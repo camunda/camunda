@@ -140,16 +140,7 @@
       <id>operateCoreFeaturesIT</id>
       <properties>
         <includeITNames>**/*IT.java</includeITNames>
-        <excludeITNames>**/*ZeebeIT.java, **/*ZeebeImportIT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>operateItImport</id>
-      <properties>
-        <includeITNames>**/*ZeebeImportIT.java, **/*ZeebeIT.java</includeITNames>
-        <excludeITNames>none</excludeITNames>
-        <skipSurefire>true</skipSurefire>
+        <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
       </properties>
     </profile>
 

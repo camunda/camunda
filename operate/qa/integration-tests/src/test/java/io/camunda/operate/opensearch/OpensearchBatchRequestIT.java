@@ -26,7 +26,6 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -54,13 +53,6 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
   @After
   public void cleanUp() {
     TestUtil.removeAllIndices(richOpenSearchClient.index(), richOpenSearchClient.template(), "*");
-  }
-
-  @Test
-  @Ignore
-  public void canUseRichClient() {
-    assertThat(richOpenSearchClient).isNotNull();
-    assertThat(searchForProcessEntity(matchAll())).isEmpty();
   }
 
   @Test
@@ -115,7 +107,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     // then
     final var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
     assertThat(foundProcesses).size().isEqualTo(1);
-    assertThat(foundProcesses.get(0).getName()).isEqualTo("newName");
+    assertThat(foundProcesses.getFirst().getName()).isEqualTo("newName");
   }
 
   @Test
@@ -129,7 +121,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     // then
     final var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
     assertThat(foundProcesses).size().isEqualTo(1);
-    assertThat(foundProcesses.get(0).getName()).isEqualTo("newName");
+    assertThat(foundProcesses.getFirst().getName()).isEqualTo("newName");
   }
 
   @Test
@@ -145,7 +137,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     // then
     final var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
     assertThat(foundProcesses).size().isEqualTo(1);
-    assertThat(foundProcesses.get(0).getName()).isEqualTo("name1-anotherName");
+    assertThat(foundProcesses.getFirst().getName()).isEqualTo("name1-anotherName");
   }
 
   @Test
@@ -167,7 +159,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     // then
     final var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 5L));
     assertThat(foundProcesses).size().isEqualTo(1);
-    assertThat(foundProcesses.get(0).getName()).isEqualTo("name5");
+    assertThat(foundProcesses.getFirst().getName()).isEqualTo("name5");
   }
 
   private BatchRequest newBatchRequest() {
