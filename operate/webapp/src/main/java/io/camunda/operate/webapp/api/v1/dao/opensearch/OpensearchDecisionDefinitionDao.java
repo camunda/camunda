@@ -137,7 +137,7 @@ public class OpensearchDecisionDefinitionDao
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        request.query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queryTerms)));
       }
     }
   }
