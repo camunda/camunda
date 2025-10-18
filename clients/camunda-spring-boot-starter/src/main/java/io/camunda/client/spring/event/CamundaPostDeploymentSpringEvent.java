@@ -17,19 +17,21 @@ package io.camunda.client.spring.event;
 
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.event.CamundaPostDeploymentEvent;
+import java.util.List;
 import org.springframework.context.ApplicationEvent;
 
 public class CamundaPostDeploymentSpringEvent extends ApplicationEvent
     implements CamundaPostDeploymentEvent {
-  private final DeploymentEvent deployment;
+  private final List<DeploymentEvent> deployments;
 
-  public CamundaPostDeploymentSpringEvent(final Object source, final DeploymentEvent deployment) {
+  public CamundaPostDeploymentSpringEvent(
+      final Object source, final List<DeploymentEvent> deployments) {
     super(source);
-    this.deployment = deployment;
+    this.deployments = deployments;
   }
 
   @Override
-  public DeploymentEvent getDeployment() {
-    return deployment;
+  public List<DeploymentEvent> getDeployments() {
+    return deployments;
   }
 }
