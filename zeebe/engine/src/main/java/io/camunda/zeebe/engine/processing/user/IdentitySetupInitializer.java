@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -109,10 +110,41 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     setupRecord.setDefaultTenant(
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
 
+    // Setup authorizations from configuration
+    initialization
+        .getAuthorizations()
+        .forEach(
+            (ownerType, authorizations) -> {
+              if (ownerType.equals("users")) {
+                authorizations.forEach(
+                    auth ->
+                        setupRecord.addAuthorization(
+                            new AuthorizationRecord()
+                                .setOwnerType(AuthorizationOwnerType.USER)
+                                .setOwnerId(auth.getOwnerId())
+                                .setResourceType(
+                                    AuthorizationResourceType.valueOf(auth.getResourceType()))
+                                .setResourceMatcher(getResourceMatcher(auth.getResourceId()))
+                                .setResourceId(auth.getResourceId())
+                                .setPermissionTypes(auth.getPermissions())));
+              } else {
+                throw new IllegalStateException(
+                    "Unexpected owner type for authorization: %s".formatted(ownerType));
+              }
+            });
+
     setupRoleMembership(initialization, setupRecord);
 
     taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, setupRecord);
     return taskResultBuilder.build();
+  }
+
+  private AuthorizationResourceMatcher getResourceMatcher(final String resourceId) {
+    if (resourceId.equals(WILDCARD.getResourceId())) {
+      return WILDCARD.getMatcher();
+    } else {
+      return AuthorizationResourceMatcher.ID;
+    }
   }
 
   private static void setupRoleMembership(
