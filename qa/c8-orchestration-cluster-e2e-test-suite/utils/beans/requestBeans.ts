@@ -22,6 +22,7 @@ import {
 } from '../requestHelpers';
 import {APIRequestContext} from 'playwright-core';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+import {readFileSync} from 'node:fs';
 
 export const jobResponseFields = [
   'type',
@@ -568,4 +569,9 @@ export async function mappingRuleBundle(
     mappingRuleId: mappingRuleIdFromKey(mappingRuleKey, state),
     responseBody: MAPPING_RULE_EXPECTED_BODY_USING_KEY(mappingRuleKey, state),
   };
+}
+
+export function getExpectedContent(resourceName: string): string {
+  const resourcePath = `./resources/${resourceName}`;
+  return readFileSync(resourcePath, 'utf-8');
 }
