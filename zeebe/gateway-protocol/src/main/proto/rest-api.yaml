@@ -7469,8 +7469,7 @@ components:
       type: object
       properties:
         processDefinitionId:
-          description: Unique identifier for the process definition.
-          type: string
+          $ref: "#/components/schemas/ProcessDefinitionId"
         latestProcessDefinitionName:
           description: Name of the latest deployed process definition instance version.
           type: string
@@ -11135,7 +11134,8 @@ components:
           allOf:
             - $ref: "#/components/schemas/ElementInstanceKey"
         rootDecisionDefinitionKey:
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionKey"
           description: The key of the root decision definition.
 
     DecisionInstanceGetQueryResult:
