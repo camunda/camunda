@@ -93,6 +93,11 @@ final class VersionCompatibilityCheckTest {
 
   @Nested
   final class CompatibleResults {
+    @Test
+    void shouldAcceptSnapshotUpgrades() {
+      assertThat(check("8.0.0-SNAPSHOT", "8.0.0-SNAPSHOT"))
+          .isInstanceOf(Compatible.SameVersion.class);
+    }
 
     @Test
     void shouldAcceptPatchUpgrades() {
