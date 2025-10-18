@@ -1,0 +1,126 @@
+Benchmark                                                   Mode  Cnt     Score      Error   Units
+EnumParserBenchmark.largeEnumOptimized                      avgt    3    44.737 ±  258.573   ns/op
+EnumParserBenchmark.largeEnumOptimized:gc.alloc.rate        avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.largeEnumOptimized:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.largeEnumOptimized:gc.count             avgt    3       ≈ 0             counts
+EnumParserBenchmark.largeEnumSimple                         avgt    3    29.581 ±   11.070   ns/op
+EnumParserBenchmark.largeEnumSimple:gc.alloc.rate           avgt    3  2907.313 ± 1085.499  MB/sec
+EnumParserBenchmark.largeEnumSimple:gc.alloc.rate.norm      avgt    3    90.162 ±    0.001    B/op
+EnumParserBenchmark.largeEnumSimple:gc.count                avgt    3    44.000             counts
+EnumParserBenchmark.largeEnumSimple:gc.time                 avgt    3    35.000                 ms
+EnumParserBenchmark.largeEnumZeroAlloc                      avgt    3    36.492 ±   14.258   ns/op
+EnumParserBenchmark.largeEnumZeroAlloc:gc.alloc.rate        avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.largeEnumZeroAlloc:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.largeEnumZeroAlloc:gc.count             avgt    3       ≈ 0             counts
+EnumParserBenchmark.mediumEnumOptimized                     avgt    3    17.325 ±   12.829   ns/op
+EnumParserBenchmark.mediumEnumOptimized:gc.alloc.rate       avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.mediumEnumOptimized:gc.alloc.rate.norm  avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.mediumEnumOptimized:gc.count            avgt    3       ≈ 0             counts
+EnumParserBenchmark.mediumEnumSimple                        avgt    3    26.759 ±   14.754   ns/op
+EnumParserBenchmark.mediumEnumSimple:gc.alloc.rate          avgt    3  2567.341 ± 1393.834  MB/sec
+EnumParserBenchmark.mediumEnumSimple:gc.alloc.rate.norm     avgt    3    72.000 ±    0.001    B/op
+EnumParserBenchmark.mediumEnumSimple:gc.count               avgt    3    79.000             counts
+EnumParserBenchmark.mediumEnumSimple:gc.time                avgt    3    46.000                 ms
+EnumParserBenchmark.mediumEnumZeroAlloc                     avgt    3    27.860 ±    1.841   ns/op
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.alloc.rate       avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.alloc.rate.norm  avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.count            avgt    3       ≈ 0             counts
+EnumParserBenchmark.smallEnumOptimized                      avgt    3    10.935 ±    4.251   ns/op
+EnumParserBenchmark.smallEnumOptimized:gc.alloc.rate        avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.smallEnumOptimized:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁵               B/op
+EnumParserBenchmark.smallEnumOptimized:gc.count             avgt    3       ≈ 0             counts
+EnumParserBenchmark.smallEnumSimple                         avgt    3    28.639 ±    8.028   ns/op
+EnumParserBenchmark.smallEnumSimple:gc.alloc.rate           avgt    3  2397.720 ±  670.405  MB/sec
+EnumParserBenchmark.smallEnumSimple:gc.alloc.rate.norm      avgt    3    72.000 ±    0.001    B/op
+EnumParserBenchmark.smallEnumSimple:gc.count                avgt    3    74.000             counts
+EnumParserBenchmark.smallEnumSimple:gc.time                 avgt    3    44.000                 ms
+EnumParserBenchmark.smallEnumZeroAlloc                      avgt    3    24.264 ±    9.133   ns/op
+EnumParserBenchmark.smallEnumZeroAlloc:gc.alloc.rate        avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.smallEnumZeroAlloc:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.smallEnumZeroAlloc:gc.count             avgt    3       ≈ 0             counts
+
+
+// Leveraging directly the DirectBuffer, improvements:
+
+Benchmark                                                   Mode  Cnt     Score      Error   Units
+EnumParserBenchmark.largeEnumOptimized                      avgt    3    32.276 ±    3.331   ns/op
+EnumParserBenchmark.largeEnumOptimized:gc.alloc.rate        avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.largeEnumOptimized:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.largeEnumOptimized:gc.count             avgt    3       ≈ 0             counts
+EnumParserBenchmark.largeEnumSimple                         avgt    3    30.725 ±   26.907   ns/op
+EnumParserBenchmark.largeEnumSimple:gc.alloc.rate           avgt    3  2802.591 ± 2431.170  MB/sec
+EnumParserBenchmark.largeEnumSimple:gc.alloc.rate.norm      avgt    3    90.162 ±    0.001    B/op
+EnumParserBenchmark.largeEnumSimple:gc.count                avgt    3    87.000             counts
+EnumParserBenchmark.largeEnumSimple:gc.time                 avgt    3    46.000                 ms
+EnumParserBenchmark.largeEnumZeroAlloc                      avgt    3    24.508 ±   52.181   ns/op
+EnumParserBenchmark.largeEnumZeroAlloc:gc.alloc.rate        avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.largeEnumZeroAlloc:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.largeEnumZeroAlloc:gc.count             avgt    3       ≈ 0             counts
+EnumParserBenchmark.mediumEnumOptimized                     avgt    3    16.716 ±    5.897   ns/op
+EnumParserBenchmark.mediumEnumOptimized:gc.alloc.rate       avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.mediumEnumOptimized:gc.alloc.rate.norm  avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.mediumEnumOptimized:gc.count            avgt    3       ≈ 0             counts
+EnumParserBenchmark.mediumEnumSimple                        avgt    3    26.832 ±   16.363   ns/op
+EnumParserBenchmark.mediumEnumSimple:gc.alloc.rate          avgt    3  2560.790 ± 1533.312  MB/sec
+EnumParserBenchmark.mediumEnumSimple:gc.alloc.rate.norm     avgt    3    72.000 ±    0.001    B/op
+EnumParserBenchmark.mediumEnumSimple:gc.count               avgt    3    65.000             counts
+EnumParserBenchmark.mediumEnumSimple:gc.time                avgt    3    44.000                 ms
+EnumParserBenchmark.mediumEnumZeroAlloc                     avgt    3    19.476 ±    3.638   ns/op
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.alloc.rate       avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.alloc.rate.norm  avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.count            avgt    3       ≈ 0             counts
+EnumParserBenchmark.smallEnumOptimized                      avgt    3    11.194 ±    1.881   ns/op
+EnumParserBenchmark.smallEnumOptimized:gc.alloc.rate        avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.smallEnumOptimized:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁵               B/op
+EnumParserBenchmark.smallEnumOptimized:gc.count             avgt    3       ≈ 0             counts
+EnumParserBenchmark.smallEnumSimple                         avgt    3    26.695 ±    5.619   ns/op
+EnumParserBenchmark.smallEnumSimple:gc.alloc.rate           avgt    3  2572.225 ±  539.824  MB/sec
+EnumParserBenchmark.smallEnumSimple:gc.alloc.rate.norm      avgt    3    72.000 ±    0.001    B/op
+EnumParserBenchmark.smallEnumSimple:gc.count                avgt    3    79.000             counts
+EnumParserBenchmark.smallEnumSimple:gc.time                 avgt    3    47.000                 ms
+EnumParserBenchmark.smallEnumZeroAlloc                      avgt    3    18.599 ±    9.972   ns/op
+EnumParserBenchmark.smallEnumZeroAlloc:gc.alloc.rate        avgt    3     0.002 ±    0.001  MB/sec
+EnumParserBenchmark.smallEnumZeroAlloc:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁴               B/op
+EnumParserBenchmark.smallEnumZeroAlloc:gc.count             avgt    3       ≈ 0             counts
+
+TreeMap for small values & HashMap when #enums > 16:
+
+EnumParserBenchmark.largeEnumOptimized                      avgt    3    32.942 ±   2.323   ns/op
+EnumParserBenchmark.largeEnumOptimized:gc.alloc.rate        avgt    3     0.002 ±   0.001  MB/sec
+EnumParserBenchmark.largeEnumOptimized:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁴              B/op
+EnumParserBenchmark.largeEnumOptimized:gc.count             avgt    3       ≈ 0            counts
+EnumParserBenchmark.largeEnumSimple                         avgt    3    31.139 ±   9.376   ns/op
+EnumParserBenchmark.largeEnumSimple:gc.alloc.rate           avgt    3  2761.611 ± 825.928  MB/sec
+EnumParserBenchmark.largeEnumSimple:gc.alloc.rate.norm      avgt    3    90.162 ±   0.001    B/op
+EnumParserBenchmark.largeEnumSimple:gc.count                avgt    3    85.000            counts
+EnumParserBenchmark.largeEnumSimple:gc.time                 avgt    3    52.000                ms
+EnumParserBenchmark.largeEnumZeroAlloc                      avgt    3    23.244 ±   9.713   ns/op
+EnumParserBenchmark.largeEnumZeroAlloc:gc.alloc.rate        avgt    3     0.002 ±   0.001  MB/sec
+EnumParserBenchmark.largeEnumZeroAlloc:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁴              B/op
+EnumParserBenchmark.largeEnumZeroAlloc:gc.count             avgt    3       ≈ 0            counts
+EnumParserBenchmark.mediumEnumOptimized                     avgt    3    17.186 ±  13.249   ns/op
+EnumParserBenchmark.mediumEnumOptimized:gc.alloc.rate       avgt    3     0.002 ±   0.001  MB/sec
+EnumParserBenchmark.mediumEnumOptimized:gc.alloc.rate.norm  avgt    3    ≈ 10⁻⁴              B/op
+EnumParserBenchmark.mediumEnumOptimized:gc.count            avgt    3       ≈ 0            counts
+EnumParserBenchmark.mediumEnumSimple                        avgt    3    27.899 ±   6.575   ns/op
+EnumParserBenchmark.mediumEnumSimple:gc.alloc.rate          avgt    3  2461.224 ± 583.618  MB/sec
+EnumParserBenchmark.mediumEnumSimple:gc.alloc.rate.norm     avgt    3    72.000 ±   0.001    B/op
+EnumParserBenchmark.mediumEnumSimple:gc.count               avgt    3    75.000            counts
+EnumParserBenchmark.mediumEnumSimple:gc.time                avgt    3    43.000                ms
+EnumParserBenchmark.mediumEnumZeroAlloc                     avgt    3    19.746 ±  10.248   ns/op
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.alloc.rate       avgt    3     0.002 ±   0.001  MB/sec
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.alloc.rate.norm  avgt    3    ≈ 10⁻⁴              B/op
+EnumParserBenchmark.mediumEnumZeroAlloc:gc.count            avgt    3       ≈ 0            counts
+EnumParserBenchmark.smallEnumOptimized                      avgt    3    11.207 ±   0.423   ns/op
+EnumParserBenchmark.smallEnumOptimized:gc.alloc.rate        avgt    3     0.002 ±   0.001  MB/sec
+EnumParserBenchmark.smallEnumOptimized:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁵              B/op
+EnumParserBenchmark.smallEnumOptimized:gc.count             avgt    3       ≈ 0            counts
+EnumParserBenchmark.smallEnumSimple                         avgt    3    25.920 ±   3.720   ns/op
+EnumParserBenchmark.smallEnumSimple:gc.alloc.rate           avgt    3  2649.017 ± 380.655  MB/sec
+EnumParserBenchmark.smallEnumSimple:gc.alloc.rate.norm      avgt    3    72.000 ±   0.001    B/op
+EnumParserBenchmark.smallEnumSimple:gc.count                avgt    3    82.000            counts
+EnumParserBenchmark.smallEnumSimple:gc.time                 avgt    3    38.000                ms
+EnumParserBenchmark.smallEnumZeroAlloc                      avgt    3    13.356 ±   8.154   ns/op
+EnumParserBenchmark.smallEnumZeroAlloc:gc.alloc.rate        avgt    3     0.002 ±   0.001  MB/sec
+EnumParserBenchmark.smallEnumZeroAlloc:gc.alloc.rate.norm   avgt    3    ≈ 10⁻⁵              B/op
+EnumParserBenchmark.smallEnumZeroAlloc:gc.count             avgt    3       ≈ 0            counts
