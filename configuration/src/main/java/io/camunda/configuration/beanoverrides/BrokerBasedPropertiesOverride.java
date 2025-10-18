@@ -581,6 +581,10 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+
+    setArg(args, "bulk.delay", database.getBulk().getDelay().getSeconds());
+    setArg(args, "bulk.size", database.getBulk().getSize());
+    setArg(args, "bulk.memoryLimit", database.getBulk().getMemoryLimit().toMegabytes());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
