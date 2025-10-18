@@ -20,7 +20,9 @@
   <name>Zeebe Gateway REST API server</name>
 
   <properties>
-    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
+    <!-- Previously this module referenced another module's source directory (../../zeebe/gateway-protocol/src/main/proto).
+         That breaks module encapsulation and IDE incremental builds. We now copy the spec from the built dependency jar. -->
+    <openapi.spec.file>${project.build.directory}/openapi-spec/rest-api.yaml</openapi.spec.file>
   </properties>
 
   <dependencies>
@@ -435,6 +437,40 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!-- dependencies only packaged but not explicitly used -->
+          <usedDependencies>
+            <!-- Needed to run tests -->
+            <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.xmlunit:xmlunit-core</dependency>
+            <!-- Used for OpenAPI generation -->
+            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
+          </usedDependencies>
+        </configuration>
+        <executions>
+          <execution>
+            <id>copy-rest-openapi</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.camunda</groupId>
+                  <artifactId>zeebe-gateway-protocol</artifactId>
+                  <version>${project.version}</version>
+                  <outputDirectory>${project.build.directory}/openapi-spec</outputDirectory>
+                  <includes>rest-api.yaml</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
         <executions>
@@ -443,11 +479,12 @@
             <goals>
               <goal>generate</goal>
             </goals>
+            <phase>generate-sources</phase>
             <configuration>
               <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>spring</generatorName>
-              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+              <inputSpec>${openapi.spec.file}</inputSpec>
               <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
               <typeMappings>OffsetDateTime=String,Permission=io.camunda.identity.automation.permissions.PermissionEnum</typeMappings>
               <generateApis>false</generateApis>
@@ -469,20 +506,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <!-- dependencies only packaged but not explicitly used -->
-          <usedDependencies>
-            <!-- Needed to run tests -->
-            <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
-            <dependency>org.xmlunit:xmlunit-core</dependency>
-            <!-- Used for OpenAPI generation -->
-            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
-          </usedDependencies>
-        </configuration>
       </plugin>
     </plugins>
   </build>

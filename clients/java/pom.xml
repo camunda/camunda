@@ -25,7 +25,8 @@
   <properties>
     <version.java>8</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
-    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
+    <!-- Replaced direct source reference with artifact-based copy to preserve module encapsulation -->
+    <openapi.spec.file>${project.build.directory}/openapi-spec/rest-api.yaml</openapi.spec.file>
   </properties>
 
   <dependencies>
@@ -62,6 +63,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol-impl</artifactId>
+    </dependency>
+
+    <!-- Add direct dependency on protocol jar to allow unpacking the OpenAPI spec -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-protocol</artifactId>
     </dependency>
 
     <dependency>
@@ -311,6 +318,26 @@
             <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
           </ignoredDependencies>
         </configuration>
+        <executions>
+          <execution>
+            <id>copy-rest-openapi</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.camunda</groupId>
+                  <artifactId>zeebe-gateway-protocol</artifactId>
+                  <version>${project.version}</version>
+                  <outputDirectory>${project.build.directory}/openapi-spec</outputDirectory>
+                  <includes>rest-api.yaml</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -321,38 +348,38 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <configuration>
-          <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
-          <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
-          <generatorName>java</generatorName>
-          <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
-          <modelPackage>io.camunda.client.protocol.rest</modelPackage>
-          <typeMappings>OffsetDateTime=String</typeMappings>
-          <generateApis>false</generateApis>
-          <generateApiTests>false</generateApiTests>
-          <generateSupportingFiles>false</generateSupportingFiles>
-          <generateModels>true</generateModels>
-          <generateModelDocumentation>false</generateModelDocumentation>
-          <generateModelTests>false</generateModelTests>
-          <!-- validate the spec on every generation -->
-          <skipValidateSpec>false</skipValidateSpec>
-          <configOptions>
-            <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
-            <documentationProvider>none</documentationProvider>
-            <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
-            <library>apache-httpclient</library>
-            <java8>true</java8>
-            <openApiNullable>false</openApiNullable>
-            <serializationLibrary>jackson</serializationLibrary>
-            <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
-          </configOptions>
-        </configuration>
         <executions>
           <execution>
             <id>rest</id>
             <goals>
               <goal>generate</goal>
             </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
+              <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
+              <generatorName>java</generatorName>
+              <inputSpec>${openapi.spec.file}</inputSpec>
+              <modelPackage>io.camunda.client.protocol.rest</modelPackage>
+              <typeMappings>OffsetDateTime=String</typeMappings>
+              <generateApis>false</generateApis>
+              <generateApiTests>false</generateApiTests>
+              <generateSupportingFiles>false</generateSupportingFiles>
+              <generateModels>true</generateModels>
+              <generateModelDocumentation>false</generateModelDocumentation>
+              <generateModelTests>false</generateModelTests>
+              <skipValidateSpec>false</skipValidateSpec>
+              <configOptions>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+                <documentationProvider>none</documentationProvider>
+                <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
+                <library>apache-httpclient</library>
+                <java8>true</java8>
+                <openApiNullable>false</openApiNullable>
+                <serializationLibrary>jackson</serializationLibrary>
+                <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
+              </configOptions>
+            </configuration>
           </execution>
         </executions>
       </plugin>
