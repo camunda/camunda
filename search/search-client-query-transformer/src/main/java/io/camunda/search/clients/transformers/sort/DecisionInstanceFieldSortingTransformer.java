@@ -20,6 +20,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.TENANT_ID;
 
@@ -42,6 +43,7 @@ public class DecisionInstanceFieldSortingTransformer implements FieldSortingTran
       case "decisionDefinitionName" -> DECISION_NAME;
       case "decisionDefinitionVersion" -> DECISION_VERSION;
       case "decisionDefinitionType" -> DECISION_TYPE;
+      case "rootDecisionDefinitionKey" -> ROOT_DECISION_DEFINITION_ID;
       case "tenantId" -> TENANT_ID;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };

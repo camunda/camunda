@@ -35,6 +35,7 @@ public record DecisionInstanceFilter(
     List<String> decisionDefinitionNames,
     List<Integer> decisionDefinitionVersions,
     List<DecisionDefinitionType> decisionTypes,
+    List<Operation<Long>> rootDecisionDefinitionKeyOperations,
     List<String> tenantIds)
     implements FilterBase {
 
@@ -58,6 +59,7 @@ public record DecisionInstanceFilter(
     private List<String> decisionDefinitionNames;
     private List<Integer> decisionDefinitionVersions;
     private List<DecisionDefinitionType> decisionTypes;
+    private List<Operation<Long>> rootDecisionDefinitionKeyOperations;
     private List<String> tenantIds;
 
     public Builder decisionInstanceKeys(final List<Long> values) {
@@ -192,6 +194,22 @@ public record DecisionInstanceFilter(
       return decisionTypes(collectValuesAsList(values));
     }
 
+    public Builder rootDecisionDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      rootDecisionDefinitionKeyOperations =
+          addValuesToList(rootDecisionDefinitionKeyOperations, operations);
+      return this;
+    }
+
+    public Builder rootDecisionDefinitionKeys(final Long value, final Long... values) {
+      return rootDecisionDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder rootDecisionDefinitionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return rootDecisionDefinitionKeyOperations(collectValues(operation, operations));
+    }
+
     public Builder tenantIds(final List<String> values) {
       tenantIds = addValuesToList(tenantIds, values);
       return this;
@@ -217,6 +235,7 @@ public record DecisionInstanceFilter(
           Objects.requireNonNullElse(decisionDefinitionNames, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionVersions, Collections.emptyList()),
           Objects.requireNonNullElse(decisionTypes, Collections.emptyList()),
+          Objects.requireNonNullElse(rootDecisionDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

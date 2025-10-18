@@ -1023,6 +1023,7 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
+        .rootDecisionDefinitionKey(KeyUtil.keyToString(entity.rootDecisionDefinitionKey()))
         .result(entity.result())
         .tenantId(entity.tenantId());
   }
@@ -1043,6 +1044,7 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
+        .rootDecisionDefinitionKey(KeyUtil.keyToString(entity.rootDecisionDefinitionKey()))
         .result(entity.result())
         .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
         .matchedRules(toMatchedRules(entity.evaluatedOutputs()))

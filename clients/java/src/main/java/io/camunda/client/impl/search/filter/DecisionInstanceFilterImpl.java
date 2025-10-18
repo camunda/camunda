@@ -120,6 +120,19 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
+  public DecisionInstanceFilter rootDecisionDefinitionKey(final long rootDecisionDefinitionKey) {
+    return rootDecisionDefinitionKey(b -> b.eq(rootDecisionDefinitionKey));
+  }
+
+  @Override
+  public DecisionInstanceFilter rootDecisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setRootDecisionDefinitionKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
     return decisionDefinitionKey(b -> b.eq(decisionDefinitionKey));
   }

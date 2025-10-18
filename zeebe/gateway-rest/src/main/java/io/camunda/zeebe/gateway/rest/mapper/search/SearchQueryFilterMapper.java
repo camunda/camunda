@@ -249,6 +249,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getDecisionDefinitionType())
           .map(t -> convertEnum(t, DecisionDefinitionType.class))
           .ifPresent(builder::decisionTypes);
+      ofNullable(filter.getRootDecisionDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::rootDecisionDefinitionKeyOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
