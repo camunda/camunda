@@ -85,17 +85,31 @@ const VariableEditor: React.FC<Props> = ({
               <StructuredListCell
                 className={cn(styles.listCell, styles.valueCell)}
               >
-                <div className={styles.scrollableOuter}>
-                  <div className={styles.scrollableInner}>
-                    {variable.isTruncated
-                      ? `${variable.value}...`
-                      : variable.value}
-                  </div>
+                <div className={styles.singleLineValue}>
+                  {variable.isTruncated ? variable.value : variable.value}
                 </div>
               </StructuredListCell>
               <StructuredListCell
                 className={cn(styles.listCell, styles.controlsCell)}
-              />
+              >
+                <div className={cn(styles.iconButtons, styles.extraPadding)}>
+                  <IconButton
+                    label={t('variableEditorOpenJsonLabel')}
+                    onClick={() => {
+                      if (variable.isTruncated) {
+                        fetchFullVariable(variable.variableKey);
+                      }
+                      onEdit(createVariableFieldName(variable.name));
+                    }}
+                    size="sm"
+                    kind="ghost"
+                    align="top-end"
+                    leaveDelayMs={100}
+                  >
+                    <Popup />
+                  </IconButton>
+                </div>
+              </StructuredListCell>
             </StructuredListRow>
           ))
         ) : (
