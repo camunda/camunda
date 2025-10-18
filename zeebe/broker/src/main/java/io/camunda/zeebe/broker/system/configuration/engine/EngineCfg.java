@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.ListenersConfiguration;
+import io.camunda.zeebe.engine.ListenersOrderConfiguration;
 
 public final class EngineCfg implements ConfigurationEntry {
 
@@ -21,6 +23,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
+  private ListenersCfg listeners = new ListenersCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -31,6 +34,7 @@ public final class EngineCfg implements ConfigurationEntry {
     validators.init(globalConfig, brokerBase);
     distribution.init(globalConfig, brokerBase);
     usageMetrics.init(globalConfig, brokerBase);
+    listeners.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -97,6 +101,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.maxProcessDepth = maxProcessDepth;
   }
 
+  public ListenersCfg getListeners() {
+    return listeners;
+  }
+
+  public void setListeners(final ListenersCfg listeners) {
+    this.listeners = listeners;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -120,6 +132,20 @@ public final class EngineCfg implements ConfigurationEntry {
   }
 
   public EngineConfiguration createEngineConfiguration() {
+    final var globalTaskListeners = listeners.getTask();
+
+    final var beforeListeners =
+        globalTaskListeners.getBeforeLocal().stream()
+            .map(ListenerCfg::toListenerConfiguration)
+            .toList();
+    final var afterListeners =
+        globalTaskListeners.getBeforeLocal().stream()
+            .map(ListenerCfg::toListenerConfiguration)
+            .toList();
+    final var taskListeners = new ListenersOrderConfiguration(beforeListeners, afterListeners);
+
+    final var listeners = new ListenersConfiguration(taskListeners);
+
     return new EngineConfiguration()
         .setMessagesTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit())
         .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
@@ -144,6 +170,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
-        .setMaxProcessDepth(getMaxProcessDepth());
+        .setMaxProcessDepth(getMaxProcessDepth())
+        .setListeners(listeners);
   }
 }

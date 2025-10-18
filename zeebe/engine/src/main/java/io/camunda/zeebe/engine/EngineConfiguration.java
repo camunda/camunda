@@ -90,6 +90,7 @@ public final class EngineConfiguration {
       DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
 
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
+  private ListenersConfiguration listeners = ListenersConfiguration.empty();
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -334,6 +335,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setEnableIdentitySetup(final boolean enableIdentitySetup) {
     this.enableIdentitySetup = enableIdentitySetup;
+    return this;
+  }
+
+  public ListenersConfiguration getListeners() {
+    return listeners;
+  }
+
+  public EngineConfiguration setListeners(final ListenersConfiguration listeners) {
+    this.listeners = listeners;
     return this;
   }
 }
