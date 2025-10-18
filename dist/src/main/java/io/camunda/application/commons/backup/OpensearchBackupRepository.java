@@ -7,22 +7,17 @@
  */
 package io.camunda.application.commons.backup;
 
-import io.camunda.operate.conditions.OpensearchCondition;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
+
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
-/*
- * Note that the condition used refers to operate OpensearchCondition
- */
-@ConditionalOnBackupWebappsEnabled
-@Conditional(OpensearchCondition.class)
+@ConditionalOnSecondaryStorageType(opensearch)
 @Configuration
-@Profile("operate")
 public class OpensearchBackupRepository
     extends io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository {
 

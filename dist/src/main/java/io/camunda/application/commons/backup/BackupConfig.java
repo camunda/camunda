@@ -7,51 +7,26 @@
  */
 package io.camunda.application.commons.backup;
 
-import static io.camunda.application.commons.backup.ConfigValidation.*;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.configuration.Backup;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
-import io.camunda.webapps.profiles.ProfileWebApp;
-import java.util.LinkedHashMap;
-import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.camunda.zeebe.util.VersionUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
-@ConditionalOnBackupWebappsEnabled
+@ConditionalOnSecondaryStorageType({elasticsearch, opensearch})
 public class BackupConfig {
 
-  public static String differentRepoNameFormat =
-      "Expected the same repository in operate and tasklist backup config: given backup repositories are %s";
-
   @Bean
-  @ProfileWebApp
-  public BackupRepositoryProps backupRepositoryProps(
-      @Autowired(required = false) final OperateProperties operateProperties,
-      @Autowired(required = false) final TasklistProperties tasklistProperties) {
-    final var operateBackup =
-        Optional.ofNullable(operateProperties).map(c -> props(c.getVersion(), c.getBackup()));
-    final var tasklistBackup =
-        Optional.ofNullable(tasklistProperties).map(c -> props(c.getVersion(), c.getBackup()));
-
-    // A LinkedHashMap has to be used because it keeps insertion order
-    // the first entry of the map will be used if all entries are present
-    final var propMap = new LinkedHashMap<String, Optional<BackupRepositoryProps>>();
-    propMap.put("operate", operateBackup);
-    propMap.put("tasklist", tasklistBackup);
-
-    final var props =
-        allMatchHaving(
-            Optional::empty,
-            m -> String.format(differentRepoNameFormat, m),
-            propMap,
-            opt -> opt.map(BackupRepositoryProps::repositoryName),
-            skipEmptyOptional());
-    return props.orElse(BackupRepositoryProps.EMPTY);
+  public BackupRepositoryProps backupRepositoryProps(final Camunda camunda) {
+    return props(VersionUtil.getVersion(), camunda.getData().getBackup());
   }
 
   @Bean("backupThreadPoolExecutor")
@@ -67,19 +42,11 @@ public class BackupConfig {
     return executor;
   }
 
-  public static BackupRepositoryProps props(
-      final String tasklistVersion,
-      final io.camunda.tasklist.property.BackupProperties operateProperties) {
-    return new BackupRepositoryPropsRecord(tasklistVersion, operateProperties.getRepositoryName());
-  }
-
-  public static BackupRepositoryProps props(
-      final String operateVersion,
-      final io.camunda.operate.property.BackupProperties operateProperties) {
+  public static BackupRepositoryProps props(final String version, final Backup backupConfig) {
     return new BackupRepositoryPropsRecord(
-        operateVersion,
-        operateProperties.getRepositoryName(),
-        operateProperties.getSnapshotTimeout(),
-        operateProperties.getIncompleteCheckTimeoutInSeconds());
+        version,
+        backupConfig.getRepositoryName(),
+        backupConfig.getSnapshotTimeout(),
+        backupConfig.getIncompleteCheckTimeout().getSeconds());
   }
 }
