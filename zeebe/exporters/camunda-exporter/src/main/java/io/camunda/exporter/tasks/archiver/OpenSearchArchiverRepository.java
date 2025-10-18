@@ -166,7 +166,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .thenComposeAsync(
             response ->
                 createArchiveBatch(
-                    response, UsageMetricTUTemplate.END_TIME, usageMetricTUTemplateDescriptor),
+                    response,
+                    UsageMetricTUTemplate.END_TIME,
+                    usageMetricTUTemplateDescriptor,
+                    config.getUsageMetricsRolloverInterval()),
             executor);
   }
 
@@ -184,7 +187,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .thenComposeAsync(
             response ->
                 createArchiveBatch(
-                    response, UsageMetricTemplate.END_TIME, usageMetricTemplateDescriptor),
+                    response,
+                    UsageMetricTemplate.END_TIME,
+                    usageMetricTemplateDescriptor,
+                    config.getUsageMetricsRolloverInterval()),
             executor);
   }
 
@@ -471,6 +477,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final SearchResponse<?> response,
       final String field,
       final IndexTemplateDescriptor templateDescriptor) {
+    return createArchiveBatch(response, field, templateDescriptor, config.getRolloverInterval());
+  }
+
+  private CompletableFuture<ArchiveBatch> createArchiveBatch(
+      final SearchResponse<?> response,
+      final String field,
+      final IndexTemplateDescriptor templateDescriptor,
+      final String rolloverInterval) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
       return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
@@ -492,7 +506,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         date -> {
           lastHistoricalArchiverDate =
               DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-                  endDate, date, config.getRolloverInterval(), config.getElsRolloverDateFormat());
+                  endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
 
           final var ids =
               hits.stream()
