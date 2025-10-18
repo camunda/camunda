@@ -10,6 +10,7 @@ package io.camunda.exporter.config;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -201,5 +202,18 @@ public class ConfigValidatorTest {
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("CamundaExporter batchOperationCache.maxCacheSize must be >= 1.");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(strings = {"-PT1M", "PT0S"})
+  void shouldForbidNonStrictlyPositiveApplyPolicyJobInterval(
+      final Duration applyPolicyJobInterval) {
+    // given
+    config.getHistory().getRetention().setApplyPolicyJobInterval(applyPolicyJobInterval);
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter retention.applyPolicyJobInterval must be strictly positive.");
   }
 }
