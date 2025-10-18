@@ -35,7 +35,7 @@ describe('Sorting', () => {
 
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Incident Type')).toBeEnabled();
-    expect(screen.getByText('Failing Flow Node')).toBeEnabled();
+    expect(screen.getByText('Failing Element')).toBeEnabled();
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Creation Date')).toBeEnabled();
     expect(screen.getByText('Error Message')).toBeEnabled();

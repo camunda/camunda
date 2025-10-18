@@ -41,7 +41,7 @@ describe('IncidentsFilter', () => {
 
     await fetchIncidents('1');
 
-    const {user} = render(<IncidentsFilter />, {
+    const {user} = render(<IncidentsFilter processInstanceKey="1" />, {
       wrapper: Wrapper,
     });
 
@@ -72,7 +72,7 @@ describe('IncidentsFilter', () => {
 
     await fetchIncidents('1');
 
-    const {user} = render(<IncidentsFilter />, {
+    const {user} = render(<IncidentsFilter processInstanceKey="1" />, {
       wrapper: Wrapper,
     });
 
