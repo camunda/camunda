@@ -32,7 +32,6 @@ import io.camunda.client.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.client.protocol.rest.JobSearchQuery;
 import io.camunda.client.protocol.rest.JobStateEnum;
 import io.camunda.client.protocol.rest.JobStateFilterProperty;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -276,20 +275,5 @@ public class SearchJobTest extends ClientRestTest {
     assertSort(sorts.get(17), "hasFailedWithRetriesLeft", SortOrderEnum.DESC);
     assertSort(sorts.get(18), "isDenied", SortOrderEnum.ASC);
     assertSort(sorts.get(19), "retries", SortOrderEnum.DESC);
-  }
-
-  @Test
-  void shouldSearchJobWithFullPagination() {
-    // when
-    client.newJobSearchRequest().page(p -> p.from(3).limit(5).before("b").after("a")).send().join();
-
-    // then
-    final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest.getFrom()).isEqualTo(3);
-    assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getBefore()).isEqualTo("b");
-    assertThat(pageRequest.getAfter()).isEqualTo("a");
   }
 }

@@ -15,6 +15,8 @@
  */
 package io.camunda.client.job.rest;
 
+import static io.camunda.client.api.command.enums.JobResultType.AD_HOC_SUB_PROCESS;
+import static io.camunda.client.api.command.enums.JobResultType.USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
@@ -22,10 +24,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.client.protocol.rest.JobResult;
-import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.client.protocol.rest.JobResultActivateElement;
-import io.camunda.client.protocol.rest.JobResultAdHocSubProcess;
-import io.camunda.client.protocol.rest.JobResultUserTask;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
@@ -43,9 +42,9 @@ import org.mockito.Mockito;
 
 class CompleteJobRestTest extends ClientRestTest {
 
-  public static final JobResult.TypeEnum USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK;
-  public static final JobResult.TypeEnum AD_HOC_SUB_PROCESS_DISCRIMINATOR =
-      TypeEnum.AD_HOC_SUB_PROCESS;
+  public static final String USER_TASK_DISCRIMINATOR = USER_TASK.getProtocolValue();
+  public static final String AD_HOC_SUB_PROCESS_DISCRIMINATOR =
+      AD_HOC_SUB_PROCESS.getProtocolValue();
 
   @Test
   void shouldCompleteJobByKey() {
@@ -181,7 +180,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
-    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    final JobResult result = request.getResult();
     assertThat(result.getDenied()).isEqualTo(denied);
     assertThat(result.getDeniedReason()).isEqualTo(deniedReason);
   }
@@ -203,7 +202,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
-    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    final JobResult result = request.getResult();
     assertThat(result.getDenied()).isEqualTo(denied);
     assertThat(result.getDeniedReason()).isEqualTo(deniedReason);
   }
@@ -225,7 +224,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
-    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    final JobResult result = request.getResult();
     assertThat(result.getDenied()).isEqualTo(denied);
     assertThat(result.getDeniedReason()).isEqualTo(deniedReason);
   }
@@ -247,7 +246,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
-    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    final JobResult result = request.getResult();
     assertThat(result.getDenied()).isEqualTo(false);
 
     final Map<String, String> expectedVariables = new HashMap<>();
@@ -271,7 +270,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
-    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    final JobResult result = request.getResult();
     assertThat(result.getDenied()).isFalse();
     assertThat(result.getDeniedReason()).isNull();
   }
@@ -302,7 +301,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultUserTask()
+                new JobResult()
                     .type(USER_TASK_DISCRIMINATOR)
                     .denied(false)
                     .corrections(
@@ -342,7 +341,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultUserTask()
+                new JobResult()
                     .type(USER_TASK_DISCRIMINATOR)
                     .denied(false)
                     .corrections(
@@ -383,7 +382,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultUserTask()
+                new JobResult()
                     .type(USER_TASK_DISCRIMINATOR)
                     .denied(false)
                     .corrections(
@@ -424,7 +423,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultUserTask()
+                new JobResult()
                     .type(USER_TASK_DISCRIMINATOR)
                     .denied(false)
                     .corrections(
@@ -466,7 +465,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultUserTask()
+                new JobResult()
                     .type(USER_TASK_DISCRIMINATOR)
                     .denied(false)
                     .corrections(
@@ -499,7 +498,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultUserTask()
+                new JobResult()
                     .type(USER_TASK_DISCRIMINATOR)
                     .denied(false)
                     .corrections(
@@ -533,7 +532,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultAdHocSubProcess()
+                new JobResult()
                     .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
                     .addActivateElementsItem(new JobResultActivateElement().elementId(elementId)));
 
@@ -563,7 +562,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultAdHocSubProcess()
+                new JobResult()
                     .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
                     .addActivateElementsItem(
                         new JobResultActivateElement()
@@ -602,7 +601,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultAdHocSubProcess()
+                new JobResult()
                     .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
                     .addActivateElementsItem(
                         new JobResultActivateElement()
@@ -635,7 +634,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultAdHocSubProcess()
+                new JobResult()
                     .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
                     .isCompletionConditionFulfilled(true)
                     .isCancelRemainingInstances(false));
@@ -660,7 +659,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResultAdHocSubProcess()
+                new JobResult()
                     .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
                     .isCompletionConditionFulfilled(false)
                     .isCancelRemainingInstances(true));
