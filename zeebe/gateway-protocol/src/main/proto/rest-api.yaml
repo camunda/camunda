@@ -10012,52 +10012,41 @@ components:
           type: object
           nullable: true
         result:
-          allOf:
-            - $ref: "#/components/schemas/JobResult"
-          description: The result of the completed job as determined by the worker.
+          $ref: "#/components/schemas/JobResult"
     JobResult:
       discriminator:
         propertyName: type
         mapping:
           userTask: "#/components/schemas/JobResultUserTask"
           adHocSubProcess: "#/components/schemas/JobResultAdHocSubProcess"
-      required:
-        - type
-      properties:
-        type:
-          type: string
-          description: Used to distinguish between different types of job results.
-          enum:
-            - userTask
-            - adHocSubProcess
-          default: userTask
-          oneOf:
-            - $ref: "#/components/schemas/JobResultUserTask"
-            - $ref: "#/components/schemas/JobResultAdHocSubProcess"
+      oneOf:
+        - $ref: "#/components/schemas/JobResultUserTask"
+        - $ref: "#/components/schemas/JobResultAdHocSubProcess"
     JobResultUserTask:
       description: >
         Job result details for a user task completion, optionally including a denial
         reason and corrected task properties.
-      allOf:
-        - $ref: '#/components/schemas/JobResult'
-        - type: object
-          nullable: true
-          properties:
-            denied:
-              type: boolean
-              description: >
-                Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
+      type: object
+      nullable: true
+      properties:
+          denied:
+            type: boolean
+            description: >
+              Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
                 For example, a user task listener can deny the completion of a task by setting this flag to true.
                 In this example, the completion of a task is represented by a job that the worker can complete as denied.
                 As a result, the completion request is rejected and the task remains active.
                 Defaults to false.
               nullable: true
-            deniedReason:
+          deniedReason:
               type: string
               description: The reason provided by the user task listener for denying the work.
               nullable: true
-            corrections:
+          corrections:
               $ref: "#/components/schemas/JobResultCorrections"
+          type:
+            type: string
+            example: userTask
     JobResultCorrections:
       type: object
       description: |
@@ -10113,11 +10102,9 @@ components:
       description: >
         Job result details for an ad‑hoc sub‑process, including elements to activate
         and flags indicating completion or cancellation behavior.
-      allOf:
-        - $ref: '#/components/schemas/JobResult'
-        - type: object
-          nullable: true
-          properties:
+      type: object
+      nullable: true
+      properties:
             activateElements:
               type: array
               description: Indicates which elements need to be activated in the ad-hoc subprocess.
@@ -10133,6 +10120,9 @@ components:
               description: Indicates whether the remaining instances of the ad-hoc subprocess should be canceled.
               default: false
               nullable: false
+            type:
+              type: string
+              example: adHocSubProcess
     JobResultActivateElement:
       description: >
         Instruction to activate a single BPMN element within an ad‑hoc sub‑process,
