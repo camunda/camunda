@@ -7,10 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyDecisionStateMigration;
@@ -29,6 +25,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
