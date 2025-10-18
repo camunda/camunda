@@ -627,19 +627,22 @@ public class ProcessDefinitionStatisticsTest {
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
 
-    // when
-    final var actual =
-        camundaClient
-            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
-            .send()
-            .join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessElementStatisticsImpl("UserTask", 2L, 0L, 0L, 0L));
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // when
+              final var actual =
+                  camundaClient
+                      .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                      .send()
+                      .join();
+              // then
+              assertThat(actual).hasSize(2);
+              assertThat(actual)
+                  .containsExactlyInAnyOrder(
+                      new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+                      new ProcessElementStatisticsImpl("UserTask", 2L, 0L, 0L, 0L));
+            });
   }
 
   @Test
@@ -687,19 +690,22 @@ public class ProcessDefinitionStatisticsTest {
     camundaClient.newCancelInstanceCommand(pi1.getProcessInstanceKey()).send().join();
     waitForProcessInstances(camundaClient, f -> f.processDefinitionKey(processDefinitionKey), 2);
 
-    // when
-    final var actual =
-        camundaClient
-            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
-            .send()
-            .join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessElementStatisticsImpl("UserTask", 1L, 1L, 0L, 0L));
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // when
+              final var actual =
+                  camundaClient
+                      .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                      .send()
+                      .join();
+              // then
+              assertThat(actual).hasSize(2);
+              assertThat(actual)
+                  .containsExactlyInAnyOrder(
+                      new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+                      new ProcessElementStatisticsImpl("UserTask", 1L, 1L, 0L, 0L));
+            });
   }
 
   @Test

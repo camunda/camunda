@@ -131,6 +131,7 @@ public class CamundaExporterITTemplateExtension
     }
     config.getConnect().setClusterName(connectionType.name());
     config.getConnect().setType(connectionType.getType());
+    config.getConnect().setAwsEnabled(extension.isAws());
     return config;
   }
 

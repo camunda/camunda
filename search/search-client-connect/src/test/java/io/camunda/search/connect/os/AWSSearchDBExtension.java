@@ -42,6 +42,7 @@ public class AWSSearchDBExtension extends SearchDBExtension {
     final var url = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
     final var configuration = new ConnectConfiguration();
     configuration.setUrl(url);
+    configuration.setAwsEnabled(true);
     final var connector = new OpensearchConnector(configuration);
     osClient = connector.createClient();
     asyncOsClient = connector.createAsyncClient();

@@ -72,7 +72,7 @@ public class UsageMetricsTest {
       final OffsetDateTime endTime,
       final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
+        .atMost(TEN_SECONDS)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->

@@ -25,7 +25,7 @@ defaults:
 jobs:
   integration-tests:
     name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
-    timeout-minutes: 20
+    timeout-minutes: 60
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -61,8 +61,8 @@ jobs:
           - group: camunda-qa-acceptance-tests
             name: "Camunda QA Integration Module"
             maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
-            maven-build-threads: 2
-            maven-test-fork-count: 2
+            maven-build-threads: 1
+            maven-test-fork-count: 1
             runs-on: aws-core-16-default
             owner: "General"
     steps:
@@ -127,10 +127,11 @@ jobs:
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
+          -D flaky.test.reportDir=failsafe-reports
           -D test.integration.opensearch.aws.url="${{ env.OS_URL }}"
           -D test.integration.camunda.database.type=AWS_OS
           -D test.integration.opensearch.aws.timeout.seconds=180
-          -P parallel-tests,extract-flaky-tests,multi-db-test
+          -P extract-flaky-tests,multi-db-test
           -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -162,7 +163,7 @@ jobs:
     name: "Send slack notification on fail"
     runs-on: ubuntu-latest
     needs: integration-tests
-    if: failure()
+    if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     permissions:
       contents: read
       actions: write

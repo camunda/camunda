@@ -64,6 +64,7 @@ abstract class BatchOperationUpdateRepositoryIT {
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
+    config.getConnect().setAwsEnabled(searchDB.isAws());
 
     clientAdapter = ClientAdapter.of(config.getConnect());
     engineClient = clientAdapter.getSearchEngineClient();
