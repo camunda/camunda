@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.CamundaClientCredentials;
+import io.camunda.client.impl.util.SSLContextUtil;
 import io.camunda.client.impl.util.VersionUtil;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -39,13 +40,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -58,8 +54,6 @@ import java.util.stream.Collectors;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.hc.core5.ssl.SSLContextBuilder;
-import org.apache.hc.core5.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -243,30 +237,8 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   private SSLSocketFactory createSSLContext() {
-    if (keystorePath == null && truststorePath == null) {
-      return SSLContexts.createSystemDefault().getSocketFactory();
-    }
-    final SSLContextBuilder builder = SSLContexts.custom();
-    try {
-      if (keystorePath != null) {
-        builder.loadKeyMaterial(
-            keystorePath,
-            keystorePassword == null ? null : keystorePassword.toCharArray(),
-            keystoreKeyPassword == null ? new char[0] : keystoreKeyPassword.toCharArray());
-      }
-      if (truststorePath != null) {
-        builder.loadTrustMaterial(
-            truststorePath, truststorePassword == null ? null : truststorePassword.toCharArray());
-      }
-      return builder.build().getSocketFactory();
-    } catch (final NoSuchAlgorithmException
-        | KeyManagementException
-        | KeyStoreException
-        | UnrecoverableKeyException
-        | CertificateException
-        | IOException e) {
-      throw new RuntimeException("Failed to create SSL context", e);
-    }
+    return SSLContextUtil.createSSLContext(
+        keystorePath, keystorePassword, truststorePath, truststorePassword, keystoreKeyPassword);
   }
 
   private String getClientAssertion() {
