@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadParti
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -673,6 +675,14 @@ public class CommandDistributionIdempotencyTest {
                       .update();
                 }),
             UserUpdateProcessor.class
+          },
+          {
+            "ClusterVariable.CREATE is idempotent",
+            new Scenario(
+                ValueType.CLUSTER_VARIABLE,
+                ClusterVariableIntent.CREATE,
+                () -> ENGINE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create()),
+            ClusterVariableCreateProcessor.class
           },
           {
             "MessageSubscription.MIGRATE is idempotent",

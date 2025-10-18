@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
 import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
+import io.camunda.zeebe.engine.util.client.ClusterVariableClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
@@ -486,6 +487,10 @@ public final class EngineRule extends ExternalResource {
 
   public VariableClient variables() {
     return new VariableClient(environmentRule);
+  }
+
+  public ClusterVariableClient clusterVariables() {
+    return new ClusterVariableClient(environmentRule);
   }
 
   public JobActivationClient jobs() {

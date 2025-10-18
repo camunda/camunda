@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -14,8 +15,8 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class ClusterVariableRecord extends UnifiedRecordValue
     implements ClusterVariableRecordValue {
@@ -28,8 +29,7 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   private final LongProperty variableKeyProp = new LongProperty(VARIABLE_KEY_KEY, 0L);
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
   public ClusterVariableRecord() {
     super(4);
@@ -45,7 +45,7 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Object getValue() {
+  public String getValue() {
     return MsgPackConverter.convertToJson(valueProp.getValue());
   }
 
@@ -54,8 +54,33 @@ public class ClusterVariableRecord extends UnifiedRecordValue
     return variableKeyProp.getValue();
   }
 
+  public ClusterVariableRecord setValue(final DirectBuffer value) {
+    valueProp.setValue(value);
+    return this;
+  }
+
+  public ClusterVariableRecord setName(final String name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getNameBuffer() {
+    return nameProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getValueBuffer() {
+    return valueProp.getValue();
+  }
+
   @Override
   public String getTenantId() {
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ClusterVariableRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

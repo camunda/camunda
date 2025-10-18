@@ -1,0 +1,121 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.state.clustervariable;
+
+import static io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableScopeKey.Scope.GLOBAL;
+import static io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableScopeKey.Scope.TENANT;
+
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbEnumValue;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableScopeKey.Scope;
+import io.camunda.zeebe.engine.state.mutable.MutableClusterVariableState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
+import java.util.Optional;
+import org.agrona.DirectBuffer;
+
+public class DbClusterVariableState implements MutableClusterVariableState {
+
+  private final DbString clusterVariableName;
+  private final DbEnumValue<Scope> clusterVariableScope;
+  private final DbString clusterVariableTenantId;
+  private final DbCompositeKey<DbString, DbClusterVariableScopeKey> clusterVariableKey;
+
+  private final ColumnFamily<
+          DbCompositeKey<DbString, DbClusterVariableScopeKey>, ClusterVariableInstance>
+      clusterVariablesColumnFamily;
+  private final ClusterVariableInstance clusterVariableInstance;
+
+  public DbClusterVariableState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    clusterVariableName = new DbString();
+    clusterVariableScope = new DbEnumValue<>(Scope.class);
+    clusterVariableTenantId = new DbString();
+    clusterVariableKey =
+        new DbCompositeKey<>(
+            clusterVariableName,
+            new DbClusterVariableScopeKey(clusterVariableScope, clusterVariableTenantId));
+
+    clusterVariableInstance = new ClusterVariableInstance();
+    clusterVariablesColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CLUSTER_VARIABLES,
+            transactionContext,
+            clusterVariableKey,
+            clusterVariableInstance);
+  }
+
+  @Override
+  public void create(final ClusterVariableRecord clusterVariableRecord) {
+    if (clusterVariableRecord.getTenantId() == null
+        || clusterVariableRecord.getTenantId().isBlank()) {
+      clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
+      clusterVariableScope.setValue(GLOBAL);
+    } else {
+      clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
+      clusterVariableScope.setValue(TENANT);
+      clusterVariableTenantId.wrapString(clusterVariableRecord.getTenantId());
+    }
+    clusterVariableInstance.setRecord(clusterVariableRecord);
+    clusterVariablesColumnFamily.insert(clusterVariableKey, clusterVariableInstance);
+  }
+
+  @Override
+  public void deleteTenantScopedClusterVariable(
+      final DirectBuffer variableNameBuffer, final String tenantId) {
+    clusterVariableName.wrapBuffer(variableNameBuffer);
+    clusterVariableScope.setValue(TENANT);
+    clusterVariableTenantId.wrapString(tenantId);
+    clusterVariablesColumnFamily.deleteExisting(clusterVariableKey);
+  }
+
+  @Override
+  public void deleteGloballyScopedClusterVariable(final DirectBuffer variableNameBuffer) {
+    clusterVariableName.wrapBuffer(variableNameBuffer);
+    clusterVariableScope.setValue(GLOBAL);
+    clusterVariablesColumnFamily.deleteExisting(clusterVariableKey);
+  }
+
+  @Override
+  public Optional<ClusterVariableInstance> getTenantScopedClusterVariable(
+      final DirectBuffer variableNameBuffer, final String tenantId) {
+    clusterVariableName.wrapBuffer(variableNameBuffer);
+    clusterVariableScope.setValue(TENANT);
+    clusterVariableTenantId.wrapString(tenantId);
+    return Optional.ofNullable(
+        clusterVariablesColumnFamily.get(clusterVariableKey, ClusterVariableInstance::new));
+  }
+
+  @Override
+  public Optional<ClusterVariableInstance> getGloballyScopedClusterVariable(
+      final DirectBuffer variableNameBuffer) {
+    clusterVariableName.wrapBuffer(variableNameBuffer);
+    clusterVariableScope.setValue(GLOBAL);
+    return Optional.ofNullable(
+        clusterVariablesColumnFamily.get(clusterVariableKey, ClusterVariableInstance::new));
+  }
+
+  @Override
+  public boolean existsAtTenantScope(final DirectBuffer variableNameBuffer, final String tenantId) {
+    clusterVariableName.wrapBuffer(variableNameBuffer);
+    clusterVariableScope.setValue(TENANT);
+    clusterVariableTenantId.wrapString(tenantId);
+    return clusterVariablesColumnFamily.exists(clusterVariableKey);
+  }
+
+  @Override
+  public boolean existsAtGlobalScope(final DirectBuffer variableNameBuffer) {
+    clusterVariableName.wrapBuffer(variableNameBuffer);
+    clusterVariableScope.setValue(GLOBAL);
+    return clusterVariablesColumnFamily.exists(clusterVariableKey);
+  }
+}

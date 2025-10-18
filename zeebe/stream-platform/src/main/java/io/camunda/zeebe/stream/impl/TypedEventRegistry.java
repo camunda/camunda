@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -92,6 +93,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.TIMER, TimerRecord.class);
     registry.put(ValueType.VARIABLE, VariableRecord.class);
     registry.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord.class);
+    registry.put(ValueType.CLUSTER_VARIABLE, ClusterVariableRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_MIGRATION, ProcessInstanceMigrationRecord.class);
