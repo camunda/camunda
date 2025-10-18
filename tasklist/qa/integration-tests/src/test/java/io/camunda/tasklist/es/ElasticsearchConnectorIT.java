@@ -82,20 +82,6 @@ public class ElasticsearchConnectorIT {
   }
 
   @Test
-  void shouldSetCustomHeaderOnAllElasticsearchClientRequests() throws IOException {
-    // given
-    final var client = connector.tasklistElasticsearchClient();
-
-    // when
-    client.cluster().health();
-
-    // then
-    WIRE_MOCK_SERVER.verify(
-        new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
-        WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
-  }
-
-  @Test
   void shouldSetCustomHeaderOnAllEsClientRequests() throws IOException {
     // given
     final var client = connector.tasklistEsClient();

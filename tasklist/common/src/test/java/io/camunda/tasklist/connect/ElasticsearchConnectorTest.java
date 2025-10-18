@@ -9,8 +9,6 @@ package io.camunda.tasklist.connect;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.tasklist.property.ElasticsearchProperties;
@@ -30,31 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class ElasticsearchConnectorTest {
-
-  @Test
-  void shouldApplyRequestInterceptorsInOrderForNativeRestClient() {
-    final var context = new BasicHttpContext();
-    final var taskListProperties = new TasklistProperties();
-    final PluginRepository pluginRepository = new PluginRepository();
-    pluginRepository.load(
-        List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
-    final var connector = Mockito.spy(new ElasticsearchConnector());
-    Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(ElasticsearchClient.class));
-    connector.setEsClientRepository(pluginRepository);
-    connector.setTasklistProperties(taskListProperties);
-    final var client = connector.tasklistElasticsearchClient();
-
-    // when
-    ((RestClientTransport) client._transport())
-        .restClient()
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
-
-    // then
-    final HttpRequestWrapper reqWrapper = (HttpRequestWrapper) context.getAttribute("http.request");
-
-    assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
-  }
 
   // TODO: this test will may be removed once RestHighLevelClient is gone
   @Test

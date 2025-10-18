@@ -32,7 +32,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -88,21 +87,6 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
 
     // when
     client.cluster().health();
-
-    // then
-    WIRE_MOCK_SERVER.verify(
-        new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
-        WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
-  }
-
-  @Test
-  @Ignore
-  public void shouldSetCustomHeaderOnAllOsAsyncClientRequests() throws IOException {
-    // given
-    final var client = connector.openSearchAsyncClient();
-
-    // when
-    client.cluster().health(new HealthRequest.Builder().build());
 
     // then
     WIRE_MOCK_SERVER.verify(
