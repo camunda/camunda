@@ -57,6 +57,7 @@ import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
@@ -242,7 +243,7 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleMemberQuery filter) {
     throw new NoSecondaryStorageException();
   }
 

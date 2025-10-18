@@ -77,6 +77,10 @@ public final class SortOptionBuilders {
     return new RoleSort.Builder();
   }
 
+  public static RoleMemberSort.Builder roleMember() {
+    return new RoleMemberSort.Builder();
+  }
+
   public static TenantSort.Builder tenant() {
     return new TenantSort.Builder();
   }
@@ -139,6 +143,11 @@ public final class SortOptionBuilders {
 
   public static RoleSort role(final Function<RoleSort.Builder, ObjectBuilder<RoleSort>> fn) {
     return fn.apply(role()).build();
+  }
+
+  public static RoleMemberSort roleMember(
+      final Function<RoleMemberSort.Builder, ObjectBuilder<RoleMemberSort>> fn) {
+    return fn.apply(roleMember()).build();
   }
 
   public static TenantSort tenant(

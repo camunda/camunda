@@ -17,10 +17,10 @@ import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.RoleMemberEntity;
-import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.RoleMemberFilter;
 import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.query.RoleQuery;
-import io.camunda.search.sort.RoleSort;
+import io.camunda.search.query.RoleMemberQuery;
+import io.camunda.search.sort.RoleMemberSort;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.time.OffsetDateTime;
@@ -51,9 +51,9 @@ public class RoleMemberIT {
 
     final var searchResult =
         reader.search(
-            new RoleQuery(
-                RoleFilter.of(b -> b.memberType(EntityType.USER).joinParentId(role.roleId())),
-                RoleSort.of(b -> b),
+            new RoleMemberQuery(
+                RoleMemberFilter.of(b -> b.memberType(EntityType.USER).roleId(role.roleId())),
+                RoleMemberSort.of(b -> b),
                 SearchQueryPage.of(b -> b)),
             ResourceAccessChecks.disabled());
 

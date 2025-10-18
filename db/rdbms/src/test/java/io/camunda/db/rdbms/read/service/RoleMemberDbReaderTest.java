@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.db.rdbms.sql.RoleMapper;
-import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -25,7 +25,7 @@ class RoleMemberDbReaderTest {
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {
-    final RoleQuery query = RoleQuery.of(b -> b);
+    final RoleMemberQuery query = RoleMemberQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
             AuthorizationCheck.enabled(Authorization.of(a -> a.role().read())),
@@ -37,7 +37,7 @@ class RoleMemberDbReaderTest {
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedTenantIdsIsNull() {
-    final RoleQuery query = RoleQuery.of(b -> b);
+    final RoleMemberQuery query = RoleMemberQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
 
