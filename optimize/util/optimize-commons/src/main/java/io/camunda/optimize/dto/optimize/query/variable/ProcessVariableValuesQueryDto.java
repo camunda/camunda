@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ProcessVariableValuesQueryDto {
@@ -141,12 +142,24 @@ public class ProcessVariableValuesQueryDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(processVariableSources, name, type, valueFilter, resultOffset, numResults);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessVariableValuesQueryDto that = (ProcessVariableValuesQueryDto) o;
+    return Objects.equals(processVariableSources, that.processVariableSources)
+        && Objects.equals(name, that.name)
+        && Objects.equals(type, that.type)
+        && Objects.equals(valueFilter, that.valueFilter)
+        && Objects.equals(resultOffset, that.resultOffset)
+        && Objects.equals(numResults, that.numResults);
   }
 
   @Override

@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query;
 
+import java.util.Objects;
+
 public class TokenDto {
 
   protected String token;
@@ -30,13 +32,17 @@ public class TokenDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TokenDto tokenDto = (TokenDto) o;
+    return Objects.equals(token, tokenDto.token);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(token);
   }
 
   @Override

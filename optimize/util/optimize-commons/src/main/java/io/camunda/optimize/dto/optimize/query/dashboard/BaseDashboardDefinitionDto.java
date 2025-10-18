@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDt
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class BaseDashboardDefinitionDto {
 
@@ -130,13 +131,40 @@ public class BaseDashboardDefinitionDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BaseDashboardDefinitionDto that = (BaseDashboardDefinitionDto) o;
+    return managementDashboard == that.managementDashboard
+        && instantPreviewDashboard == that.instantPreviewDashboard
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(description, that.description)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(created, that.created)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(lastModifier, that.lastModifier)
+        && Objects.equals(collectionId, that.collectionId)
+        && Objects.equals(availableFilters, that.availableFilters)
+        && Objects.equals(refreshRateSeconds, that.refreshRateSeconds);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        name,
+        description,
+        lastModified,
+        created,
+        owner,
+        lastModifier,
+        collectionId,
+        managementDashboard,
+        instantPreviewDashboard,
+        availableFilters,
+        refreshRateSeconds);
   }
 
   @Override

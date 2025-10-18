@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.util.configuration.security;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class CloudAuthConfiguration {
@@ -129,13 +130,38 @@ public class CloudAuthConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CloudAuthConfiguration that = (CloudAuthConfiguration) o;
+    return Objects.equals(clientId, that.clientId)
+        && Objects.equals(clientSecret, that.clientSecret)
+        && Objects.equals(domain, that.domain)
+        && Objects.equals(customDomain, that.customDomain)
+        && Objects.equals(userIdAttributeName, that.userIdAttributeName)
+        && Objects.equals(organizationClaimName, that.organizationClaimName)
+        && Objects.equals(organizationId, that.organizationId)
+        && Objects.equals(clusterId, that.clusterId)
+        && Objects.equals(audience, that.audience)
+        && Objects.equals(userAccessTokenAudience, that.userAccessTokenAudience)
+        && Objects.equals(tokenUrl, that.tokenUrl);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        clientId,
+        clientSecret,
+        domain,
+        customDomain,
+        userIdAttributeName,
+        organizationClaimName,
+        organizationId,
+        clusterId,
+        audience,
+        userAccessTokenAudience,
+        tokenUrl);
   }
 
   @Override

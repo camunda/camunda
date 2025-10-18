@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.variable;
 
+import java.util.Objects;
+
 public class ProcessVariableNameResponseDto {
 
   protected String name;
@@ -52,12 +54,21 @@ public class ProcessVariableNameResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(name, type, label);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessVariableNameResponseDto that = (ProcessVariableNameResponseDto) o;
+    return Objects.equals(name, that.name)
+        && Objects.equals(type, that.type)
+        && Objects.equals(label, that.label);
   }
 
   @Override

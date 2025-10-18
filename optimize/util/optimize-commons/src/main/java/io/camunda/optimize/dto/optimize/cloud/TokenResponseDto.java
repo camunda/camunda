@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.cloud;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class TokenResponseDto {
 
@@ -67,12 +68,22 @@ public class TokenResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(accessToken, tokenType, expiresIn, scope);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TokenResponseDto that = (TokenResponseDto) o;
+    return expiresIn == that.expiresIn
+        && Objects.equals(accessToken, that.accessToken)
+        && Objects.equals(tokenType, that.tokenType)
+        && Objects.equals(scope, that.scope);
   }
 
   @Override

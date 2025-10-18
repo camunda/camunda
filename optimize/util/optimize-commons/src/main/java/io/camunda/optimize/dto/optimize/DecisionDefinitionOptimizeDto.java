@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
 
@@ -95,13 +96,22 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DecisionDefinitionOptimizeDto that = (DecisionDefinitionOptimizeDto) o;
+    return Objects.equals(dmn10Xml, that.dmn10Xml)
+        && Objects.equals(inputVariableNames, that.inputVariableNames)
+        && Objects.equals(outputVariableNames, that.outputVariableNames);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), dmn10Xml, inputVariableNames, outputVariableNames);
   }
 
   @Override

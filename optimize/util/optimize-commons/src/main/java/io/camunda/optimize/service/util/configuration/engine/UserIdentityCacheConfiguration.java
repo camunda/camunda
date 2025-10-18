@@ -9,6 +9,8 @@ package io.camunda.optimize.service.util.configuration.engine;
 
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 
+import java.util.Objects;
+
 public class UserIdentityCacheConfiguration extends IdentityCacheConfiguration {
 
   public UserIdentityCacheConfiguration() {}
@@ -19,18 +21,24 @@ public class UserIdentityCacheConfiguration extends IdentityCacheConfiguration {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof UserIdentityCacheConfiguration;
   }
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(getClass(), super.hashCode());
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return super.equals(o);
   }
 
   @Override

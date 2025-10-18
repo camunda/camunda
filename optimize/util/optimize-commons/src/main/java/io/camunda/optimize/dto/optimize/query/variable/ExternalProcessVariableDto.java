@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.variable;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
+import java.util.Objects;
 
 public class ExternalProcessVariableDto implements OptimizeDto {
 
@@ -86,16 +87,36 @@ public class ExternalProcessVariableDto implements OptimizeDto {
     this.serializationDataFormat = serializationDataFormat;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  protected boolean canEqual(final Object other) {
-    return other instanceof ExternalProcessVariableDto;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        variableId,
+        variableName,
+        variableValue,
+        variableType,
+        ingestionTimestamp,
+        processInstanceId,
+        processDefinitionKey,
+        serializationDataFormat);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExternalProcessVariableDto that = (ExternalProcessVariableDto) o;
+    return Objects.equals(variableId, that.variableId)
+        && Objects.equals(variableName, that.variableName)
+        && Objects.equals(variableValue, that.variableValue)
+        && Objects.equals(variableType, that.variableType)
+        && Objects.equals(ingestionTimestamp, that.ingestionTimestamp)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(serializationDataFormat, that.serializationDataFormat);
   }
 
   public String toString() {

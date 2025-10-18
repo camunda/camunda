@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ResponseHeadersConfiguration {
 
@@ -103,13 +104,28 @@ public class ResponseHeadersConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ResponseHeadersConfiguration that = (ResponseHeadersConfiguration) o;
+    return Objects.equals(httpStrictTransportSecurityMaxAge, that.httpStrictTransportSecurityMaxAge)
+        && Objects.equals(
+            httpStrictTransportSecurityIncludeSubdomains,
+            that.httpStrictTransportSecurityIncludeSubdomains)
+        && Objects.equals(xsssProtection, that.xsssProtection)
+        && Objects.equals(xContentTypeOptions, that.xContentTypeOptions)
+        && Objects.equals(contentSecurityPolicy, that.contentSecurityPolicy);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        httpStrictTransportSecurityMaxAge,
+        httpStrictTransportSecurityIncludeSubdomains,
+        xsssProtection,
+        xContentTypeOptions,
+        contentSecurityPolicy);
   }
 
   @Override

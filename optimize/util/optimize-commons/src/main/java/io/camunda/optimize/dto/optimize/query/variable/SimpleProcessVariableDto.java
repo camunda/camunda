@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.variable;
 
 import java.util.List;
+import java.util.Objects;
 
 public class SimpleProcessVariableDto {
 
@@ -78,12 +79,23 @@ public class SimpleProcessVariableDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(id, name, type, value, version);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SimpleProcessVariableDto that = (SimpleProcessVariableDto) o;
+    return version == that.version
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(type, that.type)
+        && Objects.equals(value, that.value);
   }
 
   @Override

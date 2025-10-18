@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest.pagination;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Collection;
+import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaginatedDataExportDto {
@@ -97,13 +98,23 @@ public class PaginatedDataExportDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PaginatedDataExportDto that = (PaginatedDataExportDto) o;
+    return totalNumberOfRecords == that.totalNumberOfRecords
+        && Objects.equals(searchRequestId, that.searchRequestId)
+        && Objects.equals(message, that.message)
+        && Objects.equals(numberOfRecordsInResponse, that.numberOfRecordsInResponse)
+        && Objects.equals(reportId, that.reportId)
+        && Objects.equals(data, that.data);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        searchRequestId, message, numberOfRecordsInResponse, totalNumberOfRecords, reportId, data);
   }
 
   @Override

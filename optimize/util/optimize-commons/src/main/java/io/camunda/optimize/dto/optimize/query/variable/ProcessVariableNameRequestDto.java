@@ -13,6 +13,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessVariableNameRequestDto {
 
@@ -65,12 +66,21 @@ public class ProcessVariableNameRequestDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(processesToQuery, filter, timezone);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessVariableNameRequestDto that = (ProcessVariableNameRequestDto) o;
+    return Objects.equals(processesToQuery, that.processesToQuery)
+        && Objects.equals(filter, that.filter)
+        && Objects.equals(timezone, that.timezone);
   }
 
   @Override

@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.ui_configuration;
 
+import java.util.Objects;
+
 public class MixpanelConfigResponseDto {
 
   private boolean enabled;
@@ -98,12 +100,25 @@ public class MixpanelConfigResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(enabled, token, apiHost, organizationId, clusterId, stage, osanoScriptUrl);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MixpanelConfigResponseDto that = (MixpanelConfigResponseDto) o;
+    return enabled == that.enabled
+        && Objects.equals(token, that.token)
+        && Objects.equals(apiHost, that.apiHost)
+        && Objects.equals(organizationId, that.organizationId)
+        && Objects.equals(clusterId, that.clusterId)
+        && Objects.equals(stage, that.stage)
+        && Objects.equals(osanoScriptUrl, that.osanoScriptUrl);
   }
 
   @Override

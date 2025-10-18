@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.collection;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class BaseCollectionDefinitionDto<DATA_TYPE> {
 
@@ -92,12 +93,27 @@ public class BaseCollectionDefinitionDto<DATA_TYPE> {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        id, name, lastModified, created, owner, lastModifier, data, automaticallyCreated);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BaseCollectionDefinitionDto<?> that = (BaseCollectionDefinitionDto<?>) o;
+    return automaticallyCreated == that.automaticallyCreated
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(created, that.created)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(lastModifier, that.lastModifier)
+        && Objects.equals(data, that.data);
   }
 
   @Override

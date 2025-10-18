@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Objects;
 
 public class ExternalProcessVariableRequestDto implements OptimizeDto {
 
@@ -101,16 +102,28 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
     this.serializationDataFormat = serializationDataFormat;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  protected boolean canEqual(final Object other) {
-    return other instanceof ExternalProcessVariableRequestDto;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        id, name, value, type, processInstanceId, processDefinitionKey, serializationDataFormat);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExternalProcessVariableRequestDto that = (ExternalProcessVariableRequestDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(type, that.type)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(serializationDataFormat, that.serializationDataFormat);
   }
 
   public String toString() {

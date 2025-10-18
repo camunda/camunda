@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration.db;
 
+import java.util.Objects;
+
 public class DatabaseSecurity {
 
   private String username;
@@ -45,12 +47,21 @@ public class DatabaseSecurity {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(username, password, ssl);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DatabaseSecurity that = (DatabaseSecurity) o;
+    return Objects.equals(username, that.username)
+        && Objects.equals(password, that.password)
+        && Objects.equals(ssl, that.ssl);
   }
 
   @Override

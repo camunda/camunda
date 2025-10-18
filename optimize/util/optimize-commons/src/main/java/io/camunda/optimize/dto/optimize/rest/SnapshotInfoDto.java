@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 
 public class SnapshotInfoDto {
 
@@ -62,16 +63,23 @@ public class SnapshotInfoDto {
     this.failures = failures;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  protected boolean canEqual(final Object other) {
-    return other instanceof SnapshotInfoDto;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(snapshotName, state, failures);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SnapshotInfoDto that = (SnapshotInfoDto) o;
+    return Objects.equals(snapshotName, that.snapshotName)
+        && Objects.equals(state, that.state)
+        && Objects.equals(failures, that.failures);
   }
 
   public String toString() {

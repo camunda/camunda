@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.entity;
 
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Objects;
 
 public class EntitiesDeleteRequestDto {
 
@@ -56,13 +57,19 @@ public class EntitiesDeleteRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EntitiesDeleteRequestDto that = (EntitiesDeleteRequestDto) o;
+    return Objects.equals(reports, that.reports)
+        && Objects.equals(collections, that.collections)
+        && Objects.equals(dashboards, that.dashboards);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(reports, collections, dashboards);
   }
 
   @Override

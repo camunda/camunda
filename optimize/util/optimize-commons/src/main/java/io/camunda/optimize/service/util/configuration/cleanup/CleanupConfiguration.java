@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.CronNormalizerUtil;
 import java.time.Period;
+import java.util.Objects;
 import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -122,12 +123,24 @@ public class CleanupConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        cronTrigger, ttl, processDataCleanupConfiguration, externalVariableCleanupConfiguration);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CleanupConfiguration that = (CleanupConfiguration) o;
+    return Objects.equals(cronTrigger, that.cronTrigger)
+        && Objects.equals(ttl, that.ttl)
+        && Objects.equals(processDataCleanupConfiguration, that.processDataCleanupConfiguration)
+        && Objects.equals(
+            externalVariableCleanupConfiguration, that.externalVariableCleanupConfiguration);
   }
 
   @Override

@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
+import java.util.Objects;
+
 public class InitialProcessOwnerDto {
 
   private String processDefinitionKey;
@@ -40,13 +42,18 @@ public class InitialProcessOwnerDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final InitialProcessOwnerDto that = (InitialProcessOwnerDto) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(owner, that.owner);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(processDefinitionKey, owner);
   }
 
   @Override

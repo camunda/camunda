@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import io.camunda.optimize.dto.optimize.ReportConstants;
+import java.util.Objects;
 
 public class MeasureVisualizationsDto {
 
@@ -37,13 +38,17 @@ public class MeasureVisualizationsDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MeasureVisualizationsDto that = (MeasureVisualizationsDto) o;
+    return Objects.equals(frequency, that.frequency) && Objects.equals(duration, that.duration);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(frequency, duration);
   }
 
   @Override

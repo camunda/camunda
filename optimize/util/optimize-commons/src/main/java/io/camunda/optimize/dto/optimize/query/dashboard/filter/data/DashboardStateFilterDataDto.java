@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.dashboard.filter.data;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import java.util.List;
+import java.util.Objects;
 
 public class DashboardStateFilterDataDto implements FilterDataDto {
 
@@ -33,13 +34,17 @@ public class DashboardStateFilterDataDto implements FilterDataDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DashboardStateFilterDataDto that = (DashboardStateFilterDataDto) o;
+    return Objects.equals(defaultValues, that.defaultValues);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(defaultValues);
   }
 
   @Override

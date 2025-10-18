@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.engine.dto;
 
+import java.util.Objects;
+
 public class UserCredentialsDto {
 
   private String password;
@@ -31,12 +33,19 @@ public class UserCredentialsDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(password);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UserCredentialsDto that = (UserCredentialsDto) o;
+    return Objects.equals(password, that.password);
   }
 
   @Override

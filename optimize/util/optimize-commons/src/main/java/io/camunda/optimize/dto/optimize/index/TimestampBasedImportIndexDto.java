@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSourceDto>
     implements OptimizeDto {
@@ -36,12 +37,18 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSou
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(getClass(), super.hashCode());
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return super.equals(o);
   }
 
   @Override

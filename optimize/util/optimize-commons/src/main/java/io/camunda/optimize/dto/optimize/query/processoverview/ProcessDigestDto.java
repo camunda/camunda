@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class ProcessDigestDto extends ProcessDigestResponseDto {
 
@@ -40,13 +41,20 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ProcessDigestDto that = (ProcessDigestDto) o;
+    return Objects.equals(kpiReportResults, that.kpiReportResults);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), kpiReportResults);
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import java.util.List;
+import java.util.Objects;
 
 public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFilterDataDto {
 
@@ -37,13 +38,20 @@ public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFil
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DashboardVariableFilterSubDataDto that = (DashboardVariableFilterSubDataDto) o;
+    return allowCustomValues == that.allowCustomValues;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), allowCustomValues);
   }
 
   @Override

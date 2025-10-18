@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
+import java.util.Objects;
+
 public final class PanelNotificationDataDto {
 
   private final String uniqueId;
@@ -68,12 +70,25 @@ public final class PanelNotificationDataDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(uniqueId, source, type, orgId, title, description, meta);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PanelNotificationDataDto that = (PanelNotificationDataDto) o;
+    return Objects.equals(uniqueId, that.uniqueId)
+        && Objects.equals(source, that.source)
+        && Objects.equals(type, that.type)
+        && Objects.equals(orgId, that.orgId)
+        && Objects.equals(title, that.title)
+        && Objects.equals(description, that.description)
+        && Objects.equals(meta, that.meta);
   }
 
   @Override

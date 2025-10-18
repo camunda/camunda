@@ -20,6 +20,7 @@ import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -385,13 +386,70 @@ public class SingleReportConfigurationDto implements Combinable {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
+    return Objects.equals(color, that.color)
+        && Objects.equals(aggregationTypes, that.aggregationTypes)
+        && Objects.equals(userTaskDurationTimes, that.userTaskDurationTimes)
+        && Objects.equals(showInstanceCount, that.showInstanceCount)
+        && Objects.equals(pointMarkers, that.pointMarkers)
+        && Objects.equals(precision, that.precision)
+        && Objects.equals(hideRelativeValue, that.hideRelativeValue)
+        && Objects.equals(hideAbsoluteValue, that.hideAbsoluteValue)
+        && Objects.equals(yLabel, that.yLabel)
+        && Objects.equals(xLabel, that.xLabel)
+        && Objects.equals(alwaysShowRelative, that.alwaysShowRelative)
+        && Objects.equals(alwaysShowAbsolute, that.alwaysShowAbsolute)
+        && Objects.equals(showGradientBars, that.showGradientBars)
+        && Objects.equals(xml, that.xml)
+        && Objects.equals(tableColumns, that.tableColumns)
+        && Objects.equals(targetValue, that.targetValue)
+        && Objects.equals(heatmapTargetValue, that.heatmapTargetValue)
+        && groupByDateVariableUnit == that.groupByDateVariableUnit
+        && distributeByDateVariableUnit == that.distributeByDateVariableUnit
+        && Objects.equals(customBucket, that.customBucket)
+        && Objects.equals(distributeByCustomBucket, that.distributeByCustomBucket)
+        && Objects.equals(sorting, that.sorting)
+        && Objects.equals(processPart, that.processPart)
+        && Objects.equals(measureVisualizations, that.measureVisualizations)
+        && Objects.equals(stackedBar, that.stackedBar)
+        && Objects.equals(horizontalBar, that.horizontalBar)
+        && Objects.equals(logScale, that.logScale);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        color,
+        aggregationTypes,
+        userTaskDurationTimes,
+        showInstanceCount,
+        pointMarkers,
+        precision,
+        hideRelativeValue,
+        hideAbsoluteValue,
+        yLabel,
+        xLabel,
+        alwaysShowRelative,
+        alwaysShowAbsolute,
+        showGradientBars,
+        xml,
+        tableColumns,
+        targetValue,
+        heatmapTargetValue,
+        groupByDateVariableUnit,
+        distributeByDateVariableUnit,
+        customBucket,
+        distributeByCustomBucket,
+        sorting,
+        processPart,
+        measureVisualizations,
+        stackedBar,
+        horizontalBar,
+        logScale);
   }
 
   @Override

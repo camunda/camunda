@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -53,16 +54,23 @@ public class ConflictResponseDto extends ErrorResponseDto {
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ConflictResponseDto that = (ConflictResponseDto) o;
+    return Objects.equals(conflictedItems, that.conflictedItems);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), conflictedItems);
   }
 
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof ConflictResponseDto;
-  }
-
-  @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }

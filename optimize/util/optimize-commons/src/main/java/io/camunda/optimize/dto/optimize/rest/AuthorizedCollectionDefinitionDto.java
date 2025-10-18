@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import java.util.Objects;
 
 public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
 
@@ -62,12 +63,22 @@ public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), definitionDto);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AuthorizedCollectionDefinitionDto that = (AuthorizedCollectionDefinitionDto) o;
+    return Objects.equals(definitionDto, that.definitionDto);
   }
 
   @Override

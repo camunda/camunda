@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 
 public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
@@ -243,13 +244,56 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeUserTaskDataDto that = (ZeebeUserTaskDataDto) o;
+    return userTaskKey == that.userTaskKey
+        && elementInstanceKey == that.elementInstanceKey
+        && processDefinitionVersion == that.processDefinitionVersion
+        && processDefinitionKey == that.processDefinitionKey
+        && processInstanceKey == that.processInstanceKey
+        && formKey == that.formKey
+        && creationTimestamp == that.creationTimestamp
+        && Objects.equals(assignee, that.assignee)
+        && Objects.equals(candidateGroupsList, that.candidateGroupsList)
+        && Objects.equals(candidateUsersList, that.candidateUsersList)
+        && Objects.equals(dueDate, that.dueDate)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(changedAttributes, that.changedAttributes)
+        && Objects.equals(variables, that.variables)
+        && Objects.equals(followUpDate, that.followUpDate)
+        && Objects.equals(action, that.action)
+        && Objects.equals(externalFormReference, that.externalFormReference)
+        && Objects.equals(customHeaders, that.customHeaders);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        userTaskKey,
+        assignee,
+        candidateGroupsList,
+        candidateUsersList,
+        dueDate,
+        elementId,
+        elementInstanceKey,
+        bpmnProcessId,
+        processDefinitionVersion,
+        processDefinitionKey,
+        processInstanceKey,
+        tenantId,
+        changedAttributes,
+        variables,
+        followUpDate,
+        formKey,
+        action,
+        externalFormReference,
+        customHeaders,
+        creationTimestamp);
   }
 
   @Override
