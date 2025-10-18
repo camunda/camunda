@@ -91,6 +91,9 @@ public class CamundaClientJobWorkerProperties {
    */
   private Integer maxRetries;
 
+  /** The backoff before a retry of a failed job is possible. */
+  private Duration retryBackoff;
+
   /**
    * This instantiates the properties without any defaults. Intended to be used by {@link
    * CamundaClientWorkerProperties#getOverride()}.
@@ -113,6 +116,7 @@ public class CamundaClientJobWorkerProperties {
       pollInterval = DEFAULT_JOB_POLL_INTERVAL;
       name = DEFAULT_JOB_WORKER_NAME_VAR;
       streamEnabled = DEFAULT_STREAM_ENABLED;
+      retryBackoff = Duration.ZERO;
     }
   }
 
@@ -226,5 +230,13 @@ public class CamundaClientJobWorkerProperties {
 
   public void setMaxRetries(final Integer maxRetries) {
     this.maxRetries = maxRetries;
+  }
+
+  public Duration getRetryBackoff() {
+    return retryBackoff;
+  }
+
+  public void setRetryBackoff(final Duration retryBackoff) {
+    this.retryBackoff = retryBackoff;
   }
 }
