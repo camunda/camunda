@@ -10,8 +10,8 @@ package io.camunda.operate.webapp.rest.dto.metadata;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.webapps.schema.entities.JobEntity;
-import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -28,12 +28,20 @@ public class CallActivityInstanceMetadataDto extends JobFlowNodeInstanceMetadata
       final FlowNodeType flowNodeType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
-      final EventEntity event,
+      final MessageSubscriptionEntity messageSubscription,
       final JobEntity job,
       final String eventId,
       final String calledProcessInstanceId,
       final String calledProcessDefinitionName) {
-    super(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate, eventId, event, job);
+    super(
+        flowNodeId,
+        flowNodeInstanceId,
+        flowNodeType,
+        startDate,
+        endDate,
+        eventId,
+        messageSubscription,
+        job);
     setCalledProcessInstanceId(calledProcessInstanceId);
     setCalledProcessDefinitionName(calledProcessDefinitionName);
   }

@@ -16,8 +16,8 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
-import io.camunda.webapps.schema.entities.event.EventEntity;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import java.io.IOException;
 import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
@@ -30,44 +30,46 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticsearchCondition.class)
-public class EventReader implements io.camunda.operate.webapp.reader.EventReader {
+public class ElasticsearchMessageSubscriptionReader
+    implements io.camunda.operate.webapp.reader.MessageSubscriptionReader {
 
-  final EventTemplate eventTemplate;
+  final MessageSubscriptionTemplate messageSubscriptionTemplate;
 
   private final TenantAwareElasticsearchClient tenantAwareClient;
 
   private final ObjectMapper objectMapper;
 
-  public EventReader(
-      final EventTemplate eventTemplate,
+  public ElasticsearchMessageSubscriptionReader(
+      final MessageSubscriptionTemplate messageSubscriptionTemplate,
       final TenantAwareElasticsearchClient tenantAwareClient,
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
-    this.eventTemplate = eventTemplate;
+    this.messageSubscriptionTemplate = messageSubscriptionTemplate;
     this.tenantAwareClient = tenantAwareClient;
     this.objectMapper = objectMapper;
   }
 
   @Override
-  public Optional<EventEntity> getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId) {
-    // request corresponding event and build cumulative metadata
+  public Optional<MessageSubscriptionEntity> getMessageSubscriptionEntityByFlowNodeInstanceId(
+      final String flowNodeInstanceId) {
     final QueryBuilder query =
-        constantScoreQuery(termQuery(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId));
+        constantScoreQuery(
+            termQuery(MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId));
     final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(eventTemplate)
-            .source(new SearchSourceBuilder().query(query).sort(EventTemplate.ID));
+        ElasticsearchUtil.createSearchRequest(messageSubscriptionTemplate)
+            .source(new SearchSourceBuilder().query(query).sort(MessageSubscriptionTemplate.ID));
     try {
       final SearchResponse response = tenantAwareClient.search(request);
       final var hits = response.getHits();
       final var totalHits =
           (hits != null && hits.getTotalHits() != null) ? hits.getTotalHits().value : 0L;
       if (totalHits >= 1) {
-        // take last event
-        final EventEntity eventEntity =
+        // take last message subscription
+        final MessageSubscriptionEntity messageSubscriptionEntity =
             fromSearchHit(
                 hits.getHits()[(int) (totalHits - 1)].getSourceAsString(),
                 objectMapper,
-                EventEntity.class);
-        return Optional.of(eventEntity);
+                MessageSubscriptionEntity.class);
+        return Optional.of(messageSubscriptionEntity);
       } else {
         return Optional.empty();
       }

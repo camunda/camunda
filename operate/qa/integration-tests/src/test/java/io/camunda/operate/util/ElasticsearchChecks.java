@@ -30,26 +30,24 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
-import io.camunda.webapps.schema.entities.event.EventEntity;
-import io.camunda.webapps.schema.entities.event.EventType;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
@@ -87,7 +85,7 @@ public class ElasticsearchChecks {
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
-  @Autowired private EventTemplate eventTemplate;
+  @Autowired private MessageSubscriptionTemplate messageSubscriptionTemplate;
 
   @Autowired private VariableTemplate variableTemplate;
 
@@ -205,45 +203,6 @@ public class ElasticsearchChecks {
     };
   }
 
-  @Bean(name = "eventIsImportedCheck")
-  public Predicate<Object[]> getEventIsImportedCheck() {
-    return objects -> {
-      assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(Long.class);
-      assertThat(objects[1]).isInstanceOf(String.class);
-      final Long processInstanceKey = (Long) objects[0];
-      final String jobType = (String) objects[1];
-      final List<EventEntity> events = getAllEvents(processInstanceKey);
-      return events.stream()
-              .filter(
-                  e ->
-                      e.getMetadata() != null
-                          && e.getMetadata().getJobType() != null
-                          && e.getMetadata().getJobType().equals(jobType))
-              .count()
-          > 0;
-    };
-  }
-
-  @Bean(name = "eventIsImportedForFlowNodeCheck")
-  public Predicate<Object[]> getEventIsImportedForFlowNodeCheck() {
-    return objects -> {
-      assertThat(objects).hasSize(3);
-      assertThat(objects[0]).isInstanceOf(Long.class);
-      assertThat(objects[1]).isInstanceOf(String.class);
-      assertThat(objects[2]).isInstanceOf(EventType.class);
-      final Long processInstanceKey = (Long) objects[0];
-      final String flowNodeId = (String) objects[1];
-      final EventType eventType = (EventType) objects[2];
-      final List<EventEntity> events = getAllEvents(processInstanceKey);
-      return events.stream()
-          .anyMatch(
-              e ->
-                  Objects.equals(flowNodeId, e.getFlowNodeId())
-                      && Objects.equals(eventType, e.getEventType()));
-    };
-  }
-
   @Bean(name = "jobWithRetriesCheck")
   public Predicate<Object[]> getJobWithRetriesCheck() {
     return objects -> {
@@ -254,7 +213,7 @@ public class ElasticsearchChecks {
       final Long processInstanceKey = (Long) objects[0];
       final Long jobKey = (Long) objects[1];
       final Integer numberOfRetriesLeft = (Integer) objects[2];
-      final List<EventEntity> events = getAllEvents(processInstanceKey);
+      final List<MessageSubscriptionEntity> events = getAllMessageSubscriptions(processInstanceKey);
       return events.stream()
               .filter(
                   e ->
@@ -530,14 +489,14 @@ public class ElasticsearchChecks {
     }
   }
 
-  public List<EventEntity> getAllEvents(final Long processInstanceKey) {
+  public List<MessageSubscriptionEntity> getAllMessageSubscriptions(final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(eventTemplate)
+        ElasticsearchUtil.createSearchRequest(messageSubscriptionTemplate)
             .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceKeyQuery)));
     try {
-      return scroll(searchRequest, EventEntity.class, objectMapper, esClient);
+      return scroll(searchRequest, MessageSubscriptionEntity.class, objectMapper, esClient);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }

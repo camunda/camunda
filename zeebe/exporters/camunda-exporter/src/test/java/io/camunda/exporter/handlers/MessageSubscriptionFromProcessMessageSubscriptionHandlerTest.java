@@ -7,19 +7,19 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler.ID_PATTERN;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.CORRELATION_KEY;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.MESSAGE_NAME;
+import static io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscriptionHandler.ID_PATTERN;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.CORRELATION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
-import io.camunda.webapps.schema.entities.event.EventEntity;
-import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
-import io.camunda.webapps.schema.entities.event.EventSourceType;
-import io.camunda.webapps.schema.entities.event.EventType;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
+import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -35,12 +35,12 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.mockito.Mockito;
 
-final class EventFromProcessMessageSubscriptionHandlerTest {
+final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = EventTemplate.INDEX_NAME;
+  private final String indexName = MessageSubscriptionTemplate.INDEX_NAME;
 
-  private final EventFromProcessMessageSubscriptionHandler underTest =
-      new EventFromProcessMessageSubscriptionHandler(indexName);
+  private final MessageSubscriptionFromProcessMessageSubscriptionHandler underTest =
+      new MessageSubscriptionFromProcessMessageSubscriptionHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -49,7 +49,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
 
   @Test
   void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(EventEntity.class);
+    assertThat(underTest.getEntityType()).isEqualTo(MessageSubscriptionEntity.class);
   }
 
   @ParameterizedTest
@@ -147,7 +147,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final EventEntity entity = new EventEntity();
+    final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
     underTest.updateEntity(record, entity);
 
     // then
@@ -156,7 +156,8 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getEventSourceType()).isEqualTo(EventSourceType.PROCESS_MESSAGE_SUBSCRIPTION);
-    assertThat(entity.getEventType()).isEqualTo(EventType.fromZeebeIntent(intent.name()));
+    assertThat(entity.getMessageSubscriptionState())
+        .isEqualTo(MessageSubscriptionState.fromZeebeIntent(intent.name()));
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
@@ -170,16 +171,16 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
   @Test
   void shouldAddEntityOnFlush() {
     // given
-    final String expectedIndexName = EventTemplate.INDEX_NAME;
+    final String expectedIndexName = MessageSubscriptionTemplate.INDEX_NAME;
     final String id = "555";
     final long position = 456L;
     final long key = 333L;
 
-    final EventMetadataEntity metadata = new EventMetadataEntity();
+    final MessageSubscriptionMetadataEntity metadata = new MessageSubscriptionMetadataEntity();
     metadata.setMessageName("messageName");
     metadata.setCorrelationKey("correlationKey");
-    final EventEntity inputEntity =
-        new EventEntity()
+    final MessageSubscriptionEntity inputEntity =
+        new MessageSubscriptionEntity()
             .setId(id)
             .setKey(key)
             .setPositionProcessMessageSubscription(position)

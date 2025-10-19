@@ -22,7 +22,6 @@ import io.camunda.webapps.schema.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.webapps.schema.entities.dmn.DecisionType;
-import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
@@ -315,20 +314,6 @@ public abstract class TestUtil {
         processInstanceKey,
         processDefinitionKey,
         null);
-  }
-
-  public static EventEntity createEvent() {
-    return createEvent(RANDOM.nextLong(), RANDOM.nextLong());
-  }
-
-  public static EventEntity createEvent(
-      final long processInstanceKey, final Long flowNodeInstanceKey) {
-    return new EventEntity()
-        .setId(String.format("%s_%s", processInstanceKey, flowNodeInstanceKey))
-        .setProcessInstanceKey(processInstanceKey)
-        .setFlowNodeInstanceKey(flowNodeInstanceKey)
-        .setPartitionId(1)
-        .setTenantId(DEFAULT_TENANT_ID);
   }
 
   public static IncidentEntity createIncident(final IncidentState state, final String errorMsg) {

@@ -8,28 +8,28 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.CORRELATION_KEY;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.DATE_TIME;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.EVENT_SOURCE_TYPE;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.EVENT_TYPE;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.INCIDENT_ERROR_MSG;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.INCIDENT_ERROR_TYPE;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_CUSTOM_HEADERS;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_KEY;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_RETRIES;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_TYPE;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_WORKER;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.MESSAGE_NAME;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.METADATA;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.CORRELATION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EVENT_SOURCE_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INCIDENT_ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.INCIDENT_ERROR_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_CUSTOM_HEADERS;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_RETRIES;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.JOB_WORKER;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.METADATA;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.event.EventEntity;
-import io.camunda.webapps.schema.entities.event.EventSourceType;
-import io.camunda.webapps.schema.entities.event.EventType;
+import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.time.Instant;
@@ -37,7 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class AbstractEventHandler<R extends RecordValue>
-    implements ExportHandler<EventEntity, R> {
+    implements ExportHandler<MessageSubscriptionEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
 
@@ -46,13 +46,13 @@ public abstract class AbstractEventHandler<R extends RecordValue>
   }
 
   @Override
-  public Class<EventEntity> getEntityType() {
-    return EventEntity.class;
+  public Class<MessageSubscriptionEntity> getEntityType() {
+    return MessageSubscriptionEntity.class;
   }
 
   @Override
-  public EventEntity createNewEntity(final String id) {
-    return new EventEntity().setId(id);
+  public MessageSubscriptionEntity createNewEntity(final String id) {
+    return new MessageSubscriptionEntity().setId(id);
   }
 
   @Override
@@ -60,18 +60,21 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     return indexName;
   }
 
-  protected void loadEventGeneralData(final Record<R> record, final EventEntity eventEntity) {
-    eventEntity.setKey(record.getKey());
-    eventEntity.setPartitionId(record.getPartitionId());
-    eventEntity.setEventSourceType(
+  protected void loadEventGeneralData(
+      final Record<R> record, final MessageSubscriptionEntity messageSubscriptionEntity) {
+    messageSubscriptionEntity.setKey(record.getKey());
+    messageSubscriptionEntity.setPartitionId(record.getPartitionId());
+    messageSubscriptionEntity.setEventSourceType(
         EventSourceType.fromZeebeValueType(
             record.getValueType() == null ? null : record.getValueType().name()));
-    eventEntity.setDateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
+    messageSubscriptionEntity.setDateTime(
+        toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    messageSubscriptionEntity.setMessageSubscriptionState(
+        MessageSubscriptionState.fromZeebeIntent(record.getIntent().name()));
   }
 
   protected void persistEvent(
-      final EventEntity entity,
+      final MessageSubscriptionEntity entity,
       final String positionFieldName,
       final long positionFieldValue,
       final BatchRequest batchRequest) {
@@ -79,7 +82,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     final Map<String, Object> jsonMap = new HashMap<>();
     jsonMap.put(KEY, entity.getKey());
     jsonMap.put(EVENT_SOURCE_TYPE, entity.getEventSourceType());
-    jsonMap.put(EVENT_TYPE, entity.getEventType());
+    jsonMap.put(MESSAGE_SUBSCRIPTION_STATE, entity.getMessageSubscriptionState());
     jsonMap.put(DATE_TIME, entity.getDateTime());
     jsonMap.put(PROCESS_KEY, entity.getProcessDefinitionKey());
     jsonMap.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());

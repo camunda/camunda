@@ -7,9 +7,10 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.webapps.schema.entities.event.EventEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import java.util.Optional;
 
-public interface EventReader {
-  Optional<EventEntity> getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId);
+public interface MessageSubscriptionReader {
+  Optional<MessageSubscriptionEntity> getMessageSubscriptionEntityByFlowNodeInstanceId(
+      final String flowNodeInstanceId);
 }

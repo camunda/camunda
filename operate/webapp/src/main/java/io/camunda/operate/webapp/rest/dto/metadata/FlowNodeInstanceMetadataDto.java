@@ -9,8 +9,8 @@ package io.camunda.operate.webapp.rest.dto.metadata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -34,15 +34,15 @@ public class FlowNodeInstanceMetadataDto implements FlowNodeInstanceMetadata {
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
       final String eventId,
-      final EventEntity event) {
+      final MessageSubscriptionEntity messageSubscription) {
     this.flowNodeId = flowNodeId;
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeType = flowNodeType;
     this.startDate = startDate;
     this.endDate = endDate;
     this.eventId = eventId;
-    if (event != null) {
-      final var eventMetadata = event.getMetadata();
+    if (messageSubscription != null) {
+      final var eventMetadata = messageSubscription.getMetadata();
       if (eventMetadata != null) {
         messageName = eventMetadata.getMessageName();
         correlationKey = eventMetadata.getCorrelationKey();

@@ -19,8 +19,8 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -299,7 +299,7 @@ public abstract class ElasticsearchUtil {
   }
 
   private static boolean isEventConflictError(final BulkItemResponse responseItem) {
-    return responseItem.getIndex().contains(EventTemplate.INDEX_NAME)
+    return responseItem.getIndex().contains(MessageSubscriptionTemplate.INDEX_NAME)
         && responseItem.getFailure().getStatus().equals(RestStatus.CONFLICT);
   }
 

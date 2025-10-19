@@ -12,9 +12,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
-import io.camunda.operate.webapp.reader.EventReader;
 import io.camunda.operate.webapp.reader.JobReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.reader.MessageSubscriptionReader;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.operate.webapp.rest.dto.metadata.BusinessRuleTaskInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.CallActivityInstanceMetadataDto;
@@ -24,10 +24,10 @@ import io.camunda.operate.webapp.rest.dto.metadata.JobFlowNodeInstanceMetadataDt
 import io.camunda.operate.webapp.rest.dto.metadata.ServiceTaskInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
 import io.camunda.webapps.schema.entities.JobEntity;
-import io.camunda.webapps.schema.entities.event.EventEntity;
-import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.time.OffsetDateTime;
@@ -46,7 +46,7 @@ class FlowNodeInstanceMetadataBuilderTest {
   private FlowNodeInstanceMetadataBuilder builder;
   @Mock private ListViewReader listViewReader;
   @Mock private DecisionInstanceReader decisionInstanceReader;
-  @Mock private EventReader eventReader;
+  @Mock private MessageSubscriptionReader messageSubscriptionReader;
   @Mock private UserTaskReader userTaskReader;
   @Mock private JobReader elasticsearchJobReader;
   private OffsetDateTime startDate;
@@ -58,7 +58,7 @@ class FlowNodeInstanceMetadataBuilderTest {
         new FlowNodeInstanceMetadataBuilder(
             listViewReader,
             decisionInstanceReader,
-            eventReader,
+            messageSubscriptionReader,
             userTaskReader,
             elasticsearchJobReader);
     assertThat(builder).isNotNull();
@@ -77,12 +77,13 @@ class FlowNodeInstanceMetadataBuilderTest {
     final var flowNodeInstance =
         new FlowNodeInstanceEntity().setType(FlowNodeType.INCLUSIVE_GATEWAY);
     fillStandardValues(flowNodeInstance);
-    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
+    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
+            flowNodeInstance.getId()))
         .thenReturn(
             Optional.of(
-                new EventEntity()
+                new MessageSubscriptionEntity()
                     .setMetadata(
-                        new EventMetadataEntity()
+                        new MessageSubscriptionMetadataEntity()
                             .setMessageName("Last order")
                             .setCorrelationKey("23-05"))));
     final var metadata = builder.buildFrom(flowNodeInstance);
@@ -109,12 +110,13 @@ class FlowNodeInstanceMetadataBuilderTest {
                 .setDueDate(dueDate)
                 .setFollowUpDate(followUpDate)
                 .setFormKey(String.valueOf(5L)));
-    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
+    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
+            flowNodeInstance.getId()))
         .thenReturn(
             Optional.of(
-                new EventEntity()
+                new MessageSubscriptionEntity()
                     .setMetadata(
-                        new EventMetadataEntity()
+                        new MessageSubscriptionMetadataEntity()
                             .setMessageName("Last order")
                             .setCorrelationKey("23-05"))));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
@@ -148,12 +150,13 @@ class FlowNodeInstanceMetadataBuilderTest {
     final var flowNodeInstance = new FlowNodeInstanceEntity().setType(FlowNodeType.USER_TASK);
     fillStandardValues(flowNodeInstance);
     final var userTask = Optional.of(new TaskEntity().setKey(42L));
-    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
+    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
+            flowNodeInstance.getId()))
         .thenReturn(
             Optional.of(
-                new EventEntity()
+                new MessageSubscriptionEntity()
                     .setMetadata(
-                        new EventMetadataEntity()
+                        new MessageSubscriptionMetadataEntity()
                             .setMessageName("Last order")
                             .setCorrelationKey("23-05"))));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
@@ -171,7 +174,7 @@ class FlowNodeInstanceMetadataBuilderTest {
 
     final var jobDeadline = OffsetDateTime.now();
     setJobValues(jobDeadline, flowNodeInstance);
-    setEventValues(flowNodeInstance);
+    setMessageSubscriptionValues(flowNodeInstance);
 
     final var metadata = (ServiceTaskInstanceMetadataDto) builder.buildFrom(flowNodeInstance);
     assertStandardValues(metadata);
@@ -184,7 +187,7 @@ class FlowNodeInstanceMetadataBuilderTest {
     fillStandardValues(flowNodeInstance);
     final var jobDeadline = OffsetDateTime.now();
     setJobValues(jobDeadline, flowNodeInstance);
-    setEventValues(flowNodeInstance);
+    setMessageSubscriptionValues(flowNodeInstance);
     when(listViewReader.getCalledProcessInstanceIdAndNameByFlowNodeInstanceId(
             flowNodeInstance.getId()))
         .thenReturn(Tuple.of("calledProcessInstanceId", "calledProcessDefinitionName"));
@@ -206,7 +209,7 @@ class FlowNodeInstanceMetadataBuilderTest {
     fillStandardValues(flowNodeInstance);
     final var jobDeadline = OffsetDateTime.now();
     setJobValues(jobDeadline, flowNodeInstance);
-    setEventValues(flowNodeInstance);
+    setMessageSubscriptionValues(flowNodeInstance);
 
     when(decisionInstanceReader.getCalledDecisionInstanceAndDefinitionByFlowNodeInstanceId(
             flowNodeInstance.getId()))
@@ -237,12 +240,16 @@ class FlowNodeInstanceMetadataBuilderTest {
     assertThat(metadata.getJobWorker()).isEqualTo("Moe");
   }
 
-  private void setEventValues(final FlowNodeInstanceEntity flowNodeInstance) {
-    final var eventMetadata =
-        new EventMetadataEntity().setCorrelationKey("23-05").setMessageName("Last order");
-    final var event = new EventEntity().setMetadata(eventMetadata);
-    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
-        .thenReturn(Optional.of(event));
+  private void setMessageSubscriptionValues(final FlowNodeInstanceEntity flowNodeInstance) {
+    final var messageSubscriptionMetadata =
+        new MessageSubscriptionMetadataEntity()
+            .setCorrelationKey("23-05")
+            .setMessageName("Last order");
+    final var messageSubscription =
+        new MessageSubscriptionEntity().setMetadata(messageSubscriptionMetadata);
+    when(messageSubscriptionReader.getMessageSubscriptionEntityByFlowNodeInstanceId(
+            flowNodeInstance.getId()))
+        .thenReturn(Optional.of(messageSubscription));
   }
 
   private void setJobValues(

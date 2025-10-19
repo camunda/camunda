@@ -24,11 +24,11 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
@@ -57,7 +57,7 @@ public class IndexDescriptors {
                 new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
                 new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
                 new DraftTaskVariableTemplate(indexPrefix, isElasticsearch),
-                new EventTemplate(indexPrefix, isElasticsearch),
+                new MessageSubscriptionTemplate(indexPrefix, isElasticsearch),
                 new FlowNodeInstanceTemplate(indexPrefix, isElasticsearch),
                 new FormIndex(indexPrefix, isElasticsearch),
                 new GroupIndex(indexPrefix, isElasticsearch),

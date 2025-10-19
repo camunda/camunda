@@ -21,7 +21,7 @@ import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -169,7 +169,8 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
                   .isInstanceOfSatisfying(
                       SearchTermsQuery.class,
                       termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo(EventTemplate.BPMN_PROCESS_ID);
+                        assertThat(termQuery.field())
+                            .isEqualTo(MessageSubscriptionTemplate.BPMN_PROCESS_ID);
                         Assertions.assertThat(termQuery.values()).hasSize(2);
                         Assertions.assertThat(
                                 termQuery.values().stream().map(TypedValue::stringValue).toList())
@@ -249,7 +250,8 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
                   .isInstanceOfSatisfying(
                       SearchTermsQuery.class,
                       termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo(EventTemplate.TENANT_ID);
+                        assertThat(termQuery.field())
+                            .isEqualTo(MessageSubscriptionTemplate.TENANT_ID);
                         Assertions.assertThat(termQuery.values()).hasSize(2);
                         Assertions.assertThat(
                                 termQuery.values().stream().map(TypedValue::stringValue).toList())

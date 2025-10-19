@@ -5,11 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.event;
+package io.camunda.webapps.schema.entities.messagesubscription;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated since 8.9, the only valid value is PROCESS_MESSAGE_SUBSCRIPTION
+ */
+@Deprecated
 public enum EventSourceType {
   JOB,
   PROCESS_INSTANCE,

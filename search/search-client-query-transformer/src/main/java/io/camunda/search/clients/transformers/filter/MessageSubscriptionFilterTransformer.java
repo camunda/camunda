@@ -13,14 +13,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.DATE_TIME;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.EVENT_SOURCE_TYPE;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.EVENT_TYPE;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.template.EventTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EVENT_SOURCE_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MessageSubscriptionFilter;
@@ -47,7 +47,7 @@ public class MessageSubscriptionFilterTransformer
         longOperations("processInstanceKey", filter.processInstanceKeyOperations()),
         stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()),
         longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()),
-        stringOperations(EVENT_TYPE, filter.messageSubscriptionStateOperations()),
+        stringOperations(MESSAGE_SUBSCRIPTION_STATE, filter.messageSubscriptionStateOperations()),
         dateTimeOperations(DATE_TIME, filter.dateTimeOperations()),
         stringOperations("metadata.messageName", filter.messageNameOperations()),
         stringOperations("metadata.correlationKey", filter.correlationKeyOperations()),
