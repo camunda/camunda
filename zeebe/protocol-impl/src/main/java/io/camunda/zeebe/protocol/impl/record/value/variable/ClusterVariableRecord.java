@@ -9,7 +9,6 @@ package io.camunda.zeebe.protocol.impl.record.value.variable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -21,22 +20,17 @@ import org.agrona.DirectBuffer;
 public class ClusterVariableRecord extends UnifiedRecordValue
     implements ClusterVariableRecordValue {
 
-  private static final StringValue VARIABLE_KEY_KEY = new StringValue("variableKey");
   private static final StringValue NAME_KEY = new StringValue("name");
   private static final StringValue VALUE_KEY = new StringValue("value");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
-  private final LongProperty variableKeyProp = new LongProperty(VARIABLE_KEY_KEY, 0L);
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
   public ClusterVariableRecord() {
-    super(4);
-    declareProperty(variableKeyProp)
-        .declareProperty(nameProp)
-        .declareProperty(valueProp)
-        .declareProperty(tenantIdProp);
+    super(3);
+    declareProperty(nameProp).declareProperty(valueProp).declareProperty(tenantIdProp);
   }
 
   @Override
@@ -47,11 +41,6 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   @Override
   public String getValue() {
     return MsgPackConverter.convertToJson(valueProp.getValue());
-  }
-
-  @Override
-  public long getKey() {
-    return variableKeyProp.getValue();
   }
 
   public ClusterVariableRecord setValue(final DirectBuffer value) {

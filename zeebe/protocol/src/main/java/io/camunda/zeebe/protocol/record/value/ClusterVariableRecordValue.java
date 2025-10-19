@@ -57,11 +57,4 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
    * @return the variable value
    */
   Object getValue();
-
-  /**
-   * Returns the unique key of this cluster variable record.
-   *
-   * @return the record key
-   */
-  long getKey();
 }
