@@ -15,7 +15,7 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
 @AnalyzeClasses(packages = "io.camunda.zeebe", importOptions = ImportOption.DoNotIncludeTests.class)
-public class ArchitectureTest {
+public class EngineClassesDependencyArchTest {
 
   @ArchTest
   public static final ArchRule RULE_ENGINE_CLASSES_MUST_NOT_DEPEND_ON_STREAMPROCESSOR_PACKAGE =
