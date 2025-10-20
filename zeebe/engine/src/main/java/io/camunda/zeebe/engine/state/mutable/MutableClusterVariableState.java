@@ -17,4 +17,13 @@ public interface MutableClusterVariableState extends ClusterVariableState {
   void deleteTenantScopedClusterVariable(DirectBuffer variableNameBuffer, String tenantId);
 
   void deleteGloballyScopedClusterVariable(DirectBuffer variableNameBuffer);
+
+  default void deleteClusterVariable(final ClusterVariableRecord clusterVariableRecord) {
+    if (clusterVariableRecord.getTenantId().isBlank()) {
+      deleteGloballyScopedClusterVariable(clusterVariableRecord.getNameBuffer());
+    } else {
+      deleteTenantScopedClusterVariable(
+          clusterVariableRecord.getNameBuffer(), clusterVariableRecord.getTenantId());
+    }
+  }
 }
