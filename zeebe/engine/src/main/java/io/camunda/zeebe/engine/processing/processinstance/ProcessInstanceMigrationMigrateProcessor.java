@@ -331,8 +331,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             sourceElementIdToTargetElementId,
             elementInstance);
 
-    requireNonNullTargetSequenceFlowIds(
-        sequenceFlows, sourceElementIdToTargetElementId, processInstanceKey);
+    // we chose to loop through the sequence flows again despite its redundancy to keep preventive
+    // validation structure and write events after all validations passed
     requireNoMultipleActiveSequenceFlowsMappedToSameTarget(
         sequenceFlows, sourceElementIdToTargetElementId, processInstanceKey);
 
@@ -623,6 +623,8 @@ public class ProcessInstanceMigrationMigrateProcessor
                       .getProcess()
                       .getElementById(targetGatewayId, ExecutableFlowNode.class);
               requireValidTargetIncomingFlowCount(sourceGateway, targetGateway, processInstanceKey);
+              requireNonNullTargetSequenceFlowId(
+                  activeFlow, sourceElementIdToTargetElementId, processInstanceKey);
 
               return activeFlow;
             })

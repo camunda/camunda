@@ -1143,39 +1143,44 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Checks whether the target sequence flow ids of the given sequence flows are not null. If any of
-   * them is null, it throws an exception. This is used to ensure that the taken sequence flow ids
-   * are mapped when migrating a process instance.
+   * Checks whether the target sequence flow id of the given sequence flow is not null. If it is
+   * null, it throws an exception. This is used to ensure that the taken sequence flow ids are
+   * mapped when migrating a process instance.
    *
-   * @param sequenceFlows the sequence flows to check
+   * @param sequenceFlow the sequence flow to check
    * @param sourceElementIdToTargetElementId the mapping instructions
    * @param processInstanceKey process instance key to be logged
    */
-  public static void requireNonNullTargetSequenceFlowIds(
-      final Set<ExecutableSequenceFlow> sequenceFlows,
+  public static void requireNonNullTargetSequenceFlowId(
+      final ExecutableSequenceFlow sequenceFlow,
       final Map<String, String> sourceElementIdToTargetElementId,
       final long processInstanceKey) {
-    sequenceFlows.forEach(
-        sequenceFlow -> {
-          final var sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
-          final var targetSequenceFlowId =
-              sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
-          final String sourceGatewayElementId =
-              BufferUtil.bufferAsString(sequenceFlow.getTarget().getId());
+    final var sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
+    final var targetSequenceFlowId = sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
+    final String sourceGatewayElementId =
+        BufferUtil.bufferAsString(sequenceFlow.getTarget().getId());
 
-          if (targetSequenceFlowId == null) {
-            final String reason =
-                String.format(
-                    ERROR_TAKEN_SEQUENCE_FLOW_NOT_MAPPED,
-                    processInstanceKey,
-                    sourceGatewayElementId,
-                    sourceSequenceFlowId);
-            throw new ProcessInstanceMigrationPreconditionFailedException(
-                reason, RejectionType.INVALID_ARGUMENT);
-          }
-        });
+    if (targetSequenceFlowId == null) {
+      final String reason =
+          String.format(
+              ERROR_TAKEN_SEQUENCE_FLOW_NOT_MAPPED,
+              processInstanceKey,
+              sourceGatewayElementId,
+              sourceSequenceFlowId);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
   }
 
+  /**
+   * Checks whether multiple active sequence flows are mapped to the same target sequence flow. If
+   * so, it throws an exception. This is used to ensure that each active sequence flow is mapped to
+   * a different target sequence flow when migrating a process instance.
+   *
+   * @param sequenceFlows the active sequence flows to check
+   * @param sourceElementIdToTargetElementId the mapping instructions
+   * @param processInstanceKey process instance key to be logged
+   */
   public static void requireNoMultipleActiveSequenceFlowsMappedToSameTarget(
       final Set<ExecutableSequenceFlow> sequenceFlows,
       final Map<String, String> sourceElementIdToTargetElementId,
