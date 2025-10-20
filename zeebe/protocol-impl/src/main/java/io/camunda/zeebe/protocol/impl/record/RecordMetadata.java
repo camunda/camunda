@@ -354,6 +354,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
                 + valueType
                 + ", intent="
                 + intent);
+    if (requestId != RecordMetadataEncoder.requestIdNullValue()) {
+      builder.append(", requestId=").append(requestId);
+    }
     if (!rejectionType.equals(RejectionType.NULL_VAL)) {
       builder.append(", rejectionType=").append(rejectionType);
     }
