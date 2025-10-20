@@ -7,28 +7,15 @@
  */
 
 import type {Incident} from 'modules/stores/incidents';
+import type {IncidentErrorType} from '@camunda/camunda-api-zod-schemas/8.8';
+import {getIncidentErrorName} from 'modules/utils/incidents';
 
-const ERROR_TYPE_NAMES: Record<string, string> = {
-  UNSPECIFIED: 'Unspecified',
-  UNKNOWN: 'Unknown error',
-  IO_MAPPING_ERROR: 'IO mapping error.',
-  JOB_NO_RETRIES: 'No more retries left.',
-  EXECUTION_LISTENER_NO_RETRIES: 'Execution listener error (no retries left).',
-  TASK_LISTENER_NO_RETRIES: 'Task listener error (no retries left).',
-  CONDITION_ERROR: 'Condition error.',
-  EXTRACT_VALUE_ERROR: 'Extract value error.',
-  CALLED_ELEMENT_ERROR: 'Called element error.',
-  UNHANDLED_ERROR_EVENT: 'Unhandled error event.',
-  MESSAGE_SIZE_EXCEEDED: 'Message size exceeded.',
-  CALLED_DECISION_ERROR: 'Called decision error.',
-  DECISION_EVALUATION_ERROR: 'Decision evaluation error.',
-  FORM_NOT_FOUND: 'Form not found.',
-  RESOURCE_NOT_FOUND: 'Resource not found.',
-};
-const resolveIncidentErrorType = (id: string): Incident['errorType'] => {
+const resolveIncidentErrorType = (
+  id: IncidentErrorType,
+): Incident['errorType'] => {
   return {
     id,
-    name: ERROR_TYPE_NAMES[id] ?? id.replace(/_/g, ' ').toLowerCase(),
+    name: getIncidentErrorName(id) ?? id.replace(/_/g, ' ').toLowerCase(),
   };
 };
 
