@@ -20,7 +20,7 @@ const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
   UNSPECIFIED: 'Unspecified',
   UNKNOWN: 'Unknown error',
   IO_MAPPING_ERROR: 'IO mapping error.',
-  JOB_NO_RETRIES: 'No more retries left.',
+  JOB_NO_RETRIES: 'Job: No retries left.',
   EXECUTION_LISTENER_NO_RETRIES: 'Execution listener error (no retries left).',
   TASK_LISTENER_NO_RETRIES: 'Task listener error (no retries left).',
   CONDITION_ERROR: 'Condition error.',

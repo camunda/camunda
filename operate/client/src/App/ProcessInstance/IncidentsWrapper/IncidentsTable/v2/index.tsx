@@ -8,13 +8,10 @@
 
 import {IncidentOperationV2} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
-import {getSortParams} from 'modules/utils/filter';
-import {sortIncidents} from './service';
 import {observer} from 'mobx-react';
 import {FlexContainer, ErrorMessageCell} from '../styled';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
-import {useLocation} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
@@ -44,11 +41,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     const {data: hasPermissionForRetryOperation} = useHasPermissions([
       'UPDATE_PROCESS_INSTANCE',
     ]);
-    const location = useLocation();
-    const {sortBy, sortOrder} = getSortParams(location.search) || {
-      sortBy: 'creationTime',
-      sortOrder: 'desc',
-    };
 
     const handleModalClose = () => {
       setIsModalVisible(false);
@@ -65,9 +57,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
       setModalTitle(`Element "${elementName}" Error`);
     };
 
-    const sortedIncidents = sortIncidents(incidents, sortBy, sortOrder);
-
-    const isJobKeyPresent = sortedIncidents.some(({jobKey}) => !!jobKey);
+    const isJobKeyPresent = incidents.some(({jobKey}) => !!jobKey);
 
     return (
       <>
@@ -76,7 +66,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
           selectionType="row"
           columnsWithNoContentPadding={['operations', 'errorMessage']}
           onSelect={(rowId) => {
-            const incident = sortedIncidents.find(
+            const incident = incidents.find(
               ({incidentKey}) => incidentKey === rowId,
             );
             if (incident === undefined) {
@@ -96,7 +86,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             }
           }}
           checkIsRowSelected={(rowId) => {
-            const incident = sortedIncidents.find(
+            const incident = incidents.find(
               ({incidentKey}) => incidentKey === rowId,
             );
             if (incident === undefined) {
@@ -118,6 +108,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             {
               header: 'Failing Element',
               key: 'elementName',
+              isDisabled: true,
             },
             {
               header: 'Job Id',
@@ -144,7 +135,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                 ]
               : []),
           ]}
-          rows={sortedIncidents.map((incident) => {
+          rows={incidents.map((incident) => {
             const areOperationsVisible =
               processInstanceKey === incident.processInstanceKey;
 
