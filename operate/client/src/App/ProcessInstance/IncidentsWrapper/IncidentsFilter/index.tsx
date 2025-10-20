@@ -15,6 +15,7 @@ import {useIncidentsElements} from 'modules/hooks/incidents';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {useProcessInstanceIncidentsErrorTypes} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 import {getIncidentErrorName} from 'modules/utils/incidents';
+import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
 type Props = {
   processInstanceKey: string;
@@ -94,11 +95,6 @@ const IncidentsFilter: React.FC<Props> = observer(({processInstanceKey}) => {
 });
 
 const IncidentsFilterV2: React.FC<Props> = observer(({processInstanceKey}) => {
-  const {
-    setErrorTypeSelection,
-    clearSelection,
-    state: {selectedErrorTypes},
-  } = incidentsStore;
   const availableErrorTypes =
     useProcessInstanceIncidentsErrorTypes(processInstanceKey);
 
@@ -110,24 +106,25 @@ const IncidentsFilterV2: React.FC<Props> = observer(({processInstanceKey}) => {
             id="incidents-by-errorType"
             data-testid="incidents-by-errorType"
             items={availableErrorTypes}
+            selectedItems={incidentsPanelStore.state.selectedErrorTypes}
             itemToString={(selectedItem) => getIncidentErrorName(selectedItem)}
             label="Filter by Incident Type"
             titleText="Filter by Incident Type"
             hideLabel
             onChange={({selectedItems}) => {
-              setErrorTypeSelection(selectedItems);
+              incidentsPanelStore.setErrorTypeSelection(selectedItems);
             }}
             size="sm"
           />
           <Button
             kind="ghost"
             onClick={() => {
-              clearSelection();
+              incidentsPanelStore.clearSelection();
               tracking.track({
                 eventName: 'incident-filters-cleared',
               });
             }}
-            disabled={selectedErrorTypes.length === 0}
+            disabled={!incidentsPanelStore.hasActiveFilters}
             title="Reset Filters"
             size="sm"
           >
