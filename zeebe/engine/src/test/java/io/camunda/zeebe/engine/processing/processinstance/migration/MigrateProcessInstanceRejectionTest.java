@@ -1078,60 +1078,7 @@ public class MigrateProcessInstanceRejectionTest {
               Expected to migrate process instance '%s' \
               but active user task with id 'A' and implementation 'zeebe user task' is mapped to \
               an user task with id 'B' and different implementation 'job worker'. \
-              Elements must be mapped to elements of the same implementation.""",
-                processInstanceKey))
-        .hasKey(processInstanceKey);
-  }
-
-  @Test
-  public void shouldRejectCommandWhenUserTaskIsMappedToNativeUserTask() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess("process")
-                    .startEvent()
-                    .userTask("A")
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess("process2")
-                    .startEvent()
-                    .userTask("B")
-                    .zeebeUserTask()
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
-
-    final long targetProcessDefinitionKey =
-        extractTargetProcessDefinitionKey(deployment, "process2");
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "B")
-        .expectRejection()
-        .migrate();
-
-    // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
-
-    assertThat(rejectionRecord)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            String.format(
-                """
-              Expected to migrate process instance '%s' \
-              but active user task with id 'A' and implementation 'job worker' is mapped to \
-              an user task with id 'B' and different implementation 'zeebe user task'. \
-              Elements must be mapped to elements of the same implementation.""",
+              Elements must be either mapped to elements of the same implementation or to 'zeebe user task'.""",
                 processInstanceKey))
         .hasKey(processInstanceKey);
   }
