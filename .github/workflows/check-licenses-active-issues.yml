@@ -1,0 +1,148 @@
+# Checks for active licensing issues across all tracking branches for camunda/camunda@* FOSSA projects
+# owner: @camunda/monorepo-devops-team
+---
+name: Check Licenses (Active Issues)
+
+on:
+  schedule:
+    # Run weekly
+    - cron: '0 9 * * 1'
+  pull_request:
+    paths:
+    - .github/workflows/check-licenses-active-issues.yml
+  workflow_dispatch:
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  check-active-issues:
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v3.4.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
+          secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL | SLACK_WEBHOOK_URL;
+
+    - name: Get Issues for camunda/camunda@single-app (all tracked branches)
+      # Tracked branches are defiened in FOSSA UI
+      uses: camunda/infra-global-github-actions/fossa/get-issues@631423f4de7c6886352df8e4796bb5df19f4346f
+      id: single-app
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        project-locator: custom+50756/camunda/camunda@single-app
+
+    - name: Get Issues for camunda/camunda@optimize (all tracked branches)
+      uses: camunda/infra-global-github-actions/fossa/get-issues@631423f4de7c6886352df8e4796bb5df19f4346f
+      id: optimize
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        project-locator: custom+50756/camunda/camunda@optimize
+
+    - name: Get Issues for camunda/camunda@c8run (all tracked branches)
+      uses: camunda/infra-global-github-actions/fossa/get-issues@631423f4de7c6886352df8e4796bb5df19f4346f
+      id: c8run
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        project-locator: custom+50756/camunda/camunda@c8run
+
+    - name: Check active licensing issues
+      id: check-issues
+      if: |
+        steps.single-app.outputs.issues != '0' ||
+        steps.optimize.outputs.issues != '0' ||
+        steps.c8run.outputs.issues != '0'
+      env:
+        FOSSA_API_KEY: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        ISSUES: |
+          ${{ steps.c8run.outputs.issues }}
+          ${{ steps.optimize.outputs.issues }}
+          ${{ steps.single-app.outputs.issues }}
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        total_issues=0
+        issues_list=""
+
+        # Flatten all arrays and group by project-title, then iterate
+        while read -r project; do
+          project_name=$(echo "$project" | jq -r '.[0]."project-title"')
+          echo "Checking $project_name"
+
+          project_issues=""
+          project_total=0
+          
+          # Iterate over each branch in this project
+          while read -r branch; do
+            branch_name=$(echo "$branch" | jq -r '.branch')
+            licensing_issues=$(echo "$branch" | jq -r '.issues.licensing // 0')
+            url="$(echo "$branch" | jq -r '.url // empty')/licensing"
+
+            if [ "$licensing_issues" -gt 0 ]; then
+                echo "  $branch_name: $licensing_issues issues"
+                total_issues=$((total_issues + licensing_issues))
+                project_total=$((project_total + licensing_issues))
+                project_issues="${project_issues}  • *${branch_name}*: ${licensing_issues} issue(s) - <${url}|View>\n"
+            fi
+          done < <(echo "$project" | jq -c '.[]')
+
+          # Add project to the list if it has issues
+          if [ "$project_total" -gt 0 ]; then
+              issues_list="${issues_list}*${project_name}* (${project_total} total)\n${project_issues}\n"
+          fi
+        done < <(echo "$ISSUES" | jq -s 'add | group_by(."project-title")' | jq -c '.[]')
+        
+        echo "Total licensing issues: $total_issues"
+
+        {
+          echo "active-issues-found=$total_issues"
+          echo "active-issues-list=$issues_list"
+        } >> $GITHUB_OUTPUT
+
+    - name: Send Slack notification
+      if: steps.check-issues.outputs.active-issues-found != '0' && github.event_name != 'pull_request'
+      uses: slackapi/slack-github-action@v2
+      with:
+        payload: |
+          {
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": ":warning: Unhandled FOSSA Licensing Issues Found"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*${{ steps.check-issues.outputs.active-issues-found }}* active licensing issue(s) found across projects and tracked branches:\n\n${{ steps.check-issues.outputs.active-issues-list }}"
+                }
+              }
+            ]
+          }
+        webhook: ${{ steps.secrets.outputs.SLACK_WEBHOOK_URL }}
+        webhook-type: incoming-webhook
+
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
