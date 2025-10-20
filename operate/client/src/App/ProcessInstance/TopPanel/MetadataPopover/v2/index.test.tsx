@@ -108,6 +108,7 @@ const mockDecisionInstance: DecisionInstance = {
   evaluationFailure: '',
   tenantId: '<default>',
   result: '',
+  rootDecisionDefinitionKey: '123',
 };
 
 describe('MetadataPopover', () => {
