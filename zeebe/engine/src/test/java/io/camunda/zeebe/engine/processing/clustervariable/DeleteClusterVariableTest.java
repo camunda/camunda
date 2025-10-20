@@ -90,6 +90,6 @@ public final class DeleteClusterVariableTest {
         .hasIntent(ClusterVariableIntent.DELETE)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Invalid cluster variable name: 'KEY_4'. The variable does not exist in the scope 'tenant': 'tenant-1'");
+            "Invalid cluster variable name: 'KEY_4'. The variable does not exist in the scope 'tenant: 'tenant-1''");
   }
 }
