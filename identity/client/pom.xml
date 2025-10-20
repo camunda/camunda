@@ -58,7 +58,7 @@
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
-              <arguments>version ${project.version}</arguments>
+              <arguments>version --new-version ${project.version}</arguments>
             </configuration>
           </execution>
 
