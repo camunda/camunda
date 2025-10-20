@@ -12,7 +12,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.Set;
 
-public class KeyStore {
+public class KeyStore implements Cloneable {
   private static final String PREFIX = "camunda.api.grpc.ssl.key-store";
   private static final Map<String, String> LEGACY_GATEWAY_KEY_STORE_PROPERTIES =
       Map.of(
@@ -58,22 +58,22 @@ public class KeyStore {
   }
 
   @Override
-  public KeyStore clone() {
-    final KeyStore copy = new KeyStore();
-    copy.filePath = filePath;
-    copy.password = password;
-
-    return copy;
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
   }
 
   public KeyStore withBrokerKeyStoreProperties() {
-    final var copy = clone();
+    final var copy = (KeyStore) clone();
     copy.legacyPropertiesMap = LEGACY_BROKER_KEY_STORE_PROPERTIES;
     return copy;
   }
 
   public KeyStore withGatewayKeyStoreProperties() {
-    final var copy = clone();
+    final var copy = (KeyStore) clone();
     copy.legacyPropertiesMap = LEGACY_GATEWAY_KEY_STORE_PROPERTIES;
     return copy;
   }
