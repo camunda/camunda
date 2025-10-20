@@ -28,7 +28,7 @@ import {
 	type StatisticName,
 } from './processes';
 import {batchOperationTypeSchema} from './batch-operation';
-import {queryIncidentsResponseBodySchema} from './incident';
+import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
 
 const processInstanceVariableFilterSchema = z.object({
 	name: z.string(),
@@ -153,7 +153,7 @@ const cancelProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/cancellation`,
 };
 
-const queryProcessInstanceIncidentsRequestBodySchema = queryIncidentsResponseBodySchema;
+const queryProcessInstanceIncidentsRequestBodySchema = queryIncidentsRequestBodySchema;
 type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInstanceIncidentsRequestBodySchema>;
 
 const queryProcessInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
