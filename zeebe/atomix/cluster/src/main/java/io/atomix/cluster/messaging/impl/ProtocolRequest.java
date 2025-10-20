@@ -24,12 +24,23 @@ import io.atomix.utils.net.Address;
 public final class ProtocolRequest extends ProtocolMessage {
   private final Address sender;
   private final String subject;
+  private final int customId;
 
   public ProtocolRequest(
       final long id, final Address sender, final String subject, final byte[] payload) {
+    this(id, sender, subject, payload, -1);
+  }
+
+  public ProtocolRequest(
+      final long id,
+      final Address sender,
+      final String subject,
+      final byte[] payload,
+      final int customId) {
     super(id, payload);
     this.sender = sender;
     this.subject = subject;
+    this.customId = customId;
   }
 
   @Override
@@ -49,6 +60,7 @@ public final class ProtocolRequest extends ProtocolMessage {
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("id", id())
+        .add("customId", customId)
         .add("subject", subject)
         .add("sender", sender)
         .add("payload", ArraySizeHashPrinter.of(payload()))

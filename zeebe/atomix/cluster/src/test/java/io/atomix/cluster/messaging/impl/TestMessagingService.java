@@ -41,8 +41,7 @@ import java.util.function.BiFunction;
 public class TestMessagingService implements ManagedMessagingService {
   private final Address address;
   private final Map<Address, TestMessagingService> services;
-  private final Map<String, BiFunction<Address, byte[], CompletableFuture<byte[]>>> handlers =
-      new ConcurrentHashMap<>();
+  private final Map<String, AsyncMessageHandler> handlers = new ConcurrentHashMap<>();
   private final AtomicBoolean started = new AtomicBoolean();
   private final Set<Address> partitions = Sets.newConcurrentHashSet();
 
@@ -68,15 +67,14 @@ public class TestMessagingService implements ManagedMessagingService {
         return CompletableFuture.failedFuture(t);
       };
     }
-    final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler =
-        service.handlers.get(checkNotNull(type));
+    final AsyncMessageHandler handler = service.handlers.get(checkNotNull(type));
     if (handler == null) {
       return (e, p) -> {
         final Throwable t = new NoRemoteHandler(type);
         return CompletableFuture.failedFuture(t);
       };
     }
-    return handler;
+    return (sender, payload) -> handler.handle(-1, sender, payload);
   }
 
   /** Partitions the node from the given address. */
@@ -191,20 +189,30 @@ public class TestMessagingService implements ManagedMessagingService {
   }
 
   @Override
+  public CompletableFuture<byte[]> sendAndReceive(
+      final Address address,
+      final String type,
+      final byte[] payload,
+      final boolean keepAlive,
+      final Duration timeout,
+      final Executor executor,
+      final int customId) {
+    if (isPartitioned(address)) {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+    return sendAndReceive(address, type, payload, keepAlive, timeout, executor, customId);
+  }
+
+  @Override
   public void registerHandler(
       final String type, final BiConsumer<Address, byte[]> handler, final Executor executor) {
-    checkNotNull(type);
-    checkNotNull(handler);
-    handlers.put(
+    registerHandler(
         type,
-        (e, p) -> {
-          try {
-            executor.execute(() -> handler.accept(e, p));
-            return CompletableFuture.completedFuture(new byte[0]);
-          } catch (final RejectedExecutionException e2) {
-            return CompletableFuture.failedFuture(e2);
-          }
-        });
+        (customId, sender, payload) -> {
+          handler.accept(sender, payload);
+          return new byte[0];
+        },
+        executor);
   }
 
   @Override
@@ -212,14 +220,20 @@ public class TestMessagingService implements ManagedMessagingService {
       final String type,
       final BiFunction<Address, byte[], byte[]> handler,
       final Executor executor) {
+    registerHandler(type, (customId, sender, payload) -> handler.apply(sender, payload), executor);
+  }
+
+  @Override
+  public void registerHandler(
+      final String type, final MessageHandler handler, final Executor executor) {
     checkNotNull(type);
     checkNotNull(handler);
     handlers.put(
         type,
-        (e, p) -> {
+        (customId, e, p) -> {
           final CompletableFuture<byte[]> future = new CompletableFuture<>();
           try {
-            executor.execute(() -> future.complete(handler.apply(e, p)));
+            executor.execute(() -> future.complete(handler.handle(customId, e, p)));
           } catch (final RejectedExecutionException e2) {
             future.completeExceptionally(e2);
           }
@@ -232,8 +246,11 @@ public class TestMessagingService implements ManagedMessagingService {
       final String type, final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler) {
     checkNotNull(type);
     checkNotNull(handler);
-    handlers.put(type, handler);
+    handlers.put(type, (customId, sender, payload) -> handler.apply(sender, payload));
   }
+
+  @Override
+  public void registerHandler(final String type, final AsyncMessageHandler handler) {}
 
   @Override
   public void unregisterHandler(final String type) {

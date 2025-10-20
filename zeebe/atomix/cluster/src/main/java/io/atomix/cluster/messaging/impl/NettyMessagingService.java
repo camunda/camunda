@@ -263,6 +263,18 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final boolean keepAlive,
       final Duration timeout,
       final Executor executor) {
+    return sendAndReceive(address, type, payload, keepAlive, timeout, executor, -1);
+  }
+
+  @Override
+  public CompletableFuture<byte[]> sendAndReceive(
+      final Address address,
+      final String type,
+      final byte[] payload,
+      final boolean keepAlive,
+      final Duration timeout,
+      final Executor executor,
+      final int customId) {
     if (!started.get()) {
       return CompletableFuture.failedFuture(
           new IllegalStateException("MessagingService is closed."));
@@ -270,7 +282,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
     final long messageId = messageIdGenerator.incrementAndGet();
     final ProtocolRequest message =
-        new ProtocolRequest(messageId, advertisedAddress, type, payload);
+        new ProtocolRequest(messageId, advertisedAddress, type, payload, customId);
     final CompletableFuture<byte[]> responseFuture;
     if (keepAlive) {
       responseFuture =

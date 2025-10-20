@@ -16,6 +16,7 @@
  */
 package io.atomix.cluster.messaging;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import io.atomix.utils.net.Address;
 import java.time.Duration;
 import java.util.Collection;
@@ -231,6 +232,16 @@ public interface MessagingService {
     return sendAndReceive(address, type, payload, true, timeout);
   }
 
+  default CompletableFuture<byte[]> sendAndReceive(
+      final Address address,
+      final String type,
+      final byte[] payload,
+      final Duration timeout,
+      final int customId) {
+    return sendAndReceive(
+        address, type, payload, true, timeout, MoreExecutors.directExecutor(), customId);
+  }
+
   /**
    * Sends a message asynchronously and expects a response.
    *
@@ -302,6 +313,15 @@ public interface MessagingService {
       boolean keepAlive,
       Duration timeout,
       Executor executor);
+
+  CompletableFuture<byte[]> sendAndReceive(
+      Address address,
+      String type,
+      byte[] payload,
+      boolean keepAlive,
+      Duration timeout,
+      Executor executor,
+      int customId);
 
   /**
    * Registers a new message handler for message type.

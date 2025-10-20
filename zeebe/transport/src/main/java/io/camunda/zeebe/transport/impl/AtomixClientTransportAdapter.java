@@ -156,7 +156,12 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
     final var requestBytes = requestContext.getRequestBytes();
     messagingService
-        .sendAndReceive(nodeAddress, requestContext.getTopicName(), requestBytes, calculateTimeout)
+        .sendAndReceive(
+            nodeAddress,
+            requestContext.getTopicName(),
+            requestBytes,
+            calculateTimeout,
+            requestContext.hashCode())
         .whenComplete(
             (response, errorOnRequest) ->
                 actor.run(() -> handleResponse(requestContext, response, errorOnRequest)));
