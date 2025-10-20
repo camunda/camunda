@@ -209,7 +209,7 @@
 		"@types/node": "24.3.0",
 		"changelogen": "0.6.2",
 		"typescript": "5.9.2",
-		"vite": "7.1.5",
+		"vite": "7.1.11",
 		"vite-plugin-circular-dependency": "0.5.0",
 		"vite-plugin-dts": "4.5.4",
 		"zod": "^4.0.17"
