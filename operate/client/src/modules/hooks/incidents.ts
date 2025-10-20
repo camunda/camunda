@@ -13,7 +13,6 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
-import {useMemo} from 'react';
 
 type EnhancedIncident = Incident & {
   processDefinitionName: string;
@@ -72,30 +71,24 @@ const useIncidentsV2 = (
     },
   );
 
-  const enhancedIncidents = useMemo<EnhancedIncident[]>(() => {
-    if (!incidents) {
-      return [];
-    }
-
-    return incidents.map((incident) => {
-      return {
-        ...incident,
-        elementName: getFlowNodeName({
-          businessObjects,
-          flowNodeId: incident.elementId,
-        }),
-        isSelected: flowNodeSelectionStore.isSelected({
-          flowNodeId: incident.elementId,
-          flowNodeInstanceId: incident.elementInstanceKey,
-          isMultiInstance: false,
-        }),
-        processDefinitionName:
-          processDefinitionNames?.[incident.processInstanceKey] ?? '',
-      };
-    });
-  }, [incidents, businessObjects, processDefinitionNames]);
-
-  return enhancedIncidents;
+  return incidents
+    ? incidents.map((incident) => {
+        return {
+          ...incident,
+          elementName: getFlowNodeName({
+            businessObjects,
+            flowNodeId: incident.elementId,
+          }),
+          isSelected: flowNodeSelectionStore.isSelected({
+            flowNodeId: incident.elementId,
+            flowNodeInstanceId: incident.elementInstanceKey,
+            isMultiInstance: false,
+          }),
+          processDefinitionName:
+            processDefinitionNames?.[incident.processInstanceKey] ?? '',
+        };
+      })
+    : [];
 };
 
 const useIncidentsElements = () => {
