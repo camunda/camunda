@@ -21,7 +21,7 @@ import io.camunda.search.schema.utils.TestIndexDescriptor;
 import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
-import io.camunda.webapps.schema.descriptors.index.SchemaMetadataIndex;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -55,7 +55,7 @@ public class SchemaManagerConcurrencyIT {
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
   private TestIndexDescriptor index;
   private TestTemplateDescriptor indexTemplate;
-  private SchemaMetadataIndex schemaMetadataIndex;
+  private MetadataIndex metadataIndex;
   private final MethodInterceptor methodInterceptor = new MethodInterceptor(SchemaManager.class);
 
   @BeforeAll
@@ -72,7 +72,7 @@ public class SchemaManagerConcurrencyIT {
   public void before() throws IOException {
     indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
     index = createTestIndexDescriptor("index_name", "/mappings.json");
-    schemaMetadataIndex = new SchemaMetadataIndex(CONFIG_PREFIX, true);
+    metadataIndex = new MetadataIndex(CONFIG_PREFIX, true);
   }
 
   @TestTemplate
@@ -82,9 +82,9 @@ public class SchemaManagerConcurrencyIT {
     // given
     final var exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
     final var schemaManager1 =
-        createSchemaManager(Set.of(index, schemaMetadataIndex), Set.of(indexTemplate), config);
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
     final var schemaManager2 =
-        createSchemaManager(Set.of(index, schemaMetadataIndex), Set.of(indexTemplate), config);
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
 
     // when
     methodInterceptor.applyPostMethodAdvice("getMissingIndices");
@@ -133,9 +133,9 @@ public class SchemaManagerConcurrencyIT {
     // given
     final var exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
     final var schemaManager1 =
-        createSchemaManager(Set.of(index, schemaMetadataIndex), Set.of(indexTemplate), config);
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
     final var schemaManager2 =
-        createSchemaManager(Set.of(index, schemaMetadataIndex), Set.of(indexTemplate), config);
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
     schemaManager1.startup(); // initial schema creation
     // set the mappings to a different file
     index.setMappingsClasspathFilename("/mappings-added-property.json");
@@ -188,9 +188,9 @@ public class SchemaManagerConcurrencyIT {
       throws Exception {
     // given
     final var updatedSchemaManager =
-        createSchemaManager(Set.of(index, schemaMetadataIndex), Set.of(indexTemplate), config);
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
     final var oldSchemaManager =
-        createSchemaManager(Set.of(index, schemaMetadataIndex), Set.of(indexTemplate), config);
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
     oldSchemaManager.startup(); // initial schema creation
 
     // when

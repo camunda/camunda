@@ -7,20 +7,20 @@
  */
 package io.camunda.webapps.schema.descriptors.index;
 
-import static io.camunda.webapps.schema.descriptors.ComponentNames.CAMUNDA;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 
-public final class SchemaMetadataIndex extends AbstractIndexDescriptor implements Prio1Backup {
+public final class MetadataIndex extends AbstractIndexDescriptor implements Prio1Backup {
 
-  public static final String INDEX_NAME = "schema-metadata";
+  public static final String INDEX_NAME = "metadata";
 
   public static final String ID = "id";
 
   public static final String VALUE = "value";
 
-  public SchemaMetadataIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public MetadataIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
@@ -31,11 +31,12 @@ public final class SchemaMetadataIndex extends AbstractIndexDescriptor implement
 
   @Override
   public String getVersion() {
-    return "8.8.1";
+    return "8.8.0";
   }
 
   @Override
   public String getComponentName() {
-    return CAMUNDA.toString();
+    return OPERATE
+        .toString(); // using Operate component since we need to backport this index to 8.7 and 8.6
   }
 }
