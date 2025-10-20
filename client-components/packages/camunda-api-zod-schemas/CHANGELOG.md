@@ -1,10 +1,24 @@
 # Changelog
 
+## v0.0.10
+
+### 🩹 Fixes
+
+- process-instance-incidents-search request body aliases wrong schema ([#39753](https://github.com/camunda/camunda/pull/39753))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.9
 
 ### 🚀 Enhancements
 
 - use aliased incidents search request/response types ([de6fa21](https://github.com/camunda/camunda/commit/b6e683e959fdb7727cf53363e3eba95ec8a77646))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
 
 ## v0.0.8
 
