@@ -55,6 +55,7 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
       // TODO: Mark the previousDataDirectory as read-only to prevent writes during copying incase
       // the old broker is still running.
 
+      makeDirectoryReadonly(previousDataDirectory);
       // Copy the previous directory to the current one
       copyDirectory(previousDataDirectory, dataDirectory);
 
@@ -81,6 +82,11 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
     return "CopyFromPreviousVersion";
   }
 
+  private void makeDirectoryReadonly(final Path previousDataDirectory) {
+    if (!previousDataDirectory.toFile().setReadOnly()) {
+      LOG.warn("Failed to set directory {} readonly, continuing anyway.", previousDataDirectory);
+    }
+  }
   private Long findLatestValidPreviousVersion(
       final Path dataDirectoryPrefix, final long currentNodeVersion) {
     for (long version = currentNodeVersion - 1; version >= 0; version--) {
