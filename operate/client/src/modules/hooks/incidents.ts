@@ -51,14 +51,11 @@ const useIncidentsV2 = (
     {enablePeriodicRefetch, select: (res) => res.items},
   );
 
-  const instancesWithIncident = useMemo(() => {
-    if (!incidents) {
-      return [];
-    }
-    return Array.from(
-      new Set(incidents.map((incident) => incident.processInstanceKey)),
-    );
-  }, [incidents]);
+  const instancesWithIncident = incidents
+    ? Array.from(
+        new Set(incidents.map((incident) => incident.processInstanceKey)),
+      )
+    : [];
 
   const {data: processDefinitionNames} = useProcessInstancesSearch(
     {
