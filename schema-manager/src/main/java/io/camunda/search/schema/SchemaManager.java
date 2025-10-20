@@ -19,7 +19,7 @@ import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.search.schema.utils.TasklistLegacyTaskTemplate;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.index.SchemaMetadataIndex;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.SemanticVersion;
@@ -106,7 +106,7 @@ public class SchemaManager implements CloseableSilently {
     schemaMetadataStore =
         new SchemaMetadataStore(
             searchEngineClient,
-            new SchemaMetadataIndex(
+            new MetadataIndex(
                 config.connect().getIndexPrefix(),
                 config.connect().getTypeEnum().isElasticSearch()),
             LOG);

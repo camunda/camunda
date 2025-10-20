@@ -7,7 +7,7 @@
  */
 package io.camunda.search.schema;
 
-import io.camunda.webapps.schema.descriptors.index.SchemaMetadataIndex;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import java.util.Map;
 import org.slf4j.Logger;
 
@@ -16,15 +16,15 @@ class SchemaMetadataStore {
   private static final String SCHEMA_VERSION_METADATA_ID = "schema-version";
 
   private final SearchEngineClient searchEngineClient;
-  private final SchemaMetadataIndex schemaMetadataIndex;
+  private final MetadataIndex metadataIndex;
   private final Logger logger;
 
   SchemaMetadataStore(
       final SearchEngineClient searchEngineClient,
-      final SchemaMetadataIndex schemaMetadataIndex,
+      final MetadataIndex metadataIndex,
       final Logger logger) {
     this.searchEngineClient = searchEngineClient;
-    this.schemaMetadataIndex = schemaMetadataIndex;
+    this.metadataIndex = metadataIndex;
     this.logger = logger;
   }
 
@@ -34,16 +34,16 @@ class SchemaMetadataStore {
    */
   String getSchemaVersion() {
     // Check if metadata index exists
-    if (!searchEngineClient.indexExists(schemaMetadataIndex.getFullQualifiedName())) {
+    if (!searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())) {
       logger.debug("Schema metadata index does not exist, assuming fresh installation");
       return null;
     }
     final var schemaVersionDoc =
         searchEngineClient.getDocument(
-            schemaMetadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID);
+            metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID);
 
     if (schemaVersionDoc != null) {
-      return (String) schemaVersionDoc.get(SchemaMetadataIndex.VALUE);
+      return (String) schemaVersionDoc.get(MetadataIndex.VALUE);
     }
 
     logger.debug("No schema version found in metadata, assuming fresh installation");
@@ -58,11 +58,11 @@ class SchemaMetadataStore {
     try {
       final var versionDoc =
           Map.<String, Object>of(
-              SchemaMetadataIndex.ID, SCHEMA_VERSION_METADATA_ID,
-              SchemaMetadataIndex.VALUE, version);
+              MetadataIndex.ID, SCHEMA_VERSION_METADATA_ID,
+              MetadataIndex.VALUE, version);
 
       searchEngineClient.upsertDocument(
-          schemaMetadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID, versionDoc);
+          metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID, versionDoc);
 
       logger.debug("Stored schema version: {}", version);
     } catch (final Exception e) {

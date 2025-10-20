@@ -21,7 +21,7 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.index.SchemaMetadataIndex;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,7 @@ class SchemaManagerTest {
   private SearchEngineConfiguration config;
   private Collection<IndexDescriptor> indexDescriptors;
   private Collection<IndexTemplateDescriptor> templateDescriptors;
-  private SchemaMetadataIndex schemaMetadataIndex;
+  private MetadataIndex metadataIndex;
   private SchemaManager schemaManager;
 
   @BeforeEach
@@ -52,13 +52,12 @@ class SchemaManagerTest {
     final String indexPrefix = "test";
     config.connect().setIndexPrefix(indexPrefix);
 
-    schemaMetadataIndex = new SchemaMetadataIndex(indexPrefix, true);
-    indexDescriptors = List.of(schemaMetadataIndex);
+    metadataIndex = new MetadataIndex(indexPrefix, true);
+    indexDescriptors = List.of(metadataIndex);
     templateDescriptors = List.of();
 
     // Mock search engine client operations
-    when(searchEngineClient.indexExists(schemaMetadataIndex.getFullQualifiedName()))
-        .thenReturn(true);
+    when(searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())).thenReturn(true);
   }
 
   @AfterEach
@@ -100,7 +99,7 @@ class SchemaManagerTest {
         .hasMessageContaining("Schema is not compatible with current version")
         .hasMessageContaining(expectedIncompatibleType);
     // assert that the version check is not retried multiple times
-    verify(searchEngineClient, times(1)).indexExists(schemaMetadataIndex.getFullQualifiedName());
+    verify(searchEngineClient, times(1)).indexExists(metadataIndex.getFullQualifiedName());
   }
 
   // Test data for forbidden upgrades
@@ -129,7 +128,7 @@ class SchemaManagerTest {
         .hasMessageContaining("Cannot upgrade to or from a pre-release version")
         .hasMessageContaining(expectedIncompatibleType);
     // assert that the version check is not retried multiple times
-    verify(searchEngineClient, times(1)).indexExists(schemaMetadataIndex.getFullQualifiedName());
+    verify(searchEngineClient, times(1)).indexExists(metadataIndex.getFullQualifiedName());
   }
 
   // Test data for allowed upgrades
@@ -264,8 +263,7 @@ class SchemaManagerTest {
     schemaManager = createSpySchemaManager("8.8.0");
 
     // Mock that the schema metadata index specifically does not exist
-    when(searchEngineClient.indexExists(schemaMetadataIndex.getFullQualifiedName()))
-        .thenReturn(false);
+    when(searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())).thenReturn(false);
 
     // No previous version stored (fresh installation)
     mockSchemaVersionInMetadata(null);

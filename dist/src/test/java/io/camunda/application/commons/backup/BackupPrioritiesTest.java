@@ -115,7 +115,7 @@ class BackupPrioritiesTest {
     // PRIO 1
     assertThat(indices.get(0).allIndices())
         .containsExactlyInAnyOrder(
-            "camunda-schema-metadata-8.8.1_",
+            "operate-metadata-8.8.0_",
             "operate-import-position-8.3.0_",
             "tasklist-import-position-8.2.0_");
     // PRIO 2
