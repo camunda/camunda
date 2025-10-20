@@ -117,6 +117,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
       flowControl.onAppend(inFlightEntry, highestPosition);
       logStorage.append(currentPosition, highestPosition, sequencedBatch, flowControl);
       position = currentPosition + batchSize;
+      LOG.trace("Wrote entries starting at position {}: {}", currentPosition, appendEntries);
       return Either.right(highestPosition);
     } finally {
       lock.unlock();
