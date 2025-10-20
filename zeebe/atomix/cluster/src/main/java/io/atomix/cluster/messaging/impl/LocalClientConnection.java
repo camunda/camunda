@@ -17,9 +17,13 @@
 package io.atomix.cluster.messaging.impl;
 
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Local client-side connection. */
 final class LocalClientConnection extends AbstractClientConnection {
+
+  private static final Logger LOG = LoggerFactory.getLogger(LocalClientConnection.class);
   private final LocalServerConnection serverConnection;
 
   LocalClientConnection(final HandlerRegistry handlers) {
@@ -28,12 +32,14 @@ final class LocalClientConnection extends AbstractClientConnection {
 
   @Override
   public CompletableFuture<Void> sendAsync(final ProtocolRequest message) {
+    LOG.info("Sending request async {}", message);
     serverConnection.dispatch(message);
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public CompletableFuture<byte[]> sendAndReceive(final ProtocolRequest message) {
+    LOG.info("Sending request and awaiting response {}", message);
     final CompletableFuture<byte[]> future = awaitResponseForRequestWithId(message.id());
     serverConnection.dispatch(message);
     return future;

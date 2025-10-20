@@ -37,6 +37,7 @@ abstract class AbstractClientConnection implements ClientConnection {
   @Override
   public void dispatch(final ProtocolReply message) {
     final CompletableFuture<byte[]> responseFuture = responseFutures.remove(message.id());
+    log.trace("Received response for request id {}: {}", message.id(), message.status());
     if (responseFuture != null) {
       if (message.status() == ProtocolReply.Status.OK) {
         responseFuture.complete(message.payload());

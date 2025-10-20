@@ -19,10 +19,13 @@ package io.atomix.cluster.messaging.impl;
 import io.atomix.cluster.messaging.impl.ProtocolReply.Status;
 import io.netty.channel.Channel;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Remote server connection manages messaging on the server side of a Netty connection. */
 final class RemoteServerConnection extends AbstractServerConnection {
   private static final byte[] EMPTY_PAYLOAD = new byte[0];
+  private static final Logger LOG = LoggerFactory.getLogger(RemoteServerConnection.class);
 
   private final Channel channel;
 
@@ -35,6 +38,7 @@ final class RemoteServerConnection extends AbstractServerConnection {
   public void reply(final long messageId, final Status status, final Optional<byte[]> payload) {
     final ProtocolReply response =
         new ProtocolReply(messageId, payload.orElse(EMPTY_PAYLOAD), status);
+    LOG.trace("Sending response {}", response);
     channel.writeAndFlush(response, channel.voidPromise());
   }
 }

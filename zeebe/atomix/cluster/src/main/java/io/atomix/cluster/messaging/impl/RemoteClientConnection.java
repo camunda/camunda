@@ -18,9 +18,13 @@ package io.atomix.cluster.messaging.impl;
 
 import io.netty.channel.Channel;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Client-side Netty remote connection. */
 final class RemoteClientConnection extends AbstractClientConnection {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RemoteClientConnection.class);
   private final Channel channel;
   private final MessagingMetrics messagingMetrics;
 
@@ -38,8 +42,10 @@ final class RemoteClientConnection extends AbstractClientConnection {
         .addListener(
             channelFuture -> {
               if (!channelFuture.isSuccess()) {
+                LOG.trace("Failed to send async request {}", message, channelFuture.cause());
                 future.completeExceptionally(channelFuture.cause());
               } else {
+                LOG.trace("Successfully sent async request {}", message);
                 future.complete(null);
               }
             });
@@ -55,7 +61,10 @@ final class RemoteClientConnection extends AbstractClientConnection {
         .addListener(
             channelFuture -> {
               if (!channelFuture.isSuccess()) {
+                LOG.trace("Failed to send req-resp message {}", message, channelFuture.cause());
                 responseFuture.completeExceptionally(channelFuture.cause());
+              } else {
+                LOG.trace("Successfully sent req-resp message {}", message);
               }
             });
     return responseFuture;

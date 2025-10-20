@@ -18,10 +18,13 @@ package io.atomix.cluster.messaging.impl;
 
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Local server-side connection. */
 final class LocalServerConnection extends AbstractServerConnection {
   private static final byte[] EMPTY_PAYLOAD = new byte[0];
+  private static final Logger LOG = LoggerFactory.getLogger(LocalServerConnection.class);
 
   private final LocalClientConnection clientConnection;
 
@@ -34,6 +37,8 @@ final class LocalServerConnection extends AbstractServerConnection {
   @Override
   public void reply(
       final long messageId, final ProtocolReply.Status status, final Optional<byte[]> payload) {
-    clientConnection.dispatch(new ProtocolReply(messageId, payload.orElse(EMPTY_PAYLOAD), status));
+    final var response = new ProtocolReply(messageId, payload.orElse(EMPTY_PAYLOAD), status);
+    LOG.trace("Sending response {}", response);
+    clientConnection.dispatch(response);
   }
 }
