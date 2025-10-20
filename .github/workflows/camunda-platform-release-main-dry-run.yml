@@ -39,7 +39,6 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
       dryRun: true
-      mvnGoals: "-Djapicmp.skip=true" # Skip japicmp checks to avoid issues with older versions
 
   notify:
     name: Send Slack notification
