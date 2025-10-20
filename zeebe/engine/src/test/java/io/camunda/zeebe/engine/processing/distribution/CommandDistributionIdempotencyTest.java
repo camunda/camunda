@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumePro
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
@@ -683,6 +684,17 @@ public class CommandDistributionIdempotencyTest {
                 ClusterVariableIntent.CREATE,
                 () -> ENGINE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create()),
             ClusterVariableCreateProcessor.class
+          },
+          {
+            "ClusterVariable.DELETE is idempotent",
+            new Scenario(
+                ValueType.CLUSTER_VARIABLE,
+                ClusterVariableIntent.DELETE,
+                () -> {
+                  ENGINE.clusterVariables().withName("KEY_2").withValue("\"VALUE\"").create();
+                  return ENGINE.clusterVariables().withName("KEY_2").delete();
+                }),
+            ClusterVariableDeleteProcessor.class
           },
           {
             "MessageSubscription.MIGRATE is idempotent",
