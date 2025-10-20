@@ -145,7 +145,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         .type(jobResult.getType().getProtocolValue())
         .denied(jobResult.isDenied())
         .deniedReason(jobResult.getDeniedReason())
-        .corrections(correctionsRest);
+        .corrections(correctionsRest)
+        // null values as they are not applicable for user task completion
+        .isCompletionConditionFulfilled(null)
+        .isCancelRemainingInstances(null)
+        .activateElements(null);
     httpRequestObject.setResult(resultRest);
   }
 
@@ -207,7 +211,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         .type(jobResult.getType().getProtocolValue())
         .activateElements(activateElements)
         .isCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
-        .isCancelRemainingInstances(jobResult.isCancelRemainingInstances());
+        .isCancelRemainingInstances(jobResult.isCancelRemainingInstances())
+        // null values as they are not applicable for ad-hoc sub process completion
+        .denied(null)
+        .corrections(null)
+        .deniedReason(null);
     httpRequestObject.setResult(resultRest);
   }
 

@@ -334,6 +334,7 @@
           <generateModels>true</generateModels>
           <generateModelDocumentation>false</generateModelDocumentation>
           <generateModelTests>false</generateModelTests>
+          <templateDirectory>${project.basedir}/src/main/resources/templates</templateDirectory>
           <!-- validate the spec on every generation -->
           <skipValidateSpec>false</skipValidateSpec>
           <configOptions>
