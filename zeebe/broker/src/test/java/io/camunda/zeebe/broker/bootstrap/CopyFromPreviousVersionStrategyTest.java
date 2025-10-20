@@ -201,6 +201,28 @@ class CopyFromPreviousVersionStrategyTest {
   }
 
   @Test
+  void shouldMakePreviousFolderReadonly() throws IOException {
+    // given
+    final Path dataDirectoryPrefix = tempDir.resolve("node-1");
+    final long currentNodeVersion = 2L;
+
+    // Create previous version with nested directory structure
+    final Path previousVersion = dataDirectoryPrefix.resolve("v1");
+    Files.createDirectories(previousVersion.resolve("subdir1/"));
+    Files.writeString(previousVersion.resolve("subdir1/file1.txt"), "file1 content");
+    writeInitializationFile(previousVersion, null);
+
+    // when
+    final Path result = strategy.initializeDataDirectory(tempDir.toString(), 1, currentNodeVersion);
+
+    // then
+    assertThat(previousVersion.toFile().canWrite()).isFalse();
+    assertThat(previousVersion.toFile().canExecute())
+        .isTrue(); // executable so that files can be traversed
+    assertThat(Files.exists(result.resolve("subdir1/file1.txt"))).isTrue();
+  }
+
+  @Test
   void shouldHandleVersionZero() throws IOException {
     // given
     final Path dataDirectoryPrefix = tempDir.resolve("node-1");
