@@ -117,6 +117,10 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
       pathStream.forEach(
           sourcePath -> {
             try {
+              if (sourcePath.toString().contains("runtime")) {
+                LOG.info("Skipping copying runtime directory {}", sourcePath);
+                return;
+              }
               final Path targetPath = target.resolve(source.relativize(sourcePath));
               if (Files.isDirectory(sourcePath)) {
                 if (!sourcePath.getFileName().toString().equals("runtime")) {
