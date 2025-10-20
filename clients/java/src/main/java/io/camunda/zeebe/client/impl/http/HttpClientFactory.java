@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
@@ -69,7 +70,8 @@ public class HttpClientFactory {
   /** The versioned base REST API context path the client uses for requests */
   public static final String REST_API_PATH = "/v2";
 
-  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  private static final ObjectMapper JSON_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private final ZeebeClientConfiguration config;
 
