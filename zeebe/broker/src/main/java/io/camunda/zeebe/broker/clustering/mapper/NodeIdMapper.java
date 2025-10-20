@@ -50,7 +50,7 @@ public class NodeIdMapper implements Closeable {
 
   private final int maxRenewRetries = 30;
   private int renewalRetries = 0;
-  private final int faultyNodeId = 2;
+  private int faultyNodeId = 100;
 
   public NodeIdMapper(final LeaseClient lease) {
     this(lease, SHUTDOWN_VM);
@@ -64,6 +64,9 @@ public class NodeIdMapper implements Closeable {
     executor = newSingleThreadScheduledExecutor();
     executor.execute(() -> MDC.put("taskId", taskId));
     lease.initialize();
+    faultyNodeId =
+        Integer.parseInt(
+            System.getenv("FAULTY_NODE_ID") == null ? "100" : System.getenv("FAULTY_NODE_ID"));
   }
 
   public NodeIdMapper(final S3LeaseConfig config, final String taskId, final int clusterSize) {
