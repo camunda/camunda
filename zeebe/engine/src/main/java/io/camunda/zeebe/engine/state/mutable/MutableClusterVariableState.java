@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
-import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableClusterVariableState extends ClusterVariableState {

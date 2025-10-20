@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.clustervariable;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 
 public final class ClusterVariableInstance extends UnpackedObject implements DbValue {
 

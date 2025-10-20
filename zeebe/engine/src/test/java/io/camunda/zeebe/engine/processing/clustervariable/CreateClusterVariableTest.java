@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;

@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.clustervariable;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
-import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
 
