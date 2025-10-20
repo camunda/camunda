@@ -36,6 +36,7 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -71,6 +72,9 @@ public class SwimMembershipProtocol
 
   public static final Type TYPE = new Type();
   private static final Logger LOGGER = LoggerFactory.getLogger("io.atomix.cluster.protocol.swim");
+  private static final ThrottledLogger THROTTLED_LOGGER =
+      new ThrottledLogger(LOGGER, Duration.ofSeconds(30));
+
   private static final Logger GOSSIP_LOGGER =
       LoggerFactory.getLogger("io.atomix.cluster.protocol.swim.gossip");
   private static final Logger PROBE_LOGGER =
@@ -244,7 +248,7 @@ public class SwimMembershipProtocol
     // If the member matches the local member, ignore the update.
     if (member.id().equals(localMember.id())) {
       if (member.id().getIdVersion() < localMember.id().getIdVersion()) {
-        LOGGER.warn(
+        THROTTLED_LOGGER.warn(
             "{} - Detected another member with the same id {}. This is likely due to a stale node rejoining the cluster. Local member version: {}, remote member version: {}",
             localMember.id(),
             member.id(),
@@ -319,7 +323,7 @@ public class SwimMembershipProtocol
           triggerReachabilityEventOnDeath(swimMember);
         } else if (!Objects.equals(member.properties(), swimMember.properties())) {
           swimMember.properties().putAll(member.properties());
-          LOGGER.debug("{} - Member metadata changed {}", localMember.id(), swimMember);
+          LOGGER.info("{} - Member metadata changed {}", localMember.id(), swimMember);
           post(
               new GroupMembershipEvent(
                   GroupMembershipEvent.Type.METADATA_CHANGED, swimMember.copy()));
@@ -585,6 +589,11 @@ public class SwimMembershipProtocol
 
     PROBE_LOGGER.trace(
         "{} - Received probe {} from {}", this.localMember.id(), localMember, remoteMember);
+
+    if (localMember.id().getIdVersion() > this.localMember.id().getIdVersion()) {
+      // TODO: shutdown node as we detect a newer node with the same id
+      return this.localMember.copy();
+    }
 
     // If the probe indicates a term greater than the local term, update the local term, increment
     // and respond.

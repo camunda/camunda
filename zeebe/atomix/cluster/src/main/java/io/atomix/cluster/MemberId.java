@@ -58,6 +58,12 @@ public class MemberId extends NodeId {
   public static MemberId from(final String id, final int idVersion) {
     return new MemberId(id, idVersion);
   }
+
+  @Override
+  public String toString() {
+    return super.toString() + ":(v" + idVersion + ")";
+  }
+
   //
   //  @Override
   //  public int hashCode() {
