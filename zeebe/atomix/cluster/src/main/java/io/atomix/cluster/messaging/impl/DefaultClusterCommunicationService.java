@@ -247,23 +247,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
     return CompletableFuture.completedFuture(null);
   }
 
-  private static class InternalMessageConsumer<M> implements BiConsumer<Address, byte[]> {
-
-    private final Function<byte[], M> decoder;
-    private final Consumer<M> consumer;
-
-    InternalMessageConsumer(final Function<byte[], M> decoder, final Consumer<M> consumer) {
-      this.decoder = decoder;
-      this.consumer = consumer;
-    }
-
-    @Override
-    public void accept(final Address sender, final byte[] bytes) {
-      consumer.accept(decoder.apply(bytes));
-    }
-  }
-
-  private static class InternalMessageResponder<M, R>
+  private class InternalMessageResponder<M, R>
       implements BiFunction<Address, byte[], CompletableFuture<byte[]>> {
     private final Function<byte[], M> decoder;
     private final Function<R, byte[]> encoder;
@@ -280,11 +264,15 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
 
     @Override
     public CompletableFuture<byte[]> apply(final Address sender, final byte[] bytes) {
+      final Member member = membershipService.getMember(sender);
+      if (member == null) {
+        return CompletableFuture.failedFuture(new MessagingException.NoSuchMemberException(sender));
+      }
       return handler.apply(decoder.apply(bytes)).thenApply(encoder);
     }
   }
 
-  private static class InternalMessageAsyncResponder<M, R>
+  private class InternalMessageAsyncResponder<M, R>
       implements BiFunction<Address, byte[], CompletableFuture<byte[]>> {
     private final Function<byte[], M> decoder;
     private final Function<R, byte[]> encoder;
@@ -304,9 +292,34 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
 
     @Override
     public CompletableFuture<byte[]> apply(final Address sender, final byte[] bytes) {
+      // TODO: Do not run it on the caller thread
+      final Member member = membershipService.getMember(sender);
+      if (member == null) {
+        return CompletableFuture.failedFuture(new MessagingException.NoSuchMemberException(sender));
+      }
       return CompletableFuture.supplyAsync(() -> decoder.apply(bytes), executor)
           .thenComposeAsync(handler, executor)
           .thenApplyAsync(encoder, executor);
+    }
+  }
+
+  private class InternalMessageConsumer<M> implements BiConsumer<Address, byte[]> {
+
+    private final Function<byte[], M> decoder;
+    private final Consumer<M> consumer;
+
+    InternalMessageConsumer(final Function<byte[], M> decoder, final Consumer<M> consumer) {
+      this.decoder = decoder;
+      this.consumer = consumer;
+    }
+
+    @Override
+    public void accept(final Address sender, final byte[] bytes) {
+      final Member member = membershipService.getMember(sender);
+      if (member == null) {
+        return;
+      }
+      consumer.accept(decoder.apply(bytes));
     }
   }
 
