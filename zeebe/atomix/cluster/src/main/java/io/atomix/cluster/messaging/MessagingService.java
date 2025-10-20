@@ -321,6 +321,8 @@ public interface MessagingService {
    */
   void registerHandler(String type, BiFunction<Address, byte[], byte[]> handler, Executor executor);
 
+  void registerHandler(String type, MessageHandler handler, Executor executor);
+
   /**
    * Registers a new message handler for message type.
    *
@@ -328,6 +330,8 @@ public interface MessagingService {
    * @param handler message handler
    */
   void registerHandler(String type, BiFunction<Address, byte[], CompletableFuture<byte[]>> handler);
+
+  void registerHandler(String type, AsyncMessageHandler handler);
 
   /**
    * Unregister current handler, if one exists for message type.
@@ -342,4 +346,12 @@ public interface MessagingService {
    * @return Indicates whether the managed object is running.
    */
   boolean isRunning();
+
+  interface MessageHandler {
+    byte[] handle(long messageId, Address sender, byte[] payload);
+  }
+
+  interface AsyncMessageHandler {
+    CompletableFuture<byte[]> handle(long messageId, Address sender, byte[] payload);
+  }
 }

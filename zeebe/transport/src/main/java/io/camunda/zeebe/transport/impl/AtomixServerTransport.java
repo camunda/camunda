@@ -70,8 +70,8 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
           partitionsRequestMap.computeIfAbsent(partitionId, id -> new Long2ObjectHashMap<>());
           messagingService.registerHandler(
               topicName,
-              (sender, request) ->
-                  handleAtomixRequest(request, partitionId, requestType, requestHandler));
+              (id, sender, request) ->
+                  handleAtomixRequest(id, request, partitionId, requestType, requestHandler));
         });
   }
 
@@ -98,6 +98,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   private CompletableFuture<byte[]> handleAtomixRequest(
+      final long messageId,
       final byte[] requestBytes,
       final int partitionId,
       final RequestType requestType,
@@ -124,7 +125,8 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
                 requestBytes.length);
             if (LOG.isTraceEnabled()) {
               LOG.trace(
-                  "Handled request {} for topic {}",
+                  "Handled message {} as request {} for topic {}",
+                  messageId,
                   requestId,
                   topicName(partitionId, requestType));
             }

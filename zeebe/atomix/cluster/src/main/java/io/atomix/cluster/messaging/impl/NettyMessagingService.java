@@ -309,6 +309,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final String type,
       final BiFunction<Address, byte[], byte[]> handler,
       final Executor executor) {
+    registerHandler(type, (messageId, sender, payload) -> handler.apply(sender, payload), executor);
+  }
+
+  @Override
+  public void registerHandler(
+      final String type, final MessageHandler handler, final Executor executor) {
     handlers.register(
         type,
         (message, connection) ->
@@ -317,7 +323,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
                   byte[] responsePayload = null;
                   ProtocolReply.Status status = ProtocolReply.Status.OK;
                   try {
-                    responsePayload = handler.apply(message.sender(), message.payload());
+                    responsePayload =
+                        handler.handle(message.id(), message.sender(), message.payload());
                   } catch (final Exception e) {
                     log.warn(
                         "Unexpected error while handling message {} from {}",
@@ -338,6 +345,11 @@ public final class NettyMessagingService implements ManagedMessagingService {
   @Override
   public void registerHandler(
       final String type, final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler) {
+    registerHandler(type, (messageId, sender, payload) -> handler.apply(sender, payload));
+  }
+
+  @Override
+  public void registerHandler(final String type, final AsyncMessageHandler handler) {
     handlers.register(
         type,
         (message, connection) -> {
@@ -349,7 +361,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
           final var sender = message.sender();
           final var payload = message.payload();
           handler
-              .apply(sender, payload)
+              .handle(id, sender, payload)
               .whenComplete(
                   (result, error) -> {
                     byte[] responsePayload = null;
