@@ -10013,6 +10013,8 @@ components:
         result:
           $ref: "#/components/schemas/JobResult"
     JobResult:
+      description: >
+        The result of the completed job as determined by the worker.
       discriminator:
         propertyName: type
         mapping:
@@ -10044,6 +10046,7 @@ components:
         corrections:
           $ref: "#/components/schemas/JobResultCorrections"
         type:
+          description: Used to distinguish between different types of job results.
           type: string
           example: userTask
     JobResultCorrections:
@@ -10120,6 +10123,7 @@ components:
           default: false
           nullable: false
         type:
+          description: Used to distinguish between different types of job results.
           type: string
           example: adHocSubProcess
     JobResultActivateElement:
@@ -11064,11 +11068,11 @@ components:
         elementInstanceKey:
           description: The key of the element instance this decision instance is linked to.
           allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
+            - $ref: "#/components/schemas/ElementInstanceKeyFilterProperty"
         rootDecisionDefinitionKey:
           description: The key of the root decision definition.
           allOf:
-            - $ref: "#/components/schemas/ElementInstanceKeyFilterProperty"
+            - $ref: "#/components/schemas/DecisionDefinitionKeyFilterProperty"
     DecisionInstanceSearchQueryResult:
       type: object
       allOf:
