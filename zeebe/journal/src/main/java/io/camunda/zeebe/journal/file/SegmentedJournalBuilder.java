@@ -181,8 +181,7 @@ public class SegmentedJournalBuilder {
             segmentLoader,
             journalMetrics,
             journalMetaStore);
-    final var segmentsFlusher = new SegmentsFlusher(journalMetaStore);
 
-    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, segmentsFlusher);
+    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, journalMetaStore);
   }
 }

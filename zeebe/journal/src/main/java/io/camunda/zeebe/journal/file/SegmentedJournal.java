@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -49,19 +50,19 @@ public final class SegmentedJournal implements Journal {
   private final SegmentedJournalWriter writer;
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
+  private final JournalMetaStore metaStore;
 
   SegmentedJournal(
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics,
-      final SegmentsFlusher segmentsFlusher) {
+      final JournalMetaStore metaStore) {
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
-    Objects.requireNonNull(segmentsFlusher, "must specify a segments flusher");
-
+    this.metaStore = Objects.requireNonNull(metaStore, "must specify a journal meta store");
     this.segments.open();
-    writer = new SegmentedJournalWriter(segments, segmentsFlusher, journalMetrics);
+    writer = new SegmentedJournalWriter(segments, metaStore, journalMetrics);
   }
 
   /**
@@ -174,6 +175,10 @@ public final class SegmentedJournal implements Journal {
         writer.flush();
       } finally {
         rwlock.unlockRead(stamp);
+      }
+    } finally {
+      if (writer.getLastFlushedIndex() > 0) {
+        metaStore.storeLastFlushedIndex((writer.getLastFlushedIndex()));
       }
     }
   }

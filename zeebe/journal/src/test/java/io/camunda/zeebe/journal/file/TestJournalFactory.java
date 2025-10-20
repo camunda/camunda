@@ -120,8 +120,7 @@ final class TestJournalFactory {
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {
-    final var segmentsFlusher = new SegmentsFlusher(metaStore);
-    return new SegmentedJournal(index, segments, metrics, segmentsFlusher);
+    return new SegmentedJournal(index, segments, metrics, metaStore);
   }
 
   DirectBuffer entryData() {

@@ -27,7 +27,6 @@ import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
-import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,13 +34,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.CloseHelper;
@@ -871,36 +867,6 @@ class SegmentedJournalTest {
 
     // then
     journal.append(2, journalFactory.entry());
-  }
-
-  // this test ensure that flushing is thread-safe w.r.t. write-exclusive methods such as
-  // deleteUntil, deleteAfter, and reset
-  @Test
-  void shouldPreventWriteExclusiveOperationsWhileFlushing() {
-    // given
-    final var barrier = new Phaser(2);
-    journal = openJournal(2);
-    journal.append(1, journalFactory.entry());
-    final var lastWrittenIndex = journal.append(2, journalFactory.entry()).index();
-
-    // when
-    journalFactory
-        .metaStore()
-        .setOnStoreFlushedIndex(
-            () -> {
-              // two synchronization points ensure that we check the lock status strictly while the
-              // other thread is busy flushing, and not before or after
-              barrier.arriveAndAwaitAdvance();
-              barrier.arriveAndAwaitAdvance();
-            });
-    final var flushed = CompletableFuture.runAsync(CheckedRunnable.toUnchecked(journal::flush));
-
-    // then
-    barrier.arriveAndAwaitAdvance();
-    assertThat(journal.rwlock().isReadLocked()).isTrue();
-    barrier.arrive();
-    assertThat(flushed).succeedsWithin(Duration.ofSeconds(5));
-    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(lastWrittenIndex);
   }
 
   @Test

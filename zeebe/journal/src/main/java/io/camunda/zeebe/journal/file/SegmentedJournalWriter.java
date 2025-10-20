@@ -19,27 +19,34 @@ package io.camunda.zeebe.journal.file;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Collection;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class SegmentedJournalWriter {
+  private static final Logger LOGGER = LoggerFactory.getLogger(SegmentedJournalWriter.class);
   private final SegmentsManager segments;
-  private final SegmentsFlusher flusher;
+  private final JournalMetaStore metaStore;
   private final JournalMetrics journalMetrics;
+  private long lastFlushedIndex;
 
   private Segment currentSegment;
   private SegmentWriter currentWriter;
 
   SegmentedJournalWriter(
       final SegmentsManager segments,
-      final SegmentsFlusher flusher,
+      final JournalMetaStore metaStore,
       final JournalMetrics journalMetrics) {
     this.segments = segments;
-    this.flusher = flusher;
+    this.metaStore = metaStore;
     this.journalMetrics = journalMetrics;
 
+    lastFlushedIndex = metaStore.loadLastFlushedIndex();
     currentSegment = segments.getLastSegment();
     currentWriter = currentSegment.writer();
   }
@@ -50,6 +57,10 @@ final class SegmentedJournalWriter {
 
   long getNextIndex() {
     return currentWriter.getNextIndex();
+  }
+
+  long getLastFlushedIndex() {
+    return lastFlushedIndex;
   }
 
   JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
@@ -94,7 +105,8 @@ final class SegmentedJournalWriter {
   }
 
   void reset(final long index) {
-    flusher.setLastFlushedIndex(index - 1);
+    lastFlushedIndex = index - 1;
+    metaStore.storeLastFlushedIndex(index - 1);
     currentSegment = segments.resetSegments(index);
     currentWriter = currentSegment.writer();
   }
@@ -102,7 +114,8 @@ final class SegmentedJournalWriter {
   void deleteAfter(final long index) {
     // reset the last flushed index first to avoid corruption on restart in case of partial
     // truncation (e.g. the node crashed while deleting segments)
-    flusher.setLastFlushedIndex(index);
+    lastFlushedIndex = index;
+    metaStore.storeLastFlushedIndex(index);
 
     // Delete all segments with first indexes greater than the given index.
     while (index < currentSegment.index() && currentSegment != segments.getFirstSegment()) {
@@ -123,7 +136,44 @@ final class SegmentedJournalWriter {
     // even if the next flush index has not been written, this will always flush at least the last
     // segment if only to cover cases such as truncating the log, where the next flush index may not
     // have been written yet but we still want to flush that segment after modifying it
-    flusher.flush(segments.getTailSegments(flusher.nextFlushIndex()).values());
+    flush(segments.getTailSegments(lastFlushedIndex + 1).values());
+  }
+
+  /**
+   * Fetches all segments with a last index greater than or equal to current {@link
+   * #lastFlushedIndex}. These are then flushed in order. The {@link Segment#lastIndex()} of the
+   * last successful segment to be flushed will be stored in the given {@link JournalMetaStore}.
+   *
+   * @param dirtySegments the list of segments which need to be flushed
+   */
+  private void flush(final Collection<? extends FlushableSegment> dirtySegments)
+      throws FlushException {
+    final var segmentsCount = dirtySegments.size();
+    long flushedIndex = -1;
+
+    if (segmentsCount == 0) {
+      LOGGER.debug(
+          "No segments to flush for index {}; there may be nothing to flush", flushedIndex);
+    }
+
+    try {
+      for (final var segment : dirtySegments) {
+        final long lastSegmentIndex = segment.lastIndex();
+        segment.flush(); // throws FlushException
+        flushedIndex = lastSegmentIndex;
+      }
+    } finally {
+      // store whatever we managed to flush to avoid doing it again
+      if (flushedIndex > lastFlushedIndex) {
+        lastFlushedIndex = flushedIndex;
+
+        LOGGER.trace(
+            "Flushed {} segment(s), from index {} to index {}",
+            segmentsCount,
+            lastFlushedIndex,
+            flushedIndex);
+      }
+    }
   }
 
   private void createNewSegment() {
