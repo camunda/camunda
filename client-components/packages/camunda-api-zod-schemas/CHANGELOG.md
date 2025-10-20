@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.11
+
+### 🚀 Enhancements
+
+- add root rootDecisionDefinitionKey to decision instance ([#37363](https://github.com/camunda/camunda/pull/37363))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.10
 
 ### 🩹 Fixes
