@@ -1,5 +1,4 @@
 camunda:
-  profilesOverride: "broker,identity,tasklist"
   backup:
     webapps:
       enabled: false
@@ -31,11 +30,9 @@ camunda:
 
 zeebe:
   broker:
-    exporters:
-      camundaExporter:
-        args:
-          createSchema: true
-        className: io.camunda.exporter.CamundaExporter
     network:
       host: localhost
       advertisedHost: localhost
+spring:
+  profiles:
+    active: "broker,consolidated-auth,identity"
