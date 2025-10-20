@@ -226,6 +226,7 @@
             </goals>
             <phase>initialize</phase>
             <configuration>
+              <skip>${skip.fe.build}</skip>
               <nodeVersion>v22.9.0</nodeVersion>
               <npmVersion>10.8.3</npmVersion>
             </configuration>
@@ -238,6 +239,7 @@
             </goals>
             <phase>initialize</phase>
             <configuration>
+              <skip>${skip.fe.build}</skip>
               <arguments>install</arguments>
             </configuration>
           </execution>
@@ -249,6 +251,7 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
+              <skip>${skip.fe.build}</skip>
               <arguments>run build</arguments>
             </configuration>
           </execution>
