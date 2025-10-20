@@ -16,6 +16,7 @@ import type {
 const mockEvaluatedDecisionInstance: GetDecisionInstanceResponseBody = {
   decisionEvaluationInstanceKey: '2251799813830820-1',
   decisionEvaluationKey: '2251799813830820',
+  rootDecisionDefinitionKey: '2251799813687886',
   tenantId: '<default>',
   decisionDefinitionKey: '2251799813687886',
   decisionDefinitionId: 'invoiceClassification',
@@ -88,6 +89,7 @@ const mockEvaluatedDecisionInstanceWithoutPanels: GetDecisionInstanceResponseBod
     decisionEvaluationKey: '2251799813830820',
     tenantId: '<default>',
     decisionDefinitionKey: '2251799813687887',
+    rootDecisionDefinitionKey: '2251799813687887',
     decisionDefinitionId: 'amountToString',
     state: 'EVALUATED',
     decisionDefinitionName: 'Convert amount to string',
@@ -134,6 +136,7 @@ const mockFailedDecisionInstance: GetDecisionInstanceResponseBody = {
   decisionEvaluationKey: '6755399441062312',
   tenantId: '<default>',
   decisionDefinitionKey: '2251799813687886',
+  rootDecisionDefinitionKey: '2251799813687886',
   decisionDefinitionId: 'invoiceClassification',
   state: 'FAILED',
   decisionDefinitionName: 'Invoice Classification',
