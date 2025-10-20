@@ -18,23 +18,23 @@ import java.util.Optional;
  *
  * @param exporters the state of each exporter in this partition
  */
-public record ExportersConfig(Map<String, ExporterState> exporters) {
+public record ExportingConfig(Map<String, ExporterState> exporters) {
 
-  public static ExportersConfig empty() {
-    return new ExportersConfig(Map.of());
+  public static ExportingConfig empty() {
+    return new ExportingConfig(Map.of());
   }
 
-  private ExportersConfig updateExporter(
+  private ExportingConfig updateExporter(
       final String exporterName, final ExporterState exporterState) {
     final var newExporters =
         ImmutableMap.<String, ExporterState>builder()
             .putAll(exporters)
             .put(exporterName, exporterState)
             .buildKeepingLast(); // choose last one if there are duplicate keys
-    return new ExportersConfig(newExporters);
+    return new ExportingConfig(newExporters);
   }
 
-  public ExportersConfig disableExporter(final String exporterName) {
+  public ExportingConfig disableExporter(final String exporterName) {
     return updateExporter(
         exporterName,
         new ExporterState(
@@ -43,15 +43,15 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
             Optional.empty()));
   }
 
-  public ExportersConfig deleteExporter(final String exporterName) {
+  public ExportingConfig deleteExporter(final String exporterName) {
     final var newExporters =
         exporters.entrySet().stream()
             .filter(entry -> !entry.getKey().equals(exporterName))
             .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-    return new ExportersConfig(newExporters);
+    return new ExportingConfig(newExporters);
   }
 
-  public ExportersConfig disableExporters(final Collection<String> exporterNames) {
+  public ExportingConfig disableExporters(final Collection<String> exporterNames) {
     final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
 
     exporterNames.forEach(
@@ -65,21 +65,21 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys
-    return new ExportersConfig(newExporters);
+    return new ExportingConfig(newExporters);
   }
 
-  public ExportersConfig enableExporter(final String exporterName, final long metadataVersion) {
+  public ExportingConfig enableExporter(final String exporterName, final long metadataVersion) {
     return enableExporter(exporterName, null, metadataVersion);
   }
 
-  public ExportersConfig enableExporter(
+  public ExportingConfig enableExporter(
       final String exporterName, final String initializeFrom, final long metadataVersion) {
     return updateExporter(
         exporterName,
         new ExporterState(metadataVersion, State.ENABLED, Optional.ofNullable(initializeFrom)));
   }
 
-  public ExportersConfig addExporters(final Collection<String> exporterNames) {
+  public ExportingConfig addExporters(final Collection<String> exporterNames) {
     exporterNames.forEach(
         exporterName -> {
           if (exporters.containsKey(exporterName)) {
@@ -96,16 +96,16 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys
-    return new ExportersConfig(newExporters);
+    return new ExportingConfig(newExporters);
   }
 
   /**
    * Updates existing exporters to state {@link ExporterState.State#CONFIG_NOT_FOUND}.
    *
    * @param exporterNames the names of exporters for which the state should be updated
-   * @return a new {@link ExportersConfig} with the updated state for the specified exporters
+   * @return a new {@link ExportingConfig} with the updated state for the specified exporters
    */
-  public ExportersConfig withConfigNotFoundFor(final Collection<String> exporterNames) {
+  public ExportingConfig withConfigNotFoundFor(final Collection<String> exporterNames) {
     final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
 
     exporterNames.forEach(
@@ -119,6 +119,6 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys
-    return new ExportersConfig(newExporters);
+    return new ExportingConfig(newExporters);
   }
 }
