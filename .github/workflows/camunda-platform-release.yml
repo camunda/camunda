@@ -110,6 +110,7 @@ jobs:
           # - This token will be used for all git operations in this job
           # - This token expires after 1 hour (https://github.com/actions/create-github-app-token?tab=readme-ov-file#create-github-app-token)
           token: ${{ steps.github-token.outputs.token }}
+          fetch-depth: 0
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.4.0
