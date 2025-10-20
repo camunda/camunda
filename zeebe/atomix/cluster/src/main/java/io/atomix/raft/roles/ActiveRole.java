@@ -60,6 +60,7 @@ public abstract class ActiveRole extends PassiveRole {
   public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
     raft.checkThread();
     logRequest(request);
+    log.info("Received PollRequest from {}:{}", request.from(), request);
     updateTermAndLeader(request.term(), null);
     return CompletableFuture.completedFuture(logResponse(handlePoll(request)));
   }
