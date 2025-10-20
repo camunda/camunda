@@ -42,7 +42,7 @@ describe('Sorting', () => {
     expect(await screen.findByText('Operations')).toBeInTheDocument();
   });
 
-  it('should disable sorting for jobKey', () => {
+  it('should disable sorting for jobKey and elementName', () => {
     const incidents = [{...firstIncident, jobKey: ''}];
 
     render(<IncidentsTable processInstanceKey="1" incidents={incidents} />, {
@@ -53,6 +53,9 @@ describe('Sorting', () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: 'Sort by Job Id'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Sort by Failing Element'}),
     ).not.toBeInTheDocument();
   });
 });
