@@ -87,6 +87,7 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
       LOG.warn("Failed to set directory {} readonly, continuing anyway.", previousDataDirectory);
     }
   }
+
   private Long findLatestValidPreviousVersion(
       final Path dataDirectoryPrefix, final long currentNodeVersion) {
     for (long version = currentNodeVersion - 1; version >= 0; version--) {
@@ -118,7 +119,9 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
             try {
               final Path targetPath = target.resolve(source.relativize(sourcePath));
               if (Files.isDirectory(sourcePath)) {
-                Files.createDirectories(targetPath);
+                if (!sourcePath.getFileName().toString().equals("runtime")) {
+                  Files.createDirectories(targetPath);
+                }
               } else {
                 Files.copy(sourcePath, targetPath);
                 FileUtil.flushDirectory(targetPath.getParent()); // Verify if this is required.
