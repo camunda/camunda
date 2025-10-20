@@ -131,12 +131,12 @@ public final class ProcessInstanceMigrationPreconditions {
       but active element with id '%s' and type '%s' is mapped to \
       an element with id '%s' and different type '%s'. \
       Elements must be mapped to elements of the same type.""";
-  private static final String ERROR_USER_TASK_IMPLEMENTATION_CHANGED =
+  private static final String ERROR_USER_TASK_IMPLEMENTATION_DOWNGRADE =
       """
       Expected to migrate process instance '%s' \
       but active user task with id '%s' and implementation '%s' is mapped to \
       an user task with id '%s' and different implementation '%s'. \
-      Elements must be mapped to elements of the same implementation.""";
+      Elements must be either mapped to elements of the same implementation or to 'zeebe user task'.""";
   private static final String ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED =
       """
       Expected to migrate process instance '%s' \
@@ -564,17 +564,26 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Since we introduce zeebe user tasks and job worker tasks has the same bpmn element type, we
-   * need to check whether the given element instance and target element has the same user task
-   * type. Throws an exception if they have different types.
+   * Zeebe user tasks and job worker tasks share the same BPMN element type. This method verifies
+   * that the source and target element instances are either:
+   *
+   * <ul>
+   *   <li>The same user task implementation or
+   *   <li>The target is an upgrade from job worker to zeebe user task implementation. This is a
+   *       user task conversion.
+   * </ul>
+   *
+   * <p>Throws an exception if the migration is a downgrade from zeebe user task to job worker
+   * implementation.
    *
    * @param sourceProcessDefinition source process definition to retrieve the source element type
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
+   * @return true if the migration is a user task conversion, false otherwise
    */
-  public static void requireSameUserTaskImplementation(
+  public static boolean requireSupportedUserTaskMigration(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
@@ -582,14 +591,14 @@ public final class ProcessInstanceMigrationPreconditions {
       final long processInstanceKey) {
     final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
     if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
-      return;
+      return false;
     }
 
     final AbstractFlowElement targetElement =
         targetProcessDefinition.getProcess().getElementById(targetElementId);
     final BpmnElementType targetElementType = targetElement.getElementType();
     if (targetElementType != BpmnElementType.USER_TASK) {
-      return;
+      return false;
     }
 
     final ExecutableUserTask targetUserTask =
@@ -610,10 +619,14 @@ public final class ProcessInstanceMigrationPreconditions {
             ? ZEEBE_USER_TASK_IMPLEMENTATION
             : JOB_WORKER_IMPLEMENTATION;
 
-    if (!targetUserTaskType.equals(sourceUserTaskType)) {
+    final var isUserTaskConversion = !sourceUserTaskType.equals(targetUserTaskType);
+
+    // Only support migration between same types and upgrade to zeebe user task
+    if (sourceUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION)
+        && targetUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)) {
       final String reason =
           String.format(
-              ERROR_USER_TASK_IMPLEMENTATION_CHANGED,
+              ERROR_USER_TASK_IMPLEMENTATION_DOWNGRADE,
               processInstanceKey,
               elementInstanceRecord.getElementId(),
               sourceUserTaskType,
@@ -622,6 +635,8 @@ public final class ProcessInstanceMigrationPreconditions {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
+
+    return isUserTaskConversion;
   }
 
   /**
