@@ -360,6 +360,7 @@ public final class ProcessingStateMachine {
     while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
 
       final var command = pendingCommands.removeFirst();
+      LOG.trace("Processing command {}", command);
 
       currentProcessor =
           recordProcessors.stream()
