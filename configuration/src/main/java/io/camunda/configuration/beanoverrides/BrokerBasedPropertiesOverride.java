@@ -23,13 +23,16 @@ import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Membership;
 import io.camunda.configuration.PrimaryStorage;
+import io.camunda.configuration.Processing;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Ssl;
+import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.Write;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
@@ -41,6 +44,8 @@ import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.RateLimitCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.ThrottleCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -127,8 +132,88 @@ public class BrokerBasedPropertiesOverride {
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
+    populateFromProcessing(override);
+
+    populateFromFlowControl(override);
 
     return override;
+  }
+
+  private void populateFromProcessing(final BrokerBasedProperties override) {
+    final Processing processing = unifiedConfiguration.getCamunda().getProcessing();
+
+    // processing
+    override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
+    override.getProcessing().setEnableAsyncScheduledTasks(processing.isEnableAsyncScheduledTasks());
+    override
+        .getProcessing()
+        .setScheduledTaskCheckInterval(processing.getScheduledTasksCheckInterval());
+    override.getProcessing().setSkipPositions(processing.getSkipPositions());
+
+    // consistency checks
+    override
+        .getExperimental()
+        .getConsistencyChecks()
+        .setEnablePreconditions(processing.isEnablePreconditionsCheck());
+    override
+        .getExperimental()
+        .getConsistencyChecks()
+        .setEnableForeignKeyChecks(processing.isEnableForeignKeyChecks());
+    // features
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableYieldingDueDateChecker(processing.isEnableYieldingDueDateChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableMessageTtlCheckerAsync(processing.isEnableAsyncMessageTtlChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableTimerDueDateCheckerAsync(processing.isEnableAsyncTimerDuedateChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableStraightThroughProcessingLoopDetector(
+            processing.isEnableStraightthroughProcessingLoopDetector());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableMessageBodyOnExpired(processing.isEnableMessageBodyOnExpired());
+  }
+
+  private void populateFromFlowControl(final BrokerBasedProperties override) {
+    populateFromWrite(override);
+  }
+
+  private void populateFromWrite(final BrokerBasedProperties override) {
+    final Write write =
+        unifiedConfiguration.getCamunda().getProcessing().getFlowControl().getWrite();
+
+    if (write == null) {
+      return;
+    }
+
+    final RateLimitCfg rateLimitCfg =
+        Optional.ofNullable(override.getFlowControl().getWrite()).orElse(new RateLimitCfg());
+    rateLimitCfg.setEnabled(write.isEnabled());
+    rateLimitCfg.setLimit(write.getLimit());
+    rateLimitCfg.setRampUp(write.getRampUp());
+    override.getFlowControl().setWrite(rateLimitCfg);
+
+    populateFromThrottle(override);
+  }
+
+  private void populateFromThrottle(final BrokerBasedProperties override) {
+    final Throttle throttle =
+        unifiedConfiguration.getCamunda().getProcessing().getFlowControl().getWrite().getThrottle();
+
+    final ThrottleCfg throttleCfg = override.getFlowControl().getWrite().getThrottling();
+    throttleCfg.setEnabled(throttle.isEnabled());
+    throttleCfg.setAcceptableBacklog(throttle.getAcceptableBacklog());
+    throttleCfg.setMinimumLimit(throttle.getMinimumLimit());
+    throttleCfg.setResolution(throttle.getResolution());
   }
 
   private void populateFromGrpc(final BrokerBasedProperties override) {
