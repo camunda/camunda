@@ -11,7 +11,7 @@ import svgr from "vite-plugin-svgr";
 import react from "@vitejs/plugin-react";
 import license from "rollup-plugin-license";
 import path from "node:path";
-import sbom from "@vzeta/rollup-plugin-sbom";
+import sbom from 'rollup-plugin-sbom';
 
 const outDir = "dist";
 const contextPath = process.env.CONTEXT_PATH ?? "";
@@ -35,7 +35,7 @@ const plugins: PluginOption[] = [
 export default defineConfig(
   ({ mode }): UserConfig => ({
     base: "",
-    plugins: mode === "sbom" ? [...plugins, sbom() as PluginOption] : plugins,
+    plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
     resolve: {
       alias: {
         src: "/src",
