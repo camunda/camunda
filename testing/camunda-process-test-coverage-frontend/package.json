@@ -18,8 +18,8 @@
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
     "bpmn-js": "^8.6.0",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "cross-env": "^10.0.0",
