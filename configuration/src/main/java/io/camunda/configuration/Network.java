@@ -14,7 +14,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
 /** Network configuration for cluster communication. */
-public class Network {
+public class Network implements Cloneable {
 
   private static final String PREFIX = "camunda.cluster.network";
 
@@ -212,29 +212,22 @@ public class Network {
   }
 
   @Override
-  public Network clone() {
-    final Network copy = new Network();
-    copy.host = host;
-    copy.advertisedHost = advertisedHost;
-    copy.portOffset = portOffset;
-    copy.maxMessageSize = maxMessageSize;
-    copy.socketSendBuffer = socketSendBuffer;
-    copy.socketReceiveBuffer = socketReceiveBuffer;
-    copy.heartbeatTimeout = heartbeatTimeout;
-    copy.heartbeatInterval = heartbeatInterval;
-    copy.internalApi = internalApi;
-
-    return copy;
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
   }
 
   public Network withBrokerNetworkProperties() {
-    final var copy = clone();
+    final var copy = (Network) clone();
     copy.legacyPropertiesMap = LEGACY_BROKER_NETWORK_PROPERTIES;
     return copy;
   }
 
   public Network withGatewayNetworkProperties() {
-    final var copy = clone();
+    final var copy = (Network) clone();
     copy.legacyPropertiesMap = LEGACY_GATEWAY_NETWORK_PROPERTIES;
     return copy;
   }
