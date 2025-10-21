@@ -79,9 +79,9 @@ public class DefaultParameterResolverStrategyTest {
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyNative");
     assertThat(parameters).hasSize(1);
     final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
-    assertThat(parameterResolver).isInstanceOf(ProcessInstanceKeyParameterResolver.class);
-    final ProcessInstanceKeyParameterResolver processInstanceKeyParameterResolver =
-        (ProcessInstanceKeyParameterResolver) parameterResolver;
+    assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
+    final KeyParameterResolver processInstanceKeyParameterResolver =
+        (KeyParameterResolver) parameterResolver;
     assertThat(processInstanceKeyParameterResolver.getKeyTargetType())
         .isEqualTo(KeyTargetType.LONG);
   }
@@ -93,9 +93,9 @@ public class DefaultParameterResolverStrategyTest {
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyLong");
     assertThat(parameters).hasSize(1);
     final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
-    assertThat(parameterResolver).isInstanceOf(ProcessInstanceKeyParameterResolver.class);
-    final ProcessInstanceKeyParameterResolver processInstanceKeyParameterResolver =
-        (ProcessInstanceKeyParameterResolver) parameterResolver;
+    assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
+    final KeyParameterResolver processInstanceKeyParameterResolver =
+        (KeyParameterResolver) parameterResolver;
     assertThat(processInstanceKeyParameterResolver.getKeyTargetType())
         .isEqualTo(KeyTargetType.LONG);
   }
@@ -107,9 +107,9 @@ public class DefaultParameterResolverStrategyTest {
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyString");
     assertThat(parameters).hasSize(1);
     final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
-    assertThat(parameterResolver).isInstanceOf(ProcessInstanceKeyParameterResolver.class);
-    final ProcessInstanceKeyParameterResolver processInstanceKeyParameterResolver =
-        (ProcessInstanceKeyParameterResolver) parameterResolver;
+    assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
+    final KeyParameterResolver processInstanceKeyParameterResolver =
+        (KeyParameterResolver) parameterResolver;
     assertThat(processInstanceKeyParameterResolver.getKeyTargetType())
         .isEqualTo(KeyTargetType.STRING);
   }

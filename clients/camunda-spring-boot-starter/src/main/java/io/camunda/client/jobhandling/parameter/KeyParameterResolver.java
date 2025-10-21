@@ -17,12 +17,16 @@ package io.camunda.client.jobhandling.parameter;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import java.util.function.Function;
 
-public abstract class KeyParameterResolver implements ParameterResolver {
+public class KeyParameterResolver implements ParameterResolver {
   private final KeyTargetType keyTargetType;
+  private final Function<ActivatedJob, Long> keyResolver;
 
-  public KeyParameterResolver(final KeyTargetType keyTargetType) {
+  public KeyParameterResolver(
+      final KeyTargetType keyTargetType, final Function<ActivatedJob, Long> keyResolver) {
     this.keyTargetType = keyTargetType;
+    this.keyResolver = keyResolver;
   }
 
   public KeyTargetType getKeyTargetType() {
@@ -31,11 +35,10 @@ public abstract class KeyParameterResolver implements ParameterResolver {
 
   @Override
   public final Object resolve(final JobClient jobClient, final ActivatedJob job) {
+    final Long key = keyResolver.apply(job);
     return switch (keyTargetType) {
-      case LONG -> resolveKey(job);
-      case STRING -> String.valueOf(resolveKey(job));
+      case LONG -> key;
+      case STRING -> String.valueOf(key);
     };
   }
-
-  protected abstract long resolveKey(ActivatedJob job);
 }

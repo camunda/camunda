@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.jobhandling.parameter;
+package io.camunda.client.annotation;
 
-import io.camunda.client.api.response.ActivatedJob;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class ProcessInstanceKeyParameterResolver extends KeyParameterResolver {
-
-  public ProcessInstanceKeyParameterResolver(final KeyTargetType keyTargetType) {
-    super(keyTargetType);
-  }
-
-  @Override
-  protected long resolveKey(final ActivatedJob job) {
-    return job.getProcessInstanceKey();
-  }
-}
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface JobKey {}

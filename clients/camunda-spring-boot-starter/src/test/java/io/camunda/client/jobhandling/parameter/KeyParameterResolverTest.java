@@ -28,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ProcessInstanceKeyParameterResolverTest {
+public class KeyParameterResolverTest {
   @Mock ActivatedJob activatedJob;
 
   @BeforeEach
@@ -39,7 +39,7 @@ public class ProcessInstanceKeyParameterResolverTest {
   @Test
   void shouldResolveLong() {
     final ParameterResolver parameterResolver =
-        new ProcessInstanceKeyParameterResolver(KeyTargetType.LONG);
+        new KeyParameterResolver(KeyTargetType.LONG, ActivatedJob::getProcessInstanceKey);
     final Object parameter = parameterResolver.resolve(mock(JobClient.class), activatedJob);
     assertThat(parameter).isInstanceOf(Long.class).isEqualTo(123L);
   }
@@ -47,7 +47,7 @@ public class ProcessInstanceKeyParameterResolverTest {
   @Test
   void shouldResolveString() {
     final ParameterResolver parameterResolver =
-        new ProcessInstanceKeyParameterResolver(KeyTargetType.STRING);
+        new KeyParameterResolver(KeyTargetType.STRING, ActivatedJob::getProcessInstanceKey);
     final Object parameter = parameterResolver.resolve(mock(JobClient.class), activatedJob);
     assertThat(parameter).isInstanceOf(String.class).isEqualTo("123");
   }
