@@ -33,5 +33,6 @@
   "pleaseEnterValidGroupId": "Please enter a valid Group ID (only characters, numbers and _ ~ @ . + - and max 256 characters)",
   "resourceIdRequired": "Resource ID is required",
   "permissionRequired": "Please select at least one permission",
-  "pleaseEnterValidClientId": "Please enter a valid Client ID (only characters, numbers and _ ~ @ . + - and max 256 characters)"
+  "pleaseEnterValidClientId": "Please enter a valid Client ID (only characters, numbers and _ ~ @ . + - and max 256 characters)",
+  "pleaseEnterValidResourceId": "Please enter a valid Resource ID (only characters, numbers and _ ~ @ . + - and max 256 characters or wildcard '*')"
 }

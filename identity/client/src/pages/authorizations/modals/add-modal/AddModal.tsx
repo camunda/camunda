@@ -31,7 +31,7 @@ import {
 } from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
-import { isValidId } from "src/utility/validate";
+import { isValidId, isValidResourceId } from "src/utility/validate";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
@@ -289,7 +289,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
             rules={{
               required: t("resourceIdRequired"),
               validate: (value) =>
-                isValidId(value) || t("pleaseEnterValidResourceId"),
+                isValidResourceId(value) || t("pleaseEnterValidResourceId"),
             }}
             render={({ field, fieldState }) => (
               <TextField
