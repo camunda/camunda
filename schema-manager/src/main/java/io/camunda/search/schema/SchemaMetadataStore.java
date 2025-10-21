@@ -8,12 +8,13 @@
 package io.camunda.search.schema;
 
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Map;
 import org.slf4j.Logger;
 
 class SchemaMetadataStore {
   // Schema version metadata constants
-  private static final String SCHEMA_VERSION_METADATA_ID = "schema-version";
+  @VisibleForTesting static final String SCHEMA_VERSION_METADATA_ID = "schema-version";
 
   private final SearchEngineClient searchEngineClient;
   private final MetadataIndex metadataIndex;

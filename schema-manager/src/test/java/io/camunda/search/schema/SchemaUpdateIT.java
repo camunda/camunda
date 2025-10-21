@@ -118,6 +118,10 @@ class SchemaUpdateIT {
       config.schemaManager().getRetry().setMaxRetries(numberOfThreads);
       config.schemaManager().getRetry().setMaxRetryDelay(Duration.ofSeconds(1));
     }
+    config
+        .schemaManager()
+        .setVersionCheckRestrictionEnabled(
+            false); // skip version check for the test to allow 8.7.0-SNAPSHOT to 8.8.0-SNAPSHOT
     final var indexDescriptors =
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
