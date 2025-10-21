@@ -762,14 +762,14 @@ jobs:
 
   # This job waits for the existing FOSSA scan (triggered by check-licenses.yml on tag push)
   # then creates releases and generates attribution/SBOM reports for single-app only
-  # Skipped for:
-  # - Dry runs (dryRun=true or releaseProcessDryRun=true)
-  # - Non-stable versions (containing '-' like SNAPSHOT, alpha, rc)
+  # Flags impact:
+  # - With dryRun=true or releaseProcessDryRun=true: Runs in dry-run mode (no actual release creation)
+  # - Skipped for non-stable versions (containing '-' like SNAPSHOT, alpha, rc)
   fossa-release:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
-    if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && !contains(inputs.releaseVersion, '-') }}
+    if: ${{ !contains(inputs.releaseVersion, '-') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -795,11 +795,12 @@ jobs:
           branch: ${{ steps.fossa-context.outputs.head-ref }}
           project-id: "custom+50756/camunda/camunda@single-app"
           revision-id: ${{ steps.fossa-context.outputs.head-revision }}
+          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
         uses: camunda/infra-global-github-actions/fossa/release@infra-gh-854-publish-sboms
         with:
           fossa-api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          branch: ${{ steps.info.outputs.head-ref }}
+          branch: ${{ steps.fossa-context.outputs.head-ref }}
           project-id: "custom+50756/camunda/camunda@single-app"
           attribution-release-group-id: "4904" # https://app.fossa.com/projects/group/4904
           sbom-release-group-id: "4905"        # https://app.fossa.com/projects/group/4905
@@ -807,6 +808,7 @@ jobs:
           revision-id: ${{ steps.fossa-context.outputs.head-revision }}
           attribution-format: "TXT"
           sbom-format: "CYCLONEDX_JSON"
+          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Observe build status
         if: always()
         continue-on-error: true
