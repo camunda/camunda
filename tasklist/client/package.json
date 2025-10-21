@@ -8,7 +8,7 @@
     "@bpmn-io/form-js-carbon-styles": "1.18.0",
     "@bpmn-io/form-js-viewer": "1.18.0",
     "@camunda/camunda-api-zod-schemas": "0.0.27",
-    "@camunda/camunda-composite-components": "0.21.1",
+    "@camunda/camunda-composite-components": "0.20.2",
     "@carbon/elements": "11.78.0",
     "@carbon/react": "1.94.2",
     "@monaco-editor/react": "4.7.0",
@@ -26,7 +26,7 @@
     "lodash": "4.17.21",
     "mixpanel-browser": "2.67.0",
     "mobx": "6.13.7",
-    "mobx-react-lite": "4.1.0",
+    "mobx-react-lite": "4.1.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-error-boundary": "6.0.0",
@@ -70,11 +70,11 @@
     "@eslint/js": "9.38.0",
     "@playwright/test": "1.56.1",
     "@tanstack/react-query-devtools": "5.83.0",
-    "@testing-library/dom": "10.4.0",
+    "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.3.0",
     "@testing-library/user-event": "14.6.1",
-    "@types/lodash": "4.17.18",
+    "@types/lodash": "4.17.20",
     "@types/node": "24.1.0",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",
@@ -99,11 +99,11 @@
     "jsdom": "26.1.0",
     "monaco-editor": "0.52.2",
     "msw": "2.10.2",
-    "prettier": "3.6.1",
+    "prettier": "3.6.2",
     "resize-observer-polyfill": "1.5.1",
     "rollup-plugin-license": "3.6.0",
     "rollup-plugin-sbom": "3.0.0",
-    "serve": "14.2.4",
+    "serve": "14.2.5",
     "source-map-explorer": "2.5.3",
     "stylelint": "16.22.0",
     "stylelint-prettier": "5.0.3",
@@ -121,5 +121,5 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@11.6.0"
+  "packageManager": "npm@11.6.2"
 }
