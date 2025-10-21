@@ -1,0 +1,312 @@
+###
+# @no-cookie-jar
+# @name login
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/login?username=demo&password=demo
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Login should succeed and set cookies", function () {
+    client.assert(response.status === 204, "Login should succeed");
+
+    const setCookieHeaders = response.headers.valuesOf("Set-Cookie");
+    if (setCookieHeaders && setCookieHeaders.length > 0) {
+      let sessionCookie = null;
+      let csrfCookie = null;
+
+      setCookieHeaders.forEach(cookie => {
+        if (cookie.includes("camunda-session")) {
+          sessionCookie = cookie.split(';')[0].split('=')[1];
+        }
+        if (cookie.includes("X-CSRF-TOKEN")) {
+          csrfCookie = cookie.split(';')[0].split('=')[1];
+        }
+      });
+
+      if (sessionCookie) {
+        client.global.set("session_cookie", sessionCookie);
+        console.log("Session cookie: " + sessionCookie);
+      }
+      if (csrfCookie) {
+        client.global.set("csrf_cookie", csrfCookie);
+        console.log("CSRF cookie: " + csrfCookie);
+      }
+    }
+  });
+%}
+
+###
+# @name test-get-x-csrf-token-header
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authentication/me
+Accept: application/json
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+
+> {%
+  client.test("Authentication request should succeed and return CSRF token", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.headers.valueOf("x-csrf-token"), "CSRF token header is missing");
+    client.global.set("csrf_token", response.headers.valueOf("x-csrf-token"));
+    console.log("CSRF Token from header: " + client.global.get("csrf_token"));
+  });
+%}
+
+###
+# @name deploy-process-diagram
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/deployments
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="User Task Test Process.bpmn"
+Content-Type: application/octet-stream
+
+< ./User Task Processes/User Task Test Process.bpmn
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="New form A.form"
+Content-Type: application/octet-stream
+
+< ./User Task Processes/New form A.form
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="New form B.form"
+Content-Type: application/octet-stream
+
+< ./User Task Processes/New form B.form
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="New form C.form"
+Content-Type: application/octet-stream
+
+< ./User Task Processes/New form C.form
+--boundary123--
+
+
+> {%
+  client.test("Process deployment is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    const processKey = response.body.deployments[0].processDefinition.processDefinitionKey;
+    client.global.set("PROCESS_DEFINITION_KEY", processKey);
+    client.log("Deployed process key: " + processKey);
+  });
+%}
+
+###
+# @name start-process-instance
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionKey": "{{PROCESS_DEFINITION_KEY}}",
+  "variables": {},
+  "tenantId": ""
+}
+
+> {%
+  client.test("Process instance started successfully", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.body.processInstanceKey, "Process instance key should exist");
+    client.log("Started process instance with key: " + response.body.processInstanceKey);
+  });
+%}
+
+###
+# @name process-definition-search-authorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/search
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "processDefinitionKey",
+      "order": "ASC"
+    }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("Process definition search is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    //client.global.set("PROCESS_DEFINITION_KEY", response.body.items[0].processDefinitionKey);
+  });
+%}
+
+###
+# @name create-process-instance
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "processDefinitionKey": "{{PROCESS_DEFINITION_KEY}}",
+  "variables": {}
+}
+
+> {%
+  client.test("Create process instance is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+let expectedDefinitionKey = client.global.get("PROCESS_DEFINITION_KEY");
+  client.test("Response should contain process key", function () {
+    client.assert(response.body.processDefinitionKey === expectedDefinitionKey, "Process definition key was not returned");
+    client.global.set("PROCESS_INSTANCE_KEY", response.body.processInstanceKey);
+  });
+%}
+
+###
+# @name get-process-instance
+< {%
+  import {wait} from "../js/wait"
+  wait(3)
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
+Cookie: {{COOKIE_HEADER}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Process instance is successful returned", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  let expectedInstanceKey = client.global.get("PROCESS_INSTANCE_KEY");
+  client.test("Response should not be empty", function () {
+    client.assert(response.body.processInstanceKey === expectedInstanceKey, "Process instances wasn't returned");
+  });
+%}
+
+###
+# @name process-instance-search-authorized
+< {%
+  import {wait} from "../js/wait"
+  wait(3)
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/search
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "processInstanceKey",
+      "order": "ASC"
+    }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("Process instance search is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Response should not be empty", function () {
+    client.assert(response.body.items.length > 0, "Process instances were not returned");
+  });
+%}
+
+###
+# @name upload-document-authorized
+POST http://localhost:8080/v2/documents
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="file"; filename="test.pdf"
+X-Document-Metadata: {"fileName": "test.pdf", "size": 1234567}
+Content-Type: application/pdf
+
+< ../test.pdf
+--boundary123
+
+> {%
+  client.test("Document upload should be successful", function () {
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.global.set("DOCUMENT_ID", response.body.documentId);
+    client.global.set("CONTENT_HASH", response.body.contentHash);
+  });
+
+  client.test("Response should be JSON", function () {
+    const contentType = response.headers.valueOf("Content-Type") || "";
+    client.assert(
+        contentType.toLowerCase().includes("application/json"),
+        `Response is not JSON, Content-Type was: ${contentType}`
+    );
+  });
+
+  client.test("Response body should include document ID", function () {
+    client.assert(response.body.documentId, "Document ID not found in the response");
+  });
+%}
+
+###
+# @name download-document-authorized
+GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Accept: application/octet-stream
+
+> {%
+  client.test("Document download should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+%}
+
+###
+# @name delete-and-verify-document
+DELETE http://localhost:8080/v2/documents/{{DOCUMENT_ID}}
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+
+> {%
+  client.test("Document deletion should succeed", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
+  });
+
+  client.global.set("DOCUMENT_DELETED", "true");
+%}
+
+###
+# @name verify-deleted-document
+GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Accept: application/octet-stream
+
+> {%
+  if (client.global.get("DOCUMENT_DELETED") === "true") {
+    client.test("Document download after deletion should fail", function () {
+      client.assert(response.status === 404, "Expected 404, got " + response.status);
+    });
+  }
+%}
