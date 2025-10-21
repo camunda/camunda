@@ -25,102 +25,29 @@ import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class RoleQueryTransformerTest extends AbstractTransformerTest {
+public class RoleMemberQueryTransformerTest extends AbstractTransformerTest {
 
   @Test
-  void shouldQueryByRoleId() {
-    // given
-    final var filter = FilterBuilders.role((f) -> f.roleId("role1"));
-
-    // when
-    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
-
-    // then
-    assertThat(query.filter()).isEmpty();
-    assertThat(query.should()).isEmpty();
-    assertThat(query.must())
-        .containsExactlyInAnyOrder(
-            SearchQuery.of(q1 -> q1.term(t -> t.field("roleId").value("role1"))),
-            SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role"))));
-  }
-
-  @Test
-  void shouldQueryByRoleName() {
-    // given
-    final var filter = FilterBuilders.role((f) -> f.name("roleName"));
-
-    // when
-    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
-
-    // then
-    assertThat(query.filter()).isEmpty();
-    assertThat(query.should()).isEmpty();
-    assertThat(query.must())
-        .containsExactlyInAnyOrder(
-            SearchQuery.of(q1 -> q1.term(t -> t.field("name").value("roleName"))),
-            SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role"))));
-  }
-
-  @Test
-  void shouldQueryByRoleDescription() {
-    // given
-    final var filter = FilterBuilders.role((f) -> f.description("roleDescription"));
-
-    // when
-    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
-
-    // then
-    assertThat(query.filter()).isEmpty();
-    assertThat(query.should()).isEmpty();
-    assertThat(query.must())
-        .containsExactlyInAnyOrder(
-            SearchQuery.of(q1 -> q1.term(t -> t.field("description").value("roleDescription"))),
-            SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role"))));
-  }
-
-  @Test
-  void shouldQueryRolesByMemberId() {
+  void shouldQueryMembersByRoleId() {
     // given
     final var filter =
-        FilterBuilders.role((f) -> f.memberId("test-member-id").childMemberType(USER));
+        FilterBuilders.roleMember((f) -> f.roleId("test-parent-id").memberType(USER));
 
     // when
     final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
 
     // then
-    final var memberTypeQuery =
+    final var expectedMemberTypeQuery =
         SearchQuery.of(q1 -> q1.term(t -> t.field("memberType").value(USER.name())));
-    final var expectedChildMemberTypeQuery =
-        SearchQuery.of(q -> q.hasChild(hc -> hc.type("member").query(memberTypeQuery)));
-    final var memberIdQuery =
-        SearchQuery.of(q1 -> q1.term(t -> t.field("memberId").value("test-member-id")));
-    final var expectedChildMemberIdQuery =
-        SearchQuery.of(q -> q.hasChild(hc -> hc.type("member").query(memberIdQuery)));
-    final var joinQuery = SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role")));
+    final var roleIdQuery =
+        SearchQuery.of(q1 -> q1.term(t -> t.field("roleId").value("test-parent-id")));
+    final var expectedParentQuery =
+        SearchQuery.of(q -> q.hasParent(hp -> hp.parentType("role").query(roleIdQuery)));
 
     assertThat(query.filter()).isEmpty();
     assertThat(query.should()).isEmpty();
     assertThat(query.must())
-        .containsExactlyInAnyOrder(
-            expectedChildMemberTypeQuery, expectedChildMemberIdQuery, joinQuery);
-  }
-
-  @Test
-  void shouldQueryByMultipleRoleFields() {
-    // given
-    final var filter = FilterBuilders.role((f) -> f.roleId("role1").name("TestRole"));
-
-    // when
-    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
-
-    // then
-    assertThat(query.filter()).isEmpty();
-    assertThat(query.should()).isEmpty();
-    assertThat(query.must())
-        .containsExactlyInAnyOrder(
-            SearchQuery.of(q -> q.term(t -> t.field("roleId").value("role1"))),
-            SearchQuery.of(q -> q.term(t -> t.field("name").value("TestRole"))),
-            SearchQuery.of(q -> q.term(t -> t.field("join").value("role"))));
+        .containsExactlyInAnyOrder(expectedMemberTypeQuery, expectedParentQuery);
   }
 
   @Test
@@ -132,7 +59,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
 
     // when
-    final var searchQuery = transformQuery(FilterBuilders.role(b -> b), resourceAccessChecks);
+    final var searchQuery = transformQuery(FilterBuilders.roleMember(b -> b), resourceAccessChecks);
 
     // then
     final SearchQueryOption queryVariant = searchQuery.queryOption();
@@ -165,7 +92,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
 
     // when
-    final var searchQuery = transformQuery(FilterBuilders.role(b -> b), resourceAccessChecks);
+    final var searchQuery = transformQuery(FilterBuilders.roleMember(b -> b), resourceAccessChecks);
 
     // then
     assertThat(searchQuery)
@@ -180,7 +107,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
 
     // when
-    final var searchQuery = transformQuery(FilterBuilders.role(b -> b), resourceAccessChecks);
+    final var searchQuery = transformQuery(FilterBuilders.roleMember(b -> b), resourceAccessChecks);
 
     // then
     assertThat(searchQuery)
@@ -197,7 +124,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
 
     // when
     final var searchQuery =
-        transformQuery(FilterBuilders.role(b -> b.roleId("a")), resourceAccessChecks);
+        transformQuery(FilterBuilders.roleMember(b -> b.roleId("a")), resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();
@@ -214,7 +141,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
 
     // when
-    final var searchQuery = transformQuery(FilterBuilders.role(b -> b), resourceAccessChecks);
+    final var searchQuery = transformQuery(FilterBuilders.roleMember(b -> b), resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();

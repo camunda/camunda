@@ -35,6 +35,7 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.TenantMemberQuery;
@@ -179,49 +180,49 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
-  public static Either<ProblemDetail, RoleQuery> toRoleQuery(
+  public static Either<ProblemDetail, RoleMemberQuery> toRoleMemberQuery(
       final RoleUserSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.roleSearchQuery().build());
+      return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromRoleUserSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::role,
+            SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleUserSortField);
-    final var filter = FilterBuilders.role().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
+    final var filter = FilterBuilders.roleMember().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, RoleQuery> toRoleQuery(
+  public static Either<ProblemDetail, RoleMemberQuery> toRoleMemberQuery(
       final RoleGroupSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.roleSearchQuery().build());
+      return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromRoleGroupSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::role,
+            SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleGroupSortField);
-    final var filter = FilterBuilders.role().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
+    final var filter = FilterBuilders.roleMember().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, RoleQuery> toRoleQuery(
+  public static Either<ProblemDetail, RoleMemberQuery> toRoleMemberQuery(
       final RoleClientSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.roleSearchQuery().build());
+      return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromRoleClientSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::role,
+            SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleClientSortField);
-    final var filter = FilterBuilders.role().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
+    final var filter = FilterBuilders.roleMember().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
   public static Either<ProblemDetail, GroupQuery> toGroupQuery(

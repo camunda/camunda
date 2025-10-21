@@ -132,6 +132,15 @@ public final class SearchQueryBuilders {
     return fn.apply(roleSearchQuery()).build();
   }
 
+  public static RoleMemberQuery.Builder roleMemberSearchQuery() {
+    return new RoleMemberQuery.Builder();
+  }
+
+  public static RoleMemberQuery roleMemberSearchQuery(
+      final Function<RoleMemberQuery.Builder, ObjectBuilder<RoleMemberQuery>> fn) {
+    return fn.apply(roleMemberSearchQuery()).build();
+  }
+
   public static TenantQuery.Builder tenantSearchQuery() {
     return new TenantQuery.Builder();
   }
