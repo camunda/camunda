@@ -1,10 +1,21 @@
 camunda:
+  database:
+    clusterName: elasticsearch
+    type: elasticsearch
+    url: http://localhost:9200
+    index:
+      numberOfReplicas: 0
+  data:
+    secondary-storage:
+      type: elasticsearch
+      elasticsearch:
+        url: http://localhost:9200
   security:
     initialization:
       users:
         - username: demo
           password: demo
-          name: demo
+          name: Demo
           email: demo@example.com
       defaultRoles:
         admin:
@@ -12,6 +23,7 @@ camunda:
             - demo
     # By default authorization and api protection is disabled
     authentication:
+      method: BASIC
       unprotected-api: true
     authorizations:
       enabled: false
@@ -21,8 +33,18 @@ zeebe:
     exporters:
       camundaExporter:
         args:
-          createSchema: true
+          connect:
+            type: elasticsearch
+            url: http://localhost:9200
+          index:
+            shouldWaitForImporters: false
+          retention:
+            enabled: false
         className: io.camunda.exporter.CamundaExporter
     network:
       host: localhost
       advertisedHost: localhost
+  gateway:
+    cluster:
+      initialContactPoints: zeebe:26502
+      memberId: identity
