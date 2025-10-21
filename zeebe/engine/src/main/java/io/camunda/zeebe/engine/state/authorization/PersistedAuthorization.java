@@ -39,16 +39,18 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
   private final ArrayProperty<StringValue> permissionTypesProp =
       new ArrayProperty<>("permissionTypes", StringValue::new);
+  private final StringProperty propertyNameProp = new StringProperty("propertyName");
 
   public PersistedAuthorization() {
-    super(7);
+    super(8);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
         .declareProperty(resourceMatcherProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
-        .declareProperty(permissionTypesProp);
+        .declareProperty(permissionTypesProp)
+        .declareProperty(propertyNameProp);
   }
 
   public void wrap(final AuthorizationRecord authorizationRecord) {
@@ -59,6 +61,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
         .setResourceId(authorizationRecord.getResourceId())
         .setResourceType(authorizationRecord.getResourceType())
         .setPermissionTypes(authorizationRecord.getPermissionTypes());
+    propertyNameProp.setValue(authorizationRecord.getPropertyName());
   }
 
   public long getAuthorizationKey() {
@@ -133,6 +136,15 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
 
   public PersistedAuthorization addPermission(final PermissionType permission) {
     permissionTypesProp.add().wrap(BufferUtil.wrapString(permission.name()));
+    return this;
+  }
+
+  public String getPropertyName() {
+    return bufferAsString(propertyNameProp.getValue());
+  }
+
+  public PersistedAuthorization setPropertyName(final String propertyName) {
+    propertyNameProp.setValue(propertyName);
     return this;
   }
 }

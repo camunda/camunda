@@ -17,6 +17,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.property.PropertyAuthorizationEvaluatorRegistry;
+import io.camunda.zeebe.engine.processing.identity.property.UserTaskPropertyAuthorizationEvaluator;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -35,6 +38,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +70,8 @@ public final class AuthorizationCheckBehavior {
   private final LoadingCache<AuthorizationRequestMetadata, Either<Rejection, Void>>
       authorizationsCache;
 
+  private final PropertyAuthorizationEvaluatorRegistry propertyEvaluatorRegistry;
+
   public AuthorizationCheckBehavior(
       final ProcessingState processingState,
       final SecurityConfiguration securityConfig,
@@ -88,6 +94,9 @@ public final class AuthorizationCheckBehavior {
                     return checkAuthorized(authorizationRequest);
                   }
                 });
+
+    propertyEvaluatorRegistry = new PropertyAuthorizationEvaluatorRegistry();
+    propertyEvaluatorRegistry.register(new UserTaskPropertyAuthorizationEvaluator());
   }
 
   /**
@@ -122,13 +131,58 @@ public final class AuthorizationCheckBehavior {
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequestMetadata request) {
     try {
-      return authorizationsCache.get(request);
+      final var cacheKey = stripResourceProperties(request);
+      final var result = authorizationsCache.get(cacheKey);
+      if (result.isRight()) {
+        return result;
+      }
+      if (request.resourceProperties() != null && !request.resourceProperties().isEmpty()) {
+        if (propertyBasedAuthorized(request)) {
+          return Either.right(null);
+        }
+      }
+      return result;
     } catch (final ExecutionException e) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
               "No authorization data was found for the provided authorization claims."));
     }
+  }
+
+  private AuthorizationRequestMetadata stripResourceProperties(
+      final AuthorizationRequestMetadata original) {
+    if (original.resourceProperties() == null || original.resourceProperties().isEmpty()) {
+      return original;
+    }
+    return new AuthorizationRequestMetadata(
+        original.claims(),
+        original.resourceType(),
+        original.permissionType(),
+        original.isNewResource(),
+        original.isTenantOwnedResource(),
+        original.tenantId(),
+        original.authorizationScopes(),
+        null,
+        original.hasRequestMetadata(),
+        original.batchOperationReference());
+  }
+
+  private boolean propertyBasedAuthorized(final AuthorizationRequestMetadata request) {
+    return propertyEvaluatorRegistry
+        .get(request.resourceType())
+        .map(
+            evaluator -> {
+              final var matched = evaluator.matches(request.claims(), request.resourceProperties());
+              if (matched.isEmpty()) {
+                return false;
+              }
+              final var scopes = getAllAuthorizedScopes(stripResourceProperties(request));
+              return scopes.stream()
+                  .filter(s -> s.getMatcher() == AuthorizationResourceMatcher.PROPERTY)
+                  .anyMatch(s -> matched.contains(s.getResourceId()));
+            })
+        .orElse(false);
   }
 
   /**
@@ -669,6 +723,7 @@ public final class AuthorizationCheckBehavior {
       boolean isTenantOwnedResource,
       String tenantId,
       Set<AuthorizationScope> authorizationScopes,
+      Map<String, Object> resourceProperties,
       boolean hasRequestMetadata,
       long batchOperationReference) {
 
@@ -705,6 +760,7 @@ public final class AuthorizationCheckBehavior {
     private String tenantId;
     private boolean isNewResource;
     private boolean isTenantOwnedResource;
+    private Map<String, Object> resourceProperties;
 
     public AuthorizationRequest() {
       authorizationScopes = new HashSet<>();
@@ -712,6 +768,7 @@ public final class AuthorizationCheckBehavior {
       tenantId = null;
       isNewResource = false;
       isTenantOwnedResource = true;
+      resourceProperties = new HashMap<>();
     }
 
     public AuthorizationRequest(
@@ -729,6 +786,7 @@ public final class AuthorizationCheckBehavior {
       this.tenantId = tenantId;
       this.isNewResource = isNewResource;
       this.isTenantOwnedResource = isTenantOwnedResource;
+      this.resourceProperties = new HashMap<>();
     }
 
     public AuthorizationRequest(
@@ -800,6 +858,12 @@ public final class AuthorizationCheckBehavior {
       return this;
     }
 
+    public AuthorizationRequest addResourceProperties(
+        final Map<String, Object> resourceProperties) {
+      this.resourceProperties = resourceProperties;
+      return this;
+    }
+
     public AuthorizationRequestMetadata build() {
       if (command != null) {
         authorizationClaims = command.getAuthorizations();
@@ -811,6 +875,7 @@ public final class AuthorizationCheckBehavior {
             isTenantOwnedResource,
             tenantId,
             Collections.unmodifiableSet(authorizationScopes),
+            Collections.unmodifiableMap(resourceProperties),
             command.hasRequestMetadata(),
             command.getBatchOperationReference());
       }
@@ -822,6 +887,7 @@ public final class AuthorizationCheckBehavior {
           isTenantOwnedResource,
           tenantId,
           Collections.unmodifiableSet(authorizationScopes),
+          Collections.unmodifiableMap(resourceProperties),
           true,
           RecordMetadataDecoder.batchOperationReferenceNullValue());
     }

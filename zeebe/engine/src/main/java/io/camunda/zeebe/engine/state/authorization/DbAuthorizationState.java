@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -97,14 +98,16 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         .getPermissionTypes()
         .forEach(
             permissionType -> {
+              final var scopeId =
+                  authorization.getResourceMatcher() == AuthorizationResourceMatcher.PROPERTY
+                      ? authorization.getPropertyName()
+                      : authorization.getResourceId();
               permissions.addAuthorizationScope(
                   permissionType,
-                  new AuthorizationScope(
-                      authorization.getResourceMatcher(), authorization.getResourceId()));
+                  new AuthorizationScope(authorization.getResourceMatcher(), scopeId));
             });
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
 
-    // add authorization key to owner
     final var keys =
         Optional.ofNullable(authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId))
             .orElse(new AuthorizationKeys());
@@ -132,6 +135,11 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         .getPermissionTypes()
         .forEach(
             permissionType -> {
+              final var scopeId =
+                  persistedAuthorization.getResourceMatcher()
+                          == AuthorizationResourceMatcher.PROPERTY
+                      ? persistedAuthorization.getPropertyName()
+                      : persistedAuthorization.getResourceId();
               removePermission(
                   persistedAuthorization.getOwnerType(),
                   persistedAuthorization.getOwnerId(),
@@ -139,8 +147,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
                   permissionType,
                   Set.of(
                       new AuthorizationScope(
-                          persistedAuthorization.getResourceMatcher(),
-                          persistedAuthorization.getResourceId())));
+                          persistedAuthorization.getResourceMatcher(), scopeId)));
             });
 
     // delete the old authorization record

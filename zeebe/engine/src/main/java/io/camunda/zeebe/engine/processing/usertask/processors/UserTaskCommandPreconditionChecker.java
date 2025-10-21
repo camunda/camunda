@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -87,6 +88,11 @@ public class UserTaskCommandPreconditionChecker {
                     PermissionType.UPDATE,
                     persistedRecord.getTenantId())
                 .addResourceId(Long.toString(persistedRecord.getUserTaskKey()))
+                .addResourceProperties(
+                    Map.of(
+                        UserTaskRecord.ASSIGNEE, persistedRecord.getAssignee(),
+                        UserTaskRecord.CANDIDATE_USERS, persistedRecord.getCandidateUsersList(),
+                        UserTaskRecord.CANDIDATE_GROUPS, persistedRecord.getCandidateGroupsList()))
                 .build());
     if (isAuthorized.isLeft()) {
       return Either.left(isAuthorized.getLeft());

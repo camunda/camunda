@@ -35,6 +35,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private static final StringValue RESOURCE_ID_KEY = new StringValue("resourceId");
   private static final StringValue RESOURCE_TYPE_KEY = new StringValue("resourceType");
   private static final StringValue PERMISSION_TYPES_KEY = new StringValue("permissionTypes");
+  private static final StringValue PROPERTY_NAME_KEY = new StringValue("propertyName");
 
   private final LongProperty authorizationKeyProp = new LongProperty(AUTHORIZATION_KEY_KEY, -1L);
   private final StringProperty ownerIdProp = new StringProperty(OWNER_ID_KEY, "");
@@ -51,16 +52,18 @@ public final class AuthorizationRecord extends UnifiedRecordValue
           AuthorizationResourceType.UNSPECIFIED);
   private final ArrayProperty<StringValue> permissionTypesProp =
       new ArrayProperty<>(PERMISSION_TYPES_KEY, StringValue::new);
+  private final StringProperty propertyNameProp = new StringProperty(PROPERTY_NAME_KEY, "");
 
   public AuthorizationRecord() {
-    super(7);
+    super(8);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
         .declareProperty(resourceMatcherProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
-        .declareProperty(permissionTypesProp);
+        .declareProperty(permissionTypesProp)
+        .declareProperty(propertyNameProp);
   }
 
   @Override
@@ -137,6 +140,15 @@ public final class AuthorizationRecord extends UnifiedRecordValue
 
   public AuthorizationRecord setOwnerType(final AuthorizationOwnerType ownerType) {
     ownerTypeProp.setValue(ownerType);
+    return this;
+  }
+
+  public String getPropertyName() {
+    return bufferAsString(propertyNameProp.getValue());
+  }
+
+  public AuthorizationRecord setPropertyName(final String propertyName) {
+    propertyNameProp.setValue(propertyName == null ? "" : propertyName);
     return this;
   }
 }
