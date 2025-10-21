@@ -214,8 +214,7 @@ final class SegmentedJournalWriterTest {
     when(segment.index()).thenReturn(1L);
     when(segments.getLastSegment()).thenReturn(segment);
     when(segment.writer()).thenReturn(Mockito.mock(SegmentWriter.class));
-    final var journal =
-        new SegmentedJournalWriter(segments, journalFactory.metaStore(), journalFactory.metrics());
+
     final var segmentJournal = journalFactory.journal(segments);
     when(segments.getFirstSegment()).thenReturn(segment);
     when(segments.getTailSegments(anyLong())).thenAnswer(invocation -> sortedMap);
@@ -251,48 +250,5 @@ final class SegmentedJournalWriterTest {
 
     // then
     assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(15L);
-  }
-
-  private static final class TestSegment implements FlushableSegment {
-    private final long lastIndex;
-    private final boolean shouldFlush;
-    private final FlushException flushError;
-    private boolean flushed;
-
-    private TestSegment(final long lastIndex) {
-      this(lastIndex, true);
-    }
-
-    private TestSegment(final long lastIndex, final boolean shouldFlush) {
-      this(lastIndex, shouldFlush, null);
-    }
-
-    private TestSegment(final long lastIndex, final FlushException flushError) {
-      this(lastIndex, true, flushError);
-    }
-
-    private TestSegment(
-        final long lastIndex, final boolean shouldFlush, final FlushException flushError) {
-      this.lastIndex = lastIndex;
-      this.shouldFlush = shouldFlush;
-      this.flushError = flushError;
-    }
-
-    @Override
-    public long lastIndex() {
-      return lastIndex;
-    }
-
-    @Override
-    public void flush() throws FlushException {
-      if (flushError != null) {
-        throw flushError;
-      }
-
-      flushed = shouldFlush;
-      if (!shouldFlush) {
-        throw new FlushException(new IOException("flush failed"));
-      }
-    }
   }
 }

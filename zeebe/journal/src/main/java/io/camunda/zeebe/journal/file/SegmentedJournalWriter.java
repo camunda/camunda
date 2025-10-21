@@ -141,8 +141,8 @@ final class SegmentedJournalWriter {
 
   /**
    * Fetches all segments with a last index greater than or equal to current {@link
-   * #lastFlushedIndex}. These are then flushed in order. The {@link Segment#lastIndex()} of the
-   * last successful segment to be flushed will be stored in the given {@link JournalMetaStore}.
+   * #getLastFlushedIndex()}. These are then flushed in order. The {@link Segment#lastIndex()} of
+   * the last successful segment to be flushed will be stored in the given {@link JournalMetaStore}.
    *
    * @param dirtySegments the list of segments which need to be flushed
    */

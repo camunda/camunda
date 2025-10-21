@@ -18,6 +18,9 @@ package io.camunda.zeebe.journal.file;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
@@ -27,6 +30,7 @@ import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,10 +38,16 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.CloseHelper;
@@ -49,6 +59,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 
 @SuppressWarnings("resource")
 class SegmentedJournalTest {
@@ -867,6 +878,57 @@ class SegmentedJournalTest {
 
     // then
     journal.append(2, journalFactory.entry());
+  }
+
+  // this test ensure that flushing is thread-safe w.r.t. write-exclusive methods such as
+  // deleteUntil, deleteAfter, and reset
+  @Test
+  void shouldPreventWriteExclusiveOperationsWhileFlushing() {
+    // given
+    journalFactory = new TestJournalFactory("test", 2);
+    final SortedMap<Long, FlushableSegment> sortedMap = new TreeMap<>();
+    sortedMap.put(1L, new TestSegment(15, true));
+    sortedMap.put(2L, new TestSegment(30, true));
+    final var segments = spy(journalFactory.segmentsManager(directory));
+
+    final var barrier = new Phaser(2);
+
+    // intercept SegmentedJournalWriter construction to inject barrier
+    try (final var ignored =
+        Mockito.mockConstruction(
+            SegmentedJournalWriter.class,
+            Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS),
+            (mock, context) -> {
+              doAnswer(
+                      (invocation) -> {
+                        barrier.arriveAndAwaitAdvance();
+                        barrier.arriveAndAwaitAdvance();
+                        /// get reference of private {@link
+                        /// SegmentedJournalWriter#flush(Collection)}
+                        /// to provide segments for flushing
+                        final var method =
+                            SegmentedJournalWriter.class.getDeclaredMethod(
+                                "flush", Collection.class);
+                        method.setAccessible(true);
+                        return method.invoke(mock, sortedMap.values());
+                      })
+                  .when(mock)
+                  .flush();
+
+              doReturn(-1L).when(mock).getNextIndex();
+            })) {
+      journal = journalFactory.journal(segments);
+
+      // when
+      final var flushed = CompletableFuture.runAsync(CheckedRunnable.toUnchecked(journal::flush));
+
+      // then
+      barrier.arriveAndAwaitAdvance();
+      assertThat(journal.rwlock().isReadLocked()).isTrue();
+      barrier.arrive();
+      assertThat(flushed).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(30L);
+    }
   }
 
   @Test
