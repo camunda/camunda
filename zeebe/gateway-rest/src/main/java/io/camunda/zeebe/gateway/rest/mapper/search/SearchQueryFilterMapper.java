@@ -911,9 +911,6 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getElementId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeIdOperations);
-      ofNullable(filter.getElementInstanceKey())
-          .map(mapToOperations(Long.class))
-          .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.getCreationTime())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::creationTimeOperations);

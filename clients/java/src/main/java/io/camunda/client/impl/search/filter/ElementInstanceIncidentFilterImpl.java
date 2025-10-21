@@ -128,20 +128,6 @@ public class ElementInstanceIncidentFilterImpl
   }
 
   @Override
-  public ElementInstanceIncidentFilter elementInstanceKey(final Long value) {
-    elementInstanceKey(b -> b.eq(value));
-    return this;
-  }
-
-  @Override
-  public ElementInstanceIncidentFilter elementInstanceKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongProperty property = new BasicLongPropertyImpl();
-    fn.accept(property);
-    filter.setElementInstanceKey(provideSearchRequestProperty(property));
-    return this;
-  }
-
-  @Override
   public ElementInstanceIncidentFilter creationTime(final OffsetDateTime creationTime) {
     creationTime(b -> b.eq(creationTime));
     return this;

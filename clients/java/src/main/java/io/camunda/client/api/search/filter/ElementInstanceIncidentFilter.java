@@ -125,22 +125,6 @@ public interface ElementInstanceIncidentFilter extends SearchRequestFilter {
   ElementInstanceIncidentFilter elementId(final Consumer<StringProperty> fn);
 
   /**
-   * Filters incidents by the element instance key.
-   *
-   * @param value the key of element instance.
-   * @return the updated filter
-   */
-  ElementInstanceIncidentFilter elementInstanceKey(final Long value);
-
-  /**
-   * Filters incidents by the element instance keys using {@link BasicLongProperty} consumer.
-   *
-   * @param fn the element instance keys {@link BasicLongProperty} consumer of the incidents
-   * @return the updated filter
-   */
-  ElementInstanceIncidentFilter elementInstanceKey(final Consumer<BasicLongProperty> fn);
-
-  /**
    * Filters incidents by creation time of incident.
    *
    * @param creationTime the creation time of incident

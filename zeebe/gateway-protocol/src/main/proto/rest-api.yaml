@@ -7227,10 +7227,6 @@ components:
           description: The element ID associated to this incident.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
-        elementInstanceKey:
-          description: The element instance key associated to this incident.
-          allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
         creationTime:
           description: Date of incident creation.
           allOf:
