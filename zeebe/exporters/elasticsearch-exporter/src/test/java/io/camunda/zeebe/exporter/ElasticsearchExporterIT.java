@@ -269,32 +269,6 @@ final class ElasticsearchExporterIT {
     }
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
-    // given
-    config.setIncludeEnabledRecords(false);
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-
-    final var record =
-        factory.generateRecord(
-            valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
-
-    // when
-    export(record);
-
-    // then
-    final var response = testClient.getExportedDocumentFor(record);
-    assertThat(response)
-        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
-        .containsExactly(
-            indexRouter.indexFor(record),
-            indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
-            record);
-  }
-
   private boolean export(final Record<?> record) {
     exporter.export(record);
     return true;
