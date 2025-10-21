@@ -1996,7 +1996,7 @@ paths:
 
   /process-instances/{processInstanceKey}/incident-resolution:
     post:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: resolveProcessInstanceIncidents

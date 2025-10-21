@@ -94,6 +94,7 @@ public class ProcessInstanceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::modifyProcessInstance);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{processInstanceKey}/incident-resolution")
   public CompletableFuture<ResponseEntity<Object>> resolveProcessInstanceIncidents(
       @PathVariable final long processInstanceKey) {
