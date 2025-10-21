@@ -16,24 +16,25 @@
 package io.camunda.client.exception;
 
 import java.time.Duration;
+import java.util.function.Function;
 
 public class JobError extends CamundaError {
   private final String errorMessage;
   private final Object variables;
   private final Integer retries;
-  private final Duration retryBackoff;
+  private final Function<Integer, Duration> retryBackoff;
 
   public JobError(
       final String errorMessage,
       final Object variables,
       final Integer retries,
-      final Duration retryBackoff,
+      final Function<Integer, Duration> retryBackoff,
       final Throwable cause) {
     super(errorMessage, cause);
     this.errorMessage = errorMessage;
     this.variables = variables;
     this.retries = retries;
-    this.retryBackoff = retryBackoff;
+    this.retryBackoff = retryBackoff == null ? i -> null : retryBackoff;
   }
 
   public JobError(final String errorMessage) {
@@ -52,7 +53,7 @@ public class JobError extends CamundaError {
     return errorMessage;
   }
 
-  public Duration getRetryBackoff() {
+  public Function<Integer, Duration> getRetryBackoff() {
     return retryBackoff;
   }
 }

@@ -16,6 +16,7 @@
 package io.camunda.client.exception;
 
 import java.time.Duration;
+import java.util.function.Function;
 
 public abstract class CamundaError extends RuntimeException {
   protected CamundaError(final String message, final Throwable cause) {
@@ -40,16 +41,16 @@ public abstract class CamundaError extends RuntimeException {
   }
 
   public static JobError jobError(final String errorMessage) {
-    return jobError(errorMessage, null, null, null, null);
+    return jobError(errorMessage, null, null, (Duration) null, null);
   }
 
   public static JobError jobError(final String errorMessage, final Object variables) {
-    return jobError(errorMessage, variables, null, null, null);
+    return jobError(errorMessage, variables, null, (Duration) null, null);
   }
 
   public static JobError jobError(
       final String errorMessage, final Object variables, final Integer retries) {
-    return jobError(errorMessage, variables, retries, null, null);
+    return jobError(errorMessage, variables, retries, (Duration) null, null);
   }
 
   public static JobError jobError(
@@ -65,6 +66,23 @@ public abstract class CamundaError extends RuntimeException {
       final Object variables,
       final Integer retries,
       final Duration retryBackoff,
+      final Throwable cause) {
+    return new JobError(errorMessage, variables, retries, r -> retryBackoff, cause);
+  }
+
+  public static JobError jobError(
+      final String errorMessage,
+      final Object variables,
+      final Integer retries,
+      final Function<Integer, Duration> retryBackoff) {
+    return jobError(errorMessage, variables, retries, retryBackoff, null);
+  }
+
+  public static JobError jobError(
+      final String errorMessage,
+      final Object variables,
+      final Integer retries,
+      final Function<Integer, Duration> retryBackoff,
       final Throwable cause) {
     return new JobError(errorMessage, variables, retries, retryBackoff, cause);
   }

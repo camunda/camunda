@@ -70,7 +70,7 @@ public class CamundaErrorTest {
       assertThat(jobError.getMessage()).isEqualTo("message");
       assertThat(jobError.getVariables()).isNull();
       assertThat(jobError.getRetries()).isNull();
-      assertThat(jobError.getRetryBackoff()).isNull();
+      assertThat(jobError.getRetryBackoff().apply(null)).isNull();
       assertThat(jobError.getCause()).isNull();
     }
 
@@ -82,7 +82,7 @@ public class CamundaErrorTest {
       assertThat(jobError.getMessage()).isEqualTo("message");
       assertThat(jobError.getVariables()).isEqualTo(variables);
       assertThat(jobError.getRetries()).isNull();
-      assertThat(jobError.getRetryBackoff()).isNull();
+      assertThat(jobError.getRetryBackoff().apply(null)).isNull();
       assertThat(jobError.getCause()).isNull();
     }
 
@@ -95,7 +95,7 @@ public class CamundaErrorTest {
       assertThat(jobError.getMessage()).isEqualTo("message");
       assertThat(jobError.getVariables()).isEqualTo(variables);
       assertThat(jobError.getRetries()).isEqualTo(retries);
-      assertThat(jobError.getRetryBackoff()).isNull();
+      assertThat(jobError.getRetryBackoff().apply(retries)).isNull();
       assertThat(jobError.getCause()).isNull();
     }
 
@@ -109,7 +109,7 @@ public class CamundaErrorTest {
       assertThat(jobError.getMessage()).isEqualTo("message");
       assertThat(jobError.getVariables()).isEqualTo(variables);
       assertThat(jobError.getRetries()).isEqualTo(retries);
-      assertThat(jobError.getRetryBackoff()).isEqualTo(timeout);
+      assertThat(jobError.getRetryBackoff().apply(retries)).isEqualTo(timeout);
       assertThat(jobError.getCause()).isNull();
     }
 
@@ -124,7 +124,22 @@ public class CamundaErrorTest {
       assertThat(jobError.getMessage()).isEqualTo("message");
       assertThat(jobError.getVariables()).isEqualTo(variables);
       assertThat(jobError.getRetries()).isEqualTo(retries);
-      assertThat(jobError.getRetryBackoff()).isEqualTo(timeout);
+      assertThat(jobError.getRetryBackoff().apply(retries)).isEqualTo(timeout);
+      assertThat(jobError.getCause()).isEqualTo(cause);
+    }
+
+    @Test
+    void shouldCreateJobErrorVariablesAndRetriesAndTimeoutFunctionAndCause() {
+      final Map<String, Object> variables = new HashMap<>();
+      final int retries = 2;
+      final Duration timeout = Duration.ofSeconds(10);
+      final Exception cause = new Exception("cause");
+      final JobError jobError = CamundaError.jobError("message", variables, 2, r -> timeout, cause);
+      assertThat(jobError).isNotNull();
+      assertThat(jobError.getMessage()).isEqualTo("message");
+      assertThat(jobError.getVariables()).isEqualTo(variables);
+      assertThat(jobError.getRetries()).isEqualTo(retries);
+      assertThat(jobError.getRetryBackoff().apply(retries)).isEqualTo(timeout);
       assertThat(jobError.getCause()).isEqualTo(cause);
     }
   }
