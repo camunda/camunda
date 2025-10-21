@@ -15,7 +15,7 @@
  */
 package io.camunda.client.spring.bean.factory;
 
-import static io.camunda.client.annotation.AnnotationUtil.getDeploymentValue;
+import static io.camunda.client.annotation.AnnotationUtil.getDeploymentValues;
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,13 +24,13 @@ import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.bean.BeanInfo;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Optional;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ReadZeebeDeploymentValueTest {
+public class ReadDeploymentValueTest {
 
   @Test
   public void shouldReadSingleClassPathResourceTest() {
@@ -38,17 +38,14 @@ public class ReadZeebeDeploymentValueTest {
     final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
 
     final DeploymentValue expectedDeploymentValue =
-        DeploymentValue.builder()
-            .beanInfo(classInfo)
-            .resources(Collections.singletonList("classpath*:/1.bpmn"))
-            .build();
+        new DeploymentValue(Collections.singletonList("classpath*:/1.bpmn"), null);
 
     // when
-    final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
+    final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
 
     // then
-    assertThat(valueForClass.isPresent()).isTrue();
-    assertThat(valueForClass.get()).isEqualTo(expectedDeploymentValue);
+    assertThat(valueForClass).hasSize(1);
+    assertThat(valueForClass.get(0)).isEqualTo(expectedDeploymentValue);
   }
 
   @Test
@@ -57,17 +54,14 @@ public class ReadZeebeDeploymentValueTest {
     final BeanInfo classInfo = beanInfo(new WithMultipleClassPathResource());
 
     final DeploymentValue expectedDeploymentValue =
-        DeploymentValue.builder()
-            .beanInfo(classInfo)
-            .resources(Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"))
-            .build();
+        new DeploymentValue(Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"), null);
 
     // when
-    final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
+    final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
 
     // then
-    assertThat(valueForClass.isPresent()).isTrue();
-    assertThat(valueForClass.get()).isEqualTo(expectedDeploymentValue);
+    assertThat(valueForClass).hasSize(1);
+    assertThat(valueForClass.get(0)).isEqualTo(expectedDeploymentValue);
   }
 
   @Test
@@ -76,48 +70,40 @@ public class ReadZeebeDeploymentValueTest {
     final BeanInfo classInfo = beanInfo(new WithoutAnnotation());
 
     // when
-    final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
+    final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
 
     // then
-    assertThat(valueForClass.isPresent()).isFalse();
+    assertThat(valueForClass).isEmpty();
   }
 
   @Test
   public void shouldReadSingleClassPathResourceTestLegacy() {
     // given
     final BeanInfo classInfo = beanInfo(new WithSingleClassPathResourceLegacy());
-
     final DeploymentValue expectedDeploymentValue =
-        DeploymentValue.builder()
-            .beanInfo(classInfo)
-            .resources(Collections.singletonList("classpath*:/1.bpmn"))
-            .build();
+        new DeploymentValue(Collections.singletonList("classpath*:/1.bpmn"), null);
 
     // when
-    final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
+    final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
 
     // then
-    assertThat(valueForClass.isPresent()).isTrue();
-    assertThat(valueForClass.get()).isEqualTo(expectedDeploymentValue);
+    assertThat(valueForClass).hasSize(1);
+    assertThat(valueForClass.get(0)).isEqualTo(expectedDeploymentValue);
   }
 
   @Test
   public void shouldReadMultipleClassPathResourcesTestLegacy() {
     // given
     final BeanInfo classInfo = beanInfo(new WithMultipleClassPathResourceLegacy());
-
     final DeploymentValue expectedDeploymentValue =
-        DeploymentValue.builder()
-            .beanInfo(classInfo)
-            .resources(Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"))
-            .build();
+        new DeploymentValue(Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"), null);
 
     // when
-    final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
+    final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
 
     // then
-    assertThat(valueForClass.isPresent()).isTrue();
-    assertThat(valueForClass.get()).isEqualTo(expectedDeploymentValue);
+    assertThat(valueForClass).hasSize(1);
+    assertThat(valueForClass.get(0)).isEqualTo(expectedDeploymentValue);
   }
 
   @Deployment(resources = "classpath*:/1.bpmn")
