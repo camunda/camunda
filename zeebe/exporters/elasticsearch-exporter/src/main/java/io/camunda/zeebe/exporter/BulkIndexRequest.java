@@ -39,6 +39,7 @@ final class BulkIndexRequest implements ContentProducer {
 
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
       new ObjectMapper()
+          .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);

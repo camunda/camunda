@@ -22,8 +22,6 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -339,9 +337,7 @@ final class OpensearchExporterIT {
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
               String.valueOf(record.getPartitionId()),
-              VersionUtil.getVersionLowerCase().equals(version)
-                  ? record
-                  : modifyExpectedRecordForPreviousVersion(valueType, record));
+              record);
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(OpenSearchException.class)
@@ -349,56 +345,30 @@ final class OpensearchExporterIT {
     }
   }
 
-  private Record modifyExpectedRecordForPreviousVersion(
-      final ValueType valueType, final Record record) {
-    final var copyFactory = new ProtocolFactory(factory.getSeed());
-    final RecordValue recordValue =
-        (RecordValue)
-            switch (valueType) {
-              case JOB ->
-                  ImmutableJobRecordValue.builder()
-                      .from(((ImmutableJobRecordValue) record.getValue()))
-                      .withTags(List.of())
-                      .resultBuilder(null)
-                      .build();
-              case PROCESS_INSTANCE ->
-                  ImmutableProcessInstanceRecordValue.builder()
-                      .from(((ImmutableProcessInstanceRecordValue) record.getValue()))
-                      .withCallingElementPath(List.of())
-                      .withProcessDefinitionPath(List.of())
-                      .withTags(List.of())
-                      .withElementInstancePath(List.of())
-                      .build();
-              case JOB_BATCH ->
-                  ImmutableJobBatchRecordValue.builder()
-                      .from(((ImmutableJobBatchRecordValue) record.getValue()))
-                      .withJobs(
-                          ((ImmutableJobBatchRecordValue) record.getValue())
-                              .getJobs().stream()
-                                  .map(
-                                      job ->
-                                          ImmutableJobRecordValue.builder()
-                                              .from(job)
-                                              .withTags(List.of())
-                                              .resultBuilder(null)
-                                              .build())
-                                  .toList())
-                      .build();
-              case PROCESS_INSTANCE_CREATION ->
-                  ImmutableProcessInstanceCreationRecordValue.builder()
-                      .from(((ImmutableProcessInstanceCreationRecordValue) record.getValue()))
-                      .withTags(List.of())
-                      .withRuntimeInstructions(List.of())
-                      .build();
-              default -> record.getValue();
-            };
-    return copyFactory.generateRecord(
-        valueType,
-        r ->
-            r.withValue(recordValue)
-                .withAuthorizations(record.getAuthorizations())
-                .withBrokerVersion(record.getBrokerVersion())
-                .withBatchOperationReference(-1L));
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
+  void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
+    // given
+    config.setIncludeEnabledRecords(false);
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
+
+    final var record =
+        factory.generateRecord(
+            valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
+
+    // when
+    export(record);
+
+    // then
+    final var response = testClient.getExportedDocumentFor(record);
+    assertThat(response)
+        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+        .containsExactly(
+            indexRouter.indexFor(record),
+            indexRouter.idFor(record),
+            String.valueOf(record.getPartitionId()),
+            record);
   }
 
   private boolean export(final Record<?> record) {
