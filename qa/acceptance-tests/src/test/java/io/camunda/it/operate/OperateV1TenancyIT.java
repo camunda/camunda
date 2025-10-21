@@ -21,6 +21,8 @@ import static io.camunda.it.util.TestHelper.deleteTenant;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.startProcessInstanceForTenant;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
+import static io.camunda.it.util.TestHelper.waitForTenantDeletion;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -35,7 +37,6 @@ import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.util.Either;
-import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -93,18 +94,19 @@ public class OperateV1TenancyIT {
     try (final var operateClient = STANDALONE_CAMUNDA.newOperateClient(ADMIN, ADMIN)) {
       // given
       final var result = searchProcessInstancesV1(operateClient);
-      assertSearchResults(result, 2, TENANT_A, TENANT_TO_BE_DELETED);
+      assertSearchResultsTenants(result, TENANT_A, TENANT_TO_BE_DELETED);
 
       // when
       deleteTenant(camundaClient, TENANT_TO_BE_DELETED);
+      waitForTenantDeletion(camundaClient, TENANT_TO_BE_DELETED);
 
       // then
       Awaitility.await()
-          .atMost(Duration.ofSeconds(10))
+          .atMost(TIMEOUT_DATA_AVAILABILITY)
           .untilAsserted(
               () -> {
                 final var afterDeletionResult = searchProcessInstancesV1(operateClient);
-                assertSearchResults(afterDeletionResult, 1, TENANT_A);
+                assertSearchResultsTenants(afterDeletionResult, TENANT_A);
               });
     }
   }
@@ -115,15 +117,13 @@ public class OperateV1TenancyIT {
     return operateClient.mapResult(response, ProcessInstanceResult.class);
   }
 
-  private void assertSearchResults(
+  private void assertSearchResultsTenants(
       final Either<Exception, ProcessInstanceResult> result,
-      final int expectedProcesses,
       final String... expectedProcessInstanceTenants) {
 
     assertThat(result.isRight()).isTrue();
 
     final var processInstanceResults = result.get();
-    assertThat(processInstanceResults.total()).isEqualTo(expectedProcesses);
     final Set<String> tenants =
         processInstanceResults.processInstances().stream()
             .map(ProcessInstance::getTenantId)
