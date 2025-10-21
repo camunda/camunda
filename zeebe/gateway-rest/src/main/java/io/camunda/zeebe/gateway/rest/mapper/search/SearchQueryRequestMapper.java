@@ -637,6 +637,7 @@ public final class SearchQueryRequestMapper {
       case final CursorBackwardPagination req -> Either.right(toSearchQueryPage(req));
       case final CursorForwardPagination req -> Either.right(toSearchQueryPage(req));
       case final OffsetPagination req -> Either.right(toSearchQueryPage(req));
+      case final LimitPagination req -> Either.right(toSearchQueryPage(req));
       default -> Either.left(List.of(ERROR_SEARCH_UNKNOWN_PAGE_TYPE));
     };
   }
@@ -654,6 +655,10 @@ public final class SearchQueryRequestMapper {
   private static SearchQueryPage toSearchQueryPage(final OffsetPagination requestedPage) {
     return SearchQueryPage.of(
         (p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom()));
+  }
+
+  private static SearchQueryPage toSearchQueryPage(final LimitPagination requestedPage) {
+    return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

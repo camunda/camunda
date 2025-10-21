@@ -125,6 +125,31 @@ class DecisionInstanceSearchTest {
   }
 
   @Test
+  void shouldSearchByLimit() {
+    // when
+    final var resultAll = camundaClient.newDecisionInstanceSearchRequest().send().join();
+
+    final var resultWithLimit =
+        camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+
+    final var firstTwoKeys =
+        resultAll.items().subList(0, 2).stream()
+            .map(DecisionInstance::getDecisionInstanceKey)
+            .toList();
+
+    final var resultSearchFrom =
+        camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+
+    // then
+    assertThat(
+            resultSearchFrom.items().stream()
+                .map(DecisionInstance::getDecisionInstanceKey)
+                .toList())
+        .isEqualTo(firstTwoKeys);
+  }
+
+  @Test
   public void shouldRetrieveDecisionInstanceByDecisionDefinitionKey(
       final CamundaClient camundaClient) {
     // when

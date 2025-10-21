@@ -10592,9 +10592,20 @@ components:
       x-polymorphic-schema: true
       description: Pagination criteria. Can use offset-based pagination (from/limit) OR cursor-based pagination (after/before + limit), but not both.
       oneOf:
+        - $ref: "#/components/schemas/LimitPagination"
         - $ref: "#/components/schemas/OffsetPagination"
         - $ref: "#/components/schemas/CursorForwardPagination"
         - $ref: "#/components/schemas/CursorBackwardPagination"
+    LimitPagination:
+      type: object
+      title: Limit-based pagination
+      properties:
+        limit:
+          description: The maximum number of items to return in one request.
+          type: integer
+          format: int32
+          default: 100
+          minimum: 1
     OffsetPagination:
       type: object
       title: Offset-based pagination
@@ -10603,7 +10614,6 @@ components:
           description: The index of items to start searching from.
           type: integer
           format: int32
-          default: 0
           minimum: 0
         limit:
           description: The maximum number of items to return in one request.
