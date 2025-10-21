@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
@@ -183,6 +184,11 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
+    return getByKey(processInstanceKey, PROCESS_INSTANCE_READ_AUTHORIZATION);
+  }
+
+  public ProcessInstanceEntity getByKey(
+      final Long processInstanceKey, final Authorization<ProcessInstanceEntity> authorization) {
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
@@ -190,8 +196,7 @@ public final class ProcessInstanceServices
                     securityContextProvider.provideSecurityContext(
                         authentication,
                         withAuthorization(
-                            PROCESS_INSTANCE_READ_AUTHORIZATION,
-                            ProcessInstanceEntity::processDefinitionId)))
+                            authorization, ProcessInstanceEntity::processDefinitionId)))
                 .getProcessInstance(processInstanceKey));
   }
 
@@ -261,7 +266,9 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord> resolveProcessInstanceIncidents(
       final long processInstanceKey) {
-    final var processInstance = getByKey(processInstanceKey);
+    // this is a workaround, the user only needs update permissions but we need to read here
+    // disabling authorization would also be appropriate but we cannot easily do this yet
+    final var processInstance = getByKey(processInstanceKey, PROCESS_INSTANCE_UPDATE_AUTHORIZATION);
 
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
@@ -269,6 +276,7 @@ public final class ProcessInstanceServices
                 FilterBuilders.processInstance(f -> f.processInstanceKeys(processInstanceKey)))
             .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT)
             .setAuthentication(authentication)
+            // the user only needs single instance update permission, not batch creation
             .setAuthorizationCheck(
                 Authorization.withAuthorization(
                     Authorization.of(a -> a.processDefinition().updateProcessInstance()),
