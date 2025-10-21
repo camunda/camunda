@@ -51,6 +51,8 @@ public class SecondaryStorageOpensearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final boolean EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION = false;
+
   private static final int EXPECTED_BULK_DELAY = 10;
   private static final int EXPECTED_BULK_SIZE = 2_000;
   private static final int EXPECTED_BULK_MEMORY_LIMIT = 50;
@@ -67,6 +69,8 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.opensearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.opensearch.batch-operations.export-items-on-creation="
+            + EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION,
         "camunda.data.secondary-storage.opensearch.bulk.delay=10s",
         "camunda.data.secondary-storage.opensearch.bulk.size=" + EXPECTED_BULK_SIZE,
         "camunda.data.secondary-storage.opensearch.bulk.memory-limit=50MB"
@@ -141,6 +145,8 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getBatchOperation().isExportItemsOnCreation())
+          .isEqualTo(EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION);
       assertThat(exporterConfiguration.getBulk().getDelay()).isEqualTo(EXPECTED_BULK_DELAY);
       assertThat(exporterConfiguration.getBulk().getSize()).isEqualTo(EXPECTED_BULK_SIZE);
       assertThat(exporterConfiguration.getBulk().getMemoryLimit())

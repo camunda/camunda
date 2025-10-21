@@ -584,6 +584,10 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+    setArg(
+        args,
+        "batchOperation.exportItemsOnCreation",
+        database.getBatchOperations().isExportItemsOnCreation());
 
     setArg(args, "bulk.delay", database.getBulk().getDelay().getSeconds());
     setArg(args, "bulk.size", database.getBulk().getSize());

@@ -33,6 +33,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
 
+  @NestedConfigurationProperty
+  private BatchOperation batchOperations = new BatchOperation(databaseName());
+
   @NestedConfigurationProperty private Bulk bulk = new Bulk(databaseName());
 
   @Override
@@ -73,6 +76,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
+  }
+
+  public BatchOperation getBatchOperations() {
+    return batchOperations;
+  }
+
+  public void setBatchOperations(final BatchOperation batchOperations) {
+    this.batchOperations = batchOperations;
   }
 
   public Bulk getBulk() {
