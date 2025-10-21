@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.Closeable;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,12 +48,16 @@ public class NodeIdMapper implements Closeable {
   private final Runnable onRenewalFailure;
   private ScheduledFuture<?> renewealTimer;
   private boolean previousOwnerExpired;
-  public NodeIdMapper(final LeaseClient lease) {
-    this(lease, SHUTDOWN_VM);
+  private final int clusterSize;
+
+  public NodeIdMapper(final LeaseClient lease, final int clusterSize) {
+    this(lease, SHUTDOWN_VM, clusterSize);
   }
 
   @VisibleForTesting
-  public NodeIdMapper(final LeaseClient lease, final Runnable onRenewalFailure) {
+  public NodeIdMapper(
+      final LeaseClient lease, final Runnable onRenewalFailure, final int clusterSize) {
+    this.clusterSize = clusterSize;
     this.lease = lease;
     taskId = lease.taskId();
     this.onRenewalFailure = onRenewalFailure;
@@ -62,7 +67,7 @@ public class NodeIdMapper implements Closeable {
   }
 
   public NodeIdMapper(final S3LeaseConfig config, final String taskId, final int clusterSize) {
-    this(new S3Lease(config, taskId, clusterSize, Clock.systemUTC()));
+    this(new S3Lease(config, taskId, clusterSize, Clock.systemUTC()), clusterSize);
   }
 
   public NodeInstance getNodeInstance() {
@@ -139,23 +144,10 @@ public class NodeIdMapper implements Closeable {
         () -> {
           final var allLeases = lease.getAllLeases();
           final var allNodesUpdated =
-              allLeases.stream()
-                  .allMatch(
-                      l -> {
-                        final var mappings = l.nodeIdMappings().mappings();
-                        final var versionInMapping =
-                            mappings.get(String.valueOf(nodeInstance.id()));
-
-                        // If this node is not in the mapping, it means the node hasn't seen this
-                        // version yet
-                        if (versionInMapping == null) {
-                          return false;
-                        }
-
-                        // Check if the version in the mapping matches this node's version
-                        return versionInMapping == nodeInstance.version();
-                      });
-
+              allMappingsAreUpdated(
+                  allLeases.stream().map(Lease::nodeIdMappings).toList(),
+                  nodeInstance,
+                  clusterSize);
           if (allNodesUpdated) {
             LOG.info(
                 "All nodes have updated to version {} for nodeId {}",
@@ -170,6 +162,30 @@ public class NodeIdMapper implements Closeable {
             throw new IllegalStateException("Not all nodes have updated version yet");
           }
         });
+  }
+
+  @VisibleForTesting
+  public static boolean allMappingsAreUpdated(
+      final Collection<NodeIdMappings> mappings,
+      final NodeInstance nodeInstance,
+      final int clusterSize) {
+    if (mappings.size() != clusterSize) {
+      return false;
+    }
+    return mappings.stream()
+        .allMatch(
+            m -> {
+              final var versionInMapping = m.mappings().get(String.valueOf(nodeInstance.id()));
+
+              // If this node is not in the mapping, it means the node hasn't seen this
+              // version yet
+              if (versionInMapping == null) {
+                return false;
+              }
+
+              // Check if the version in the mapping matches this node's version
+              return versionInMapping == nodeInstance.version();
+            });
   }
 
   public long expiresAt() {

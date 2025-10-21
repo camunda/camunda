@@ -193,7 +193,9 @@ public class S3LeaseComponentIT {
         new S3Lease(
             s3Client, BUCKET_NAME, taskId, CLUSTER_SIZE, LEASE_EXPIRY_DURATION, Clock.systemUTC());
     return new NodeIdMapper(
-        lease, () -> System.err.println("Failed to renew lease for taskId " + taskId));
+        lease,
+        () -> System.err.println("Failed to renew lease for taskId " + taskId),
+        CLUSTER_SIZE);
   }
 
   private List<Long> expirations() {
