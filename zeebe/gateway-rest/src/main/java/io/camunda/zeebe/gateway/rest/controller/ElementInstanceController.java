@@ -99,7 +99,7 @@ public class ElementInstanceController {
       @PathVariable("elementInstanceKey") final long elementInstanceKey,
       @RequestBody(required = false) final ElementInstanceIncidentSearchQuery query) {
 
-    return SearchQueryRequestMapper.toIncidentQuery(query)
+    return SearchQueryRequestMapper.toElementInstanceIncidentQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             incidentQuery -> searchIncidents(elementInstanceKey, incidentQuery));

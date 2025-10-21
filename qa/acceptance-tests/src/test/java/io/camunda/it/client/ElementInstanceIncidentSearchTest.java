@@ -20,6 +20,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -191,5 +192,153 @@ class ElementInstanceIncidentSearchTest {
             elementInstancesSortedByKey.get(2).getElementInstanceKey(), calledErrorIncident),
         Arguments.of(
             elementInstancesSortedByKey.get(3).getElementInstanceKey(), calledErrorIncident));
+  }
+
+  @Test
+  void shouldFilterByErrorTypeOperationEqual() {
+    // given
+    final var elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(f -> f.errorType(e -> e.eq(IncidentErrorType.CALLED_ELEMENT_ERROR)))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).hasSize(1);
+    assertThat(incidentsResult.items().getFirst().getErrorType())
+        .isEqualTo(IncidentErrorType.CALLED_ELEMENT_ERROR);
+  }
+
+  @Test
+  void shouldFilterByErrorTypeOperationNotEqual() {
+    // given
+    final var elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(f -> f.errorType(e -> e.neq(IncidentErrorType.CALLED_ELEMENT_ERROR)))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).hasSize(1);
+    assertThat(incidentsResult.items().getFirst().getErrorType())
+        .isNotEqualTo(IncidentErrorType.CALLED_ELEMENT_ERROR);
+  }
+
+  @Test
+  void shouldFilterByErrorTypeOperationExists() {
+    // given
+    final var elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(f -> f.errorType(e -> e.exists(true)))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).hasSize(2);
+    assertThat(incidentsResult.items())
+        .extracting(Incident::getErrorType)
+        .containsExactlyInAnyOrder(
+            IncidentErrorType.CALLED_ELEMENT_ERROR, IncidentErrorType.FORM_NOT_FOUND);
+  }
+
+  @Test
+  void shouldFilterByErrorTypeOperationIn() {
+    // given
+    final var elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(
+                f ->
+                    f.errorType(
+                        e ->
+                            e.in(
+                                List.of(
+                                    IncidentErrorType.CALLED_ELEMENT_ERROR,
+                                    IncidentErrorType.FORM_NOT_FOUND))))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).hasSize(2);
+    assertThat(incidentsResult.items())
+        .extracting(Incident::getErrorType)
+        .containsExactlyInAnyOrder(
+            IncidentErrorType.CALLED_ELEMENT_ERROR, IncidentErrorType.FORM_NOT_FOUND);
+  }
+
+  @Test
+  void shouldFilterByErrorTypeOperationNotIn() {
+    // given
+    final var elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(
+                f ->
+                    f.errorType(
+                        e ->
+                            e.notIn(
+                                List.of(
+                                    IncidentErrorType.CALLED_ELEMENT_ERROR,
+                                    IncidentErrorType.FORM_NOT_FOUND))))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).hasSize(0);
+  }
+
+  @Test
+  void shouldFilterByIncidentStateOperationNotIn() {
+    // given
+    final var elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(
+                f -> f.state(e -> e.notIn(List.of(IncidentState.RESOLVED, IncidentState.PENDING))))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).hasSize(2);
+  }
+
+  @Test
+  void shouldFilterByErrorTypeOperationLike() {
+    // given
+    final var elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(f -> f.errorType(e -> e.like("CALLED*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).hasSize(1);
+    assertThat(incidentsResult.items().getFirst().getErrorType())
+        .isEqualTo(IncidentErrorType.CALLED_ELEMENT_ERROR);
   }
 }

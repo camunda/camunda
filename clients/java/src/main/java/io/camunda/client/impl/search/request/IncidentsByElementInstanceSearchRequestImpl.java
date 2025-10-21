@@ -15,12 +15,14 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.elementInstanceIncidentFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider.provideSearchRequestProperty;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.filter.ElementInstanceIncidentFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.IncidentsByElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
@@ -83,6 +85,18 @@ public class IncidentsByElementInstanceSearchRequestImpl
   @Override
   public IncidentsByElementInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest filter(final ElementInstanceIncidentFilter value) {
+    request.setFilter(provideSearchRequestProperty(value));
+    return this;
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest filter(
+      final Consumer<ElementInstanceIncidentFilter> fn) {
+    return filter(elementInstanceIncidentFilter(fn));
   }
 
   @Override

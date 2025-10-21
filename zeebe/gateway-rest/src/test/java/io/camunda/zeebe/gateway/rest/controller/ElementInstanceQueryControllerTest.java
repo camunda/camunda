@@ -8,15 +8,21 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.protocol.rest.IncidentErrorTypeEnum;
+import io.camunda.client.protocol.rest.IncidentStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.ErrorType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
+import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
@@ -29,8 +35,10 @@ import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +47,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -176,17 +186,77 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         }
       }
       """;
-
   static final SearchQueryResult<IncidentEntity> INCIDENT_SEARCH_RESULT =
       SearchQueryResult.of(INCIDENT_ENTITY);
-
   static final String ELEMENT_INSTANCES_URL = "/v2/element-instances/";
   static final String ELEMENT_INSTANCES_SEARCH_URL = ELEMENT_INSTANCES_URL + "search";
   static final String INCIDENTS_SEARCH_URL = ELEMENT_INSTANCES_URL + "%d/incidents/search";
+  private static final String EXPECTED_PROCESS_INSTANCE_INCIDENTS_SEARCH_RESPONSE =
+      """
+          {
+              "items": [
+                {
+                  "incidentKey": "456",
+                  "processDefinitionKey": "234",
+                  "processDefinitionId": "Test_Process",
+                  "errorMessage": "Process crashed",
+                  "processInstanceKey": "789",
+                  "errorType": "CALLED_DECISION_ERROR",
+                  "elementId": "elementId",
+                  "elementInstanceKey": "123",
+                  "creationTime": "2024-01-02T00:00:00.000Z",
+                  "state": "ACTIVE",
+                  "jobKey": "567",
+                  "tenantId": "tenantId"
+                }
+              ],
+              "page": {
+                  "totalItems": 1,
+                  "startCursor": "f",
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
+              }
+          }
+          """;
+  private static final SearchQueryResult<IncidentEntity> SEARCH_INCIDENT_QUERY_RESULT =
+      new io.camunda.search.query.SearchQueryResult.Builder<IncidentEntity>()
+          .total(1L)
+          .items(
+              List.of(
+                  new IncidentEntity(
+                      456L,
+                      234L,
+                      "Test_Process",
+                      789L,
+                      ErrorType.CALLED_DECISION_ERROR,
+                      "Process crashed",
+                      "elementId",
+                      123L,
+                      OffsetDateTime.parse("2024-01-02T00:00:00.000Z"),
+                      IncidentState.ACTIVE,
+                      567L,
+                      "tenantId")))
+          .startCursor("f")
+          .endCursor("v")
+          .build();
+  private static final String ELEMENT_INSTANCE_INCIDENTS_SEARCH_URL =
+      "/v2/element-instances/{elementInstanceKey}/incidents/search";
 
   @MockitoBean ElementInstanceServices elementInstanceServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<FlowNodeInstanceQuery> queryCaptor;
+  @Captor ArgumentCaptor<IncidentQuery> incidentQueryCaptor;
+
+  private static void assertJsonNonExtensible(final byte[] actualBytes) {
+    try {
+      JSONAssert.assertEquals(
+          ElementInstanceQueryControllerTest.EXPECTED_PROCESS_INSTANCE_INCIDENTS_SEARCH_RESPONSE,
+          new String(Objects.requireNonNull(actualBytes), StandardCharsets.UTF_8),
+          JSONCompareMode.NON_EXTENSIBLE);
+    } catch (final Exception e) {
+      throw new AssertionError(e);
+    }
+  }
 
   @BeforeEach
   void setupServices() {
@@ -519,5 +589,125 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_INCIDENT_SEARCH_RESPONSE, JsonCompareMode.STRICT);
     verify(elementInstanceServices).searchIncidents(any(Long.class), any(IncidentQuery.class));
+  }
+
+  private static Stream<Arguments> provideAdvancedIncidentSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionId",
+        ops -> new IncidentFilter.Builder().processDefinitionIdOperations(ops).build());
+
+    customOperationTestCases(
+        streamBuilder,
+        "errorType",
+        ops -> new IncidentFilter.Builder().errorTypeOperations(ops).build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
+            List.of(Operation.neq(String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND))),
+            List.of(
+                Operation.in(
+                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                Operation.like("ERROR")),
+            List.of(
+                Operation.notIn(
+                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                Operation.like("ERROR"))),
+        true);
+
+    stringOperationTestCases(
+        streamBuilder,
+        "errorMessage",
+        ops -> new IncidentFilter.Builder().errorMessageOperations(ops).build());
+
+    stringOperationTestCases(
+        streamBuilder,
+        "elementId",
+        ops -> new IncidentFilter.Builder().flowNodeIdOperations(ops).build());
+
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "creationTime",
+        ops -> new IncidentFilter.Builder().creationTimeOperations(ops).build());
+
+    customOperationTestCases(
+        streamBuilder,
+        "state",
+        ops -> new IncidentFilter.Builder().stateOperations(ops).build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(IncidentStateEnum.PENDING))),
+            List.of(Operation.neq(String.valueOf(IncidentStateEnum.RESOLVED))),
+            List.of(
+                Operation.in(
+                    String.valueOf(IncidentStateEnum.PENDING),
+                    String.valueOf(IncidentStateEnum.RESOLVED)),
+                Operation.like("com")),
+            List.of(
+                Operation.notIn(
+                    String.valueOf(IncidentStateEnum.PENDING),
+                    String.valueOf(IncidentStateEnum.RESOLVED)),
+                Operation.like("com"))),
+        true);
+
+    stringOperationTestCases(
+        streamBuilder,
+        "tenantId",
+        ops -> new IncidentFilter.Builder().tenantIdOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder,
+        "incidentKey",
+        ops -> new IncidentFilter.Builder().incidentKeyOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder,
+        "processDefinitionKey",
+        ops -> new IncidentFilter.Builder().processDefinitionKeyOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder,
+        "processInstanceKey",
+        ops -> new IncidentFilter.Builder().processInstanceKeyOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder, "jobKey", ops -> new IncidentFilter.Builder().jobKeyOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedIncidentSearchParameters")
+  void shouldSearchIncidentsForProcessInstance(
+      final String filterString, final IncidentFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    when(elementInstanceServices.searchIncidents(eq(123L), incidentQueryCaptor.capture()))
+        .thenReturn(SEARCH_INCIDENT_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(ELEMENT_INSTANCE_INCIDENTS_SEARCH_URL, 123L)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .consumeWith(result -> assertJsonNonExtensible(result.getResponseBody()));
+
+    verify(elementInstanceServices)
+        .searchIncidents(123L, new IncidentQuery.Builder().filter(filter).build());
   }
 }

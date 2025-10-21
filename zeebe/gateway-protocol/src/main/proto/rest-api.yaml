@@ -7807,6 +7807,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
+        filter:
+          description: The incident search filters.
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceIncidentFilter"
     AdHocSubProcessActivateActivitiesInstruction:
       type: object
       properties:
