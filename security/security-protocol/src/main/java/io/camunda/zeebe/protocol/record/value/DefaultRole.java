@@ -11,7 +11,7 @@ public enum DefaultRole {
   ADMIN("admin"),
   RPA("rpa"),
   CONNECTORS("connectors"),
-  APPS_INTEGRATION("apps_integration");
+  APPS_INTEGRATION("apps-integration");
 
   private final String id;
 
