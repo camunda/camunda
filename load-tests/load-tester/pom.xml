@@ -178,7 +178,7 @@
                 <image>eclipse-temurin:21</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/starter:SNAPSHOT</image>
+                <image>registry.camunda.cloud/team-zeebe/starter:SNAPSHOT</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.Starter</mainClass>
@@ -201,7 +201,7 @@
                 <image>eclipse-temurin:21</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/worker:SNAPSHOT</image>
+                <image>registry.camunda.cloud/team-zeebe/worker:SNAPSHOT</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.Worker</mainClass>
