@@ -884,4 +884,94 @@ public class SearchQueryFilterMapper {
 
     return builder.build();
   }
+
+  static IncidentFilter toElementInstanceIncidentFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.ElementInstanceIncidentFilter filter) {
+    final var builder = FilterBuilders.incident();
+
+    if (filter != null) {
+      ofNullable(filter.getIncidentKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::incidentKeyOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getErrorType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorTypeOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::flowNodeInstanceKeyOperations);
+      ofNullable(filter.getCreationTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::creationTimeOperations);
+      ofNullable(filter.getState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
+      ofNullable(filter.getJobKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::jobKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
+    }
+    return builder.build();
+  }
+
+  static IncidentFilter toProcessInstanceIncidentFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceIncidentFilter filter) {
+    final var builder = FilterBuilders.incident();
+
+    if (filter != null) {
+      ofNullable(filter.getIncidentKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::incidentKeyOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getErrorType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorTypeOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::flowNodeInstanceKeyOperations);
+      ofNullable(filter.getCreationTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::creationTimeOperations);
+      ofNullable(filter.getState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
+      ofNullable(filter.getJobKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::jobKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
+    }
+    return builder.build();
+  }
 }

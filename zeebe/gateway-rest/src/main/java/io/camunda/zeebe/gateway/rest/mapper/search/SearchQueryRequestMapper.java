@@ -486,20 +486,38 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final ProcessInstanceIncidentSearchQuery request) {
-    return toIncidentQueryWithNullFilter(
-        request,
-        f -> null,
-        ProcessInstanceIncidentSearchQuery::getPage,
-        ProcessInstanceIncidentSearchQuery::getSort);
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::incident,
+            SearchQuerySortRequestMapper::applyIncidentSortField);
+    return buildSearchQuery(
+        SearchQueryFilterMapper.toProcessInstanceIncidentFilter(request.getFilter()),
+        sort,
+        page,
+        SearchQueryBuilders::incidentSearchQuery);
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final ElementInstanceIncidentSearchQuery request) {
-    return toIncidentQueryWithNullFilter(
-        request,
-        f -> null,
-        ElementInstanceIncidentSearchQuery::getPage,
-        ElementInstanceIncidentSearchQuery::getSort);
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::incident,
+            SearchQuerySortRequestMapper::applyIncidentSortField);
+    return buildSearchQuery(
+        SearchQueryFilterMapper.toElementInstanceIncidentFilter(request.getFilter()),
+        sort,
+        page,
+        SearchQueryBuilders::incidentSearchQuery);
   }
 
   private static <T> Either<ProblemDetail, IncidentQuery> toIncidentQueryWithNullFilter(

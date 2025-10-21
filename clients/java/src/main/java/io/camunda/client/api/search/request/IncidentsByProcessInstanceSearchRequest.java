@@ -15,10 +15,10 @@
  */
 package io.camunda.client.api.search.request;
 
+import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.sort.IncidentSort;
 
 public interface IncidentsByProcessInstanceSearchRequest
-    extends TypedSortableRequest<IncidentSort, IncidentsByProcessInstanceSearchRequest>,
-        TypedPageableRequest<IncidentsByProcessInstanceSearchRequest>,
+    extends TypedSearchRequest<IncidentFilter, IncidentSort, IncidentsByProcessInstanceSearchRequest>,
         FinalSearchRequestStep<Incident> {}

@@ -6259,6 +6259,62 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
+        filter:
+          description: The process instance incident search filters.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceIncidentFilter"
+    ProcessInstanceIncidentFilter:
+      description: Process instance incident search filter with advanced filtering capabilities.
+      type: object
+      properties:
+        incidentKey:
+          description: The assigned key, which acts as a unique identifier for this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processDefinitionId:
+          description: The process definition ID associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processInstanceKey:
+          description: The process instance key associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        errorType:
+          description: Incident error type with a defined set of values.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        errorMessage:
+          description: Error message which describes the error in more detail.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementId:
+          description: The element ID associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementInstanceKey:
+          description: The element instance key associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        creationTime:
+          description: Date of incident creation.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
+        state:
+          description: State of this incident with a defined set of values.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        jobKey:
+          description: The job key, if exists, associated with this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        tenantId:
+          description: The tenant ID of the incident.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     AdvancedIntegerFilter:
       title: Advanced filter
       description: Advanced integer (int32) filter.
@@ -7135,6 +7191,62 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
+        filter:
+          description: The element instance incident search filters.
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceIncidentFilter"
+    ElementInstanceIncidentFilter:
+      description: Element instance incident search filter with advanced filtering capabilities.
+      type: object
+      properties:
+        incidentKey:
+          description: The assigned key, which acts as a unique identifier for this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processDefinitionId:
+          description: The process definition ID associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processInstanceKey:
+          description: The process instance key associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        errorType:
+          description: Incident error type with a defined set of values.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        errorMessage:
+          description: Error message which describes the error in more detail.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementId:
+          description: The element ID associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementInstanceKey:
+          description: The element instance key associated to this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        creationTime:
+          description: Date of incident creation.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
+        state:
+          description: State of this incident with a defined set of values.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        jobKey:
+          description: The job key, if exists, associated with this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        tenantId:
+          description: The tenant ID of the incident.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     AdHocSubProcessActivateActivitiesInstruction:
       type: object
       properties:
