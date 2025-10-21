@@ -584,6 +584,18 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+
+    setArg(args, "postExport.batchSize", database.getPostExport().getBatchSize());
+    // Duration supports only seconds and nanos; other units need to be converted
+    setArg(
+        args,
+        "postExport.delayBetweenRuns",
+        database.getPostExport().getDelayBetweenRuns().getSeconds() * 1000);
+    setArg(
+        args,
+        "postExport.maxDelayBetweenRuns",
+        database.getPostExport().getMaxDelayBetweenRuns().getSeconds() * 1000);
+    setArg(args, "postExport.ignoreMissingData", database.getPostExport().isIgnoreMissingData());
     setArg(
         args,
         "batchOperation.exportItemsOnCreation",
