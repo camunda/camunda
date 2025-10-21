@@ -11,12 +11,14 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestPlugin;
@@ -30,7 +32,6 @@ import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.testcontainers.OpensearchContainer;
@@ -44,13 +45,20 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(
     classes = {
       OpensearchConnector.class,
-      OpensearchProperties.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      OperatePropertiesOverride.class
+      OperatePropertiesOverride.class,
+      TasklistPropertiesOverride.class,
+      UnifiedConfiguration.class,
+      UnifiedConfigurationHelper.class
     },
-    properties = "camunda.data.secondary-storage.type=opensearch")
+    properties = {
+      "camunda.data.secondary-storage.type=opensearch",
+      "camunda.database.type=opensearch",
+      "camunda.tasklist.database=opensearch",
+      "camunda.operate.database=opensearch"
+    })
 public class OpensearchConnectorIT extends OperateAbstractIT {
 
   private static final OpensearchContainer<?> OPENSEARCH_CONTAINER =
@@ -69,7 +77,6 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
 
   @BeforeClass
   public static void beforeAll() {
-    // OpensearchOperateAbstractIT.beforeClass();
     OPENSEARCH_CONTAINER.start();
     WIRE_MOCK_SERVER.start();
   }
@@ -81,7 +88,6 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
   }
 
   @Test
-  @Ignore
   public void shouldSetCustomHeaderOnAllOpensearchClientRequests() throws IOException {
     // given
     final var client = connector.openSearchClient();
@@ -96,7 +102,6 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
   }
 
   @Test
-  @Ignore
   public void shouldSetCustomHeaderOnAllOsAsyncClientRequests() throws IOException {
     // given
     final var client = connector.openSearchAsyncClient();
@@ -134,7 +139,7 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
 
     setPluginConfig(registry, OperateProperties.PREFIX + ".openSearch", plugin);
     setPluginConfig(registry, OperateProperties.PREFIX + ".zeebeOpenSearch", plugin);
-    registry.add(OperateProperties.PREFIX + ".opensearch.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add("camunda.data.secondary-storage.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
     registry.add(OperateProperties.PREFIX + ".zeebeopensearch.url", WIRE_MOCK_SERVER::baseUrl);
   }
 

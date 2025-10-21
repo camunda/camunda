@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -149,7 +148,6 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .isEqualTo("\"d\"");
   }
 
-  @Ignore("Due to flaky CI tests")
   @Test
   public void shouldAddTokenWithAncestor() throws Exception {
     // given
