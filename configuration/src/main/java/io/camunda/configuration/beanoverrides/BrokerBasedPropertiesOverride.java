@@ -13,6 +13,7 @@ import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Export;
+import io.camunda.configuration.Exporter;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
@@ -121,6 +122,8 @@ public class BrokerBasedPropertiesOverride {
     } else {
       populateCamundaExporter(override);
     }
+
+    populateFromExporters(override);
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
@@ -710,5 +713,22 @@ public class BrokerBasedPropertiesOverride {
       cursor = (Map<String, Object>) cursor.computeIfAbsent(keys[i], k -> new LinkedHashMap<>());
     }
     cursor.put(keys[keys.length - 1], value);
+  }
+
+  private void populateFromExporters(final BrokerBasedProperties override) {
+    final Map<String, Exporter> exporters =
+        unifiedConfiguration.getCamunda().getData().getExporters();
+
+    // Log common legacy exporters warning instead of using UnifiedConfigurationHelper logging.
+    if (!override.getExporters().isEmpty()) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.data.exporters", "zeebe.broker.exporters");
+      LOGGER.warn(warningMessage);
+    }
+
+    exporters.forEach(
+        (name, exporter) -> override.getExporters().put(name, exporter.toExporterCfg()));
   }
 }
