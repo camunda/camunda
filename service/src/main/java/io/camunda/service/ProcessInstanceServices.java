@@ -25,6 +25,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
@@ -260,12 +261,18 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord> resolveProcessInstanceIncidents(
       final long processInstanceKey) {
+    final var processInstance = getByKey(processInstanceKey);
+
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(
                 FilterBuilders.processInstance(f -> f.processInstanceKeys(processInstanceKey)))
             .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT)
-            .setAuthentication(authentication);
+            .setAuthentication(authentication)
+            .setAuthorizationCheck(
+                Authorization.withAuthorization(
+                    Authorization.of(a -> a.processDefinition().updateProcessInstance()),
+                    processInstance.processDefinitionId()));
 
     return sendBrokerRequest(brokerRequest);
   }
