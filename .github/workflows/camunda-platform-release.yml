@@ -675,7 +675,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions POC_MINIMUS_PSW | minimus-token
+            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
