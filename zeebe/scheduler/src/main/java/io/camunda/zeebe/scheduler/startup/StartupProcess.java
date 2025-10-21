@@ -159,11 +159,18 @@ public final class StartupProcess<CONTEXT> {
 
       logCurrentStepSynchronized("Startup", stepToStart);
 
+      final var before = System.nanoTime();
       final var stepStartupFuture = stepToStart.startup(context);
 
       concurrencyControl.runOnCompletion(
           stepStartupFuture,
           (contextReturnedByStep, error) -> {
+            final var completedAt = System.nanoTime();
+            logger.debug(
+                "StartupStep {} completed (error={}) took {} millis ",
+                stepToStart.getName(),
+                error != null,
+                (completedAt - before) / 1e6);
             if (error != null) {
               completeStartupFutureExceptionallySynchronized(startupFuture, stepToStart, error);
             } else {
