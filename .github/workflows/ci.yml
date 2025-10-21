@@ -1108,21 +1108,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: identity/client
+          cache: 'npm'
+          cache-dependency-path: 'identity/client/package-lock.json'
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
       - name: Check formatting
-        run: yarn test:format
+        run: npm run test:format
       - name: Lint code
-        run: yarn test:lint
+        run: npm run test:lint
       - name: Unit & Integration tests
-        run: yarn test:unit
+        run: npm run test:unit
       - name: Check licenses
-        run: yarn test:licenses
+        run: npm run test:licenses
       - name: Build frontend
-        run: yarn build
+        run: npm run build
       - name: Observe build status
         if: always()
         continue-on-error: true
