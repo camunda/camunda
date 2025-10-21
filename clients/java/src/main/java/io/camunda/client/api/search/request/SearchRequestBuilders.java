@@ -23,6 +23,7 @@ import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.ElementInstanceIncidentFilter;
 import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
@@ -30,6 +31,7 @@ import io.camunda.client.api.search.filter.MappingRuleFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceIncidentFilter;
 import io.camunda.client.api.search.filter.RoleFilter;
 import io.camunda.client.api.search.filter.TenantFilter;
 import io.camunda.client.api.search.filter.UserFilter;
@@ -72,6 +74,7 @@ import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.client.impl.search.filter.ElementInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.ElementInstanceIncidentFilterImpl;
 import io.camunda.client.impl.search.filter.GroupFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.client.impl.search.filter.JobFilterImpl;
@@ -79,6 +82,7 @@ import io.camunda.client.impl.search.filter.MappingRuleFilterImpl;
 import io.camunda.client.impl.search.filter.MessageSubscriptionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.ProcessInstanceIncidentFilterImpl;
 import io.camunda.client.impl.search.filter.RoleFilterImpl;
 import io.camunda.client.impl.search.filter.TenantFilterImpl;
 import io.camunda.client.impl.search.filter.UserFilterImpl;
@@ -143,6 +147,20 @@ public final class SearchRequestBuilders {
 
   public static IncidentFilter incidentFilter(final Consumer<IncidentFilter> fn) {
     final IncidentFilter filter = new IncidentFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ProcessInstanceIncidentFilter processInstanceIncidentFilter(
+      final Consumer<ProcessInstanceIncidentFilter> fn) {
+    final ProcessInstanceIncidentFilter filter = new ProcessInstanceIncidentFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ElementInstanceIncidentFilter elementInstanceIncidentFilter(
+      final Consumer<ElementInstanceIncidentFilter> fn) {
+    final ElementInstanceIncidentFilter filter = new ElementInstanceIncidentFilterImpl();
     fn.accept(filter);
     return filter;
   }

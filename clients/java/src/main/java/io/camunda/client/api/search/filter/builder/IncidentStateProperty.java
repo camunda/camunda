@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.request;
+package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.api.search.filter.ProcessInstanceIncidentFilter;
-import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.sort.IncidentSort;
+import io.camunda.client.api.search.enums.IncidentState;
+import java.util.List;
 
-public interface IncidentsByProcessInstanceSearchRequest
-    extends TypedSearchRequest<
-            ProcessInstanceIncidentFilter, IncidentSort, IncidentsByProcessInstanceSearchRequest>,
-        TypedPageableRequest<IncidentsByProcessInstanceSearchRequest>,
-        FinalSearchRequestStep<Incident> {}
+public interface IncidentStateProperty
+    extends LikeProperty<IncidentState, String, IncidentStateProperty> {
 
+  IncidentStateProperty notIn(final IncidentState... values);
+
+  IncidentStateProperty notIn(final List<IncidentState> values);
+}

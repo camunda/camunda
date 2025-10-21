@@ -15,14 +15,14 @@
  */
 package io.camunda.client.impl.search.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.elementInstanceIncidentFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider.provideSearchRequestProperty;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.ElementInstanceIncidentFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.IncidentsByElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
@@ -32,8 +32,8 @@ import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.ElementInstanceIncidentSearchQuery;
 import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.client.protocol.rest.ElementInstanceIncidentSearchQuery;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -64,27 +64,16 @@ public class IncidentsByElementInstanceSearchRequestImpl
   }
 
   @Override
-  public IncidentsByElementInstanceSearchRequest filter(final IncidentFilter value) {
-    request.setFilter(provideSearchRequestProperty(value));
-    return this;
-  }
-
-  @Override
-  public IncidentsByElementInstanceSearchRequest filter(final Consumer<IncidentFilter> fn) {
-    return filter(incidentFilter(fn));
-  }
-
-  @Override
-  public IncidentsByElementInstanceSearchRequest sort(final IncidentSort value) {
-    request.setSort(
-        SearchRequestSortMapper.toIncidentSearchQuerySortRequest(
-            provideSearchRequestProperty(value)));
-    return this;
-  }
-
-  @Override
-  public IncidentsByElementInstanceSearchRequest sort(final Consumer<IncidentSort> fn) {
-    return sort(incidentSort(fn));
+  public CamundaFuture<SearchResponse<Incident>> send() {
+    final HttpCamundaFuture<SearchResponse<Incident>> result = new HttpCamundaFuture<>();
+    httpClient.post(
+        String.format("/process-instances/%d/incidents/search", elementInstanceKey),
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        IncidentSearchQueryResult.class,
+        SearchResponseMapper::toIncidentSearchResponse,
+        result);
+    return result;
   }
 
   @Override
@@ -99,15 +88,27 @@ public class IncidentsByElementInstanceSearchRequestImpl
   }
 
   @Override
-  public CamundaFuture<SearchResponse<Incident>> send() {
-    final HttpCamundaFuture<SearchResponse<Incident>> result = new HttpCamundaFuture<>();
-    httpClient.post(
-        String.format("/element-instances/%d/incidents/search", elementInstanceKey),
-        jsonMapper.toJson(request),
-        httpRequestConfig.build(),
-        IncidentSearchQueryResult.class,
-        SearchResponseMapper::toIncidentSearchResponse,
-        result);
-    return result;
+  public IncidentsByElementInstanceSearchRequest filter(final ElementInstanceIncidentFilter value) {
+    request.setFilter(provideSearchRequestProperty(value));
+    return this;
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest filter(
+      final Consumer<ElementInstanceIncidentFilter> fn) {
+    return filter(elementInstanceIncidentFilter(fn));
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest sort(final IncidentSort value) {
+    request.setSort(
+        SearchRequestSortMapper.toIncidentSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
+    return this;
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest sort(final Consumer<IncidentSort> fn) {
+    return sort(incidentSort(fn));
   }
 }
