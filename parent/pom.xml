@@ -2735,6 +2735,7 @@
           <artifactId>japicmp-maven-plugin</artifactId>
           <version>${plugin.version.japicmp}</version>
           <configuration>
+            <skip>${japicmp.skip}</skip>
             <parameter>
               <accessModifier>private</accessModifier>
               <postAnalysisScript>${project.basedir}/src/main/scripts/failOnNewFieldWithoutAnnotation.groovy</postAnalysisScript>
