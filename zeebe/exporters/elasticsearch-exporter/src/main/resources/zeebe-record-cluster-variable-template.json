@@ -28,6 +28,9 @@
               "type": "keyword",
               "ignore_above": 8191
             },
+            "scope": {
+              "type": "keyword"
+            },
             "tenantId": {
               "type": "keyword"
             }
