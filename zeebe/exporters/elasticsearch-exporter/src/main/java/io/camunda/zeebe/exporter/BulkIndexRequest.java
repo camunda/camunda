@@ -39,6 +39,7 @@ final class BulkIndexRequest implements ContentProducer {
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
+          .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
@@ -50,7 +51,7 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(ProcessInstanceResultRecordValue.class, ProcessInstanceResult87Mixin.class)
           .addMixIn(UserTaskRecordValue.class, UserTask87Mixin.class)
           .addMixIn(JobRecordValue.class, Job87Mixin.class)
-          .addMixIn(CommandDistributionRecordValue.class, CommandDistribution87Mixin.class)
+          .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -217,5 +218,5 @@ final class BulkIndexRequest implements ContentProducer {
   private static final class Job87Mixin {}
 
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
-  private static final class CommandDistribution87Mixin {}
+  private static final class CommandDistributionMixin {}
 }
