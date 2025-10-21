@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.mcp.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.gateway.mcp.tools.incident.ClusterIncidentsTool;
 import io.camunda.zeebe.gateway.mcp.tools.incident.IncidentSearchRequest;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -52,29 +53,34 @@ public class GatewayMcpConfiguration {
   }
 
   @Bean
-  public ToolCallbackProvider tools(List<ToolCallback> toolCallbacks) {
+  public ToolCallbackProvider tools(final List<ToolCallback> toolCallbacks) {
     return new StaticToolCallbackProvider(toolCallbacks);
   }
 
   /** Server configuration for Model Context Protocol (MCP) using Web MVC. */
   @Bean
   public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
-      ObjectProvider<ObjectMapper> objectMapperProvider) {
+      final ObjectProvider<ObjectMapper> objectMapperProvider) {
     final ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-    return new WebMvcSseServerTransportProvider(objectMapper, "", "/mcp/message", "/sse");
+    return WebMvcSseServerTransportProvider.builder()
+        .sseEndpoint("/sse")
+        .messageEndpoint("/mcp/message")
+        .baseUrl("")
+        .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+        .build();
   }
 
   @Bean
   public RouterFunction<ServerResponse> mvcMcpRouterFunction(
-      WebMvcSseServerTransportProvider transportProvider) {
+      final WebMvcSseServerTransportProvider transportProvider) {
     return transportProvider.getRouterFunction();
   }
 
   @Bean
   public McpSyncServer mcpSyncServer(
-      GatewayMcpProperties serverProperties,
-      McpServerTransportProvider transportProvider,
-      List<ToolCallbackProvider> toolCallbackProvider) {
+      final GatewayMcpProperties serverProperties,
+      final McpServerTransportProvider transportProvider,
+      final List<ToolCallbackProvider> toolCallbackProvider) {
     // Create the server
     final Implementation serverInfo =
         new Implementation(serverProperties.getServerName(), serverProperties.getVersion());
@@ -89,7 +95,7 @@ public class GatewayMcpConfiguration {
             .filter(Objects::nonNull)
             .toList();
 
-    final var toolSpecifications = this.toSyncToolSpecifications(providerToolCallbacks);
+    final var toolSpecifications = toSyncToolSpecifications(providerToolCallbacks);
 
     if (!CollectionUtils.isEmpty(toolSpecifications)) {
       serverBuilder.tools(toolSpecifications);
@@ -103,7 +109,7 @@ public class GatewayMcpConfiguration {
   }
 
   private List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecifications(
-      List<ToolCallback> tools) {
+      final List<ToolCallback> tools) {
     return tools.stream().map(McpToolUtils::toSyncToolSpecification).toList();
   }
 }
