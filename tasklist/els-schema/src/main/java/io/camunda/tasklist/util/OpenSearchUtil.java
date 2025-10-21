@@ -10,7 +10,6 @@ package io.camunda.tasklist.util;
 import static io.camunda.tasklist.util.CollectionUtil.map;
 import static io.camunda.tasklist.util.CollectionUtil.throwAwayNullElements;
 
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
@@ -25,14 +24,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.ListUtils;
 import org.opensearch.client.json.JsonData;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Time;
@@ -44,8 +40,6 @@ import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.SearchResult;
-import org.opensearch.client.opensearch.indices.RefreshRequest;
-import org.opensearch.client.opensearch.indices.RefreshResponse;
 import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -169,44 +163,8 @@ public abstract class OpenSearchUtil {
     return entity;
   }
 
-  public static CompletableFuture<ScrollResponse<Object>> scrollAsync(
-      final ScrollRequest scrollRequest,
-      final Executor executor,
-      final OpenSearchAsyncClient osClient) {
-    final var searchFuture = new CompletableFuture<SearchResponse>();
-    try {
-      final CompletableFuture<ScrollResponse<Object>> response =
-          osClient.scroll(scrollRequest, Object.class);
-      return response;
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
-    }
-  }
-
   public static BoolQuery.Builder boolQuery() {
     return new BoolQuery.Builder();
-  }
-
-  public static CompletableFuture<DeleteByQueryResponse> deleteByQueryAsync(
-      final DeleteByQueryRequest deleteRequest,
-      final Executor executor,
-      final OpenSearchAsyncClient osClient) {
-    try {
-      return osClient.deleteByQuery(deleteRequest);
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
-    }
-  }
-
-  public static CompletableFuture<ReindexResponse> reindexAsync(
-      final ReindexRequest reindexRequest,
-      final Executor executor,
-      final OpenSearchAsyncClient osClient) {
-    try {
-      return osClient.reindex(reindexRequest);
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
-    }
   }
 
   public static void processBulkRequest(
@@ -238,36 +196,6 @@ public abstract class OpenSearchUtil {
         throw new PersistenceException(
             "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
       }
-    }
-  }
-
-  public static void refreshIndicesFor(final OpenSearchClient osClient, final String indexPattern) {
-    final var refreshRequest = new RefreshRequest.Builder().index(List.of(indexPattern)).build();
-    try {
-      final RefreshResponse refresh = osClient.indices().refresh(refreshRequest);
-      if (refresh.shards().failures().size() > 0) {
-        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
-      }
-    } catch (final Exception ex) {
-      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
-    }
-  }
-
-  public static <T> List<T> mapSearchHits(
-      final List<Hit> searchHits, final ObjectMapper objectMapper, final JavaType valueType) {
-    return map(searchHits, (searchHit) -> objectMapper.convertValue(searchHit.source(), valueType));
-  }
-
-  public static CompletableFuture<SearchResponse<Object>> searchAsync(
-      final SearchRequest searchRequest,
-      final Executor executor,
-      final OpenSearchAsyncClient osClient) {
-    final var searchFuture = new CompletableFuture<SearchResponse>();
-
-    try {
-      return osClient.search(searchRequest, Object.class);
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
     }
   }
 
