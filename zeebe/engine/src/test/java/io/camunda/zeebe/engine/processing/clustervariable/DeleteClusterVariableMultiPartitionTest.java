@@ -38,14 +38,19 @@ public final class DeleteClusterVariableMultiPartitionTest {
   @Test
   public void deleteGlobalScopedClusterVariableMultiPartition() {
     // given
-    ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create();
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_1")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .create();
 
     RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
         .withDistributionIntent(ClusterVariableIntent.CREATE)
         .await();
 
     // when
-    ENGINE_RULE.clusterVariables().withName("KEY_1").delete();
+    ENGINE_RULE.clusterVariables().setGlobalScope().withName("KEY_1").delete();
 
     // then
     assertThat(
@@ -97,6 +102,7 @@ public final class DeleteClusterVariableMultiPartitionTest {
     ENGINE_RULE
         .clusterVariables()
         .withName("KEY_1")
+        .setTenantScope()
         .withTenantId("tenant_2")
         .withValue("\"VALUE\"")
         .create();
@@ -106,7 +112,12 @@ public final class DeleteClusterVariableMultiPartitionTest {
         .await();
 
     // when
-    ENGINE_RULE.clusterVariables().withName("KEY_1").withTenantId("tenant_2").delete();
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_1")
+        .setTenantScope()
+        .withTenantId("tenant_2")
+        .delete();
 
     // then
     assertThat(

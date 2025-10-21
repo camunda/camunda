@@ -38,7 +38,12 @@ public final class CreateClusterVariableTest {
   public void createGlobalScopedClusterVariable() {
     // when
     final var record =
-        ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create();
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_1")
+            .setGlobalScope()
+            .withValue("\"VALUE\"")
+            .create();
 
     // then
     Assertions.assertThat(record)
@@ -54,6 +59,7 @@ public final class CreateClusterVariableTest {
             .clusterVariables()
             .withName("KEY_2")
             .withValue("\"VALUE\"")
+            .setTenantScope()
             .withTenantId("tenant_1")
             .create();
     // then
@@ -65,12 +71,18 @@ public final class CreateClusterVariableTest {
   @Test
   public void createGlobalScopedClusterVariableAlreadyExists() {
     // given
-    ENGINE_RULE.clusterVariables().withName("KEY_3").withValue("\"VALUE\"").create();
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_3")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .create();
     // when
     final var record =
         ENGINE_RULE
             .clusterVariables()
             .withName("KEY_3")
+            .setGlobalScope()
             .withValue("\"VALUE_2\"")
             .expectRejection()
             .create();
@@ -86,12 +98,18 @@ public final class CreateClusterVariableTest {
   public void globalScopedAndTenantScopedClusterVariableDoNotOverlap() {
     // given
     final var recordGlobal =
-        ENGINE_RULE.clusterVariables().withName("KEY_5").withValue("\"VALUE\"").create();
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_5")
+            .setGlobalScope()
+            .withValue("\"VALUE\"")
+            .create();
     // when
     final var recordTenant =
         ENGINE_RULE
             .clusterVariables()
             .withName("KEY_5")
+            .setTenantScope()
             .withValue("\"VALUE\"")
             .withTenantId("tenant-1")
             .create();

@@ -28,10 +28,15 @@ public final class DeleteClusterVariableTest {
   @Test
   public void deleteGlobalScopedClusterVariable() {
     // given
-    ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create();
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_1")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .create();
 
     // when
-    final var record = ENGINE_RULE.clusterVariables().withName("KEY_1").delete();
+    final var record = ENGINE_RULE.clusterVariables().withName("KEY_1").setGlobalScope().delete();
 
     // then
     Assertions.assertThat(record)
@@ -40,18 +45,24 @@ public final class DeleteClusterVariableTest {
   }
 
   @Test
-  public void createTenantScopedClusterVariable() {
+  public void deleteTenantScopedClusterVariable() {
     // given
     ENGINE_RULE
         .clusterVariables()
         .withName("KEY_2")
+        .setTenantScope()
         .withValue("\"VALUE\"")
         .withTenantId("tenant_1")
         .create();
 
     // when
     final var record =
-        ENGINE_RULE.clusterVariables().withName("KEY_2").withTenantId("tenant_1").delete();
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_2")
+            .setTenantScope()
+            .withTenantId("tenant_1")
+            .delete();
 
     // then
     Assertions.assertThat(record)
@@ -62,7 +73,13 @@ public final class DeleteClusterVariableTest {
   @Test
   public void deleteNonExistingGlobalScopedClusterVariable() {
     // when
-    final var record = ENGINE_RULE.clusterVariables().withName("KEY_3").expectRejection().delete();
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_3")
+            .setGlobalScope()
+            .expectRejection()
+            .delete();
     // then
     Assertions.assertThat(record)
         .hasIntent(ClusterVariableIntent.DELETE)
@@ -72,15 +89,40 @@ public final class DeleteClusterVariableTest {
   }
 
   @Test
+  public void deleteNonExistingTenantScopedClusterVariable() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_3")
+            .setTenantScope()
+            .withTenantId("tenant_1")
+            .expectRejection()
+            .delete();
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.DELETE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Invalid cluster variable name: 'KEY_3'. The variable does not exist in the scope 'tenant: 'tenant_1''");
+  }
+
+  @Test
   public void globalScopedAndTenantScopedClusterVariableDoNotOverlapForDeletion() {
     // given
 
-    ENGINE_RULE.clusterVariables().withName("KEY_4").withValue("\"VALUE\"").create();
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_4")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .create();
     // when
     final var recordTenant =
         ENGINE_RULE
             .clusterVariables()
             .withName("KEY_4")
+            .setTenantScope()
             .withTenantId("tenant-1")
             .expectRejection()
             .delete();
@@ -91,5 +133,34 @@ public final class DeleteClusterVariableTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Invalid cluster variable name: 'KEY_4'. The variable does not exist in the scope 'tenant: 'tenant-1''");
+  }
+
+  @Test
+  public void tenantScopedAndGlobalScopedClusterVariableDoNotOverlapForDeletion() {
+    // given
+
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_5")
+        .setTenantScope()
+        .withValue("\"VALUE\"")
+        .withTenantId("tenant-1")
+        .create();
+    // when
+
+    final var recordTenant =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_5")
+            .setGlobalScope()
+            .expectRejection()
+            .delete();
+    // then
+
+    Assertions.assertThat(recordTenant)
+        .hasIntent(ClusterVariableIntent.DELETE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Invalid cluster variable name: 'KEY_5'. The variable does not exist in the scope 'GLOBAL'");
   }
 }

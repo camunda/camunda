@@ -73,13 +73,13 @@ public class ClusterVariableRecordValidator {
   }
 
   private boolean tenantScopedVariableExists(final ClusterVariableRecord clusterVariableRecord) {
-    return !clusterVariableRecord.getTenantId().isBlank()
+    return clusterVariableRecord.isTenantScoped()
         && clusterVariableState.existsAtTenantScope(
             clusterVariableRecord.getNameBuffer(), clusterVariableRecord.getTenantId());
   }
 
   private boolean globallyScopedVariableExists(final ClusterVariableRecord clusterVariableRecord) {
-    return clusterVariableRecord.getTenantId().isBlank()
+    return clusterVariableRecord.isGloballyScoped()
         && clusterVariableState.existsAtGlobalScope(clusterVariableRecord.getNameBuffer());
   }
 }

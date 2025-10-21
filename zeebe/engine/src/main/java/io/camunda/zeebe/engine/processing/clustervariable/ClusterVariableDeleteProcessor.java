@@ -44,12 +44,11 @@ public class ClusterVariableDeleteProcessor
   @Override
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
-    final long key = keyGenerator.nextKey();
-
     clusterVariableRecordValidator
         .validateExistence(clusterVariableRecord)
         .ifRightOrLeft(
             record -> {
+              final long key = keyGenerator.nextKey();
               writers
                   .state()
                   .appendFollowUpEvent(key, ClusterVariableIntent.DELETED, clusterVariableRecord);

@@ -682,7 +682,13 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.CLUSTER_VARIABLE,
                 ClusterVariableIntent.CREATE,
-                () -> ENGINE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create()),
+                () ->
+                    ENGINE
+                        .clusterVariables()
+                        .withName("KEY_1")
+                        .setGlobalScope()
+                        .withValue("\"VALUE\"")
+                        .create()),
             ClusterVariableCreateProcessor.class
           },
           {
@@ -691,8 +697,13 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.CLUSTER_VARIABLE,
                 ClusterVariableIntent.DELETE,
                 () -> {
-                  ENGINE.clusterVariables().withName("KEY_2").withValue("\"VALUE\"").create();
-                  return ENGINE.clusterVariables().withName("KEY_2").delete();
+                  ENGINE
+                      .clusterVariables()
+                      .withName("KEY_2")
+                      .setGlobalScope()
+                      .withValue("\"VALUE\"")
+                      .create();
+                  return ENGINE.clusterVariables().setGlobalScope().withName("KEY_2").delete();
                 }),
             ClusterVariableDeleteProcessor.class
           },
