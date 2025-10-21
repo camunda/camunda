@@ -176,6 +176,26 @@ class ProcessInstanceIncidentSearchTest {
     assertThat(response2.items()).containsExactly(incidentsSortedByKey.get(1));
   }
 
+  @Test
+  void shouldFilterByState() {
+    // given
+    final long processInstanceKey = processInstancesSortedByKey.getFirst().getProcessInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
+            .filter(f -> f.state(io.camunda.client.api.search.enums.IncidentState.ACTIVE))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).isNotEmpty();
+    assertThat(incidentsResult.items())
+        .allMatch(
+            i -> i.getState().equals(io.camunda.client.api.search.enums.IncidentState.ACTIVE));
+  }
+
   private static Stream<Arguments> provideProcessInstanceKeyAndExpectedAmountOfIncidents() {
     final var processInstance1 = processInstancesSortedByKey.get(0);
     final var processInstance1Incidents = incidentsSortedByKey;

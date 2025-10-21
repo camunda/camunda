@@ -177,6 +177,46 @@ class ElementInstanceIncidentSearchTest {
     assertThat(response2.items()).containsExactly(incidentsSortedByKey.get(1));
   }
 
+  @Test
+  void shouldFilterByErrorType() {
+    // given
+    final long elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+    final var expectedErrorType = IncidentErrorType.CALLED_ELEMENT_ERROR;
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(f -> f.errorType(expectedErrorType))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items())
+        .isNotEmpty()
+        .allMatch(i -> i.getErrorType().equals(expectedErrorType));
+  }
+
+  @Test
+  void shouldFilterByState() {
+    // given
+    final long elementInstanceKey = elementInstancesSortedByKey.getFirst().getElementInstanceKey();
+
+    // when
+    final SearchResponse<Incident> incidentsResult =
+        camundaClient
+            .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+            .filter(f -> f.state(io.camunda.client.api.search.enums.IncidentState.ACTIVE))
+            .send()
+            .join();
+
+    // then
+    assertThat(incidentsResult.items()).isNotEmpty();
+    assertThat(incidentsResult.items())
+        .allMatch(
+            i -> i.getState().equals(io.camunda.client.api.search.enums.IncidentState.ACTIVE));
+  }
+
   private static Stream<Arguments> provideElementInstanceKeyAndExpectedAmountOfIncidents() {
 
     final var calledErrorIncident =

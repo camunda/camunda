@@ -20,5 +20,6 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.sort.IncidentSort;
 
 public interface IncidentsByProcessInstanceSearchRequest
-    extends TypedSearchRequest<IncidentFilter, IncidentSort, IncidentsByProcessInstanceSearchRequest>,
+    extends TypedSearchRequest<
+            IncidentFilter, IncidentSort, IncidentsByProcessInstanceSearchRequest>,
         FinalSearchRequestStep<Incident> {}
