@@ -30,7 +30,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionT
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -237,7 +237,7 @@ class ExporterDirectorPartitionTransitionStepTest {
     // new config removes expB entirely
     final var updatedConfig =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(enabledExporterId, new ExporterState(0, State.ENABLED, Optional.empty()))));
     transitionContext.setDynamicPartitionConfig(updatedConfig);
     startingFuture.complete(null);
@@ -312,7 +312,7 @@ class ExporterDirectorPartitionTransitionStepTest {
       final String exporterTwo,
       final State exporterTwoState) {
     return new DynamicPartitionConfig(
-        new ExportersConfig(
+        new ExportingConfig(
             Map.of(
                 exporterOne,
                 new ExporterState(0, exporterOneState, Optional.empty()),

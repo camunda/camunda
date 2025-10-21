@@ -56,9 +56,9 @@ message PartitionState {
   PartitionConfig config = 3;
 }
 
-message PartitionConfig { ExportersConfig exporting = 1; }
+message PartitionConfig { ExportingConfig exporting = 1; }
 
-message ExportersConfig { map<string, ExporterState> exporters = 1; }
+message ExportingConfig { map<string, ExporterState> exporters = 1; }
 
 message ExporterState {
   ExporterStateEnum state = 1;
