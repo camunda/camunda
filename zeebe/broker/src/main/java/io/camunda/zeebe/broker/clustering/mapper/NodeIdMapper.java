@@ -49,6 +49,7 @@ public class NodeIdMapper implements Closeable {
   private ScheduledFuture<?> renewealTimer;
   private boolean previousOwnerExpired;
   private final int clusterSize;
+  private final ScheduledExecutorService retryingExecutor;
 
   public NodeIdMapper(final LeaseClient lease, final int clusterSize) {
     this(lease, SHUTDOWN_VM, clusterSize);
@@ -61,7 +62,9 @@ public class NodeIdMapper implements Closeable {
     this.lease = lease;
     taskId = lease.taskId();
     this.onRenewalFailure = onRenewalFailure;
-    executor = newSingleThreadScheduledExecutor();
+    executor = newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdMapper-Executor"));
+    retryingExecutor =
+        newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdMapper-RetryingExecutor"));
     executor.execute(() -> MDC.put("taskId", taskId));
     lease.initialize();
   }
@@ -113,7 +116,7 @@ public class NodeIdMapper implements Closeable {
         "Previous owner did not release the lease gracefully. Waiting until all nodes have updated.");
     final var readyFuture = new CompletableFuture<Boolean>();
 
-    executor.submit(
+    retryingExecutor.submit(
         () -> {
           try {
             waitUntilAllNodesHaveUpdatedVersion();
@@ -210,6 +213,7 @@ public class NodeIdMapper implements Closeable {
       LOG.warn("Failed to release the lease gracefully");
     }
     executor.shutdown();
+    retryingExecutor.shutdownNow();
   }
 
   private InitialLease acquireLease() {
@@ -222,7 +226,7 @@ public class NodeIdMapper implements Closeable {
                 throw new CompletionException(e);
               }
             },
-            executor)
+            retryingExecutor)
         .join();
   }
 
