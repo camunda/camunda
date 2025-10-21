@@ -11,7 +11,7 @@
     "test:lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test:licenses": "license-checker --excludePrivatePackages --excludePackages 'wicg-inert@3.1.2' --onlyAllow 'Apache-2.0;MIT;0BSD;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0;WTFPL;OFL-1.1;CC-BY-4.0;' --production",
     "test:unit": "",
-    "test": "yarn test:unit & yarn test:format && yarn test:licenses && yarn test:lint",
+    "test": "npm run test:unit && npm run test:format && npm run test:licenses && npm run test:lint",
     "preview": "vite preview",
     "extract-sbom": "vite build --mode sbom",
     "lint": "tsc && eslint .",
@@ -61,6 +61,5 @@
     "vite": "7.0.7",
     "vite-plugin-svgr": "^4.3.0"
   },
-  "packageManager": "yarn@4.3.1",
   "stableVersion": "8.8.0-SNAPSHOT"
 }
