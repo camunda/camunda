@@ -233,15 +233,16 @@ final class ElasticsearchExporterIT {
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldExportOnlyRequiredRecords(final ValueType valueType) {
+  @ParameterizedTest(name = "{0} - version={1}")
+  @MethodSource(
+      "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
+  void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
     // given
     config.setIncludeEnabledRecords(false);
     exporter.configure(exporterTestContext);
     exporter.open(controller);
 
-    final var record = generateRecord(valueType);
+    final var record = generateRecord(valueType, version);
 
     // when
     export(record);
@@ -262,38 +263,14 @@ final class ElasticsearchExporterIT {
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
               String.valueOf(record.getPartitionId()),
-              record);
+              VersionUtil.getVersionLowerCase().equals(version)
+                  ? record
+                  : modifyExpectedRecordForPreviousVersion(valueType, record));
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(ElasticsearchException.class)
           .hasMessageContaining("no such index [%s]".formatted(indexRouter.indexFor(record)));
     }
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
-    // given
-    config.setIncludeEnabledRecords(false);
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-
-    final var record =
-        factory.generateRecord(
-            valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
-
-    // when
-    export(record);
-
-    // then
-    final var response = testClient.getExportedDocumentFor(record);
-    assertThat(response)
-        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
-        .containsExactly(
-            indexRouter.indexFor(record),
-            indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
-            modifyExpectedRecordForPreviousVersion(valueType, record));
   }
 
   private Record modifyExpectedRecordForPreviousVersion(
@@ -352,9 +329,13 @@ final class ElasticsearchExporterIT {
     return true;
   }
 
+  private <T extends RecordValue> Record<T> generateRecord(
+      final ValueType valueType, final String version) {
+    return factory.generateRecord(valueType, r -> r.withBrokerVersion(version));
+  }
+
   private <T extends RecordValue> Record<T> generateRecord(final ValueType valueType) {
-    return factory.generateRecord(
-        valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+    return generateRecord(valueType, VersionUtil.getVersionLowerCase());
   }
 
   private <T extends RecordValue> Record<T> generateSupportedRecord(
