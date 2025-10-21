@@ -271,4 +271,60 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
             Tuple.tuple(
                 ProcessInstanceIntent.ELEMENT_ACTIVATING, boundaryEventNestedSubProcessEnd));
   }
+
+  @Test
+  public void shouldTerminateOnlyOnceForMultiInstanceElements() {
+    // given
+    final String processId = "process";
+    final String multiInstanceTaskId = "multiInstanceTask";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .scriptTask()
+                .id(multiInstanceTaskId)
+                .zeebeExpression("i + 2")
+                .zeebeResultVariable("j")
+                .multiInstance(
+                    b ->
+                        b.zeebeInputCollectionExpression("[1,2,3]")
+                            .zeebeInputElement("i")
+                            .zeebeOutputCollection("out")
+                            .zeebeOutputElementExpression("j + 2"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeTerminateInstruction(multiInstanceTaskId)
+            .create();
+
+    // then
+    final var result =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(processId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .filter(
+                record ->
+                    record.getValue().getElementId().equals(processId)
+                        || record.getValue().getElementId().equals(multiInstanceTaskId));
+
+    assertThat(result)
+        .extracting(Record::getIntent, record -> record.getValue().getElementId())
+        .containsSubsequence(
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, multiInstanceTaskId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, multiInstanceTaskId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, multiInstanceTaskId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, multiInstanceTaskId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, multiInstanceTaskId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, multiInstanceTaskId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, processId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, processId));
+  }
 }
