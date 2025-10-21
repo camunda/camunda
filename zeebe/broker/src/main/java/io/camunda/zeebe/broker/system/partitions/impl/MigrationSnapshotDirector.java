@@ -33,7 +33,7 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   private static final Logger LOG = LoggerFactory.getLogger(MigrationSnapshotDirector.class);
 
   private volatile boolean snapshotTaken = false;
-  private ScheduledTimer runningSnapshot = null;
+  private volatile ScheduledTimer runningSnapshot = null;
   private final ConcurrentMap<FailureListener, Boolean> listeners = new ConcurrentHashMap<>();
   private final AsyncSnapshotDirector snapshotDirector;
 
@@ -96,7 +96,9 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
+    LOG.trace("Added failure listener {}", failureListener);
     listeners.put(failureListener, Boolean.TRUE);
+    failureListener.onFailure(healthReport);
   }
 
   @Override
