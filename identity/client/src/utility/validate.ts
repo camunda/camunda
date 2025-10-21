@@ -13,6 +13,11 @@
 export const isValidId = (id: string): boolean =>
   /^[a-zA-Z0-9_~@.+-]{1,256}$/.test(id);
 
+export const AUTHORIZATION_WILDCARD = "*";
+
+export const isValidResourceId = (id: string): boolean =>
+  isValidId(id) || id === AUTHORIZATION_WILDCARD;
+
 /**
  * Because tenant IDs are used widely in the system and also part of many messages and events,
  * they are more heavily restricted than other IDs.
