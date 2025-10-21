@@ -15,11 +15,13 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
+import io.camunda.client.api.search.enums.IncidentErrorType;
 import java.util.List;
 
-public interface BasicStringProperty extends PropertyBase<String, BasicStringProperty> {
+public interface IncidentErrorTypeProperty
+    extends LikeProperty<IncidentErrorType, String, IncidentErrorTypeProperty> {
 
-  BasicStringProperty notIn(List<String> values);
+  IncidentErrorTypeProperty notIn(List<IncidentErrorType> values);
 
-  BasicStringProperty notIn(String... values);
+  IncidentErrorTypeProperty notIn(IncidentErrorType... values);
 }

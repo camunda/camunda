@@ -181,4 +181,43 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getIncidentKey()).isEqualTo("1");
     assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.valueOf(errorType.name()));
   }
+
+  @Test
+  void shouldSearchIncidentByProcessInstanceKeyWithFullFilters() {
+    // when
+    client
+        .newIncidentsByProcessInstanceSearchRequest(123L)
+        .filter(
+            f ->
+                f.incidentKey(1L)
+                    .processDefinitionKey(2L)
+                    .processDefinitionId("complexProcess")
+                    .errorType(IncidentErrorType.CALLED_DECISION_ERROR)
+                    .errorMessage("Can't decide")
+                    .elementId("element")
+                    .elementInstanceKey(4L)
+                    .creationTime(OffsetDateTime.parse("2024-05-23T23:05:00.001Z"))
+                    .state(IncidentState.ACTIVE)
+                    .jobKey(5L)
+                    .tenantId("tenant"))
+        .send()
+        .join();
+    // then
+    final ProcessInstanceIncidentSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceIncidentSearchQuery.class);
+    final ProcessInstanceIncidentFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getIncidentKey().get$Eq()).isEqualTo("1");
+    assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("2");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("complexProcess");
+    assertThat(filter.getErrorType().get$Eq())
+        .isEqualTo(IncidentErrorTypeEnum.CALLED_DECISION_ERROR);
+    assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Can't decide");
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("element");
+    assertThat(filter.getElementInstanceKey().get$Eq()).isEqualTo("4");
+    assertThat(filter.getCreationTime().get$Eq()).isEqualTo("2024-05-23T23:05:00.001Z");
+    assertThat(filter.getState().get$Eq()).isEqualTo(IncidentStateEnum.ACTIVE);
+    assertThat(filter.getJobKey().get$Eq()).isEqualTo("5");
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
+  }
 }

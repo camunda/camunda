@@ -205,7 +205,7 @@ public class ProcessInstanceController {
   public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
       @PathVariable("processInstanceKey") final long processInstanceKey,
       @RequestBody(required = false) final ProcessInstanceIncidentSearchQuery query) {
-    return SearchQueryRequestMapper.toIncidentQuery(query)
+    return SearchQueryRequestMapper.toProcessInstanceIncidentQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             incidentQuery -> searchIncidents(processInstanceKey, incidentQuery));
