@@ -4,14 +4,14 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
-ARG BASE_IMAGE="reg.mini.dev/openjre:21-dev"
-ARG BASE_DIGEST="sha256:80e113714c426176d4c8159d0729bfbe799784f04e4efac4b376a9f17e0fa689"
+ARG BASE_IMAGE="reg.mini.dev/openjre:21.0.8-dev"
+ARG BASE_DIGEST="sha256:fb5dc6ad558a42ad31117ce698f440862ff78dd3dcb3d94f59e3293ec038ff47"
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
 
 ### Build camunda from scratch ###
-FROM reg.mini.dev/openjdk:21-dev AS build
+FROM reg.mini.dev/openjdk:21.0.8-dev AS build
 
 # hadolint ignore=DL3002
 USER root
