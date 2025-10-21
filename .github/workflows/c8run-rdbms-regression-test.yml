@@ -72,14 +72,17 @@ jobs:
 
       - name: Run c8run
         run: |
-          if [[ "${{ matrix.config }}" == *"application-h2.yaml" ]]; then
+          echo "Matrix config: $CONFIG"
+          if [[ "$CONFIG" == *"application-h2.yaml" ]]; then
             echo "Using H2 configuration..."
-            cp ${{ matrix.config }} ./camunda/c8run/application.yaml
+            cp "$CONFIG" ./camunda/c8run/application.yaml
           else
             echo "Using default configuration (no override)"
           fi
           nohup ./start.sh --detached &
         working-directory: ./camunda/c8run
+        env:
+          CONFIG: ${{ matrix.config }}
 
       - name: Wait for app to start
         run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
