@@ -83,9 +83,7 @@ const IncidentsWrapper: React.FC<Props> = observer(
               count={filteredIncidents.length}
               size="sm"
             >
-              <IncidentsFilter
-                processInstanceKey={processInstance.processInstanceKey}
-              />
+              <IncidentsFilter />
             </PanelHeader>
             <IncidentsTable />
           </IncidentsOverlay>
@@ -172,7 +170,7 @@ const IncidentsWrapperContent: React.FC<IncidentsWrapperContentProps> =
             count={filteredIncidents.length}
             size="sm"
           >
-            <IncidentsFilter processInstanceKey={props.processInstanceKey} />
+            <IncidentsFilter />
           </PanelHeader>
           <IncidentsTableV2
             processInstanceKey={props.processInstanceKey}
