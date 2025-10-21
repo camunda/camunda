@@ -27,6 +27,7 @@ import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.jobhandling.DocumentContext;
+import io.camunda.client.jobhandling.parameter.KeyTargetType;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -60,6 +61,11 @@ public class AnnotationUtil {
     return parameterInfo.getParameter().isAnnotationPresent(Document.class)
         && (DOCUMENT_PARAMETER_TYPES.containsKey(
             parameterInfo.getParameter().getParameterizedType().getTypeName()));
+  }
+
+  public static boolean isProcessInstanceKey(final ParameterInfo parameterInfo) {
+    return parameterInfo.getParameter().isAnnotationPresent(ProcessInstanceKey.class)
+        && KeyTargetType.isValidParameterType(parameterInfo.getParameter().getType());
   }
 
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {
