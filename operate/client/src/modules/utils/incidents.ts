@@ -34,6 +34,10 @@ const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
   RESOURCE_NOT_FOUND: 'Resource not found.',
 };
 
+const availableErrorTypes = Object.keys(
+  ERROR_TYPE_NAMES,
+) as IncidentErrorType[];
+
 const getIncidentErrorName = (errorType: IncidentErrorType): string => {
   return ERROR_TYPE_NAMES[errorType];
 };
@@ -140,6 +144,7 @@ const getFilteredIncidentsV2 = (incidents: EnhancedIncident[]) => {
 };
 
 export {
+  availableErrorTypes,
   getIncidentErrorName,
   init,
   startPolling,

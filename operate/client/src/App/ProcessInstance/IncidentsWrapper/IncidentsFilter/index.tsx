@@ -13,17 +13,15 @@ import {tracking} from 'modules/tracking';
 import {Button, MultiSelect} from '@carbon/react';
 import {useIncidentsElements} from 'modules/hooks/incidents';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
-import {useProcessInstanceIncidentsErrorTypes} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
-import {getIncidentErrorName} from 'modules/utils/incidents';
+import {
+  availableErrorTypes,
+  getIncidentErrorName,
+} from 'modules/utils/incidents';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
-type Props = {
-  processInstanceKey: string;
-};
-
-const IncidentsFilter: React.FC<Props> = observer(({processInstanceKey}) => {
+const IncidentsFilter: React.FC = observer(() => {
   if (IS_INCIDENTS_PANEL_V2) {
-    return <IncidentsFilterV2 processInstanceKey={processInstanceKey} />;
+    return <IncidentsFilterV2 />;
   }
 
   const {
@@ -94,10 +92,7 @@ const IncidentsFilter: React.FC<Props> = observer(({processInstanceKey}) => {
   );
 });
 
-const IncidentsFilterV2: React.FC<Props> = observer(({processInstanceKey}) => {
-  const availableErrorTypes =
-    useProcessInstanceIncidentsErrorTypes(processInstanceKey);
-
+const IncidentsFilterV2: React.FC = observer(() => {
   return (
     <Layer>
       <Container>

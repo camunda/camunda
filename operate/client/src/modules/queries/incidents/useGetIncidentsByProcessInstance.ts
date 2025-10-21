@@ -52,21 +52,4 @@ function useProcessInstanceIncidentsCount(processInstanceKey: string): number {
   return data ?? 0;
 }
 
-function useProcessInstanceIncidentsErrorTypes(
-  processInstanceKey: string,
-): IncidentErrorType[] {
-  const {data} = useGetIncidentsByProcessInstance(processInstanceKey, {
-    select: (incidents) =>
-      Array.from(
-        new Set(incidents.items.map((incident) => incident.errorType)),
-      ),
-  });
-
-  return data ?? [];
-}
-
-export {
-  useGetIncidentsByProcessInstance,
-  useProcessInstanceIncidentsCount,
-  useProcessInstanceIncidentsErrorTypes,
-};
+export {useGetIncidentsByProcessInstance, useProcessInstanceIncidentsCount};
