@@ -16,6 +16,11 @@ import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INS
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
+import static io.camunda.it.util.TestHelper.createTenant;
+import static io.camunda.it.util.TestHelper.deleteTenant;
+import static io.camunda.it.util.TestHelper.deployResourceForTenant;
+import static io.camunda.it.util.TestHelper.startProcessInstanceForTenant;
+import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -70,17 +75,15 @@ public class OperateV1TenancyIT {
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_TO_BE_DELETED);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_TO_BE_DELETED);
+    createTenant(adminClient, TENANT_A, TENANT_A, ADMIN);
+    createTenant(adminClient, TENANT_TO_BE_DELETED, TENANT_TO_BE_DELETED, ADMIN);
 
-    deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
-    startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
+    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_A);
 
-    deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_TO_BE_DELETED);
-    startProcessInstance(adminClient, PROCESS_ID, TENANT_TO_BE_DELETED);
-    waitForProcessBeingExported(adminClient, 2);
+    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_TO_BE_DELETED);
+    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_TO_BE_DELETED);
+    waitForProcessInstances(adminClient, f -> f.processDefinitionId(PROCESS_ID), 2);
   }
 
   @Test
@@ -126,57 +129,5 @@ public class OperateV1TenancyIT {
             .map(ProcessInstance::getTenantId)
             .collect(Collectors.toSet());
     assertThat(tenants).containsExactlyInAnyOrder(expectedProcessInstanceTenants);
-  }
-
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
-  }
-
-  private static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newDeleteTenantCommand(tenant).send().join();
-  }
-
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
-  }
-
-  private static void deployResource(
-      final CamundaClient camundaClient, final String resourceName, final String tenant) {
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath(resourceName)
-        .tenantId(tenant)
-        .send()
-        .join();
-  }
-
-  private static void startProcessInstance(
-      final CamundaClient camundaClient, final String processId, final String tenant) {
-    camundaClient
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .tenantId(tenant)
-        .send()
-        .join();
-  }
-
-  private static void waitForProcessBeingExported(
-      final CamundaClient camundaClient, final int expectedDefinitions) {
-    Awaitility.await("should receive data from secondary storage")
-        .atMost(Duration.ofMinutes(1))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      camundaClient
-                          .newProcessInstanceSearchRequest()
-                          .filter(filter -> filter.processDefinitionId(fn -> fn.in(PROCESS_ID)))
-                          .send()
-                          .join()
-                          .items())
-                  .hasSize(expectedDefinitions);
-            });
   }
 }

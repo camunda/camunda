@@ -166,12 +166,27 @@ public final class TestHelper {
     }
   }
 
+  public static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
+    camundaClient.newDeleteTenantCommand(tenant).send().join();
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId) {
     return camundaClient
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
+        .send()
+        .join();
+  }
+
+  public static ProcessInstanceEvent startProcessInstanceForTenant(
+      final CamundaClient camundaClient, final String bpmnProcessId, final String tenant) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .tenantId(tenant)
         .send()
         .join();
   }
