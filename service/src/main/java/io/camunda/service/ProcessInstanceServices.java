@@ -18,6 +18,7 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
@@ -252,6 +253,18 @@ public final class ProcessInstanceServices
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord> resolveProcessInstanceIncidents(
+      final long processInstanceKey) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(
+                FilterBuilders.processInstance(f -> f.processInstanceKeys(processInstanceKey)))
+            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT)
             .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
