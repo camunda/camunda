@@ -15,6 +15,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
+import io.camunda.it.document.DocumentClient;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
@@ -97,7 +98,7 @@ public class BackupRestoreIT {
   @TestZeebe(autoStart = false)
   protected TestStandaloneApplication<?> testStandaloneApplication;
 
-  protected BackupDBClient webappsDBClient;
+  protected DocumentClient webappsDBClient;
 
   @RegisterExtension
   @SuppressWarnings("unused")
@@ -175,7 +176,7 @@ public class BackupRestoreIT {
     backupActuator = BackupActuator.of(testStandaloneApplication);
 
     historyBackupClient = HistoryBackupClient.of(testStandaloneApplication);
-    webappsDBClient = BackupDBClient.create(dbUrl, config.databaseType, EXECUTOR);
+    webappsDBClient = DocumentClient.create(dbUrl, config.databaseType, EXECUTOR);
     webappsDBClient.createRepository(REPOSITORY_NAME);
     generator = new DataGenerator(camundaClient, PROCESS_ID, TIMEOUT);
   }
