@@ -52,7 +52,7 @@ jobs:
   notify-camunda:
     name: Send Slack notification for 8.6+
     runs-on: ubuntu-latest
-    needs: [dry-run-release-86, dry-run-release-87]
+    needs: [dry-run-release-86, dry-run-release-87, dry-run-release-88]
     if: always()
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
