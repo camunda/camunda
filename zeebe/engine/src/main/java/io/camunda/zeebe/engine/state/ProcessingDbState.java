@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionStat
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
+import io.camunda.zeebe.engine.state.deployment.DbHistoryDeletionState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.deployment.DbResourceState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
+import io.camunda.zeebe.engine.state.mutable.MutableHistoryDeletionState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
@@ -135,6 +137,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableAsyncRequestState asyncRequestState;
   private final MutableMultiInstanceState multiInstanceState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final MutableHistoryDeletionState historyDeletionState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -194,6 +197,7 @@ public class ProcessingDbState implements MutableProcessingState {
     multiInstanceState = new DbMultiInstanceState(zeebeDb, transactionContext);
     asyncRequestState = new DbAsyncRequestState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
+    historyDeletionState = new DbHistoryDeletionState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -382,6 +386,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableMultiInstanceState getMultiInstanceState() {
     return multiInstanceState;
+  }
+
+  @Override
+  public MutableHistoryDeletionState getHistoryDeletionState() {
+    return historyDeletionState;
   }
 
   @Override

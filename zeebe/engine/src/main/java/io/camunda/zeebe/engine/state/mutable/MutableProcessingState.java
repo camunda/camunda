@@ -120,5 +120,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableMultiInstanceState getMultiInstanceState();
 
+  @Override
+  MutableHistoryDeletionState getHistoryDeletionState();
+
   KeyGenerator getKeyGenerator();
 }
