@@ -63,6 +63,7 @@ import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
@@ -470,6 +471,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return the builder for the command
    */
   ResolveIncidentCommandStep1 newResolveIncidentCommand(long incidentKey);
+
+  /**
+   * Command to resolve multiple existing incidents for one process instance.
+   *
+   * <pre>
+   * camundaClient
+   *  .newResolveProcessInstanceIncidentsCommand(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key of the process instance to resolve incidents for
+   * @return the builder for the command
+   */
+  ResolveProcessInstanceIncidentsCommandStep1 newResolveProcessInstanceIncidentsCommand(
+      long processInstanceKey);
 
   /**
    * Command to update the retries of a job.

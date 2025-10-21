@@ -59,7 +59,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
       final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
-    this.requestTimeout = requestTimeout;
+    requestTimeout(requestTimeout);
     this.retryPredicate = retryPredicate;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
