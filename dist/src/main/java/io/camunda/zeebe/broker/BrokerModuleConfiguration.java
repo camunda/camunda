@@ -26,6 +26,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -165,7 +168,16 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   @Bean
   public NodeIdMapperReadiness isReady(final NodeIdMapper nodeIdMapper) {
     LOGGER.info("Waiting until NodeIdMapper is ready");
-    return new NodeIdMapperReadiness(nodeIdMapper.waitUntilReady().join());
+    boolean isReady;
+    try {
+      isReady = nodeIdMapper.waitUntilReady().get(2, TimeUnit.MINUTES);
+    } catch (final ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    } catch (final TimeoutException e) {
+      isReady = true;
+    }
+
+    return new NodeIdMapperReadiness(isReady);
   }
 
   protected void startBroker() {

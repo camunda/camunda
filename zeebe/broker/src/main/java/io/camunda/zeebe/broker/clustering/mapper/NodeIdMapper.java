@@ -170,6 +170,7 @@ public class NodeIdMapper implements Closeable {
       final NodeInstance nodeInstance,
       final int clusterSize) {
     if (mappings.size() != clusterSize) {
+      LOG.warn("Mappings do not contain all nodes: {} of {}", mappings.size(), clusterSize);
       return false;
     }
     return mappings.stream()
@@ -180,11 +181,19 @@ public class NodeIdMapper implements Closeable {
               // If this node is not in the mapping, it means the node hasn't seen this
               // version yet
               if (versionInMapping == null) {
+                LOG.debug("No mapping found for nodeId {}", nodeInstance.id());
                 return false;
               }
 
               // Check if the version in the mapping matches this node's version
-              return versionInMapping == nodeInstance.version();
+              final var isDifferent = versionInMapping == nodeInstance.version();
+              if (isDifferent) {
+                LOG.debug(
+                    "Node contains mapping {} which is different than expected {}",
+                    versionInMapping,
+                    nodeInstance.version());
+              }
+              return isDifferent;
             });
   }
 
