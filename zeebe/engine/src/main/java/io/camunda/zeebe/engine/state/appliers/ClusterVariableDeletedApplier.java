@@ -23,6 +23,12 @@ public class ClusterVariableDeletedApplier
 
   @Override
   public void applyState(final long key, final ClusterVariableRecord clusterVariableRecord) {
-    clusterVariableState.deleteClusterVariable(clusterVariableRecord);
+    if (clusterVariableRecord.isTenantScoped()) {
+      clusterVariableState.deleteTenantScopedClusterVariable(
+          clusterVariableRecord.getNameBuffer(), clusterVariableRecord.getTenantId());
+    } else if (clusterVariableRecord.isGloballyScoped()) {
+      clusterVariableState.deleteGloballyScopedClusterVariable(
+          clusterVariableRecord.getNameBuffer());
+    }
   }
 }

@@ -23,6 +23,10 @@ public class ClusterVariableCreatedApplier
 
   @Override
   public void applyState(final long key, final ClusterVariableRecord clusterVariableRecord) {
-    clusterVariableState.create(clusterVariableRecord);
+    if (clusterVariableRecord.isTenantScoped()) {
+      clusterVariableState.createTenantScopedClusterVariable(clusterVariableRecord);
+    } else if (clusterVariableRecord.isGloballyScoped()) {
+      clusterVariableState.createGloballyScopedClusterVariable(clusterVariableRecord);
+    } // if ever no scope is given, it is better not to do anything for safety
   }
 }

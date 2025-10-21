@@ -66,6 +66,16 @@ public final class ClusterVariableClient {
     return this;
   }
 
+  public ClusterVariableClient setTenantScope() {
+    clusterVariableRecord.setTenantScope();
+    return this;
+  }
+
+  public ClusterVariableClient setGlobalScope() {
+    clusterVariableRecord.setGlobalScope();
+    return this;
+  }
+
   public ClusterVariableClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;

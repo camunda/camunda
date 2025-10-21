@@ -55,16 +55,19 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
-  public void create(final ClusterVariableRecord clusterVariableRecord) {
-    if (clusterVariableRecord.getTenantId() == null
-        || clusterVariableRecord.getTenantId().isBlank()) {
-      clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
-      clusterVariableScope.setValue(GLOBAL);
-    } else {
-      clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
-      clusterVariableScope.setValue(TENANT);
-      clusterVariableTenantId.wrapString(clusterVariableRecord.getTenantId());
-    }
+  public void createTenantScopedClusterVariable(final ClusterVariableRecord clusterVariableRecord) {
+    clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
+    clusterVariableScope.setValue(TENANT);
+    clusterVariableTenantId.wrapString(clusterVariableRecord.getTenantId());
+    clusterVariableInstance.setRecord(clusterVariableRecord);
+    clusterVariablesColumnFamily.insert(clusterVariableKey, clusterVariableInstance);
+  }
+
+  @Override
+  public void createGloballyScopedClusterVariable(
+      final ClusterVariableRecord clusterVariableRecord) {
+    clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
+    clusterVariableScope.setValue(GLOBAL);
     clusterVariableInstance.setRecord(clusterVariableRecord);
     clusterVariablesColumnFamily.insert(clusterVariableKey, clusterVariableInstance);
   }
