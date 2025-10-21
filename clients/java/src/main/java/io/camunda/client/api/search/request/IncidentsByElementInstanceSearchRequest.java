@@ -24,4 +24,3 @@ public interface IncidentsByElementInstanceSearchRequest
             ElementInstanceIncidentFilter, IncidentSort, IncidentsByElementInstanceSearchRequest>,
         TypedPageableRequest<IncidentsByElementInstanceSearchRequest>,
         FinalSearchRequestStep<Incident> {}
-

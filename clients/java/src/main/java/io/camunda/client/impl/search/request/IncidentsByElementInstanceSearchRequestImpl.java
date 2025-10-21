@@ -15,8 +15,8 @@
  */
 package io.camunda.client.impl.search.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.elementInstanceIncidentFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider.provideSearchRequestProperty;
 
@@ -32,8 +32,8 @@ import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.client.protocol.rest.ElementInstanceIncidentSearchQuery;
+import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
