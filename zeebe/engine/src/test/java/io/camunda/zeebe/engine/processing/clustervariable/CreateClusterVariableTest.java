@@ -69,6 +69,25 @@ public final class CreateClusterVariableTest {
   }
 
   @Test
+  public void createClusterVariableWithoutScope() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_1")
+            .withValue("\"VALUE\"")
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Invalid cluster variable scope. The scope must be either 'GLOBAL' or 'TENANT'.");
+  }
+
+  @Test
   public void createGlobalScopedClusterVariableAlreadyExists() {
     // given
     ENGINE_RULE

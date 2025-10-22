@@ -47,6 +47,7 @@ public class ClusterVariableCreateProcessor
 
     clusterVariableRecordValidator
         .validateName(clusterVariableRecord)
+        .flatMap(clusterVariableRecordValidator::ensureValidScope)
         .flatMap(clusterVariableRecordValidator::validateUniqueness)
         .ifRightOrLeft(
             record -> {

@@ -32,7 +32,7 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   private final BinaryProperty valueProp =
       new BinaryProperty(VALUE_KEY, new UnsafeBuffer(new byte[] {0}));
   private final EnumProperty<ClusterVariableScope> scopeProp =
-      new EnumProperty<>(SCOPE_KEY, ClusterVariableScope.class);
+      new EnumProperty<>(SCOPE_KEY, ClusterVariableScope.class, ClusterVariableScope.UNSPECIFIED);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
   public ClusterVariableRecord() {
@@ -63,19 +63,22 @@ public class ClusterVariableRecord extends UnifiedRecordValue
     return scopeProp.getValue();
   }
 
+  public ClusterVariableRecord setScope(final ClusterVariableScope scope) {
+    scopeProp.setValue(scope);
+    return this;
+  }
+
   public ClusterVariableRecord setName(final String name) {
     nameProp.setValue(name);
     return this;
   }
 
   public ClusterVariableRecord setTenantScope() {
-    scopeProp.setValue(ClusterVariableScope.TENANT);
-    return this;
+    return setScope(ClusterVariableScope.TENANT);
   }
 
   public ClusterVariableRecord setGlobalScope() {
-    scopeProp.setValue(ClusterVariableScope.GLOBAL);
-    return this;
+    return setScope(ClusterVariableScope.GLOBAL);
   }
 
   @JsonIgnore
@@ -98,10 +101,12 @@ public class ClusterVariableRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public boolean isTenantScoped() {
     return ClusterVariableScope.TENANT.equals(scopeProp.getValue());
   }
 
+  @JsonIgnore
   public boolean isGloballyScoped() {
     return ClusterVariableScope.GLOBAL.equals(scopeProp.getValue());
   }

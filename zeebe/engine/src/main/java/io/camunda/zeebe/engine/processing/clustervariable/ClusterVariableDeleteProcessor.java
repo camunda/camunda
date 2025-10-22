@@ -45,7 +45,8 @@ public class ClusterVariableDeleteProcessor
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
     clusterVariableRecordValidator
-        .validateExistence(clusterVariableRecord)
+        .ensureValidScope(clusterVariableRecord)
+        .flatMap(clusterVariableRecordValidator::validateExistence)
         .ifRightOrLeft(
             record -> {
               final long key = keyGenerator.nextKey();

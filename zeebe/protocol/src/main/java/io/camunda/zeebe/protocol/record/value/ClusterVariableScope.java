@@ -17,7 +17,8 @@ package io.camunda.zeebe.protocol.record.value;
 
 public enum ClusterVariableScope {
   GLOBAL("global"),
-  TENANT("tenant");
+  TENANT("tenant"),
+  UNSPECIFIED("unspecified");
 
   private final String scope;
 

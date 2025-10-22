@@ -7,26 +7,23 @@
  */
 package io.camunda.zeebe.engine.state.clustervariable;
 
-import static io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableScopeKey.Scope.GLOBAL;
-import static io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableScopeKey.Scope.TENANT;
-
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableScopeKey.Scope;
 import io.camunda.zeebe.engine.state.mutable.MutableClusterVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public class DbClusterVariableState implements MutableClusterVariableState {
 
   private final DbString clusterVariableName;
-  private final DbEnumValue<Scope> clusterVariableScope;
+  private final DbEnumValue<ClusterVariableScope> clusterVariableScope;
   private final DbString clusterVariableTenantId;
   private final DbCompositeKey<DbString, DbClusterVariableScopeKey> clusterVariableKey;
 
@@ -38,7 +35,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   public DbClusterVariableState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     clusterVariableName = new DbString();
-    clusterVariableScope = new DbEnumValue<>(Scope.class);
+    clusterVariableScope = new DbEnumValue<>(ClusterVariableScope.class);
     clusterVariableTenantId = new DbString();
     clusterVariableKey =
         new DbCompositeKey<>(
@@ -57,7 +54,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   @Override
   public void createTenantScopedClusterVariable(final ClusterVariableRecord clusterVariableRecord) {
     clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
-    clusterVariableScope.setValue(TENANT);
+    clusterVariableScope.setValue(ClusterVariableScope.TENANT);
     clusterVariableTenantId.wrapString(clusterVariableRecord.getTenantId());
     clusterVariableInstance.setRecord(clusterVariableRecord);
     clusterVariablesColumnFamily.insert(clusterVariableKey, clusterVariableInstance);
@@ -67,7 +64,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   public void createGloballyScopedClusterVariable(
       final ClusterVariableRecord clusterVariableRecord) {
     clusterVariableName.wrapBuffer(clusterVariableRecord.getNameBuffer());
-    clusterVariableScope.setValue(GLOBAL);
+    clusterVariableScope.setValue(ClusterVariableScope.GLOBAL);
     clusterVariableInstance.setRecord(clusterVariableRecord);
     clusterVariablesColumnFamily.insert(clusterVariableKey, clusterVariableInstance);
   }
@@ -76,7 +73,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   public void deleteTenantScopedClusterVariable(
       final DirectBuffer variableNameBuffer, final String tenantId) {
     clusterVariableName.wrapBuffer(variableNameBuffer);
-    clusterVariableScope.setValue(TENANT);
+    clusterVariableScope.setValue(ClusterVariableScope.TENANT);
     clusterVariableTenantId.wrapString(tenantId);
     clusterVariablesColumnFamily.deleteExisting(clusterVariableKey);
   }
@@ -84,7 +81,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   @Override
   public void deleteGloballyScopedClusterVariable(final DirectBuffer variableNameBuffer) {
     clusterVariableName.wrapBuffer(variableNameBuffer);
-    clusterVariableScope.setValue(GLOBAL);
+    clusterVariableScope.setValue(ClusterVariableScope.GLOBAL);
     clusterVariablesColumnFamily.deleteExisting(clusterVariableKey);
   }
 
@@ -92,7 +89,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   public Optional<ClusterVariableInstance> getTenantScopedClusterVariable(
       final DirectBuffer variableNameBuffer, final String tenantId) {
     clusterVariableName.wrapBuffer(variableNameBuffer);
-    clusterVariableScope.setValue(TENANT);
+    clusterVariableScope.setValue(ClusterVariableScope.TENANT);
     clusterVariableTenantId.wrapString(tenantId);
     return Optional.ofNullable(
         clusterVariablesColumnFamily.get(clusterVariableKey, ClusterVariableInstance::new));
@@ -102,7 +99,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   public Optional<ClusterVariableInstance> getGloballyScopedClusterVariable(
       final DirectBuffer variableNameBuffer) {
     clusterVariableName.wrapBuffer(variableNameBuffer);
-    clusterVariableScope.setValue(GLOBAL);
+    clusterVariableScope.setValue(ClusterVariableScope.GLOBAL);
     return Optional.ofNullable(
         clusterVariablesColumnFamily.get(clusterVariableKey, ClusterVariableInstance::new));
   }
@@ -110,7 +107,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   @Override
   public boolean existsAtTenantScope(final DirectBuffer variableNameBuffer, final String tenantId) {
     clusterVariableName.wrapBuffer(variableNameBuffer);
-    clusterVariableScope.setValue(TENANT);
+    clusterVariableScope.setValue(ClusterVariableScope.TENANT);
     clusterVariableTenantId.wrapString(tenantId);
     return clusterVariablesColumnFamily.exists(clusterVariableKey);
   }
@@ -118,7 +115,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   @Override
   public boolean existsAtGlobalScope(final DirectBuffer variableNameBuffer) {
     clusterVariableName.wrapBuffer(variableNameBuffer);
-    clusterVariableScope.setValue(GLOBAL);
+    clusterVariableScope.setValue(ClusterVariableScope.GLOBAL);
     return clusterVariablesColumnFamily.exists(clusterVariableKey);
   }
 }

@@ -82,4 +82,16 @@ public class ClusterVariableRecordValidator {
     return clusterVariableRecord.isGloballyScoped()
         && clusterVariableState.existsAtGlobalScope(clusterVariableRecord.getNameBuffer());
   }
+
+  public Either<Rejection, ClusterVariableRecord> ensureValidScope(
+      final ClusterVariableRecord clusterVariableRecord) {
+    if (clusterVariableRecord.isTenantScoped() || clusterVariableRecord.isGloballyScoped()) {
+      return Either.right(clusterVariableRecord);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Invalid cluster variable scope. The scope must be either 'GLOBAL' or 'TENANT'."));
+    }
+  }
 }
