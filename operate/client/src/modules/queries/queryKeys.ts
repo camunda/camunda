@@ -8,6 +8,8 @@
 
 import type {
   ProcessInstance,
+  QueryElementInstanceIncidentsRequestBody,
+  QueryProcessInstanceIncidentsRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
@@ -50,14 +52,19 @@ const queryKeys = {
     ],
   },
   incidents: {
-    searchByProcessInstanceKey: (processInstanceKey: string) => [
-      'incidentsSearchByProcessInstanceKey',
+    processInstanceIncidentsCount: (processInstanceKey: string) => [
+      'incidentsSearch',
+      'processInstanceIncidentsCount',
       processInstanceKey,
     ],
-    searchByElementInstanceKey: (elementInstanceKey: string) => [
-      'incidentsSearchByElementInstanceKey',
-      elementInstanceKey,
-    ],
+    searchByProcessInstanceKey: (
+      processInstanceKey: string,
+      payload?: QueryProcessInstanceIncidentsRequestBody,
+    ) => ['incidentsSearchByProcessInstanceKey', processInstanceKey, payload],
+    searchByElementInstanceKey: (
+      elementInstanceKey: string,
+      payload?: QueryElementInstanceIncidentsRequestBody,
+    ) => ['incidentsSearchByElementInstanceKey', elementInstanceKey, payload],
   },
 };
 
