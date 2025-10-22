@@ -55,35 +55,52 @@ const buildMutationRequestBody = ({
     requestBody.filter.state = {$eq: 'TERMINATED'};
   }
 
-  if (baseFilter.processIds && baseFilter.processIds.length > 0) {
+  if (
+    Array.isArray(baseFilter.processIds) &&
+    baseFilter.processIds.length > 0
+  ) {
     requestBody.filter.processDefinitionKey = {
       $in: baseFilter.processIds,
     };
   }
 
   if (baseFilter.startDateAfter || baseFilter.startDateBefore) {
-    requestBody.filter.startDate = {
-      ...(baseFilter.startDateAfter && {
-        $gt: formatToISO(baseFilter.startDateAfter),
-      }),
-      ...(baseFilter.startDateBefore && {
-        $lt: formatToISO(baseFilter.startDateBefore),
-      }),
-    };
+    const startDate: {
+      $gt?: string;
+      $lt?: string;
+    } = {};
+
+    if (baseFilter.startDateAfter) {
+      startDate.$gt = formatToISO(baseFilter.startDateAfter);
+    }
+    if (baseFilter.startDateBefore) {
+      startDate.$lt = formatToISO(baseFilter.startDateBefore);
+    }
+
+    requestBody.filter.startDate = startDate;
   }
 
   if (baseFilter.endDateAfter || baseFilter.endDateBefore) {
-    requestBody.filter.endDate = {
-      ...(baseFilter.endDateAfter && {
-        $gt: formatToISO(baseFilter.endDateAfter),
-      }),
-      ...(baseFilter.endDateBefore && {
-        $lt: formatToISO(baseFilter.endDateBefore),
-      }),
-    };
+    const endDate: {
+      $gt?: string;
+      $lt?: string;
+    } = {};
+
+    if (baseFilter.endDateAfter) {
+      endDate.$gt = formatToISO(baseFilter.endDateAfter);
+    }
+    if (baseFilter.endDateBefore) {
+      endDate.$lt = formatToISO(baseFilter.endDateBefore);
+    }
+
+    requestBody.filter.endDate = endDate;
   }
 
-  if (baseFilter.variable?.name && baseFilter.variable.values) {
+  if (
+    baseFilter.variable?.name &&
+    Array.isArray(baseFilter.variable.values) &&
+    baseFilter.variable.values.length > 0
+  ) {
     requestBody.filter.variables = baseFilter.variable.values.map((value) => {
       return {
         name: baseFilter.variable!.name,
