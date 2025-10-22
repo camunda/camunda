@@ -33,6 +33,13 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
 
+  @NestedConfigurationProperty
+  private Cache batchOperationCache = new Cache(databaseName(), "batchOperation");
+
+  @NestedConfigurationProperty private Cache processCache = new Cache(databaseName(), "process");
+
+  @NestedConfigurationProperty private Cache formCache = new Cache(databaseName(), "form");
+
   @NestedConfigurationProperty private PostExport postExport = new PostExport(databaseName());
 
   @NestedConfigurationProperty
@@ -78,6 +85,30 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
+  }
+
+  public Cache getBatchOperationCache() {
+    return batchOperationCache;
+  }
+
+  public void setBatchOperationCache(final Cache batchOperationCache) {
+    this.batchOperationCache = batchOperationCache;
+  }
+
+  public Cache getProcessCache() {
+    return processCache;
+  }
+
+  public void setProcessCache(final Cache processCache) {
+    this.processCache = processCache;
+  }
+
+  public Cache getFormCache() {
+    return formCache;
+  }
+
+  public void setFormCache(final Cache formCache) {
+    this.formCache = formCache;
   }
 
   public PostExport getPostExport() {

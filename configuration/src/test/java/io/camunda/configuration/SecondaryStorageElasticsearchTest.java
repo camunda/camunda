@@ -51,6 +51,10 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final int EXPECTED_BATCH_OPERATION_CACHE_MAX_SIZE = 5_000;
+  private static final int EXPECTED_PROCESS_CACHE_MAX_SIZE = 15_000;
+  private static final int EXPECTED_FORM_CACHE_MAX_SIZE = 20_000;
+
   private static final int EXPECTED_POST_EXPORT_BATCH_SIZE = 200;
   private static final int EXPECTED_POST_EXPORT_DELAY_BETWEEN_RUNS = 3000;
   private static final int EXPECTED_POST_EXPORT_MAX_DELAY_BETWEEN_RUNS = 70000;
@@ -414,6 +418,43 @@ public class SecondaryStorageElasticsearchTest {
       final ExporterConfiguration exporterConfiguration =
           UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://wanted-url:4321");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://expected-url:4321",
+        "camunda.data.secondary-storage.elasticsearch.batchOperation-cache.max-size="
+            + EXPECTED_BATCH_OPERATION_CACHE_MAX_SIZE,
+        "camunda.data.secondary-storage.elasticsearch.process-cache.max-size="
+            + EXPECTED_PROCESS_CACHE_MAX_SIZE,
+        "camunda.data.secondary-storage.elasticsearch.form-cache.max-size="
+            + EXPECTED_FORM_CACHE_MAX_SIZE,
+      })
+  class WithCachePropertiesSet {
+    final BrokerBasedProperties brokerBasedProperties;
+
+    WithCachePropertiesSet(@Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void testCachesAreConfiguredCorrectly() {
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+      assertThat(exporterConfiguration.getBatchOperationCache().getMaxCacheSize())
+          .isEqualTo(EXPECTED_BATCH_OPERATION_CACHE_MAX_SIZE);
+      assertThat(exporterConfiguration.getProcessCache().getMaxCacheSize())
+          .isEqualTo(EXPECTED_PROCESS_CACHE_MAX_SIZE);
+      assertThat(exporterConfiguration.getFormCache().getMaxCacheSize())
+          .isEqualTo(EXPECTED_FORM_CACHE_MAX_SIZE);
     }
   }
 }
