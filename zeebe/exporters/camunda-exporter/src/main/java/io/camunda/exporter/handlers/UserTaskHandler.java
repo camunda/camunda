@@ -115,6 +115,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
       case UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
         entity.setState(TaskState.CREATED);
+        entity.setCompletionTime(null);
         updateChangedAttributes(record, entity);
       }
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
@@ -203,6 +204,14 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     if (entity.getProcessDefinitionVersion() != null) {
       updateFields.put(
           TaskTemplate.PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    }
+
+    // TODO only apply for MIGRATION?
+    if (entity.getImplementation() != null) {
+      updateFields.put(TaskTemplate.IMPLEMENTATION, entity.getImplementation());
+    }
+    if (entity.getPriority() != null) {
+      updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
     }
 
     return updateFields;

@@ -51,7 +51,6 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -346,6 +345,18 @@ public class ProcessInstanceMigrationMigrateProcessor
         ProcessInstanceIntent.ELEMENT_MIGRATED,
         updatedElementInstanceRecord);
 
+    // Migrate user task and cancel job
+    if (isUserTaskConversion) {
+      tryMigrateJobWorkerToCamundaUserTask(
+          elementInstance,
+          updatedElementInstanceRecord,
+          sourceProcessDefinition,
+          targetProcessDefinition,
+          processInstanceKey,
+          elementId,
+          targetElementId);
+    }
+
     final Set<ExecutableSequenceFlow> sequenceFlows =
         getSequenceFlowsToMigrate(
             sourceProcessDefinition,
@@ -373,24 +384,9 @@ public class ProcessInstanceMigrationMigrateProcessor
               targetSequenceFlowId);
         });
 
-    final long jobKey = elementInstance.getJobKey();
-
-    // Migrate user task and cancel job
-    if (isUserTaskConversion) {
-      elementInstance.setJobKey(jobKey);
-      tryMigrateJobWorkerToCamundaUserTask(
-          elementInstance,
-          updatedElementInstanceRecord,
-          sourceProcessDefinition,
-          targetProcessDefinition,
-          processInstanceKey,
-          elementId,
-          targetElementId);
-    }
-
     // Migrate job if it is not a user task conversion
-    if (jobKey > 0 && !isUserTaskConversion) {
-      final var job = jobState.getJob(jobKey);
+    if (elementInstance.getJobKey() > 0 && !isUserTaskConversion) {
+      final var job = jobState.getJob(elementInstance.getJobKey());
       if (job == null) {
         throw new SafetyCheckFailedException(
             String.format(
@@ -398,10 +394,10 @@ public class ProcessInstanceMigrationMigrateProcessor
                 Expected to migrate a job for process instance with key '%d', \
                 but could not find job with key '%d'. \
                 Please report this as a bug""",
-                processInstanceKey, jobKey));
+                processInstanceKey, elementInstance.getJobKey()));
       }
       stateWriter.appendFollowUpEvent(
-          jobKey,
+          elementInstance.getJobKey(),
           JobIntent.MIGRATED,
           job.setProcessDefinitionKey(targetProcessDefinition.getKey())
               .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
@@ -419,7 +415,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           updatedElementInstanceRecord);
     }
 
-    final var jobIncidentKey = incidentState.getJobIncidentKey(jobKey);
+    final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
     if (jobIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
           jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
@@ -505,6 +501,15 @@ public class ProcessInstanceMigrationMigrateProcessor
               processInstanceKey, jobKey));
     }
 
+    // Cancel previous job worker job
+    stateWriter.appendFollowUpEvent(
+        jobKey,
+        JobIntent.CANCELED,
+        job.setProcessDefinitionKey(targetProcessDefinition.getKey())
+            .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+            .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+            .setElementId(targetElementId));
+
     final ExecutableJobWorkerElement sourceElement =
         sourceProcessDefinition
             .getProcess()
@@ -519,17 +524,18 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     // Create new Zeebe user task
     final var context = new BpmnElementContextImpl();
-    // FIXME use new key so previous job is not overridden
     context.init(
         elementInstance.getKey(), updatedElementInstanceRecord, elementInstance.getState());
 
-    final UserTaskRecord userTaskRecord =
+    final var userTaskRecord =
         userTaskBehavior.createNewUserTask(
+            jobKey, // job-based user tasks use the jobKey as userTaskKey
             context,
             sourceElement.getJobWorkerProperties().getTaskHeaders(),
             targetElement.getId(),
             userTaskProperties);
     userTaskBehavior.userTaskCreated(userTaskRecord);
+    elementInstance.setUserTaskKey(userTaskRecord.getUserTaskKey());
 
     final var assignee = userTaskProperties.getAssignee();
     if (StringUtils.isNotEmpty(assignee)) {
@@ -542,15 +548,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                       context, userTaskRecord, listener, userTaskRecord.getChangedAttributes()),
               () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
     }
-
-    // Cancel previous job worker job
-    stateWriter.appendFollowUpEvent(
-        jobKey,
-        JobIntent.CANCELED,
-        job.setProcessDefinitionKey(targetProcessDefinition.getKey())
-            .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-            .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-            .setElementId(targetElementId));
   }
 
   private static UserTaskProperties mapUserTaskProperties(
