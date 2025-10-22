@@ -17,10 +17,12 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -91,9 +93,10 @@ public class TenantAwareTimerStartEventTest {
     // then
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-                .withProcessDefinitionKey(processDefinitionKey))
+                .withProcessDefinitionKey(processDefinitionKey)
+                .getFirst())
         .extracting(r -> r.getValue().getTenantId(), Record::getIntent)
-        .containsSequence(tuple(TENANT, TimerIntent.TRIGGERED));
+        .containsSequence(TENANT, TimerIntent.TRIGGERED);
   }
 
   @Test
@@ -270,7 +273,14 @@ public class TenantAwareTimerStartEventTest {
 
     // then
     assertThat(
-            RecordingExporter.timerRecords(TimerIntent.CANCELED)
+            RecordingExporter.records()
+                .limit(
+                    record ->
+                        record.getIntent().equals(DeploymentIntent.CREATED)
+                            && ((DeploymentRecordValue) record.getValue()).getDeploymentKey()
+                                == tenantBDeployment.getKey())
+                .timerRecords()
+                .withIntent(TimerIntent.CANCELED)
                 .withProcessDefinitionKey(processDefinitionKey)
                 .exists())
         .isFalse();
