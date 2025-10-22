@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Ordering;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
@@ -17,11 +19,12 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequest {
 
@@ -55,7 +58,7 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
             .distinct()
             .toList();
 
-    final Map<Integer, Set<MemberId>> partitionsWithNewMembers =
+    final SortedMap<Integer, SortedSet<MemberId>> partitionsWithNewMembers =
         calculateNewConfiguration(clusterConfiguration, membersToRetain, partitions);
 
     final var partitionsWithNoReplicas =
@@ -80,7 +83,7 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
     final var memberToRemove =
         clusterConfiguration.members().keySet().stream()
             .filter(m -> !membersToRetain.contains(m))
-            .toList();
+            .collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural()));
 
     return generateOperations(partitionsWithNewMembers, memberToRemove);
   }
@@ -91,8 +94,8 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
   }
 
   private Either<Exception, List<ClusterConfigurationChangeOperation>> generateOperations(
-      final Map<Integer, Set<MemberId>> partitionsWithNewMembers,
-      final List<MemberId> memberToRemove) {
+      final SortedMap<Integer, SortedSet<MemberId>> partitionsWithNewMembers,
+      final SortedSet<MemberId> memberToRemove) {
 
     final var partitionForceConfigureOperations = reconfigurePartitions(partitionsWithNewMembers);
     final List<ClusterConfigurationChangeOperation> operations =
@@ -105,7 +108,7 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
   }
 
   private List<ClusterConfigurationChangeOperation> reconfigurePartitions(
-      final Map<Integer, Set<MemberId>> partitionsWithNewMembers) {
+      final SortedMap<Integer, SortedSet<MemberId>> partitionsWithNewMembers) {
     return partitionsWithNewMembers.entrySet().stream()
         .map(
             partition ->
@@ -118,21 +121,21 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
   }
 
   private List<ClusterConfigurationChangeOperation> forceRemoveMembers(
-      final List<MemberId> membersToRemove) {
+      final SortedSet<MemberId> membersToRemove) {
     return membersToRemove.stream()
         .map(member -> new MemberRemoveOperation(coordinator, member))
         .map(ClusterConfigurationChangeOperation.class::cast)
         .toList();
   }
 
-  private Map<Integer, Set<MemberId>> calculateNewConfiguration(
+  private SortedMap<Integer, SortedSet<MemberId>> calculateNewConfiguration(
       final ClusterConfiguration currentTopology,
       final Set<MemberId> membersToRetain,
       final List<Integer> partitions) {
 
-    final Map<Integer, Set<MemberId>> partitionToMembersMap = new HashMap<>();
+    final SortedMap<Integer, SortedSet<MemberId>> partitionToMembersMap = new TreeMap<>();
     for (final var partitionId : partitions) {
-      partitionToMembersMap.put(partitionId, new HashSet<>());
+      partitionToMembersMap.put(partitionId, new TreeSet<>());
       for (final var member : membersToRetain) {
         if (currentTopology.getMember(member).hasPartition(partitionId)) {
           partitionToMembersMap.computeIfPresent(
