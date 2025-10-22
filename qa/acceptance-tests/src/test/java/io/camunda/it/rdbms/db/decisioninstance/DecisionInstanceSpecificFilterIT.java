@@ -70,8 +70,8 @@ public class DecisionInstanceSpecificFilterIT {
     createAndSaveRandomDecisionInstances(
         rdbmsWriter,
         b ->
-            b.state(DecisionInstanceState.EVALUATED)
-                .decisionType(DecisionDefinitionType.DECISION_TABLE)
+            b.state(DecisionInstanceState.FAILED)
+                .decisionType(DecisionDefinitionType.LITERAL_EXPRESSION)
                 .decisionDefinitionKey(decisionDefinition.decisionDefinitionKey())
                 .decisionDefinitionId(decisionDefinition.decisionDefinitionId()));
   }
