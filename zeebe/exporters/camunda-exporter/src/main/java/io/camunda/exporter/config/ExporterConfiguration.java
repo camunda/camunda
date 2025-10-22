@@ -188,7 +188,7 @@ public class ExporterConfiguration {
     private boolean processInstanceEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
-    private String usageMetricsRolloverInterval = "1w";
+    private String usageMetricsRolloverInterval = "1M";
     private int rolloverBatchSize = 100;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
