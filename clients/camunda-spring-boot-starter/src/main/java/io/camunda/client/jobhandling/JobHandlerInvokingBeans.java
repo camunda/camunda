@@ -17,7 +17,6 @@ package io.camunda.client.jobhandling;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.CompleteJobCommandStep1.ResultFunction;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
@@ -102,8 +101,8 @@ public class JobHandlerInvokingBeans implements JobHandler {
   private FinalCommandStep<CompleteJobResponse> createCompleteCommand(
       final JobClient jobClient, final ActivatedJob job, final Object result) {
     final CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
-    if (result instanceof final ResultFunction resultFunction) {
-      return completeCommand.withResult(resultFunction);
+    if (result instanceof final UserTaskResultFunction resultFunction) {
+      return completeCommand.withResult(r -> resultFunction.apply(r.forUserTask()));
     } else {
       return JobHandlingUtil.applyVariables(result, completeCommand);
     }

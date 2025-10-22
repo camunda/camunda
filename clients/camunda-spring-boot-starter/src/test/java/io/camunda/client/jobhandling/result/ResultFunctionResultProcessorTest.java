@@ -18,15 +18,15 @@ package io.camunda.client.jobhandling.result;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.client.api.command.CompleteJobCommandStep1.ResultFunction;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.jobhandling.UserTaskResultFunction;
 import org.junit.jupiter.api.Test;
 
 public class ResultFunctionResultProcessorTest {
 
   @Test
   void shouldReturnResultFunction() {
-    final ResultFunction resultFunction = r -> r.forUserTask().correctAssignee("demo");
+    final UserTaskResultFunction resultFunction = r -> r.correctAssignee("demo");
     final ResultFunctionResultProcessor resultFunctionResultProcessor =
         new ResultFunctionResultProcessor();
     final Object processedResult =

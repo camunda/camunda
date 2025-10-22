@@ -13,18 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.jobhandling.result;
+package io.camunda.client.jobhandling;
 
-import io.camunda.client.jobhandling.UserTaskResultFunction;
+import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
+import java.util.function.Function;
 
-public class ResultFunctionResultProcessor implements ResultProcessor {
-  @Override
-  public Object process(final ResultProcessorContext context) {
-    if (context.getResult() instanceof UserTaskResultFunction) {
-      return context.getResult();
-    } else {
-      throw new IllegalStateException(
-          "Cannot process result of type " + context.getResult().getClass().getName());
-    }
-  }
-}
+public interface UserTaskResultFunction
+    extends Function<CompleteUserTaskJobResultStep1, CompleteJobResult> {}
