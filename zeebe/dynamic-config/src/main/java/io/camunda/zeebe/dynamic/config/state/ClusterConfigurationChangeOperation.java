@@ -9,8 +9,10 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * An operation that changes the configuration. The operation could be a member join or leave a
@@ -80,7 +82,11 @@ public sealed interface ClusterConfigurationChangeOperation {
      */
     record AwaitRedistributionCompletion(
         MemberId memberId, int desiredPartitionCount, SortedSet<Integer> partitionsToRedistribute)
-        implements ScaleUpOperation {}
+        implements ScaleUpOperation {
+      public AwaitRedistributionCompletion {
+        partitionsToRedistribute = new TreeSet<>(partitionsToRedistribute);
+      }
+    }
 
     /**
      * @param memberId the id of the member that initiated the scale up
@@ -89,7 +95,11 @@ public sealed interface ClusterConfigurationChangeOperation {
      */
     record AwaitRelocationCompletion(
         MemberId memberId, int desiredPartitionCount, SortedSet<Integer> partitionsToRelocate)
-        implements ScaleUpOperation {}
+        implements ScaleUpOperation {
+      public AwaitRelocationCompletion {
+        partitionsToRelocate = new TreeSet<>(partitionsToRelocate);
+      }
+    }
   }
 
   sealed interface PartitionChangeOperation extends ClusterConfigurationChangeOperation {
@@ -134,7 +144,11 @@ public sealed interface ClusterConfigurationChangeOperation {
      */
     record PartitionForceReconfigureOperation(
         MemberId memberId, int partitionId, Collection<MemberId> members)
-        implements PartitionChangeOperation {}
+        implements PartitionChangeOperation {
+      public PartitionForceReconfigureOperation {
+        members = List.copyOf(members);
+      }
+    }
 
     /**
      * Operation to disable an exporter on a partition in the given member.

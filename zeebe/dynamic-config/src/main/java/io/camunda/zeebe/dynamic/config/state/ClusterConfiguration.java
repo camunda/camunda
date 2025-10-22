@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * @param version - represents the current version of the configuration. It is incremented only by
  *     the coordinator when a new configuration change is triggered.
  * @param members - represents the state of each member
- * @param pendingChanges- keeps track of the ongoing configuration changes
+ * @param pendingChanges - keeps track of the ongoing configuration changes
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
  */
@@ -42,6 +42,10 @@ public record ClusterConfiguration(
 
   public static final int INITIAL_VERSION = 1;
   private static final int UNINITIALIZED_VERSION = -1;
+
+  public ClusterConfiguration {
+    members = Map.copyOf(members);
+  }
 
   public static ClusterConfiguration uninitialized() {
     return new ClusterConfiguration(

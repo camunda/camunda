@@ -30,6 +30,11 @@ public record ClusterChangePlan(
     List<CompletedOperation> completedOperations,
     List<ClusterConfigurationChangeOperation> pendingOperations) {
 
+  public ClusterChangePlan {
+    completedOperations = List.copyOf(completedOperations);
+    pendingOperations = List.copyOf(pendingOperations);
+  }
+
   public static ClusterChangePlan init(
       final long id, final List<ClusterConfigurationChangeOperation> operations) {
     return new ClusterChangePlan(

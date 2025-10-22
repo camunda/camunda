@@ -20,6 +20,10 @@ import java.util.Optional;
  */
 public record ExportingConfig(ExportingState state, Map<String, ExporterState> exporters) {
 
+  public ExportingConfig {
+    exporters = Map.copyOf(exporters);
+  }
+
   public static ExportingConfig init() {
     return new ExportingConfig(null, Map.of());
   }

@@ -27,6 +27,11 @@ import java.util.function.UnaryOperator;
  */
 public record MemberState(
     long version, Instant lastUpdated, State state, Map<Integer, PartitionState> partitions) {
+
+  public MemberState {
+    partitions = Map.copyOf(partitions);
+  }
+
   public static MemberState initializeAsActive(
       final Map<Integer, PartitionState> initialPartitions) {
     return new MemberState(0, Instant.MIN, State.ACTIVE, Map.copyOf(initialPartitions));
