@@ -37,7 +37,7 @@ permissions:
 
 jobs:
   build_and_test_c8run:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       fail-fast: false
