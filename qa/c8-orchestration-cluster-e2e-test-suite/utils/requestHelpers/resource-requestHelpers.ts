@@ -7,6 +7,9 @@
  */
 
 import {expect} from '@playwright/test';
+import {readFileSync} from 'node:fs';
+import {APIRequestContext} from 'playwright-core';
+import {assertStatusCode, buildUrl, defaultHeaders} from '../http';
 
 export function validateProcessDefinitionDeployment(
   deployments: unknown[],
@@ -141,4 +144,96 @@ export function validateDeploymentResponse(
   expect(body.tenantId).toEqual('<default>');
   expect(body.deploymentKey).toBeDefined();
   expect(body.deployments.length).toBe(expectedDeploymentCount);
+}
+
+export function createResourceFormData(resourceName: string): FormData {
+  const formData = new FormData();
+  const blob = createResourceBlob(resourceName);
+  formData.append('resources', blob, resourceName);
+  return formData;
+}
+
+export function createMultiResourceFormData(
+  ...resourceNames: string[]
+): FormData {
+  const formData = new FormData();
+  for (const resourceName of resourceNames) {
+    const blob = createResourceBlob(resourceName);
+    formData.append('resources', blob, resourceName);
+  }
+  return formData;
+}
+
+function createResourceBlob(resourceName: string) {
+  const resourcePath = `./resources/${resourceName}`;
+  const resourceBuffer = readFileSync(resourcePath);
+  const mimeType = resourceName.endsWith('.bpmn')
+    ? 'application/xml'
+    : 'application/json';
+  return new Blob([resourceBuffer], {type: mimeType});
+}
+
+export interface ResourceMetadata {
+  resourceKey: string;
+  resourceName: string;
+  resourceId?: string;
+  version?: number;
+}
+
+export async function deployResourceAndGetMetadata(
+  request: APIRequestContext,
+  resourceName: string,
+  deploymentIndex: number = 0,
+): Promise<ResourceMetadata> {
+  const formData = createResourceFormData(resourceName);
+
+  const res = await request.post(buildUrl('/deployments'), {
+    headers: defaultHeaders(),
+    multipart: formData,
+  });
+
+  await assertStatusCode(res, 200);
+  const body = await res.json();
+  expect(body.deployments.length).toBeGreaterThan(deploymentIndex);
+
+  const deployment = body.deployments[deploymentIndex];
+
+  if (deployment.processDefinition) {
+    return {
+      resourceKey: deployment.processDefinition.processDefinitionKey,
+      resourceName: deployment.processDefinition.resourceName,
+      resourceId: deployment.processDefinition.processDefinitionId,
+      version: deployment.processDefinition.version,
+    };
+  } else if (deployment.form) {
+    return {
+      resourceKey: deployment.form.formKey,
+      resourceName: deployment.form.resourceName,
+      resourceId: deployment.form.formId,
+      version: deployment.form.version,
+    };
+  } else if (deployment.decisionDefinition) {
+    return {
+      resourceKey: deployment.decisionDefinition.decisionDefinitionKey,
+      resourceName: deployment.decisionDefinition.name,
+      resourceId: deployment.decisionDefinition.decisionDefinitionId,
+      version: deployment.decisionDefinition.version,
+    };
+  } else if (deployment.decisionRequirements) {
+    return {
+      resourceKey: deployment.decisionRequirements.decisionRequirementsKey,
+      resourceName: deployment.decisionRequirements.resourceName,
+      resourceId: deployment.decisionRequirements.decisionRequirementsId,
+      version: deployment.decisionRequirements.version,
+    };
+  } else if (deployment.resource) {
+    return {
+      resourceKey: deployment.resource.resourceKey,
+      resourceName: deployment.resource.resourceName,
+      resourceId: deployment.resource.resourceId,
+      version: deployment.resource.version,
+    };
+  }
+
+  throw new Error(`Unknown deployment type: ${JSON.stringify(deployment)}`);
 }

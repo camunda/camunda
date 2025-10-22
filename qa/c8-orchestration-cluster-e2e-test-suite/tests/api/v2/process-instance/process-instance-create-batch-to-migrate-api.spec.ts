@@ -20,9 +20,9 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {findUserTask} from '../../../../utils/requestHelpers';
 import {APIRequestContext} from 'playwright-core';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {

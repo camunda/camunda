@@ -19,9 +19,10 @@ import {
   assertDecisionDefinitionInResponse,
   DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT,
   deployDecisionAndStoreResponse,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search Decision Definitions API Tests', () => {
   const state: Record<string, unknown> = {};
   let decisionDefinition1: DecisionDeployment;

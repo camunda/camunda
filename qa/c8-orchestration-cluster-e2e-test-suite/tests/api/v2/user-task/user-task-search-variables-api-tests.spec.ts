@@ -7,10 +7,7 @@
  */
 
 import test, {expect} from '@playwright/test';
-import {
-  findUserTask,
-  setupProcessInstanceTests,
-} from '../../../../utils/requestHelpers';
+import {setupProcessInstanceForTests} from '@requestHelpers';
 import {
   assertBadRequest,
   assertUnauthorizedRequest,
@@ -19,14 +16,16 @@ import {
 } from 'utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponseShape} from 'assert-json-body';
+import {findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search User Task Variables Tests', () => {
-  const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'user_task_api_test_process',
-    'user_task_api_test_process',
-    {testset1: 'something', testset2: 'something else', zip: 123},
-  );
+  const {state, beforeAll, beforeEach, afterEach} =
+    setupProcessInstanceForTests(
+      'user_task_api_test_process',
+      'user_task_api_test_process',
+      {testset1: 'something', testset2: 'something else', zip: 123},
+    );
 
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
