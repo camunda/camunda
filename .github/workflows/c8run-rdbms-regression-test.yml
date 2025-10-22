@@ -120,6 +120,7 @@ jobs:
 
       - name: Shut down Docker Compose
         if: always()
+        working-directory: ./c8run
         run: ./shutdown.sh
 
       - uses: actions/upload-artifact@v4
