@@ -230,7 +230,7 @@ public class ProtoBufSerializer
     return new DynamicPartitionConfig(decodeExportingConfig(config.getExporting()));
   }
 
-  private ExportingConfig decodeExportingConfig(final Topology.ExportingConfig exporting) {
+  ExportingConfig decodeExportingConfig(final Topology.ExportingConfig exporting) {
     return new ExportingConfig(
         decodeExportingState(exporting.getState()),
         exporting.getExportersMap().entrySet().stream()
