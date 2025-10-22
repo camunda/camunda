@@ -37,7 +37,6 @@ permissions:
 
 jobs:
   build_and_test_c8run:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: macos-latest
     strategy:
       max-parallel: 1
