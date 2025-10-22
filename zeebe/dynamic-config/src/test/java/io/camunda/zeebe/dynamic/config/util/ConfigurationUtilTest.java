@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -32,6 +33,7 @@ class ConfigurationUtilTest {
   private final DynamicPartitionConfig partitionConfig =
       new DynamicPartitionConfig(
           new ExportingConfig(
+              ExportingState.EXPORTING,
               Map.of("expA", new ExporterState(1, ExporterState.State.ENABLED, Optional.empty()))));
 
   @Test

@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -51,6 +52,7 @@ final class PartitionConfigurationManagerTest {
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of(exporterId, new ExporterState(0, State.ENABLED, Optional.empty()))));
 
     @BeforeEach
@@ -133,6 +135,7 @@ final class PartitionConfigurationManagerTest {
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of(
                     exporterId, new ExporterState(0, State.CONFIG_NOT_FOUND, Optional.empty()))));
 
@@ -214,6 +217,7 @@ final class PartitionConfigurationManagerTest {
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of(
                     validExporterToInitialize,
                     new ExporterState(0, State.ENABLED, Optional.empty()))));

@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -48,7 +49,9 @@ final class PartitionEnableExporterApplierTest {
                   m.addPartition(
                       partitionId,
                       PartitionState.active(
-                          1, new DynamicPartitionConfig(new ExportingConfig(Map.of())))));
+                          1,
+                          new DynamicPartitionConfig(
+                              new ExportingConfig(ExportingState.EXPORTING, Map.of())))));
 
   @Test
   void shouldRejectWhenMemberDoesNotExist() {
@@ -100,6 +103,7 @@ final class PartitionEnableExporterApplierTest {
     final var configWithDisabledExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of("other", new ExporterState(0, State.DISABLED, Optional.empty()))));
     final var clusterConfiguration =
         clusterConfigWithPartition.updateMember(
@@ -122,6 +126,7 @@ final class PartitionEnableExporterApplierTest {
     final var configWithOtherExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of("other", new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var clusterConfiguration =
         ClusterConfiguration.init()
@@ -164,6 +169,7 @@ final class PartitionEnableExporterApplierTest {
     final var configWithOtherExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of("other", new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var clusterConfiguration =
         ClusterConfiguration.init()

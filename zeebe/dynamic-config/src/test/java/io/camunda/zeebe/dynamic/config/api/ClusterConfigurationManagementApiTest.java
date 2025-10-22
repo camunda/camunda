@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -442,6 +443,7 @@ final class ClusterConfigurationManagementApiTest {
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var configurationWithExporter =
         initialTopology.updateMember(
@@ -465,6 +467,7 @@ final class ClusterConfigurationManagementApiTest {
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var configurationWithExporter =
         initialTopology.updateMember(
@@ -489,6 +492,7 @@ final class ClusterConfigurationManagementApiTest {
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of(exporterId, new ExporterState(1, State.DISABLED, Optional.empty()))));
     final var configurationWithExporter =
         initialTopology.updateMember(

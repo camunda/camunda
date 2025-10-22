@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
@@ -168,6 +169,7 @@ final class PartitionBootstrapApplierTest {
           DynamicPartitionConfig.init()
               .updateExporting(
                   new ExportingConfig(
+                      ExportingState.EXPORTING,
                       Map.of(
                           "exporter",
                           new ExporterState(
@@ -203,6 +205,7 @@ final class PartitionBootstrapApplierTest {
           DynamicPartitionConfig.init()
               .updateExporting(
                   new ExportingConfig(
+                      ExportingState.EXPORTING,
                       Map.of(
                           "exporter",
                           new ExporterState(

@@ -17,7 +17,7 @@ public record DynamicPartitionConfig(ExportingConfig exporting) {
   }
 
   public static DynamicPartitionConfig init() {
-    return new DynamicPartitionConfig(ExportingConfig.empty());
+    return new DynamicPartitionConfig(ExportingConfig.init());
   }
 
   public boolean isInitialized() {
