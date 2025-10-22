@@ -247,6 +247,25 @@ const jobMetadata: Job = {
   deniedReason: '',
 };
 
+const calledDecisionInstanceMetadata = {
+  decisionEvaluationKey: '9876543210',
+  decisionEvaluationInstanceKey: '9876543210',
+  decisionDefinitionName: 'Approval Rules',
+  decisionDefinitionId: 'approval-decision',
+  decisionDefinitionKey: '123456',
+  decisionDefinitionVersion: 1,
+  decisionDefinitionType: 'DECISION_TABLE' as const,
+  processDefinitionKey: '2',
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  elementInstanceKey: '2251799813699889',
+  state: 'EVALUATED' as const,
+  evaluationDate: '2023-01-15T10:05:00.000Z',
+  evaluationFailure: '',
+  tenantId: '<default>',
+  result: '',
+  rootDecisionDefinitionKey: '123456',
+};
+
 export {
   baseMetadata as singleInstanceMetadata,
   incidentFlowNodeMetaData,
@@ -262,6 +281,7 @@ export {
   incidentsByProcessKeyMetadata,
   processDefinitionMetadata,
   jobMetadata,
+  calledDecisionInstanceMetadata,
   PROCESS_INSTANCE_ID,
   CALL_ACTIVITY_FLOW_NODE_ID,
   FLOW_NODE_ID,

@@ -22,6 +22,7 @@ const invoiceClassification: GetDecisionInstanceResponseBody = {
   processDefinitionKey: '666',
   elementInstanceKey: '37423847',
   evaluationFailure: '',
+  rootDecisionDefinitionKey: '111',
   evaluatedInputs: [
     {inputId: '0', inputName: 'Age', inputValue: '16'},
     {inputId: '1', inputName: 'Stateless Person', inputValue: 'false'},
@@ -122,6 +123,7 @@ const assignApproverGroup: GetDecisionInstanceResponseBody = {
   processDefinitionKey: '777',
   elementInstanceKey: '2347238947239',
   evaluationFailure: 'An error occurred',
+  rootDecisionDefinitionKey: '111',
   evaluatedInputs: [
     {
       inputId: '0',
@@ -166,6 +168,7 @@ const literalExpression: GetDecisionInstanceResponseBody = {
   processDefinitionKey: '42',
   elementInstanceKey: '623426348231',
   evaluationFailure: '',
+  rootDecisionDefinitionKey: '111',
   evaluatedInputs: [],
   matchedRules: [],
   decisionDefinitionType: 'LITERAL_EXPRESSION',
