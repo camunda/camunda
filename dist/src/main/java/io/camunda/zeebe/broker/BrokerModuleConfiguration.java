@@ -169,12 +169,14 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   public NodeIdMapperReadiness isReady(final NodeIdMapper nodeIdMapper) {
     LOGGER.info("Waiting until NodeIdMapper is ready");
     boolean isReady;
+    final var future = nodeIdMapper.waitUntilReady();
     try {
-      isReady = nodeIdMapper.waitUntilReady().get(2, TimeUnit.MINUTES);
+      isReady = future.get(2, TimeUnit.MINUTES);
     } catch (final ExecutionException | InterruptedException e) {
       throw new RuntimeException(e);
     } catch (final TimeoutException e) {
       isReady = true;
+      future.cancel(true);
     }
 
     return new NodeIdMapperReadiness(isReady);
