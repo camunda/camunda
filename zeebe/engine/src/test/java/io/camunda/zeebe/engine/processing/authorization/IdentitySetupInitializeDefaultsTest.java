@@ -312,14 +312,14 @@ public class IdentitySetupInitializeDefaultsTest {
             RecordingExporter.records()
                 .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
                 .authorizationRecords()
-                .withOwnerId(DefaultRole.APPS_INTEGRATION.getId()))
+                .withOwnerId(DefaultRole.APP_INTEGRATIONS.getId()))
         .extracting(Record::getValue)
         .describedAs(
             "Expect all apps_integration role authorizations to be owned by the apps_integration role")
         .allSatisfy(
             auth ->
                 Assertions.assertThat(auth)
-                    .hasOwnerId(DefaultRole.APPS_INTEGRATION.getId())
+                    .hasOwnerId(DefaultRole.APP_INTEGRATIONS.getId())
                     .hasOwnerType(AuthorizationOwnerType.ROLE))
         .describedAs(
             "Expect the apps_integration role authorizations to have specific resource permissions")

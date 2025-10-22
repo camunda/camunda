@@ -232,7 +232,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   }
 
   private static void setupAppIntegrationsRole(final IdentitySetupRecord setupRecord) {
-    final var appIntegrationsRoleId = DefaultRole.APPS_INTEGRATION.getId();
+    final var appIntegrationsRoleId = DefaultRole.APP_INTEGRATIONS.getId();
     setupRecord.addRole(
         new RoleRecord().setRoleId(appIntegrationsRoleId).setName("App Integrations"));
     setupRecord.addAuthorization(
