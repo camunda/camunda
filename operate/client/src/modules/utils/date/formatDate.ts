@@ -21,4 +21,12 @@ function formatDate(
     : placeholder;
 }
 
-export {parseDate, formatDate};
+const formatToISO = (dateString: string | undefined): string | undefined => {
+  if (!dateString) {
+    return undefined;
+  }
+  const date = new Date(dateString);
+  return date.toISOString();
+};
+
+export {parseDate, formatDate, formatToISO};

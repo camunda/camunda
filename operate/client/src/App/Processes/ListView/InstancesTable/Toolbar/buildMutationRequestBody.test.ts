@@ -12,6 +12,7 @@ import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
+import {formatToISO} from 'modules/utils/date/formatDate';
 
 type Body =
   | CreateIncidentResolutionBatchOperationRequestBody
@@ -67,23 +68,6 @@ describe('buildMutationRequestBody', () => {
         elementId: 'taskA',
         hasIncident: true,
         processInstanceKey: {$in: ['1', '2'], $notIn: ['3']},
-      },
-    });
-  });
-
-  it('adds processDefinitionKey when provided', () => {
-    const body: Body = buildMutationRequestBody({
-      baseFilter,
-      includeIds: [],
-      excludeIds: [],
-      processDefinitionKey: '2251799813693459',
-    });
-
-    expect(body).toEqual({
-      filter: {
-        elementId: 'taskA',
-        hasIncident: true,
-        processDefinitionKey: '2251799813693459',
       },
     });
   });
@@ -172,6 +156,158 @@ describe('buildMutationRequestBody', () => {
       filter: {
         elementId: 'taskA',
         state: {$eq: 'ACTIVE'},
+      },
+    });
+  });
+
+  it('maps additional baseFilter fields to request body', () => {
+    const body: Body = buildMutationRequestBody({
+      baseFilter: {
+        activityId: 'taskA',
+        errorMessage: 'some error',
+        tenantId: 'tenant-xyz',
+        batchOperationId: 'batch-123',
+        parentInstanceId: 'parent-456',
+        retriesLeft: true,
+        incidentErrorHashCode: 37136123613781,
+      } as RequestFilters,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        elementId: 'taskA',
+        errorMessage: 'some error',
+        tenantId: 'tenant-xyz',
+        batchOperationKey: 'batch-123',
+        parentProcessInstanceKey: 'parent-456',
+        hasRetriesLeft: true,
+        incidentErrorHashCode: 37136123613781,
+      },
+    });
+  });
+
+  it('maps processIds to processDefinitionKey $in', () => {
+    const body: Body = buildMutationRequestBody({
+      baseFilter: {
+        activityId: 'taskA',
+        incidents: false,
+        processIds: ['p1', 'p2'],
+      } as RequestFilters,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        elementId: 'taskA',
+        processDefinitionKey: {$in: ['p1', 'p2']},
+      },
+    });
+  });
+
+  it('maps startDateAfter / startDateBefore to startDate $gt/$lt', () => {
+    const after = '2020-01-01T00:00:00Z';
+    const before = '2020-01-02T00:00:00Z';
+
+    const body: Body = buildMutationRequestBody({
+      baseFilter: {
+        startDateAfter: after,
+        startDateBefore: before,
+      } as RequestFilters,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        startDate: {$gt: formatToISO(after), $lt: formatToISO(before)},
+      },
+    });
+  });
+
+  it('maps endDateAfter / endDateBefore to endDate $gt/$lt', () => {
+    const after = '2020-01-01T00:00:00Z';
+    const before = '2020-01-02T00:00:00Z';
+
+    const body: Body = buildMutationRequestBody({
+      baseFilter: {
+        endDateAfter: after,
+        endDateBefore: before,
+      } as RequestFilters,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        endDate: {$gt: formatToISO(after), $lt: formatToISO(before)},
+      },
+    });
+  });
+
+  it('maps variable name and values to variables array', () => {
+    const body: Body = buildMutationRequestBody({
+      baseFilter: {
+        incidents: false,
+        variable: {name: 'foo', values: ['a', 'b']},
+      } as RequestFilters,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        variables: [
+          {name: 'foo', value: 'a'},
+          {name: 'foo', value: 'b'},
+        ],
+      },
+    });
+  });
+
+  it('maps completed and canceled flags to state correctly', () => {
+    const both: Body = buildMutationRequestBody({
+      baseFilter: {
+        completed: true,
+        canceled: true,
+      } as RequestFilters,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(both).toEqual({
+      filter: {
+        state: {$in: ['COMPLETED', 'TERMINATED']},
+      },
+    });
+
+    const onlyCompleted: Body = buildMutationRequestBody({
+      baseFilter: {
+        completed: true,
+      } as RequestFilters,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(onlyCompleted).toEqual({
+      filter: {
+        state: {$eq: 'COMPLETED'},
+      },
+    });
+
+    const onlyCanceled: Body = buildMutationRequestBody({
+      baseFilter: {
+        canceled: true,
+      } as RequestFilters,
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(onlyCanceled).toEqual({
+      filter: {
+        state: {$eq: 'TERMINATED'},
       },
     });
   });
