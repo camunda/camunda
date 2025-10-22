@@ -1,10 +1,13 @@
-# description: Runs regression tests on Identity. Tests are defined as .http files
+# description: Runs regression tests on C8Run. Tests are defined as .http files
 # test location: /qa/http/c8run-tests
 # type: CI
 # owner: @camunda/identity
 name: C8Run RDBMS Regression Tests
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       branch:
