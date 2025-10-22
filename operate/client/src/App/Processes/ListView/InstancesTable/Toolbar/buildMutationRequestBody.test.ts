@@ -169,7 +169,7 @@ describe('buildMutationRequestBody', () => {
         parentInstanceId: 'parent-456',
         retriesLeft: true,
         incidentErrorHashCode: 37136123613781,
-      } satisfies RequestFilters,
+      },
       includeIds: [],
       excludeIds: [],
     });
@@ -193,7 +193,7 @@ describe('buildMutationRequestBody', () => {
         activityId: 'taskA',
         incidents: false,
         processIds: ['p1', 'p2'],
-      } satisfies RequestFilters,
+      },
       includeIds: [],
       excludeIds: [],
     });
@@ -214,7 +214,7 @@ describe('buildMutationRequestBody', () => {
       baseFilter: {
         startDateAfter: after,
         startDateBefore: before,
-      } satisfies RequestFilters,
+      },
       includeIds: [],
       excludeIds: [],
     });
@@ -237,7 +237,7 @@ describe('buildMutationRequestBody', () => {
       baseFilter: {
         endDateAfter: after,
         endDateBefore: before,
-      } satisfies RequestFilters,
+      },
       includeIds: [],
       excludeIds: [],
     });
@@ -257,7 +257,7 @@ describe('buildMutationRequestBody', () => {
       baseFilter: {
         incidents: false,
         variable: {name: 'foo', values: ['a', 'b']},
-      } satisfies RequestFilters,
+      },
       includeIds: [],
       excludeIds: [],
     });
@@ -277,7 +277,7 @@ describe('buildMutationRequestBody', () => {
       baseFilter: {
         completed: true,
         canceled: true,
-      } satisfies RequestFilters,
+      },
       includeIds: [],
       excludeIds: [],
     });
@@ -291,7 +291,7 @@ describe('buildMutationRequestBody', () => {
     const onlyCompleted: Body = buildMutationRequestBody({
       baseFilter: {
         completed: true,
-      } satisfies RequestFilters,
+      },
       includeIds: [],
       excludeIds: [],
     });
@@ -305,7 +305,7 @@ describe('buildMutationRequestBody', () => {
     const onlyCanceled: Body = buildMutationRequestBody({
       baseFilter: {
         canceled: true,
-      } satisfies RequestFilters,
+      },
       includeIds: [],
       excludeIds: [],
     });
