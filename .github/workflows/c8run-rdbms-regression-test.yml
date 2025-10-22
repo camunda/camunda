@@ -92,12 +92,12 @@ jobs:
           echo "Matrix config: $CONFIG"
           if [[ "$CONFIG" == *"application-h2.yaml" ]]; then
             echo "Using H2 configuration..."
-            cp "$CONFIG" ./camunda/c8run/application.yaml
+            cp "../$CONFIG" ./configuration/application.yaml
           else
             echo "Using default configuration (no override)"
           fi
           nohup ./start.sh --detached &
-        working-directory: ./camunda/c8run
+        working-directory: ./c8run
         env:
           CONFIG: ${{ matrix.config }}
 
