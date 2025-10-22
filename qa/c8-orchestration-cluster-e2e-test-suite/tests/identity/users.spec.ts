@@ -42,6 +42,20 @@ test.describe.serial('users CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
+  test('tries to create a mapping rule with invalid id', async ({
+    identityUsersPage,
+  }) => {
+    await identityUsersPage.createUserButton.click();
+    await identityUsersPage.createUsernameField.fill('invalid!!%');
+    await expect(identityUsersPage.createUserModal).toContainText(
+      'Please enter a valid username',
+    );
+    await expect(identityUsersPage.createUsernameField).toHaveAttribute(
+      'data-invalid',
+      'true',
+    );
+  });
+
   test('create a user', async ({identityUsersPage, page}) => {
     await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
     await identityUsersPage.createUser(NEW_USER);

@@ -41,6 +41,20 @@ test.describe.serial('tenants CRUD', () => {
   });
 
   test.describe.serial('tenants CRUD', () => {
+    test('tries to create a tenant with invalid id', async ({
+      identityTenantsPage,
+    }) => {
+      await identityTenantsPage.createTenantButton.click();
+      await identityTenantsPage.fillTenantId('invalid!!%');
+      await expect(identityTenantsPage.createTenantModal).toContainText(
+        'Please enter a valid Tenant ID',
+      );
+      await expect(identityTenantsPage.tenantFieldId).toHaveAttribute(
+        'data-invalid',
+        'true',
+      );
+    });
+
     test('creates a tenant', async ({page, identityTenantsPage}) => {
       await expect(
         identityTenantsPage.tenantCell(NEW_TENANT.name),
