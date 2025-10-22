@@ -234,6 +234,45 @@ public class RoleQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSortAndPaginateByLimitOnlySearchResult() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new RoleEntity(100L, "role1", "Role 1", "description 1"),
+                        new RoleEntity(300L, "role12", "Role 12", "description 12"),
+                        new RoleEntity(200L, "role2", "Role 2", "description 2")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(ROLE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "name", "order":  "ASC"}],
+              "page":  {"limit":  10}
+            }
+             """)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(roleServices)
+        .search(
+            new RoleQuery.Builder()
+                .sort(RoleSort.of(builder -> builder.name().asc()))
+                .page(SearchQueryPage.of(builder -> builder.size(10)))
+                .build());
+  }
+
+  @Test
   void shouldSearchUsersByRole() {
     // given
     final var roleId = "roleId";

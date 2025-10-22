@@ -633,21 +633,32 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
-    if (requestedPage.getAfter() != null && requestedPage.getBefore() != null) {
-      return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER));
-    }
-    if (requestedPage.getFrom() != null
-        && (requestedPage.getAfter() != null || requestedPage.getBefore() != null)) {
-      return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER_AND_FROM));
-    }
+    return switch (requestedPage) {
+      case final CursorBackwardPagination req -> Either.right(toSearchQueryPage(req));
+      case final CursorForwardPagination req -> Either.right(toSearchQueryPage(req));
+      case final OffsetPagination req -> Either.right(toSearchQueryPage(req));
+      case final LimitPagination req -> Either.right(toSearchQueryPage(req));
+      default -> Either.left(List.of(ERROR_SEARCH_UNKNOWN_PAGE_TYPE));
+    };
+  }
 
-    return Either.right(
-        SearchQueryPage.of(
-            (p) ->
-                p.size(requestedPage.getLimit())
-                    .from(requestedPage.getFrom())
-                    .after(requestedPage.getAfter())
-                    .before(requestedPage.getBefore())));
+  private static SearchQueryPage toSearchQueryPage(final CursorBackwardPagination requestedPage) {
+    return SearchQueryPage.of(
+        (p) -> p.size(requestedPage.getLimit()).before(requestedPage.getBefore()));
+  }
+
+  private static SearchQueryPage toSearchQueryPage(final CursorForwardPagination requestedPage) {
+    return SearchQueryPage.of(
+        (p) -> p.size(requestedPage.getLimit()).after(requestedPage.getAfter()));
+  }
+
+  private static SearchQueryPage toSearchQueryPage(final OffsetPagination requestedPage) {
+    return SearchQueryPage.of(
+        (p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom()));
+  }
+
+  private static SearchQueryPage toSearchQueryPage(final LimitPagination requestedPage) {
+    return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

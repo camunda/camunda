@@ -23,23 +23,19 @@ import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.enums.JobResultType;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
-import io.camunda.client.protocol.rest.JobResult.TypeEnum;
+import io.camunda.client.protocol.rest.JobResult;
 import io.camunda.client.protocol.rest.JobResultActivateElement;
-import io.camunda.client.protocol.rest.JobResultAdHocSubProcess;
 import io.camunda.client.protocol.rest.JobResultCorrections;
-import io.camunda.client.protocol.rest.JobResultUserTask;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
@@ -136,7 +132,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private void setRestJobResult(final CompleteUserTaskJobResultImpl jobResult) {
-    final JobResultUserTask resultRest = new JobResultUserTask();
+    final JobResult resultRest = new JobResult();
     final JobResultCorrections correctionsRest = new JobResultCorrections();
     correctionsRest
         .assignee(jobResult.getCorrections().getAssignee())
@@ -146,15 +142,19 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         .candidateGroups(jobResult.getCorrections().getCandidateGroups())
         .priority(jobResult.getCorrections().getPriority());
     resultRest
-        .type(getJobResultTypeEnum(jobResult.getType()))
+        .type(jobResult.getType().getProtocolValue())
         .denied(jobResult.isDenied())
         .deniedReason(jobResult.getDeniedReason())
-        .corrections(correctionsRest);
+        .corrections(correctionsRest)
+        // null values as they are not applicable for user task completion
+        .isCompletionConditionFulfilled(null)
+        .isCancelRemainingInstances(null)
+        .activateElements(null);
     httpRequestObject.setResult(resultRest);
   }
 
   private void setGrpcJobResult(final CompleteUserTaskJobResultImpl jobResult) {
-    final JobResult.Builder resultGrpc = JobResult.newBuilder();
+    final GatewayOuterClass.JobResult.Builder resultGrpc = GatewayOuterClass.JobResult.newBuilder();
     final GatewayOuterClass.JobResultCorrections.Builder correctionsGrpc =
         GatewayOuterClass.JobResultCorrections.newBuilder();
     if (jobResult.getCorrections().getAssignee() != null) {
@@ -178,22 +178,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       correctionsGrpc.setPriority(jobResult.getCorrections().getPriority());
     }
     resultGrpc
-        .setType(getJobResultTypeEnum(jobResult.getType()).getValue())
+        .setType(jobResult.getType().getProtocolValue())
         .setDenied(jobResult.isDenied())
         .setDeniedReason(jobResult.getDeniedReason() == null ? "" : jobResult.getDeniedReason())
         .setCorrections(correctionsGrpc);
     grpcRequestObjectBuilder.setResult(resultGrpc);
-  }
-
-  private TypeEnum getJobResultTypeEnum(final JobResultType type) {
-    switch (type) {
-      case USER_TASK:
-        return TypeEnum.USER_TASK;
-      case AD_HOC_SUB_PROCESS:
-        return TypeEnum.AD_HOC_SUB_PROCESS;
-      default:
-        throw new IllegalArgumentException("Unsupported job result type: " + type);
-    }
   }
 
   private void setJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
@@ -205,7 +194,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private void setRestJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
-    final JobResultAdHocSubProcess resultRest = new JobResultAdHocSubProcess();
+    final JobResult resultRest = new JobResult();
     final List<JobResultActivateElement> activateElements =
         jobResult.getActivateElements().stream()
             .map(
@@ -219,17 +208,21 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
                 })
             .collect(Collectors.toList());
     resultRest
-        .type(getJobResultTypeEnum(jobResult.getType()))
+        .type(jobResult.getType().getProtocolValue())
         .activateElements(activateElements)
         .isCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
-        .isCancelRemainingInstances(jobResult.isCancelRemainingInstances());
+        .isCancelRemainingInstances(jobResult.isCancelRemainingInstances())
+        // null values as they are not applicable for ad-hoc sub process completion
+        .denied(null)
+        .corrections(null)
+        .deniedReason(null);
     httpRequestObject.setResult(resultRest);
   }
 
   private void setGrpcJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
-    final JobResult.Builder resultGrpc = JobResult.newBuilder();
+    final GatewayOuterClass.JobResult.Builder resultGrpc = GatewayOuterClass.JobResult.newBuilder();
     resultGrpc
-        .setType(getJobResultTypeEnum(jobResult.getType()).getValue())
+        .setType(jobResult.getType().getProtocolValue())
         .setIsCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
         .setIsCancelRemainingInstances(jobResult.isCancelRemainingInstances());
     jobResult.getActivateElements().stream()

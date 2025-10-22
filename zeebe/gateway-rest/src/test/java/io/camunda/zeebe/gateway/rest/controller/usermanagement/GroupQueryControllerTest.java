@@ -550,6 +550,63 @@ public class GroupQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSortAndPaginateByLimitOnlySearchResult() {
+    // given
+    final var groupKey1 = 111L;
+    final var groupKey2 = 222L;
+    final var groupKey3 = 333L;
+    final var groupId1 = Strings.newRandomValidIdentityId();
+    final var groupId2 = Strings.newRandomValidIdentityId();
+    final var groupId3 = Strings.newRandomValidIdentityId();
+    final var groupName1 = "Group 1";
+    final var groupName2 = "Group 2";
+    final var groupName3 = "Group 3";
+    final var description1 = "Description 1";
+    final var description2 = "Description 2";
+    final var description3 = "Description 3";
+    when(groupServices.search(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new GroupEntity(groupKey1, groupId1, groupName1, description1),
+                        new GroupEntity(groupKey2, groupId2, groupName2, description2),
+                        new GroupEntity(groupKey3, groupId3, groupName3, description3)))
+                .startCursor("f")
+                .endCursor("v")
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(GROUP_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "name", "order":  "ASC"}],
+              "page":  {"limit":  20}
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            EXPECTED_SEARCH_RESPONSE.formatted(groupId1, groupId2, groupId3),
+            JsonCompareMode.STRICT);
+
+    verify(groupServices)
+        .search(
+            new GroupQuery.Builder()
+                .sort(GroupSort.of(builder -> builder.name().asc()))
+                .page(SearchQueryPage.of(builder -> builder.size(20)))
+                .build());
+  }
+
+  @Test
   void shouldSearchGroupUsersWithSorting() {
     // given
     when(groupServices.searchMembers(any(GroupMemberQuery.class)))
@@ -912,9 +969,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Both after and before cannot be set at the same time.",
+                      "detail": "Failed to read request",
                       "instance": "%s"
                     }""",
                 endpoint)));

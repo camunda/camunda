@@ -227,6 +227,48 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSortAndPaginateByLimitOnlySearchResult() {
+    // given
+    when(mappingRuleServices.search(any(MappingRuleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingRuleEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new MappingRuleEntity(
+                            "id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingRuleEntity(
+                            "id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingRuleEntity(
+                            "id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(MAPPING_RULE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "claimName", "order":  "ASC"}],
+              "page":  {"limit":  10}
+            }
+             """)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(mappingRuleServices)
+        .search(
+            new MappingRuleQuery.Builder()
+                .sort(MappingRuleSort.of(builder -> builder.claimName().asc()))
+                .page(SearchQueryPage.of(builder -> builder.size(10)))
+                .build());
+  }
+
+  @Test
   void shouldSortAndPaginateSearchResultByName() {
     // given
     when(mappingRuleServices.search(any(MappingRuleQuery.class)))

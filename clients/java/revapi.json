@@ -20,6 +20,11 @@
             "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
             "matcher": "java-package",
             "match": "/io\\.camunda\\.zeebe\\.client\\.impl(\\..*)?/"
+          },
+          {
+            "justification": "Ignore REST protocol class changes, there were significant ones due to breaking changes to the search API as well as experimental APIs.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.protocol\\.rest(\\..*)?/"
           }
         ]
       }
