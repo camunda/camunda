@@ -2,10 +2,14 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
-# Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
-# has trouble with custom versioning schemes
+
 ARG BASE_IMAGE="reg.mini.dev/openjre:21.0.8-dev"
 ARG BASE_DIGEST="sha256:fb5dc6ad558a42ad31117ce698f440862ff78dd3dcb3d94f59e3293ec038ff47"
+
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk:
+#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
+#ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
