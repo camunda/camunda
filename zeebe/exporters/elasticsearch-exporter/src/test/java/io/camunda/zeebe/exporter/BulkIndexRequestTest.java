@@ -13,6 +13,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.BulkIndexRequest.BulkOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -625,6 +627,60 @@ final class BulkIndexRequestTest {
           .extracting(source -> ((Map<String, Object>) source).get("callingElementPath"))
           .describedAs("Expect that the records are serialized with callingElementPath")
           .containsExactly(List.of(3, 4, 5));
+    }
+
+    @Test
+    void shouldIndexCommandDistributionRecordWithoutAuthInfoOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new CommandDistributionRecord()
+                              .setPartitionId(1)
+                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
+          .describedAs("Expect that the records are NOT serialized with authInfo")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexCommandDistributionRecordWithoutAuthInfo() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new CommandDistributionRecord()
+                              .setPartitionId(1)
+                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
+          .describedAs("Expect that the records are NOT serialized with authInfo")
+          .containsExactly(new Object[] {null});
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {
