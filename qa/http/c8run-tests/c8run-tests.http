@@ -136,7 +136,6 @@ Accept: application/json
 > {%
   client.test("Process definition search is successful", function () {
     client.assert(response.status === 200, "Expected 200, got " + response.status);
-    //client.global.set("PROCESS_DEFINITION_KEY", response.body.items[0].processDefinitionKey);
   });
 %}
 
@@ -172,7 +171,7 @@ let expectedDefinitionKey = client.global.get("PROCESS_DEFINITION_KEY");
 # @name get-process-instance
 < {%
   import {wait} from "../js/wait"
-  wait(3)
+  wait(4)
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
 Cookie: {{COOKIE_HEADER}}
