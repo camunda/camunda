@@ -1,4 +1,7 @@
 camunda:
+  database:
+    index:
+      numberOfReplicas: 0
   security:
     initialization:
       users:
