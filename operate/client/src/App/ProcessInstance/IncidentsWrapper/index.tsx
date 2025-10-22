@@ -152,8 +152,8 @@ const IncidentsWrapperContent: React.FC<IncidentsWrapperContentProps> =
 
     const headerTitle =
       selectedElementInstance !== null
-        ? `Incidents View for Element "${selectedElementInstance.elementName}"`
-        : 'Incidents View';
+        ? `Incidents - Filtered by "${selectedElementInstance.elementName}"`
+        : 'Incidents';
 
     return (
       <Transition
