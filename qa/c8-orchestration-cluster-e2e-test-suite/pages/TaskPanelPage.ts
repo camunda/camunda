@@ -40,7 +40,11 @@ class TaskPanelPage {
   }
 
   async openTask(name: string) {
-    // V2 mode: always displays process ID regardless of task name
+    // V1/V2 mode difference:
+    // V1: displays process name ("User registration")
+    // V2: always displays process ID ("user_registration") regardless of task name
+
+    // Mapping of processes names to process IDs for V2 mode compatibility
     const processNameToIdMapping: Record<string, string> = {
       'User registration': 'user_registration',
       'Some user activity': 'usertask_to_be_completed', // Process ID from BPMN
@@ -60,16 +64,27 @@ class TaskPanelPage {
       Zeebe_user_task: 'Zeebe_user_task',
     };
 
-    const processId = processNameToIdMapping[name] || name;
-
+    // Strategy 1: Try with original name (for V1)
     try {
       await this.availableTasks
-        .getByText(processId, {exact: true})
+        .getByText(name, {exact: true})
         .nth(0)
         .click({timeout: 10000});
       return;
-    } catch {
-      console.log('Failed to open task with name:', name);
+    } catch {}
+
+    // Strategy 2: Try with mapped process ID (for V2 mode)
+    const processId = processNameToIdMapping[name] || name;
+    if (processId !== name) {
+      try {
+        await this.availableTasks
+          .getByText(processId, {exact: true})
+          .nth(0)
+          .click({timeout: 10000});
+        return;
+      } catch {
+        console.log('Failed to open task with name:', name);
+      }
     }
   }
 
