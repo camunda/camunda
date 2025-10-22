@@ -170,7 +170,7 @@ describe('buildMutationRequestBody', () => {
         parentInstanceId: 'parent-456',
         retriesLeft: true,
         incidentErrorHashCode: 37136123613781,
-      } as RequestFilters,
+      } satisfies RequestFilters,
       includeIds: [],
       excludeIds: [],
     });
@@ -194,7 +194,7 @@ describe('buildMutationRequestBody', () => {
         activityId: 'taskA',
         incidents: false,
         processIds: ['p1', 'p2'],
-      } as RequestFilters,
+      } satisfies RequestFilters,
       includeIds: [],
       excludeIds: [],
     });
@@ -215,7 +215,7 @@ describe('buildMutationRequestBody', () => {
       baseFilter: {
         startDateAfter: after,
         startDateBefore: before,
-      } as RequestFilters,
+      } satisfies RequestFilters,
       includeIds: [],
       excludeIds: [],
     });
@@ -235,7 +235,7 @@ describe('buildMutationRequestBody', () => {
       baseFilter: {
         endDateAfter: after,
         endDateBefore: before,
-      } as RequestFilters,
+      } satisfies RequestFilters,
       includeIds: [],
       excludeIds: [],
     });
@@ -252,7 +252,7 @@ describe('buildMutationRequestBody', () => {
       baseFilter: {
         incidents: false,
         variable: {name: 'foo', values: ['a', 'b']},
-      } as RequestFilters,
+      } satisfies RequestFilters,
       includeIds: [],
       excludeIds: [],
     });
@@ -272,7 +272,7 @@ describe('buildMutationRequestBody', () => {
       baseFilter: {
         completed: true,
         canceled: true,
-      } as RequestFilters,
+      } satisfies RequestFilters,
       includeIds: [],
       excludeIds: [],
     });
@@ -286,7 +286,7 @@ describe('buildMutationRequestBody', () => {
     const onlyCompleted: Body = buildMutationRequestBody({
       baseFilter: {
         completed: true,
-      } as RequestFilters,
+      } satisfies RequestFilters,
       includeIds: [],
       excludeIds: [],
     });
@@ -300,7 +300,7 @@ describe('buildMutationRequestBody', () => {
     const onlyCanceled: Body = buildMutationRequestBody({
       baseFilter: {
         canceled: true,
-      } as RequestFilters,
+      } satisfies RequestFilters,
       includeIds: [],
       excludeIds: [],
     });
