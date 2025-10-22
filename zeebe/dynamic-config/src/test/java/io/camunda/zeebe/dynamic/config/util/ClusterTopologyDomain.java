@@ -118,8 +118,13 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   }
 
   @Provide
-  Arbitrary<ExportingConfig> exportersConfigs() {
+  Arbitrary<ExportingConfig> exportingConfigs() {
     return Arbitraries.forType(ExportingConfig.class).enableRecursion();
+  }
+
+  @Provide
+  Arbitrary<ExportingState> exportingStates() {
+    return Arbitraries.of(ExportingState.values()).injectNull(0.1);
   }
 
   @Provide
