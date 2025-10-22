@@ -192,13 +192,13 @@ jobs:
             declare -A MATRIX=(
               [low_low]=someday
               [low_mid]=someday
-              [low_high]=planned
+              [low_high]=someday
               [mid_low]=someday
               [mid_mid]=planned
-              [mid_high]=next
+              [mid_high]=planned
               [high_low]=planned
               [high_mid]=next
-              [high_high]=immediate
+              [high_high]=next
               [critical_low]=immediate
               [critical_mid]=immediate
               [critical_high]=immediate
