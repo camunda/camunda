@@ -48,6 +48,20 @@ test.describe.serial('roles CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
+  test('tries to create a role with invalid id', async ({
+    identityRolesPage,
+  }) => {
+    await identityRolesPage.clickCreateRoles();
+    await identityRolesPage.idField.fill('invalid!!%');
+    await expect(identityRolesPage.createRoleModal).toContainText(
+      'Please enter a valid role ID',
+    );
+    await expect(identityRolesPage.idField).toHaveAttribute(
+      'data-invalid',
+      'true',
+    );
+  });
+
   test('creates a role', async ({identityRolesPage}) => {
     await expect(identityRolesPage.roleCell('Admin')).toBeVisible();
     await identityRolesPage.createRole(NEW_ROLE);
