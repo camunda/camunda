@@ -101,6 +101,10 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.oracle.database.jdbc</groupId>
+      <artifactId>ojdbc8</artifactId>
+    </dependency>
     <!-- Common test dependencies-->
     <dependency>
       <groupId>io.camunda</groupId>
