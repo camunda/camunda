@@ -329,6 +329,11 @@ public final class EventAppliers implements EventApplier {
         2,
         new IncidentResolvedV2Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
+    register(
+        IncidentIntent.RESOLVED,
+        3,
+        new IncidentResolvedV3Applier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }
 
