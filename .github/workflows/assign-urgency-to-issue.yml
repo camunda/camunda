@@ -56,9 +56,9 @@ jobs:
           echo "🔍 Checking project membership for issue #${ISSUE_NUMBER} in project ${PROJECT_NUMBER}"
 
           # Single GraphQL query fetches: project info, project item, labels, issue type, and current urgency value
-          QUERY='query($owner:String!,$repo:String!,$issueNumber:Int!,$projectNumber:Int!){
-            repository(owner:$owner,name:$repo){
-              issue(number:$issueNumber){
+          QUERY="query(\$owner:String!,\$repo:String!,\$issueNumber:Int!,\$projectNumber:Int!){
+            repository(owner:\$owner,name:\$repo){
+              issue(number:\$issueNumber){
                 id
                 issueType { name }
                 labels(first:100){ nodes { name } }
@@ -78,10 +78,10 @@ jobs:
                 }
               }
             }
-            organization(login:$owner){
-              projectV2(number:$projectNumber){ id }
+            organization(login:\$owner){
+              projectV2(number:\$projectNumber){ id }
             }
-          }'
+          }"
 
           RESP=$(gh api graphql -f query="$QUERY" -F owner="$OWNER" -F repo="$REPO" -F issueNumber="$ISSUE_NUMBER" -F projectNumber="$PROJECT_NUMBER") || {
             echo "❌ GraphQL query failed:"
@@ -132,12 +132,14 @@ jobs:
           # Store all labels for next step
           LABELS_JSON=$(echo "$RESP" | jq -c '.data.repository.issue.labels.nodes | map(.name)')
 
-          echo "is_relevant_issue=true" >> "$GITHUB_OUTPUT"
-          echo "issue_node_id=$ISSUE_NODE_ID" >> "$GITHUB_OUTPUT"
-          echo "project_v2_id=$TARGET_PROJECT_NODE_ID" >> "$GITHUB_OUTPUT"
-          echo "project_item_id=$PROJECT_ITEM_ID" >> "$GITHUB_OUTPUT"
-          echo "current_urgency=$CURRENT_URGENCY" >> "$GITHUB_OUTPUT"
-          echo "labels=$LABELS_JSON" >> "$GITHUB_OUTPUT"
+          {
+            echo "is_relevant_issue=true"
+            echo "issue_node_id=$ISSUE_NODE_ID"
+            echo "project_v2_id=$TARGET_PROJECT_NODE_ID"
+            echo "project_item_id=$PROJECT_ITEM_ID"
+            echo "current_urgency=$CURRENT_URGENCY"
+            echo "labels=$LABELS_JSON"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Check Labels
         id: check_labels
@@ -202,7 +204,7 @@ jobs:
               [critical_high]=immediate
             )
             key="${SEVERITY}_${LIKELIHOOD}"
-            URGENCY=${MATRIX[$key]:-someday}
+            URGENCY="${MATRIX[$key]:-someday}"
 
             # Alternative mathematical calculation (unused / illustrative only)
             # S=$(case "$SEVERITY" in low)1;; mid)2;; high)3;; *)1;; esac)
@@ -216,7 +218,7 @@ jobs:
             echo "🎯 Urgency: $URGENCY"
           fi
 
-          echo "urgency=$URGENCY" >> $GITHUB_OUTPUT
+          echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
 
       - name: Update Urgency
         if: steps.check_issue.outputs.is_relevant_issue == 'true'
@@ -255,9 +257,9 @@ jobs:
           fi
 
           # Fetch project fields (single query for both clear and update)
-          FIELD_DATA=$(gh api graphql -f query='
-            query($projectId:ID!){
-              node(id:$projectId){
+          FIELD_DATA=$(gh api graphql -f query="
+            query(\$projectId:ID!){
+              node(id:\$projectId){
                 ... on ProjectV2 {
                   fields(first:100){
                     nodes{
@@ -266,7 +268,7 @@ jobs:
                   }
                 }
               }
-            }' -F projectId="$PROJECT_V2_ID") || {
+            }" -F projectId="$PROJECT_V2_ID") || {
             echo "❌ Failed to fetch project fields"
             exit 1
           }
