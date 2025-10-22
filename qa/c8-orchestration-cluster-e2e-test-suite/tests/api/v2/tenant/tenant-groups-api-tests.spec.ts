@@ -24,9 +24,10 @@ import {
   createGroupAndStoreResponseFields,
   createTenant,
   groupIdFromState,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {GROUPS_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Tenant Groups API Tests', () => {
   const state: Record<string, unknown> = {};
 

@@ -7,7 +7,7 @@
  */
 
 import type {Page, Locator} from '@playwright/test';
-import {convertToQueryString} from '../../utils/convertToQueryString';
+import {convertToQueryString} from '@/utils/convertToQueryString.ts';
 import {DeleteResourceModal} from '../components/DeleteResourceModal';
 import MigrationModal from '../components/MigrationModal';
 import MoveModificationModal from '../components/MoveModificationModal';

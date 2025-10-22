@@ -16,7 +16,7 @@ import {
   assertNotFoundRequest,
   assertBadRequest,
 } from '../../../../utils/http';
-import {deployResourceAndGetMetadata} from '../../../../utils/requestHelpers';
+import {deployResourceAndGetMetadata} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Resource Delete API', () => {

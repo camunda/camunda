@@ -27,9 +27,10 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertRoleInResponse,
   createRoleAndStoreResponseFields,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Roles API Tests', () => {
   const state: Record<string, unknown> = {};
   const createdRoleIds: string[] = [];

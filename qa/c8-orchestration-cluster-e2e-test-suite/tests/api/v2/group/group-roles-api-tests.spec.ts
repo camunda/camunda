@@ -20,10 +20,11 @@ import {
   roleNameFromState,
   roleIdValueUsingKey,
   assertRoleInResponse,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Group Roles API Tests', () => {
   const state: Record<string, unknown> = {};
   state['createdIds'] = [];

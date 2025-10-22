@@ -9,8 +9,8 @@
 import {expect, test} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
-import {getProcessDefinitionKey} from '../../../../utils/requestHelpers';
 import {validateResponseShape} from '../../../../json-body-assertions';
+import {getProcessDefinitionKey} from '@requestHelpers';
 
 const PROCESS_INSTANCE_ENDPOINT = '/process-instances';
 test.describe.parallel('Process instance Tests', () => {

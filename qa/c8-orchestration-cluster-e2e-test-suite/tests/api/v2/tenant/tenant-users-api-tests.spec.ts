@@ -24,9 +24,10 @@ import {
   assignUsersToTenant,
   createTenant,
   userFromState,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Tenant Users API Tests', () => {
   const state: Record<string, unknown> = {};
   const createdUserIds: string[] = [];

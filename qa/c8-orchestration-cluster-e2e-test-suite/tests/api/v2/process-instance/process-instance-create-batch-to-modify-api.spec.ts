@@ -20,7 +20,8 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {findUserTask} from '../../../../utils/requestHelpers';
+
+import {findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
