@@ -210,19 +210,51 @@ describe('buildMutationRequestBody', () => {
     const after = '2020-01-01T00:00:00Z';
     const before = '2020-01-02T00:00:00Z';
 
-    const body: Body = buildMutationRequestBody({
-      baseFilter: {
-        startDateAfter: after,
-        startDateBefore: before,
-      },
-      includeIds: [],
-      excludeIds: [],
-    });
-
-    expect(body).toEqual({
+    expect(
+      buildMutationRequestBody({
+        baseFilter: {
+          startDateAfter: after,
+          startDateBefore: before,
+        },
+        includeIds: [],
+        excludeIds: [],
+      }),
+    ).toEqual({
       filter: {
         startDate: {
           $gt: '2020-01-01T00:00:00.000Z',
+          $lt: '2020-01-02T00:00:00.000Z',
+        },
+      },
+    });
+
+    expect(
+      buildMutationRequestBody({
+        baseFilter: {
+          startDateAfter: after,
+        },
+        includeIds: [],
+        excludeIds: [],
+      }),
+    ).toEqual({
+      filter: {
+        startDate: {
+          $gt: '2020-01-01T00:00:00.000Z',
+        },
+      },
+    });
+
+    expect(
+      buildMutationRequestBody({
+        baseFilter: {
+          startDateBefore: before,
+        },
+        includeIds: [],
+        excludeIds: [],
+      }),
+    ).toEqual({
+      filter: {
+        startDate: {
           $lt: '2020-01-02T00:00:00.000Z',
         },
       },
@@ -233,19 +265,51 @@ describe('buildMutationRequestBody', () => {
     const after = '2020-01-01T00:00:00Z';
     const before = '2020-01-02T00:00:00Z';
 
-    const body: Body = buildMutationRequestBody({
-      baseFilter: {
-        endDateAfter: after,
-        endDateBefore: before,
-      },
-      includeIds: [],
-      excludeIds: [],
-    });
-
-    expect(body).toEqual({
+    expect(
+      buildMutationRequestBody({
+        baseFilter: {
+          endDateAfter: after,
+          endDateBefore: before,
+        },
+        includeIds: [],
+        excludeIds: [],
+      }),
+    ).toEqual({
       filter: {
         endDate: {
           $gt: '2020-01-01T00:00:00.000Z',
+          $lt: '2020-01-02T00:00:00.000Z',
+        },
+      },
+    });
+
+    expect(
+      buildMutationRequestBody({
+        baseFilter: {
+          endDateAfter: after,
+        },
+        includeIds: [],
+        excludeIds: [],
+      }),
+    ).toEqual({
+      filter: {
+        endDate: {
+          $gt: '2020-01-01T00:00:00.000Z',
+        },
+      },
+    });
+
+    expect(
+      buildMutationRequestBody({
+        baseFilter: {
+          endDateBefore: before,
+        },
+        includeIds: [],
+        excludeIds: [],
+      }),
+    ).toEqual({
+      filter: {
+        endDate: {
           $lt: '2020-01-02T00:00:00.000Z',
         },
       },
