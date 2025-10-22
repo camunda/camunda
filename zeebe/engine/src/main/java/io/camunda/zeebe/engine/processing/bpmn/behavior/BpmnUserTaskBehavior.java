@@ -132,7 +132,9 @@ public final class BpmnUserTaskBehavior {
       final BpmnElementContext context,
       final ExecutableUserTask element,
       final UserTaskProperties userTaskProperties) {
+    final var userTaskKey = keyGenerator.nextKey();
     return createNewUserTask(
+        userTaskKey,
         context,
         element.getUserTaskProperties().getTaskHeaders(),
         element.getId(),
@@ -140,12 +142,12 @@ public final class BpmnUserTaskBehavior {
   }
 
   public UserTaskRecord createNewUserTask(
+      final long userTaskKey,
       final BpmnElementContext context,
       final Map<String, String> taskHeaders,
       final DirectBuffer elementId,
       final UserTaskProperties userTaskProperties) {
 
-    final var userTaskKey = keyGenerator.nextKey();
     final var encodedHeaders = headerEncoder.encode(taskHeaders);
 
     final var userTaskRecord =
