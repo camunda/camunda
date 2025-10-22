@@ -14,14 +14,13 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {setupProcessInstanceTests} from '../../../../utils/requestHelpers';
+import {setupProcessInstanceForTests} from '@requestHelpers';
 import {validateResponseShape} from '../../../../json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search User Task Tests', () => {
-  const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'process_with_multiple_user_tasks',
-  );
+  const {state, beforeAll, beforeEach, afterEach} =
+    setupProcessInstanceForTests('process_with_multiple_user_tasks');
 
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);

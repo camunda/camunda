@@ -15,17 +15,15 @@ import {
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
-  createMultiResourceFormData,
-  createResourceFormData,
-} from '../../../../utils/requestHelpers';
-import {
   validateDecisionDefinitionDeployment,
   validateDecisionRequirementsDeployment,
   validateDeploymentResponse,
   validateFormDeployment,
   validateProcessDefinitionDeployment,
   validateRpaDeployment,
-} from '../../../../utils/requestHelper/resource-deploy-requestHelper';
+  createMultiResourceFormData,
+  createResourceFormData,
+} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Resource Deploy API', () => {

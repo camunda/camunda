@@ -24,8 +24,9 @@ import {
   assignClientsToTenant,
   clientFromState,
   createTenant,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Tenant Clients API Tests', () => {
   const state: Record<string, unknown> = {};
 

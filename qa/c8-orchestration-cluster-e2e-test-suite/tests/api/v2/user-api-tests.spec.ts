@@ -25,7 +25,7 @@ import {
 import {
   assertUserInResponse,
   createUsersAndStoreResponseFields,
-} from '../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {
   CREATE_NEW_USER,
   UPDATE_USER,
@@ -33,6 +33,7 @@ import {
 } from '../../../utils/beans/requestBeans';
 import {cleanupUsers} from '../../../utils/usersCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Users API Tests', () => {
   const state: Record<string, unknown> = {};
   const createdUserIds: string[] = [];
