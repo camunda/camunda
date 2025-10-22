@@ -35,7 +35,7 @@ class SecurityContextProviderTest {
         securityContextProvider.provideSecurityContext(authentication, authorization);
 
     // then
-    assertThat(securityContext.authorization()).isEqualTo(authorization);
+    assertThat(securityContext.authorizations().getFirst()).isEqualTo(authorization);
     assertThat(securityContext.authentication()).isEqualTo(authentication);
   }
 }

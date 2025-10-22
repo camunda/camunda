@@ -9,6 +9,8 @@ package io.camunda.security.auth;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -22,7 +24,7 @@ import java.util.function.Function;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record SecurityContext(
     @JsonProperty("authentication") CamundaAuthentication authentication,
-    @JsonProperty("authorization") Authorization<?> authorization) {
+    @JsonProperty("authorization") List<Authorization<?>> authorizations) {
 
   public static SecurityContext of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
@@ -30,7 +32,7 @@ public record SecurityContext(
 
   public static class Builder {
     private CamundaAuthentication authentication;
-    private Authorization<?> authorization;
+    private List<Authorization<?>> authorizations;
 
     public Builder withAuthentication(final CamundaAuthentication authentication) {
       this.authentication = authentication;
@@ -43,8 +45,8 @@ public record SecurityContext(
       return withAuthentication(CamundaAuthentication.of(builderFunction));
     }
 
-    public Builder withAuthorization(final Authorization authorization) {
-      this.authorization = authorization;
+    public Builder withAuthorization(final Authorization... authorization) {
+      authorizations = Arrays.asList(authorization);
       return this;
     }
 
@@ -54,7 +56,7 @@ public record SecurityContext(
     }
 
     public SecurityContext build() {
-      return new SecurityContext(authentication, authorization);
+      return new SecurityContext(authentication, authorizations);
     }
   }
 }

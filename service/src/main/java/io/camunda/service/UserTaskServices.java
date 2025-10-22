@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.userTaskSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.UserTaskSearchClient;
@@ -99,8 +100,10 @@ public final class UserTaskServices
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
     return search(
         query,
-        securityContextProvider.provideSecurityContext(
-            authentication, USER_TASK_READ_AUTHORIZATION));
+        new SecurityContext.Builder()
+            .withAuthentication(authentication)
+            .withAuthorization(USER_TASK_READ_AUTHORIZATION, PROCESS_DEFINITION_READ_AUTHORIZATION)
+            .build());
   }
 
   private SearchQueryResult<UserTaskEntity> search(

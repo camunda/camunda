@@ -7,9 +7,6 @@
  */
 package io.camunda.search.clients.auth;
 
-import static io.camunda.search.exception.ErrorMessages.ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION;
-
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.exception.TenantAccessDeniedException;
@@ -24,6 +21,8 @@ import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.security.reader.TenantAccessProvider;
 import io.camunda.security.reader.TenantCheck;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -38,8 +37,8 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {
     final var authentication = securityContext.authentication();
-    final var authorization = (Authorization<T>) securityContext.authorization();
-    return doPostFiltering(authentication, authorization, resourceChecksApplier);
+    final var authorizations = securityContext.authorizations();
+    return doPostFiltering(authentication, authorizations, resourceChecksApplier);
   }
 
   @Override
@@ -47,23 +46,23 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {
     final var authentication = securityContext.authentication();
-    final var authorization = securityContext.authorization();
-    return doPreFiltering(authentication, authorization, resourceChecksApplier);
+    final var authorizations = securityContext.authorizations();
+    return doPreFiltering(authentication, authorizations, resourceChecksApplier);
   }
 
   @Override
   public boolean supports(final SecurityContext securityContext) {
     return Optional.of(securityContext)
-            .filter(c -> c.authentication() != null && c.authorization() != null)
+            .filter(c -> c.authentication() != null && c.authorizations() != null)
             .isPresent()
         && !isAnonymousAuthentication(securityContext.authentication());
   }
 
   protected <T> T doPreFiltering(
       final CamundaAuthentication authentication,
-      final Authorization<?> authorization,
+      final List<Authorization<?>> authorizations,
       final Function<ResourceAccessChecks, T> applier) {
-    final var authorizationCheck = determineAuthorizationCheck(authentication, authorization);
+    final var authorizationCheck = determineAuthorizationCheck(authentication, authorizations);
     final var tenantCheck = determineTenantCheck(authentication);
 
     // read with resource access checks
@@ -72,9 +71,16 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
   }
 
   protected AuthorizationCheck determineAuthorizationCheck(
-      final CamundaAuthentication authentication, final Authorization<?> authorization) {
-    final var resourceAccess = resolveResourcesAccess(authentication, authorization);
-    return createAuthorizationCheck(resourceAccess);
+      final CamundaAuthentication authentication, final List<Authorization<?>> authorizations) {
+
+    final var resourceAccesses = new ArrayList<ResourceAccess>();
+    for (final Authorization<?> authorization : authorizations) {
+      final var resourceAccess = resolveResourcesAccess(authentication, authorization);
+      resourceAccesses.add(resourceAccess);
+      // TODO: optimize if any is wildcard, immediately return disabled authorization check
+    }
+
+    return createAuthorizationCheck(resourceAccesses);
   }
 
   protected ResourceAccess resolveResourcesAccess(
@@ -82,19 +88,17 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     return getResourceAccessProvider().resolveResourceAccess(authentication, authorization);
   }
 
-  protected AuthorizationCheck createAuthorizationCheck(final ResourceAccess resourceAccess) {
-    return Optional.of(resourceAccess)
-        .filter(f -> !f.wildcard())
-        .map(
-            r ->
-                Optional.ofNullable(r.authorization())
-                    .map(AuthorizationCheck::enabled)
-                    .orElseThrow(
-                        () ->
-                            new CamundaSearchException(
-                                ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION.formatted(
-                                    resourceAccess))))
-        .orElseGet(AuthorizationCheck::disabled);
+  protected AuthorizationCheck createAuthorizationCheck(final List<ResourceAccess> resourceAccess) {
+    final var wildcard = resourceAccess.stream().anyMatch(ResourceAccess::wildcard);
+
+    if (wildcard) {
+      return AuthorizationCheck.disabled();
+    }
+
+    final var authorizations =
+        resourceAccess.stream().map(ResourceAccess::authorization).toArray(Authorization[]::new);
+
+    return AuthorizationCheck.enabled(authorizations);
   }
 
   protected TenantCheck determineTenantCheck(final CamundaAuthentication authentication) {
@@ -119,7 +123,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
 
   protected <T> T doPostFiltering(
       final CamundaAuthentication authentication,
-      final Authorization<T> authorization,
+      final List<Authorization<?>> authorizations,
       final Function<ResourceAccessChecks, T> applier) {
     // read without any resource access check
     final T resource = applier.apply(ResourceAccessChecks.disabled());
@@ -130,20 +134,28 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
 
     // now ensure access to resource
     ensureTenantAccessOrThrow(authentication, resource);
-    ensureResourceAccessOrThrow(authentication, authorization, resource);
+    ensureResourceAccessOrThrow(authentication, authorizations, resource);
 
     return resource;
   }
 
   protected <T> void ensureResourceAccessOrThrow(
       final CamundaAuthentication authentication,
-      final Authorization<T> authorization,
+      final List<Authorization<?>> authorizations,
       final T document) {
-    final var resourceAccess =
-        getResourceAccessProvider().hasResourceAccess(authentication, authorization, document);
-    if (resourceAccess.denied()) {
-      throw new ResourceAccessDeniedException(authorization);
+
+    for (final Authorization authorization : authorizations) {
+      final var resourceAccess =
+          getResourceAccessProvider().hasResourceAccess(authentication, authorization, document);
+      // if any authorization grants access to the resource
+      // then return immediately (assuming authorization are always "disjunctive")
+      if (!resourceAccess.denied()) {
+        return;
+      }
     }
+
+    // adjust exception to handle multiple authorizations
+    throw new ResourceAccessDeniedException(authorizations.get(0));
   }
 
   protected <T> void ensureTenantAccessOrThrow(

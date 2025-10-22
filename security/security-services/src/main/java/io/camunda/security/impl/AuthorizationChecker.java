@@ -52,8 +52,8 @@ public class AuthorizationChecker {
   public List<AuthorizationScope> retrieveAuthorizedAuthorizationScopes(
       final SecurityContext securityContext) {
     final var authentication = securityContext.authentication();
-    final var resourceType = securityContext.authorization().resourceType();
-    final var permissionType = securityContext.authorization().permissionType();
+    final var resourceType = securityContext.authorizations().get(0).resourceType();
+    final var permissionType = securityContext.authorizations().get(0).permissionType();
     return getOrElseDefaultResult(
         authentication,
         (ownerIds) -> {
@@ -86,8 +86,8 @@ public class AuthorizationChecker {
   public boolean isAuthorized(
       final AuthorizationScope authorizationScope, final SecurityContext securityContext) {
     final var authentication = securityContext.authentication();
-    final var resourceType = securityContext.authorization().resourceType();
-    final var permissionType = securityContext.authorization().permissionType();
+    final var resourceType = securityContext.authorizations().get(0).resourceType();
+    final var permissionType = securityContext.authorizations().get(0).permissionType();
     return getOrElseDefaultResult(
         authentication,
         (ownerIds) -> {
