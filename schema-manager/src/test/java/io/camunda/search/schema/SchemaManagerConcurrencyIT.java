@@ -44,6 +44,7 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.dynamic.loading.ClassReloadingStrategy;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -245,7 +246,7 @@ public class SchemaManagerConcurrencyIT {
     final var node1Version10 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     node1Version10.startup(); // Initial schema creation with 1.0.0
-    assertThat(getSchemaVersion(config)).isEqualTo("1.0.0");
+    assertSchemaVersion(config, "1.0.0");
 
     // when - Step 1: Node1 upgrades to 1.1.0
     final var node1Version11 =
@@ -253,7 +254,7 @@ public class SchemaManagerConcurrencyIT {
     node1Version11.startup();
 
     // then - Schema should be upgraded to 1.1.0
-    assertThat(getSchemaVersion(config)).isEqualTo("1.1.0");
+    assertSchemaVersion(config, "1.1.0");
 
     // when - Step 2: Node2 upgrades to 1.1.0 (should skip upgrade since schema is already 1.1.0)
     final var node2Version11 =
@@ -261,7 +262,7 @@ public class SchemaManagerConcurrencyIT {
     node2Version11.startup();
 
     // then - Schema should still be 1.1.0
-    assertThat(getSchemaVersion(config)).isEqualTo("1.1.0");
+    assertSchemaVersion(config, "1.1.0");
   }
 
   @TestTemplate
@@ -276,7 +277,7 @@ public class SchemaManagerConcurrencyIT {
     final var initialNode =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     initialNode.startup();
-    assertThat(getSchemaVersion(config)).isEqualTo("1.0.0");
+    assertSchemaVersion(config, "1.0.0");
 
     final var exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
 
@@ -306,7 +307,7 @@ public class SchemaManagerConcurrencyIT {
     thread2.join(TIMEOUT);
 
     // then - Schema should be 1.1.0 at this point
-    assertThat(getSchemaVersion(config)).isEqualTo("1.1.0");
+    assertSchemaVersion(config, "1.1.0");
 
     // when - Step 3: Node1 completes upgrade
     PostMethodPauseAdvice.unpauseAll();
@@ -315,7 +316,7 @@ public class SchemaManagerConcurrencyIT {
     // then - Both should complete without errors
     assertThat(exceptions).isEmpty();
     // Schema should be upgraded to 1.1.0
-    assertThat(getSchemaVersion(config)).isEqualTo("1.1.0");
+    assertSchemaVersion(config, "1.1.0");
     // then - verify the version compatibility results observed by both nodes
     assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread1, CheckResult.class))
         .isInstanceOf(Compatible.MinorUpgrade.class)
@@ -342,13 +343,13 @@ public class SchemaManagerConcurrencyIT {
     final var node1Version10 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     node1Version10.startup();
-    assertThat(getSchemaVersion(config)).isEqualTo("1.0.0");
+    assertSchemaVersion(config, "1.0.0");
 
     // when - Step 1: Node1 upgrades to 1.1.0
     final var node1Version11 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.1.0");
     node1Version11.startup();
-    assertThat(getSchemaVersion(config)).isEqualTo("1.1.0");
+    assertSchemaVersion(config, "1.1.0");
 
     // when - Step 2: Node2 restarts with old version 1.0.0 (should skip - minor downgrade)
     final var node2Version10 =
@@ -356,7 +357,7 @@ public class SchemaManagerConcurrencyIT {
     node2Version10.startup();
 
     // then - Schema should remain 1.1.0 (not downgraded)
-    assertThat(getSchemaVersion(config)).isEqualTo("1.1.0");
+    assertSchemaVersion(config, "1.1.0");
   }
 
   @TestTemplate
@@ -374,7 +375,7 @@ public class SchemaManagerConcurrencyIT {
     final var initialNode =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     initialNode.startup();
-    assertThat(getSchemaVersion(config)).isEqualTo("1.0.0");
+    assertSchemaVersion(config, "1.0.0");
 
     final var exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
 
@@ -403,7 +404,7 @@ public class SchemaManagerConcurrencyIT {
     thread2.join(TIMEOUT);
 
     // then - Schema should still be 1.0.0 at this point
-    assertThat(getSchemaVersion(config)).isEqualTo("1.0.0");
+    assertSchemaVersion(config, "1.0.0");
 
     // when - Step 3: Node1 completes upgrade
     PostMethodPauseAdvice.unpauseAll();
@@ -411,7 +412,7 @@ public class SchemaManagerConcurrencyIT {
 
     // then - Schema should now be 1.1.0
     assertThat(exceptions).isEmpty();
-    assertThat(getSchemaVersion(config)).isEqualTo("1.1.0");
+    assertSchemaVersion(config, "1.1.0");
     // then - verify the version compatibility results observed by both nodes
     assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread1, CheckResult.class))
         .isInstanceOf(Compatible.MinorUpgrade.class)
@@ -434,6 +435,13 @@ public class SchemaManagerConcurrencyIT {
         exceptions.add(t);
       }
     };
+  }
+
+  private void assertSchemaVersion(
+      final SearchEngineConfiguration config, final String expectedVersion) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(getSchemaVersion(config)).isEqualTo(expectedVersion));
   }
 
   private String getSchemaVersion(final SearchEngineConfiguration config) {
