@@ -112,8 +112,6 @@ test.describe('task panel page', () => {
   });
 
   test('scrolling', async ({page, taskPanelPageV1}) => {
-    // TODO: This test fails in V2 mode - investigate if this is expected behavior or a bug
-    // V2 mode may have different scrolling/pagination behavior that affects task count expectations
     test.slow();
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
