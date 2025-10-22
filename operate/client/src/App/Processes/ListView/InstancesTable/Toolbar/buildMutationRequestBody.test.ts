@@ -12,7 +12,6 @@ import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {formatToISO} from 'modules/utils/date/formatDate';
 
 type Body =
   | CreateIncidentResolutionBatchOperationRequestBody
@@ -222,7 +221,10 @@ describe('buildMutationRequestBody', () => {
 
     expect(body).toEqual({
       filter: {
-        startDate: {$gt: formatToISO(after), $lt: formatToISO(before)},
+        startDate: {
+          $gt: '2020-01-01T00:00:00.000Z',
+          $lt: '2020-01-02T00:00:00.000Z',
+        },
       },
     });
   });
@@ -242,7 +244,10 @@ describe('buildMutationRequestBody', () => {
 
     expect(body).toEqual({
       filter: {
-        endDate: {$gt: formatToISO(after), $lt: formatToISO(before)},
+        endDate: {
+          $gt: '2020-01-01T00:00:00.000Z',
+          $lt: '2020-01-02T00:00:00.000Z',
+        },
       },
     });
   });
