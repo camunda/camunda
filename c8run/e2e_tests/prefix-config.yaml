@@ -10,7 +10,7 @@ camunda:
       type: elasticsearch
       elasticsearch:
         url: http://localhost:9200
-#       indexPrefix: "extra-prefix-zeebe-record"
+#        indexPrefix: "extra-prefix-zeebe-record"
   security:
     initialization:
       users:
