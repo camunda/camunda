@@ -7,46 +7,89 @@
  */
 
 import type {
-  IncidentErrorType,
+  QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstanceIncidentsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {useQuery} from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQuery,
+  type InfiniteData,
+} from '@tanstack/react-query';
 import {searchIncidentsByProcessInstance} from 'modules/api/v2/incidents/searchIncidentsByProcessInstance';
 import {queryKeys} from '../queryKeys';
 
+const PAGE_LIMIT = 50;
+
 type QueryOptions<T> = {
+  payload?: QueryProcessInstanceIncidentsRequestBody;
   enabled?: boolean;
   enablePeriodicRefetch?: boolean;
-  select?: (result: QueryProcessInstanceIncidentsResponseBody) => T;
+  select?: (data: InfiniteData<QueryProcessInstanceIncidentsResponseBody>) => T;
 };
 
 const useGetIncidentsByProcessInstance = <
-  T = QueryProcessInstanceIncidentsResponseBody,
+  T = InfiniteData<QueryProcessInstanceIncidentsResponseBody>,
 >(
   processInstanceKey: string,
   options?: QueryOptions<T>,
 ) => {
-  return useQuery({
-    queryKey:
-      queryKeys.incidents.searchByProcessInstanceKey(processInstanceKey),
+  const payload: QueryProcessInstanceIncidentsRequestBody = {
+    ...options?.payload,
+    filter: {state: 'ACTIVE', ...options?.payload?.filter},
+  };
+  return useInfiniteQuery({
+    queryKey: queryKeys.incidents.searchByProcessInstanceKey(
+      processInstanceKey,
+      payload,
+    ),
     refetchInterval: () => (options?.enablePeriodicRefetch ? 5000 : false),
+    staleTime: 5000,
     enabled: options?.enabled ?? !!processInstanceKey,
     select: options?.select,
-    queryFn: async () => {
-      const {response, error} =
-        await searchIncidentsByProcessInstance(processInstanceKey);
+    queryFn: async ({pageParam}) => {
+      const {response, error} = await searchIncidentsByProcessInstance(
+        processInstanceKey,
+        {
+          ...payload,
+          page: {from: pageParam, limit: PAGE_LIMIT},
+        },
+      );
       if (response !== null) {
         return response;
       }
 
       throw error;
     },
+    maxPages: 2,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      const nextPage = lastPageParam + PAGE_LIMIT;
+      return nextPage > lastPage.page.totalItems ? null : nextPage;
+    },
+    getPreviousPageParam: (_, __, firstPageParam) => {
+      const previousPage = firstPageParam - PAGE_LIMIT;
+      return previousPage < 0 ? null : previousPage;
+    },
   });
 };
 
 function useProcessInstanceIncidentsCount(processInstanceKey: string): number {
-  const {data} = useGetIncidentsByProcessInstance(processInstanceKey, {
-    select: (incidents) => incidents.page.totalItems,
+  // TODO: Refetch interval needed?
+  const {data} = useQuery({
+    queryKey:
+      queryKeys.incidents.processInstanceIncidentsCount(processInstanceKey),
+    staleTime: 5000,
+    queryFn: async () => {
+      const {response, error} = await searchIncidentsByProcessInstance(
+        processInstanceKey,
+        {page: {limit: 0}, filter: {state: 'ACTIVE'}},
+      );
+      if (response !== null) {
+        return response.page.totalItems;
+      }
+
+      throw error;
+    },
   });
 
   return data ?? 0;
