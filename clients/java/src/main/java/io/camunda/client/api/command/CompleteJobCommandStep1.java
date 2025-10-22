@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.Map;
