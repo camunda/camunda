@@ -65,11 +65,12 @@ jobs:
           go-version: '>=1.23.1'
 
       - name: Build c8run
-        run: go build -o c8run ./c8run/cmd/c8run
+        working-directory: ./c8run
+        run: go build -o c8run ./cmd/c8run
 
       - name: Package c8run
         run: ./package.sh
-        working-directory: ./camunda/c8run
+        working-directory: ./c8run
 
       - name: Run c8run
         run: |
