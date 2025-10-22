@@ -45,6 +45,7 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -102,7 +103,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep1 withResult(final ResultFunction function) {
+  public CompleteJobCommandStep1 withResult(
+      final Function<CompleteJobCommandJobResultStep, CompleteJobResult> function) {
     final CompleteJobResult result = function.apply(this);
     if (result instanceof CompleteUserTaskJobResultImpl) {
       setJobResult((CompleteUserTaskJobResultImpl) result);

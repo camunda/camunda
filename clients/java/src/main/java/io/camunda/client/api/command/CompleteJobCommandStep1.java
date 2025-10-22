@@ -81,9 +81,8 @@ public interface CompleteJobCommandStep1
    *
    * @return the builder for this command.
    */
-  CompleteJobCommandStep1 withResult(ResultFunction consumer);
-
-  interface ResultFunction extends Function<CompleteJobCommandJobResultStep, CompleteJobResult> {}
+  CompleteJobCommandStep1 withResult(
+      Function<CompleteJobCommandJobResultStep, CompleteJobResult> consumer);
 
   interface CompleteJobCommandJobResultStep {
     /**
