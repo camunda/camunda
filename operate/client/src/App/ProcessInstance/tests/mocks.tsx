@@ -227,13 +227,9 @@ function getWrapper(options?: {
 const waitForPollingsToBeComplete = async () => {
   await waitFor(() => {
     expect(variablesStore.isPollRequestRunning).toBe(false);
-    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
-    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
     expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
-    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
     expect(incidentsStore.isPollRequestRunning).toBe(false);
-    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
     expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
   });
 };
