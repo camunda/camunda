@@ -21,8 +21,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -56,7 +56,7 @@ final class ConfigurationChangeAppliersImplTest {
             new PartitionReconfigurePriorityOperation(localMemberId, 1, 1),
             PartitionReconfigurePriorityApplier.class),
         Arguments.of(
-            new PartitionForceReconfigureOperation(localMemberId, 1, List.of()),
+            new PartitionForceReconfigureOperation(localMemberId, 1, Set.of()),
             PartitionForceReconfigureApplier.class),
         Arguments.of(
             new PartitionDisableExporterOperation(localMemberId, 1, "expId"),

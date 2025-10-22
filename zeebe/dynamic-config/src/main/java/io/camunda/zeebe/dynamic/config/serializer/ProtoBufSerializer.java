@@ -693,7 +693,7 @@ public class ProtoBufSerializer
           topologyChangeOperation.getPartitionForceReconfigure().getPartitionId(),
           topologyChangeOperation.getPartitionForceReconfigure().getMembersList().stream()
               .map(MemberId::from)
-              .toList());
+              .collect(Collectors.toSet()));
     } else if (topologyChangeOperation.hasMemberRemove()) {
       return new MemberRemoveOperation(
           memberId, MemberId.from(topologyChangeOperation.getMemberRemove().getMemberToRemove()));

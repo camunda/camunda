@@ -8,9 +8,8 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import io.atomix.cluster.MemberId;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -143,10 +142,10 @@ public sealed interface ClusterConfigurationChangeOperation {
      * @param members the members of the partition's replication group after the reconfiguration
      */
     record PartitionForceReconfigureOperation(
-        MemberId memberId, int partitionId, Collection<MemberId> members)
+        MemberId memberId, int partitionId, Set<MemberId> members)
         implements PartitionChangeOperation {
       public PartitionForceReconfigureOperation {
-        members = List.copyOf(members);
+        members = Set.copyOf(members);
       }
     }
 

@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,7 +55,7 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
             .distinct()
             .toList();
 
-    final Map<Integer, ArrayList<MemberId>> partitionsWithNewMembers =
+    final Map<Integer, Set<MemberId>> partitionsWithNewMembers =
         calculateNewConfiguration(clusterConfiguration, membersToRetain, partitions);
 
     final var partitionsWithNoReplicas =
@@ -90,7 +91,7 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
   }
 
   private Either<Exception, List<ClusterConfigurationChangeOperation>> generateOperations(
-      final Map<Integer, ArrayList<MemberId>> partitionsWithNewMembers,
+      final Map<Integer, Set<MemberId>> partitionsWithNewMembers,
       final List<MemberId> memberToRemove) {
 
     final var partitionForceConfigureOperations = reconfigurePartitions(partitionsWithNewMembers);
@@ -104,7 +105,7 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
   }
 
   private List<ClusterConfigurationChangeOperation> reconfigurePartitions(
-      final Map<Integer, ArrayList<MemberId>> partitionsWithNewMembers) {
+      final Map<Integer, Set<MemberId>> partitionsWithNewMembers) {
     return partitionsWithNewMembers.entrySet().stream()
         .map(
             partition ->
@@ -124,14 +125,14 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
         .toList();
   }
 
-  private Map<Integer, ArrayList<MemberId>> calculateNewConfiguration(
+  private Map<Integer, Set<MemberId>> calculateNewConfiguration(
       final ClusterConfiguration currentTopology,
       final Set<MemberId> membersToRetain,
       final List<Integer> partitions) {
 
-    final Map<Integer, ArrayList<MemberId>> partitionToMembersMap = new HashMap<>();
+    final Map<Integer, Set<MemberId>> partitionToMembersMap = new HashMap<>();
     for (final var partitionId : partitions) {
-      partitionToMembersMap.put(partitionId, new ArrayList<>());
+      partitionToMembersMap.put(partitionId, new HashSet<>());
       for (final var member : membersToRetain) {
         if (currentTopology.getMember(member).hasPartition(partitionId)) {
           partitionToMembersMap.computeIfPresent(

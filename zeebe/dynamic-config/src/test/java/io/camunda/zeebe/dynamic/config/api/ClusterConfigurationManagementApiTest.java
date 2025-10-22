@@ -346,8 +346,8 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
-            new PartitionForceReconfigureOperation(id0, 1, List.of(id0)),
-            new PartitionForceReconfigureOperation(id2, 2, List.of(id2)),
+            new PartitionForceReconfigureOperation(id0, 1, Set.of(id0)),
+            new PartitionForceReconfigureOperation(id2, 2, Set.of(id2)),
             new MemberRemoveOperation(id0, id1),
             new MemberRemoveOperation(id0, id3));
   }
@@ -428,8 +428,8 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
-            new PartitionForceReconfigureOperation(id0, 1, List.of(id0)),
-            new PartitionForceReconfigureOperation(id2, 2, List.of(id2)),
+            new PartitionForceReconfigureOperation(id0, 1, Set.of(id0)),
+            new PartitionForceReconfigureOperation(id2, 2, Set.of(id2)),
             new MemberRemoveOperation(id0, id1),
             new MemberRemoveOperation(id0, id3));
   }
