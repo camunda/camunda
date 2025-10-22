@@ -14,12 +14,9 @@ import {
   jsonHeaders,
   assertNotFoundRequest,
 } from '../../../../utils/http';
-import {
-  deployResourceAndGetMetadata,
-  ResourceMetadata,
-} from '../../../../utils/requestHelpers';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {validateResponseShape} from '../../../../json-body-assertions';
+import {deployResourceAndGetMetadata, ResourceMetadata} from '@requestHelpers';
 
 function validateResourceResponse(
   body: JSONDoc,
