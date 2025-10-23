@@ -328,8 +328,8 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     env:
-        TEST_TYPE: "Unit"
-        TEST_PRODUCT: "Zeebe"
+      TEST_TYPE: "Unit"
+      TEST_PRODUCT: "Zeebe"
     strategy:
       fail-fast: false
       matrix:
@@ -357,8 +357,10 @@ jobs:
             maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ matrix.suite}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_owner: "${{ matrix.suite }}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-zeebe
@@ -823,6 +825,7 @@ jobs:
       CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
       CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
       DOCKER_IMAGE_TAG: current-test
+      TEST_TYPE: Integration
     services:
       registry:
         image: registry:3
@@ -830,8 +833,11 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a Integration test for ${{ matrix.name }} owned by ${{ matrix.owner}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_product: "${{ matrix.name }}"
+          test_owner: "${{ matrix.owner }}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
@@ -932,8 +938,8 @@ jobs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: archunit-tests
