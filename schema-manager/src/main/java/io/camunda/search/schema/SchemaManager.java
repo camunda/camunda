@@ -150,8 +150,8 @@ public class SchemaManager implements CloseableSilently {
   private void initializeSchema() {
     LOG.info("Schema creation is enabled. Start Schema management.");
     final boolean upgradeSchema;
-    final var previousSchemaManager = schemaMetadataStore.getSchemaVersion();
-    final var checkResult = checkVersionCompatibility(previousSchemaManager, currentVersion);
+    final var previousSchemaVersion = schemaMetadataStore.getSchemaVersion();
+    final var checkResult = checkVersionCompatibility(previousSchemaVersion, currentVersion);
     switch (checkResult) {
       case final Compatible.SameVersion ignored:
         upgradeSchema = "SNAPSHOT".equals(SemanticVersion.parse(currentVersion).get().preRelease());

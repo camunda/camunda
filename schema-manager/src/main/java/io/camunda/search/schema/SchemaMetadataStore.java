@@ -36,7 +36,7 @@ class SchemaMetadataStore {
   String getSchemaVersion() {
     // Check if metadata index exists
     if (!searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())) {
-      logger.debug("Schema metadata index does not exist, assuming fresh installation");
+      logger.info("Metadata index does not exist, assuming a fresh installation");
       return null;
     }
     final var schemaVersionDoc =
@@ -47,7 +47,7 @@ class SchemaMetadataStore {
       return (String) schemaVersionDoc.get(MetadataIndex.VALUE);
     }
 
-    logger.debug("No schema version found in metadata, assuming fresh installation");
+    logger.info("No schema version found in metadata index, assuming a fresh installation");
     return null;
   }
 
@@ -65,7 +65,7 @@ class SchemaMetadataStore {
       searchEngineClient.upsertDocument(
           metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID, versionDoc);
 
-      logger.debug("Stored schema version: {}", version);
+      logger.info("Stored schema version metadata: {}", version);
     } catch (final Exception e) {
       logger.error("Failed to store schema version in metadata", e);
       throw new IllegalStateException("Could not store schema version metadata", e);
