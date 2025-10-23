@@ -764,14 +764,12 @@ jobs:
   # then creates releases and generates attribution/SBOM reports for single-app only
   # Flags impact:
   # - With dryRun=true or releaseProcessDryRun=true: Runs in dry-run mode (no actual release creation)
-  # - Skipped for non-stable versions (containing '-' like SNAPSHOT, alpha, rc)
   fossa-release:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
-    if: ${{ !contains(inputs.releaseVersion, '-') }}
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
