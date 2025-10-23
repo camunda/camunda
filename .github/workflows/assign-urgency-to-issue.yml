@@ -1,6 +1,31 @@
 # type: Project Management
 # owner: @camunda/core-features-team
 ---
+# Urgency Field Automation
+#
+# This workflow automatically calculates and updates the Urgency field for Bug issues in GitHub Projects.
+#
+# How it works:
+# - Triggers when Bug issues are opened, labeled, unlabeled, reopened, or transferred
+# - Calculates urgency based on severity and likelihood labels using a risk matrix
+# - Updates the Urgency field in ProjectV2 with values: immediate, next, planned, someday
+#
+# Labels:
+# - severity/{low,mid,high,critical} - Required for all bugs
+# - likelihood/{low,mid,high,unknown} - Optional, defaults to unknown (treated as low)
+# - urgency-locked - Prevents automatic urgency updates while showing calculated value
+#
+# Matrix:
+#   Likelihood →     low        mid        high
+#   Severity ↓
+#   low              someday    someday    someday
+#   mid              someday    planned    planned
+#   high             planned    next       next
+#   critical         immediate  immediate  immediate
+#
+# Manual usage:
+#   gh workflow run assign-urgency-to-issue.yml -f issue_number=123 -f project_id=173
+#
 name: Assign urgency field when issue is updated
 
 on:
