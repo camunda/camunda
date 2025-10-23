@@ -17,9 +17,11 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import java.util.Collection;
 import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component(value = "jobStreamService")
+@Profile("gateway")
 final class GatewayJobStreamService implements JobStreamEndpoint.Service {
   private final SpringGatewayBridge bridge;
 
