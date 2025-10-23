@@ -98,7 +98,7 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   public void addFailureListener(final FailureListener failureListener) {
     LOG.trace("Added failure listener {}", failureListener);
     listeners.put(failureListener, Boolean.TRUE);
-    failureListener.onFailure(healthReport);
+    failureListener.onHealthReport(healthReport);
   }
 
   @Override
