@@ -19,8 +19,10 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleReco
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -83,6 +86,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     setupAdminRole(setupRecord);
     setupRpaRole(setupRecord);
     setupConnectorsRole(setupRecord);
+    setupTaskWorkerRole(setupRecord);
 
     initialization
         .getUsers()
@@ -255,6 +259,23 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                 .setTenantId(DEFAULT_TENANT_ID)
                 .setEntityType(EntityType.ROLE)
                 .setEntityId(rpaRoleId));
+  }
+
+  private static void setupTaskWorkerRole(final IdentitySetupRecord setupRecord) {
+    final var taskWorkerRoleId = "task-worker";
+    setupRecord.addRole(new RoleRecord().setRoleId(taskWorkerRoleId).setName("Task worker"));
+    Stream.of(UserTaskRecord.ASSIGNEE, UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.CANDIDATE_GROUPS)
+        .forEach(
+            propertyName ->
+                setupRecord.addAuthorization(
+                    new AuthorizationRecord()
+                        .setOwnerId(taskWorkerRoleId)
+                        .setOwnerType(AuthorizationOwnerType.ROLE)
+                        .setResourceType(AuthorizationResourceType.USER_TASK)
+                        .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+                        .setPropertyName(UserTaskRecord.ASSIGNEE)
+                        .setPermissionTypes(Set.of(PermissionType.READ/*, ASSIGN, COMPLETE*/))));
   }
 
   private static boolean isReadPermission(final PermissionType permissionType) {
