@@ -133,10 +133,13 @@
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
-      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      <if test="authorizedByType != null and !authorizedByType.isEmpty()">
         AND ut.PROCESS_DEFINITION_ID IN
-        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        <foreach collection="authorizedByType" item="value" index="key" open="(" separator=","
           close=")">
+        <if test="key == PROCESS_DEFINITION">
+          AND ut.PROCESS_DEFINITION_ID IN #{resourceId}
+        </if>
           #{resourceId}
         </foreach>
       </if>
