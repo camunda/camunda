@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
@@ -308,14 +309,15 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
     final var taskListeners = new ArrayList<TaskListener>();
 
-    // Add global listeners
-    Optional.ofNullable(listenersConfiguration)
-        .map(ListenersConfiguration::task)
-        .ifPresent(
-            listeners ->
-                listeners.stream()
-                    .map(l -> toTaskListenerModel(l, userTaskProperties))
-                    .forEach(taskListeners::addAll));
+    // Add global listeners to be executed before local ones
+    final var globalListenersConfiguration =
+        Optional.ofNullable(listenersConfiguration).map(ListenersConfiguration::task);
+    globalListenersConfiguration.ifPresent(
+        listeners ->
+            listeners.stream()
+                .filter(Predicate.not(ListenerConfiguration::afterLocal))
+                .map(l -> toTaskListenerModel(l, userTaskProperties))
+                .forEach(taskListeners::addAll));
 
     // Add listeners defined directly on the model
     Optional.ofNullable(element.getSingleExtensionElement(ZeebeTaskListeners.class))
@@ -325,6 +327,14 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
                     .map(listener -> toTaskListenerModel(listener, userTaskProperties))
                     .toList())
         .ifPresent(taskListeners::addAll);
+
+    // Add global listeners to be executed after local ones
+    globalListenersConfiguration.ifPresent(
+        listeners ->
+            listeners.stream()
+                .filter(ListenerConfiguration::afterLocal)
+                .map(l -> toTaskListenerModel(l, userTaskProperties))
+                .forEach(taskListeners::addAll));
 
     if (!taskListeners.isEmpty()) {
       userTask.setTaskListeners(taskListeners);
