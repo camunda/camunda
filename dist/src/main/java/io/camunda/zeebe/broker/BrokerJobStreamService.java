@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint;
@@ -20,6 +21,7 @@ import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+@ConditionalOnRestGatewayEnabled
 @Component(value = "jobStreamService")
 final class BrokerJobStreamService implements JobStreamEndpoint.Service {
   private final SpringBrokerBridge bridge;
