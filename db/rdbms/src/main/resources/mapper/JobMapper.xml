@@ -184,16 +184,16 @@
         </foreach>
       </if>
       <if test="filter.hasFailedWithRetriesLeft == true">
-        AND HAS_FAILED_WITH_RETRIES_LEFT = TRUE
+        AND HAS_FAILED_WITH_RETRIES_LEFT = ${true}
       </if>
       <if test="filter.hasFailedWithRetriesLeft == false">
-        AND HAS_FAILED_WITH_RETRIES_LEFT = FALSE
+        AND HAS_FAILED_WITH_RETRIES_LEFT = ${false}
       </if>
       <if test="filter.isDenied == true">
-        AND IS_DENIED = TRUE
+        AND IS_DENIED = ${true}
       </if>
       <if test="filter.isDenied == false">
-        AND IS_DENIED = FALSE
+        AND IS_DENIED = ${false}
       </if>
       <if test="filter.retriesOperations != null and !filter.retriesOperations.isEmpty()">
         <foreach collection="filter.retriesOperations" item="operation">
@@ -270,14 +270,14 @@
         WORKER = #{worker},
         ERROR_MESSAGE = #{errorMessage},
         ERROR_CODE = #{errorCode},
-        END_TIME = #{endTime},
+        END_TIME = #{endTime, jdbcType=TIMESTAMP},
         CUSTOM_HEADERS = #{serializedCustomHeaders},
         KIND = #{kind},
         ELEMENT_ID = #{elementId},
         IS_DENIED = #{isDenied},
         DENIED_REASON = #{deniedReason},
         LISTENER_EVENT_TYPE = #{listenerEventType},
-        DEADLINE = #{deadline},
+        DEADLINE = #{deadline, jdbcType=TIMESTAMP},
         HAS_FAILED_WITH_RETRIES_LEFT = #{hasFailedWithRetriesLeft},
         LAST_UPDATE_TIME = #{lastUpdateTime, jdbcType=TIMESTAMP}
     WHERE JOB_KEY = #{jobKey}
