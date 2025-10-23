@@ -224,17 +224,23 @@ final class ZeebeIntegrationExtension
     if (annotation.autoStart()) {
       resource.start();
 
-      if (annotation.awaitStarted()) {
-        resource.await(TestHealthProbe.STARTED);
-      }
+      awaitResourceStatus(resource);
+    }
+  }
 
-      if (annotation.awaitReady()) {
-        resource.await(TestHealthProbe.READY);
-      }
+  private static void awaitResourceStatus(final TestZeebeResource resource) {
+    final var annotation = resource.annotation();
 
-      if (annotation.awaitCompleteTopology()) {
-        resource.awaitCompleteTopology();
-      }
+    if (annotation.awaitStarted()) {
+      resource.await(TestHealthProbe.STARTED);
+    }
+
+    if (annotation.awaitReady()) {
+      resource.await(TestHealthProbe.READY);
+    }
+
+    if (annotation.awaitCompleteTopology()) {
+      resource.awaitCompleteTopology();
     }
   }
 
@@ -311,6 +317,7 @@ final class ZeebeIntegrationExtension
         }
         purgeResource(testGateway);
       }
+      awaitResourceStatus(resource);
     }
   }
 
