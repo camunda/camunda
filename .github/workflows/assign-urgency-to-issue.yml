@@ -47,12 +47,12 @@ on:
 
 concurrency:
   group: update-urgency-${{ github.event.inputs.issue_number || github.event.issue.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   assign-urgency-to-issue:
-    # Always run for manual dispatch, only run for Bug type issues when triggered by issue events
-    if: github.event_name == 'workflow_dispatch' || github.event.issue.issueType.name == 'Bug'
+    # Run when manually dispatched OR issue is Bug OR issueType missing (backwards compatibility)
+    if: github.event_name == 'workflow_dispatch' || (github.event.issue.issueType && github.event.issue.issueType.name == 'Bug') || github.event.issue.issueType == null
     runs-on: ubuntu-latest
     permissions: {}
     timeout-minutes: 10
@@ -69,6 +69,9 @@ jobs:
         shell: bash
 
     steps:
+      - name: Dump issue JSON
+        if: always()
+        run: echo '${{ toJSON(github.event.issue) }}'
       - name: Check issue
         id: check_issue
         run: |
