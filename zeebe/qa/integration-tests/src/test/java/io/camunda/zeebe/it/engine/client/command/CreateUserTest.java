@@ -24,15 +24,15 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class CreateUserTest {
 
-  @AutoClose CamundaClient client;
-
   @TestZeebe
-  private final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+
+  @AutoClose CamundaClient client;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
   }
 
   @Test
