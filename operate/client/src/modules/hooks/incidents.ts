@@ -10,8 +10,15 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {incidentsStore} from 'modules/stores/incidents';
 import {getFlowNodeName} from '../utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
+import {
+  queryIncidentsRequestBodySchema,
+  type Incident,
+  type QueryIncidentsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
+import {useLocation} from 'react-router-dom';
+import {getSortParams} from 'modules/utils/filter';
+import {useMemo} from 'react';
 
 type EnhancedIncident = Incident & {
   processDefinitionName: string;
@@ -78,6 +85,24 @@ const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
   });
 };
 
+const incidentsSortKeySchema =
+  queryIncidentsRequestBodySchema.shape.sort.def.innerType.def.element.shape
+    .field;
+
+const useIncidentsSort = () => {
+  const location = useLocation();
+  return useMemo<QueryIncidentsRequestBody['sort']>(() => {
+    const params = getSortParams(location.search);
+    const field = incidentsSortKeySchema.safeParse(params?.sortBy);
+    return [
+      {
+        field: field.success ? field.data : 'creationTime',
+        order: params?.sortOrder ?? 'desc',
+      },
+    ];
+  }, [location.search]);
+};
+
 const useIncidentsElements = () => {
   const {data: businessObjects} = useBusinessObjects();
 
@@ -98,5 +123,6 @@ export {
   useIncidents,
   useIncidentsElements,
   useEnhancedIncidents,
+  useIncidentsSort,
   type EnhancedIncident,
 };

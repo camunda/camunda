@@ -16,14 +16,20 @@ import {IncidentsTable as IncidentsTableV2} from './IncidentsTable/v2';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {
   getFilteredIncidents,
-  getFilteredIncidentsV2,
+  getIncidentsSearchFilter,
   init,
 } from 'modules/utils/incidents';
-import {useIncidents, useEnhancedIncidents} from 'modules/hooks/incidents';
+import {
+  useIncidents,
+  useEnhancedIncidents,
+  useIncidentsSort,
+} from 'modules/hooks/incidents';
 import {
   type Incident,
   type ProcessInstance,
+  type QueryIncidentsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
+import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {useEffect} from 'react';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {isInstanceRunning} from 'modules/utils/instance';
@@ -98,6 +104,7 @@ const IncidentsWrapperV2: React.FC<Props> = observer(
     const enablePeriodicRefetch =
       isInstanceRunning(processInstance) &&
       !modificationsStore.isModificationModeEnabled;
+    const isPanelVisible = incidentsPanelStore.state.isPanelVisible;
     const selectedElementInstance =
       incidentsPanelStore.state.selectedElementInstance;
 
@@ -106,12 +113,15 @@ const IncidentsWrapperV2: React.FC<Props> = observer(
         <IncidentsByElementInstance
           elementInstanceKey={selectedElementInstance.elementInstanceKey}
           enablePeriodicRefetch={enablePeriodicRefetch}
+          enableQuery={isPanelVisible}
         >
-          {(incidents) => (
+          {(handle) => (
             <IncidentsWrapperContent
-              incidents={incidents}
+              handle={handle}
               processInstanceKey={processInstance.processInstanceKey}
               setIsInTransition={setIsInTransition}
+              isPanelVisible={isPanelVisible}
+              selectedElementName={selectedElementInstance.elementName}
             />
           )}
         </IncidentsByElementInstance>
@@ -122,12 +132,14 @@ const IncidentsWrapperV2: React.FC<Props> = observer(
       <IncidentsByProcessInstance
         processInstanceKey={processInstance.processInstanceKey}
         enablePeriodicRefetch={enablePeriodicRefetch}
+        enableQuery={isPanelVisible}
       >
-        {(incidents) => (
+        {(handle) => (
           <IncidentsWrapperContent
-            incidents={incidents}
+            handle={handle}
             processInstanceKey={processInstance.processInstanceKey}
             setIsInTransition={setIsInTransition}
+            isPanelVisible={isPanelVisible}
           />
         )}
       </IncidentsByProcessInstance>
@@ -136,90 +148,145 @@ const IncidentsWrapperV2: React.FC<Props> = observer(
 );
 
 type IncidentsWrapperContentProps = {
-  incidents: Incident[];
+  handle: IncidentsHandle;
   processInstanceKey: string;
   setIsInTransition: Props['setIsInTransition'];
+  isPanelVisible: boolean;
+  selectedElementName?: string;
 };
 
-const IncidentsWrapperContent: React.FC<IncidentsWrapperContentProps> =
-  observer((props) => {
-    const enhancedIncidents = useEnhancedIncidents(props.incidents ?? []);
-    const filteredIncidents = getFilteredIncidentsV2(enhancedIncidents);
-    const selectedElementInstance =
-      incidentsPanelStore.state.selectedElementInstance;
+const IncidentsWrapperContent: React.FC<IncidentsWrapperContentProps> = (
+  props,
+) => {
+  const enhancedIncidents = useEnhancedIncidents(props.handle.incidents);
+  const headerTitle = props.selectedElementName
+    ? `Incidents - Filtered by "${props.selectedElementName}"`
+    : 'Incidents';
 
-    const headerTitle =
-      selectedElementInstance !== null
-        ? `Incidents - Filtered by "${selectedElementInstance.elementName}"`
-        : 'Incidents';
-
-    return (
-      <Transition
-        in={incidentsPanelStore.state.isPanelVisible}
-        onEnter={() => props.setIsInTransition(true)}
-        onEntered={() => props.setIsInTransition(false)}
-        onExit={() => props.setIsInTransition(true)}
-        onExited={() => props.setIsInTransition(false)}
-        mountOnEnter
-        unmountOnExit
-        timeout={400}
-      >
-        <IncidentsOverlay>
-          <PanelHeader
-            title={headerTitle}
-            count={filteredIncidents.length}
-            size="sm"
-          >
-            <IncidentsFilter />
-          </PanelHeader>
-          <IncidentsTableV2
-            processInstanceKey={props.processInstanceKey}
-            incidents={filteredIncidents}
-          />
-        </IncidentsOverlay>
-      </Transition>
-    );
-  });
+  return (
+    <Transition
+      in={props.isPanelVisible}
+      onEnter={() => props.setIsInTransition(true)}
+      onEntered={() => props.setIsInTransition(false)}
+      onExit={() => props.setIsInTransition(true)}
+      onExited={() => props.setIsInTransition(false)}
+      mountOnEnter
+      unmountOnExit
+      timeout={400}
+    >
+      <IncidentsOverlay>
+        <PanelHeader
+          title={headerTitle}
+          count={props.handle.totalIncidentsCount}
+          size="sm"
+        >
+          <IncidentsFilter />
+        </PanelHeader>
+        <IncidentsTableV2
+          state={props.handle.displayState}
+          onVerticalScrollStartReach={props.handle.handleScrollStartReach}
+          onVerticalScrollEndReach={props.handle.handleScrollEndReach}
+          processInstanceKey={props.processInstanceKey}
+          incidents={enhancedIncidents}
+        />
+      </IncidentsOverlay>
+    </Transition>
+  );
+};
 
 type IncidentsSourceProps<Source> = Source & {
+  enableQuery: boolean;
   enablePeriodicRefetch: boolean;
-  children: (incidents: Incident[]) => React.ReactNode;
+  children: (handle: IncidentsHandle) => React.ReactNode;
+};
+
+type IncidentsHandle = {
+  incidents: Incident[];
+  totalIncidentsCount: number;
+  displayState: React.ComponentProps<typeof IncidentsTableV2>['state'];
+  handleScrollStartReach: React.ComponentProps<
+    typeof IncidentsTableV2
+  >['onVerticalScrollStartReach'];
+  handleScrollEndReach: React.ComponentProps<
+    typeof IncidentsTableV2
+  >['onVerticalScrollEndReach'];
 };
 
 const IncidentsByProcessInstance: React.FC<
   IncidentsSourceProps<{processInstanceKey: string}>
-> = (props) => {
-  const {data: incidents} = useGetIncidentsByProcessInstance(
-    props.processInstanceKey,
-    {
-      enablePeriodicRefetch: props.enablePeriodicRefetch,
-      select: (res) => res.items,
-    },
+> = observer((props) => {
+  const sort = useIncidentsSort();
+  const filter = getIncidentsSearchFilter(
+    incidentsPanelStore.state.selectedErrorTypes,
   );
 
-  if (!incidents || incidents.length === 0) {
-    return null;
-  }
+  const result = useGetIncidentsByProcessInstance(props.processInstanceKey, {
+    enabled: props.enableQuery,
+    enablePeriodicRefetch: props.enablePeriodicRefetch,
+    payload: {sort, filter},
+  });
 
-  return props.children(incidents);
-};
+  return props.children(mapQueryResultToIncidentsHandle(result));
+});
 
 const IncidentsByElementInstance: React.FC<
   IncidentsSourceProps<{elementInstanceKey: string}>
 > = (props) => {
-  const {data: incidents} = useGetIncidentsByElementInstance(
-    props.elementInstanceKey,
-    {
-      enablePeriodicRefetch: props.enablePeriodicRefetch,
-      select: (res) => res.items,
-    },
+  const sort = useIncidentsSort();
+  const filter = getIncidentsSearchFilter(
+    incidentsPanelStore.state.selectedErrorTypes,
   );
 
-  if (!incidents || incidents.length === 0) {
-    return null;
+  const result = useGetIncidentsByElementInstance(props.elementInstanceKey, {
+    enabled: props.enableQuery,
+    enablePeriodicRefetch: props.enablePeriodicRefetch,
+    payload: {sort, filter},
+  });
+
+  return props.children(mapQueryResultToIncidentsHandle(result));
+};
+
+function mapQueryResultToIncidentsHandle(
+  result: UseInfiniteQueryResult<InfiniteData<QueryIncidentsResponseBody>>,
+): IncidentsHandle {
+  const incidents = result.data?.pages.flatMap((p) => p.items) ?? [];
+  const totalIncidentsCount = result.data?.pages[0]?.page.totalItems ?? 0;
+
+  let displayState: React.ComponentProps<typeof IncidentsTableV2>['state'] =
+    'content';
+
+  if (result.status === 'pending') {
+    displayState = 'skeleton';
+  } else if (
+    result.isFetching &&
+    !result.isRefetching &&
+    !result.isFetchingPreviousPage &&
+    !result.isFetchingNextPage
+  ) {
+    displayState = 'loading';
+  } else if (result.status === 'error') {
+    displayState = 'error';
+  } else if (result.status === 'success' && totalIncidentsCount === 0) {
+    displayState = 'empty';
   }
 
-  return props.children(incidents);
-};
+  return {
+    incidents,
+    totalIncidentsCount,
+    displayState,
+    handleScrollStartReach: async (scrollDown) => {
+      if (result.hasPreviousPage && !result.isFetchingPreviousPage) {
+        await result.fetchPreviousPage();
+        // Scroll down a bit (~5 rows) to make it possible to continue scrolling up.
+        scrollDown(5 * 32);
+      }
+    },
+    handleScrollEndReach: () => {
+      if (result.hasNextPage && !result.isFetchingNextPage) {
+        result.fetchNextPage();
+      }
+    },
+  };
+}
 
 export {IncidentsWrapper, IncidentsWrapperV2};
