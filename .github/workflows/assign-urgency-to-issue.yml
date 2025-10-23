@@ -189,9 +189,10 @@ jobs:
           LIKELIHOOD='${{ steps.check_labels.outputs.likelihood }}'
 
           if [[ -z "$SEVERITY" ]]; then
-            echo "⚠️ Missing severity label - urgency will not be set"
-            echo "  ❌ Missing severity label (expected: severity/low|mid|high|critical)"
-            URGENCY=""
+            echo "❌ Missing severity label - cannot calculate urgency"
+            echo "  Required: severity/low|mid|high|critical"
+            echo "urgency=" >> "$GITHUB_OUTPUT"
+            exit 1
           else
             # Treat unknown likelihood as low for matrix lookup
             LOOKUP_LIKELIHOOD="$LIKELIHOOD"
@@ -244,41 +245,22 @@ jobs:
           NEW_URGENCY='${{ steps.calculate_urgency.outputs.urgency }}'
           HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
 
-          # Check for urgency-locked label first
+          # Check for urgency-locked label - skip updates but show what would change
           if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
             echo "🔒 Skipping urgency update - issue has 'urgency-locked' label"
-            if [[ -n "$NEW_URGENCY" ]]; then
-              echo "ℹ️  Calculated urgency would be: '$NEW_URGENCY' (current: '$CURRENT_URGENCY')"
-            else
-              echo "ℹ️  No urgency could be calculated (missing severity/likelihood labels)"
-            fi
+            echo "ℹ️  Calculated urgency: '$NEW_URGENCY' (current: '$CURRENT_URGENCY')"
             exit 0
           fi
 
-          # Determine what action to take
-          if [[ -z "$NEW_URGENCY" && -z "$CURRENT_URGENCY" ]]; then
-            echo "⏭️ No urgency to set and field is already empty; skipping"
-            exit 0
-          elif [[ -n "$NEW_URGENCY" && "$CURRENT_URGENCY" == "$NEW_URGENCY" ]]; then
+          # Check if urgency matches - skip if already correct
+          if [[ "$CURRENT_URGENCY" == "$NEW_URGENCY" ]]; then
             echo "⏭️ Urgency already set to '$NEW_URGENCY'; skipping update"
             exit 0
           fi
 
-          # Determine mutation type
-          if [[ -z "$NEW_URGENCY" ]]; then
-            MUTATION_TYPE="clear"
-            echo "🧹 Clearing urgency field (was '$CURRENT_URGENCY') due to missing severity/likelihood labels"
-          else
-            MUTATION_TYPE="update"
-          fi
-
           # Dry run check
           if [[ "$DRY_RUN" == "true" ]]; then
-            if [[ "$MUTATION_TYPE" == "clear" ]]; then
-              echo "🔬 DRY RUN: Would clear urgency field"
-            else
-              echo "🔬 DRY RUN: Would update urgency from '$CURRENT_URGENCY' to '$NEW_URGENCY'"
-            fi
+            echo "🔬 DRY RUN: Would update urgency from '$CURRENT_URGENCY' to '$NEW_URGENCY'"
             exit 0
           fi
 
@@ -303,63 +285,44 @@ jobs:
             '.data.node.fields.nodes[] | select(.name==$name) | .id // empty')
 
           if [[ -z "$FIELD_ID" ]]; then
-            if [[ "$MUTATION_TYPE" == "clear" ]]; then
-              echo "⚠️ Field '$URGENCY_FIELD_NAME' does not exist; cannot clear"
-              exit 0
-            else
-              echo "❌ Field '$URGENCY_FIELD_NAME' does not exist in project"
-              echo "� Please create a single-select field named '$URGENCY_FIELD_NAME' with options: immediate, next, planned, someday"
-              exit 1
-            fi
+            echo "❌ Field '$URGENCY_FIELD_NAME' does not exist in project"
+            echo "💡 Please create a single-select field named '$URGENCY_FIELD_NAME' with options: immediate, next, planned, someday"
+            exit 1
           fi
 
           # Build and execute mutation
-          if [[ "$MUTATION_TYPE" == "clear" ]]; then
-            JSON_PAYLOAD=$(jq -n \
-              --arg projectId "$PROJECT_V2_ID" \
-              --arg itemId "$PROJECT_ITEM_ID" \
-              --arg fieldId "$FIELD_ID" \
-              '{
-                "query": "mutation($input: ClearProjectV2ItemFieldValueInput!) { clearProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
-                "variables": {
-                  "input": {
-                    "projectId": $projectId,
-                    "itemId": $itemId,
-                    "fieldId": $fieldId
-                  }
-                }
-              }')
-          else
-            OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
-              '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
+          OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
+            '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
 
-            if [[ -z "$OPTION_ID" ]]; then
-              echo "❌ Option '$NEW_URGENCY' not found in field '$URGENCY_FIELD_NAME'"
-              echo "💡 Available options:"
-              echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" \
-                '.data.node.fields.nodes[] | select(.name==$name) | .options[] | "  - \(.name)"'
-              exit 1
-            fi
+          OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
+            '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
 
-            JSON_PAYLOAD=$(jq -n \
-              --arg projectId "$PROJECT_V2_ID" \
-              --arg itemId "$PROJECT_ITEM_ID" \
-              --arg fieldId "$FIELD_ID" \
-              --arg optionId "$OPTION_ID" \
-              '{
-                "query": "mutation($input: UpdateProjectV2ItemFieldValueInput!) { updateProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
-                "variables": {
-                  "input": {
-                    "projectId": $projectId,
-                    "itemId": $itemId,
-                    "fieldId": $fieldId,
-                    "value": { "singleSelectOptionId": $optionId }
-                  }
-                }
-              }')
+          if [[ -z "$OPTION_ID" ]]; then
+            echo "❌ Option '$NEW_URGENCY' not found in field '$URGENCY_FIELD_NAME'"
+            echo "💡 Available options:"
+            echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" \
+              '.data.node.fields.nodes[] | select(.name==$name) | .options[] | "  - \(.name)"'
+            exit 1
           fi
 
-          # Execute mutation with unified error handling
+          JSON_PAYLOAD=$(jq -n \
+            --arg projectId "$PROJECT_V2_ID" \
+            --arg itemId "$PROJECT_ITEM_ID" \
+            --arg fieldId "$FIELD_ID" \
+            --arg optionId "$OPTION_ID" \
+            '{
+              "query": "mutation($input: UpdateProjectV2ItemFieldValueInput!) { updateProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
+              "variables": {
+                "input": {
+                  "projectId": $projectId,
+                  "itemId": $itemId,
+                  "fieldId": $fieldId,
+                  "value": { "singleSelectOptionId": $optionId }
+                }
+              }
+            }')
+
+          # Execute mutation
           MUTATION_RESP=$(gh api graphql -H "Content-Type: application/json" --input - <<< "$JSON_PAYLOAD" 2>&1) || {
             echo "❌ GraphQL mutation failed:"
             echo "$MUTATION_RESP"
@@ -367,15 +330,10 @@ jobs:
           }
 
           if echo "$MUTATION_RESP" | jq -e '.errors' > /dev/null 2>&1; then
-            echo "❌ GraphQL returned errors:"
+            echo "❌ GraphQL mutation returned errors:"
             echo "$MUTATION_RESP" | jq '.errors'
             exit 1
           fi
 
-          # Success message
-          if [[ "$MUTATION_TYPE" == "clear" ]]; then
-            echo "✅ Cleared urgency field"
-          else
-            echo "✅ Updated urgency from '$CURRENT_URGENCY' to '$NEW_URGENCY'"
-          fi
+          echo "✅ Updated urgency from '$CURRENT_URGENCY' to '$NEW_URGENCY'"
 
