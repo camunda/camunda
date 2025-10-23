@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.HistoryDeletionScheduler;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
@@ -353,6 +354,8 @@ public final class EngineProcessors {
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
+
+    typedRecordProcessors.withListener(new HistoryDeletionScheduler(scheduledTaskStateFactory));
 
     return typedRecordProcessors;
   }

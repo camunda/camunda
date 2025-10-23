@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.mutable.MutableHistoryDeletionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.function.Function;
 
 public class DbHistoryDeletionState implements MutableHistoryDeletionState {
 
@@ -35,5 +36,11 @@ public class DbHistoryDeletionState implements MutableHistoryDeletionState {
   public void insertProcessInstanceToDelete(final long processInstanceKey) {
     this.processInstanceKey.wrapLong(processInstanceKey);
     processInstancesToDeleteColumnFamily.insert(this.processInstanceKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void forEachProcessInstanceToDelete(final Function<DbLong, Boolean> visitor) {
+    processInstancesToDeleteColumnFamily.whileTrue(
+        (processInstanceKey, nil) -> visitor.apply(processInstanceKey));
   }
 }
