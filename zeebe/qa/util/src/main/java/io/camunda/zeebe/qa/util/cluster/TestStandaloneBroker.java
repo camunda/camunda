@@ -78,6 +78,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
     config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
+    // Disable pre-allocation of segment files - many tests won't even fill up their first segment
+    config.getExperimental().getRaft().setPreallocateSegmentFiles(false);
 
     config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
