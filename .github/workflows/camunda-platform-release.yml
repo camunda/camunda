@@ -222,6 +222,7 @@ jobs:
           ARTIFACT_DIR=$(mktemp -d)
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
+          cp target/checkout/db/rdbms-schema/target/camunda-db-rdbms-schema-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
