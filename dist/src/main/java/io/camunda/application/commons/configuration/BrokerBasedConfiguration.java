@@ -57,12 +57,14 @@ public class BrokerBasedConfiguration {
     return workingDirectory;
   }
 
+  @Profile("!gateway")
   @Bean
   public BrokerClientTimeoutConfiguration brokerClientConfig() {
     return new BrokerClientTimeoutConfiguration(
         properties.getGateway().getCluster().getRequestTimeout());
   }
 
+  @Profile("!gateway")
   @Bean
   public SchedulerConfiguration schedulerConfiguration() {
     final var threadCfg = properties.getThreads();
@@ -82,6 +84,7 @@ public class BrokerBasedConfiguration {
     return new RestApiCompositeFilter(filters);
   }
 
+  @Profile("!gateway")
   @Bean
   public ActivateJobHandlerConfiguration activateJobHandlerConfiguration() {
     return new ActivateJobHandlerConfiguration(
@@ -94,6 +97,7 @@ public class BrokerBasedConfiguration {
     return lifecycle.getTimeoutPerShutdownPhase();
   }
 
+  @Profile("!gateway")
   @Bean
   public ClusterConfig clusterConfig() {
     final var configFactory = new ClusterConfigFactory();
