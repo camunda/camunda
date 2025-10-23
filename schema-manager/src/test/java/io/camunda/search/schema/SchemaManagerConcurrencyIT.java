@@ -7,8 +7,8 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.SchemaMetadataStore.SCHEMA_VERSION_METADATA_ID;
 import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.CONFIG_PREFIX;
-import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.mappingsMatch;
@@ -235,7 +235,7 @@ public class SchemaManagerConcurrencyIT {
 
   @TestTemplate
   void shouldHandleSequentialNodeUpgradeSuccessfully(
-      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+      final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter) {
     // Scenario: Sequential node upgrade
     // Initial State: Node1(1.0.0), Node2(1.0.0), Schema(1.0.0)
     // Step 1: Node1 upgrades to 1.1.0
@@ -246,7 +246,7 @@ public class SchemaManagerConcurrencyIT {
     final var node1Version10 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     node1Version10.startup(); // Initial schema creation with 1.0.0
-    assertSchemaVersion(config, "1.0.0");
+    assertSchemaVersion(clientAdapter, "1.0.0");
 
     // when - Step 1: Node1 upgrades to 1.1.0
     final var node1Version11 =
@@ -254,7 +254,7 @@ public class SchemaManagerConcurrencyIT {
     node1Version11.startup();
 
     // then - Schema should be upgraded to 1.1.0
-    assertSchemaVersion(config, "1.1.0");
+    assertSchemaVersion(clientAdapter, "1.1.0");
 
     // when - Step 2: Node2 upgrades to 1.1.0 (should skip upgrade since schema is already 1.1.0)
     final var node2Version11 =
@@ -262,12 +262,13 @@ public class SchemaManagerConcurrencyIT {
     node2Version11.startup();
 
     // then - Schema should still be 1.1.0
-    assertSchemaVersion(config, "1.1.0");
+    assertSchemaVersion(clientAdapter, "1.1.0");
   }
 
   @TestTemplate
   void shouldHandleParallelNodeUpgradeSuccessfully(
-      final SearchEngineConfiguration config, final SearchClientAdapter ignored) throws Exception {
+      final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
+      throws Exception {
     // Scenario: Parallel Node Upgrade
     // Initial State: Node1(1.0.0), Node2(1.0.0), Schema(1.0.0)
     // Step 1: Both nodes upgrade simultaneously to 1.1.0
@@ -277,7 +278,7 @@ public class SchemaManagerConcurrencyIT {
     final var initialNode =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     initialNode.startup();
-    assertSchemaVersion(config, "1.0.0");
+    assertSchemaVersion(clientAdapter, "1.0.0");
 
     final var exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
 
@@ -307,7 +308,7 @@ public class SchemaManagerConcurrencyIT {
     thread2.join(TIMEOUT);
 
     // then - Schema should be 1.1.0 at this point
-    assertSchemaVersion(config, "1.1.0");
+    assertSchemaVersion(clientAdapter, "1.1.0");
 
     // when - Step 3: Node1 completes upgrade
     PostMethodPauseAdvice.unpauseAll();
@@ -316,7 +317,7 @@ public class SchemaManagerConcurrencyIT {
     // then - Both should complete without errors
     assertThat(exceptions).isEmpty();
     // Schema should be upgraded to 1.1.0
-    assertSchemaVersion(config, "1.1.0");
+    assertSchemaVersion(clientAdapter, "1.1.0");
     // then - verify the version compatibility results observed by both nodes
     assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread1, CheckResult.class))
         .isInstanceOf(Compatible.MinorUpgrade.class)
@@ -332,7 +333,7 @@ public class SchemaManagerConcurrencyIT {
 
   @TestTemplate
   void shouldHandleOldVersionNodeRestartAfterUpgrade(
-      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+      final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter) {
     // Scenario: Old version node restarts after upgrade
     // Initial State: Node1(1.0.0), Node2(1.0.0), Schema(1.0.0)
     // Step 1: Node1 upgrades to 1.1.0
@@ -343,13 +344,13 @@ public class SchemaManagerConcurrencyIT {
     final var node1Version10 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     node1Version10.startup();
-    assertSchemaVersion(config, "1.0.0");
+    assertSchemaVersion(clientAdapter, "1.0.0");
 
     // when - Step 1: Node1 upgrades to 1.1.0
     final var node1Version11 =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.1.0");
     node1Version11.startup();
-    assertSchemaVersion(config, "1.1.0");
+    assertSchemaVersion(clientAdapter, "1.1.0");
 
     // when - Step 2: Node2 restarts with old version 1.0.0 (should skip - minor downgrade)
     final var node2Version10 =
@@ -357,7 +358,7 @@ public class SchemaManagerConcurrencyIT {
     node2Version10.startup();
 
     // then - Schema should remain 1.1.0 (not downgraded)
-    assertSchemaVersion(config, "1.1.0");
+    assertSchemaVersion(clientAdapter, "1.1.0");
   }
 
   @TestTemplate
@@ -375,7 +376,7 @@ public class SchemaManagerConcurrencyIT {
     final var initialNode =
         createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config, "1.0.0");
     initialNode.startup();
-    assertSchemaVersion(config, "1.0.0");
+    assertSchemaVersion(clientAdapter, "1.0.0");
 
     final var exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
 
@@ -404,7 +405,7 @@ public class SchemaManagerConcurrencyIT {
     thread2.join(TIMEOUT);
 
     // then - Schema should still be 1.0.0 at this point
-    assertSchemaVersion(config, "1.0.0");
+    assertSchemaVersion(clientAdapter, "1.0.0");
 
     // when - Step 3: Node1 completes upgrade
     PostMethodPauseAdvice.unpauseAll();
@@ -412,7 +413,7 @@ public class SchemaManagerConcurrencyIT {
 
     // then - Schema should now be 1.1.0
     assertThat(exceptions).isEmpty();
-    assertSchemaVersion(config, "1.1.0");
+    assertSchemaVersion(clientAdapter, "1.1.0");
     // then - verify the version compatibility results observed by both nodes
     assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread1, CheckResult.class))
         .isInstanceOf(Compatible.MinorUpgrade.class)
@@ -438,17 +439,22 @@ public class SchemaManagerConcurrencyIT {
   }
 
   private void assertSchemaVersion(
-      final SearchEngineConfiguration config, final String expectedVersion) {
+      final SearchClientAdapter clientAdapter, final String expectedVersion) {
     Awaitility.await()
         .atMost(Duration.ofSeconds(2))
-        .untilAsserted(() -> assertThat(getSchemaVersion(config)).isEqualTo(expectedVersion));
+        .untilAsserted(
+            () -> assertThat(getSchemaVersion(clientAdapter)).isEqualTo(expectedVersion));
   }
 
-  private String getSchemaVersion(final SearchEngineConfiguration config) {
-    final var searchEngineClient = searchEngineClientFromConfig(config);
-    final var schemaVersionDoc =
-        searchEngineClient.getDocument(
-            metadataIndex.getFullQualifiedName(), SchemaMetadataStore.SCHEMA_VERSION_METADATA_ID);
+  private String getSchemaVersion(final SearchClientAdapter clientAdapter) {
+    final Map<String, Object> schemaVersionDoc;
+    try {
+      schemaVersionDoc =
+          clientAdapter.get(
+              SCHEMA_VERSION_METADATA_ID, metadataIndex.getFullQualifiedName(), Map.class);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
     if (schemaVersionDoc != null) {
       return (String) schemaVersionDoc.get(MetadataIndex.VALUE);
     }
@@ -471,7 +477,7 @@ public class SchemaManagerConcurrencyIT {
   }
 
   static class PostMethodPauseAdvice {
-    static final Semaphore SEMAPHORE = new Semaphore(0);
+    static Semaphore semaphore = new Semaphore(0);
     static ThreadLocal<Boolean> pauseCurrentThread = ThreadLocal.withInitial(() -> false);
     static final ConcurrentMap<Thread, Object> RETURNED_VALUES = new ConcurrentHashMap<>();
 
@@ -480,7 +486,7 @@ public class SchemaManagerConcurrencyIT {
         throws InterruptedException {
       RETURNED_VALUES.put(Thread.currentThread(), returnedObject);
       if (pauseCurrentThread.get()) {
-        SEMAPHORE.acquire(); // wait for unpauseAll signal
+        semaphore.acquire(); // wait for unpauseAll signal
       }
       pauseCurrentThread.set(false);
     }
@@ -490,8 +496,8 @@ public class SchemaManagerConcurrencyIT {
     }
 
     static void unpauseAll() {
-      while (SEMAPHORE.hasQueuedThreads()) {
-        SEMAPHORE.release();
+      while (semaphore.hasQueuedThreads()) {
+        semaphore.release();
       }
     }
 
@@ -501,6 +507,7 @@ public class SchemaManagerConcurrencyIT {
 
     static void reset() {
       unpauseAll();
+      semaphore = new Semaphore(0);
       RETURNED_VALUES.clear();
       pauseCurrentThread = ThreadLocal.withInitial(() -> false);
     }
