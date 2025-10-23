@@ -268,7 +268,7 @@ jobs:
           --set orchestration.image.registry=gcr.io
           --set orchestration.image.repository=zeebe-io/zeebe
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          -f https://raw.githubusercontent.com/camunda/camunda/refs/heads/${{ inputs.ref }}/load-tests/camunda-platform-values.yaml
+          -f https://raw.githubusercontent.com/camunda/camunda/${{ inputs.ref }}/load-tests/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f load-tests/setup/default/values-stable.yaml' || '' }}
       - name: Label namespace
