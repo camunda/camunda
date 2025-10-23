@@ -1466,6 +1466,7 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+          package-manager: "npm"
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
@@ -1524,6 +1525,7 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:

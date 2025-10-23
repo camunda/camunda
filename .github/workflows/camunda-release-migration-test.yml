@@ -112,6 +112,7 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-zeebe
         name: Build Zeebe
         id: build-zeebe
