@@ -47,7 +47,7 @@ on:
 
 concurrency:
   group: update-urgency-${{ github.event.inputs.issue_number || github.event.issue.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   assign-urgency-to-issue:
