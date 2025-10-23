@@ -295,7 +295,7 @@
         <foreach collection="filter.errorMessageOperations" item="operation">
           AND EXISTS (
           SELECT 1
-          FROM INCIDENT i
+          FROM ${prefix}INCIDENT i
           WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
           AND i.ERROR_MESSAGE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
           )
@@ -305,7 +305,7 @@
         <foreach collection="filter.incidentErrorHashCodeOperations" item="operation">
           AND EXISTS (
           SELECT 1
-          FROM INCIDENT i
+          FROM ${prefix}INCIDENT i
           WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
           AND i.ERROR_MESSAGE_HASH <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition" />
         )
