@@ -672,6 +672,19 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+    setArg(args, "history.elsRolloverDateFormat", database.getHistory().getElsRolloverDateFormat());
+    setArg(args, "history.rolloverInterval", database.getHistory().getRolloverInterval());
+    setArg(args, "history.rolloverBatchSize", database.getHistory().getRolloverBatchSize());
+    setArg(
+        args,
+        "history.waitPeriodBeforeArchiving",
+        database.getHistory().getWaitPeriodBeforeArchiving());
+    setArg(
+        args, "history.delayBetweenRuns", database.getHistory().getDelayBetweenRuns().toMillis());
+    setArg(
+        args,
+        "history.maxDelayBetweenRuns",
+        database.getHistory().getMaxDelayBetweenRuns().toMillis());
 
     setArg(args, "createSchema", database.isCreateSchema());
 

@@ -50,6 +50,12 @@ public class SecondaryStorageElasticsearchTest {
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
+  private static final String EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "foo";
+  private static final String EXPECTED_HISTORY_ROLLOVER_INTERVAL = "5d";
+  private static final int EXPECTED_HISTORY_ROLLOVER_BATCH_SIZE = 200;
+  private static final String EXPECTED_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING = "5h";
+  private static final int EXPECTED_HISTORY_DELAY_BETWEEN_RUNS = 4000;
+  private static final int EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS = 12000;
 
   private static final boolean EXPECTED_CREATE_SCHEMA = false;
 
@@ -89,6 +95,20 @@ public class SecondaryStorageElasticsearchTest {
             + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.elasticsearch.history.els-rollover-date-format="
+            + EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT,
+        "camunda.data.secondary-storage.elasticsearch.history.rollover-interval="
+            + EXPECTED_HISTORY_ROLLOVER_INTERVAL,
+        "camunda.data.secondary-storage.elasticsearch.history.rollover-batch-size="
+            + EXPECTED_HISTORY_ROLLOVER_BATCH_SIZE,
+        "camunda.data.secondary-storage.elasticsearch.history.wait-period-before-archiving="
+            + EXPECTED_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING,
+        "camunda.data.secondary-storage.elasticsearch.history.delay-between-runs="
+            + EXPECTED_HISTORY_DELAY_BETWEEN_RUNS
+            + "ms",
+        "camunda.data.secondary-storage.elasticsearch.history.max-delay-between-runs="
+            + EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS
+            + "ms",
         "camunda.data.secondary-storage.elasticsearch.create-schema=" + EXPECTED_CREATE_SCHEMA,
         "camunda.data.secondary-storage.elasticsearch.incident-notifier.webhook="
             + EXPECTED_INCIDENT_NOTIFIER_WEBHOOK,
@@ -186,6 +206,18 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getHistory().getElsRolloverDateFormat())
+          .isEqualTo(EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT);
+      assertThat(exporterConfiguration.getHistory().getRolloverInterval())
+          .isEqualTo(EXPECTED_HISTORY_ROLLOVER_INTERVAL);
+      assertThat(exporterConfiguration.getHistory().getRolloverBatchSize())
+          .isEqualTo(EXPECTED_HISTORY_ROLLOVER_BATCH_SIZE);
+      assertThat(exporterConfiguration.getHistory().getWaitPeriodBeforeArchiving())
+          .isEqualTo(EXPECTED_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING);
+      assertThat(exporterConfiguration.getHistory().getDelayBetweenRuns())
+          .isEqualTo(EXPECTED_HISTORY_DELAY_BETWEEN_RUNS);
+      assertThat(exporterConfiguration.getHistory().getMaxDelayBetweenRuns())
+          .isEqualTo(EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS);
       assertThat(exporterConfiguration.isCreateSchema()).isEqualTo(EXPECTED_CREATE_SCHEMA);
       assertThat(exporterConfiguration.getNotifier().getWebhook())
           .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_WEBHOOK);
@@ -226,6 +258,62 @@ public class SecondaryStorageElasticsearchTest {
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat="
+            + EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT,
+        "zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval="
+            + EXPECTED_HISTORY_ROLLOVER_INTERVAL,
+        "zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize="
+            + EXPECTED_HISTORY_ROLLOVER_BATCH_SIZE,
+        "zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving="
+            + EXPECTED_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING,
+        "zeebe.broker.exporters.camundaexporter.args.history.delayBetweenRuns="
+            + EXPECTED_HISTORY_DELAY_BETWEEN_RUNS
+            + "ms",
+        "zeebe.broker.exporters.camundaexporter.args.history.maxDelayBetweenRuns="
+            + EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS
+            + "ms",
+        "zeebe.broker.exporters.camundaexporter.args.bulk.delay=10s",
+        "zeebe.broker.exporters.camundaexporter.args.bulk.size=" + EXPECTED_BULK_SIZE,
+        "zeebe.broker.exporters.camundaexporter.args.bulk.memoryLimit=50MB"
+      })
+  class WithOnlyLegacySet {
+    final BrokerBasedProperties brokerBasedProperties;
+
+    WithOnlyLegacySet(@Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void testCamundaDataSecondaryStorageCamundaExporterProperties() {
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+      assertThat(exporterConfiguration.getHistory().getElsRolloverDateFormat())
+          .isEqualTo(EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT);
+      assertThat(exporterConfiguration.getHistory().getRolloverInterval())
+          .isEqualTo(EXPECTED_HISTORY_ROLLOVER_INTERVAL);
+      assertThat(exporterConfiguration.getHistory().getRolloverBatchSize())
+          .isEqualTo(EXPECTED_HISTORY_ROLLOVER_BATCH_SIZE);
+      assertThat(exporterConfiguration.getHistory().getWaitPeriodBeforeArchiving())
+          .isEqualTo(EXPECTED_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING);
+      assertThat(exporterConfiguration.getHistory().getDelayBetweenRuns())
+          .isEqualTo(EXPECTED_HISTORY_DELAY_BETWEEN_RUNS);
+      assertThat(exporterConfiguration.getHistory().getMaxDelayBetweenRuns())
+          .isEqualTo(EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS);
+      assertThat(exporterConfiguration.getBulk().getDelay()).isEqualTo(EXPECTED_BULK_DELAY);
+      assertThat(exporterConfiguration.getBulk().getSize()).isEqualTo(EXPECTED_BULK_SIZE);
+      assertThat(exporterConfiguration.getBulk().getMemoryLimit())
+          .isEqualTo(EXPECTED_BULK_MEMORY_LIMIT);
     }
   }
 
