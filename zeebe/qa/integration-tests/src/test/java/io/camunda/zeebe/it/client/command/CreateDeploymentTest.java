@@ -36,19 +36,18 @@ import org.springframework.util.unit.DataSize;
 @ZeebeIntegration
 public final class CreateDeploymentTest {
 
-  CamundaClient client;
-
   @TestZeebe
-  final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withBrokerConfig(b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
 
+  CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
