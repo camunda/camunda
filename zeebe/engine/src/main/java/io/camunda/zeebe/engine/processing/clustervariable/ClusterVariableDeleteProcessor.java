@@ -19,7 +19,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 @ExcludeAuthorizationCheck
-public class ClusterVariableCreateProcessor
+public class ClusterVariableDeleteProcessor
     implements DistributedTypedRecordProcessor<ClusterVariableRecord> {
 
   private final KeyGenerator keyGenerator;
@@ -28,7 +28,7 @@ public class ClusterVariableCreateProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ClusterVariableRecordValidator clusterVariableRecordValidator;
 
-  public ClusterVariableCreateProcessor(
+  public ClusterVariableDeleteProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
@@ -44,21 +44,19 @@ public class ClusterVariableCreateProcessor
   @Override
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
-
     clusterVariableRecordValidator
-        .validateName(clusterVariableRecord)
-        .flatMap(clusterVariableRecordValidator::ensureValidScope)
-        .flatMap(clusterVariableRecordValidator::validateUniqueness)
+        .ensureValidScope(clusterVariableRecord)
+        .flatMap(clusterVariableRecordValidator::validateExistence)
         .ifRightOrLeft(
             record -> {
-              final var key = keyGenerator.nextKey();
+              final long key = keyGenerator.nextKey();
               writers
                   .state()
-                  .appendFollowUpEvent(key, ClusterVariableIntent.CREATED, clusterVariableRecord);
+                  .appendFollowUpEvent(key, ClusterVariableIntent.DELETED, clusterVariableRecord);
               writers
                   .response()
                   .writeEventOnCommand(
-                      key, ClusterVariableIntent.CREATED, clusterVariableRecord, command);
+                      key, ClusterVariableIntent.DELETED, clusterVariableRecord, command);
               commandDistributionBehavior
                   .withKey(key)
                   .inQueue(clusterVariableRecord.getName())
@@ -74,17 +72,16 @@ public class ClusterVariableCreateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<ClusterVariableRecord> command) {
-    final var record = command.getValue();
+    final var clusterVariableRecord = command.getValue();
     clusterVariableRecordValidator
-        .validateUniqueness(record)
+        .validateExistence(clusterVariableRecord)
         .ifRightOrLeft(
-            clusterVariableRecord ->
+            record ->
                 writers
                     .state()
-                    .appendFollowUpEvent(command.getKey(), ClusterVariableIntent.CREATED, record),
+                    .appendFollowUpEvent(command.getKey(), ClusterVariableIntent.DELETED, record),
             rejection ->
                 writers.rejection().appendRejection(command, rejection.type(), rejection.reason()));
-
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }

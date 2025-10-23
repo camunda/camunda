@@ -66,6 +66,16 @@ public final class ClusterVariableClient {
     return this;
   }
 
+  public ClusterVariableClient setTenantScope() {
+    clusterVariableRecord.setTenantScope();
+    return this;
+  }
+
+  public ClusterVariableClient setGlobalScope() {
+    clusterVariableRecord.setGlobalScope();
+    return this;
+  }
+
   public ClusterVariableClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;
@@ -78,6 +88,17 @@ public final class ClusterVariableClient {
             requestStreamId,
             requestId,
             ClusterVariableIntent.CREATE,
+            clusterVariableRecord);
+    return expectation.apply(position);
+  }
+
+  public Record<ClusterVariableRecordValue> delete() {
+    final long position =
+        writer.writeCommand(
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            ClusterVariableIntent.DELETE,
             clusterVariableRecord);
     return expectation.apply(position);
   }

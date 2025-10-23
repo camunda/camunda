@@ -9,13 +9,16 @@ package io.camunda.zeebe.protocol.impl.record.value.clustervariable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClusterVariableRecord extends UnifiedRecordValue
     implements ClusterVariableRecordValue {
@@ -23,14 +26,21 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   private static final StringValue NAME_KEY = new StringValue("name");
   private static final StringValue VALUE_KEY = new StringValue("value");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue SCOPE_KEY = new StringValue("scope");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
-  private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
+  private final BinaryProperty valueProp =
+      new BinaryProperty(VALUE_KEY, new UnsafeBuffer(new byte[] {0}));
+  private final EnumProperty<ClusterVariableScope> scopeProp =
+      new EnumProperty<>(SCOPE_KEY, ClusterVariableScope.class, ClusterVariableScope.UNSPECIFIED);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
   public ClusterVariableRecord() {
-    super(3);
-    declareProperty(nameProp).declareProperty(valueProp).declareProperty(tenantIdProp);
+    super(4);
+    declareProperty(nameProp)
+        .declareProperty(valueProp)
+        .declareProperty(scopeProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -48,9 +58,27 @@ public class ClusterVariableRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public ClusterVariableScope getScope() {
+    return scopeProp.getValue();
+  }
+
+  public ClusterVariableRecord setScope(final ClusterVariableScope scope) {
+    scopeProp.setValue(scope);
+    return this;
+  }
+
   public ClusterVariableRecord setName(final String name) {
     nameProp.setValue(name);
     return this;
+  }
+
+  public ClusterVariableRecord setTenantScope() {
+    return setScope(ClusterVariableScope.TENANT);
+  }
+
+  public ClusterVariableRecord setGlobalScope() {
+    return setScope(ClusterVariableScope.GLOBAL);
   }
 
   @JsonIgnore
@@ -71,5 +99,15 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   public ClusterVariableRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @JsonIgnore
+  public boolean isTenantScoped() {
+    return ClusterVariableScope.TENANT.equals(scopeProp.getValue());
+  }
+
+  @JsonIgnore
+  public boolean isGloballyScoped() {
+    return ClusterVariableScope.GLOBAL.equals(scopeProp.getValue());
   }
 }

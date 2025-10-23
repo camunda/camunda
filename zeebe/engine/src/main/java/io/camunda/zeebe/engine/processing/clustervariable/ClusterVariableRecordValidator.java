@@ -56,14 +56,42 @@ public class ClusterVariableRecordValidator {
     return Either.right(record);
   }
 
+  public Either<Rejection, ClusterVariableRecord> validateExistence(
+      final ClusterVariableRecord record) {
+    if (globallyScopedVariableExists(record) || tenantScopedVariableExists(record)) {
+      return Either.right(record);
+    }
+    return Either.left(
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            "Invalid cluster variable name: '%s'. The variable does not exist in the scope '%s'"
+                .formatted(
+                    record.getName(),
+                    record.getTenantId().isBlank()
+                        ? "GLOBAL"
+                        : "tenant: '%s'".formatted(record.getTenantId()))));
+  }
+
   private boolean tenantScopedVariableExists(final ClusterVariableRecord clusterVariableRecord) {
-    return !clusterVariableRecord.getTenantId().isBlank()
+    return clusterVariableRecord.isTenantScoped()
         && clusterVariableState.existsAtTenantScope(
             clusterVariableRecord.getNameBuffer(), clusterVariableRecord.getTenantId());
   }
 
   private boolean globallyScopedVariableExists(final ClusterVariableRecord clusterVariableRecord) {
-    return clusterVariableRecord.getTenantId().isBlank()
+    return clusterVariableRecord.isGloballyScoped()
         && clusterVariableState.existsAtGlobalScope(clusterVariableRecord.getNameBuffer());
+  }
+
+  public Either<Rejection, ClusterVariableRecord> ensureValidScope(
+      final ClusterVariableRecord clusterVariableRecord) {
+    if (clusterVariableRecord.isTenantScoped() || clusterVariableRecord.isGloballyScoped()) {
+      return Either.right(clusterVariableRecord);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Invalid cluster variable scope. The scope must be either 'GLOBAL' or 'TENANT'."));
+    }
   }
 }
