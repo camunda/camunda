@@ -43,7 +43,10 @@ public record Authorization<T>(
     @JsonProperty("resource_type") AuthorizationResourceType resourceType,
     @JsonProperty("permission_type") PermissionType permissionType,
     @JsonProperty("resource_ids") List<String> resourceIds,
-    @JsonIgnore Function<T, String> resourceIdSupplier) {
+    @JsonIgnore Function<T, String> resourceIdSupplier,
+    String propertyName,
+    List<String> propertyValues,
+    Function<CamundaAuthentication, List<String>> propertyValuesSupplier) {
 
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final String resourceId) {
@@ -72,6 +75,25 @@ public record Authorization<T>(
     private PermissionType permissionType;
     private List<String> resourceIds;
     private Function<T, String> resourceIdSupplier;
+    private String propertyName;
+    private List<String> propertyValues;
+    private Function<CamundaAuthentication, List<String>> propertyValuesSupplier;
+
+    public Builder<T> propertyName(final String propertyName) {
+      this.propertyName = propertyName;
+      return this;
+    }
+
+    public Builder<T> propertyValues(final List<String> propertyValues) {
+      this.propertyValues = propertyValues;
+      return this;
+    }
+
+    public Builder<T> propertyValuesSupplier(
+        final Function<CamundaAuthentication, List<String>> value) {
+      propertyValuesSupplier = value;
+      return this;
+    }
 
     public Builder<T> resourceType(final AuthorizationResourceType resourceType) {
       this.resourceType = resourceType;
@@ -186,7 +208,14 @@ public record Authorization<T>(
     }
 
     public Authorization<T> build() {
-      return new Authorization<>(resourceType, permissionType, resourceIds, resourceIdSupplier);
+      return new Authorization<>(
+          resourceType,
+          permissionType,
+          resourceIds,
+          resourceIdSupplier,
+          propertyName,
+          propertyValues,
+          propertyValuesSupplier);
     }
   }
 }

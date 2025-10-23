@@ -22,6 +22,7 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -88,8 +89,16 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     final var authorization = authorizationCheck.authorization();
     final var queries = new ArrayList<SearchQuery>();
     authorization.stream()
-        .filter(a -> a.resourceIds() != null && !a.resourceIds().isEmpty())
-        .map(this::toAuthorizationCheckSearchQuery)
+        .map(
+            a -> {
+              if (a.resourceIds() != null && a.resourceIds().isEmpty()) {
+                return toAuthorizationCheckSearchQuery(a);
+              } else if (a.propertyName() != null) {
+                return toAuthorizationCheckSearchQueryByProperty(
+                    authorizationCheck.authentication(), a);
+              }
+              return null;
+            })
         .filter(Objects::nonNull)
         .forEach(queries::add);
 
@@ -135,6 +144,11 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
   }
 
   protected abstract SearchQuery toAuthorizationCheckSearchQuery(Authorization<?> authorization);
+
+  protected SearchQuery toAuthorizationCheckSearchQueryByProperty(
+      final CamundaAuthentication authentication, final Authorization<?> authorization) {
+    return null;
+  }
 
   @Override
   public IndexDescriptor getIndex() {

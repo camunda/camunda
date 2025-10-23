@@ -80,7 +80,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       // TODO: optimize if any is wildcard, immediately return disabled authorization check
     }
 
-    return createAuthorizationCheck(resourceAccesses);
+    return createAuthorizationCheck(resourceAccesses, authentication);
   }
 
   protected ResourceAccess resolveResourcesAccess(
@@ -88,7 +88,8 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     return getResourceAccessProvider().resolveResourceAccess(authentication, authorization);
   }
 
-  protected AuthorizationCheck createAuthorizationCheck(final List<ResourceAccess> resourceAccess) {
+  protected AuthorizationCheck createAuthorizationCheck(
+      final List<ResourceAccess> resourceAccess, final CamundaAuthentication authentication) {
     final var wildcard = resourceAccess.stream().anyMatch(ResourceAccess::wildcard);
 
     if (wildcard) {
@@ -98,7 +99,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     final var authorizations =
         resourceAccess.stream().map(ResourceAccess::authorization).toArray(Authorization[]::new);
 
-    return AuthorizationCheck.enabled(authorizations);
+    return AuthorizationCheck.enabled(authentication, authorizations);
   }
 
   protected TenantCheck determineTenantCheck(final CamundaAuthentication authentication) {

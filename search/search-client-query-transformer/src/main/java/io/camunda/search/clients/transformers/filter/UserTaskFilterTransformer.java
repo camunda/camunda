@@ -14,8 +14,10 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.*;
 import static java.util.Optional.ofNullable;
 
@@ -25,13 +27,14 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
@@ -83,10 +86,29 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    if (authorization.resourceType() == AuthorizationResourceType.PROCESS_DEFINITION) {
-      return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQueryByProperty(
+      final CamundaAuthentication authentication, final Authorization<?> authorization) {
+
+    final List<SearchQuery> queries = new ArrayList<>();
+    final Map<String, List<String>> properties = authorization.properties();
+
+    for (final Map.Entry<String, List<String>> entry : properties.entrySet()) {
+      if (entry.getKey().equals("assignee")) {
+        // TODO: how to pass username to it.
+        return stringTerms(ASSIGNEE, authorization.propertyValues());
+        //      return term(ASSIGNEE, authentication.authenticatedUsername());
+      } else if (entry.getKey().equals("candidateUsers")) {
+        return term(CANDIDATE_USERS, authentication.authenticatedUsername());
+      } else if (entry.getKey().equals("candidateGroups")) {
+        return stringTerms(CANDIDATE_GROUPS, authentication.authenticatedGroupIds());
+      }
     }
-    return null;
+
+    return or(queries);
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
