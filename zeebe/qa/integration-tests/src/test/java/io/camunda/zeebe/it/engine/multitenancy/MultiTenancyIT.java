@@ -83,7 +83,7 @@ public class MultiTenancyIT {
   private static final String USER_TENANT_A_WITHOUT_DEFAULT_TENANT = "userTenantANoDefault";
   private static final String USER_WITHOUT_TENANT = "userNoTenant";
 
-  @TestZeebe(autoStart = false)
+  @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
