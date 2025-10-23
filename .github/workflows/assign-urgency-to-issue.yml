@@ -158,18 +158,20 @@ jobs:
 
           # Extract and validate severity & likelihood using jq directly
           severity=$(echo "$LABELS" | jq -r '.[] | select(startswith("severity/")) | sub("severity/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "critical")' | head -n1)
-          likelihood=$(echo "$LABELS" | jq -r '.[] | select(startswith("likelihood/")) | sub("likelihood/"; "") | select(. == "low" or . == "mid" or . == "high")' | head -n1)
+          likelihood=$(echo "$LABELS" | jq -r '.[] | select(startswith("likelihood/")) | sub("likelihood/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "unknown")' | head -n1)
+
+          # Map missing likelihood to unknown
+          if [[ -z "$likelihood" ]]; then
+            likelihood="unknown"
+            echo "🏷️ Likelihood: (not set, treating as unknown)"
+          else
+            echo "🏷️ Likelihood: $likelihood"
+          fi
 
           if [[ -z "$severity" ]]; then
             echo "⚠️ No valid severity label found (expected: severity/low|mid|high|critical)"
           else
             echo "🏷️ Severity: $severity"
-          fi
-
-          if [[ -z "$likelihood" ]]; then
-            echo "⚠️ No valid likelihood label found (expected: likelihood/low|mid|high)"
-          else
-            echo "🏷️ Likelihood: $likelihood"
           fi
 
           {
@@ -186,18 +188,20 @@ jobs:
           SEVERITY='${{ steps.check_labels.outputs.severity }}'
           LIKELIHOOD='${{ steps.check_labels.outputs.likelihood }}'
 
-          if [[ -z "$SEVERITY" || -z "$LIKELIHOOD" ]]; then
-            echo "⚠️ Missing severity or likelihood labels - urgency will not be set"
-            if [[ -z "$SEVERITY" ]]; then
-              echo "  ❌ Missing severity label (expected: severity/low|mid|high|critical)"
-            fi
-            if [[ -z "$LIKELIHOOD" ]]; then
-              echo "  ❌ Missing likelihood label (expected: likelihood/low|mid|high)"
-            fi
+          if [[ -z "$SEVERITY" ]]; then
+            echo "⚠️ Missing severity label - urgency will not be set"
+            echo "  ❌ Missing severity label (expected: severity/low|mid|high|critical)"
             URGENCY=""
           else
+            # Treat unknown likelihood as low for matrix lookup
+            LOOKUP_LIKELIHOOD="$LIKELIHOOD"
+            if [[ "$LIKELIHOOD" == "unknown" ]]; then
+              LOOKUP_LIKELIHOOD="low"
+              echo "ℹ️  Using likelihood=low for urgency calculation (actual: unknown)"
+            fi
+
             # severity: low, mid, high, critical
-            # likelihood: low, mid, high
+            # likelihood: low, mid, high (unknown treated as low)
             # urgency: immediate, next, planned, someday
             declare -A MATRIX=(
               [low_low]=someday
@@ -213,7 +217,7 @@ jobs:
               [critical_mid]=immediate
               [critical_high]=immediate
             )
-            key="${SEVERITY}_${LIKELIHOOD}"
+            key="${SEVERITY}_${LOOKUP_LIKELIHOOD}"
             URGENCY="${MATRIX[$key]:-someday}"
 
             # Alternative mathematical calculation (unused / illustrative only)
