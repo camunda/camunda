@@ -11,7 +11,8 @@
     "paths": {
       "@fixtures": ["fixtures.ts"],
       "@setup": ["./test-setup.ts"],
-      "@pages/*": ["pages/*"]
+      "@pages/*": ["pages/*"],
+      "@requestHelpers": ["utils/requestHelpers/index.ts"]
     }
   }
 }

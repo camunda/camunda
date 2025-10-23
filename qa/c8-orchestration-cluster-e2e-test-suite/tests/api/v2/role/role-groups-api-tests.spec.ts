@@ -24,11 +24,12 @@ import {
   createGroupAndStoreResponseFields,
   createRole,
   groupIdFromState,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {GROUPS_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Role Groups API Tests', () => {
   const state: Record<string, unknown> = {};
   const createdRoleIds: string[] = [];

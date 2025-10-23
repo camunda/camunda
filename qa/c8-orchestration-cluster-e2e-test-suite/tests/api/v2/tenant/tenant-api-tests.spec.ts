@@ -20,14 +20,16 @@ import {
 } from '../../../../utils/http';
 import {
   CREATE_NEW_TENANT,
-  tenantRequiredFields, UPDATE_TENANT,
+  tenantRequiredFields,
+  UPDATE_TENANT,
 } from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertTenantInResponse,
-  createTenantAndStoreResponseFields
-} from '../../../../utils/requestHelpers';
+  createTenantAndStoreResponseFields,
+} from '@requestHelpers';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Tenants API Tests', () => {
   const state: Record<string, unknown> = {};
 
