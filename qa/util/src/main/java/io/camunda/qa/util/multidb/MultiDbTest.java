@@ -95,5 +95,5 @@ public @interface MultiDbTest {
    * @return the database type to run the test with. By default, the test will run with the local
    *     database type as defined in the test configuration.
    */
-  DatabaseType value() default DatabaseType.LOCAL;
+  DatabaseType value() default DatabaseType.RDBMS_MYSQL;
 }

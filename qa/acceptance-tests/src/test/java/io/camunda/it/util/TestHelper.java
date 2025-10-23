@@ -8,6 +8,7 @@
 package io.camunda.it.util;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -1053,6 +1054,27 @@ public final class TestHelper {
       final Function<T, U> propertyExtractor) {
     assertThatIsAscSorted(resultAsc.items(), propertyExtractor);
     assertThatIsDescSorted(resultDesc.items(), propertyExtractor);
+  }
+
+  /**
+   * Asserts that the given search responses are sorted either in a case insensitive way or in a
+   * Java natural order way.
+   */
+  public static <T> void assertSortedFlexible(
+      final SearchResponse<T> resultAsc,
+      final SearchResponse<T> resultDesc,
+      final Function<T, String> propertyExtractor) {
+    assertThat(resultAsc)
+        .satisfiesAnyOf(
+            result ->
+                assertThatIsSortedBy(result.items(), propertyExtractor, CASE_INSENSITIVE_ORDER),
+            result -> assertThatIsAscSorted(result.items(), propertyExtractor));
+    assertThat(resultDesc)
+        .satisfiesAnyOf(
+            result ->
+                assertThatIsSortedBy(
+                    result.items(), propertyExtractor, CASE_INSENSITIVE_ORDER.reversed()),
+            result -> assertThatIsDescSorted(result.items(), propertyExtractor));
   }
 
   public static <T, U extends Comparable<U>> void assertThatIsAscSorted(

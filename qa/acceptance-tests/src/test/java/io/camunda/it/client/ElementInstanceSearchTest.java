@@ -8,6 +8,7 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.assertSorted;
+import static io.camunda.it.util.TestHelper.assertSortedFlexible;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
@@ -97,7 +98,11 @@ public class ElementInstanceSearchTest {
             .send()
             .join()
             .items();
-    elementInstance = allElementInstances.getFirst();
+    elementInstance =
+        allElementInstances.stream()
+            .filter(e -> e.getElementId().equals("Event_1p0nsc7"))
+            .findFirst()
+            .get();
     elementInstanceWithIncident =
         allElementInstances.stream()
             .filter(f -> f.getIncidentKey() != null)
@@ -385,7 +390,10 @@ public class ElementInstanceSearchTest {
             .sort(s -> s.elementId().desc())
             .send()
             .join();
-    assertSorted(resultAsc, resultDesc, ElementInstance::getElementId);
+
+    // depending on the database vendor, we have two different sort algorithms here... either
+    // case-insensitive or normal ascending/descending
+    assertSortedFlexible(resultAsc, resultDesc, ElementInstance::getElementId);
   }
 
   @Test
