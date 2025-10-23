@@ -292,8 +292,6 @@ jobs:
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ env.GENERAL_UT_MODULES }}
-          ${TEST_FILTER:+-Dtest="${TEST_FILTER}"}
-          ${TEST_EXCLUDE_FILTER:+-DexcludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -376,9 +374,9 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test (Zeebe)
-        shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=7
@@ -386,8 +384,6 @@ jobs:
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
-          ${TEST_FILTER:+-Dtest="${TEST_FILTER}"}
-          ${TEST_EXCLUDE_FILTER:+-DexcludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -802,7 +798,7 @@ jobs:
             docker-file: Dockerfile
             owner: "Core Features"
             module: "Zeebe"
-            test-filter: "io/camunda/zeebe/it/engine/**"
+            test-filter: "io.camunda.zeebe.it.engine.**"
           - group: zeebe-ds-integration
             name: "Zeebe Cluster QA"
             maven-modules: "zeebe/qa/integration-tests"
@@ -813,7 +809,18 @@ jobs:
             docker-file: Dockerfile
             owner: "Distributed Systems"
             module: "Zeebe"
-            test-filter: "io/camunda/zeebe/it/cluster/**"
+            test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
+          - group: zeebe-ds-integration-scaleup
+            name: "Zeebe Cluster ScaleUp QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 1
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Distributed Systems"
+            module: "Zeebe"
+            test-filter: "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
           - group: zeebe-shared-integration
             name: "Zeebe General QA"
             maven-modules: "zeebe/qa/integration-tests"
@@ -824,7 +831,7 @@ jobs:
             docker-file: Dockerfile
             owner: "General"
             module: "Zeebe"
-            test-exclude-filter: "io/camunda/zeebe/it/engine/**,io/camunda/zeebe/it/cluster/**"
+            test-filter: "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**"
           - group: qa-update
             name: "Zeebe QA - Update"
             maven-modules: "zeebe/qa/update-tests"
@@ -905,7 +912,6 @@ jobs:
         env:
           # Propagate matrix test filters (may be empty for other matrix entries)
           TEST_FILTER: ${{ matrix.test-filter }}
-          TEST_EXCLUDE_FILTER: ${{ matrix.test-exclude-filter }}
         shell: bash
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
@@ -919,7 +925,6 @@ jobs:
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           ${TEST_FILTER:+-Dit.test="${TEST_FILTER}"}
-          ${TEST_EXCLUDE_FILTER:+-Dit.excludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
