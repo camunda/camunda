@@ -7,7 +7,10 @@
  */
 package io.camunda.webapps.controllers;
 
-import io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
+
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.webapps.profiles.ProfileWebAppStandalone;
 import jakarta.annotation.Nullable;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
@@ -20,7 +23,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "backups")
-@ConditionalOnBackupWebappsEnabled
+@ConditionalOnSecondaryStorageType({elasticsearch, opensearch})
 @ProfileWebAppStandalone
 public class BackupControllerStandalone {
   private final BackupController backupController;

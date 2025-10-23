@@ -7,31 +7,21 @@
  */
 package io.camunda.application;
 
-import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_WEBAPPS_ENABLED;
-
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.application.commons.backup.BackupPriorityConfiguration;
+import io.camunda.application.commons.search.SearchClientDatabaseConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
-import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
-import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
-import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
-import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
-import io.camunda.zeebe.util.VersionUtil;
 import java.util.Arrays;
 import java.util.EnumSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.boot.SpringBootConfiguration;
@@ -39,7 +29,6 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
  * Backup Camunda, Operate and Tasklist indices for ElasticSearch by running this standalone
@@ -101,8 +90,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
             // ---
             BackupManagerConfiguration.class,
             StandaloneBackupManager.class,
-            UnifiedConfiguration.class)
-        .properties(BACKUP_WEBAPPS_ENABLED + "=true")
+            SearchClientDatabaseConfiguration.class)
         .addCommandLineProperties(true)
         .run(args);
 
@@ -185,38 +173,6 @@ public class StandaloneBackupManager implements CommandLineRunner {
     public ElasticsearchClient elasticsearchClient(
         final ConnectConfiguration connectConfiguration) {
       return new ElasticsearchConnector(connectConfiguration).createClient();
-    }
-
-    @Bean
-    public BackupRepository backupRepository(
-        final ElasticsearchClient elasticsearchClient,
-        final BackupRepositoryProps backupRepositoryProps,
-        @Qualifier("backupThreadPoolExecutor")
-            final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
-      return new ElasticsearchBackupRepository(
-          elasticsearchClient,
-          backupRepositoryProps,
-          new WebappsSnapshotNameProvider(),
-          threadPoolTaskExecutor);
-    }
-
-    @Bean
-    public BackupPriorities backupPrioritiesForStandaloneBackup(
-        final ConnectConfiguration connectConfiguration) {
-      return BackupPriorityConfiguration.getBackupPriorities(
-          connectConfiguration.getIndexPrefix(),
-          connectConfiguration.getTypeEnum().isElasticSearch());
-    }
-
-    @Bean
-    public BackupRepositoryProps standaloneBackupRepositoryProps(
-        final UnifiedConfiguration unifiedConfiguration) {
-      final var backupConfiguration = unifiedConfiguration.getCamunda().getData().getBackup();
-      return new BackupRepositoryPropsRecord(
-          VersionUtil.getVersion(),
-          backupConfiguration.getRepositoryName(),
-          backupConfiguration.getSnapshotTimeout(),
-          backupConfiguration.getIncompleteCheckTimeout().getSeconds());
     }
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.it.document;
 
+import static io.camunda.webapps.backup.repository.BackupRepositoryProps.defaultIncompleteCheckTimeoutInSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.webapps.backup.BackupRepository;
@@ -84,7 +85,7 @@ public class OSClient implements DocumentClient {
     return new OpensearchBackupRepository(
         opensearchClient,
         new OpenSearchAsyncClient(transport),
-        new BackupRepositoryPropsRecord("current", ""),
+        new BackupRepositoryPropsRecord("current", "", 0, defaultIncompleteCheckTimeoutInSeconds()),
         snapshotNameProvider);
   }
 

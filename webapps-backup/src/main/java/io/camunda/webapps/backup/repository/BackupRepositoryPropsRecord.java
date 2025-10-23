@@ -12,13 +12,4 @@ public record BackupRepositoryPropsRecord(
     String repositoryName,
     int snapshotTimeout,
     Long incompleteCheckTimeoutInSeconds)
-    implements BackupRepositoryProps {
-
-  public BackupRepositoryPropsRecord(final String version, final String repositoryName) {
-    this(
-        version,
-        repositoryName,
-        BackupRepositoryProps.EMPTY.snapshotTimeout(),
-        BackupRepositoryProps.EMPTY.incompleteCheckTimeoutInSeconds());
-  }
-}
+    implements BackupRepositoryProps {}
