@@ -109,7 +109,7 @@ jobs:
         {
           echo "active-issues-found=$total_issues"
           echo "active-issues-list=$issues_list"
-        } >> $GITHUB_OUTPUT
+        } >> "$GITHUB_OUTPUT"
 
     - name: Send Slack notification
       if: steps.check-issues.outputs.active-issues-found != '0' && github.event_name != 'pull_request'
