@@ -27,11 +27,11 @@ jobs:
         # which requires webapps-schema artifact (introduced Sep 13, 2024).
         # Earlier versions from 2021 predate this dependency and cause build failures.
         # See discussion at: https://camunda.slack.com/archives/C06UWQNCU7M/p1760468857576009?thread_ts=1760406101.424439&cid=C06UWQNCU7M
-        version: [ 8.6.1, 8.8.0-alpha8 ]
+        version: [ 8.6.1, 8.7.0-alpha2 ]
         include:
           - version: 8.6.1
             latest: true
-          - version: 8.8.0-alpha8
+          - version: 8.7.0-alpha2
             latest: false
     with:
       releaseBranch: ${{ inputs.branch || 'main' }}
