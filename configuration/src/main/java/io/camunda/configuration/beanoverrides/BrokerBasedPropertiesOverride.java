@@ -673,6 +673,8 @@ public class BrokerBasedPropertiesOverride {
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
 
+    setArg(args, "createSchema", database.isCreateSchema());
+
     if (database.getIncidentNotifier() != null) {
       setArg(args, "notifier.webhook", database.getIncidentNotifier().getWebhook());
       setArg(args, "notifier.auth0Domain", database.getIncidentNotifier().getAuth0Domain());
