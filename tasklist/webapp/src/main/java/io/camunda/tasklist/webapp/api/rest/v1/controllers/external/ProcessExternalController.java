@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessStore;
@@ -50,6 +51,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(
     value = TasklistURIs.EXTERNAL_PROCESS_URL_V1,
     produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnRdbmsDisabled
 public class ProcessExternalController extends ApiErrorController {
 
   @Autowired private ProcessStore processStore;

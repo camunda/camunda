@@ -25,4 +25,12 @@ public final class DatabaseTypeUtils {
 
     return !"none".equalsIgnoreCase(dbType);
   }
+
+  public static boolean isRdbmsDisabled(final Environment env) {
+    final String dbType =
+        Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
+            .or(() -> Optional.ofNullable(env.getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE)))
+            .orElse("elasticsearch");
+    return !"rdbms".equalsIgnoreCase(dbType);
+  }
 }

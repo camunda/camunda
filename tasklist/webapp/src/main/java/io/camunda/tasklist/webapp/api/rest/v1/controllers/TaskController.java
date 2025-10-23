@@ -14,6 +14,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskByCandidateUserOrGroup;
 import io.camunda.tasklist.util.LazySupplier;
@@ -72,6 +73,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Task", description = "API to query and manage tasks.")
 @RestController
 @RequestMapping(value = TasklistURIs.TASKS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnRdbmsDisabled
 public class TaskController extends ApiErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskController.class);

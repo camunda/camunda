@@ -15,6 +15,7 @@ import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.Auth0Properties;
@@ -51,6 +52,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpServerErrorException;
 
 @Component
+@ConditionalOnRdbmsDisabled
 public class TaskService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);

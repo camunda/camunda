@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
@@ -24,6 +25,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
 @RequestMapping(value = TasklistURIs.START_PUBLIC_PROCESS)
+@ConditionalOnRdbmsDisabled
 public class PublicProcessController extends ApiErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PublicProcessController.class);
