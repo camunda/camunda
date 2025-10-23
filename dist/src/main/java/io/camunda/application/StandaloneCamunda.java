@@ -87,6 +87,11 @@ public class StandaloneCamunda {
             .listeners(new ApplicationErrorListener())
             .build(args);
 
+    standaloneCamundaApplication.addInitializers(context -> {
+      ProfilesStreamlining processor = new ProfilesStreamlining();
+      processor.postProcessEnvironment(context.getEnvironment(), standaloneCamundaApplication);
+    });
+
     standaloneCamundaApplication.run(args);
   }
 
