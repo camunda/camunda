@@ -27,6 +27,7 @@ import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -77,6 +79,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
     // Disable pre-allocation of segment files - many tests won't even fill up their first segment
     config.getExperimental().getRaft().setPreallocateSegmentFiles(false);
+    // Disable flushes to reduce test runtime - we don't need perfect durability in tests, if the
+    // machine crashes the test fails anyway.
+    config.getCluster().getRaft().setFlush(new FlushConfig(false, Duration.ZERO));
 
     config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
