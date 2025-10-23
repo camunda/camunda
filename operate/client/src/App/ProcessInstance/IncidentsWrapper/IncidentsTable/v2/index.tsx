@@ -29,10 +29,23 @@ import type {EnhancedIncident} from 'modules/hooks/incidents';
 type IncidentsTableProps = {
   processInstanceKey: string;
   incidents: EnhancedIncident[];
+  state: React.ComponentProps<typeof SortableTable>['state'];
+  onVerticalScrollStartReach: React.ComponentProps<
+    typeof SortableTable
+  >['onVerticalScrollStartReach'];
+  onVerticalScrollEndReach: React.ComponentProps<
+    typeof SortableTable
+  >['onVerticalScrollEndReach'];
 };
 
 const IncidentsTable: React.FC<IncidentsTableProps> = observer(
-  function IncidentsTable({incidents, processInstanceKey}) {
+  function IncidentsTable({
+    state,
+    incidents,
+    processInstanceKey,
+    onVerticalScrollEndReach,
+    onVerticalScrollStartReach,
+  }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [modalContent, setModalContent] = useState<string>('');
     const [modalTitle, setModalTitle] = useState<string>('');
@@ -62,7 +75,10 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     return (
       <>
         <SortableTable
-          state="content"
+          state={state}
+          emptyMessage={{
+            message: 'There are no Instances matching this filter set',
+          }}
           selectionType="row"
           columnsWithNoContentPadding={['operations', 'errorMessage']}
           onSelect={(rowId) => {
@@ -100,6 +116,8 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               column: sortKey,
             });
           }}
+          onVerticalScrollStartReach={onVerticalScrollStartReach}
+          onVerticalScrollEndReach={onVerticalScrollEndReach}
           headerColumns={[
             {
               header: 'Incident Type',
@@ -112,7 +130,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             },
             {
               header: 'Job Id',
-              key: 'jobId',
+              key: 'jobKey',
               isDisabled: !isJobKeyPresent,
             },
             {
@@ -158,7 +176,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                     {`${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
                   </Link>
                 ),
-              jobId: incident.jobKey || '--',
+              jobKey: incident.jobKey || '--',
               creationTime: formatDate(incident.creationTime),
               errorMessage: (
                 <FlexContainer>

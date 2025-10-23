@@ -9,12 +9,12 @@
 import type {
   ProcessInstance,
   IncidentErrorType,
+  QueryIncidentsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {autorun} from 'mobx';
 import {incidentsStore, type Incident} from 'modules/stores/incidents';
 import {isInstanceRunning} from './instance';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
 const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
   UNSPECIFIED: 'Unspecified',
@@ -131,16 +131,12 @@ const isSingleIncidentSelectedV2 = (
   );
 };
 
-const getFilteredIncidentsV2 = (incidents: EnhancedIncident[]) => {
-  const {selectedErrorTypes} = incidentsPanelStore.state;
-
-  if (selectedErrorTypes.length === 0) {
-    return incidents;
-  }
-
-  return incidents.filter((incident) => {
-    return selectedErrorTypes.includes(incident.errorType);
-  });
+const getIncidentsSearchFilter = (
+  errorTypes: IncidentErrorType[],
+): QueryIncidentsRequestBody['filter'] => {
+  return {
+    errorType: errorTypes.length > 0 ? {$in: errorTypes} : undefined,
+  };
 };
 
 export {
@@ -151,5 +147,5 @@ export {
   isSingleIncidentSelected,
   isSingleIncidentSelectedV2,
   getFilteredIncidents,
-  getFilteredIncidentsV2,
+  getIncidentsSearchFilter,
 };
