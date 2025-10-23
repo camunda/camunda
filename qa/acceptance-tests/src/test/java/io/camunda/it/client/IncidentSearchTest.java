@@ -25,6 +25,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import java.util.ArrayList;
@@ -468,14 +469,7 @@ class IncidentSearchTest {
     final var resultDesc =
         camundaClient.newIncidentSearchRequest().sort(s -> s.elementId().desc()).send().join();
 
-    final var all = resultAsc.items().stream().map(Incident::getElementId).toList();
-    final var sortedAsc = all.stream().sorted().toList();
-    final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
-
-    assertThat(resultAsc.items().stream().map(Incident::getElementId).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(Incident::getElementId).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    TestHelper.assertSortedFlexible(resultAsc, resultDesc, Incident::getElementId);
   }
 
   @Test
