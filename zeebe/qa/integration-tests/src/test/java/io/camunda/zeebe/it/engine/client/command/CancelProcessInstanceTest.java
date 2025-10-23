@@ -31,18 +31,18 @@ import org.junit.jupiter.params.provider.ValueSource;
 public final class CancelProcessInstanceTest {
 
   private static final String PROCESS_ID = "process";
-  @AutoClose CamundaClient client;
 
   @TestZeebe
-  final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
+  @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
   private long processDefinitionKey;
 
   @BeforeEach
   public void init() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
     processDefinitionKey =
         resourcesHelper.deployProcess(

@@ -29,7 +29,7 @@ class UpdateGroupTest {
   private static final String UPDATED_GROUP_DESCRIPTION = "Updated Group Description";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
@@ -38,7 +38,7 @@ class UpdateGroupTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     groupId =
         client
             .newCreateGroupCommand()

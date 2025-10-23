@@ -40,17 +40,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 public final class ThrowErrorTest {
 
   private static final String ERROR_CODE = "error";
-  @AutoClose CamundaClient client;
 
   @TestZeebe
-  final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
+  @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   public void init() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
