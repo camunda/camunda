@@ -9,7 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from 'fixtures';
 import {createInstances, deploy} from 'utils/zeebeClient';
-import {completeTaskWithRetry, navigateToApp} from '@pages/UtilitiesPage';
+import {completeTaskWithRetryV1, navigateToApp} from '@pages/v1/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
@@ -35,10 +35,10 @@ test.beforeAll(async () => {
 });
 
 test.describe('HTO User Flow Tests', () => {
-  test.beforeEach(async ({page, loginPage, taskPanelPage}) => {
+  test.beforeEach(async ({page, loginPage, taskPanelPageV1}) => {
     await navigateToApp(page, 'tasklist');
     await loginPage.login('demo', 'demo');
-    await expect(taskPanelPage.taskListPageBanner).toBeVisible();
+    await expect(taskPanelPageV1.taskListPageBanner).toBeVisible();
   });
 
   test.afterEach(async ({page}, testInfo) => {
@@ -53,13 +53,54 @@ test.describe('HTO User Flow Tests', () => {
     },
   });
 
+  test('User Task Most Common Flow', async ({
+    operateHomePage,
+    operateProcessesPage,
+    taskDetailsPageV1,
+    taskPanelPageV1,
+    operateProcessInstancePage,
+    page,
+    loginPage,
+  }) => {
+    await test.step('View Process Instance in Operate, complete User Task in Tasklist & assert process complete in Operate', async () => {
+      await navigateToApp(page, 'operate');
+      await loginPage.login('demo', 'demo');
+      await expect(operateHomePage.operateBanner).toBeVisible();
+      await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName('Job_Worker_Process');
+      await operateProcessesPage.clickProcessInstanceLink();
+      await operateProcessInstancePage.activeIconAssertion();
+
+      await navigateToApp(page, 'tasklist');
+      await loginPage.login('demo', 'demo');
+      await completeTaskWithRetryV1(
+        taskPanelPageV1,
+        taskDetailsPageV1,
+        'Job_Worker_Process',
+        'medium',
+      );
+
+      await navigateToApp(page, 'operate');
+      await loginPage.login('demo', 'demo');
+
+      await expect(operateHomePage.processesTab).toBeVisible({timeout: 120000});
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName('Job_Worker_Process');
+      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await sleep(10000);
+      await operateProcessesPage.clickProcessInstanceLink();
+      await operateProcessInstancePage.completedIconAssertion();
+    });
+  });
+
   test('User Task Editing Variables Flow', async ({
     page,
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
-    taskPanelPage,
-    taskDetailsPage,
+    taskPanelPageV1,
+    taskDetailsPageV1,
     loginPage,
   }) => {
     await test.step('View Process Instance in Operate, Edit the Variable & Assert the Variable is Updated in Tasklist', async () => {
@@ -97,24 +138,24 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
 
-      await taskPanelPage.openTask('Variable_Process');
-      await taskDetailsPage.clickAssignToMeButton();
+      await taskPanelPageV1.openTask('Variable_Process');
+      await taskDetailsPageV1.clickAssignToMeButton();
       await expect(page.getByText('Assigning...')).not.toBeVisible({
         timeout: 90000,
       });
       await expect(page.getByText('testVariable', {exact: true})).toBeVisible();
-      await taskDetailsPage.assertVariableValue(
+      await taskDetailsPageV1.assertVariableValue(
         'testVariable',
         '"updatedValue"',
       );
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await taskDetailsPageV1.clickCompleteTaskButton();
+      await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible();
     });
   });
 
   test('Form.js Integration with User Task', async ({
-    taskDetailsPage,
-    taskPanelPage,
+    taskDetailsPageV1,
+    taskPanelPageV1,
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
@@ -133,11 +174,11 @@ test.describe('HTO User Flow Tests', () => {
 
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
-      await taskPanelPage.openTask('Form_User_Task');
-      await taskDetailsPage.clickAssignToMeButton();
-      await taskDetailsPage.fillTextInput('Name*', 'Test User');
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await taskPanelPageV1.openTask('Form_User_Task');
+      await taskDetailsPageV1.clickAssignToMeButton();
+      await taskDetailsPageV1.fillTextInput('Name*', 'Test User');
+      await taskDetailsPageV1.clickCompleteTaskButton();
+      await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible();
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');
@@ -176,8 +217,8 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
-    taskDetailsPage,
-    taskPanelPage,
+    taskDetailsPageV1,
+    taskPanelPageV1,
     loginPage,
   }) => {
     await test.step('Complete User Task in Tasklist & assert process complete in Operate', async () => {
@@ -186,38 +227,38 @@ test.describe('HTO User Flow Tests', () => {
       await expect(
         page.getByText('Zeebe_Priority_User_Task_Process').first(),
       ).toBeVisible({timeout: 60000});
-      await completeTaskWithRetry(
-        taskPanelPage,
-        taskDetailsPage,
+      await completeTaskWithRetryV1(
+        taskPanelPageV1,
+        taskDetailsPageV1,
         'priorityTest4',
         'critical',
       );
-      await completeTaskWithRetry(
-        taskPanelPage,
-        taskDetailsPage,
+      await completeTaskWithRetryV1(
+        taskPanelPageV1,
+        taskDetailsPageV1,
         'priorityTest3',
         'high',
       );
-      await completeTaskWithRetry(
-        taskPanelPage,
-        taskDetailsPage,
+      await completeTaskWithRetryV1(
+        taskPanelPageV1,
+        taskDetailsPageV1,
         'priorityTest2',
         'medium',
       );
-      await completeTaskWithRetry(
-        taskPanelPage,
-        taskDetailsPage,
+      await completeTaskWithRetryV1(
+        taskPanelPageV1,
+        taskDetailsPageV1,
         'priorityTest1',
         'low',
       );
-      await taskPanelPage.filterBy('Completed');
-      await taskPanelPage.assertCompletedHeadingVisible();
-      await taskPanelPage.openTask('priorityTest4');
+      await taskPanelPageV1.filterBy('Completed');
+      await taskPanelPageV1.assertCompletedHeadingVisible();
+      await taskPanelPageV1.openTask('priorityTest4');
       await expect(
         page.getByText('Zeebe_Priority_User_Task_Process').first(),
       ).toBeVisible({timeout: 60000});
-      await taskDetailsPage.taskAssertion('Zeebe_Priority_User_Task_Process');
-      await taskDetailsPage.priorityAssertion('critical');
+      await taskDetailsPageV1.taskAssertion('Zeebe_Priority_User_Task_Process');
+      await taskDetailsPageV1.priorityAssertion('critical');
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
@@ -237,8 +278,8 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
-    taskDetailsPage,
-    taskPanelPage,
+    taskDetailsPageV1,
+    taskPanelPageV1,
   }) => {
     await test.step('View Process Instance in Operate, complete User Task in Tasklist', async () => {
       await navigateToApp(page, 'operate');
@@ -251,9 +292,9 @@ test.describe('HTO User Flow Tests', () => {
 
       await navigateToApp(page, 'tasklist');
       await loginPage.login('demo', 'demo');
-      await completeTaskWithRetry(
-        taskPanelPage,
-        taskDetailsPage,
+      await completeTaskWithRetryV1(
+        taskPanelPageV1,
+        taskDetailsPageV1,
         'Zeebe_User_Task_Process',
         'medium',
       );

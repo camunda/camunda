@@ -205,8 +205,23 @@ jobs:
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
             TEST_ARGS=(--project=chromium)
+            
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-              TEST_ARGS+=(tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert '@v1-only')
+              echo "Running all tests in V2 mode"
+              TEST_ARGS+=(
+                tests/api/
+                tests/operate/
+                tests/identity/
+                tests/tasklist/
+                tests/common-flows/
+                --grep-invert="v1/"
+              )
+            else
+              echo "Running V1 mode tests from specific directories"
+              TEST_ARGS+=(
+                tests/tasklist/v1/
+                tests/common-flows/v1/
+              )
             fi
           fi
           echo "Running tests with args: ${TEST_ARGS[*]}"

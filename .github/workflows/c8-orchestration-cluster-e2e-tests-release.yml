@@ -69,6 +69,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          job_name: c8-orchestration-cluster-e2e-tests-validate-release
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -257,8 +258,23 @@ jobs:
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
             TEST_ARGS=(--project=chromium)
+            
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-              TEST_ARGS+=(tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert '@v1-only')
+              echo "Running All tests in V2 mode, excluding V1 specific tests"
+              TEST_ARGS+=(
+                tests/api/
+                tests/operate/
+                tests/identity/
+                tests/tasklist/
+                tests/common-flows/
+                --grep-invert="v1/"
+              )
+            else
+              echo "Running V1 mode tests from specific V1 directories only"
+              TEST_ARGS+=(
+                tests/tasklist/v1/
+                tests/common-flows/v1/
+              )
             fi
           fi
           echo "Running tests with args: ${TEST_ARGS[*]}"
@@ -297,7 +313,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
-          job_name: c8-orchestration-cluster-e2e-tests
+          job_name: c8-orchestration-cluster-e2e-tests-release
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -346,6 +362,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          job_name: c8-orchestration-cluster-e2e-tests-notify-result
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
