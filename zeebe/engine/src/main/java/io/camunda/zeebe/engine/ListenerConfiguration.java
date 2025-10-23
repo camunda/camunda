@@ -9,4 +9,5 @@ package io.camunda.zeebe.engine;
 
 import java.util.List;
 
-public record ListenerConfiguration(List<String> eventTypes, String type, String retries) {}
+public record ListenerConfiguration(
+    List<String> eventTypes, String type, String retries, boolean afterLocal) {}
