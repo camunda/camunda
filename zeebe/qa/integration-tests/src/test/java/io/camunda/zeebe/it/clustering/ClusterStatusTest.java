@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class ClusterStatusTest {
 
-  @TestZeebe(autoStart = false)
+  @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestCluster CLUSTER =
       TestCluster.builder()
           .withEmbeddedGateway(false)
