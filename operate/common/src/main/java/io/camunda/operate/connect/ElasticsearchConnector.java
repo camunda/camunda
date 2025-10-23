@@ -7,6 +7,10 @@
  */
 package io.camunda.operate.connect;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.ElasticsearchProperties;
@@ -78,19 +82,25 @@ public class ElasticsearchConnector {
     return createEsClient(operateProperties.getElasticsearch(), esClientRepository);
   }
 
+  @Bean
+  public ElasticsearchClient es8Client() {
+    return createEs8Client(operateProperties.getElasticsearch(), esClientRepository);
+  }
+
+  private ElasticsearchClient createEs8Client(
+      final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
+    final var restClientBuilder = restClientBuilder(elsConfig, pluginRepository);
+
+    final ElasticsearchTransport transport =
+        new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper());
+
+    return new ElasticsearchClient(transport);
+  }
+
   public RestHighLevelClient createEsClient(
       final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     LOGGER.debug("Creating Elasticsearch connection...");
-    final RestClientBuilder restClientBuilder =
-        RestClient.builder(getHttpHost(elsConfig))
-            .setHttpClientConfigCallback(
-                httpClientBuilder ->
-                    configureHttpClient(
-                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
-    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, elsConfig));
-    }
+    final var restClientBuilder = restClientBuilder(elsConfig, pluginRepository);
     final RestHighLevelClient esClient =
         new RestHighLevelClientBuilder(restClientBuilder.build())
             .setApiCompatibilityMode(true)
@@ -105,6 +115,22 @@ public class ElasticsearchConnector {
       LOGGER.warn("Elasticsearch cluster health check is disabled.");
     }
     return esClient;
+  }
+
+  private RestClientBuilder restClientBuilder(
+      final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
+    final RestClientBuilder restClientBuilder =
+        RestClient.builder(getHttpHost(elsConfig))
+            .setHttpClientConfigCallback(
+                httpClientBuilder ->
+                    configureHttpClient(
+                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
+    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
+      restClientBuilder.setRequestConfigCallback(
+          configCallback -> setTimeouts(configCallback, elsConfig));
+    }
+
+    return restClientBuilder;
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
