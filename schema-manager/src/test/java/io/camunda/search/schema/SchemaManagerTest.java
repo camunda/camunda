@@ -7,8 +7,12 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.SchemaMetadataStore.SCHEMA_VERSION_METADATA_ID;
+import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
+import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -19,6 +23,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
+import io.camunda.search.schema.utils.TestIndexDescriptor;
+import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
@@ -40,6 +46,8 @@ class SchemaManagerTest {
   private Collection<IndexDescriptor> indexDescriptors;
   private Collection<IndexTemplateDescriptor> templateDescriptors;
   private MetadataIndex metadataIndex;
+  private TestIndexDescriptor testIndexDescriptor;
+  private TestTemplateDescriptor testTemplateDescriptor;
   private SchemaManager schemaManager;
 
   @BeforeEach
@@ -53,8 +61,10 @@ class SchemaManagerTest {
     config.connect().setIndexPrefix(indexPrefix);
 
     metadataIndex = new MetadataIndex(indexPrefix, true);
-    indexDescriptors = List.of(metadataIndex);
-    templateDescriptors = List.of();
+    testIndexDescriptor = new TestIndexDescriptor(indexPrefix, "mappings.json");
+    testTemplateDescriptor = new TestTemplateDescriptor(indexPrefix, "mappings.json");
+    indexDescriptors = List.of(metadataIndex, testIndexDescriptor);
+    templateDescriptors = List.of(testTemplateDescriptor);
 
     // Mock search engine client operations
     when(searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())).thenReturn(true);
@@ -100,6 +110,8 @@ class SchemaManagerTest {
         .hasMessageContaining(expectedIncompatibleType);
     // assert that the version check is not retried multiple times
     verify(searchEngineClient, times(1)).indexExists(metadataIndex.getFullQualifiedName());
+    // No operations should be invoked since the upgrade is forbidden
+    verifyNoOperationWereInvoked();
   }
 
   // Test data for forbidden upgrades
@@ -129,6 +141,8 @@ class SchemaManagerTest {
         .hasMessageContaining(expectedIncompatibleType);
     // assert that the version check is not retried multiple times
     verify(searchEngineClient, times(1)).indexExists(metadataIndex.getFullQualifiedName());
+    // No operations should be invoked since the upgrade is forbidden
+    verifyNoOperationWereInvoked();
   }
 
   // Test data for allowed upgrades
@@ -157,8 +171,7 @@ class SchemaManagerTest {
   void shouldAllowCompatibleUpgrades(
       final String previousVersion,
       final String currentVersion,
-      final boolean expectSchemaUpgrade,
-      final String expectedCompatibilityType) {
+      final boolean expectSchemaUpgrade) {
 
     // Given
     schemaManager = createSpySchemaManager(currentVersion);
@@ -168,17 +181,46 @@ class SchemaManagerTest {
     schemaManager.startup();
 
     // Then: Should complete without throwing exceptions
+    verifyInvokedOperations(currentVersion, expectSchemaUpgrade);
+  }
+
+  private void verifyInvokedOperations(
+      final String currentVersion, final boolean expectSchemaUpgrade) {
     if (expectSchemaUpgrade) {
       // Verify schema upgrade operations were called via searchEngineClient
-      verify(searchEngineClient).upsertDocument(anyString(), anyString(), any());
-      verify(searchEngineClient).createIndex(any(), any());
+      verify(searchEngineClient)
+          .upsertDocument(
+              metadataIndex.getFullQualifiedName(),
+              SCHEMA_VERSION_METADATA_ID,
+              Map.of(
+                  MetadataIndex.ID,
+                  SCHEMA_VERSION_METADATA_ID,
+                  MetadataIndex.VALUE,
+                  currentVersion));
+      Stream.of(metadataIndex, testIndexDescriptor, testTemplateDescriptor)
+          .forEach(
+              indexDescriptor ->
+                  verify(searchEngineClient).createIndex(indexDescriptor, config.index()));
+      verify(searchEngineClient).createIndexTemplate(testTemplateDescriptor, config.index(), true);
     } else {
       // Verify schema upgrade was skipped - no upsert should happen for same version
       verify(searchEngineClient, never()).upsertDocument(anyString(), anyString(), any());
+      verify(searchEngineClient, never()).createIndex(any(), any());
+      verify(searchEngineClient, never()).createIndexTemplate(any(), any(), anyBoolean());
     }
 
     // Settings and lifecycle policies should always be updated unless returning early
-    verify(searchEngineClient).putSettings(any(), any());
+    Stream.of(metadataIndex, testIndexDescriptor, testTemplateDescriptor)
+        .forEach(
+            indexDescriptor ->
+                verify(searchEngineClient)
+                    .putSettings(
+                        List.of(indexDescriptor), Map.of("index.number_of_replicas", "1")));
+    searchEngineClient.putIndexLifeCyclePolicy(
+        config.retention().getPolicyName(), config.retention().getMinimumAge());
+    searchEngineClient.putIndexLifeCyclePolicy(
+        config.retention().getUsageMetricsPolicyName(),
+        config.retention().getUsageMetricsMinimumAge());
   }
 
   // Test data for skipped upgrades (downgrades that should return early)
@@ -196,9 +238,7 @@ class SchemaManagerTest {
   @ParameterizedTest
   @MethodSource("skippedUpgradeScenarios")
   void shouldSkipOperationsForDowngrades(
-      final String previousVersion,
-      final String currentVersion,
-      final String expectedDowngradeType) {
+      final String previousVersion, final String currentVersion) {
 
     // Given
     schemaManager = createSpySchemaManager(currentVersion);
@@ -208,9 +248,14 @@ class SchemaManagerTest {
     schemaManager.startup();
 
     // Then: Should return early without performing any operations
+    verifyNoOperationWereInvoked();
+  }
+
+  private void verifyNoOperationWereInvoked() {
     verify(searchEngineClient, never()).upsertDocument(anyString(), anyString(), any());
-    verify(searchEngineClient, never()).putSettings(any(), any());
     verify(searchEngineClient, never()).createIndex(any(), any());
+    verify(searchEngineClient, never()).putSettings(any(), any());
+    verify(searchEngineClient, never()).putIndexLifeCyclePolicy(any(), any());
   }
 
   @Test
@@ -224,8 +269,7 @@ class SchemaManagerTest {
     spySchemaManager.startup();
 
     // Then: Should proceed with schema upgrade despite incompatibility
-    verify(searchEngineClient).upsertDocument(anyString(), anyString(), any());
-    verify(searchEngineClient).createIndex(any(), any());
+    verifyInvokedOperations("9.0.0", true);
   }
 
   @Test
@@ -238,9 +282,7 @@ class SchemaManagerTest {
     spySchemaManager.startup();
 
     // Then: Should proceed with full schema initialization
-    verify(searchEngineClient).upsertDocument(anyString(), anyString(), any());
-    verify(searchEngineClient).createIndex(any(), any());
-    verify(searchEngineClient).putSettings(any(), any());
+    verifyInvokedOperations("8.8.0", true);
   }
 
   @Test
@@ -253,8 +295,7 @@ class SchemaManagerTest {
     spySchemaManager.startup();
 
     // Then: Should trigger schema upgrade for SNAPSHOT versions even when same version
-    verify(searchEngineClient).upsertDocument(anyString(), anyString(), any());
-    verify(searchEngineClient).createIndex(any(), any());
+    verifyInvokedOperations("8.8.0-SNAPSHOT", true);
   }
 
   @Test
@@ -272,11 +313,7 @@ class SchemaManagerTest {
     schemaManager.startup();
 
     // Then: Should proceed with full schema initialization including metadata index creation
-    verify(searchEngineClient)
-        .createIndex(any(), any()); // Should create indices including metadata index
-    verify(searchEngineClient)
-        .upsertDocument(anyString(), anyString(), any()); // Should store schema version
-    verify(searchEngineClient).putSettings(any(), any()); // Should update settings
+    verifyInvokedOperations("8.8.0", true);
   }
 
   private SchemaManager createSpySchemaManager(final String currentVersion) {
@@ -292,12 +329,12 @@ class SchemaManagerTest {
   }
 
   private void mockSchemaVersionInMetadata(final String version) {
-    if (version == null) {
-      when(searchEngineClient.getDocument(anyString(), anyString())).thenReturn(null);
-    } else {
-      // Use the correct field names that SchemaMetadataStore expects
-      final var versionDoc = Map.<String, Object>of("id", "schema-version", "value", version);
-      when(searchEngineClient.getDocument(anyString(), anyString())).thenReturn(versionDoc);
-    }
+    final var versionDoc =
+        version == null
+            ? null
+            : Map.<String, Object>of(ID, SCHEMA_VERSION_METADATA_ID, VALUE, version);
+    when(searchEngineClient.getDocument(
+            metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
+        .thenReturn(versionDoc);
   }
 }
