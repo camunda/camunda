@@ -131,6 +131,6 @@ public @interface ZeebeIntegration {
      * @see <a href="https://docs.camunda.io/docs/self-managed/operational-guides/data-purge/">Purge
      *     documentation</a>
      */
-    boolean purgeAfterEach() default false;
+    boolean purgeAfterEach() default true;
   }
 }
