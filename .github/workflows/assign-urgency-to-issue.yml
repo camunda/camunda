@@ -149,6 +149,13 @@ jobs:
 
           LABELS='${{ steps.check_issue.outputs.labels }}'
 
+          # Check for urgency-locked label
+          has_urgency_locked=$(echo "$LABELS" | jq -r 'any(. == "urgency-locked")')
+          
+          if [[ "$has_urgency_locked" == "true" ]]; then
+            echo "🔒 Issue has 'urgency-locked' label - automatic urgency updates will be skipped"
+          fi
+
           # Extract and validate severity & likelihood using jq directly
           severity=$(echo "$LABELS" | jq -r '.[] | select(startswith("severity/")) | sub("severity/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "critical")' | head -n1)
           likelihood=$(echo "$LABELS" | jq -r '.[] | select(startswith("likelihood/")) | sub("likelihood/"; "") | select(. == "low" or . == "mid" or . == "high")' | head -n1)
@@ -165,8 +172,11 @@ jobs:
             echo "🏷️ Likelihood: $likelihood"
           fi
 
-          echo "severity=$severity" >> "$GITHUB_OUTPUT"
-          echo "likelihood=$likelihood" >> "$GITHUB_OUTPUT"
+          {
+            echo "has_urgency_locked=$has_urgency_locked"
+            echo "severity=$severity"
+            echo "likelihood=$likelihood"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Calculate urgency
         id: calculate_urgency
@@ -228,6 +238,18 @@ jobs:
           PROJECT_V2_ID='${{ steps.check_issue.outputs.project_v2_id }}'
           CURRENT_URGENCY='${{ steps.check_issue.outputs.current_urgency }}'
           NEW_URGENCY='${{ steps.calculate_urgency.outputs.urgency }}'
+          HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
+
+          # Check for urgency-locked label first
+          if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
+            echo "🔒 Skipping urgency update - issue has 'urgency-locked' label"
+            if [[ -n "$NEW_URGENCY" ]]; then
+              echo "ℹ️  Calculated urgency would be: '$NEW_URGENCY' (current: '$CURRENT_URGENCY')"
+            else
+              echo "ℹ️  No urgency could be calculated (missing severity/likelihood labels)"
+            fi
+            exit 0
+          fi
 
           # Determine what action to take
           if [[ -z "$NEW_URGENCY" && -z "$CURRENT_URGENCY" ]]; then
