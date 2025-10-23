@@ -34,6 +34,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
 
   @NestedConfigurationProperty
+  private IncidentNotifier incidentNotifier = new IncidentNotifier(databaseName());
+
+  @NestedConfigurationProperty
   private Cache batchOperationCache = new Cache(databaseName(), "batchOperation");
 
   @NestedConfigurationProperty private Cache processCache = new Cache(databaseName(), "process");
@@ -188,6 +191,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setInterceptorPlugins(final List<InterceptorPlugin> interceptorPlugins) {
     this.interceptorPlugins = interceptorPlugins;
+  }
+
+  public IncidentNotifier getIncidentNotifier() {
+    return incidentNotifier;
+  }
+
+  public void setIncidentNotifier(final IncidentNotifier incidentNotifier) {
+    this.incidentNotifier = incidentNotifier;
   }
 
   private String prefix() {

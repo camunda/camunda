@@ -673,6 +673,15 @@ public class BrokerBasedPropertiesOverride {
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
 
+    if (database.getIncidentNotifier() != null) {
+      setArg(args, "notifier.webhook", database.getIncidentNotifier().getWebhook());
+      setArg(args, "notifier.auth0Domain", database.getIncidentNotifier().getAuth0Domain());
+      setArg(args, "notifier.auth0Protocol", database.getIncidentNotifier().getAuth0Protocol());
+      setArg(args, "notifier.m2mClientId", database.getIncidentNotifier().getM2mClientId());
+      setArg(args, "notifier.m2mClientSecret", database.getIncidentNotifier().getM2mClientSecret());
+      setArg(args, "notifier.m2mAudience", database.getIncidentNotifier().getM2mAudience());
+    }
+
     setArg(
         args, "batchOperationCache.maxCacheSize", database.getBatchOperationCache().getMaxSize());
     setArg(args, "processCache.maxCacheSize", database.getProcessCache().getMaxSize());
