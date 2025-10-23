@@ -478,8 +478,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromBackup(final BrokerBasedProperties override) {
-    final Backup backup =
-        unifiedConfiguration.getCamunda().getData().getBackup().withBrokerBackupProperties();
+    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupStoreCfg backupStoreCfg = override.getData().getBackup();
     backupStoreCfg.setStore(BackupStoreType.valueOf(backup.getStore().name()));
 

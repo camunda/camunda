@@ -15,7 +15,6 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Security;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.search.connect.plugin.PluginConfiguration;
-import io.camunda.tasklist.property.BackupProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import java.util.List;
@@ -70,10 +69,8 @@ public class TasklistPropertiesOverride {
   }
 
   private void populateFromBackup(final TasklistProperties override) {
-    final Backup backup =
-        unifiedConfiguration.getCamunda().getData().getBackup().withTasklistBackupProperties();
-    final BackupProperties backupProperties = override.getBackup();
-    backupProperties.setRepositoryName(backup.getRepositoryName());
+    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
+    override.getBackup().setRepositoryName(backup.getRepositoryName());
   }
 
   private void populateFromElasticsearch(

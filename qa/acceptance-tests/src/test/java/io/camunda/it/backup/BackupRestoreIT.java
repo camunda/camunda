@@ -160,10 +160,7 @@ public class BackupRestoreIT {
                   "Unsupported database type: " + config.databaseType);
         };
 
-    testStandaloneApplication.withProperty(
-        "camunda.tasklist.backup.repositoryName", REPOSITORY_NAME);
-    testStandaloneApplication.withProperty(
-        "camunda.operate.backup.repositoryName", REPOSITORY_NAME);
+    testStandaloneApplication.withProperty("camunda.data.backup.repository-name", REPOSITORY_NAME);
 
     testStandaloneApplication.start().awaitCompleteTopology();
 
