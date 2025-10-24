@@ -172,11 +172,21 @@ jobs:
           fi
 
           if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-            echo "Running all tests in V2 mode, excluding V1-specific tests"
-            npm run test -- --project=chromium --ignore="tests/common-flows/v1/**" --ignore="tests/tasklist/v1/**""
+            if [[ "${{ matrix.branch }}" == "main" ]]; then
+              echo "Running all tests in V2 mode on main branch, excluding V1-specific tests"
+              npm run test -- --project=chromium --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
+            else
+              echo "Running focused tests in V2 mode: Tasklist + HTO flows (excluding @v1-only tests)"
+              npm run test -- --project=chromium tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert "@v1-only"
+            fi
           else
-            echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
-            npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/"
+            if [[ "${{ matrix.branch }}" == "main" ]]; then
+              echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
+              npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/
+            else
+              echo "Running all tests in V1 mode"
+              npm run test -- --project=chromium
+            fi
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
