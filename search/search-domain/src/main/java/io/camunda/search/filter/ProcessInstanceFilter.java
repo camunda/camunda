@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public record ProcessInstanceFilter(
     List<Operation<Long>> processInstanceKeyOperations,
@@ -41,6 +42,7 @@ public record ProcessInstanceFilter(
     List<Operation<String>> flowNodeInstanceStateOperations,
     List<Operation<Integer>> incidentErrorHashCodeOperations,
     Integer partitionId,
+    Set<String> tags,
     List<ProcessInstanceFilter> orFilters)
     implements FilterBase {
 
@@ -64,6 +66,7 @@ public record ProcessInstanceFilter(
         .errorMessageOperations(errorMessageOperations)
         .incidentErrorHashCodeOperations(incidentErrorHashCodeOperations)
         .partitionId(partitionId)
+        .tags(tags)
         .orFilters(orFilters);
   }
 
@@ -91,6 +94,7 @@ public record ProcessInstanceFilter(
     private List<Operation<String>> flowNodeInstanceStateOperations;
     private List<Operation<Integer>> incidentErrorHashCodeOperations;
     private Integer partitionId;
+    private Set<String> tags;
     private List<ProcessInstanceFilter> orFilters;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -378,6 +382,11 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder tags(final Set<String> value) {
+      tags = value;
+      return this;
+    }
+
     public Builder addOrOperation(final ProcessInstanceFilter orOperation) {
       if (orFilters == null) {
         orFilters = new ArrayList<>();
@@ -417,6 +426,7 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(flowNodeInstanceStateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(incidentErrorHashCodeOperations, Collections.emptyList()),
           partitionId,
+          Objects.requireNonNullElse(tags, Collections.emptySet()),
           orFilters);
     }
   }

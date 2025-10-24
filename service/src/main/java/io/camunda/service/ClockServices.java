@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -20,13 +21,25 @@ public final class ClockServices extends ApiServices<ClockServices> {
   public ClockServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override
   public ClockServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ClockServices(brokerClient, securityContextProvider, authentication);
+    return new ClockServices(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<ClockRecord> pinClock(final long pinnedEpoch) {

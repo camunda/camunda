@@ -76,8 +76,12 @@ public interface EvaluateDecisionResponse {
    */
   String getTenantId();
 
+  /** Deprecated, please use {@link #getDecisionEvaluationKey()} instead. */
+  @Deprecated
+  long getDecisionInstanceKey();
+
   /**
    * @return the unique key identifying this decision evaluation
    */
-  long getDecisionInstanceKey();
+  long getDecisionEvaluationKey();
 }

@@ -11,11 +11,16 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.util.ObjectBuilder;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record RoleDbQuery(RoleFilter filter, DbQuerySorting<RoleEntity> sort, DbQueryPage page) {
+public record RoleDbQuery(
+    RoleFilter filter,
+    List<String> authorizedResourceIds,
+    DbQuerySorting<RoleEntity> sort,
+    DbQueryPage page) {
 
   public static RoleDbQuery of(final Function<Builder, ObjectBuilder<RoleDbQuery>> fn) {
     return fn.apply(new Builder()).build();
@@ -26,11 +31,17 @@ public record RoleDbQuery(RoleFilter filter, DbQuerySorting<RoleEntity> sort, Db
     private static final RoleFilter EMPTY_FILTER = FilterBuilders.role().build();
 
     private RoleFilter filter;
+    private List<String> authorizedResourceIds = Collections.emptyList();
     private DbQuerySorting<RoleEntity> sort;
     private DbQueryPage page;
 
     public RoleDbQuery.Builder filter(final RoleFilter value) {
       filter = value;
+      return this;
+    }
+
+    public RoleDbQuery.Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
@@ -59,8 +70,9 @@ public record RoleDbQuery(RoleFilter filter, DbQuerySorting<RoleEntity> sort, Db
     @Override
     public RoleDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new RoleDbQuery(filter, sort, page);
+      return new RoleDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }

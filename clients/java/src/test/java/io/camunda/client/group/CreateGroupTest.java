@@ -15,14 +15,16 @@
  */
 package io.camunda.client.group;
 
-import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.GroupCreateRequest;
+import io.camunda.client.protocol.rest.GroupCreateResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class CreateGroupTest extends ClientRestTest {
@@ -33,6 +35,9 @@ public class CreateGroupTest extends ClientRestTest {
 
   @Test
   void shouldCreateGroup() {
+    // given
+    gatewayService.onCreateGroupRequest(Instancio.create(GroupCreateResult.class));
+
     // when
     client
         .newCreateGroupCommand()
@@ -51,6 +56,9 @@ public class CreateGroupTest extends ClientRestTest {
 
   @Test
   void shouldCreateGroupWithoutDescription() {
+    // given
+    gatewayService.onCreateGroupRequest(Instancio.create(GroupCreateResult.class));
+
     // when
     client.newCreateGroupCommand().groupId(GROUP_ID).name(NAME).send().join();
 
@@ -65,7 +73,7 @@ public class CreateGroupTest extends ClientRestTest {
   void shouldRaiseExceptionOnRequestError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/groups", () -> new ProblemDetail().title("Not Found").status(404));
+        RestGatewayPaths.getGroupsUrl(), () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
@@ -77,10 +85,11 @@ public class CreateGroupTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionIfGroupAlreadyExists() {
     // given
+    gatewayService.onCreateGroupRequest(Instancio.create(GroupCreateResult.class));
     client.newCreateGroupCommand().groupId(GROUP_ID).name(NAME).send().join();
 
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/groups", () -> new ProblemDetail().title("Conflict").status(409));
+        RestGatewayPaths.getGroupsUrl(), () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
     assertThatThrownBy(
@@ -93,7 +102,8 @@ public class CreateGroupTest extends ClientRestTest {
   void shouldHandleValidationErrorResponse() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/groups", () -> new ProblemDetail().title("Bad Request").status(400));
+        RestGatewayPaths.getGroupsUrl(),
+        () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
     assertThatThrownBy(

@@ -9,12 +9,10 @@
 import {
   endpoints,
   type ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+} from '@camunda/camunda-api-zod-schemas/8.8';
+import {requestWithThrow} from 'modules/request';
 
-const fetchProcessInstance = async (
-  processInstanceKey: string,
-): RequestResult<ProcessInstance> => {
+const fetchProcessInstance = async (processInstanceKey: string) => {
   return requestWithThrow<ProcessInstance>({
     url: endpoints.getProcessInstance.getUrl({
       processInstanceKey,

@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-webjar</artifactId>
@@ -51,7 +51,7 @@
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
-              <arguments>version --new-version=${project.version} --no-git-tag-version</arguments>
+              <arguments>version ${project.version} --no-git-tag-version --allow-same-version</arguments>
             </configuration>
           </execution>
 
@@ -61,7 +61,6 @@
               <goal>npm</goal>
             </goals>
             <configuration>
-              <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
               <arguments>ci</arguments>
             </configuration>
@@ -73,7 +72,6 @@
               <goal>npm</goal>
             </goals>
             <configuration>
-              <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
               <arguments>run build</arguments>
             </configuration>

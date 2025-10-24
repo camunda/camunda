@@ -46,17 +46,14 @@ public final class ClusterConfigurationManagementRequestsHandler
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
-  private final boolean enablePartitionScaling;
 
   public ClusterConfigurationManagementRequestsHandler(
       final ConfigurationChangeCoordinator coordinator,
       final MemberId localMemberId,
-      final ConcurrencyControl executor,
-      final boolean enablePartitionScaling) {
+      final ConcurrencyControl executor) {
     this.coordinator = coordinator;
     this.executor = executor;
     this.localMemberId = localMemberId;
-    this.enablePartitionScaling = enablePartitionScaling;
   }
 
   @Override
@@ -143,13 +140,6 @@ public final class ClusterConfigurationManagementRequestsHandler
   public ActorFuture<ClusterConfigurationChangeResponse> scaleCluster(
       final ClusterScaleRequest clusterScaleRequest) {
 
-    if (!enablePartitionScaling && clusterScaleRequest.newPartitionCount().isPresent()) {
-      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
-      failedFuture.completeExceptionally(
-          new UnsupportedOperationException("Partition scaling is not enabled."));
-      return failedFuture;
-    }
-
     return handleRequest(
         clusterScaleRequest.dryRun(),
         new ClusterScaleRequestTransformer(
@@ -161,13 +151,6 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       final ClusterPatchRequest clusterPatchRequest) {
-
-    if (!enablePartitionScaling && clusterPatchRequest.newPartitionCount().isPresent()) {
-      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
-      failedFuture.completeExceptionally(
-          new UnsupportedOperationException("Partition scaling is not enabled."));
-      return failedFuture;
-    }
 
     return handleRequest(
         clusterPatchRequest.dryRun(),
@@ -183,8 +166,7 @@ public final class ClusterConfigurationManagementRequestsHandler
       final UpdateRoutingStateRequest updateRoutingStateRequest) {
     return handleRequest(
         updateRoutingStateRequest.dryRun(),
-        new UpdateRoutingStateTransformer(
-            enablePartitionScaling, updateRoutingStateRequest.routingState()));
+        new UpdateRoutingStateTransformer(updateRoutingStateRequest.routingState()));
   }
 
   @Override

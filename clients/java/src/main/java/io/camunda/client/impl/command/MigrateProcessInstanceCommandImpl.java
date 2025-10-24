@@ -157,6 +157,7 @@ public final class MigrateProcessInstanceCommandImpl
         "/process-instances/" + processInstanceKey + "/migration",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
+        MigrateProcessInstanceResponseImpl::new,
         result);
     return result;
   }

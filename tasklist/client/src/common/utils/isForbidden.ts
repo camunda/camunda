@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
 
 function isForbidden(user: CurrentUser | undefined) {
   return (
-    Array.isArray(user?.authorizedApplications) &&
-    !user.authorizedApplications.includes('tasklist') &&
-    !user.authorizedApplications.includes('*')
+    Array.isArray(user?.authorizedComponents) &&
+    !user.authorizedComponents.includes('tasklist') &&
+    !user.authorizedComponents.includes('*')
   );
 }
 

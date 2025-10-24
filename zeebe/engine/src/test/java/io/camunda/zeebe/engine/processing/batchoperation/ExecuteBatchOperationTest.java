@@ -8,16 +8,24 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest {
 
@@ -61,6 +69,41 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
           assertThat(cancelCommand.getIntent()).isEqualTo(ProcessInstanceIntent.CANCEL);
           assertThat(cancelCommand.getAuthorizations()).isEqualTo(claims);
         });
+  }
+
+  @Test
+  public void shouldFailBatchOperationWhenRetriesAreExhausted() {
+    // given
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenThrow(new RuntimeException("error"));
+
+    final var filterBuffer =
+        convertToBuffer(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
+
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+
+    // then we have completed event
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .limit(r -> r.getIntent() == BatchOperationIntent.PARTITION_FAILED))
+        .isNotEmpty();
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED))
+        .isNotEmpty();
+
+    verify(searchClientsProxy, times(3)).searchProcessInstances(any());
   }
 
   @Test

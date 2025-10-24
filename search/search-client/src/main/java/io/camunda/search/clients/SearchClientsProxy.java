@@ -12,26 +12,26 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface SearchClientsProxy
     extends AuthorizationSearchClient,
+        BatchOperationSearchClient,
         DecisionDefinitionSearchClient,
         DecisionInstanceSearchClient,
         DecisionRequirementSearchClient,
         FlowNodeInstanceSearchClient,
         FormSearchClient,
+        GroupSearchClient,
         IncidentSearchClient,
+        JobSearchClient,
+        MappingRuleSearchClient,
+        MessageSubscriptionSearchClient,
         ProcessDefinitionSearchClient,
         ProcessInstanceSearchClient,
         RoleSearchClient,
+        SequenceFlowSearchClient,
         TenantSearchClient,
+        UsageMetricsSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
-        VariableSearchClient,
-        MappingRuleSearchClient,
-        GroupSearchClient,
-        UsageMetricsSearchClient,
-        BatchOperationSearchClient,
-        SequenceFlowSearchClient,
-        JobSearchClient,
-        MessageSubscriptionSearchClient {
+        VariableSearchClient {
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);

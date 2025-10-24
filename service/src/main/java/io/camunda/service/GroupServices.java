@@ -13,8 +13,10 @@ import static io.camunda.service.authorization.Authorizations.GROUP_READ_AUTHORI
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -38,8 +40,15 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GroupSearchClient groupSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.groupSearchClient = groupSearchClient;
   }
 
@@ -68,7 +77,12 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   @Override
   public GroupServices withAuthentication(final CamundaAuthentication authentication) {
     return new GroupServices(
-        brokerClient, securityContextProvider, groupSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        groupSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<GroupRecord> createGroup(final GroupDTO groupDTO) {
@@ -113,7 +127,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             .setMemberType(groupMemberDTO.memberType));
   }
 
-  public SearchQueryResult<GroupMemberEntity> searchMembers(final GroupQuery query) {
+  public SearchQueryResult<GroupMemberEntity> searchMembers(final GroupMemberQuery query) {
     return executeSearchRequest(
         () ->
             groupSearchClient

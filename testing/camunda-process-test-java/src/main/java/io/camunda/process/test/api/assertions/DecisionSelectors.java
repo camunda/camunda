@@ -74,9 +74,9 @@ public class DecisionSelectors {
 
   private static final class DecisionProcessInstanceKeySelector implements DecisionSelector {
 
-    private final Long processInstanceKey;
+    private final long processInstanceKey;
 
-    private DecisionProcessInstanceKeySelector(final Long processInstanceKey) {
+    private DecisionProcessInstanceKeySelector(final long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
     }
 
@@ -87,7 +87,7 @@ public class DecisionSelectors {
 
     @Override
     public String describe() {
-      return String.format("%d", processInstanceKey);
+      return "processInstanceKey: " + processInstanceKey;
     }
 
     @Override
@@ -119,9 +119,9 @@ public class DecisionSelectors {
     public String describe() {
       if (processInstanceKey != null) {
         return String.format(
-            "%s (processInstanceKey: %d)", decisionDefinitionId, processInstanceKey);
+            "decisionId: %s, processInstanceKey: %d", decisionDefinitionId, processInstanceKey);
       } else {
-        return decisionDefinitionId;
+        return "decisionId: " + decisionDefinitionId;
       }
     }
 
@@ -159,9 +159,9 @@ public class DecisionSelectors {
     public String describe() {
       if (processInstanceKey != null) {
         return String.format(
-            "%s (processInstanceKey: %d)", decisionDefinitionName, processInstanceKey);
+            "name: %s, processInstanceKey: %d", decisionDefinitionName, processInstanceKey);
       } else {
-        return decisionDefinitionName;
+        return "name: " + decisionDefinitionName;
       }
     }
 
@@ -191,7 +191,7 @@ public class DecisionSelectors {
     @Override
     public String describe() {
       return String.format(
-          "%s (decisionId: %s)", response.getDecisionName(), response.getDecisionId());
+          "name: %s, decisionId: %s", response.getDecisionName(), response.getDecisionId());
     }
 
     @Override

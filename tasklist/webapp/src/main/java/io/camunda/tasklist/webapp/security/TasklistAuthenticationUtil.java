@@ -7,17 +7,22 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import java.util.Optional;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 
 public final class TasklistAuthenticationUtil {
 
   private TasklistAuthenticationUtil() {}
 
-  public static boolean isApiUser() {
-    return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-        .map(JwtAuthenticationToken.class::isInstance)
-        .orElse(false);
+  public static boolean isApiUser(CamundaAuthentication authenticatedUser) {
+
+    if (authenticatedUser.authenticatedUsername() != null || authenticatedUser.isAnonymous()) {
+      return false;
+    } else if (authenticatedUser.authenticatedClientId() != null) {
+      return true;
+    } else {
+      throw new InvalidRequestException(
+          "Expecting authentication to either be anonymous, or have username or client id");
+    }
   }
 }

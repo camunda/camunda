@@ -99,4 +99,18 @@ public class RoleStateTest {
     final var deletedRole = roleState.getRole(roleId);
     assertThat(deletedRole).isEmpty();
   }
+
+  @Test
+  void shouldReturnNewCopiesOnGet() {
+    // given
+    final String id = "id";
+    roleState.create(new RoleRecord().setRoleId(id).setRoleKey(123L).setName("name"));
+
+    // when
+    final var role1 = roleState.getRole(id).get();
+    final var role2 = roleState.getRole(id).get();
+
+    // then
+    assertThat(role1).isNotSameAs(role2);
+  }
 }

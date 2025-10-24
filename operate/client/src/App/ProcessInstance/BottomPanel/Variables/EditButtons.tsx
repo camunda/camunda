@@ -11,12 +11,9 @@ import {getError} from './getError';
 import {useFieldError} from 'modules/hooks/useFieldError';
 import {Button} from '@carbon/react';
 import {Checkmark, Close} from '@carbon/react/icons';
+import {Loading} from './EditButtons.styled';
 
-type Props = {
-  onExitEditMode?: () => void;
-};
-
-const EditButtons: React.FC<Props> = ({onExitEditMode}) => {
+const EditButtons: React.FC = () => {
   const form = useForm();
   const {values, initialValues, validating, hasValidationErrors} =
     useFormState();
@@ -37,29 +34,33 @@ const EditButtons: React.FC<Props> = ({onExitEditMode}) => {
         aria-label="Exit edit mode"
         tooltipPosition="left"
         onClick={() => {
-          onExitEditMode?.();
           form.reset({});
         }}
         hasIconOnly
         renderIcon={Close}
+        disabled={form.getState().submitting}
       />
 
-      <Button
-        kind="ghost"
-        size="sm"
-        iconDescription="Save variable"
-        aria-label="Save variable"
-        tooltipPosition="left"
-        disabled={
-          initialValues.value === values.value ||
-          validating ||
-          hasValidationErrors ||
-          errorMessage !== undefined
-        }
-        onClick={() => form.submit()}
-        hasIconOnly
-        renderIcon={Checkmark}
-      />
+      {form.getState().submitting ? (
+        <Loading small withOverlay={false} data-testid="full-variable-loader" />
+      ) : (
+        <Button
+          kind="ghost"
+          size="sm"
+          iconDescription="Save variable"
+          aria-label="Save variable"
+          tooltipPosition="left"
+          disabled={
+            initialValues.value === values.value ||
+            validating ||
+            hasValidationErrors ||
+            errorMessage !== undefined
+          }
+          onClick={() => form.submit()}
+          hasIconOnly
+          renderIcon={Checkmark}
+        />
+      )}
     </>
   );
 };

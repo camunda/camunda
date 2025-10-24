@@ -132,6 +132,15 @@ public final class SearchQueryBuilders {
     return fn.apply(roleSearchQuery()).build();
   }
 
+  public static RoleMemberQuery.Builder roleMemberSearchQuery() {
+    return new RoleMemberQuery.Builder();
+  }
+
+  public static RoleMemberQuery roleMemberSearchQuery(
+      final Function<RoleMemberQuery.Builder, ObjectBuilder<RoleMemberQuery>> fn) {
+    return fn.apply(roleMemberSearchQuery()).build();
+  }
+
   public static TenantQuery.Builder tenantSearchQuery() {
     return new TenantQuery.Builder();
   }
@@ -141,6 +150,15 @@ public final class SearchQueryBuilders {
     return fn.apply(tenantSearchQuery()).build();
   }
 
+  public static TenantMemberQuery.Builder tenantMemberSearchQuery() {
+    return new TenantMemberQuery.Builder();
+  }
+
+  public static TenantMemberQuery tenantMemberSearchQuery(
+      final Function<TenantMemberQuery.Builder, ObjectBuilder<TenantMemberQuery>> fn) {
+    return fn.apply(tenantMemberSearchQuery()).build();
+  }
+
   public static GroupQuery.Builder groupSearchQuery() {
     return new GroupQuery.Builder();
   }
@@ -148,6 +166,15 @@ public final class SearchQueryBuilders {
   public static GroupQuery groupSearchQuery(
       final Function<GroupQuery.Builder, ObjectBuilder<GroupQuery>> fn) {
     return fn.apply(groupSearchQuery()).build();
+  }
+
+  public static GroupMemberQuery.Builder groupMemberSearchQuery() {
+    return new GroupMemberQuery.Builder();
+  }
+
+  public static GroupMemberQuery groupMemberSearchQuery(
+      final Function<GroupMemberQuery.Builder, ObjectBuilder<GroupMemberQuery>> fn) {
+    return fn.apply(groupMemberSearchQuery()).build();
   }
 
   public static AuthorizationQuery.Builder authorizationSearchQuery() {
@@ -197,5 +224,23 @@ public final class SearchQueryBuilders {
 
   public static MessageSubscriptionQuery.Builder messageSubscriptionSearchQuery() {
     return new MessageSubscriptionQuery.Builder();
+  }
+
+  public static CorrelatedMessageSubscriptionQuery.Builder
+      correlatedMessageSubscriptionSearchQuery() {
+    return new CorrelatedMessageSubscriptionQuery.Builder();
+  }
+
+  public static CorrelatedMessageSubscriptionQuery correlatedMessageSubscriptionSearchQuery(
+      final Function<
+              CorrelatedMessageSubscriptionQuery.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionQuery>>
+          fn) {
+    return fn.apply(correlatedMessageSubscriptionSearchQuery()).build();
+  }
+
+  public static ProcessDefinitionInstanceStatisticsQuery.Builder
+      processDefinitionInstanceStatisticsQuery() {
+    return new ProcessDefinitionInstanceStatisticsQuery.Builder();
   }
 }

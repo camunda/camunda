@@ -32,11 +32,12 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
-public class CamundaManagementClient {
+public final class CamundaManagementClient {
 
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
@@ -51,10 +52,28 @@ public class CamundaManagementClient {
 
   private final URI camundaManagementApi;
   private final URI camundaRestApi;
+  private final String basicAuthCredentials;
 
-  public CamundaManagementClient(final URI camundaManagementApi, final URI camundaRestApi) {
+  private CamundaManagementClient(final URI camundaManagementApi, final URI camundaRestApi) {
+    this(camundaManagementApi, camundaRestApi, null);
+  }
+
+  private CamundaManagementClient(
+      final URI camundaManagementApi, final URI camundaRestApi, final String basicAuthCredentials) {
+
     this.camundaManagementApi = camundaManagementApi;
     this.camundaRestApi = camundaRestApi;
+    this.basicAuthCredentials = basicAuthCredentials;
+  }
+
+  public static CamundaManagementClient createAuthenticatedClient(
+      final URI camundaManagementApi, final URI camundaRestApi, final String basicAuthCredentials) {
+    return new CamundaManagementClient(camundaManagementApi, camundaRestApi, basicAuthCredentials);
+  }
+
+  public static CamundaManagementClient createClient(
+      final URI camundaManagementApi, final URI camundaRestApi) {
+    return new CamundaManagementClient(camundaManagementApi, camundaRestApi);
   }
 
   public Instant getCurrentTime() {
@@ -65,7 +84,7 @@ public class CamundaManagementClient {
 
       return Instant.parse(clockResponseDto.getInstant());
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to resolve the current time", e);
+      throw new RuntimeException(timerBasedErrorMessage(e), e);
     }
   }
 
@@ -81,7 +100,7 @@ public class CamundaManagementClient {
 
       sendRequest(request);
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to increase the time", e);
+      throw new RuntimeException(timerBasedErrorMessage(e), e);
     }
   }
 
@@ -98,8 +117,15 @@ public class CamundaManagementClient {
     try {
       sendRequest(request);
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to reset the time", e);
+      throw new RuntimeException(timerBasedErrorMessage(e), e);
     }
+  }
+
+  private String timerBasedErrorMessage(final Exception e) {
+    return e.getMessage().contains("code: " + HttpStatus.SC_FORBIDDEN)
+        ? "Failed to increase the time. Please double-check that the Clock endpoint is enabled by "
+            + "setting 'zeebe-clock-controlled' to true."
+        : "Failed to increase the time.";
   }
 
   /**
@@ -172,6 +198,10 @@ public class CamundaManagementClient {
   }
 
   private String sendRequest(final ClassicHttpRequest request) throws IOException {
+    if (basicAuthCredentials != null) {
+      request.setHeader("Authorization", "Basic " + basicAuthCredentials);
+    }
+
     return httpClient.execute(
         request,
         response -> {
@@ -179,13 +209,18 @@ public class CamundaManagementClient {
             throw new RuntimeException(
                 String.format(
                     "Request failed. [code: %d, message: %s]",
-                    response.getCode(), HttpClientUtil.getReponseAsString(response)));
+                    response.getCode(), HttpClientUtil.getResponseAsString(response)));
           }
-          return HttpClientUtil.getReponseAsString(response);
+          return HttpClientUtil.getResponseAsString(response);
         });
   }
 
   private boolean isNotSuccessfulStatusCode(final int statusCode) {
-    return statusCode < 200 || statusCode >= 300;
+    /*
+     * Multi-tenancy uses basic auth to secure the camunda gateway. During the purge, the default
+     * user is briefly deleted and previously authenticated requests will fail until the user's
+     * been recreated. Therefore, we choose to silently ignore 401 errors.
+     */
+    return statusCode < 200 || (statusCode >= 300 && statusCode != 401);
   }
 }

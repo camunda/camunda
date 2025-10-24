@@ -7,7 +7,7 @@
  */
 
 import {openFile} from '@/utils/openFile';
-import {InstanceMock} from '.';
+import type {InstanceMock} from '.';
 
 const compensationProcessInstance: InstanceMock = {
   detail: {

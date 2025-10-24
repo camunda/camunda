@@ -20,7 +20,9 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -100,7 +102,16 @@ public class SearchColumnTest {
               ListenerEventType.class,
               List.of(
                   Tuple.of(ListenerEventType.START, ListenerEventType.START),
-                  Tuple.of(ListenerEventType.START, "START"))));
+                  Tuple.of(ListenerEventType.START, "START"))),
+          Map.entry(
+              MessageSubscriptionState.class,
+              List.of(
+                  Tuple.of(MessageSubscriptionState.CREATED, MessageSubscriptionState.CREATED),
+                  Tuple.of(MessageSubscriptionState.CREATED, "CREATED"))),
+          Map.entry(
+              EntityType.class,
+              List.of(
+                  Tuple.of(EntityType.USER, EntityType.USER), Tuple.of(EntityType.USER, "USER"))));
 
   private static List<Object[]> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()

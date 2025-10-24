@@ -55,7 +55,7 @@ npx playwright install
 
 ### 3. Configure Environment Variables
 
-Create a `.env` file inside `c8-orchestration-cluster-e2e-test-suite`.  
+Create a `.env` file inside `c8-orchestration-cluster-e2e-test-suite`.
 This file configures test parameters, including application URLs and credentials.
 **Note**: Do not commit the `.env` file to GitHub to avoid exposing sensitive information.
 
@@ -68,6 +68,7 @@ CAMUNDA_AUTH_STRATEGY=BASIC
 CAMUNDA_BASIC_AUTH_USERNAME=demo
 CAMUNDA_BASIC_AUTH_PASSWORD=demo
 ZEEBE_REST_ADDRESS=http://localhost:8080
+CAMUNDA_TASKLIST_V2_MODE_ENABLED=false
 ```
 
 ---
@@ -78,6 +79,14 @@ For running tests locally, ensure you have an active instance. To set it up:
 
 1. Open a terminal in the `config` folder inside the `c8-orchestration-cluster-e2e-test-suite` directory.
 2. Run:
+
+**For Tasklist V1 mode:**
+
+```bash
+CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
+```
+
+**For Tasklist V2 mode:**
 
 ```bash
 DATABASE=elasticsearch docker compose up -d camunda
@@ -123,10 +132,30 @@ Reports and artifacts:
 
 This test suite follows the **Page Object Model (POM)** pattern for reusability and maintainability.
 
-- Page objects: `qa/c8-orchestration-cluster-e2e-test-suite/pages`
-- Test specs: `qa/c8-orchestration-cluster-e2e-test-suite/tests`
-- Utilities/fixtures: `qa/c8-orchestration-cluster-e2e-test-suite/utils`
-- Test data: `qa/c8-orchestration-cluster-e2e-test-suite/resources`
+### Directory Structure
+
+- **Page objects**: `qa/c8-orchestration-cluster-e2e-test-suite/pages`
+  - `pages/`: V2 page objects (default)
+  - `pages/v1/`: Tasklist V1-specific page objects
+- **Test specs**: `qa/c8-orchestration-cluster-e2e-test-suite/tests`
+  - `tests/tasklist/`: V2 Tasklist tests
+  - `tests/tasklist/v1/`: V1 Tasklist tests
+  - `tests/common-flows/`: V2 common flow tests
+  - `tests/common-flows/v1/`: V1 common flow tests
+  - `tests/operate/`: Operate tests
+  - `tests/identity/`: Identity tests
+  - `tests/api/`: API tests
+- **Utilities/fixtures**: `qa/c8-orchestration-cluster-e2e-test-suite/utils`
+- **Test data**: `qa/c8-orchestration-cluster-e2e-test-suite/resources`
+
+### Test Mode Separation
+
+Starting with Camunda 8.8, Tasklist V2 is the default mode. The test suite reflects this:
+
+- **V2 Mode (Default)**: All tests run against Tasklist V2 unless specified otherwise
+- **V1 Mode (Explicit)**: V1 tests require explicit project specification
+- Tests are organized into mode-specific directories for clear separation
+- Page objects are separated by mode to eliminate compatibility overhead
 
 ---
 
@@ -138,7 +167,7 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 1. Go to [C8 Orchestration Cluster E2E Tests On Demand](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
 2. Click **"Run workflow"**
-3. Choose the desired branch (e.g., `main`, `stable/8.6`, `stable/8.7`)
+3. Choose the desired branch (e.g., `main`, `stable/8.6`, `stable/8.7`, `stable/8.8`)
 4. Click **"Run workflow"**
 
 ---
@@ -200,5 +229,5 @@ If you want to suggest a new test case without submitting code:
 
 ---
 
-Thank you for using the C8 Orchestration Cluster End-to-End Test Suite.  
+Thank you for using the C8 Orchestration Cluster End-to-End Test Suite.
 Happy testing! 🚀 For help, reach out to the DRI.

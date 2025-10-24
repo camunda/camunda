@@ -9,16 +9,19 @@
 import {
   getSelectedFlowNodeName,
   getSelectedRunningInstanceCount,
+  selectAdHocSubProcessInnerInstance,
 } from './flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {createInstance} from 'modules/testUtils';
 
-describe('getSelectedRunningInstanceCount', () => {
+describe('flowNodeSelection', () => {
   beforeEach(() => {
     flowNodeSelectionStore.reset();
     flowNodeMetaDataStore.reset();
+    flowNodeInstanceStore.reset();
   });
 
   afterEach(() => {
@@ -112,5 +115,72 @@ describe('getSelectedRunningInstanceCount', () => {
     });
 
     expect(result).toBe('Start Event');
+  });
+
+  it('should not change selection when no children exist', () => {
+    const rootNode = {flowNodeId: 'root', flowNodeInstanceId: 'root-1'};
+    const innerInstance = {
+      id: 'inner-1',
+      type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE' as const,
+      state: 'ACTIVE' as const,
+      flowNodeId: 'adhoc-subprocess',
+      startDate: '2020-08-18T12:07:33.953+0000',
+      endDate: null,
+      treePath: 'some-tree-path',
+      sortValues: ['1606300828415', 'inner-1'] as [string, string],
+    };
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'existing',
+      flowNodeInstanceId: 'existing-1',
+    });
+
+    selectAdHocSubProcessInnerInstance(rootNode, innerInstance);
+
+    expect(flowNodeSelectionStore.state.selection).toEqual({
+      flowNodeId: 'existing',
+      flowNodeInstanceId: 'existing-1',
+    });
+  });
+
+  it('should select first child when children exist', () => {
+    const rootNode = {flowNodeId: 'root', flowNodeInstanceId: 'root-1'};
+    const innerInstance = {
+      id: 'inner-1',
+      type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE' as const,
+      state: 'ACTIVE' as const,
+      flowNodeId: 'adhoc-subprocess',
+      startDate: '2020-08-18T12:07:33.953+0000',
+      endDate: null,
+      treePath: 'some-tree-path',
+      sortValues: ['1606300828415', 'inner-1'] as [string, string],
+    };
+
+    flowNodeInstanceStore.handleFetchSuccess({
+      'some-tree-path': {
+        children: [
+          {
+            id: 'child-1',
+            type: 'SERVICE_TASK' as const,
+            state: 'ACTIVE' as const,
+            flowNodeId: 'task-1',
+            startDate: '2020-08-18T12:07:33.953+0000',
+            endDate: null,
+            treePath: 'child-tree-path',
+            sortValues: ['1606300828416', 'child-1'] as [string, string],
+          },
+        ],
+        running: false,
+      },
+    });
+
+    flowNodeSelectionStore.setSelection(null);
+
+    selectAdHocSubProcessInnerInstance(rootNode, innerInstance);
+
+    expect(flowNodeSelectionStore.state.selection).toEqual({
+      flowNodeId: 'task-1',
+      flowNodeInstanceId: 'child-1',
+    });
   });
 });

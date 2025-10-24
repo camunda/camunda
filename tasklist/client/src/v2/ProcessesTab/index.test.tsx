@@ -31,7 +31,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {pages} from 'common/routing';
 import {getClientConfig} from 'common/config/getClientConfig';
-import type {QueryProcessDefinitionsRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {QueryProcessDefinitionsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 vi.mock('common/notifications/notifications.store', () => ({
   notificationsStore: {

@@ -47,10 +47,15 @@ test.describe.serial('tenants CRUD', () => {
       ).toBeHidden();
       await identityTenantsPage.createTenant(NEW_TENANT);
       const item = identityTenantsPage.tenantCell(NEW_TENANT.name);
-      await waitForItemInList(page, item, {timeout: 60000});
+      await waitForItemInList(page, item, {timeout: 60000, clickNext: true});
     });
 
     test('assign a user', async ({page, identityTenantsPage}) => {
+      await waitForItemInList(
+        page,
+        identityTenantsPage.tenantCell(NEW_TENANT.name),
+        {timeout: 60000, clickNext: true},
+      );
       await identityTenantsPage.openTenantDetails(NEW_TENANT.tenantId).click();
       await identityTenantsPage.assignUserToTenant(USER);
       const item = identityTenantsPage.userRow(USER.name);
@@ -61,6 +66,11 @@ test.describe.serial('tenants CRUD', () => {
     });
 
     test('remove a user', async ({page, identityTenantsPage}) => {
+      await waitForItemInList(
+        page,
+        identityTenantsPage.tenantCell(NEW_TENANT.name),
+        {timeout: 60000, clickNext: true},
+      );
       await identityTenantsPage.openTenantDetails(NEW_TENANT.tenantId).click();
       await identityTenantsPage.removeUserFromTenant(USER.name);
       const item = identityTenantsPage.userRow(USER.name);
@@ -71,12 +81,19 @@ test.describe.serial('tenants CRUD', () => {
     });
 
     test('delete a tenant', async ({page, identityTenantsPage}) => {
-      await expect(
-        identityTenantsPage.tenantCell(NEW_TENANT.name),
-      ).toBeVisible();
+      const item = identityTenantsPage.tenantCell(NEW_TENANT.name);
+      await waitForItemInList(page, item, {
+        clickNext: true,
+        timeout: 60000,
+      });
+
       await identityTenantsPage.deleteTenant(NEW_TENANT.name);
-      const item = identityTenantsPage.tenantRow(NEW_TENANT.name);
-      await waitForItemInList(page, item, {shouldBeVisible: false});
+
+      await waitForItemInList(page, item, {
+        shouldBeVisible: false,
+        clickNext: true,
+        timeout: 60000,
+      });
     });
   });
 });

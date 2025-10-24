@@ -13,7 +13,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -27,7 +27,10 @@ import org.springframework.http.ProblemDetail;
 public final class RequestValidator {
 
   public static Optional<ProblemDetail> createProblemDetail(final List<String> violations) {
-    final String problems = String.join(". ", violations) + ".";
+    String problems = String.join(". ", violations);
+    if (!problems.endsWith(".")) {
+      problems = problems + ".";
+    }
     return violations.isEmpty()
         ? Optional.empty()
         : Optional.of(
@@ -35,15 +38,16 @@ public final class RequestValidator {
                 HttpStatus.BAD_REQUEST, problems, INVALID_ARGUMENT.name()));
   }
 
-  public static void validateDate(
+  public static OffsetDateTime validateDate(
       final String dateString, final String attributeName, final List<String> violations) {
     if (dateString != null && !dateString.isEmpty()) {
       try {
-        OffsetDateTime.parse(dateString);
+        return OffsetDateTime.parse(dateString);
       } catch (final DateTimeParseException ex) {
         violations.add(ERROR_MESSAGE_DATE_PARSING.formatted(attributeName, dateString));
       }
     }
+    return null;
   }
 
   public static boolean isEmpty(final Changeset changeset) {

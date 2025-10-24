@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -56,7 +57,9 @@ public class TenantIntegrationTest {
     // when / then
     assertThatThrownBy(() -> camundaClient.newTenantGetRequest("someTenantId").send().join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'");
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            ERROR_ENTITY_BY_ID_NOT_FOUND.formatted("Tenant", "id", "someTenantId"));
   }
 
   @Test

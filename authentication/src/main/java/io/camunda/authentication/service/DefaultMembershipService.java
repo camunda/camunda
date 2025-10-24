@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.service;
 
-import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
@@ -34,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 @Primary
@@ -47,7 +45,7 @@ public class DefaultMembershipService implements MembershipService {
   private final RoleServices roleServices;
   private final GroupServices groupServices;
   private final OidcGroupsLoader oidcGroupsLoader;
-  private final String groupsClaim;
+  private final boolean isGroupsClaimConfigured;
 
   public DefaultMembershipService(
       final MappingRuleServices mappingRuleServices,
@@ -59,24 +57,23 @@ public class DefaultMembershipService implements MembershipService {
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
-    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
-    oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
+    oidcGroupsLoader =
+        new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
+    isGroupsClaimConfigured =
+        securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
   }
 
   @Override
   public CamundaAuthentication resolveMemberships(
       final Map<String, Object> tokenClaims,
-      final Map<String, Object> authenticatedClaims,
-      final String username,
-      final String clientId)
+      final String principalId,
+      final PrincipalType principalType)
       throws OAuth2AuthenticationException {
     final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
-    if (username != null) {
-      ownerTypeToIds.put(EntityType.USER, Set.of(username));
-    }
-    if (clientId != null) {
-      ownerTypeToIds.put(EntityType.CLIENT, Set.of(clientId));
-    }
+
+    ownerTypeToIds.put(
+        principalType.equals(PrincipalType.USER) ? EntityType.USER : EntityType.CLIENT,
+        Set.of(principalId));
 
     final var mappingRules =
         mappingRuleServices
@@ -92,10 +89,8 @@ public class DefaultMembershipService implements MembershipService {
     }
 
     final Set<String> groups;
-    final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
-    if (groupsClaimPresent) {
+    if (isGroupsClaimConfigured) {
       groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
-      authenticatedClaims.put(USER_GROUPS_CLAIMS, groups.stream().toList());
     } else {
       groups =
           groupServices
@@ -131,13 +126,17 @@ public class DefaultMembershipService implements MembershipService {
             .toList();
 
     return CamundaAuthentication.of(
-        a ->
-            a.user(username)
-                .clientId(clientId)
-                .roleIds(roles.stream().toList())
-                .groupIds(groups.stream().toList())
-                .mappingRule(mappingRules.stream().toList())
-                .tenants(tenants)
-                .claims(authenticatedClaims));
+        a -> {
+          if (principalType.equals(PrincipalType.CLIENT)) {
+            a.clientId(principalId);
+          } else {
+            a.user(principalId);
+          }
+          return a.roleIds(roles.stream().toList())
+              .groupIds(groups.stream().toList())
+              .mappingRule(mappingRules.stream().toList())
+              .tenants(tenants)
+              .claims(tokenClaims);
+        });
   }
 }

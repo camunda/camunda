@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.configuration;
 
-import io.camunda.spring.client.configuration.CamundaAutoConfiguration;
-import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
+import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
+import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -26,8 +26,9 @@ import org.springframework.context.annotation.Bean;
 @ImportAutoConfiguration({
   CamundaProcessTestProxyConfiguration.class,
   CamundaProcessTestDefaultConfiguration.class,
+  LegacyCamundaProcessTestRuntimeConfiguration.class,
+  CamundaProcessTestRuntimeConfiguration.class,
   CamundaAutoConfiguration.class,
-  CamundaProcessTestRuntimeConfiguration.class
 })
 @AutoConfigureBefore(CamundaAutoConfiguration.class)
 public class CamundaProcessTestAutoConfiguration {

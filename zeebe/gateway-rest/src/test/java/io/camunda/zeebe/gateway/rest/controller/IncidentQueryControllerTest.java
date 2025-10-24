@@ -184,17 +184,17 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         """
             {
               "filter":{
-                "incidentKey": 5,
-                "processDefinitionKey": 23,
+                "incidentKey": "5",
+                "processDefinitionKey": "23",
                 "processDefinitionId": "complexProcess",
-                "processInstanceKey": 42,
+                "processInstanceKey": "42",
                 "errorType": "JOB_NO_RETRIES",
                 "errorMessage": "No retries left.",
                 "elementId": "elementId",
-                "elementInstanceKey": 17,
+                "elementInstanceKey": "17",
                 "creationTime": "2024-05-23T23:05:00.000Z",
                 "state": "ACTIVE",
-                "jobKey": 101,
+                "jobKey": "101",
                 "tenantId": "tenantId"
               }
             }

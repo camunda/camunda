@@ -212,11 +212,21 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       if (analysis == null) {
         continue;
       }
-      final Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
+      final Map analyzerWrapper = (Map) analysis.get("analyzer");
+      if (analyzerWrapper == null) {
+        continue;
+      }
+      final Map analyzer = (Map) analyzerWrapper.get("is_present_analyzer");
+      if (analyzer == null) {
+        continue;
+      }
       if (!List.class.isInstance(analyzer.get("filter"))) {
         analyzer.put("filter", List.of(analyzer.get("filter")));
       }
-      final Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
+      final Map lowercaseNgram = (Map) analyzerWrapper.get("lowercase_ngram");
+      if (lowercaseNgram == null) {
+        continue;
+      }
       if (!List.class.isInstance(lowercaseNgram.get("filter"))) {
         lowercaseNgram.put("filter", List.of(lowercaseNgram.get("filter")));
       }

@@ -150,7 +150,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers,
             processingState.getKeyGenerator(),
             jobMetrics,
-            clock);
+            clock,
+            authCheckBehavior);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(
@@ -207,7 +208,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     adHocSubProcessBehavior =
         new BpmnAdHocSubProcessBehavior(
-            processingState.getKeyGenerator(), writers, stateBehavior, variableBehavior);
+            processingState.getKeyGenerator(),
+            writers,
+            stateBehavior,
+            variableBehavior,
+            processingState);
   }
 
   @Override

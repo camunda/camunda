@@ -1,0 +1,12 @@
+{
+  "camunda.document.type": "camunda",
+  "documentId": "document-id",
+  "contentHash": "content-hash",
+  "metadata": {
+    "contentType": "content-type",
+    "fileName": "file-name",
+    "expiresAt": "2025-06-28T07:32:28.93912+02:00",
+    "customProperties": {}
+  }
+}
+

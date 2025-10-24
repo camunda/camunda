@@ -9,10 +9,11 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class PrimaryStorage {
 
-  private static final String PREFIX = "camunda.data.primary-storage.";
+  private static final String PREFIX = "camunda.data.primary-storage";
 
   private static final Set<String> LEGACY_DIRECTORY_PROPERTIES =
       Set.of("zeebe.broker.data.directory");
@@ -33,12 +34,13 @@ public class PrimaryStorage {
    */
   private String runtimeDirectory;
 
-  private Disk disk = new Disk();
-  private LogStream logStream = new LogStream();
+  @NestedConfigurationProperty private Disk disk = new Disk();
+  @NestedConfigurationProperty private LogStream logStream = new LogStream();
+  @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
 
   public String getDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "directory",
+        PREFIX + ".directory",
         directory,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -51,7 +53,7 @@ public class PrimaryStorage {
 
   public String getRuntimeDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "runtime-directory",
+        PREFIX + ".runtime-directory",
         runtimeDirectory,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -76,5 +78,13 @@ public class PrimaryStorage {
 
   public void setLogStream(final LogStream logStream) {
     this.logStream = logStream;
+  }
+
+  public RocksDb getRocksDb() {
+    return rocksDb;
+  }
+
+  public void setRocksDb(final RocksDb rocksDb) {
+    this.rocksDb = rocksDb;
   }
 }

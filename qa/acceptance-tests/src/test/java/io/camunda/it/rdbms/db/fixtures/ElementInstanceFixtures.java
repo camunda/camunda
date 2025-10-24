@@ -30,6 +30,7 @@ public final class ElementInstanceFixtures extends CommonFixtures {
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-" + generateRandomString(20))
             .flowNodeId("element-" + generateRandomString(20))
+            .flowNodeScopeKey(nextKey())
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .treePath(nextStringId())
@@ -58,14 +59,14 @@ public final class ElementInstanceFixtures extends CommonFixtures {
     rdbmsWriter.flush();
   }
 
-  public static FlowNodeInstanceDbModel createAndSaveElementInstance(
+  public static FlowNodeInstanceDbModel createAndSaveRandomElementInstance(
       final RdbmsWriter rdbmsWriter) {
     final var instance = ElementInstanceFixtures.createRandomized(b -> b);
     createAndSaveElementInstances(rdbmsWriter, List.of(instance));
     return instance;
   }
 
-  public static FlowNodeInstanceDbModel createAndSaveElementInstance(
+  public static FlowNodeInstanceDbModel createAndSaveRandomElementInstance(
       final RdbmsWriter rdbmsWriter,
       final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
           builderFunction) {
@@ -74,7 +75,7 @@ public final class ElementInstanceFixtures extends CommonFixtures {
     return instance;
   }
 
-  public static void createAndSaveElementInstance(
+  public static void createAndSaveRandomElementInstance(
       final RdbmsWriter rdbmsWriter, final FlowNodeInstanceDbModel processInstance) {
     createAndSaveElementInstances(rdbmsWriter, List.of(processInstance));
   }

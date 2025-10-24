@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -95,7 +96,7 @@ public class MappingRuleDeleteProcessor
     final var authorizationRequest =
         new AuthorizationRequest(
             command, AuthorizationResourceType.MAPPING_RULE, PermissionType.DELETE);
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
@@ -182,7 +183,10 @@ public class MappingRuleDeleteProcessor
 
     authorizationKeysForMappingRule.forEach(
         authorizationKey -> {
-          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          final var authorization =
+              new AuthorizationRecord()
+                  .setAuthorizationKey(authorizationKey)
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

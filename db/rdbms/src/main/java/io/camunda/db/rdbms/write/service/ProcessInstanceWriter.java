@@ -11,11 +11,13 @@ import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -23,6 +25,8 @@ import java.time.OffsetDateTime;
 import java.util.function.Function;
 
 public class ProcessInstanceWriter {
+
+  private static final int PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE = 10000;
 
   private final ProcessInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
@@ -97,6 +101,23 @@ public class ProcessInstanceWriter {
     }
   }
 
+  public void createTags(final ProcessInstanceTagsDto tagList) {
+    for (int i = 0; i < tagList.tags().size(); i += PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE) {
+      final var block =
+          tagList
+              .tags()
+              .subList(
+                  i, Math.min(i + PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE, tagList.tags().size()));
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              WriteStatementType.INSERT,
+              tagList.processInstanceKey(),
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insertTags",
+              new ProcessInstanceTagsDto(tagList.processInstanceKey(), block)));
+    }
+  }
+
   private boolean mergeToQueue(
       final long key,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder> mergeFunction) {
@@ -107,8 +128,10 @@ public class ProcessInstanceWriter {
 
   public void scheduleForHistoryCleanup(
       final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    final boolean wasMerged =
-        mergeToQueue(processInstanceKey, b -> b.historyCleanupDate(historyCleanupDate));
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new UpdateHistoryCleanupDateMerger(
+                ContextType.PROCESS_INSTANCE, processInstanceKey, historyCleanupDate));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(

@@ -100,12 +100,24 @@ public final class FilterBuilders {
     return new RoleFilter.Builder();
   }
 
+  public static RoleMemberFilter.Builder roleMember() {
+    return new RoleMemberFilter.Builder();
+  }
+
   public static TenantFilter.Builder tenant() {
     return new TenantFilter.Builder();
   }
 
+  public static TenantMemberFilter.Builder tenantMember() {
+    return new TenantMemberFilter.Builder();
+  }
+
   public static GroupFilter.Builder group() {
     return new GroupFilter.Builder();
+  }
+
+  public static GroupMemberFilter.Builder groupMember() {
+    return new GroupMemberFilter.Builder();
   }
 
   public static AuthorizationFilter.Builder authorization() {
@@ -157,14 +169,29 @@ public final class FilterBuilders {
     return fn.apply(new RoleFilter.Builder()).build();
   }
 
+  public static RoleMemberFilter roleMember(
+      final Function<RoleMemberFilter.Builder, ObjectBuilder<RoleMemberFilter>> fn) {
+    return fn.apply(new RoleMemberFilter.Builder()).build();
+  }
+
   public static TenantFilter tenant(
       final Function<TenantFilter.Builder, ObjectBuilder<TenantFilter>> fn) {
     return fn.apply(new TenantFilter.Builder()).build();
   }
 
+  public static TenantMemberFilter tenantMember(
+      final Function<TenantMemberFilter.Builder, ObjectBuilder<TenantMemberFilter>> fn) {
+    return fn.apply(new TenantMemberFilter.Builder()).build();
+  }
+
   public static GroupFilter group(
       final Function<GroupFilter.Builder, ObjectBuilder<GroupFilter>> fn) {
     return fn.apply(new GroupFilter.Builder()).build();
+  }
+
+  public static GroupMemberFilter groupMember(
+      final Function<GroupMemberFilter.Builder, ObjectBuilder<GroupMemberFilter>> fn) {
+    return fn.apply(new GroupMemberFilter.Builder()).build();
   }
 
   public static AuthorizationFilter authorization(
@@ -251,5 +278,17 @@ public final class FilterBuilders {
       final Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>
           fn) {
     return fn.apply(messageSubscription()).build();
+  }
+
+  public static CorrelatedMessageSubscriptionFilter.Builder correlatedMessageSubscription() {
+    return new CorrelatedMessageSubscriptionFilter.Builder();
+  }
+
+  public static CorrelatedMessageSubscriptionFilter correlatedMessageSubscription(
+      final Function<
+              CorrelatedMessageSubscriptionFilter.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionFilter>>
+          fn) {
+    return fn.apply(correlatedMessageSubscription()).build();
   }
 }

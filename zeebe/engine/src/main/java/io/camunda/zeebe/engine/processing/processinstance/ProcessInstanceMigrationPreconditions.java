@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -567,12 +568,14 @@ public final class ProcessInstanceMigrationPreconditions {
    * need to check whether the given element instance and target element has the same user task
    * type. Throws an exception if they have different types.
    *
+   * @param sourceProcessDefinition source process definition to retrieve the source element type
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireSameUserTaskImplementation(
+      final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
       final ElementInstance elementInstance,
@@ -597,8 +600,13 @@ public final class ProcessInstanceMigrationPreconditions {
         targetUserTask.getUserTaskProperties() != null
             ? ZEEBE_USER_TASK_IMPLEMENTATION
             : JOB_WORKER_IMPLEMENTATION;
+
+    final ExecutableUserTask sourceUserTask =
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(elementInstanceRecord.getElementId(), ExecutableUserTask.class);
     final String sourceUserTaskType =
-        elementInstance.getUserTaskKey() > 0
+        sourceUserTask.getUserTaskProperties() != null
             ? ZEEBE_USER_TASK_IMPLEMENTATION
             : JOB_WORKER_IMPLEMENTATION;
 
@@ -1135,6 +1143,93 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
+   * Checks whether the target sequence flow id of the given sequence flow is not null. If it is
+   * null, it throws an exception. This is used to ensure that the taken sequence flow ids are
+   * mapped when migrating a process instance.
+   *
+   * @param sequenceFlow the sequence flow to check
+   * @param sourceElementIdToTargetElementId the mapping instructions
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNonNullTargetSequenceFlowId(
+      final ExecutableSequenceFlow sequenceFlow,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final long processInstanceKey) {
+    final var sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
+    final var targetSequenceFlowId = sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
+    final String sourceGatewayElementId =
+        BufferUtil.bufferAsString(sequenceFlow.getTarget().getId());
+
+    if (targetSequenceFlowId == null) {
+      final String reason =
+          String.format(
+              ERROR_TAKEN_SEQUENCE_FLOW_NOT_MAPPED,
+              processInstanceKey,
+              sourceGatewayElementId,
+              sourceSequenceFlowId);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
+  }
+
+  /**
+   * Checks whether multiple active sequence flows are mapped to the same target sequence flow. If
+   * so, it throws an exception. This is used to ensure that each active sequence flow is mapped to
+   * a different target sequence flow when migrating a process instance.
+   *
+   * @param sequenceFlows the active sequence flows to check
+   * @param sourceElementIdToTargetElementId the mapping instructions
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNoMultipleActiveSequenceFlowsMappedToSameTarget(
+      final Set<ExecutableSequenceFlow> sequenceFlows,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final long processInstanceKey) {
+    final var targetElementIdToSourceElementIds = new HashMap<String, List<String>>();
+    for (final var sequenceFlow : sequenceFlows) {
+      final var sourceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
+
+      // no need to check for null because it is expected to be validated before
+      final var targetFlowId = sourceElementIdToTargetElementId.get(sourceFlowId);
+      targetElementIdToSourceElementIds
+          .computeIfAbsent(targetFlowId, k -> new ArrayList<>())
+          .add(sourceFlowId);
+    }
+
+    final List<String> conflicts =
+        targetElementIdToSourceElementIds.entrySet().stream()
+            .filter(e -> e.getValue().size() > 1)
+            .map(
+                e -> {
+                  final var formattedSources =
+                      String.join(
+                          ", ",
+                          e.getValue().stream()
+                              .sorted()
+                              .toList()); // sort to preserve order in test assertions
+                  final var targetElementId = e.getKey();
+                  return String.format(
+                      "Active sequence flows '%s' mapped to target sequence flow '%s'.",
+                      formattedSources, targetElementId);
+                })
+            .toList();
+
+    if (!conflicts.isEmpty()) {
+      final var lineSeparatedConflicts = String.join("\n", conflicts);
+      final var reason =
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but some active sequence flows are mapped to the same target sequence flow:
+              %s
+              Each active sequence flow must be mapped to a different sequence flow in the target process definition.""",
+              processInstanceKey, lineSeparatedConflicts);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
+  }
+
+  /**
    * This precondition checks whether the given distribution is pending to prevent the scenario:
    *
    * <p>Partition 1 migrates a process instance that is subscribed to a message catch even. It
@@ -1169,33 +1264,6 @@ public final class ProcessInstanceMigrationPreconditions {
       // We can't migrate until the previous migration has completed
       throw new ProcessInstanceMigrationPreconditionFailedException(
           message, RejectionType.INVALID_STATE);
-    }
-  }
-
-  /**
-   * Checks whether the target sequence flow id is not null. If it is null, it throws an exception.
-   * This is used to ensure that the taken sequence flow id is mapped when migrating a process
-   * instance.
-   *
-   * @param targetSequenceFlowId target sequence flow id to check
-   * @param sourceSequenceFlowId source sequence flow id to be logged
-   * @param sourceGatewayElementId source gateway element id to be logged
-   * @param processInstanceKey process instance key to be logged
-   */
-  public static void requireNonNullTargetSequenceFlowId(
-      final String targetSequenceFlowId,
-      final String sourceSequenceFlowId,
-      final String sourceGatewayElementId,
-      final long processInstanceKey) {
-    if (targetSequenceFlowId == null) {
-      final String reason =
-          String.format(
-              ERROR_TAKEN_SEQUENCE_FLOW_NOT_MAPPED,
-              processInstanceKey,
-              sourceGatewayElementId,
-              sourceSequenceFlowId);
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_ARGUMENT);
     }
   }
 

@@ -109,7 +109,7 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
             784L),
         Arguments.of(
             (Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>)
-                b -> b.messageSubscriptionTypes("CREATED"),
+                b -> b.messageSubscriptionStates("CREATED"),
             "eventType",
             "CREATED"),
         Arguments.of(
@@ -295,7 +295,7 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
     // when
     final var searchQuery =
         transformQuery(
-            FilterBuilders.messageSubscription(b -> b.messageSubscriptionTypes("abc")),
+            FilterBuilders.messageSubscription(b -> b.messageSubscriptionStates("abc")),
             resourceAccessChecks);
 
     // then

@@ -67,6 +67,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -122,7 +123,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   private final OperateProperties operateProperties;
 
   public ElasticsearchProcessStore(
-      final @Qualifier("operateProcessIndex") ProcessIndex processIndex,
+      final ProcessIndex processIndex,
       final ListViewTemplate listViewTemplate,
       final List<ProcessInstanceDependant> processInstanceDependantTemplates,
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
@@ -678,6 +679,13 @@ public class ElasticsearchProcessStore implements ProcessStore {
     }
 
     return count;
+  }
+
+  @Override
+  public long count() throws IOException {
+    return esClient
+        .count(new CountRequest(processIndex.getAlias()), RequestOptions.DEFAULT)
+        .getCount();
   }
 
   private QueryBuilder buildQuery(final String tenantId, final Set<String> allowedBPMNProcessIds) {

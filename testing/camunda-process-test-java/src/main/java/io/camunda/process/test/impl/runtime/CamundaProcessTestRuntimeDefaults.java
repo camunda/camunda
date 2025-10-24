@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import java.net.URI;
 import java.util.List;
@@ -28,23 +29,23 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION = "SNAPSHOT";
   public static final String DEFAULT_ELASTICSEARCH_VERSION = "8.13.0";
 
-  public static final String ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
+  public static final String DEFAULT_ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
 
-  public static final String ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
-  public static final String CAMUNDA_LOGGER_NAME = "tc.camunda";
-  public static final String CONNECTORS_LOGGER_NAME = "tc.connectors";
+  public static final String DEFAULT_ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
+  public static final String DEFAULT_CAMUNDA_LOGGER_NAME = "tc.camunda";
+  public static final String DEFAULT_CONNECTORS_LOGGER_NAME = "tc.connectors";
 
   public static final URI LOCAL_CAMUNDA_MONITORING_API_ADDRESS =
       URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);
   public static final URI LOCAL_CONNECTORS_REST_API_ADDRESS = URI.create("http://0.0.0.0:8085");
+
+  public static final String DEFAULT_COVERAGE_REPORT_DIRECTORY = "target/coverage-report";
 
   private static final ContainerRuntimePropertiesUtil PROPERTIES_UTIL =
       ContainerRuntimePropertiesUtil.readProperties();
 
   public static final String ELASTICSEARCH_DOCKER_IMAGE_VERSION =
       PROPERTIES_UTIL.getElasticsearchVersion();
-
-  public static final String CAMUNDA_VERSION = PROPERTIES_UTIL.getCamundaVersion();
 
   public static final String CAMUNDA_DOCKER_IMAGE_NAME =
       PROPERTIES_UTIL.getCamundaDockerImageName();
@@ -53,6 +54,9 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final Map<String, String> CAMUNDA_ENV_VARS = PROPERTIES_UTIL.getCamundaEnvVars();
   public static final List<Integer> CAMUNDA_EXPOSED_PORTS =
       PROPERTIES_UTIL.getCamundaExposedPorts();
+
+  public static final String CAMUNDA_LOGGER_NAME = PROPERTIES_UTIL.getCamundaLoggerName();
+  public static final String CONNECTORS_LOGGER_NAME = PROPERTIES_UTIL.getConnectorsLoggerName();
 
   public static final boolean CONNECTORS_ENABLED = PROPERTIES_UTIL.isConnectorsEnabled();
   public static final String CONNECTORS_DOCKER_IMAGE_NAME =
@@ -63,6 +67,8 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getConnectorsEnvVars();
   public static final Map<String, String> CONNECTORS_SECRETS =
       PROPERTIES_UTIL.getConnectorsSecrets();
+  public static final List<Integer> CONNECTORS_EXPOSED_PORTS =
+      PROPERTIES_UTIL.getConnectorsExposedPorts();
 
   public static final CamundaProcessTestRuntimeMode RUNTIME_MODE = PROPERTIES_UTIL.getRuntimeMode();
 
@@ -73,4 +79,14 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final URI REMOTE_CLIENT_GRPC_ADDRESS = PROPERTIES_UTIL.getRemoteClientGrpcAddress();
   public static final URI REMOTE_CLIENT_REST_ADDRESS = PROPERTIES_UTIL.getRemoteClientRestAddress();
+
+  public static final CamundaClientBuilderFactory CAMUNDA_CLIENT_BUILDER_FACTORY =
+      PROPERTIES_UTIL.getCamundaClientBuilderFactory();
+
+  public static final boolean MULTI_TENANCY_ENABLED = PROPERTIES_UTIL.isMultiTenancyEnabled();
+
+  public static final String COVERAGE_REPORT_DIRECTORY =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageReportDirectory();
+  public static final List<String> COVERAGE_EXCLUDED_PROCESSES =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedProcesses();
 }

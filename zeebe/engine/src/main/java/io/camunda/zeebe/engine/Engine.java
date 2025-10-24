@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -73,6 +75,45 @@ public class Engine implements RecordProcessor {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     this.config = config;
     this.securityConfig = securityConfig;
+  }
+
+  /**
+   * Returns whether scaling is currently in progress. This can be used to determine if certain
+   * operations like checkpoint creation should be blocked.
+   *
+   * @return true if scaling is in progress, false otherwise
+   */
+  public boolean isScalingInProgress() {
+    if (processingState == null || processingState.getRoutingState() == null) {
+      return false;
+    }
+
+    final var routingState = processingState.getRoutingState();
+    if (!routingState.isInitialized()) {
+      return false;
+    }
+
+    // Scaling is in progress if desired partitions differ from current partitions
+    final var currentPartitions = routingState.currentPartitions();
+    final var desiredPartitions = routingState.desiredPartitions();
+
+    return !currentPartitions.equals(desiredPartitions);
+  }
+
+  /**
+   * Returns the current partition count from routing information. If routing state is not
+   * initialized, returns the fallback partition count.
+   *
+   * @param fallBackPartitionCount the fallback partition count to use if dynamic routing state is
+   *     not initialized
+   * @return the current partition count
+   */
+  public int getCurrentPartitionCount(final int fallBackPartitionCount) {
+    return RoutingInfo.dynamic(
+            processingState.getRoutingState(),
+            RoutingInfo.forStaticPartitions(fallBackPartitionCount))
+        .partitions()
+        .size();
   }
 
   @Override
@@ -217,7 +258,17 @@ public class Engine implements RecordProcessor {
       writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
       writers
           .response()
-          .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
+          .writeRejectionOnCommand(
+              record,
+              RejectionType.PROCESSING_ERROR,
+              """
+                Expected to process command %d (%s.%s) without errors, but unexpected error occurred. \
+                Check your broker logs (partition %d), or ask your operator, for more details."""
+                  .formatted(
+                      Protocol.encodePartitionId(record.getPartitionId(), record.getKey()),
+                      record.getValueType(),
+                      record.getIntent(),
+                      record.getPartitionId()));
     }
     errorRecord.initErrorRecord(processingException, record.getPosition());
 

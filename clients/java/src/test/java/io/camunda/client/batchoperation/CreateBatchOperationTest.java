@@ -19,20 +19,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceFilter;
+import io.camunda.client.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceIncidentResolutionBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.util.List;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public final class CreateBatchOperationTest extends ClientRestTest {
 
   @Test
   public void shouldSendProcessInstanceCancelCommandEmptyFilter() {
+    // given
+    gatewayService.onCancelProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
     // when
     client
         .newCreateBatchOperationCommand()
@@ -46,12 +53,17 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
     assertThat(request.getUrl()).isEqualTo("/v2/process-instances/cancellation");
 
-    final ProcessInstanceFilter filter = gatewayService.getLastRequest(ProcessInstanceFilter.class);
-    assertThat(filter).isNotNull();
+    final ProcessInstanceCancellationBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceCancellationBatchOperationRequest.class);
+    assertThat(lastRequest.getFilter()).isNotNull();
   }
 
   @Test
   public void shouldSendProcessInstanceCancelCommandWithFilter() {
+    // given
+    gatewayService.onCancelProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
     // when
     client
         .newCreateBatchOperationCommand()
@@ -65,12 +77,17 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
     assertThat(request.getUrl()).isEqualTo("/v2/process-instances/cancellation");
 
-    final ProcessInstanceFilter filter = gatewayService.getLastRequest(ProcessInstanceFilter.class);
-    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+    final ProcessInstanceCancellationBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceCancellationBatchOperationRequest.class);
+    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
   }
 
   @Test
   public void shouldSendProcessInstanceMigrationCommand() {
+    // given
+    gatewayService.onMigrateProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
     // when
     client
         .newCreateBatchOperationCommand()
@@ -104,6 +121,10 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
   @Test
   public void shouldSendProcessInstanceModificationCommand() {
+    // given
+    gatewayService.onModifyProcessInstances(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
     // when
     client
         .newCreateBatchOperationCommand()
@@ -128,5 +149,29 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     assertThat(lastRequest.getMoveInstructions().get(0).getTargetElementId()).isEqualTo("target");
     assertThat(lastRequest.getMoveInstructions().get(1).getSourceElementId()).isEqualTo("source2");
     assertThat(lastRequest.getMoveInstructions().get(1).getTargetElementId()).isEqualTo("target2");
+  }
+
+  @Test
+  public void shouldSendResolveIncidentCommand() {
+    // given
+    gatewayService.onResolveIncidentsRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("3"));
+
+    // when
+    client
+        .newCreateBatchOperationCommand()
+        .resolveIncident()
+        .filter(filter -> filter.processDefinitionId("test-01"))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/incident-resolution");
+
+    final ProcessInstanceIncidentResolutionBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceIncidentResolutionBatchOperationRequest.class);
+    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
   }
 }

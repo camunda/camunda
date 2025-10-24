@@ -179,7 +179,7 @@ JAVA_TOOL_OPTIONS=-XX:+PrintFlagsFinal -XX:+HeapDumpOnOutOfMemoryError -XX:MinRA
 
 ## async-profiler
 
-To make our life easier we are providing a script to execute profiling inside a container, you can find it [here](../zeebe/benchmarks/docs/scripts/executeProfiling.sh)
+To make our life easier we are providing a script to execute profiling inside a container, you can find it [here](../zeebe/load-tests/docs/scripts/executeProfiling.sh)
 
 Simply run the script with the respective pod name:
 

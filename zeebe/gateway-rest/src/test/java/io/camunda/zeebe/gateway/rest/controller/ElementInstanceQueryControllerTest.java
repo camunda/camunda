@@ -14,10 +14,12 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.FlowNodeInstanceSort;
@@ -91,7 +93,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       false,
                       null,
                       "bpmnProcessId",
-                      "<default>")))
+                      "<default>",
+                      null)))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -130,10 +133,56 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
           true,
           1234L,
           "complexProcess",
-          "tenantId");
+          "tenantId",
+          null);
+
+  static final IncidentEntity INCIDENT_ENTITY =
+      new IncidentEntity(
+          1234L,
+          3L,
+          "processDefId",
+          2L,
+          IncidentEntity.ErrorType.JOB_NO_RETRIES,
+          "error",
+          "elementId",
+          1L,
+          OffsetDateTime.parse("2023-05-17T00:00:00Z"),
+          IncidentEntity.IncidentState.ACTIVE,
+          99L,
+          "tenant1");
+
+  static final String EXPECTED_INCIDENT_SEARCH_RESPONSE =
+      """
+      {
+        "items": [
+          {
+            "incidentKey": "1234",
+            "processDefinitionKey": "3",
+            "processDefinitionId": "processDefId",
+            "processInstanceKey": "2",
+            "errorType": "JOB_NO_RETRIES",
+            "errorMessage": "error",
+            "elementId": "elementId",
+            "elementInstanceKey": "1",
+            "creationTime": "2023-05-17T00:00:00.000Z",
+            "state": "ACTIVE",
+            "jobKey": "99",
+            "tenantId": "tenant1"
+          }
+        ],
+        "page": {
+          "totalItems": 1,
+          "hasMoreTotalItems": false
+        }
+      }
+      """;
+
+  static final SearchQueryResult<IncidentEntity> INCIDENT_SEARCH_RESULT =
+      SearchQueryResult.of(INCIDENT_ENTITY);
 
   static final String ELEMENT_INSTANCES_URL = "/v2/element-instances/";
   static final String ELEMENT_INSTANCES_SEARCH_URL = ELEMENT_INSTANCES_URL + "search";
+  static final String INCIDENTS_SEARCH_URL = ELEMENT_INSTANCES_URL + "%d/incidents/search";
 
   @MockitoBean ElementInstanceServices elementInstanceServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -213,7 +262,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 "incidentKey": "2251799813685320",
                 "tenantId": "default",
                 "startDate": "2023-05-17T10:10:10Z",
-                "endDate": "2023-05-23T10:10:10.000Z"
+                "endDate": "2023-05-23T10:10:10.000Z",
+                "elementInstanceScopeKey": "2251799813685979"
               }
             }
             """;
@@ -251,6 +301,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                             Operation.eq(OffsetDateTime.parse("2023-05-17T10:10:10Z")))
                         .endDateOperations(
                             Operation.eq(OffsetDateTime.parse("2023-05-23T10:10:10.000Z")))
+                        .elementInstanceScopeKeys(2251799813685979L)
                         .build())
                 .build());
   }
@@ -427,5 +478,46 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
     verify(elementInstanceServices)
         .search(new FlowNodeInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  void shouldSearchIncidentsForElementInstance() {
+    // given
+    when(elementInstanceServices.searchIncidents(any(Long.class), any(IncidentQuery.class)))
+        .thenReturn(INCIDENT_SEARCH_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(String.format(INCIDENTS_SEARCH_URL, 1L))
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_INCIDENT_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+    verify(elementInstanceServices).searchIncidents(any(Long.class), any(IncidentQuery.class));
+  }
+
+  @Test
+  void shouldSearchIncidentsForElementInstanceWithNullBody() {
+    // given
+    when(elementInstanceServices.searchIncidents(any(Long.class), any(IncidentQuery.class)))
+        .thenReturn(INCIDENT_SEARCH_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(String.format(INCIDENTS_SEARCH_URL, 1L))
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_INCIDENT_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+    verify(elementInstanceServices).searchIncidents(any(Long.class), any(IncidentQuery.class));
   }
 }

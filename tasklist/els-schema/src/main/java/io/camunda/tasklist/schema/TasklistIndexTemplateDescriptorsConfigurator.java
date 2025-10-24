@@ -7,17 +7,15 @@
  */
 package io.camunda.tasklist.schema;
 
-import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
-
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -33,63 +31,59 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   @Bean
   public DraftTaskVariableTemplate draftTaskVariableTemplate() {
     return new DraftTaskVariableTemplate(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
   }
 
   @Bean
   public FormIndex formIndex() {
-    return new FormIndex(getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+    return new FormIndex(
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
   }
 
   @Bean
   public TasklistMetricIndex tasklistMetricIndex() {
     return new TasklistMetricIndex(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
   }
 
-  @Bean("tasklistSnapshotTaskVariableTemplate")
-  public SnapshotTaskVariableTemplate snapshotTaskVariableTemplate() {
+  @Bean
+  public UsageMetricTUTemplate usageMetricTUTemplate() {
+    return new UsageMetricTUTemplate(
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
+  }
+
+  @Bean
+  @Profile("!operate")
+  public SnapshotTaskVariableTemplate getSnapshotTaskVariableTemplate() {
     return new SnapshotTaskVariableTemplate(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
   }
 
   @Bean
-  public TaskTemplate taskTemplate() {
+  @Profile("!operate")
+  public TaskTemplate getTaskTemplate() {
     return new TaskTemplate(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
-  }
-
-  @Bean("tasklistVariableTemplate")
-  public VariableTemplate tasklistVariableTemplate() {
-    return new VariableTemplate(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
-  }
-
-  @Bean("tasklistFlowNodeInstanceTemplate")
-  public FlowNodeInstanceTemplate flowNodeInstanceTemplate() {
-    return new FlowNodeInstanceTemplate(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
   }
 
   @Bean
-  public TasklistImportPositionIndex tasklistImportPositionIndex() {
-    return new TasklistImportPositionIndex(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+  @Profile("!operate")
+  public VariableTemplate getVariableTemplate() {
+    return new VariableTemplate(
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
   }
 
-  @Bean("tasklistProcessIndex")
-  public ProcessIndex processIndex() {
+  @Bean
+  @Profile("!operate")
+  public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate() {
+    return new FlowNodeInstanceTemplate(
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
+  }
+
+  @Bean
+  @Profile("!operate")
+  public ProcessIndex getProcessIndex() {
     return new ProcessIndex(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
-  }
-
-  private boolean isElasticsearch(final TasklistProperties tasklistProperties) {
-    return ELASTIC_SEARCH.equals(tasklistProperties.getDatabase());
-  }
-
-  private String getIndexPrefix(final TasklistProperties tasklistProperties) {
-    return isElasticsearch(tasklistProperties)
-        ? tasklistProperties.getElasticsearch().getIndexPrefix()
-        : tasklistProperties.getOpenSearch().getIndexPrefix();
+        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
   }
 }

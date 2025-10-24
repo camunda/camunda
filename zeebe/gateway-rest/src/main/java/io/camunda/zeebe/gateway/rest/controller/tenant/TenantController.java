@@ -7,14 +7,16 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -39,17 +41,17 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +66,7 @@ public class TenantController {
   private final GroupServices groupServices;
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final SecurityConfiguration securityConfiguration;
 
   public TenantController(
       final TenantServices tenantServices,
@@ -71,19 +74,22 @@ public class TenantController {
       final MappingRuleServices mappingRuleServices,
       final GroupServices groupServices,
       final RoleServices roleServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final SecurityConfiguration securityConfiguration) {
     this.tenantServices = tenantServices;
     this.userServices = userServices;
     this.mappingRuleServices = mappingRuleServices;
     this.groupServices = groupServices;
     this.roleServices = roleServices;
     this.authenticationProvider = authenticationProvider;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createTenant(
       @RequestBody final TenantCreateRequest createTenantRequest) {
-    return RequestMapper.toTenantCreateDto(createTenantRequest)
+    return RequestMapper.toTenantCreateDto(
+            createTenantRequest, securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createTenant);
   }
 
@@ -119,9 +125,13 @@ public class TenantController {
   }
 
   @CamundaPutMapping(path = "/{tenantId}/users/{username}")
-  public CompletableFuture<ResponseEntity<Object>> assignUsersToTenant(
+  public CompletableFuture<ResponseEntity<Object>> assignUserToTenant(
       @PathVariable final String tenantId, @PathVariable final String username) {
-    return RequestMapper.toTenantMemberRequest(tenantId, username, EntityType.USER)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            username,
+            EntityType.USER,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -130,7 +140,7 @@ public class TenantController {
   public ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantUserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toTenantQuery(query)
+    return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             tenantQuery -> searchUsersInTenant(tenantId, tenantQuery));
@@ -139,28 +149,44 @@ public class TenantController {
   @CamundaPutMapping(path = "/{tenantId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> assignClientToTenant(
       @PathVariable final String tenantId, @PathVariable final String clientId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            clientId,
+            EntityType.CLIENT,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
   @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingRuleToTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            mappingRuleId,
+            EntityType.MAPPING_RULE,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            groupId,
+            EntityType.GROUP,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
   @CamundaPutMapping(path = "/{tenantId}/roles/{roleId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToTenant(
       @PathVariable final String tenantId, @PathVariable final String roleId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            roleId,
+            EntityType.ROLE,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -175,16 +201,24 @@ public class TenantController {
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/users/{username}")
-  public CompletableFuture<ResponseEntity<Object>> removeUserFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignUserFromTenant(
       @PathVariable final String tenantId, @PathVariable final String username) {
-    return RequestMapper.toTenantMemberRequest(tenantId, username, EntityType.USER)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            username,
+            EntityType.USER,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/clients/{clientId}")
-  public CompletableFuture<ResponseEntity<Object>> removeClientFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignClientFromTenant(
       @PathVariable final String tenantId, @PathVariable final String clientId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            clientId,
+            EntityType.CLIENT,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
@@ -200,23 +234,35 @@ public class TenantController {
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
-  public CompletableFuture<ResponseEntity<Object>> removeMappingRuleFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignMappingRuleFromTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            mappingRuleId,
+            EntityType.MAPPING_RULE,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupId}")
-  public CompletableFuture<ResponseEntity<Object>> removeGroupFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignGroupFromTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            groupId,
+            EntityType.GROUP,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/roles/{roleId}")
-  public CompletableFuture<ResponseEntity<Object>> removeRoleFromTenant(
+  public CompletableFuture<ResponseEntity<Object>> unassignRoleFromTenant(
       @PathVariable final String tenantId, @PathVariable final String roleId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
+    return RequestMapper.toTenantMemberRequest(
+            tenantId,
+            roleId,
+            EntityType.ROLE,
+            securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
@@ -225,14 +271,14 @@ public class TenantController {
   public ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantGroupSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toTenantQuery(query)
+    return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             tenantQuery -> searchGroupIdsInTenant(tenantId, tenantQuery));
   }
 
   private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
-      final String tenantId, final TenantQuery query) {
+      final String tenantId, final TenantMemberQuery query) {
     try {
       final var result =
           tenantServices
@@ -260,7 +306,7 @@ public class TenantController {
   public ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantClientSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toTenantQuery(query)
+    return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             tenantQuery -> searchClientsInTenant(tenantId, tenantQuery));
@@ -307,12 +353,12 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
-      final String tenantId, final TenantQuery tenantQuery) {
+      final String tenantId, final TenantMemberQuery tenantMemberQuery) {
     try {
       final var result =
           tenantServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.USER, tenantQuery));
+              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.USER, tenantMemberQuery));
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -320,7 +366,7 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
-      final String tenantId, final TenantQuery query) {
+      final String tenantId, final TenantMemberQuery query) {
     try {
       final var result =
           tenantServices
@@ -388,10 +434,10 @@ public class TenantController {
     }
   }
 
-  private TenantQuery buildTenantMemberQuery(
-      final String tenantId, final EntityType memberType, final TenantQuery query) {
+  private TenantMemberQuery buildTenantMemberQuery(
+      final String tenantId, final EntityType memberType, final TenantMemberQuery query) {
     return query.toBuilder()
-        .filter(query.filter().toBuilder().joinParentId(tenantId).memberType(memberType).build())
+        .filter(query.filter().toBuilder().tenantId(tenantId).memberType(memberType).build())
         .build();
   }
 

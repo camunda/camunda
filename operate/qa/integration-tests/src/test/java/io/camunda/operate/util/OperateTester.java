@@ -43,9 +43,6 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import io.camunda.operate.zeebeimport.ZeebeImporter;
-import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.entities.event.EventType;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
@@ -53,7 +50,6 @@ import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -61,7 +57,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
-import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -84,9 +79,6 @@ public class OperateTester {
   @Autowired protected IncidentReader incidentReader;
   @Autowired protected ListViewReader listViewReader;
   @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
-
-  @Autowired(required = false)
-  protected ZeebeImporter zeebeImporter;
 
   @Autowired private BeanFactory beanFactory;
   private final CamundaClient camundaClient;
@@ -205,15 +197,11 @@ public class OperateTester {
   @Qualifier("userTasksAreCreated")
   private Predicate<Object[]> userTasksAreCreated;
 
-  @Autowired
-  @Qualifier("operateFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-
   @Autowired private OperationReader operationReader;
 
   @Autowired private ObjectMapper objectMapper;
 
-  private boolean operationExecutorEnabled = true;
+  private final boolean operationExecutorEnabled = true;
   private BatchOperationDto operation;
   private List<String> processDefinitions;
 
@@ -286,23 +274,23 @@ public class OperateTester {
   }
 
   public OperateTester processIsDeployed() {
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    searchTestRule.waitFor(processIsDeployedCheck, processDefinitionKey);
     LOGGER.debug("Process is deployed with key: {}", processDefinitionKey);
     return this;
   }
 
   public OperateTester decisionsAreDeployed(final int count) {
-    searchTestRule.processAllRecordsAndWait(decisionsAreDeployedCheck, count);
+    searchTestRule.waitFor(decisionsAreDeployedCheck, count);
     return this;
   }
 
   public OperateTester decisionInstancesAreCreated(final int count) {
-    searchTestRule.processAllRecordsAndWait(decisionInstancesAreCreated, count);
+    searchTestRule.waitFor(decisionInstancesAreCreated, count);
     return this;
   }
 
   public OperateTester userTasksAreCreated(final int count) {
-    searchTestRule.processAllRecordsAndWait(userTasksAreCreated, count);
+    searchTestRule.waitFor(userTasksAreCreated, count);
     return this;
   }
 
@@ -350,30 +338,27 @@ public class OperateTester {
   }
 
   public OperateTester processInstanceIsStarted() {
-    searchTestRule.processAllRecordsAndWait(
-        processInstancesAreStartedCheck, Arrays.asList(processInstanceKey));
+    searchTestRule.waitFor(processInstancesAreStartedCheck, Arrays.asList(processInstanceKey));
     return this;
   }
 
   public OperateTester processInstanceExists() {
-    searchTestRule.processAllRecordsAndWait(
-        processInstanceExistsCheck, Arrays.asList(processInstanceKey));
+    searchTestRule.waitFor(processInstanceExistsCheck, Arrays.asList(processInstanceKey));
     return this;
   }
 
   public OperateTester processInstanceIsFinished() {
-    searchTestRule.processAllRecordsAndWait(
-        processInstancesAreFinishedCheck, Arrays.asList(processInstanceKey));
+    searchTestRule.waitFor(processInstancesAreFinishedCheck, Arrays.asList(processInstanceKey));
     return this;
   }
 
   public OperateTester processInstanceIsCompleted() {
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
+    searchTestRule.waitFor(processInstanceIsCompletedCheck, processInstanceKey);
     return this;
   }
 
   public OperateTester processInstanceIsCanceled() {
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    searchTestRule.waitFor(processInstanceIsCanceledCheck, processInstanceKey);
     return this;
   }
 
@@ -413,64 +398,35 @@ public class OperateTester {
   }
 
   public OperateTester incidentIsActive() {
-    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.waitFor(incidentIsActiveCheck, processInstanceKey);
     return this;
   }
 
   public OperateTester incidentsInAnyInstanceAreActive(final long count) {
-    searchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, count);
+    searchTestRule.waitFor(incidentsInAnyInstanceAreActiveCheck, count);
     return this;
   }
 
   public OperateTester flowNodeIsActive(final String activityId) {
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, activityId);
+    searchTestRule.waitFor(flowNodeIsActiveCheck, processInstanceKey, activityId);
     LOGGER.debug("FlowNode {} is active.", activityId);
     return this;
   }
 
-  public OperateTester eventIsImported(final String jobType) {
-    searchTestRule.processAllRecordsAndWait(eventIsImportedCheck, processInstanceKey, jobType);
-    return this;
-  }
-
-  public OperateTester eventIsImportedForFlowNode(
-      final String flowNodeId, final EventType eventType) {
-    searchTestRule.processAllRecordsAndWait(
-        eventIsImportedForFlowNodeCheck, processInstanceKey, flowNodeId, eventType);
-    return this;
-  }
-
   public OperateTester flowNodesAreActive(final String activityId, final int count) {
-    searchTestRule.processAllRecordsAndWait(
-        flowNodesAreActiveCheck, processInstanceKey, activityId, count);
+    searchTestRule.waitFor(flowNodesAreActiveCheck, processInstanceKey, activityId, count);
     LOGGER.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
 
-  public OperateTester flowNodesExist(final String activityId, final int count) {
-    searchTestRule.processAllRecordsAndWait(
-        flowNodesExistCheck, processInstanceKey, activityId, count);
-    LOGGER.debug("{} FlowNodes {} exist.", count, activityId);
-    return this;
-  }
-
   public OperateTester flowNodesInAnyInstanceAreActive(final String activityId, final int count) {
-    searchTestRule.processAllRecordsAndWait(
-        flowNodesInAnyInstanceAreActiveCheck, activityId, count);
+    searchTestRule.waitFor(flowNodesInAnyInstanceAreActiveCheck, activityId, count);
     return this;
   }
 
   public OperateTester flowNodeIsCompleted(final String activityId) {
-    searchTestRule.processAllRecordsAndWait(
-        flowNodeIsCompletedCheck, processInstanceKey, activityId);
+    searchTestRule.waitFor(flowNodeIsCompletedCheck, processInstanceKey, activityId);
     LOGGER.debug("FlowNode {} is completed.", activityId);
-    return this;
-  }
-
-  public OperateTester flowNodesAreCompleted(final String activityId, final int count) {
-    searchTestRule.processAllRecordsAndWait(
-        flowNodesAreCompletedCheck, processInstanceKey, activityId, count);
-    LOGGER.debug("{} FlowNodes {} is completed.", count, activityId);
     return this;
   }
 
@@ -491,19 +447,13 @@ public class OperateTester {
   }
 
   public OperateTester flowNodeIsTerminated(final String activityId) {
-    searchTestRule.processAllRecordsAndWait(
-        flowNodeIsTerminatedCheck, processInstanceKey, activityId);
+    searchTestRule.waitFor(flowNodeIsTerminatedCheck, processInstanceKey, activityId);
     LOGGER.debug("FlowNode {} is terminated.", activityId);
     return this;
   }
 
-  public OperateTester flowNodeIsCanceled(final String activityId) {
-    return flowNodeIsTerminated(activityId);
-  }
-
   public OperateTester flowNodesAreTerminated(final String activityId, final int count) {
-    searchTestRule.processAllRecordsAndWait(
-        flowNodesAreTerminatedCheck, processInstanceKey, activityId, count);
+    searchTestRule.waitFor(flowNodesAreTerminatedCheck, processInstanceKey, activityId, count);
     LOGGER.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
@@ -641,26 +591,15 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester cancelFlowNodeInstance(final Long flowNodeInstanceId) {
-    camundaClient
-        .newModifyProcessInstanceCommand(processInstanceKey)
-        .terminateElement(flowNodeInstanceId)
-        .send()
-        .join();
-    return this;
-  }
-
   public OperateTester operationIsCompleted() throws Exception {
     executeOneBatch();
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompletedCheck, processInstanceKey);
+    searchTestRule.waitFor(operationsByProcessInstanceAreCompletedCheck, processInstanceKey);
     return this;
   }
 
   public OperateTester operationIsFailed() throws Exception {
     executeOneBatch();
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreFailedCheck, processInstanceKey);
+    searchTestRule.waitFor(operationsByProcessInstanceAreFailedCheck, processInstanceKey);
     return this;
   }
 
@@ -697,54 +636,36 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester disableOperationExecutor() {
-    operationExecutorEnabled = false;
-    return this;
-  }
-
-  public OperateTester enableOperationExecutor() throws Exception {
-    operationExecutorEnabled = true;
-    return executeOperations();
-  }
-
   public OperateTester executeOperations() throws Exception {
     executeOneBatch();
     searchTestRule.refreshOperateSearchIndices();
     return this;
   }
 
-  public OperateTester archiveIsDone() {
-    searchTestRule.refreshOperateSearchIndices();
-    return this;
-  }
-
   public OperateTester variableExists(final String name) {
-    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, name);
+    searchTestRule.waitFor(variableExistsCheck, processInstanceKey, name);
     return this;
   }
 
   public OperateTester variableExistsIn(final String name, final Long scopeKey) {
-    searchTestRule.processAllRecordsAndWait(
-        variableExistsInCheck, processInstanceKey, name, scopeKey);
+    searchTestRule.waitFor(variableExistsInCheck, processInstanceKey, name, scopeKey);
     return this;
   }
 
   public OperateTester variableHasValue(final String name, final Object value) {
-    searchTestRule.processAllRecordsAndWait(
-        variableHasValue, processInstanceKey, name, value, processInstanceKey);
+    searchTestRule.waitFor(variableHasValue, processInstanceKey, name, value, processInstanceKey);
     return this;
   }
 
   public OperateTester variableHasValue(
       final String name, final Object value, final Long scopeKey) {
-    searchTestRule.processAllRecordsAndWait(
-        variableHasValue, processInstanceKey, name, value, scopeKey);
+    searchTestRule.waitFor(variableHasValue, processInstanceKey, name, value, scopeKey);
     return this;
   }
 
   public OperateTester conditionIsMet(
       final Predicate<Object[]> elsCheck, final Object... arguments) {
-    searchTestRule.processAllRecordsAndWait(elsCheck, arguments);
+    searchTestRule.waitFor(elsCheck, arguments);
     return this;
   }
 
@@ -962,12 +883,5 @@ public class OperateTester {
     assertThat(deleted)
         .as(format("Index %s was not deleted after %s ms!", index, maxWaitMillis))
         .isTrue();
-  }
-
-  public void performOneRoundOfImport() {
-    zeebeImporter.performOneRoundOfImport();
-    Awaitility.await("Waiting for import threads to finish")
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(() -> assertThat(importExecutor.getActiveCount()).isEqualTo(0));
   }
 }

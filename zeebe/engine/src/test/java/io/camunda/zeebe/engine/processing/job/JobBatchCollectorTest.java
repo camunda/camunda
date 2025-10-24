@@ -61,7 +61,9 @@ final class JobBatchCollectorTest {
   void beforeEach() {
     final var authorizationCheckBehavior =
         new AuthorizationCheckBehavior(
-            state, SecurityConfigurations.unauthenticatedAndUnauthorized());
+            state,
+            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            new EngineConfiguration());
     collector = new JobBatchCollector(state, lengthEvaluator, authorizationCheckBehavior);
   }
 

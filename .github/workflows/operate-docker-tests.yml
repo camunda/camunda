@@ -2,7 +2,7 @@
 # test location: operate/qa/integration-tests
 # type: CI
 # owner: @camunda/core-features
-name: "[Legacy] Operate / Docker Tests"
+name: "[Legacy] Operate / Docker"
 on:
   push:
     branches:
@@ -40,9 +40,10 @@ concurrency:
 jobs:
   # does not meet the 10 minute runtime as required by the unified CI
   integration-tests:
-    name: Docker container tests
+    name: "Container Tests"
     runs-on: gcp-core-4-default
     timeout-minutes: 40
+    permissions: { }
     env:
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
     services:

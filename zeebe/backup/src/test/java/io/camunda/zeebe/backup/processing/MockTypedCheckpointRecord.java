@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -20,8 +21,27 @@ record MockTypedCheckpointRecord(
     long sourceRecordPosition,
     Intent intent,
     RecordType recordType,
-    CheckpointRecord value)
+    CheckpointRecord value,
+    int requestStreamId,
+    long requestId)
     implements TypedRecord<CheckpointRecord> {
+
+  public MockTypedCheckpointRecord(
+      final long position,
+      final long sourceRecordPosition,
+      final Intent intent,
+      final RecordType recordType,
+      final CheckpointRecord value) {
+    this(
+        position,
+        sourceRecordPosition,
+        intent,
+        recordType,
+        value,
+        -1, // requestStreamId
+        -1L // requestId
+        );
+  }
 
   @Override
   public long getPosition() {
@@ -105,16 +125,21 @@ record MockTypedCheckpointRecord(
 
   @Override
   public int getRequestStreamId() {
-    return -1;
+    return requestStreamId;
   }
 
   @Override
   public long getRequestId() {
-    return -1L;
+    return requestId;
   }
 
   @Override
   public int getLength() {
     return 0;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return null;
   }
 }

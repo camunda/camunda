@@ -37,14 +37,20 @@ public record ClusterConfiguration(
     Map<MemberId, MemberState> members,
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges,
-    Optional<RoutingState> routingState) {
+    Optional<RoutingState> routingState,
+    Optional<String> clusterId) {
 
   public static final int INITIAL_VERSION = 1;
   private static final int UNINITIALIZED_VERSION = -1;
 
   public static ClusterConfiguration uninitialized() {
     return new ClusterConfiguration(
-        UNINITIALIZED_VERSION, Map.of(), Optional.empty(), Optional.empty(), Optional.empty());
+        UNINITIALIZED_VERSION,
+        Map.of(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
   }
 
   public boolean isUninitialized() {
@@ -53,7 +59,12 @@ public record ClusterConfiguration(
 
   public static ClusterConfiguration init() {
     return new ClusterConfiguration(
-        INITIAL_VERSION, Map.of(), Optional.empty(), Optional.empty(), Optional.empty());
+        INITIAL_VERSION,
+        Map.of(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
   }
 
   public ClusterConfiguration addMember(final MemberId memberId, final MemberState state) {
@@ -66,12 +77,13 @@ public record ClusterConfiguration(
 
     final var newMembers =
         ImmutableMap.<MemberId, MemberState>builder().putAll(members).put(memberId, state).build();
-    return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges, routingState);
+    return new ClusterConfiguration(
+        version, newMembers, lastChange, pendingChanges, routingState, clusterId);
   }
 
   public ClusterConfiguration setRoutingState(final RoutingState updatedRoutingState) {
     return new ClusterConfiguration(
-        version, members, lastChange, pendingChanges, Optional.of(updatedRoutingState));
+        version, members, lastChange, pendingChanges, Optional.of(updatedRoutingState), clusterId);
   }
 
   /**
@@ -109,7 +121,8 @@ public record ClusterConfiguration(
     }
 
     final var newMembers = mapBuilder.buildKeepingLast();
-    return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges, routingState);
+    return new ClusterConfiguration(
+        version, newMembers, lastChange, pendingChanges, routingState, clusterId);
   }
 
   public ClusterConfiguration startConfigurationChange(
@@ -128,7 +141,8 @@ public record ClusterConfiguration(
           members,
           lastChange,
           Optional.of(ClusterChangePlan.init(newVersion, operations)),
-          routingState);
+          routingState,
+          clusterId);
     }
   }
 
@@ -165,7 +179,8 @@ public record ClusterConfiguration(
           ImmutableMap.copyOf(mergedMembers),
           lastChange,
           mergedChanges,
-          mergedRoutingState);
+          mergedRoutingState,
+          clusterId);
     }
   }
 
@@ -219,7 +234,8 @@ public record ClusterConfiguration(
             members,
             lastChange,
             Optional.of(pendingChanges.orElseThrow().advance()),
-            routingState);
+            routingState,
+            clusterId);
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -242,7 +258,8 @@ public record ClusterConfiguration(
           currentMembers,
           Optional.of(completedChange),
           Optional.empty(),
-          routingState);
+          routingState,
+          clusterId);
     }
 
     return result;
@@ -318,7 +335,12 @@ public record ClusterConfiguration(
       // A conflict would not happen if the cancel is only called when the operation is truly stuck.
       final var newVersion = version + 2;
       return new ClusterConfiguration(
-          newVersion, members, Optional.of(cancelledChange), Optional.empty(), routingState);
+          newVersion,
+          members,
+          Optional.of(cancelledChange),
+          Optional.empty(),
+          routingState,
+          clusterId);
     } else {
       return this;
     }

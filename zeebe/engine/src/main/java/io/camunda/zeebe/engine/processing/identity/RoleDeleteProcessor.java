@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -70,7 +71,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.DELETE)
             .addResourceId(roleId);
 
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
@@ -143,7 +144,10 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
     authorizationKeysForRole.forEach(
         authorizationKey -> {
-          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          final var authorization =
+              new AuthorizationRecord()
+                  .setAuthorizationKey(authorizationKey)
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.JobQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -22,17 +22,17 @@ import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteJobRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateJobRequest;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.CompleteJobRequest;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.ErrorJobRequest;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.FailJobRequest;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.UpdateJobRequest;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;

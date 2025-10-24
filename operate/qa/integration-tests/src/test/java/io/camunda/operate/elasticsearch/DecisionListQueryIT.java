@@ -38,10 +38,11 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -54,7 +55,13 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   @Autowired private DecisionDataUtil testDataUtil;
 
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
+
+  @Before
+  public void setup() {
+    when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
+  }
 
   @Test
   public void testVariousQueries() throws Exception {
@@ -599,7 +606,6 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
@@ -623,7 +629,6 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     createData();
 
     // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId)));
 

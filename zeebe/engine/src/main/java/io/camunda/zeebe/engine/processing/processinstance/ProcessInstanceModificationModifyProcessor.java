@@ -198,10 +198,10 @@ public final class ProcessInstanceModificationModifyProcessor
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE,
+                PermissionType.MODIFY_PROCESS_INSTANCE,
                 processInstance.getValue().getTenantId())
             .addResourceId(processInstance.getValue().getBpmnProcessId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       final String errorMessage =

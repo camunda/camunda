@@ -11,6 +11,7 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
+import java.util.Objects;
 
 public class UpdateMappingIndexStep extends UpgradeStep {
 
@@ -35,11 +36,18 @@ public class UpdateMappingIndexStep extends UpgradeStep {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(index);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UpdateMappingIndexStep that = (UpdateMappingIndexStep) o;
+    return Objects.equals(index, that.index);
   }
 }

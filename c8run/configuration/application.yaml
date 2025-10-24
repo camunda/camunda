@@ -1,0 +1,28 @@
+camunda:
+  security:
+    initialization:
+      users:
+        - username: demo
+          password: demo
+          name: demo
+          email: demo@example.com
+      defaultRoles:
+        admin:
+          users:
+            - demo
+    # By default authorization and api protection is disabled
+    authentication:
+      unprotected-api: true
+    authorizations:
+      enabled: false
+
+zeebe:
+  broker:
+    exporters:
+      camundaExporter:
+        args:
+          createSchema: true
+        className: io.camunda.exporter.CamundaExporter
+    network:
+      host: localhost
+      advertisedHost: localhost

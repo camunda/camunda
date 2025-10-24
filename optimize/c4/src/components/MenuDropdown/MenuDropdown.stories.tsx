@@ -1,6 +1,8 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-webpack5"
 import { MenuItemSelectable } from "@carbon/react"
-import { within, expect, userEvent } from "@storybook/test"
+import { within, expect, userEvent } from "storybook/test"
+
+import StoryWrapper from "src/StoryWrapper"
 
 import MenuDropdown from "./MenuDropdown"
 
@@ -14,6 +16,8 @@ const meta: Meta<typeof MenuDropdown> = {
 		disabled: { control: "boolean" },
 		invalid: { control: "boolean" },
 	},
+
+	decorators: [StoryWrapper()],
 }
 
 export default meta

@@ -26,7 +26,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "camunda.tasklist.webappEnabled",
+    name = "camunda.tasklist.webapp-enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class WebappModuleConfiguration {

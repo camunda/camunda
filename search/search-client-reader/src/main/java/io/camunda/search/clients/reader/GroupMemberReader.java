@@ -8,6 +8,7 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.GroupMemberEntity;
-import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.GroupMemberQuery;
 
-public interface GroupMemberReader extends SearchEntityReader<GroupMemberEntity, GroupQuery> {}
+public interface GroupMemberReader
+    extends SearchEntityReader<GroupMemberEntity, GroupMemberQuery> {}

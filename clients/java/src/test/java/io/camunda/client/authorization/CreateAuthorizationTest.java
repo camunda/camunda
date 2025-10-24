@@ -21,14 +21,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 import io.camunda.client.protocol.rest.AuthorizationRequest;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class CreateAuthorizationTest extends ClientRestTest {
 
   @Test
   void shouldSendCommand() {
+    // given
+    gatewayService.onCreateAuthorizationRequest(
+        Instancio.create(AuthorizationCreateResult.class).authorizationKey("3"));
+
     // when
     client
         .newCreateAuthorizationCommand()

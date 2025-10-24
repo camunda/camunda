@@ -7,13 +7,16 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
+import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
 import io.camunda.search.clients.reader.DecisionInstanceReader;
 import io.camunda.search.clients.reader.DecisionRequirementsReader;
@@ -25,6 +28,7 @@ import io.camunda.search.clients.reader.IncidentReader;
 import io.camunda.search.clients.reader.JobReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessInstanceReader;
@@ -42,7 +46,6 @@ import io.camunda.search.clients.reader.UserTaskReader;
 import io.camunda.search.clients.reader.VariableReader;
 import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
@@ -50,30 +53,47 @@ import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.util.List;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnRestGatewayEnabled
 public class SearchClientDatabaseConfiguration {
 
   @Bean
-  @ConditionalOnSecondaryStorageType(DatabaseConfig.ELASTICSEARCH)
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.elasticsearch)
   public ElasticsearchSearchClient elasticsearchSearchClient(
-      final ConnectConfiguration configuration) {
-    final var connector = new ElasticsearchConnector(configuration);
-    final var elasticsearch = connector.createClient();
-    return new ElasticsearchSearchClient(elasticsearch);
+      final ElasticsearchClient elasticsearchClient) {
+    return new ElasticsearchSearchClient(elasticsearchClient);
   }
 
   @Bean
-  @ConditionalOnSecondaryStorageType(DatabaseConfig.OPENSEARCH)
-  public OpensearchSearchClient opensearchSearchClient(final ConnectConfiguration configuration) {
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.elasticsearch)
+  public ElasticsearchClient elasticsearchClient(final ConnectConfiguration configuration) {
+    final var connector = new ElasticsearchConnector(configuration);
+    return connector.createClient();
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
+  public OpensearchSearchClient opensearchSearchClient(final OpenSearchClient openSearchClient) {
+    return new OpensearchSearchClient(openSearchClient);
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
+  public OpenSearchClient openSearchClient(final ConnectConfiguration configuration) {
     final var connector = new OpensearchConnector(configuration);
-    final var opensearch = connector.createClient();
-    return new OpensearchSearchClient(opensearch);
+    return connector.createClient();
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
+  public OpenSearchAsyncClient openSearchAsyncClient(final ConnectConfiguration configuration) {
+    final var connector = new OpensearchConnector(configuration);
+    return connector.createAsyncClient();
   }
 
   @Bean
@@ -105,6 +125,7 @@ public class SearchClientDatabaseConfiguration {
       final AuthorizationReader authorizationReader,
       final BatchOperationReader batchOperationReader,
       final BatchOperationItemReader batchOperationItemReader,
+      final CorrelatedMessageSubscriptionReader correlatedMessageSubscriptionReader,
       final DecisionDefinitionReader decisionDefinitionReader,
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
@@ -117,6 +138,7 @@ public class SearchClientDatabaseConfiguration {
       final MappingRuleReader mappingRuleReader,
       final MessageSubscriptionReader messageSubscriptionReader,
       final ProcessDefinitionReader processDefinitionReader,
+      final ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader,
       final ProcessDefinitionStatisticsReader processDefinitionFlowNodeStatisticsReader,
       final ProcessInstanceReader processInstanceReader,
       final ProcessInstanceStatisticsReader processInstanceFlowNodeStatisticsReader,
@@ -134,6 +156,7 @@ public class SearchClientDatabaseConfiguration {
         authorizationReader,
         batchOperationReader,
         batchOperationItemReader,
+        correlatedMessageSubscriptionReader,
         decisionDefinitionReader,
         decisionInstanceReader,
         decisionRequirementsReader,
@@ -148,6 +171,7 @@ public class SearchClientDatabaseConfiguration {
         processDefinitionReader,
         processDefinitionFlowNodeStatisticsReader,
         processInstanceReader,
+        processDefinitionInstanceStatisticsReader,
         processInstanceFlowNodeStatisticsReader,
         roleReader,
         roleMemberReader,

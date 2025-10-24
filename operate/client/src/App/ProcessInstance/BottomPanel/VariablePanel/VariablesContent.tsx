@@ -7,33 +7,38 @@
  */
 
 import {observer} from 'mobx-react';
-import {Form as ReactFinalForm} from 'react-final-form';
-import {type VariableFormValues} from 'modules/types/variables';
 
 import {Content, EmptyMessageContainer} from './styled';
-import arrayMutators from 'final-form-arrays';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Loading} from '@carbon/react';
-import {VariablesForm} from './VariablesForm';
-import {notificationsStore} from 'modules/stores/notifications';
-import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {addVariable, getScopeId, updateVariable} from 'modules/utils/variables';
-import {useQueryClient} from '@tanstack/react-query';
-import {
-  VARIABLES_SEARCH_QUERY_KEY,
-  useVariables,
-} from 'modules/queries/variables/useVariables';
+import {getScopeId} from 'modules/utils/variables';
+import {useVariables} from 'modules/queries/variables/useVariables';
+import {VariablesFinalForm} from './VariablesFinalForm';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {isRequestError} from 'modules/request';
 
 const VariablesContent: React.FC = observer(() => {
-  const {processInstanceId = ''} = useProcessInstancePageParams();
-  const queryClient = useQueryClient();
-  const {displayStatus} = useVariables();
+  const {displayStatus, error} = useVariables();
+  const scopeId = getScopeId();
 
   if (displayStatus === 'error') {
     return (
       <EmptyMessageContainer>
-        <ErrorMessage message="Variables could not be fetched" />
+        <ErrorMessage
+          message={
+            isRequestError(error) &&
+            error?.response?.status === HTTP_STATUS_FORBIDDEN
+              ? 'Missing permissions to access Variables'
+              : 'Variables could not be fetched'
+          }
+          additionalInfo={
+            isRequestError(error) &&
+            error?.response?.status === HTTP_STATUS_FORBIDDEN
+              ? 'Please contact your organization owner or admin to give you the necessary permissions to access variables'
+              : 'Refresh the page to try again'
+          }
+        />
       </EmptyMessageContainer>
     );
   }
@@ -49,73 +54,26 @@ const VariablesContent: React.FC = observer(() => {
     );
   }
 
+  if (displayStatus === 'no-variables') {
+    return (
+      <Content>
+        {scopeId !== null ? (
+          <VariablesFinalForm scopeId={scopeId} />
+        ) : (
+          <EmptyMessageContainer>
+            <EmptyMessage message="The Flow Node has no Variables" />
+          </EmptyMessageContainer>
+        )}
+      </Content>
+    );
+  }
+
   return (
     <Content>
       {displayStatus === 'spinner' && (
         <Loading data-testid="variables-spinner" />
       )}
-      <ReactFinalForm<VariableFormValues>
-        mutators={{
-          ...arrayMutators,
-          triggerValidation(fieldsToValidate: string[], state, {changeValue}) {
-            fieldsToValidate.forEach((fieldName) => {
-              changeValue(state, fieldName, (n) => n);
-            });
-          },
-        }}
-        key={getScopeId()}
-        render={(props) => <VariablesForm {...props} />}
-        onSubmit={async (values, form) => {
-          const {initialValues} = form.getState();
-
-          const {name, value} = values;
-
-          if (name === undefined || value === undefined) {
-            return;
-          }
-
-          const params = {
-            id: processInstanceId,
-            name,
-            value,
-            invalidateQueries: () => {
-              queryClient.invalidateQueries({
-                queryKey: [VARIABLES_SEARCH_QUERY_KEY],
-              });
-            },
-            onSuccess: () => {
-              notificationsStore.displayNotification({
-                kind: 'success',
-                title: 'Variable added',
-                isDismissable: true,
-              });
-
-              form.reset({});
-            },
-            onError: (statusCode: number) => {
-              notificationsStore.displayNotification({
-                kind: 'error',
-                title: 'Variable could not be saved',
-                subtitle:
-                  statusCode === 403 ? 'You do not have permission' : undefined,
-                isDismissable: true,
-              });
-
-              form.reset({});
-            },
-          };
-
-          if (initialValues.name === '') {
-            const result = await addVariable(params);
-            if (result === 'VALIDATION_ERROR') {
-              return {name: 'Name should be unique'};
-            }
-          } else if (initialValues.name === name) {
-            updateVariable(params);
-            form.reset({});
-          }
-        }}
-      />
+      {scopeId !== null && <VariablesFinalForm scopeId={scopeId} />}
     </Content>
   );
 });

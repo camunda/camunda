@@ -12,8 +12,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,9 +29,9 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
-import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
+import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -44,10 +47,10 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 import org.springframework.util.unit.DataSize;
@@ -59,7 +62,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
 
   @Autowired ActivateJobsHandler<JobActivationResult> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
-  @SpyBean ResettableJobActivationRequestResponseObserver responseObserver;
+  @MockitoSpyBean ResettableJobActivationRequestResponseObserver responseObserver;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
@@ -427,7 +430,13 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         final BrokerClient brokerClient,
         final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
       return new JobServices<>(
-          brokerClient, new SecurityContextProvider(), activateJobsHandler, null, null);
+          brokerClient,
+          new SecurityContextProvider(),
+          activateJobsHandler,
+          null,
+          null,
+          new ApiServicesExecutorProvider(1, 1, 1, 1),
+          new BrokerRequestAuthorizationConverter(new SecurityConfiguration()));
     }
   }
 }

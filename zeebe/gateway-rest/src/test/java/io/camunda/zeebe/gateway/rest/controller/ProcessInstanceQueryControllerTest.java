@@ -30,8 +30,11 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +44,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -52,10 +57,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
   private static final String PROCESS_INSTANCES_BY_KEY_URL =
       "/v2/process-instances/{processInstanceKey}";
-
   private static final String PROCESS_INSTANCE_CALL_HIERARCHY_BY_KEY_URL =
       "/v2/process-instances/{processInstanceKey}/call-hierarchy";
-
   private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
           123L,
@@ -71,8 +74,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           ProcessInstanceState.ACTIVE,
           false,
           "tenant",
-          "PI_123");
-
+          "PI_123",
+          Set.of("tag1", "tag2"));
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
             {
@@ -87,10 +90,10 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
-            "tenantId": "tenant"
+            "tenantId": "tenant",
+            "tags": ["tag1", "tag2"]
           }
           """;
-
   private static final String EXPECTED_SEARCH_RESPONSE =
       """
           {
@@ -107,7 +110,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
-                  "tenantId": "tenant"
+                  "tenantId": "tenant",
+                  "tags": ["tag1", "tag2"]
                 }
               ],
               "page": {
@@ -118,7 +122,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               }
           }
           """;
-
   private static final String EXPECTED_CALL_HIERARCHY =
       """
         [
@@ -130,6 +133,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         ]
       """;
 
+  private static final String EXPECTED_INVALID_TAGS_RESPONSE =
+      """
+      {
+        "type":"about:blank",
+        "title":"INVALID_ARGUMENT",
+        "status":400,
+        "detail":"The provided tag '1 invalid tag' is not valid. Tags must start with a letter (a-z, A-Z), followed by alphanumerics, underscores, minuses, colons, or periods. It must not be blank and must be 100 characters or less.",
+        "instance":"/v2/process-instances/search"
+      }
+      """;
+
   private static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessInstanceEntity>()
           .total(1L)
@@ -137,7 +151,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .startCursor("f")
           .endCursor("v")
           .build();
-
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -149,6 +162,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(processInstanceServices);
+  }
+
+  private static void assertJsonNonExtensible(final String expected, final byte[] actualBytes) {
+    try {
+      JSONAssert.assertEquals(
+          expected,
+          new String(Objects.requireNonNull(actualBytes), StandardCharsets.UTF_8),
+          JSONCompareMode.NON_EXTENSIBLE);
+    } catch (final Exception e) {
+      throw new AssertionError(e);
+    }
   }
 
   @Test
@@ -166,7 +190,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
@@ -190,7 +215,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
@@ -314,7 +340,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
         .search(
@@ -470,9 +497,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Both after and before cannot be set at the same time.",
+                  "detail": "Failed to read request",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -510,7 +537,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(PROCESS_INSTANCE_ENTITY_JSON, JsonCompareMode.STRICT);
+        .consumeWith(
+            result ->
+                assertJsonNonExtensible(PROCESS_INSTANCE_ENTITY_JSON, result.getResponseBody()));
 
     // Verify that the service was called with the valid key
     verify(processInstanceServices).getByKey(validProcesInstanceKey);
@@ -649,7 +678,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
@@ -685,7 +715,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     // then
     verify(processInstanceServices)
@@ -737,7 +768,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build());
@@ -764,5 +796,30 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the valid key
     verify(processInstanceServices).callHierarchy(processInstanceKey);
+  }
+
+  @Test
+  void shouldReturnBadRequestWhenTagsAreInvalid() {
+    // given
+    final var request =
+        """
+            {
+                "filter": { "tags": ["1 invalid tag", "tag2"] }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .consumeWith(
+            result ->
+                assertJsonNonExtensible(EXPECTED_INVALID_TAGS_RESPONSE, result.getResponseBody()));
   }
 }

@@ -8,8 +8,7 @@
 package io.camunda.application.commons.console.ping;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -19,6 +18,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.io.IOException;
 import java.net.URI;
@@ -26,6 +27,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,11 +44,14 @@ class PingConsoleConfigurationTest {
   private static final ManagementServices MANAGEMENT_SERVICES = mock(ManagementServices.class);
   private static final Environment ENVIRONMENT = mock(Environment.class);
   private static final ApplicationContext APPLICATION_CONTEXT = mock(ApplicationContext.class);
+  private static final BrokerTopologyManager BROKER_TOPOLOGY_MANAGER =
+      mock(BrokerTopologyManager.class);
+  private static final ClusterConfiguration BROKER_CLUSTER_CONFIGURATION =
+      mock(ClusterConfiguration.class);
   private final ConsolePingConfiguration pingConfiguration =
       new ConsolePingConfiguration(
           true,
           URI.create("http://fake-endpoint.com"),
-          "clusterId",
           "clusterName",
           Duration.ofMillis(1000),
           new RetryConfiguration(),
@@ -63,6 +68,9 @@ class PingConsoleConfigurationTest {
     when(MANAGEMENT_SERVICES.getCamundaLicenseExpiresAt()).thenReturn(null);
     when(APPLICATION_CONTEXT.getEnvironment()).thenReturn(ENVIRONMENT);
     when(ENVIRONMENT.getActiveProfiles()).thenReturn(new String[] {"broker"});
+    when(BROKER_TOPOLOGY_MANAGER.getClusterConfiguration())
+        .thenReturn(BROKER_CLUSTER_CONFIGURATION);
+    when(BROKER_CLUSTER_CONFIGURATION.clusterId()).thenReturn(Optional.of("clusterId"));
   }
 
   @Test
@@ -70,23 +78,21 @@ class PingConsoleConfigurationTest {
     // given
     final ConsolePingConfiguration consolePingConfiguration =
         new ConsolePingConfiguration(
-            true,
-            null,
-            "clusterId",
-            "clusterName",
-            Duration.ofMillis(5000),
-            new RetryConfiguration(),
-            null);
+            true, null, "clusterName", Duration.ofMillis(5000), new RetryConfiguration(), null);
+
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
 
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage()).isEqualTo("Ping endpoint must not be null.");
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo("Ping endpoint must not be null.");
   }
 
   @Test
@@ -96,45 +102,24 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("123"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null);
 
-    // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage()).isEqualTo("Ping endpoint 123 must be a valid URI.");
-  }
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
 
-  @Test
-  void clusterIdShouldNotBeNullOrEmpty() {
-    // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
-            true,
-            URI.create("http://localhost:8080"),
-            null,
-            "clusterName",
-            Duration.ofMillis(5000),
-            new RetryConfiguration(),
-            null);
+    // when
+    final var result = runner.validateConfiguration();
 
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage()).isEqualTo("Cluster ID must not be null or empty.");
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo("Ping endpoint 123 must be a valid URI.");
   }
 
   @Test
@@ -144,21 +129,24 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "",
             Duration.ofMillis(5000),
             new RetryConfiguration(),
             null);
 
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage()).isEqualTo("Cluster name must not be null or empty.");
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo("Cluster name must not be null or empty.");
   }
 
   @Test
@@ -168,21 +156,24 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(-333),
             new RetryConfiguration(),
             null);
 
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage()).isEqualTo("Ping period must be greater than zero.");
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo("Ping period must be greater than zero.");
   }
 
   @Test
@@ -195,22 +186,24 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
             null);
 
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage())
-        .isEqualTo("Number of max retries must be greater than zero.");
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo("Number of max retries must be greater than zero.");
   }
 
   @Test
@@ -223,22 +216,24 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
             null);
 
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage())
-        .isEqualTo("Retry delay multiplier must be greater than zero.");
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo("Retry delay multiplier must be greater than zero.");
   }
 
   @Test
@@ -248,7 +243,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             null,
@@ -258,7 +252,8 @@ class PingConsoleConfigurationTest {
     assertThatCode(
             () ->
                 new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+                    consolePingConfiguration, MANAGEMENT_SERVICES,
+                    APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER))
         .doesNotThrowAnyException();
   }
 
@@ -272,21 +267,24 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
             null);
 
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage()).isEqualTo("Max retry delay must be greater than zero.");
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo("Max retry delay must be greater than zero.");
   }
 
   @Test
@@ -299,21 +297,24 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
             null);
 
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage()).isEqualTo("Min retry delay must be greater than zero.");
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo("Min retry delay must be greater than zero.");
   }
 
   @Test
@@ -327,21 +328,24 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             retryConfiguration,
             null);
 
+    final PingConsoleRunner runner =
+        new PingConsoleRunner(
+            consolePingConfiguration,
+            MANAGEMENT_SERVICES,
+            APPLICATION_CONTEXT,
+            BROKER_TOPOLOGY_MANAGER);
+
+    // when
+    final var result = runner.validateConfiguration();
+
     // then
-    final IllegalArgumentException exception =
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(
-                new PingConsoleRunner(
-                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                    ::validateConfiguration)
-            .actual();
-    assertThat(exception.getMessage())
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft())
         .isEqualTo("Max retry delay must be greater than or equal to min retry delay.");
   }
 
@@ -352,7 +356,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             true,
             URI.create("http://localhost:8080"),
-            "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
             new RetryConfiguration(),
@@ -361,7 +364,8 @@ class PingConsoleConfigurationTest {
     assertThatCode(
             () ->
                 new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+                    consolePingConfiguration, MANAGEMENT_SERVICES,
+                    APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER))
         .doesNotThrowAnyException();
   }
 
@@ -372,7 +376,6 @@ class PingConsoleConfigurationTest {
         new ConsolePingConfiguration(
             false,
             URI.create("123"),
-            "",
             null,
             Duration.ofMillis(-300),
             new RetryConfiguration(),
@@ -382,7 +385,8 @@ class PingConsoleConfigurationTest {
     assertThatCode(
             () ->
                 new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+                    consolePingConfiguration, MANAGEMENT_SERVICES,
+                    APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER))
         .doesNotThrowAnyException();
   }
 

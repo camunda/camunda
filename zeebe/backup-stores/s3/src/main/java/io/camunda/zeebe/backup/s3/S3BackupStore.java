@@ -37,8 +37,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -133,12 +131,8 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
-    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
-        .takeWhile(Optional::isPresent)
-        .map(Optional::get)
-        .map(Number::toString)
-        .collect(Collectors.joining("/", config.basePath().map(base -> base + "/").orElse(""), ""));
+    return config.basePath().map(base -> base + "/").orElse("")
+        + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
   public String objectPrefix(final BackupIdentifier id) {

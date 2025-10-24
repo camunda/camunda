@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -120,7 +121,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             userServices,
             passwordEncoder,
             jwtDecoder,
-            searchClientsProxy);
+            searchClientsProxy,
+            new BrokerRequestAuthorizationConverter(securityConfiguration));
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker =

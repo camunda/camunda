@@ -13,39 +13,43 @@ import java.util.List;
 
 public class RdbmsPurger {
 
+  /** Do not change the order here !! */
   private static final List<String> TABLE_NAMES =
       List.of(
-          "EXPORTER_POSITION",
-          "VARIABLE",
-          "FLOW_NODE_INSTANCE",
-          "PROCESS_INSTANCE",
-          "PROCESS_DEFINITION",
-          "CANDIDATE_USER",
+          "AUTHORIZATIONS",
+          "BATCH_OPERATION_ITEM",
+          "BATCH_OPERATION_ERROR",
+          "BATCH_OPERATION",
           "CANDIDATE_GROUP",
-          "USER_TASK",
-          "INCIDENT",
+          "CANDIDATE_USER",
+          "CORRELATED_MESSAGE_SUBSCRIPTION",
+          "DECISION_DEFINITION",
           "DECISION_INSTANCE_INPUT",
           "DECISION_INSTANCE_OUTPUT",
           "DECISION_INSTANCE",
-          "DECISION_DEFINITION",
           "DECISION_REQUIREMENTS",
-          "AUTHORIZATIONS",
-          "USERS",
+          "EXPORTER_POSITION",
+          "FLOW_NODE_INSTANCE",
           "FORM",
+          "GROUP_MEMBER",
+          "GROUP_",
+          "INCIDENT",
+          "JOB",
           "MAPPING_RULES",
-          "TENANT_MEMBER",
-          "TENANT",
+          "MESSAGE_SUBSCRIPTION",
+          "PROCESS_DEFINITION",
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_TAG",
           "ROLE_MEMBER",
           "ROLES",
-          "GROUP_MEMBER",
-          "GROUPS",
-          "BATCH_OPERATION_ERROR",
-          "BATCH_OPERATION_ITEM",
-          "BATCH_OPERATION",
-          "JOB",
           "SEQUENCE_FLOW",
+          "TENANT_MEMBER",
+          "TENANT",
           "USAGE_METRIC",
-          "USAGE_METRIC_TU");
+          "USAGE_METRIC_TU",
+          "USER_TASK",
+          "USER_",
+          "VARIABLE");
 
   private final PurgeMapper purgeMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;

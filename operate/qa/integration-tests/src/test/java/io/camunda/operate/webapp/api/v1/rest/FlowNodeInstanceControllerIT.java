@@ -33,9 +33,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -47,9 +47,9 @@ import org.springframework.web.context.WebApplicationContext;
 public class FlowNodeInstanceControllerIT {
 
   @Autowired WebApplicationContext context;
-  @MockBean PermissionsService permissionsService;
+  @MockitoBean PermissionsService permissionsService;
   private MockMvc mockMvc;
-  @MockBean private FlowNodeInstanceDao flowNodeInstanceDao;
+  @MockitoBean private FlowNodeInstanceDao flowNodeInstanceDao;
 
   @Before
   public void setupMockMvc() {
@@ -101,8 +101,7 @@ public class FlowNodeInstanceControllerIT {
   @Test
   public void shouldAcceptQueryWithFilter() throws Exception {
     assertPostToWithSucceed(
-        URI + SEARCH,
-        "{\"filter\": { \"" + FlowNodeInstance.PROCESS_INSTANCE_KEY + "\": \"1\" } }");
+        URI + SEARCH, "{\"filter\": { \"" + FlowNodeInstance.PROCESS_INSTANCE_KEY + "\": 1 } }");
     verify(flowNodeInstanceDao)
         .search(
             new Query<FlowNodeInstance>()
@@ -128,9 +127,9 @@ public class FlowNodeInstanceControllerIT {
         URI + SEARCH,
         "{\"filter\": { \""
             + FlowNodeInstance.PROCESS_DEFINITION_KEY
-            + "\": \""
+            + "\": "
             + processDefinitionKey
-            + "\" } }");
+            + " } }");
     verify(flowNodeInstanceDao)
         .search(
             new Query<FlowNodeInstance>()

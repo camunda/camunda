@@ -10,7 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import java.util.function.UnaryOperator;
 
 /** Represents configuration of a partition that can be updated during runtime. */
-public record DynamicPartitionConfig(ExportersConfig exporting) {
+public record DynamicPartitionConfig(ExportingConfig exporting) {
 
   public static DynamicPartitionConfig uninitialized() {
     // This is temporary until we have a way to initialize this during bootstrap or first update to
@@ -22,19 +22,19 @@ public record DynamicPartitionConfig(ExportersConfig exporting) {
   public static DynamicPartitionConfig init() {
     // This is temporary until we have a way to initialize this during bootstrap or first update to
     // the version that added this
-    return new DynamicPartitionConfig(ExportersConfig.empty());
+    return new DynamicPartitionConfig(ExportingConfig.empty());
   }
 
   public boolean isInitialized() {
     return exporting != null;
   }
 
-  public DynamicPartitionConfig updateExporting(final ExportersConfig exporter) {
-    return new DynamicPartitionConfig(exporter);
+  public DynamicPartitionConfig updateExporting(final ExportingConfig exporting) {
+    return new DynamicPartitionConfig(exporting);
   }
 
   public DynamicPartitionConfig updateExporting(
-      final UnaryOperator<ExportersConfig> exporterUpdater) {
-    return new DynamicPartitionConfig(exporterUpdater.apply(exporting));
+      final UnaryOperator<ExportingConfig> exportingUpdater) {
+    return new DynamicPartitionConfig(exportingUpdater.apply(exporting));
   }
 }

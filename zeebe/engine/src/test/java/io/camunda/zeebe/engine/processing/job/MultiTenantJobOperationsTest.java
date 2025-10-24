@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -92,6 +93,7 @@ public class MultiTenantJobOperationsTest {
         .authorization()
         .newAuthorization()
         .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
         .withResourceId(PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerId(username)
@@ -102,6 +104,7 @@ public class MultiTenantJobOperationsTest {
         .authorization()
         .newAuthorization()
         .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
         .withResourceId(BOUNDARY_PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerId(username)

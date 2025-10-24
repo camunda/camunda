@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivateElementInstructionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -38,8 +37,6 @@ public class AdHocSubProcessInstructionActivateProcessor
 
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
-  private static final String ERROR_MSG_DUPLICATE_ACTIVITIES =
-      "Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given.";
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE =
       "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE =
@@ -106,16 +103,6 @@ public class AdHocSubProcessInstructionActivateProcessor
       return;
     }
 
-    if (hasDuplicateElementsToActivate(command)) {
-      writeRejectionError(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          String.format(
-              ERROR_MSG_DUPLICATE_ACTIVITIES, command.getValue().getAdHocSubProcessInstanceKey()));
-
-      return;
-    }
-
     if (!adHocSubProcessElementInstance.isActive()) {
       writeRejectionError(
           command,
@@ -124,6 +111,22 @@ public class AdHocSubProcessInstructionActivateProcessor
               ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE,
               command.getValue().getAdHocSubProcessInstanceKey()));
 
+      return;
+    }
+
+    final var activateElements =
+        command.getValue().activateElements().stream()
+            .map(AdHocSubProcessActivateElementInstruction::getElementId)
+            .toList();
+
+    final var thatCompletionConditionIsNotFulfilledWhenActivatingElements =
+        AdHocSubProcessUtils.validateThatCompletionConditionIsNotFulfilledWhenActivatingElements(
+            adHocSubProcessElementInstance.getKey(),
+            command.getValue().isCompletionConditionFulfilled(),
+            activateElements);
+    if (thatCompletionConditionIsNotFulfilledWhenActivatingElements.isLeft()) {
+      final var rejection = thatCompletionConditionIsNotFulfilledWhenActivatingElements.getLeft();
+      writeRejectionError(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -139,10 +142,6 @@ public class AdHocSubProcessInstructionActivateProcessor
                 adHocSubProcessElementInstance.getValue().getElementId());
 
     // check that the given elements exist within the ad-hoc sub-process
-    final var activateElements =
-        command.getValue().activateElements().stream()
-            .map(AdHocSubProcessActivateElementInstruction::getElementId)
-            .toList();
     final var activateElementsAreInProcess =
         AdHocSubProcessUtils.validateActivateElementsExistInAdHocSubProcess(
             adHocSubProcessElementInstance.getKey(), adHocSubProcessElement, activateElements);
@@ -157,6 +156,10 @@ public class AdHocSubProcessInstructionActivateProcessor
         adHocSubProcessElementInstance.getKey(),
         adHocSubProcessElementInstance.getValue(),
         adHocSubProcessElementInstance.getState());
+
+    if (command.getValue().isCancelRemainingInstances()) {
+      bpmnAdHocSubProcessBehavior.terminateChildInstances(bpmnElementContext);
+    }
 
     // activate the elements
     for (final var elementValue : command.getValue().activateElements()) {
@@ -182,15 +185,6 @@ public class AdHocSubProcessInstructionActivateProcessor
     responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
   }
 
-  private boolean hasDuplicateElementsToActivate(
-      final TypedRecord<AdHocSubProcessInstructionRecord> command) {
-    return command.getValue().getActivateElements().stream()
-            .map(AdHocSubProcessActivateElementInstructionValue::getElementId)
-            .distinct()
-            .count()
-        != command.getValue().getActivateElements().size();
-  }
-
   private Either<Rejection, Void> authorize(
       final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final ElementInstance adHocSubProcessElementInstance) {
@@ -202,6 +196,6 @@ public class AdHocSubProcessInstructionActivateProcessor
                 adHocSubProcessElementInstance.getValue().getTenantId())
             .addResourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId());
 
-    return authCheckBehavior.isAuthorized(authRequest);
+    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }

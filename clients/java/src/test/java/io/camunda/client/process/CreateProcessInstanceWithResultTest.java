@@ -25,6 +25,9 @@ import io.camunda.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.Test;
 
 public final class CreateProcessInstanceWithResultTest extends ClientTest {
@@ -218,6 +221,27 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
     final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
     final CreateProcessInstanceRequest piRequest = request.getRequest();
     assertThat(piRequest.getTenantId()).isEqualTo(tenantId);
+  }
+
+  @Test
+  public void shouldAddTags() {
+    // given
+    final Long processDefinitionKey = 1L;
+    final Set<String> tags = new HashSet<>(Arrays.asList("tag1", "tag2"));
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .tags(tags)
+        .withResult()
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest piRequest = request.getRequest();
+    assertThat(new HashSet(piRequest.getTagsList())).isEqualTo(tags);
   }
 
   private static final class VariablesPojo {

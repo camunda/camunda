@@ -8,6 +8,7 @@
 package io.camunda.authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -96,5 +97,28 @@ public class DefaultCamundaAuthenticationProviderTest {
     assertThat(actualAuthentication).isNotNull();
     assertThat(actualAuthentication).isEqualTo(expectedAuthentication);
     verify(holder, times(0)).set(eq(expectedAuthentication));
+  }
+
+  @Test
+  void shouldFailToConvertWithUsernameAndClientId() {
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> CamundaAuthentication.of(b -> b.user("foo").clientId("bar")));
+  }
+
+  @Test
+  void shouldAllowNeitherUsernameOrClientWhenAnonymous() {
+    // given
+    final var expectedAuthentication = CamundaAuthentication.anonymous();
+
+    final var mockAuthentication = mock(Authentication.class);
+    SecurityContextHolder.getContext().setAuthentication(mockAuthentication);
+    when(holder.get()).thenReturn(expectedAuthentication);
+
+    // when
+    final var actualAuthentication = authenticationProvider.getCamundaAuthentication();
+
+    // then
+    assertThat(actualAuthentication).isNotNull();
+    assertThat(actualAuthentication).isEqualTo(expectedAuthentication);
   }
 }

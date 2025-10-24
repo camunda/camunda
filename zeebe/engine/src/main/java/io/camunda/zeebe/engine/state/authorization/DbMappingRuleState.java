@@ -125,7 +125,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     mappingRuleId.wrapString(id);
     final var fk = claimByIdColumnFamily.get(mappingRuleId);
     if (fk != null) {
-      return Optional.of(mappingRuleColumnFamily.get(fk.inner()));
+      return Optional.of(mappingRuleColumnFamily.get(fk.inner(), PersistedMappingRule::new));
     }
     return Optional.empty();
   }

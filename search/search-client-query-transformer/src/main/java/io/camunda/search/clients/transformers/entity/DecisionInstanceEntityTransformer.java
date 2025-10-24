@@ -41,6 +41,7 @@ public class DecisionInstanceEntityTransformer
         source.getDecisionName(),
         source.getDecisionVersion(),
         toDecisionType(source.getDecisionType()),
+        ofNullable(source.getRootDecisionDefinitionId()).map(Long::valueOf).orElse(null),
         source.getResult(),
         toEvaluatedInputs(source.getEvaluatedInputs()),
         toEvaluatedOutputs(source.getEvaluatedOutputs()));

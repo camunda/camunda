@@ -10,7 +10,7 @@ package io.camunda.operate.util.j5templates;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestContainerUtil;
-import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -25,31 +25,25 @@ public class OpensearchZeebeContainerManager extends ZeebeContainerManager {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchZeebeContainerManager.class);
 
-  private final ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
+  private final RichOpenSearchClient richOpenSearchClient;
 
   public OpensearchZeebeContainerManager(
       final OperateProperties operateProperties,
       final SecurityConfiguration securityConfiguration,
       final TestContainerUtil testContainerUtil,
-      final ZeebeRichOpenSearchClient zeebeRichOpenSearchClient,
+      final RichOpenSearchClient richOpenSearchClient,
       final IndexPrefixHolder indexPrefixHolder) {
     super(
         operateProperties,
         securityConfiguration,
         testContainerUtil,
         indexPrefixHolder.createNewIndexPrefix());
-    this.zeebeRichOpenSearchClient = zeebeRichOpenSearchClient;
-  }
-
-  @Override
-  protected void updatePrefix() {
-    LOGGER.info("Starting Zeebe with OS prefix: " + prefix);
-    operateProperties.getZeebeOpensearch().setPrefix(prefix);
+    this.richOpenSearchClient = richOpenSearchClient;
   }
 
   @Override
   protected void removeIndices() {
     TestUtil.removeAllIndices(
-        zeebeRichOpenSearchClient.index(), zeebeRichOpenSearchClient.template(), prefix);
+        richOpenSearchClient.index(), richOpenSearchClient.template(), prefix);
   }
 }

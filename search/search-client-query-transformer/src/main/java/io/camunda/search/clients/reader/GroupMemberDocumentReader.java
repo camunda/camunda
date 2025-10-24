@@ -9,7 +9,7 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.GroupMemberEntity;
-import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -26,7 +26,7 @@ public class GroupMemberDocumentReader extends DocumentBasedReader implements Gr
 
   @Override
   public SearchQueryResult<GroupMemberEntity> search(
-      final GroupQuery query, final ResourceAccessChecks resourceAccessChecks) {
+      final GroupMemberQuery query, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
         .search(
             query,
@@ -36,8 +36,8 @@ public class GroupMemberDocumentReader extends DocumentBasedReader implements Gr
 
   public Set<String> getGroupMembers(final String groupId, final EntityType entityType) {
     final var groupMemberQuery =
-        GroupQuery.of(
-            b -> b.filter(f -> f.joinParentId(groupId).memberType(entityType)).unlimited());
+        GroupMemberQuery.of(
+            b -> b.filter(f -> f.groupId(groupId).memberType(entityType)).unlimited());
     return search(groupMemberQuery, ResourceAccessChecks.disabled()).items().stream()
         .map(GroupMemberEntity::id)
         .collect(Collectors.toSet());

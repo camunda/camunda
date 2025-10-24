@@ -8,8 +8,10 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
@@ -20,6 +22,7 @@ import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
+import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -59,21 +62,28 @@ public class MyBatisConfiguration {
 
   @Bean
   @ConditionalOnProperty(
-      prefix = "camunda.database",
+      prefix = "camunda.data.secondary-storage.rdbms",
       name = "auto-ddl",
       havingValue = "true",
       matchIfMissing = true)
   public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
       final DataSource dataSource,
-      @Value("${camunda.database.index-prefix:}") final String indexPrefix) {
-    final String prefix = StringUtils.trimToEmpty(indexPrefix);
-    LOGGER.info("Initializing Liquibase for RDBMS with global table prefix '{}'.", prefix);
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
+    final String trimmedPrefix = StringUtils.trimToEmpty(prefix);
+    LOGGER.info(
+        "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
 
     final var moduleConfig = new MultiTenantSpringLiquibase();
     moduleConfig.setDataSource(dataSource);
-    moduleConfig.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
-    moduleConfig.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
-    moduleConfig.setParameters(Map.of("prefix", prefix));
+    moduleConfig.setDatabaseChangeLogTable(trimmedPrefix + "DATABASECHANGELOG");
+    moduleConfig.setDatabaseChangeLogLockTable(trimmedPrefix + "DATABASECHANGELOGLOCK");
+    moduleConfig.setParameters(
+        Map.of(
+            "prefix",
+            trimmedPrefix,
+            "userCharColumnSize",
+            Integer.toString(vendorDatabaseProperties.userCharColumnSize())));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 
@@ -82,7 +92,7 @@ public class MyBatisConfiguration {
 
   @Bean
   public RdbmsDatabaseIdProvider databaseIdProvider(
-      @Value("${camunda.database.database-vendor-id:}") final String vendorId) {
+      @Value("${camunda.data.secondary-storage.rdbms.database-vendor-id:}") final String vendorId) {
     return new RdbmsDatabaseIdProvider(vendorId);
   }
 
@@ -93,18 +103,7 @@ public class MyBatisConfiguration {
     final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
     LOGGER.info("Detected databaseId: {}", databaseId);
 
-    final Properties properties = new Properties();
-    final var file = "db/vendor-properties/" + databaseId + ".properties";
-    try (final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
-      if (propertiesInputStream != null) {
-        properties.load(propertiesInputStream);
-      } else {
-        throw new IllegalArgumentException(
-            "No vendor properties found for databaseId " + databaseId);
-      }
-    }
-
-    return new VendorDatabaseProperties(properties);
+    return VendorDatabasePropertiesLoader.load(databaseId);
   }
 
   @Bean
@@ -112,7 +111,7 @@ public class MyBatisConfiguration {
       final DataSource dataSource,
       final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
-      @Value("${camunda.database.index-prefix:}") final String indexPrefix)
+      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix)
       throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
@@ -127,7 +126,7 @@ public class MyBatisConfiguration {
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
     final Properties p = new Properties();
-    p.put("prefix", StringUtils.trimToEmpty(indexPrefix));
+    p.put("prefix", StringUtils.trimToEmpty(prefix));
     p.putAll(databaseProperties.properties());
     factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();
@@ -263,6 +262,18 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<UsageMetricTUMapper> usageMetricTUMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, UsageMetricTUMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<MessageSubscriptionMapper> messageSubscriptionMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, MessageSubscriptionMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<CorrelatedMessageSubscriptionMapper> correlatedMessageSubscriptionMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, CorrelatedMessageSubscriptionMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

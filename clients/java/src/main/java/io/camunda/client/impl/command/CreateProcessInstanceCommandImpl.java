@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.command;
 
+import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.TERMINATE_PROCESS_INSTANCE;
+
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
@@ -30,9 +32,10 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -42,6 +45,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreati
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TerminateProcessInstanceInstruction;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -94,6 +100,7 @@ public final class CreateProcessInstanceCommandImpl
    *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub, JsonMapper,
    *     CamundaClientConfiguration, Predicate, HttpClient, boolean)}
    */
+  @Deprecated
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
@@ -141,7 +148,9 @@ public final class CreateProcessInstanceCommandImpl
             .setTerminate(
                 TerminateProcessInstanceInstruction.newBuilder().setAfterElementId(elementId)));
     httpRequestObject.addRuntimeInstructionsItem(
-        new ProcessInstanceCreationTerminateInstruction().afterElementId(elementId));
+        new ProcessInstanceCreationRuntimeInstruction()
+            .afterElementId(elementId)
+            .type(TERMINATE_PROCESS_INSTANCE.name()));
     return this;
   }
 
@@ -159,6 +168,31 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
+  public CreateProcessInstanceCommandStep3 tags(final String... tags) {
+    final Set<String> uniqueTags = new HashSet<>(Arrays.asList(tags)); // ensure no duplicates
+
+    return tags(uniqueTags);
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 tags(final Iterable<String> tags) {
+
+    final Set<String> uniqueTags = new HashSet<>();
+    for (final String item : tags) {
+      uniqueTags.add(item);
+    }
+    return tags(uniqueTags);
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 tags(final Set<String> tags) {
+    TagUtil.ensureValidTags("tags", tags);
+    grpcRequestObjectBuilder.addAllTags(tags);
+    httpRequestObject.setTags(tags);
+    return this;
+  }
+
+  @Override
   public CreateProcessInstanceCommandStep2 bpmnProcessId(final String id) {
     grpcRequestObjectBuilder.setBpmnProcessId(id);
     httpRequestObject.setProcessDefinitionId(id);
@@ -168,6 +202,7 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep3 processDefinitionKey(final long processDefinitionKey) {
     grpcRequestObjectBuilder.setProcessDefinitionKey(processDefinitionKey);
+    httpRequestObject.setProcessDefinitionVersion(null); // reset version when setting key2
     httpRequestObject.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
   }

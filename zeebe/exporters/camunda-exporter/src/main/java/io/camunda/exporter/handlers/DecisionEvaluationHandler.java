@@ -59,12 +59,19 @@ public class DecisionEvaluationHandler
 
   @Override
   public List<String> generateIds(final Record<DecisionEvaluationRecordValue> record) {
-    final List<String> ids = new ArrayList<>();
-    for (int i = 1; i <= record.getValue().getEvaluatedDecisions().size(); i++) {
-      final String id = ID_PATTERN.formatted(record.getKey(), i);
-      ids.add(id);
+    // To ensure compatibility with older Zeebe versions, we first check if the IDs are already
+    // present in the record. If they are, we use them directly. If not,
+    // we fall back to the legacy ID generation method.
+    final var ids =
+        record.getValue().getEvaluatedDecisions().stream()
+            .map(EvaluatedDecisionValue::getDecisionEvaluationInstanceKey)
+            .toList();
+    // If none of the IDs are empty, we can safely return the list.
+    // "" is the default value for the decisionEvaluationInstanceKey field.
+    if (!ids.contains("")) {
+      return ids;
     }
-    return ids;
+    return generateIdsLegacy(record);
   }
 
   @Override
@@ -189,5 +196,14 @@ public class DecisionEvaluationHandler
                                 .setValue(output.getOutputValue()))
                     .toList()));
     return outputs;
+  }
+
+  private List<String> generateIdsLegacy(final Record<DecisionEvaluationRecordValue> record) {
+    final var ids = new ArrayList<String>();
+    final var decisionEvaluation = record.getValue();
+    for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
+      ids.add(ID_PATTERN.formatted(record.getKey(), i));
+    }
+    return ids;
   }
 }

@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.converter;
 
-import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -143,7 +142,7 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   }
 
   @Test
-  void authenticationContainsUsernameClaim() {
+  void authenticationClaimsAreNull() {
     // given
     final var authentication = getUsernamePasswordAuthentication("test-user", "test-password");
 
@@ -151,7 +150,7 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
     final var camundaAuthentication = authenticationConverter.convert(authentication);
 
     // then
-    assertThat(camundaAuthentication.claims()).containsEntry(AUTHORIZED_USERNAME, "test-user");
+    assertThat(camundaAuthentication.claims()).isNull();
   }
 
   private Authentication getUsernamePasswordAuthentication(

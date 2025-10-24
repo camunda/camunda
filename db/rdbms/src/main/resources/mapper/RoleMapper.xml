@@ -13,58 +13,127 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}ROLES r
-    <if test="filter.memberIds != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
-      AND rm.ENTITY_TYPE = #{filter.childMemberType}
-    </if>
-    <if test="filter.tenantId != null">
-      JOIN ${prefix}TENANT_MEMBER tm ON r.ROLE_ID = tm.ENTITY_ID
-      AND tm.ENTITY_TYPE = 'ROLE'
-    </if>
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+  </select>
+
+  <select id="countMembers" parameterType="io.camunda.db.rdbms.read.domain.RoleMemberDbQuery">
+    SELECT COUNT(*)
+    FROM ${prefix}ROLE_MEMBER rm
+    JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
+    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilter"/>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery"
     resultMap="io.camunda.db.rdbms.sql.RoleMapper.roleResultMap">
+SELECT
+    t.ROLE_ID,
+    t.ROLE_KEY,
+    t.NAME,
+    t.DESCRIPTION,
+    rm.ROLE_ID AS MEMBER_ROLE_ID,
+    rm.ENTITY_ID AS MEMBER_ENTITY_ID,
+    rm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
+FROM (
+    SELECT * FROM (
+    SELECT
+    r.ROLE_ID,
+    r.ROLE_KEY,
+    r.NAME,
+    r.DESCRIPTION
+    FROM ${prefix}ROLES r
+    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+             ) t
+    LEFT JOIN ${prefix}ROLE_MEMBER rm ON t.ROLE_ID = rm.ROLE_ID
+    <if test="filter.childMemberType != null">
+      AND rm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+  </select>
+
+  <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.RoleMemberDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.RoleMapper.roleMemberResultMap">
     SELECT * FROM (
     SELECT
     r.ROLE_ID,
     r.ROLE_KEY,
     r.NAME,
     r.DESCRIPTION,
-    rm.ROLE_ID AS MEMBER_ROLE_ID,
-    rm.ENTITY_ID AS MEMBER_ENTITY_ID,
-    rm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
-    FROM ${prefix}ROLES r
-    LEFT JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
-    <if test="filter.tenantId != null">
-      JOIN ${prefix}TENANT_MEMBER tm ON r.ROLE_ID = tm.ENTITY_ID
-      AND tm.ENTITY_TYPE = 'ROLE'
-    </if>
-    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+    rm.ENTITY_ID,
+    rm.ENTITY_TYPE
+    FROM ${prefix}ROLE_MEMBER rm
+    JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
+    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
+
   <sql id="searchFilter">
-    WHERE 1 = 1
-    <if test="filter.roleId != null">AND r.ROLE_ID = #{filter.roleId}</if>
-    <if test="filter.name != null">AND r.NAME = #{filter.name}</if>
-    <if test="filter.memberIds != null and !filter.memberIds.isEmpty()">
-      AND rm.ENTITY_ID IN
-      <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
-        #{memberId}
-      </foreach>
-      AND rm.ENTITY_TYPE = #{filter.childMemberType}
-    </if>
-    <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
+    <where>
+      <if test="filter.roleId != null">AND r.ROLE_ID = #{filter.roleId}</if>
+      <if test="filter.name != null">AND r.NAME = #{filter.name}</if>
+      <if test="filter.description != null">AND r.DESCRIPTION = #{filter.description}</if>
+      <if
+        test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">
+        AND r.ROLE_ID IN ( SELECT rmf.ROLE_ID FROM ${prefix}ROLE_MEMBER rmf
+        WHERE
+        rmf.ENTITY_TYPE = #{filter.childMemberType}
+        AND rmf.ENTITY_ID IN
+        <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
+          #{memberId}
+        </foreach>
+        )
+      </if>
+      <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+        AND r.ROLE_ID IN ( SELECT rmt.ROLE_ID FROM ${prefix}ROLE_MEMBER rmt
+        WHERE 1=1
+        <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND ("
+          separator=" OR " close=")">
+          <if test="values != null and !values.isEmpty()">
+            rmt.ENTITY_TYPE = #{memberType} AND rmt.ENTITY_ID IN
+            <foreach collection="values" item="value" open="(" separator=" , " close=")">
+              #{value}
+            </foreach>
+          </if>
+        </foreach>
+        )
+      </if>
+      <if test="filter.tenantId != null">
+        AND r.ROLE_ID IN ( SELECT tm.ENTITY_ID FROM ${prefix}TENANT_MEMBER tm
+        WHERE tm.ENTITY_TYPE = 'ROLE'
+        AND tm.TENANT_ID = #{filter.tenantId})
+      </if>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND r.ROLE_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+    </where>
+  </sql>
+
+  <sql id="searchMemberFilter">
+    <where>
+      <if test="filter.roleId != null">
+        AND r.ROLE_ID = #{filter.roleId}
+      </if>
+
+      <if test="filter.memberType != null">
+        AND rm.ENTITY_TYPE = #{filter.memberType}
+      </if>
+    </where>
   </sql>
 
   <resultMap id="roleResultMap" type="io.camunda.db.rdbms.write.domain.RoleDbModel">
-    <id column="ROLE_ID" property="roleId" />
-    <result column="ROLE_KEY" property="roleKey" />
+    <id column="ROLE_ID" property="roleId"/>
+    <result column="ROLE_KEY" property="roleKey"/>
     <result column="NAME" property="name"/>
     <result column="DESCRIPTION" property="description"/>
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
@@ -77,6 +146,14 @@
     </collection>
   </resultMap>
 
+  <resultMap id="roleMemberResultMap" type="io.camunda.db.rdbms.write.domain.RoleMemberDbModel">
+    <constructor>
+      <idArg column="ROLE_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_TYPE" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel">
     INSERT INTO ${prefix}ROLES (ROLE_KEY, ROLE_ID, NAME, DESCRIPTION)
     VALUES (#{roleKey}, #{roleId}, #{name}, #{description})
@@ -84,7 +161,7 @@
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel">
     UPDATE ${prefix}ROLES
-    SET NAME = #{name},
+    SET NAME        = #{name},
         DESCRIPTION = #{description}
     WHERE ROLE_ID = #{roleId}
   </update>

@@ -111,26 +111,24 @@ class BackupPrioritiesTest {
 
     final var indices = priorities.indicesSplitBySnapshot().toList();
 
-    assertThat(indices.size()).isEqualTo(7);
+    assertThat(indices.size()).isEqualTo(6);
+    final var iterator = indices.iterator();
     // PRIO 1
-    assertThat(indices.get(0).allIndices())
-        .containsExactlyInAnyOrder(
-            "operate-import-position-8.3.0_", "tasklist-import-position-8.2.0_");
     // PRIO 2
-    assertThat(indices.get(1).allIndices())
-        .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.5.0_");
+    assertThat(iterator.next().allIndices())
+        .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.8.0_");
     // PRIO 2 TEMPLATES
-    assertThat(indices.get(2).allIndices())
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
             "operate-list-view-8.3.0_*",
             "-operate-list-view-8.3.0_",
-            "tasklist-task-8.5.0_*",
-            "-tasklist-task-8.5.0_");
+            "tasklist-task-8.8.0_*",
+            "-tasklist-task-8.8.0_");
     // PRIO 3
-    assertThat(indices.get(3).allIndices())
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder("operate-batch-operation-1.0.0_", "operate-operation-8.4.1_");
     // PRIO 4
-    assertThat(indices.get(4).allIndices())
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
             "operate-decision-8.3.0_",
             "operate-decision-instance-8.3.0_",
@@ -143,10 +141,11 @@ class BackupPrioritiesTest {
             "operate-sequence-flow-8.3.0_",
             "operate-variable-8.3.0_",
             "tasklist-draft-task-variable-8.3.0_",
-            "tasklist-task-variable-8.3.0_");
+            "tasklist-task-variable-8.3.0_",
+            "camunda-correlated-message-subscription-8.8.0_");
 
     // PRIO 4 TEMPLATES
-    assertThat(indices.get(5).allIndices())
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
             "operate-event-8.3.0_*",
             "-operate-event-8.3.0_",
@@ -169,14 +168,15 @@ class BackupPrioritiesTest {
             "-tasklist-draft-task-variable-8.3.0_",
             "tasklist-draft-task-variable-8.3.0_*",
             "-tasklist-task-variable-8.3.0_",
-            "tasklist-task-variable-8.3.0_*");
+            "tasklist-task-variable-8.3.0_*",
+            "-camunda-correlated-message-subscription-8.8.0_",
+            "camunda-correlated-message-subscription-8.8.0_*");
 
     // PRIO 5
-    assertThat(indices.get(6).allIndices())
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
             "operate-decision-requirements-8.3.0_",
             "operate-metric-8.3.0_",
-            "operate-user-1.2.0_",
             "operate-process-8.3.0_",
             "tasklist-form-8.4.0_",
             "tasklist-metric-8.3.0_",

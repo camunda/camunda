@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {defaultAssertionOptions} from '../utils/constants';
 
 export class IdentityTenantsPage {
   private page: Page;
@@ -38,6 +39,7 @@ export class IdentityTenantsPage {
   readonly userRow: (userName: string) => Locator;
   readonly tenantCell: (tenantName: string) => Locator;
   readonly tenantRow: (tenantName: string) => Locator;
+  readonly tenantsHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -105,7 +107,9 @@ export class IdentityTenantsPage {
     this.confirmAssignmentButton = this.assignUserModal.getByRole('button', {
       name: 'Assign user',
     });
-    this.usersEmptyState = page.getByText('Assign users to this Tenant');
+    this.usersEmptyState = page.getByText(
+      'No users assigned to this tenant yet',
+    );
     this.removeUserButton = (rowName) =>
       page.getByRole('row', {name: rowName}).getByLabel('Remove');
     this.userRow = (userName) =>
@@ -121,6 +125,7 @@ export class IdentityTenantsPage {
     this.confirmRemoveUserButton = this.removeUserModal.getByRole('button', {
       name: 'Remove user',
     });
+    this.tenantsHeading = this.page.getByRole('heading', {name: 'Tenants'});
   }
 
   async navigateToTenants() {
@@ -160,7 +165,14 @@ export class IdentityTenantsPage {
   }
 
   async deleteTenant(tenantName: string) {
-    await this.deleteTenantButton(tenantName).click();
+    await expect(async () => {
+      await expect(this.deleteTenantButton(tenantName)).toBeVisible({
+        timeout: 20000,
+      });
+      await this.tenantsHeading.click();
+      await this.deleteTenantButton(tenantName).click();
+    }).toPass(defaultAssertionOptions);
+
     await expect(this.deleteTenantModal).toBeVisible();
     await this.deleteTenantModalDeleteButton.click();
     await expect(this.deleteTenantModal).toBeHidden();

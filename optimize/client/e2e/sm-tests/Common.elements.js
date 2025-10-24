@@ -84,4 +84,4 @@ export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
 export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
 export const processItem = listItemLink('process', true);
 export const templateOption = (text) => Selector('.Modal .templateContainer button').withText(text);
-export const collectionsPage = Selector('a[href="#/collections"]');
+export const collectionsPage = Selector('header > nav a[href="#/collections"]');

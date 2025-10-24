@@ -7,14 +7,14 @@
  */
 
 import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import type {Job} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {Job} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
 const USER_TASK_FLOW_NODE_ID = 'UserTask';
 const FLOW_NODE_INSTANCE_ID = '2251799813699889';
 const PROCESS_INSTANCE_ID = '2251799813685591';
-const BUSSINESS_RULE_FLOW_NODE_ID = 'BusinessRuleTask';
+const BUSINESS_RULE_FLOW_NODE_ID = 'BusinessRuleTask';
 
 const baseInstanceMetadata: MetaDataDto['instanceMetadata'] = {
   flowNodeId: FLOW_NODE_ID,
@@ -247,6 +247,25 @@ const jobMetadata: Job = {
   deniedReason: '',
 };
 
+const calledDecisionInstanceMetadata = {
+  decisionEvaluationKey: '9876543210',
+  decisionEvaluationInstanceKey: '9876543210',
+  decisionDefinitionName: 'Approval Rules',
+  decisionDefinitionId: 'approval-decision',
+  decisionDefinitionKey: '123456',
+  decisionDefinitionVersion: 1,
+  decisionDefinitionType: 'DECISION_TABLE' as const,
+  processDefinitionKey: '2',
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  elementInstanceKey: '2251799813699889',
+  state: 'EVALUATED' as const,
+  evaluationDate: '2023-01-15T10:05:00.000Z',
+  evaluationFailure: '',
+  tenantId: '<default>',
+  result: '',
+  rootDecisionDefinitionKey: '123456',
+};
+
 export {
   baseMetadata as singleInstanceMetadata,
   incidentFlowNodeMetaData,
@@ -262,10 +281,11 @@ export {
   incidentsByProcessKeyMetadata,
   processDefinitionMetadata,
   jobMetadata,
+  calledDecisionInstanceMetadata,
   PROCESS_INSTANCE_ID,
   CALL_ACTIVITY_FLOW_NODE_ID,
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
-  BUSSINESS_RULE_FLOW_NODE_ID,
+  BUSINESS_RULE_FLOW_NODE_ID,
   FLOW_NODE_INSTANCE_ID,
 };

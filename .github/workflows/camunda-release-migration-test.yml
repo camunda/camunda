@@ -1,0 +1,409 @@
+# description: Reusable workflow to run Camunda Platform release migration tests
+# type: CI
+# owner: @Chris
+name: Camunda Release migration test
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Specifies the name of the migration test'
+        default: "release-migration-test"
+        type: string
+        required: false
+      reuse-tag:
+        description: 'Docker image tag, that should be reused for the test. Allows to skip the docker image build step'
+        type: string
+        default: ""
+        required: false
+      ref:
+        description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
+        default: 'stable/8.8'
+        type: string
+        required: false
+      cluster:
+        description: 'Specifies which cluster to deploy the test on'
+        default: 'zeebe-cluster'
+        type: string
+        required: false
+      cluster-region:
+        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
+        default: europe-west1-b
+        type: string
+        required: false
+  workflow_call:
+    inputs:
+      name:
+        description: 'Specifies the name of the migration test'
+        default: "release-migration-test"
+        type: string
+        required: false
+      reuse-tag:
+        description: 'Docker image tag, that should be reused for the test. Allows to skip the docker image build step'
+        type: string
+        default: ""
+        required: false
+      ref:
+        description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
+        default: 'stable/8.8'
+        type: string
+        required: false
+      cluster:
+        description: 'Specifies which cluster to deploy the test on'
+        default: 'zeebe-cluster'
+        type: string
+        required: false
+      cluster-region:
+        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
+        default: europe-west1-b
+        type: string
+        required: false
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ inputs.name }}
+
+jobs:
+  calculate-image-tag:
+    name: Calculate Image Tag
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Get image tag
+        id: image-tag
+        run: |
+          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  build-camunda-image:
+    name: Build Zeebe
+    needs: calculate-image-tag
+    if: ${{ inputs.reuse-tag == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-frontend
+        name: Build Operate Frontend
+        id: build-operate-fe
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Tasklist Frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Identity Frontend
+        id: build-identity-fe
+        with:
+          directory: ./identity/client
+      - uses: ./.github/actions/build-zeebe
+        name: Build Zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+      - uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Camunda Docker Image
+        with:
+          repository: 'gcr.io/zeebe-io/zeebe'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
+
+  deploy-camunda-cluster-prev-version:
+    name: Deploy previous version of Camunda Platform
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - name: Clean up existing namespace
+        run: |
+          kubectl delete namespace ${{ inputs.name }} --ignore-not-found=true
+      - name: Add camunda helm repo
+        run: |
+          helm repo add camunda https://helm.camunda.io
+          helm repo update
+      - name: Helm install
+        run: >
+          helm install ${{ inputs.name }} camunda/camunda-platform
+          --wait --timeout 35m0s
+          --namespace ${{ inputs.name }}
+          --create-namespace
+          --render-subchart-notes
+          --version 12.6.2
+      - name: Summarize deployment
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Test \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
+          EOF
+
+  prev-version-create-instance:
+    name: Previous version create instance
+    needs:
+      - deploy-camunda-cluster-prev-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - name: Port-forward to gateway
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
+      - name: Port-forward to Keycloak
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
+      - name: Install zbctl
+        run: |
+          # Install zbctl after port-forward - allowing wait for port-forward to be ready
+          wget https://github.com/camunda/camunda/releases/download/8.5.8/zbctl
+          chmod +x zbctl
+      - name: Add load
+        run: |
+          release="${{ inputs.name }}"
+          # Get secret for connectors - to communicate with the cluster
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" "$release-zeebe-identity-secret" -o json | jq -r '.data."zeebe-secret"' | base64 -d)
+          # Set env vars to get zbctl working with the cluster
+          export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+          export ZEEBE_CLIENT_ID=zeebe
+          export ZEEBE_CLIENT_SECRET
+          export ZEEBE_TOKEN_AUDIENCE=zeebe-api
+          # Do not exit on error - as the port-forward might not be ready
+          set +e
+          while ! ./zbctl status --insecure;
+          do
+            echo "Result unsuccessful"
+            sleep 1
+          done
+          set -e
+          # Deploy load
+          ./zbctl deploy load-tests/load-tester/src/main/resources/bpmn/one_task.bpmn --insecure
+          ./zbctl create instance benchmark --insecure
+      - name: Summarize deployment
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Test \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
+          EOF
+
+  upgrade-camunda-cluster-to-new-version:
+    name: Upgrade previous version of Camunda Platform to new version
+    needs:
+      - prev-version-create-instance
+      - calculate-image-tag
+      - build-camunda-image
+    # To have the possibility to re-deploy the benchmarks without rebuilding the images,
+    # the deploy will be run, when build is skipped or successful.
+    if: always() && (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - name: Add camunda helm repo
+        run: |
+          helm repo add camunda https://helm.camunda.io
+          helm repo update
+      - name: Extract secrets
+        id: extract-secrets
+        run: |
+          release=${{ inputs.name }}
+          OPTIMIZE_SECRET=$(kubectl get secret --namespace "$release" "$release-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
+          export OPTIMIZE_SECRET
+          CONNECTORS_SECRET=$(kubectl get secret --namespace "$release" "$release-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
+          export CONNECTORS_SECRET
+          ORCHESTRATION_SECRET=$(kubectl get secret --namespace "$release" "$release-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
+          export ORCHESTRATION_SECRET
+          KEYCLOAK_ADMIN_SECRET=$(kubectl get secret --namespace "$release" "$release-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
+          export KEYCLOAK_ADMIN_SECRET
+          KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret --namespace "$release" "$release-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
+          export KEYCLOAK_MANAGEMENT_SECRET
+          POSTGRESQL_ADMIN_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.postgres-password}" | base64 --decode)
+          export POSTGRESQL_ADMIN_PASSWORD
+          POSTGRESQL_KEYCLOAK_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
+          export POSTGRESQL_KEYCLOAK_PASSWORD
+          kubectl create secret generic camunda-credentials \
+          --namespace $release \
+          --from-literal=identity-optimize-client-token="$OPTIMIZE_SECRET" \
+          --from-literal=identity-connectors-client-token="$CONNECTORS_SECRET" \
+          --from-literal=identity-orchestration-client-token="$ORCHESTRATION_SECRET" \
+          --from-literal=identity-keycloak-admin-password="$KEYCLOAK_ADMIN_SECRET" \
+          --from-literal=identity-keycloak-postgresql-admin-password="$POSTGRESQL_ADMIN_PASSWORD" \
+          --from-literal=identity-keycloak-postgresql-user-password="$POSTGRESQL_KEYCLOAK_PASSWORD"
+
+      - name: Upgrade platform
+        id: upgrade-platform
+        run: |
+          helm upgrade ${{ inputs.name }} camunda/camunda-platform \
+          --wait --wait-for-jobs --timeout 35m0s \
+          --namespace ${{ inputs.name }} \
+          --render-subchart-notes \
+          --set global.security.authentication.method=oidc \
+          --set connectors.image.tag=8.8.0 \
+          --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
+          --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
+          --set identity.enabled=true \
+          --set identity.firstUser.enabled=false \
+          --set identity.image.tag=8.8.0 \
+          --set identityKeycloak.enabled=true \
+          --set global.identity.auth.enabled=true \
+          --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
+          --set-string "orchestration.env[0].value=false" \
+          --set orchestration.image.registry=gcr.io \
+          --set orchestration.image.repository=zeebe-io/zeebe \
+          --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
+          --set orchestration.migration.data.enabled=true \
+          --set orchestration.migration.identity.enabled=true \
+          --set orchestration.migration.identity.secret.existingSecret=camunda-credentials \
+          --set orchestration.migration.identity.secret.existingSecretKey=identity-orchestration-client-token \
+          --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
+          --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
+          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
+          --version 13.x
+      - name: Summarize deployment
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Test \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
+          EOF
+
+  target-version-complete-job:
+    name: Target version - complete job
+    needs:
+      - upgrade-camunda-cluster-to-new-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - name: Port-forward to gateway
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
+      - name: Port-forward to Keycloak
+        run: |
+          release="${{ inputs.name }}"
+          kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
+      - name: Install zbctl
+        run: |
+          # Install zbctl after port-forward - allowing wait for port-forward to be ready
+          wget https://github.com/camunda/camunda/releases/download/8.5.8/zbctl
+          chmod +x zbctl
+      - name: Add load
+        run: |
+          release="${{ inputs.name }}"
+          # Get client secret from camunda credentials - which has been extracted during the upgrade
+          ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
+          # Set env vars to get zbctl working with the cluster
+          export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+          export ZEEBE_CLIENT_ID=zeebe
+          export ZEEBE_CLIENT_SECRET
+          export ZEEBE_TOKEN_AUDIENCE=zeebe-api
+          # Do not exit on error - as the port-forward might not be ready
+          set +e
+          while ! ./zbctl status --insecure;
+          do
+            echo "Result unsuccessful"
+            sleep 1
+          done
+          set -e
+          # Activate job
+          key=$(./zbctl  activate jobs benchmark-task --insecure --timeout 1s | jq -r '.jobs[0].key')
+          # Complete job from 8.7 version
+          ./zbctl complete job "$key" --insecure
+      - name: Summarize deployment
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Test \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
+          EOF

@@ -34,7 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -60,12 +60,12 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     })
 public class ClientConfigRestServiceIT extends OperateAbstractIT {
 
-  @MockBean private OperateProfileService operateProfileService;
-  @MockBean private SecurityConfiguration securityConfiguration;
-  @MockBean private AuthorizationsConfiguration authorizationsConfiguration;
-  @MockBean private AuthenticationConfiguration authenticationConfiguration;
-  @MockBean private MultiTenancyConfiguration multiTenancyConfiguration;
-  @MockBean private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+  @MockitoBean private OperateProfileService operateProfileService;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
+  @MockitoBean private AuthorizationsConfiguration authorizationsConfiguration;
+  @MockitoBean private AuthenticationConfiguration authenticationConfiguration;
+  @MockitoBean private MultiTenancyConfiguration multiTenancyConfiguration;
+  @MockitoBean private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
   @Autowired private OperateProperties operateProperties;
 

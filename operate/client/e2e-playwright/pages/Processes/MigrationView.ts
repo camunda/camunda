@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import type {Page, Locator} from '@playwright/test';
 
 export class MigrationView {
   private page: Page;
@@ -62,7 +62,7 @@ export class MigrationView {
     targetFlowNodeName: string;
   }) {
     return this.page
-      .getByLabel(`Target flow node for ${sourceFlowNodeName}`, {exact: true})
+      .getByLabel(`Target element for ${sourceFlowNodeName}`, {exact: true})
       .selectOption(targetFlowNodeName);
   }
 

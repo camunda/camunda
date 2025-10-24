@@ -7,7 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;
@@ -16,6 +17,8 @@ import io.camunda.search.clients.reader.BatchOperationDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
+import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionDocumentReader;
+import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
 import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
 import io.camunda.search.clients.reader.DecisionInstanceDocumentReader;
@@ -39,6 +42,8 @@ import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.clients.reader.MessageSubscriptionDocumentReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionDocumentReader;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsDocumentReader;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
@@ -66,9 +71,9 @@ import io.camunda.search.clients.reader.UserTaskDocumentReader;
 import io.camunda.search.clients.reader.UserTaskReader;
 import io.camunda.search.clients.reader.VariableDocumentReader;
 import io.camunda.search.clients.reader.VariableReader;
+import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
@@ -79,10 +84,9 @@ import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -92,14 +96,17 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnRestGatewayEnabled
-@ConditionalOnSecondaryStorageType({DatabaseConfig.ELASTICSEARCH, DatabaseConfig.OPENSEARCH})
+@ConditionalOnSecondaryStorageType({
+  SecondaryStorageType.elasticsearch,
+  SecondaryStorageType.opensearch
+})
 public class SearchClientReaderConfiguration {
 
   @Bean
@@ -123,6 +130,12 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
+  public IncidentErrorHashCodeNormalizer incidentErrorHashCodeNormalizer(
+      final IncidentReader incidentReader) {
+    return new IncidentErrorHashCodeNormalizer((IncidentDocumentReader) incidentReader);
+  }
+
+  @Bean
   public BatchOperationReader batchOperationReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new BatchOperationDocumentReader(
@@ -133,6 +146,13 @@ public class SearchClientReaderConfiguration {
   public BatchOperationItemReader batchOperationItemReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new BatchOperationItemDocumentReader(executor, descriptors.get(OperationTemplate.class));
+  }
+
+  @Bean
+  public CorrelatedMessageSubscriptionReader correlatedMessageSubscriptionsReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new CorrelatedMessageSubscriptionDocumentReader(
+        executor, descriptors.get(CorrelatedMessageSubscriptionTemplate.class));
   }
 
   @Bean
@@ -230,18 +250,27 @@ public class SearchClientReaderConfiguration {
   public ProcessDefinitionStatisticsReader processDefinitionStatisticsReader(
       final SearchClientBasedQueryExecutor executor,
       final IndexDescriptors descriptors,
-      final IncidentReader incidentReader) {
+      final IncidentErrorHashCodeNormalizer normalizer) {
     return new ProcessDefinitionStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class), (IncidentDocumentReader) incidentReader);
+        executor, descriptors.get(ListViewTemplate.class), normalizer);
+  }
+
+  @Bean
+  public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader(
+      final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptors descriptors,
+      final IncidentErrorHashCodeNormalizer normalizer) {
+    return new ProcessDefinitionInstanceStatisticsDocumentReader(
+        executor, descriptors.get(ListViewTemplate.class), normalizer) {};
   }
 
   @Bean
   public ProcessInstanceReader processInstanceReader(
       final SearchClientBasedQueryExecutor executor,
       final IndexDescriptors descriptors,
-      final IncidentReader incidentReader) {
+      final IncidentErrorHashCodeNormalizer normalizer) {
     return new ProcessInstanceDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class), (IncidentDocumentReader) incidentReader);
+        executor, descriptors.get(ListViewTemplate.class), normalizer);
   }
 
   @Bean
@@ -289,13 +318,13 @@ public class SearchClientReaderConfiguration {
   @Bean
   public UsageMetricsReader usageMetricsReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new UsageMetricsDocumentReader(executor, descriptors.get(UsageMetricIndex.class));
+    return new UsageMetricsDocumentReader(executor, descriptors.get(UsageMetricTemplate.class));
   }
 
   @Bean
   public UsageMetricsTUReader usageMetricsTUReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new UsageMetricsTUDocumentReader(executor, descriptors.get(UsageMetricTUIndex.class));
+    return new UsageMetricsTUDocumentReader(executor, descriptors.get(UsageMetricTUTemplate.class));
   }
 
   @Bean

@@ -40,7 +40,6 @@ faces-config.NavData
 .gradle
 .worktree
 work/
-public/
 tngp-data
 *.sst
 

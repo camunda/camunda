@@ -16,6 +16,8 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.BatchOperationType;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface BatchOperationItems {
@@ -25,11 +27,13 @@ public interface BatchOperationItems {
   interface BatchOperationItem {
     String getBatchOperationKey();
 
+    BatchOperationType getOperationType();
+
     Long getItemKey();
 
     Long getProcessInstanceKey();
 
-    String getProcessedDate();
+    OffsetDateTime getProcessedDate();
 
     String getErrorMessage();
 

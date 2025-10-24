@@ -17,9 +17,13 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
@@ -69,9 +73,12 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     super(
         // Unified Configuration classes
         UnifiedConfiguration.class,
+        UnifiedConfigurationHelper.class,
         TasklistPropertiesOverride.class,
         OperatePropertiesOverride.class,
-        UnifiedConfigurationHelper.class,
+        SearchEngineConnectPropertiesOverride.class,
+        SearchEngineIndexPropertiesOverride.class,
+        GatewayRestPropertiesOverride.class,
         // ---
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
@@ -329,8 +336,16 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     return new TestRestOperateClient(restAddress(), username, password);
   }
 
+  public TestRestOperateClient newOperateClient(CredentialsProvider credentialsProvider) {
+    return new TestRestOperateClient(restAddress(), credentialsProvider);
+  }
+
   public TestRestTasklistClient newTasklistClient() {
     return new TestRestTasklistClient(restAddress());
+  }
+
+  public TestRestTasklistClient newTasklistClient(CredentialsProvider credentialsProvider) {
+    return new TestRestTasklistClient(restAddress(), credentialsProvider);
   }
 
   public TestWebappClient newWebappClient() {

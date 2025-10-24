@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.rest.dto.metadata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import java.time.OffsetDateTime;
@@ -38,8 +39,10 @@ public class UserTaskInstanceMetadataDto extends ServiceTaskInstanceMetadataDto
       final FlowNodeType flowNodeType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
-      final EventEntity event) {
-    super(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate, event);
+      final String eventId,
+      final EventEntity event,
+      final JobEntity job) {
+    super(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate, eventId, event, job);
   }
 
   public String getExternalReference() {

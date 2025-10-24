@@ -57,7 +57,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -66,6 +66,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -153,8 +154,18 @@ public class ProtoBufSerializer
             ? decodeRoutingState(encodedClusterTopology.getRoutingState())
             : Optional.empty();
 
+    final Optional<String> clusterId =
+        encodedClusterTopology.getClusterId().isEmpty()
+            ? Optional.empty()
+            : Optional.of(encodedClusterTopology.getClusterId());
+
     return new ClusterConfiguration(
-        encodedClusterTopology.getVersion(), members, completedChange, currentChange, routingState);
+        encodedClusterTopology.getVersion(),
+        members,
+        completedChange,
+        currentChange,
+        routingState,
+        clusterId);
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -182,6 +193,7 @@ public class ProtoBufSerializer
     clusterConfiguration
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
+    clusterConfiguration.clusterId().ifPresent(clusterId -> builder.setClusterId(clusterId));
 
     return builder.build();
   }
@@ -217,8 +229,8 @@ public class ProtoBufSerializer
     return new DynamicPartitionConfig(decodeExportingConfig(config.getExporting()));
   }
 
-  private ExportersConfig decodeExportingConfig(final Topology.ExportersConfig exporting) {
-    return new ExportersConfig(
+  private ExportingConfig decodeExportingConfig(final Topology.ExportingConfig exporting) {
+    return new ExportingConfig(
         exporting.getExportersMap().entrySet().stream()
             .map(e -> Map.entry(e.getKey(), decodeExporterState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
@@ -280,8 +292,8 @@ public class ProtoBufSerializer
         .build();
   }
 
-  private Topology.ExportersConfig encodeExportingConfig(final ExportersConfig exporting) {
-    return Topology.ExportersConfig.newBuilder()
+  private Topology.ExportingConfig encodeExportingConfig(final ExportingConfig exporting) {
+    return Topology.ExportingConfig.newBuilder()
         .putAllExporters(
             exporting.exporters().entrySet().stream()
                 .map(e -> Map.entry(e.getKey(), encodeExporterState(e.getValue())))
@@ -525,19 +537,22 @@ public class ProtoBufSerializer
         pendingOperations);
   }
 
-  private Optional<RoutingState> decodeRoutingState(final Topology.RoutingState routingState) {
+  Optional<RoutingState> decodeRoutingState(final Topology.RoutingState routingState) {
     if (routingState.equals(Topology.RoutingState.getDefaultInstance())) {
       return Optional.empty();
     } else {
       return Optional.of(
           new RoutingState(
               routingState.getVersion(),
-              decodeRequestHandling(routingState.getRequestHandling()),
+              decodeRequestHandling(
+                  routingState.getRequestHandling(), routingState.getActivePartitionsList()),
               decodeMessageCorrelation(routingState.getMessageCorrelation())));
     }
   }
 
-  private RequestHandling decodeRequestHandling(final Topology.RequestHandling requestHandling) {
+  private RequestHandling decodeRequestHandling(
+      final Topology.RequestHandling requestHandling,
+      @Deprecated(forRemoval = true) final List<Integer> activePartitionList) {
     return switch (requestHandling.getStrategyCase()) {
       case ALLPARTITIONS ->
           new RequestHandling.AllPartitions(requestHandling.getAllPartitions().getPartitionCount());
@@ -547,7 +562,15 @@ public class ProtoBufSerializer
               new TreeSet<>(
                   requestHandling.getActivePartitions().getAdditionalActivePartitionsList()),
               new TreeSet<>(requestHandling.getActivePartitions().getInactivePartitionsList()));
-      case STRATEGY_NOT_SET -> throw new IllegalArgumentException("Unknown request handling type");
+      case STRATEGY_NOT_SET -> {
+        // This fallback is used during the transition from 8.7 to 8.8, as RequestHandling was
+        // introduced in 8.8. It can be removed in 8.9
+        if (activePartitionList.isEmpty()) {
+          throw new IllegalArgumentException("Unknown request handling type");
+        } else {
+          yield new RequestHandling.AllPartitions(activePartitionList.size());
+        }
+      }
     };
   }
 
@@ -561,9 +584,10 @@ public class ProtoBufSerializer
     };
   }
 
-  private Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
+  Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
     return Topology.RoutingState.newBuilder()
         .setVersion(routingState.version())
+        .addAllActivePartitions(routingState.requestHandling().activePartitions())
         .setRequestHandling(encodeRequestHandling(routingState.requestHandling()))
         .setMessageCorrelation(encodeMessageCorrelation(routingState.messageCorrelation()))
         .build();

@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration.security;
 
+import java.util.Objects;
+
 public class SecurityConfiguration {
 
   private AuthConfiguration auth;
@@ -44,13 +46,19 @@ public class SecurityConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SecurityConfiguration that = (SecurityConfiguration) o;
+    return Objects.equals(auth, that.auth)
+        && Objects.equals(license, that.license)
+        && Objects.equals(responseHeaders, that.responseHeaders);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(auth, license, responseHeaders);
   }
 
   @Override

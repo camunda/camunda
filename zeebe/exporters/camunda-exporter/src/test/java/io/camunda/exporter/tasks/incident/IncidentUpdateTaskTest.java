@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.exporter.notifier.IncidentNotifier;
-import io.camunda.exporter.notifier.M2mTokenManager;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
@@ -34,7 +33,6 @@ import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,13 +107,10 @@ final class IncidentUpdateTaskTest {
   private IncidentNotifier createIncidentNotifier() {
     final var config = new IncidentNotifierConfiguration();
     config.setWebhook(null);
-    final var m2mTokenManager = mock(M2mTokenManager.class);
     final var processCache = mock(ExporterEntityCache.class);
-    final var httpClient = mock(HttpClient.class);
     final var objectMapper = new ObjectMapper();
 
-    return new IncidentNotifier(
-        m2mTokenManager, processCache, config, httpClient, EXECUTOR, objectMapper);
+    return new IncidentNotifier(processCache, config, EXECUTOR, objectMapper);
   }
 
   private static final class TestRepository extends NoopIncidentUpdateRepository {

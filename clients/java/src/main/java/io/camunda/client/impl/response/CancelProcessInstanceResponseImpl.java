@@ -22,4 +22,6 @@ public class CancelProcessInstanceResponseImpl implements CancelProcessInstanceR
 
   public CancelProcessInstanceResponseImpl(
       final GatewayOuterClass.CancelProcessInstanceResponse response) {}
+
+  public CancelProcessInstanceResponseImpl(final Void nothing) {}
 }

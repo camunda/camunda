@@ -18,16 +18,20 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1.AssignMappingRuleToTenantCommandStep2;
+import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1.AssignMappingRuleToTenantCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignMappingRuleToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignMappingRuleToTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class AssignMappingRuleToTenantCommandImpl
-    implements AssignMappingRuleToTenantCommandStep1, AssignMappingRuleToTenantCommandStep2 {
+    implements AssignMappingRuleToTenantCommandStep1,
+        AssignMappingRuleToTenantCommandStep2,
+        AssignMappingRuleToTenantCommandStep3 {
 
   private String tenantId;
   private String mappingRuleId;
@@ -46,7 +50,7 @@ public final class AssignMappingRuleToTenantCommandImpl
   }
 
   @Override
-  public AssignMappingRuleToTenantCommandStep2 tenantId(final String tenantId) {
+  public AssignMappingRuleToTenantCommandStep3 tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -62,7 +66,12 @@ public final class AssignMappingRuleToTenantCommandImpl
   public CamundaFuture<AssignMappingRuleToTenantResponse> send() {
     final HttpCamundaFuture<AssignMappingRuleToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/mapping-rules/%s", tenantId, mappingRuleId);
-    httpClient.put(endpoint, null, httpRequestConfig.build(), result);
+    httpClient.put(
+        endpoint,
+        null,
+        httpRequestConfig.build(),
+        AssignMappingRuleToTenantResponseImpl::new,
+        result);
     return result;
   }
 }

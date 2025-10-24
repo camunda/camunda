@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -22,8 +22,9 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOper
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceIncidentResolutionBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceIncidentSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
@@ -31,15 +32,14 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOp
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -171,27 +171,17 @@ public class ProcessInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/cancellation")
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstancesBatchOperation(
-      @RequestBody(required = false) final ProcessInstanceFilter filter) {
-
-    return SearchQueryRequestMapper.toProcessInstanceFilter(filter)
-        .fold(
-            (errors) ->
-                RestErrorMapper.mapProblemToCompletedResponse(
-                    RequestValidator.createProblemDetail(errors).get()),
-            this::batchOperationCancellation);
+      @RequestBody final ProcessInstanceCancellationBatchOperationRequest request) {
+    return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationCancellation);
   }
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/incident-resolution")
   public CompletableFuture<ResponseEntity<Object>> resolveIncidentsBatchOperation(
-      @RequestBody(required = false) final ProcessInstanceFilter filter) {
-
-    return SearchQueryRequestMapper.toProcessInstanceFilter(filter)
-        .fold(
-            (errors) ->
-                RestErrorMapper.mapProblemToCompletedResponse(
-                    RequestValidator.createProblemDetail(errors).get()),
-            this::batchOperationResolveIncidents);
+      @RequestBody final ProcessInstanceIncidentResolutionBatchOperationRequest request) {
+    return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationResolveIncidents);
   }
 
   @RequiresSecondaryStorage
@@ -199,7 +189,7 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstancesBatchOperation(
       @RequestBody final ProcessInstanceMigrationBatchOperationRequest request) {
     return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationMigrate);
   }
 
   @RequiresSecondaryStorage
@@ -268,7 +258,7 @@ public class ProcessInstanceController {
         ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> batchOperationModify(
+  private CompletableFuture<ResponseEntity<Object>> batchOperationMigrate(
       final ProcessInstanceMigrateBatchOperationRequest request) {
     return RequestMapper.executeServiceMethod(
         () ->

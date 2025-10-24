@@ -18,6 +18,7 @@ package io.camunda.client;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
+import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
@@ -32,8 +33,6 @@ import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
-import io.camunda.client.api.command.ClockPinCommandStep1;
-import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
@@ -50,6 +49,7 @@ import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
+import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
@@ -59,22 +59,27 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
-import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
+import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
+import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
+import io.camunda.client.api.command.UnassignMappingRuleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
@@ -116,6 +121,7 @@ import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
+import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -124,6 +130,7 @@ import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.IncidentsByElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
@@ -205,6 +212,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return the request where you must call {@code send()}
    */
   TopologyRequestStep1 newTopologyRequest();
+
+  /**
+   * Request the current cluster status. Can be used to check if the cluster is healthy (has at
+   * least one partition with a healthy leader).
+   *
+   * <pre>
+   * boolean isHealthy = camundaClient
+   *  .newStatusRequest()
+   *  .send()
+   *  .join()
+   *  .isHealthy();
+   * </pre>
+   *
+   * @return the request where you must call {@code send()}
+   */
+  StatusRequestStep1 newStatusRequest();
 
   /**
    * @return the client's configuration
@@ -595,7 +618,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long userTaskKey = ..;
    *
    * camundaClient
-   *  .newUserTaskCompleteCommand(userTaskKey)
+   *  .newCompleteUserTaskCommand(userTaskKey)
    *  .variables(map)
    *  .send();
    * </pre>
@@ -609,7 +632,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(long userTaskKey);
+  CompleteUserTaskCommandStep1 newCompleteUserTaskCommand(long userTaskKey);
 
   /**
    * Command to assign a user task.
@@ -618,7 +641,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long userTaskKey = ..;
    *
    * camundaClient
-   *  .newUserTaskAssignCommand(userTaskKey)
+   *  .newAssignUserTaskCommand(userTaskKey)
    *  .assignee(newAssignee)
    *  .send();
    * </pre>
@@ -629,7 +652,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  AssignUserTaskCommandStep1 newUserTaskAssignCommand(long userTaskKey);
+  AssignUserTaskCommandStep1 newAssignUserTaskCommand(long userTaskKey);
 
   /**
    * Command to update a user task.
@@ -638,7 +661,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long userTaskKey = ..;
    *
    * camundaClient
-   *  .newUserTaskUpdateCommand(userTaskKey)
+   *  .newUpdateUserTaskCommand(userTaskKey)
    *  .candidateGroups(newCandidateGroups)
    *  .send();
    * </pre>
@@ -649,7 +672,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(long userTaskKey);
+  UpdateUserTaskCommandStep1 newUpdateUserTaskCommand(long userTaskKey);
 
   /**
    * Command to unassign a user task.
@@ -658,7 +681,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long userTaskKey = ..;
    *
    * camundaClient
-   *  .newUserTaskUnassignCommand(userTaskKey)
+   *  .newUnassignUserTaskCommand(userTaskKey)
    *  .send();
    * </pre>
    *
@@ -668,7 +691,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
+  UnassignUserTaskCommandStep1 newUnassignUserTaskCommand(long userTaskKey);
 
   /**
    * Command to update the retries and/or the timeout of a job.
@@ -736,13 +759,13 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>{@code
    * final long pinnedTime = 1742461285000L; // Thu, Mar 20, 2025 09:01:25 GMT+0000
    * camundaClient
-   *  .newClockPinCommand()
+   *  .newPinClockCommand()
    *  .time(pinnedTime)
    *  .send();
    *
    * final Instant futureInstant = Instant.now().plus(Duration.ofDays(7));
    * camundaClient
-   *  .newClockPinCommand()
+   *  .newPinClockCommand()
    *  .time(futureInstant)
    *  .send();
    * }</pre>
@@ -753,7 +776,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command that allows setting either a timestamp or an instant
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
-  ClockPinCommandStep1 newClockPinCommand();
+  PinClockCommandStep1 newPinClockCommand();
 
   /**
    * Command to reset the Zeebe engine's internal clock to the system time.
@@ -763,7 +786,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>{@code
    * camundaClient
-   *  .newClockResetCommand()
+   *  .newResetClockCommand()
    *  .send();
    * }</pre>
    *
@@ -773,7 +796,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
-  ClockResetCommandStep1 newClockResetCommand();
+  ResetClockCommandStep1 newResetClockCommand();
 
   /**
    * Gets a process definition by key.
@@ -1574,6 +1597,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteGroupCommandStep1 newDeleteGroupCommand(String groupId);
 
   /**
+   * Command to delete a mapping rule.
+   *
+   * <pre>
+   * camundaClient
+   *  .newDeleteMappingRuleCommand("mappingRuleId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @param mappingRuleId the ID of the mapping rule to delete
+   * @return a builder for the command
+   */
+  DeleteMappingRuleCommandStep1 newDeleteMappingRuleCommand(String mappingRuleId);
+
+  /**
    * Command to assign a user to a group.
    *
    * <pre>
@@ -2128,7 +2167,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   AssignUserToTenantCommandStep1 newAssignUserToTenantCommand();
 
   /**
-   * Command to remove a user from a tenant.
+   * Command to unassign a user from a tenant.
    *
    * <p>Example usage:
    *
@@ -2140,12 +2179,12 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .send();
    * </pre>
    *
-   * <p>This command sends an HTTP DELETE request to remove the specified user from the given
+   * <p>This command sends an HTTP DELETE request to unassign the specified user from the given
    * tenant.
    *
-   * @return a builder for the remove user from tenant command
+   * @return a builder for the unassign user from tenant command
    */
-  RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand();
+  UnassignUserFromTenantCommandStep1 newUnassignUserFromTenantCommand();
 
   /**
    * Command to assign a group to a tenant.
@@ -2171,15 +2210,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUnassignGroupFromTenantCommand(tenantId)
-   *   .groupId(groupId)
+   *   .newUnassignGroupFromTenantCommand()
+   *   .groupId("groupId")
+   *   .tenantId("tenantId")
    *   .send();
    * </pre>
    *
-   * @param tenantId the unique identifier of the tenant
    * @return a builder to configure and send the unassign group from tenant command
    */
-  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(String tenantId);
+  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand();
 
   /**
    * Command to assign a client to a group.
@@ -2217,6 +2256,60 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the unassign client from group command
    */
   UnassignClientFromGroupCommandStep1 newUnassignClientFromGroupCommand();
+
+  /**
+   * Command to assign a client to a tenant.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignClientToTenantCommand()
+   *  .clientId("clientId")
+   *  .tenantId("tenantId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign client to tenant command
+   */
+  AssignClientToTenantCommandStep1 newAssignClientToTenantCommand();
+
+  /**
+   * Command to unassign a client from a tenant.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUnassignClientFromTenantCommand()
+   *  .clientId("clientId")
+   *  .tenantId("tenantId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the unassign client from tenant command
+   */
+  UnassignClientFromTenantCommandStep1 newUnassignClientFromTenantCommand();
+
+  /**
+   * Command to unassign a mapping rule from a tenant.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUnassignMappingRuleFromTenantCommand()
+   *  .mappingRuleId("mappingRuleId")
+   *  .tenantId("tenantId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the unassign mapping rule from tenant command
+   */
+  UnassignMappingRuleFromTenantCommandStep1 newUnassignMappingRuleFromTenantCommand();
 
   /**
    * Command to create an authorization
@@ -2649,4 +2742,37 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the message subscription search request
    */
   MessageSubscriptionSearchRequest newMessageSubscriptionSearchRequest();
+
+  /**
+   * Executes a search request to query correlated message subscriptions.
+   *
+   * <pre>
+   * camundaClient
+   *  .newCorrelatedMessageSubscriptionSearchRequest()
+   *  .filter((f) -> f.messageName("myMessage"))
+   *  .sort((s) -> s.correlationTime().desc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the correlated message subscription search request
+   */
+  CorrelatedMessageSubscriptionSearchRequest newCorrelatedMessageSubscriptionSearchRequest();
+
+  /**
+   * Executes a search request to query incidents by element instance key.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+   *    .sort((s) -> s.incidentKey().desc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   * </pre>
+   *
+   * @param elementInstanceKey the key of the element instance
+   * @return a builder for the incidents by element instance search request
+   */
+  IncidentsByElementInstanceSearchRequest newIncidentsByElementInstanceSearchRequest(
+      long elementInstanceKey);
 }

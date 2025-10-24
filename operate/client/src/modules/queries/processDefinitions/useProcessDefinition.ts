@@ -6,28 +6,37 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {skipToken, useQuery} from '@tanstack/react-query';
 import {fetchProcessDefinition} from 'modules/api/v2/processDefinitions/fetchProcessDefinition';
+import {queryKeys} from '../queryKeys';
 
-const PROCESS_DEFINITION_QUERY_KEY = 'processDefinition';
+const getUseProcessDefinitionOptions = (processDefinitionKey?: string) => {
+  return {
+    queryKey: queryKeys.processDefinitions.get(processDefinitionKey),
+    queryFn: processDefinitionKey
+      ? async () => {
+          const {response, error} = await fetchProcessDefinition({
+            processDefinitionKey,
+          });
+          if (response !== null) {
+            return response;
+          }
+          throw error;
+        }
+      : skipToken,
+  } as const;
+};
 
 const useProcessDefinition = (
-  processDefinitionKey: string,
+  processDefinitionKey?: string,
   options?: {
     enabled?: boolean;
   },
 ) => {
   return useQuery({
-    queryKey: [PROCESS_DEFINITION_QUERY_KEY, processDefinitionKey],
-    queryFn: async () => {
-      const {response, error} = await fetchProcessDefinition({
-        processDefinitionKey,
-      });
-      if (response !== null) return response;
-      throw error;
-    },
-    enabled: options?.enabled,
+    ...getUseProcessDefinitionOptions(processDefinitionKey),
+    ...options,
   });
 };
 
-export {useProcessDefinition};
+export {useProcessDefinition, getUseProcessDefinitionOptions};

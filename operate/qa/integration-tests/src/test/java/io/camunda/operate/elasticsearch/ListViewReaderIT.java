@@ -8,6 +8,8 @@
 package io.camunda.operate.elasticsearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -18,6 +20,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -31,16 +34,16 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class ListViewReaderIT extends OperateSearchAbstractIT {
   @Autowired private ListViewReader listViewReader;
   @Autowired private ListViewTemplate listViewTemplate;
   @Autowired private IncidentTemplate incidentTemplate;
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
   private ProcessInstanceForListViewEntity activeProcess;
   private ProcessInstanceForListViewEntity completedProcess;
@@ -173,9 +176,15 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
     searchContainerManager.refreshIndices("*list-view*");
   }
 
-  @Override
-  protected void runAdditionalBeforeEachSetup() throws Exception {
-    Mockito.reset(permissionsService);
+  @BeforeEach
+  public void setup() {
+    when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.wildcard());
+    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
+        .thenReturn(ResourcesAllowed.wildcard());
+    when(permissionsService.hasPermissionForProcess(
+            any(), eq(PermissionType.READ_PROCESS_INSTANCE)))
+        .thenReturn(true);
   }
 
   @Test
@@ -438,7 +447,6 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testQueryProcessInstancesWithPermissions() {
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(
             PermissionsService.ResourcesAllowed.withIds(Set.of(activeProcess.getBpmnProcessId())));

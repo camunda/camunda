@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
-import io.camunda.zeebe.auth.Authorization;
+import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
+
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -45,6 +47,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public TenantRemoveEntityProcessor(
@@ -62,6 +65,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
@@ -73,7 +77,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
             .addResourceId(tenantId);
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
       return;
@@ -97,6 +101,12 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     final var tenantKey = persistedTenant.get().getTenantKey();
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
+
     distributeCommand(command);
   }
 
@@ -105,6 +115,11 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     if (validateEntityAssignment(command, command.getValue().getTenantId())) {
       stateWriter.appendFollowUpEvent(
           command.getKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
+      sideEffectWriter.appendSideEffect(
+          () -> {
+            authCheckBehavior.clearAuthorizationsCache();
+            return true;
+          });
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
@@ -129,13 +144,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final Map<String, Object> authorizations,
       final EntityType entityType,
       final String entityId) {
-    return switch (entityType) {
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
-      case GROUP ->
-          authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
-              || groupState.get(entityId).isPresent();
-      default -> true;
-    };
+    return entityType != MAPPING_RULE || mappingRuleState.get(entityId).isPresent();
   }
 
   private void createEntityNotExistRejectCommand(

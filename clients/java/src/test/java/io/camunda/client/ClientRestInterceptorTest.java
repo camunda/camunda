@@ -102,7 +102,7 @@ public class ClientRestInterceptorTest {
 
     // when
     final Future<CompleteUserTaskResponse> response =
-        client.newUserTaskCompleteCommand(1234L).send();
+        client.newCompleteUserTaskCommand(1234L).send();
 
     // then
     assertThatThrownBy(() -> response.get())
@@ -112,7 +112,6 @@ public class ClientRestInterceptorTest {
 
   private CamundaClient createClient(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
     return CamundaClient.newClientBuilder()
-        .usePlaintext()
         .preferRestOverGrpc(true)
         .restAddress(new URI(mockInfo.getHttpBaseUrl()))
         .withChainHandlers(new TestTopologyInterceptor(), new TestUserTasksInterceptor())

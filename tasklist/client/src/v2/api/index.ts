@@ -15,7 +15,7 @@ import {
   type QueryProcessDefinitionsRequestBody,
   type ProcessDefinition,
   type CreateProcessInstanceRequestBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 
 const api = {

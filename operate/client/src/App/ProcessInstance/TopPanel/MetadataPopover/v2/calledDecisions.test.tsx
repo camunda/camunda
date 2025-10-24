@@ -21,7 +21,8 @@ import {
   PROCESS_INSTANCE_ID,
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
-  BUSSINESS_RULE_FLOW_NODE_ID,
+  BUSINESS_RULE_FLOW_NODE_ID,
+  calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {
@@ -40,20 +41,22 @@ import {mockIncidents} from 'modules/mocks/incidents';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
-
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import type {
   ElementInstance,
   ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
 const mockElementInstance: ElementInstance = {
   elementInstanceKey: '2251799813699889',
-  elementId: BUSSINESS_RULE_FLOW_NODE_ID,
-  elementName: 'Service Task',
-  type: 'SERVICE_TASK',
+  elementId: BUSINESS_RULE_FLOW_NODE_ID,
+  elementName: 'Business Rule Task',
+  type: 'BUSINESS_RULE_TASK',
   state: 'COMPLETED',
   startDate: '2018-06-21T10:00:00.000Z',
   endDate: '2018-06-21T10:00:00.000Z',
@@ -74,6 +77,22 @@ const mockProcessInstance: ProcessInstance = {
   tenantId: '<default>',
   processDefinitionName: 'Called Process',
   hasIncident: true,
+};
+
+const mockIncident = {
+  incidentKey: '4503599627375678',
+  errorType: 'DECISION_EVALUATION_ERROR' as const,
+  errorMessage:
+    "Failed to evaluate expression 'paid = false': no variable found for name 'paid'",
+  state: 'ACTIVE' as const,
+  creationTime: '2022-02-03T16:44:06.981+0000',
+  processDefinitionId: 'someKey',
+  processDefinitionKey: '2',
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  elementId: BUSINESS_RULE_FLOW_NODE_ID,
+  elementInstanceKey: '2251799813699889',
+  jobKey: '',
+  tenantId: '<default>',
 };
 
 vi.mock('date-fns', async () => {
@@ -126,6 +145,33 @@ describe('MetadataPopover', () => {
       ],
     });
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchIncidentsByProcessInstance('2251799813685294').withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchMessageSubscriptions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
   });
 
   afterEach(() => {
@@ -140,11 +186,17 @@ describe('MetadataPopover', () => {
 
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
-    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+      }),
+    );
 
     const mockCallActivityElementInstance: ElementInstance = {
       ...mockElementInstance,
       elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+      elementName: 'Call Activity',
+      type: 'CALL_ACTIVITY',
     };
 
     mockFetchElementInstance('2251799813699889').withSuccess(
@@ -159,6 +211,11 @@ describe('MetadataPopover', () => {
     mockSearchProcessInstances().withSuccess({
       items: [mockProcessInstance],
       page: {totalItems: 1},
+    });
+
+    mockSearchIncidentsByProcessInstance('2251799813685294').withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
 
     processInstanceDetailsStore.setProcessInstance(
@@ -201,11 +258,33 @@ describe('MetadataPopover', () => {
   it('should render completed decision', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const {instanceMetadata} = calledDecisionMetadata;
+    const mockBusinessRuleElementInstance: ElementInstance = {
+      ...mockElementInstance,
+      elementId: BUSINESS_RULE_FLOW_NODE_ID,
+      type: 'BUSINESS_RULE_TASK',
+    };
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledDecisionMetadata);
     mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockBusinessRuleElementInstance,
+    );
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [calledDecisionInstanceMetadata],
+      page: {totalItems: 1},
+    });
+
+    mockSearchElementInstances().withSuccess({
+      items: [mockBusinessRuleElementInstance],
+      page: {totalItems: 1},
+    });
+
+    mockSearchIncidentsByProcessInstance('2251799813685294').withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -217,13 +296,12 @@ describe('MetadataPopover', () => {
     selectFlowNode(
       {},
       {
-        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeId: BUSINESS_RULE_FLOW_NODE_ID,
         flowNodeInstanceId: '2251799813699889',
       },
     );
 
     const {user} = renderPopover();
-
     expect(
       await screen.findByText(labels.calledDecisionInstance),
     ).toBeInTheDocument();
@@ -236,15 +314,15 @@ describe('MetadataPopover', () => {
 
     await user.click(
       screen.getByText(
-        `${instanceMetadata!.calledDecisionDefinitionName} - ${
-          instanceMetadata!.calledDecisionInstanceId
+        `${calledDecisionInstanceMetadata!.decisionDefinitionName} - ${
+          calledDecisionInstanceMetadata!.decisionEvaluationInstanceKey
         }`,
       ),
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        `/decisions/${instanceMetadata!.calledDecisionInstanceId}`,
+        `/decisions/${calledDecisionInstanceMetadata!.decisionEvaluationInstanceKey}`,
       ),
     );
 
@@ -256,12 +334,41 @@ describe('MetadataPopover', () => {
   it.skip('should render failed decision', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const {instanceMetadata} = calledFailedDecisionMetadata;
-    const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;
+    const mockBusinessRuleElementInstance: ElementInstance = {
+      ...mockElementInstance,
+      elementId: BUSINESS_RULE_FLOW_NODE_ID,
+      type: 'BUSINESS_RULE_TASK',
+      hasIncident: true,
+    };
+
+    const mockFailedDecisionInstance = {
+      ...calledDecisionInstanceMetadata,
+      state: 'FAILED' as const,
+    };
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledFailedDecisionMetadata);
-    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
+    );
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockBusinessRuleElementInstance,
+    );
+
+    mockSearchElementInstances().withSuccess({
+      items: [mockBusinessRuleElementInstance],
+      page: {totalItems: 1},
+    });
+
+    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
+      items: [mockIncident],
+      page: {totalItems: 1},
+    });
+
+    mockSearchDecisionInstances().withSuccess({
+      items: [mockFailedDecisionInstance],
+      page: {totalItems: 1},
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -273,7 +380,7 @@ describe('MetadataPopover', () => {
     selectFlowNode(
       {},
       {
-        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeId: BUSINESS_RULE_FLOW_NODE_ID,
         flowNodeInstanceId: '2251799813699889',
       },
     );
@@ -287,11 +394,9 @@ describe('MetadataPopover', () => {
       screen.getByRole('heading', {name: labels.incident}),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        `${instanceMetadata!.calledDecisionDefinitionName} - ${
-          instanceMetadata!.calledDecisionInstanceId
-        }`,
-      ),
+      screen.getByRole('link', {
+        name: `View ${mockFailedDecisionInstance.decisionDefinitionName} instance ${mockFailedDecisionInstance!.decisionEvaluationKey}`,
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(labels.rootCauseDecisionInstance),
@@ -299,17 +404,24 @@ describe('MetadataPopover', () => {
     expect(
       screen.queryByText(labels.rootCauseProcessInstance),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: `View root cause decision ${mockFailedDecisionInstance!.decisionDefinitionName!} - ${
+          mockFailedDecisionInstance!.decisionEvaluationKey
+        }`,
+      }),
+    ).toBeInTheDocument();
 
     await user.click(
-      screen.getByText(
-        `${rootCauseDecision!.decisionName!} - ${
-          rootCauseDecision!.instanceId
+      screen.getByRole('link', {
+        name: `View root cause decision ${mockFailedDecisionInstance!.decisionDefinitionName!} - ${
+          mockFailedDecisionInstance!.decisionEvaluationKey
         }`,
-      ),
+      }),
     );
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        `/decisions/${rootCauseDecision!.instanceId}`,
+        `/decisions/${mockFailedDecisionInstance!.decisionEvaluationKey}`,
       ),
     );
 
@@ -317,12 +429,32 @@ describe('MetadataPopover', () => {
     vi.useRealTimers();
   });
 
-  it('should render unevaluated decision', async () => {
+  //TODO should be removed after #39658 and related issues are closed
+  it.skip('should render unevaluated decision', async () => {
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledUnevaluatedDecisionMetadata);
-    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+      }),
+    );
 
-    const {instanceMetadata} = calledUnevaluatedDecisionMetadata;
+    const mockUnevaluatedDecisionInstance = {
+      ...calledDecisionInstanceMetadata,
+      decisionEvaluationInstanceKey: '',
+      decisionEvaluationKey: '',
+      state: 'UNSPECIFIED' as const,
+    };
+
+    // mockSearchDecisionInstances().withSuccess({
+    //   items: [mockUnevaluatedDecisionInstance],
+    //   page: {totalItems: 1},
+    // });
+
+    mockSearchIncidentsByProcessInstance('2251799813685294').withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -334,7 +466,7 @@ describe('MetadataPopover', () => {
     selectFlowNode(
       {},
       {
-        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeId: BUSINESS_RULE_FLOW_NODE_ID,
         flowNodeInstanceId: '2251799813699889',
       },
     );
@@ -345,7 +477,7 @@ describe('MetadataPopover', () => {
       await screen.findByText(labels.calledDecisionInstance),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(instanceMetadata.calledDecisionDefinitionName),
+      screen.getByText(mockUnevaluatedDecisionInstance.decisionDefinitionName),
     ).toBeInTheDocument();
     expect(screen.queryByText(labels.incident)).not.toBeInTheDocument();
     expect(

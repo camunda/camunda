@@ -13,12 +13,12 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.opensearch.client.AbstractOpenSearchOperationIT;
-import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class OpenSearchDocumentOperationsIT extends AbstractOpenSearchOperationIT {
-  @Autowired private OperateUserIndex operateUserIndex;
+  @Autowired private UserIndex userIndex;
 
   @Test
   public void searchUniqueShouldDeserializeLocalRecord() {
@@ -27,16 +27,16 @@ public class OpenSearchDocumentOperationsIT extends AbstractOpenSearchOperationI
     opensearchTestDataHelper.addUser(id, "displayName", "password");
 
     // when
-    record Result(String displayName) {}
+    record Result(String name) {}
     final var searchRequestBuilder =
-        searchRequestBuilder(operateUserIndex.getFullQualifiedName())
-            .query(term("userId", id))
-            .source(sourceInclude("displayName"));
+        searchRequestBuilder(userIndex.getFullQualifiedName())
+            .query(term("id", id))
+            .source(sourceInclude("name"));
 
     final Result result =
         richOpenSearchClient.doc().searchUnique(searchRequestBuilder, Result.class, id);
 
     // then
-    assertThat(result.displayName()).isEqualTo("displayName");
+    assertThat(result.name()).isEqualTo("displayName");
   }
 }

@@ -27,7 +27,12 @@ public class DecisionInstanceDocumentReader extends DocumentBasedReader
       final String id, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
         .getByQuery(
-            DecisionInstanceQuery.of(b -> b.filter(f -> f.decisionInstanceIds(id)).singleResult()),
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.decisionInstanceIds(id))
+                        .resultConfig(
+                            c -> c.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))
+                        .singleResult()),
             io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
   }
 

@@ -17,12 +17,13 @@ package io.camunda.client.user;
 
 import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.protocol.rest.UserUpdateRequest;
+import io.camunda.client.protocol.rest.UserUpdateResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class UpdateUserTest extends ClientRestTest {
@@ -33,6 +34,9 @@ public class UpdateUserTest extends ClientRestTest {
 
   @Test
   void shouldUpdateUser() {
+    // given
+    gatewayService.onUpdateUserRequest(USERNAME, Instancio.create(UserUpdateResult.class));
+
     // when
     client.newUpdateUserCommand(USERNAME).name(NAME).email(EMAIL).password(PASSWORD).send().join();
 
@@ -48,50 +52,21 @@ public class UpdateUserTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNullName() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateUserCommand(USERNAME)
-                    .name(null)
-                    .email("new_email@email.com")
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("name must not be null");
-  }
+  void shouldUpdateUserWhenOptionalFieldsAreNotPresent() {
+    // given
+    gatewayService.onUpdateUserRequest(USERNAME, Instancio.create(UserUpdateResult.class));
 
-  @Test
-  void shouldRaiseExceptionOnEmptyName() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateUserCommand(USERNAME)
-                    .name("")
-                    .email("new_email@email.com")
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("name must not be empty");
-  }
+    // when
+    client.newUpdateUserCommand(USERNAME).send().join();
 
-  @Test
-  void shouldRaiseExceptionOnNullEmail() {
-    // when / then
-    assertThatThrownBy(
-            () -> client.newUpdateUserCommand(USERNAME).name(NAME).email(null).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("email must not be null");
-  }
+    // then
+    final UserUpdateRequest request = gatewayService.getLastRequest(UserUpdateRequest.class);
+    assertThat(request.getName()).isNull();
+    assertThat(request.getEmail()).isNull();
+    assertThat(request.getPassword()).isNull();
 
-  @Test
-  void shouldRaiseExceptionOnEmptyEmail() {
-    // when / then
-    assertThatThrownBy(
-            () -> client.newUpdateUserCommand(USERNAME).name(NAME).email("").send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("email must not be empty");
+    final String requestPath = RestGatewayService.getLastRequest().getUrl();
+    assertThat(requestPath).isEqualTo(REST_API_PATH + "/users/" + USERNAME);
+    assertThat(RestGatewayService.getLastRequest().getMethod()).isEqualTo(RequestMethod.PUT);
   }
 }

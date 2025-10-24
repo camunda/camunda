@@ -17,13 +17,14 @@ package io.camunda.process.test.utils;
 
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
+import java.time.OffsetDateTime;
+import java.util.Set;
 
 public class ProcessInstanceBuilder implements ProcessInstance {
 
   private static final String PROCESS_DEFINITION_ID = "process";
-  private static final String START_DATE = "2024-01-01T09:00:00";
-  private static final String END_DATE = "2024-01-02T16:00:00";
-
+  private static final OffsetDateTime START_DATE = OffsetDateTime.parse("2024-01-01T09:00:00Z");
+  private static final OffsetDateTime END_DATE = OffsetDateTime.parse("2024-01-02T16:00:00Z");
   private Long processInstanceKey;
   private String processDefinitionId;
   private String processDefinitionName;
@@ -32,11 +33,12 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   private Long processDefinitionKey;
   private Long parentProcessInstanceKey;
   private Long parentElementInstanceKey;
-  private String startDate;
-  private String endDate;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
   private ProcessInstanceState state;
   private Boolean hasIncident;
   private String tenantId;
+  private Set<String> tags;
 
   @Override
   public Long getProcessInstanceKey() {
@@ -79,12 +81,12 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   }
 
   @Override
-  public String getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
   @Override
-  public String getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 
@@ -103,6 +105,16 @@ public class ProcessInstanceBuilder implements ProcessInstance {
     return tenantId;
   }
 
+  @Override
+  public Set<String> getTags() {
+    return tags;
+  }
+
+  public ProcessInstanceBuilder setTags(final Set<String> tags) {
+    this.tags = tags;
+    return this;
+  }
+
   public ProcessInstanceBuilder setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
@@ -118,12 +130,12 @@ public class ProcessInstanceBuilder implements ProcessInstance {
     return this;
   }
 
-  public ProcessInstanceBuilder setEndDate(final String endDate) {
+  public ProcessInstanceBuilder setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
 
-  public ProcessInstanceBuilder setStartDate(final String startDate) {
+  public ProcessInstanceBuilder setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -172,6 +184,27 @@ public class ProcessInstanceBuilder implements ProcessInstance {
 
   public ProcessInstance build() {
     return this;
+  }
+
+  public static ProcessInstanceBuilder newActiveChildProcessInstance(
+      final long processInstanceKey, final long parentElementInstanceKey) {
+
+    return newActiveProcessInstance(processInstanceKey)
+        .setParentProcessInstanceKey(parentElementInstanceKey);
+  }
+
+  public static ProcessInstanceBuilder newCompletedChildProcessInstance(
+      final long processInstanceKey, final long parentElementInstanceKey) {
+
+    return newCompletedProcessInstance(processInstanceKey)
+        .setParentProcessInstanceKey(parentElementInstanceKey);
+  }
+
+  public static ProcessInstanceBuilder newTerminatedChildProcessInstance(
+      final long processInstanceKey, final long parentElementInstanceKey) {
+
+    return newTerminatedProcessInstance(processInstanceKey)
+        .setParentProcessInstanceKey(parentElementInstanceKey);
   }
 
   public static ProcessInstanceBuilder newActiveProcessInstance(final long processInstanceKey) {

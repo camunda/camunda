@@ -11,7 +11,7 @@ import io.camunda.search.filter.UsageMetricsTUFilter;
 
 public record UsageMetricsTUAggregation(UsageMetricsTUFilter filter) implements AggregationBase {
 
-  public static final int AGGREGATION_TERMS_SIZE = 10000;
+  public static final int AGGREGATION_TERMS_SIZE = 20000;
   public static final String AGGREGATION_TERMS_TENANT_ID = "termsTenantId";
   public static final String AGGREGATION_TERMS_ASSIGNEE_HASH = "termsAssigneeHash";
 }

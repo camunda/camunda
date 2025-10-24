@@ -20,14 +20,12 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespon
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableSourceDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -55,13 +53,8 @@ public interface VariableRepository {
 
   void deleteVariablesForDefinition(String variableLabelIndexName, String processDefinitionKey);
 
-  void deleteByProcessInstanceIds(List<String> processInstanceIds);
-
   Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
       List<String> processDefinitionKeys);
-
-  List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
-      Set<String> processInstanceIds);
 
   void writeExternalProcessVariables(List<ExternalProcessVariableDto> variables, String itemName);
 

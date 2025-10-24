@@ -15,4 +15,6 @@
  */
 package io.camunda.client.api.command;
 
-public interface CancelBatchOperationStep1 extends FinalCommandStep<Void> {}
+import io.camunda.client.api.response.CancelBatchOperationResponse;
+
+public interface CancelBatchOperationStep1 extends FinalCommandStep<CancelBatchOperationResponse> {}

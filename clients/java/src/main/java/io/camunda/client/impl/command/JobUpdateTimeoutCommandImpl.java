@@ -104,7 +104,11 @@ public class JobUpdateTimeoutCommandImpl
   private CamundaFuture<UpdateTimeoutJobResponse> sendRestRequest() {
     final HttpCamundaFuture<UpdateTimeoutJobResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
-        "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
+        "/jobs/" + jobKey,
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        UpdateTimeoutJobResponseImpl::new,
+        result);
     return result;
   }
 

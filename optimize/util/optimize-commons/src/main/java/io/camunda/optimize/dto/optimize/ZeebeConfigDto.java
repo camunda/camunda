@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize;
 
+import java.util.Objects;
+
 public class ZeebeConfigDto implements SchedulerConfig {
 
   private String name;
@@ -39,12 +41,19 @@ public class ZeebeConfigDto implements SchedulerConfig {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(name, partitionCount);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeConfigDto that = (ZeebeConfigDto) o;
+    return partitionCount == that.partitionCount && Objects.equals(name, that.name);
   }
 
   @Override

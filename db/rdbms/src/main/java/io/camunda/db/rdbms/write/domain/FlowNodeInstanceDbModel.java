@@ -18,6 +18,7 @@ public record FlowNodeInstanceDbModel(
     Long processInstanceKey,
     Long processDefinitionKey,
     String processDefinitionId,
+    Long flowNodeScopeKey,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     String flowNodeId,
@@ -27,8 +28,9 @@ public record FlowNodeInstanceDbModel(
     FlowNodeState state,
     Long incidentKey,
     Long numSubprocessIncidents,
+    Boolean hasIncident,
     String tenantId,
-    int partitionId,
+    Integer partitionId,
     OffsetDateTime historyCleanupDate)
     implements Copyable<FlowNodeInstanceDbModel> {
 
@@ -43,6 +45,7 @@ public record FlowNodeInstanceDbModel(
                 .processInstanceKey(processInstanceKey())
                 .processDefinitionKey(processDefinitionKey)
                 .processDefinitionId(processDefinitionId)
+                .flowNodeScopeKey(flowNodeScopeKey)
                 .startDate(startDate)
                 .endDate(endDate)
                 .flowNodeId(flowNodeId)
@@ -52,6 +55,7 @@ public record FlowNodeInstanceDbModel(
                 .state(state)
                 .incidentKey(incidentKey)
                 .numSubprocessIncidents(numSubprocessIncidents)
+                .hasIncident(hasIncident)
                 .tenantId(tenantId)
                 .partitionId(partitionId)
                 .historyCleanupDate(historyCleanupDate))
@@ -65,6 +69,7 @@ public record FlowNodeInstanceDbModel(
     private Long processInstanceKey;
     private Long processDefinitionKey;
     private String processDefinitionId;
+    private Long flowNodeScopeKey;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
     private String flowNodeId;
@@ -74,6 +79,7 @@ public record FlowNodeInstanceDbModel(
     private FlowNodeState state;
     private Long incidentKey;
     private Long numSubprocessIncidents = 0L;
+    private Boolean hasIncident;
     private String tenantId;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
@@ -94,6 +100,11 @@ public record FlowNodeInstanceDbModel(
 
     public FlowNodeInstanceDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    public FlowNodeInstanceDbModelBuilder flowNodeScopeKey(final Long flowNodeScopeKey) {
+      this.flowNodeScopeKey = flowNodeScopeKey;
       return this;
     }
 
@@ -147,6 +158,11 @@ public record FlowNodeInstanceDbModel(
       return this;
     }
 
+    public FlowNodeInstanceDbModelBuilder hasIncident(final Boolean hasIncident) {
+      this.hasIncident = hasIncident;
+      return this;
+    }
+
     public FlowNodeInstanceDbModelBuilder processDefinitionId(final String bpmnProcessId) {
       processDefinitionId = bpmnProcessId;
       return this;
@@ -174,6 +190,7 @@ public record FlowNodeInstanceDbModel(
           processInstanceKey,
           processDefinitionKey,
           processDefinitionId,
+          flowNodeScopeKey,
           startDate,
           endDate,
           flowNodeId,
@@ -183,6 +200,7 @@ public record FlowNodeInstanceDbModel(
           state,
           incidentKey,
           numSubprocessIncidents,
+          hasIncident,
           tenantId,
           partitionId,
           historyCleanupDate);

@@ -119,9 +119,12 @@ const VariablesTable: React.FC<Props> = ({
                       <Button
                         kind="ghost"
                         size="sm"
+                        tooltipPosition="left"
                         iconDescription={`Edit variable ${name}`}
                         aria-label={`Edit variable ${name}`}
-                        disabled={isFetchingNextPage}
+                        disabled={
+                          isFetchingNextPage || form.getState().submitting
+                        }
                         onClick={async () => {
                           form.reset({name, value});
                           form.change('value', value);

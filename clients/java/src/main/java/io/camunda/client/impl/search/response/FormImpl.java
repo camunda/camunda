@@ -16,21 +16,24 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.Form;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.FormResult;
 
 public class FormImpl implements Form {
-  private final String formId;
-  private final long version;
-  private final long formKey;
-  private final Object schema;
-  private final String tenantId;
+  private String formId;
+  private Long version;
+  private Long formKey;
+  private Object schema;
+  private String tenantId;
 
   public FormImpl(final FormResult item) {
-    formId = item.getFormId();
-    version = item.getVersion();
-    formKey = Long.parseLong(item.getFormKey());
-    schema = item.getSchema();
-    tenantId = item.getTenantId();
+    if (item != null) {
+      formId = item.getFormId();
+      version = item.getVersion();
+      formKey = ParseUtil.parseLongOrNull(item.getFormKey());
+      schema = item.getSchema();
+      tenantId = item.getTenantId();
+    }
   }
 
   @Override

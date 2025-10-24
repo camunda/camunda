@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
   <artifactId>zeebe-gateway-rest</artifactId>
@@ -34,7 +34,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -202,9 +201,62 @@
       <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
 
+    <!-- Swagger dependencies for reading OpenAPI YAML -->
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-models-jakarta</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.swagger.parser.v3</groupId>
+      <artifactId>swagger-parser-v3</artifactId>
+      <version>${version.swagger-parser}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.swagger.core.v3</groupId>
+          <artifactId>swagger-models</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.swagger.core.v3</groupId>
+          <artifactId>swagger-annotations</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.swagger.parser.v3</groupId>
+      <artifactId>swagger-parser-core</artifactId>
+      <version>${version.swagger-parser}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.swagger.core.v3</groupId>
+          <artifactId>swagger-models</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.swagger.core.v3</groupId>
+          <artifactId>swagger-annotations</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-common</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
     </dependency>
 
     <dependency>
@@ -378,23 +430,9 @@
       <artifactId>xmlunit-core</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <targetPath>apidoc</targetPath>
-        <directory>../gateway-protocol/src/main/proto</directory>
-        <includes>
-          <include>rest-api.yaml</include>
-        </includes>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>org.openapitools</groupId>
@@ -411,7 +449,7 @@
               <generatorName>spring</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
-              <typeMappings>OffsetDateTime=String,Permission=io.camunda.identity.automation.permissions.PermissionEnum</typeMappings>
+              <typeMappings>OffsetDateTime=String,Permission=io.camunda.identity.automation.permissions.PermissionEnum,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty,ElementInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceKeyFilterProperty=BasicStringFilterProperty,ScopeKeyFilterProperty=StringFilterProperty,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty,MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty,JobKeyFilterProperty=BasicStringFilterProperty,JobKindFilterProperty=StringFilterProperty,VariableKeyFilterProperty=BasicStringFilterProperty</typeMappings>
               <generateApis>false</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
@@ -428,6 +466,28 @@
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
               </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cleanupModels</id>
+            <goals>
+              <goal>apply</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <applySkip>false</applySkip>
+              <java>
+                <includes>
+                  <include>**/io/camunda/zeebe/gateway/protocol/rest/*.java</include>
+                </includes>
+                <removeUnusedImports/>
+              </java>
             </configuration>
           </execution>
         </executions>

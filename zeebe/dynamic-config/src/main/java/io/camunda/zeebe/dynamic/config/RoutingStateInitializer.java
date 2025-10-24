@@ -20,18 +20,15 @@ import java.util.Optional;
  */
 public class RoutingStateInitializer implements ClusterConfigurationModifier {
 
-  private final boolean enablePartitionScaling;
   private final int staticPartitionCount;
 
-  public RoutingStateInitializer(
-      final boolean enablePartitionScaling, final int staticPartitionCount) {
-    this.enablePartitionScaling = enablePartitionScaling;
+  public RoutingStateInitializer(final int staticPartitionCount) {
     this.staticPartitionCount = staticPartitionCount;
   }
 
   @Override
   public ActorFuture<ClusterConfiguration> modify(final ClusterConfiguration configuration) {
-    if (configuration.routingState().isPresent() || !enablePartitionScaling) {
+    if (configuration.routingState().isPresent()) {
       return CompletableActorFuture.completed(configuration);
     }
 
@@ -42,7 +39,8 @@ public class RoutingStateInitializer implements ClusterConfigurationModifier {
             configuration.members(),
             configuration.lastChange(),
             configuration.pendingChanges(),
-            Optional.of(routingState));
+            Optional.of(routingState),
+            configuration.clusterId());
     return CompletableActorFuture.completed(withRoutingState);
   }
 }

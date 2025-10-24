@@ -53,6 +53,9 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "tags": {
+              "type": "keyword"
             }
           }
         }

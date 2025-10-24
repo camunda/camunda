@@ -22,6 +22,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserTaskResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignUserTaskResponseImpl;
 import io.camunda.client.protocol.rest.UserTaskAssignmentRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +58,7 @@ public final class AssignUserTaskCommandImpl implements AssignUserTaskCommandSte
         "/user-tasks/" + userTaskKey + "/assignment",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
+        AssignUserTaskResponseImpl::new,
         result);
     return result;
   }

@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -26,14 +28,22 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   protected final BrokerClient brokerClient;
   protected final SecurityContextProvider securityContextProvider;
   protected final CamundaAuthentication authentication;
+  protected final ApiServicesExecutorProvider executorProvider;
+  protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final ExecutorService executor;
 
   protected ApiServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.brokerClient = brokerClient;
     this.securityContextProvider = securityContextProvider;
     this.authentication = authentication;
+    this.executorProvider = executorProvider;
+    executor = executorProvider.getExecutor();
+    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
   public abstract T withAuthentication(final CamundaAuthentication authentication);
@@ -44,12 +54,15 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   }
 
   protected <R> CompletableFuture<R> sendBrokerRequest(final BrokerRequest<R> brokerRequest) {
-    return sendBrokerRequestWithFullResponse(brokerRequest).thenApply(BrokerResponse::getResponse);
+    return sendBrokerRequestWithFullResponse(brokerRequest)
+        .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest) {
-    brokerRequest.setAuthorization(authentication.claims());
+    final var brokerRequestAuthorization =
+        brokerRequestAuthorizationConverter.convert(authentication);
+    brokerRequest.setAuthorization(brokerRequestAuthorization);
     return brokerClient
         .sendRequest(brokerRequest)
         .handleAsync(
@@ -64,7 +77,8 @@ public abstract class ApiServices<T extends ApiServices<T>> {
                 throw ErrorMapper.mapBrokerRejection(response.getRejection());
               }
               return response;
-            });
+            },
+            executor);
   }
 
   protected DirectBuffer getDocumentOrEmpty(final Map<String, Object> value) {

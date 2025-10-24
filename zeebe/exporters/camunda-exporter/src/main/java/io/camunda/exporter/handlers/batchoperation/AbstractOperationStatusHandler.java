@@ -84,6 +84,7 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
   public void updateEntity(final Record<R> record, final OperationEntity entity) {
     entity
         .setBatchOperationId(String.valueOf(record.getBatchOperationReference()))
+        .setType(getRelevantOperationType())
         .setItemKey(getItemKey(record))
         .setProcessInstanceKey(getProcessInstanceKey(record));
 
@@ -106,6 +107,7 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
       throws PersistenceException {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(OperationTemplate.BATCH_OPERATION_ID, entity.getBatchOperationId());
+    updateFields.put(OperationTemplate.TYPE, entity.getType());
     updateFields.put(OperationTemplate.PROCESS_INSTANCE_KEY, entity.getProcessInstanceKey());
     updateFields.put(OperationTemplate.ITEM_KEY, entity.getItemKey());
     updateFields.put(OperationTemplate.STATE, entity.getState());

@@ -13,6 +13,9 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -34,9 +37,13 @@ public class BatchOperationChunkCreatedItemHandler
       LoggerFactory.getLogger(BatchOperationChunkCreatedItemHandler.class);
 
   private final String indexName;
+  private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
-  public BatchOperationChunkCreatedItemHandler(final String indexName) {
+  public BatchOperationChunkCreatedItemHandler(
+      final String indexName,
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
     this.indexName = indexName;
+    this.batchOperationCache = batchOperationCache;
   }
 
   @Override
@@ -83,8 +90,15 @@ public class BatchOperationChunkCreatedItemHandler
         item.getProcessInstanceKey(),
         indexName);
 
+    final var cachedEntity = batchOperationCache.get(String.valueOf(value.getBatchOperationKey()));
     entity
         .setBatchOperationId(String.valueOf(value.getBatchOperationKey()))
+        .setType(
+            cachedEntity
+                .map(CachedBatchOperationEntity::type)
+                .map(String::valueOf)
+                .map(OperationType::valueOf)
+                .orElse(null))
         .setState(OperationState.SCHEDULED)
         .setProcessInstanceKey(item.getProcessInstanceKey())
         .setItemKey(item.getItemKey());

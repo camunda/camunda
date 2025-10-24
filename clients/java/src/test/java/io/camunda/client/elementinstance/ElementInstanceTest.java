@@ -29,6 +29,7 @@ import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class ElementInstanceTest extends ClientRestTest {
@@ -61,7 +62,8 @@ public class ElementInstanceTest extends ClientRestTest {
                     .incidentKey(4L)
                     .tenantId("<default>")
                     .startDate(b -> b.exists(true))
-                    .endDate(b -> b.exists(true)))
+                    .endDate(b -> b.exists(true))
+                    .elementInstanceScopeKey(4L))
         .send()
         .join();
     // then
@@ -82,6 +84,7 @@ public class ElementInstanceTest extends ClientRestTest {
     assertThat(filter.getEndDate()).isNotNull();
     assertThat(filter.getStartDate().get$Exists()).isTrue();
     assertThat(filter.getEndDate().get$Exists()).isTrue();
+    assertThat(filter.getElementInstanceScopeKey()).isEqualTo("4");
   }
 
   @Test
@@ -342,8 +345,19 @@ public class ElementInstanceTest extends ClientRestTest {
 
   @Test
   public void shouldGetElementInstance() {
-    // when
+    // given
     final long elementInstanceKey = 0xC00L;
+    gatewayService.onElementInstanceRequest(
+        elementInstanceKey,
+        Instancio.create(ElementInstanceResult.class)
+            .elementInstanceKey("1")
+            .processInstanceKey("2")
+            .incidentKey("3")
+            .processDefinitionKey("4")
+            .startDate(OffsetDateTime.now().toString())
+            .endDate(OffsetDateTime.now().toString()));
+
+    // when
     client.newElementInstanceGetRequest(elementInstanceKey).send().join();
 
     // then

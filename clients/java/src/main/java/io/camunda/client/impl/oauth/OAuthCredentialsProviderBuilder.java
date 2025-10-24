@@ -35,7 +35,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
 
-import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
+import io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -51,10 +51,13 @@ import java.util.Objects;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
+  public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
+  public static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
+  public static final String DEFAULT_CREDENTIALS_CACHE_PATH =
+      Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
+          .toAbsolutePath()
+          .toString();
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
-  private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
-  private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
-
   private String clientId;
   private String clientSecret;
   private String audience;
@@ -252,8 +255,8 @@ public final class OAuthCredentialsProviderBuilder {
   }
 
   /**
-   * The connection timeout of request. The default value is 5 seconds. Max value is {@link
-   * Integer#MAX_VALUE} milliseconds.
+   * The connection timeout of requests to the OAuth credentials provider. The default value is 5
+   * seconds. Max value is {@link Integer#MAX_VALUE} milliseconds.
    */
   public OAuthCredentialsProviderBuilder connectTimeout(final Duration connectTimeout) {
     this.connectTimeout = connectTimeout;
@@ -275,8 +278,8 @@ public final class OAuthCredentialsProviderBuilder {
   }
 
   /**
-   * The data read timeout of request. The default value is 5 seconds. Max value is {@link
-   * Integer#MAX_VALUE} milliseconds.
+   * The data read timeout of requests to the OAuth credentials provider. The default value is 5
+   * seconds. Max value is {@link Integer#MAX_VALUE} milliseconds.
    */
   public OAuthCredentialsProviderBuilder readTimeout(final Duration readTimeout) {
     this.readTimeout = readTimeout;
@@ -387,65 +390,66 @@ public final class OAuthCredentialsProviderBuilder {
 
   private void checkEnvironmentOverrides() {
     applyEnvironmentValueIfNotNull(
-        this::clientId, OAUTH_ENV_CLIENT_ID, ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID);
+        this::clientId,
+        OAUTH_ENV_CLIENT_ID,
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID);
     applyEnvironmentValueIfNotNull(
         this::clientSecret,
         OAUTH_ENV_CLIENT_SECRET,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET);
     applyEnvironmentValueIfNotNull(
         this::audience,
         OAUTH_ENV_TOKEN_AUDIENCE,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE);
     applyEnvironmentValueIfNotNull(
-        this::scope, OAUTH_ENV_TOKEN_SCOPE, ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE);
+        this::scope,
+        OAUTH_ENV_TOKEN_SCOPE,
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE);
     applyEnvironmentValueIfNotNull(
         this::resource,
         OAUTH_ENV_TOKEN_RESOURCE,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE);
     applyEnvironmentValueIfNotNull(
         this::authorizationServerUrl,
         OAUTH_ENV_AUTHORIZATION_SERVER,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER);
     applyEnvironmentValueIfNotNull(
         this::keystorePath,
         OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH);
     applyEnvironmentValueIfNotNull(
         this::keystorePassword,
         OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET);
     applyEnvironmentValueIfNotNull(
         this::keystoreKeyPassword,
         OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET);
     applyEnvironmentValueIfNotNull(
         this::truststorePath,
         OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH);
     applyEnvironmentValueIfNotNull(
         this::truststorePassword,
         OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET);
     applyEnvironmentValueIfNotNull(
         this::credentialsCachePath,
         OAUTH_ENV_CACHE_PATH,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH);
     applyEnvironmentValueIfNotNull(
         this::readTimeout,
         OAUTH_ENV_READ_TIMEOUT,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT);
     applyEnvironmentValueIfNotNull(
         this::connectTimeout,
         OAUTH_ENV_CONNECT_TIMEOUT,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT);
   }
 
   private void applyDefaults() {
     if (credentialsCachePath == null) {
-      credentialsCachePath =
-          Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
-              .toAbsolutePath()
-              .toString();
+      credentialsCachePath = DEFAULT_CREDENTIALS_CACHE_PATH;
     }
 
     if (authorizationServerUrl == null) {

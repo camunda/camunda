@@ -12,27 +12,27 @@ import java.time.OffsetDateTime;
 
 public interface MetricsStore {
 
-  String EVENT_PROCESS_INSTANCE_FINISHED = "EVENT_PROCESS_INSTANCE_FINISHED";
-  String EVENT_PROCESS_INSTANCE_STARTED = "EVENT_PROCESS_INSTANCE_STARTED";
-  String EVENT_DECISION_INSTANCE_EVALUATED = "EVENT_DECISION_INSTANCE_EVALUATED";
-
   String PROCESS_INSTANCES_AGG_NAME = "process_instances";
   String DECISION_INSTANCES_AGG_NAME = "decision_instances";
 
-  Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
+  Long retrieveProcessInstanceCount(
+      OffsetDateTime startTime, OffsetDateTime endTime, String tenantId);
 
-  Long retrieveDecisionInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
+  Long retrieveDecisionInstanceCount(
+      OffsetDateTime startTime, OffsetDateTime endTime, String tenantId);
 
   void registerProcessInstanceStartEvent(
-      String processInstanceKey,
+      long key,
       String tenantId,
+      int partitionId,
       OffsetDateTime timestamp,
       BatchRequest batchRequest)
       throws PersistenceException;
 
   void registerDecisionInstanceCompleteEvent(
-      String processInstanceKey,
+      long key,
       String tenantId,
+      int partitionId,
       OffsetDateTime timestamp,
       BatchRequest batchRequest)
       throws PersistenceException;

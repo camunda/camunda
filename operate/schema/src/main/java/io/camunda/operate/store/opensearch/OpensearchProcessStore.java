@@ -46,12 +46,12 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -63,9 +63,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired
-  @Qualifier("operateProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private ListViewTemplate listViewTemplate;
 
@@ -470,6 +468,13 @@ public class OpensearchProcessStore implements ProcessStore {
                 listViewTemplate.getAlias(),
                 longTerms(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys));
     return count;
+  }
+
+  @Override
+  public long count() {
+    return richOpenSearchClient
+        .doc()
+        .docCount(new SearchRequest.Builder().index(processIndex.getAlias()));
   }
 
   private Query withTenantIdQuery(@Nullable final String tenantId, @Nullable final Query query) {

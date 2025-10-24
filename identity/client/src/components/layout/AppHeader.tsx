@@ -8,31 +8,37 @@
 
 import { C3Navigation } from "@camunda/camunda-composite-components";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 import { useApi } from "src/utility/api";
 import { checkLicense, License } from "src/utility/api/headers";
 import { getAuthentication } from "src/utility/api/authentication";
 import { ArrowRight } from "@carbon/react/icons";
 import { logout } from "src/utility/auth";
+import { useState } from "react";
+import { isSaaS } from "src/configuration";
 
 const AppHeader = ({ hideNavLinks = false }) => {
   const routes = useGlobalRoutes();
-  const navigate = useNavigate();
   const { data: license } = useApi(checkLicense);
   const { data: camundaUser } = useApi(getAuthentication);
+  const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 
   return (
     <C3Navigation
+      toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
       app={{
         name: "Identity",
         ariaLabel: "Identity",
         routeProps: {
-          href: "/",
+          to: "/",
         },
       }}
+      forwardRef={Link}
       appBar={{
-        isOpen: false,
-        elements: [],
+        ariaLabel: "App panel",
+        isOpen: isAppBarOpen,
+        elements: isSaaS ? undefined : [],
+        appTeaserRouteProps: isSaaS ? {} : undefined,
       }}
       navbar={{
         elements: hideNavLinks
@@ -40,7 +46,7 @@ const AppHeader = ({ hideNavLinks = false }) => {
           : routes.map((route) => ({
               ...route,
               routeProps: {
-                onClick: () => navigate(route.key),
+                to: route.key,
               },
             })),
         licenseTag: getLicenseTag(license),

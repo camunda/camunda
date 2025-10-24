@@ -148,8 +148,6 @@ test.describe('task details page', () => {
       useInnerText: true,
     });
 
-    await page.reload();
-
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
       timeout: 60000,
     });
@@ -165,74 +163,6 @@ test.describe('task details page', () => {
 
     await page.goto(taskUrl);
 
-    await expect(taskDetailsPage.assignToMeButton).toBeHidden();
-    await expect(taskDetailsPage.unassignButton).toBeHidden();
-    await expect(taskDetailsPage.completeTaskButton).toBeHidden();
-  });
-
-  test('complete zeebe and job worker tasks', async ({
-    page,
-    taskPanelPage,
-    taskDetailsPage,
-  }) => {
-    test.slow();
-    await taskPanelPage.openTask('Zeebe_user_task');
-    await taskDetailsPage.clickUnassignButton();
-    await taskDetailsPage.clickAssignToMeButton();
-    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
-    await taskDetailsPage.addVariable({
-      name: 'zeebeVar',
-      value: '{"Name":"John","Age":20}',
-    });
-    await taskDetailsPage.clickCompleteTaskButton();
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-
-    await taskPanelPage.openTask('JobWorker_user_task');
-    await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
-    });
-    await taskDetailsPage.clickAssignToMeButton();
-    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
-    await taskDetailsPage.addVariable({
-      name: 'jobWorkerVar',
-      value: '{"Name":"John","Age":22}',
-    });
-    await taskDetailsPage.clickCompleteTaskButton();
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-
-    await taskPanelPage.filterBy('Completed');
-    await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('Zeebe_user_task');
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(page.getByRole('cell', {name: 'zeebeVar'})).toBeVisible({
-          timeout: 60000,
-        });
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
-    await expect(taskDetailsPage.assignToMeButton).toBeHidden();
-    await expect(taskDetailsPage.unassignButton).toBeHidden();
-    await expect(taskDetailsPage.completeTaskButton).toBeHidden();
-
-    await taskPanelPage.openTask('JobWorker_user_task');
-
-    // this is necessary because sometimes the importer takes some time to receive the variables
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(
-          page.getByRole('cell', {name: 'jobWorkerVar'}),
-        ).toBeVisible();
-        await expect(page.getByRole('cell', {name: 'zeebeVar'})).toBeVisible({
-          timeout: 60000,
-        });
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
     await expect(taskDetailsPage.assignToMeButton).toBeHidden();
     await expect(taskDetailsPage.unassignButton).toBeHidden();
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
@@ -267,10 +197,17 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks
+          .getByText('processWithDeployedForm')
+          .first(),
+      ).toBeVisible();
+    }).toPass();
     await taskPanelPage.openTask('processWithDeployedForm');
 
     await taskDetailsPage.clickAssignToMeButton();
-    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.unassignButton).toBeVisible({timeout: 30000});
     await taskDetailsPage.fillTextInput('Client Name*', 'Jon');
     await taskDetailsPage.fillTextInput('Client Address*', 'Earth');
     await taskDetailsPage.fillDatetimeField('Invoice Date', '1/1/3000');
@@ -298,6 +235,13 @@ test.describe('task details page', () => {
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks
+          .getByText('processWithDeployedForm')
+          .first(),
+      ).toBeVisible();
+    }).toPass();
     await taskPanelPage.openTask('processWithDeployedForm');
 
     await taskDetailsPage.assertFieldValue('Client Name*', 'Jon');
@@ -448,7 +392,9 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillDatetimeField('Date', '1/1/3000');
     await taskDetailsPage.fillDatetimeField('Time', '12:00 PM');
     await taskDetailsPage.clickCompleteTaskButton();
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+      timeout: 30000,
+    });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Date and Time Task');
@@ -472,7 +418,7 @@ test.describe('task details page', () => {
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Checkbox Task');
 
-    await expect(taskDetailsPage.checkbox).toBeChecked();
+    await expect(taskDetailsPage.checkbox).toBeChecked({timeout: 60000});
   });
 
   test('task completion with select form', async ({
@@ -492,7 +438,7 @@ test.describe('task details page', () => {
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Select User Task');
 
-    await expect(taskDetailsPage.form).toContainText('Value');
+    await expect(taskDetailsPage.form).toContainText('Value', {timeout: 30000});
   });
 
   test('task completion with radio button form', async ({

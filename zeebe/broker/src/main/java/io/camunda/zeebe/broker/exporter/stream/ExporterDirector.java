@@ -63,6 +63,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
+  // using primitive boolean since it is only used in actor
+  private boolean allExportersOpened;
 
   // Use concrete type because it must be modifiable
   private final ArrayList<ExporterContainer> containers;
@@ -218,27 +220,29 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   /**
-   * Disables an already configured exporter. No records will be exported to this exporter anymore.
-   * We will not wait for acknowledgments for this exporter, allowing the log to be compacted.
+   * Removes the given exporter if it exists. Once removed, no records will be sent to it, and
+   * acknowledgments will no longer be awaited, allowing the log to be compacted.
    *
-   * @param exporterId id of the exporter to disabled
-   * @return future which will be completed after the exporter is disabled.
+   * @param exporterId ID of the exporter to remove
+   * @return a future completed when the removal is done
    */
-  public ActorFuture<Void> disableExporter(final String exporterId) {
+  public ActorFuture<Void> removeExporter(final String exporterId) {
     if (actor.isClosed()) {
       return CompletableActorFuture.completed(null);
     }
 
-    return actor.call(() -> removeExporter(exporterId));
-  }
-
-  private void removeExporter(final String exporterId) {
-    containers.stream()
-        .filter(c -> c.getId().equals(exporterId))
-        .findFirst()
-        .ifPresentOrElse(
-            container -> removeExporter(exporterId, container),
-            () -> LOG.debug("Exporter '{}' is not found. It may be already removed.", exporterId));
+    return actor.call(
+        () -> {
+          containers.stream()
+              .filter(c -> c.getId().equals(exporterId))
+              .findFirst()
+              .ifPresentOrElse(
+                  container -> removeExporter(exporterId, container),
+                  () ->
+                      LOG.debug(
+                          "Exporter '{}' is not found. It may already be removed.", exporterId));
+          return null;
+        });
   }
 
   private void removeExporter(final String exporterId, final ExporterContainer container) {
@@ -547,11 +551,20 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
               .runWithRetry(
                   () -> {
                     try {
-                      container.openExporter();
+                      // If the exporter was disable or removed concurrently, then don't retry
+                      // opening.
+                      if (containers.contains(container)) {
+                        container.openExporter();
+                      } else {
+                        LOG.debug(
+                            "Exporter '{}' was disabled or removed before it could be opened.",
+                            container.getId());
+                      }
                       return true;
                     } catch (final Exception e) {
                       LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());
-                      LOG.debug("Stacktrace:", e);
+                      LOG.debug(
+                          "Failed to open exporter '{}' => Stacktrace:", container.getId(), e);
                       return false;
                     }
                   },
@@ -564,6 +577,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     actor.runOnCompletion(
         containerOpenFutures,
         (error) -> {
+          allExportersOpened = true;
           if (state.hasExporters()) {
             final long snapshotPosition = state.getLowestPosition();
             // start reading and exporting
@@ -650,6 +664,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private boolean shouldExport() {
     return isOpened.get()
+        && allExportersOpened
         && !idle
         && logStreamReader.hasNext()
         && !inExportingPhase
@@ -765,9 +780,36 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final ValueType valueType = metadata.getValueType();
       final Intent intent = metadata.getIntent();
 
-      return acceptRecordTypes.get(recordType)
-          && acceptValueTypes.get(valueType)
-          && acceptIntents.get(intent);
+      try {
+        return acceptRecordTypes.get(recordType)
+            && acceptValueTypes.get(valueType)
+            && acceptIntents.get(intent);
+      } catch (final NullPointerException e) {
+        // Log added to root cause https://github.com/camunda/camunda/issues/36621
+        LOG.error(
+            """
+                NPE when applying event filter for event: {}
+                - metadata: {}
+                - acceptRecordTypes: {}
+                - acceptValueTypes: {}
+                - acceptIntents: {}""",
+            event,
+            metadata,
+            acceptRecordTypes,
+            acceptValueTypes,
+            acceptIntents.entrySet().stream()
+                .map(
+                    entry -> {
+                      final var key = entry.getKey();
+                      if (key == null) {
+                        return "null: %s".formatted(entry.getValue());
+                      }
+                      return String.format(
+                          "%s.%s: %s", key.getClass().getSimpleName(), key, entry.getValue());
+                    })
+                .toList());
+        throw e;
+      }
     }
 
     @Override

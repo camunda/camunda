@@ -17,12 +17,12 @@ import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
-import java.io.IOException;
+import io.camunda.zeebe.util.HashUtil;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -39,6 +39,8 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
       "/actuator/usage-metrics/assignees?startTime={startTime}&endTime={endTime}";
   public static final DateTimeFormatter FORMATTER =
       DateTimeFormatter.ofPattern(DATE_FORMAT_DEFAULT);
+  public static final long ASSIGNEE_HASH_1 = HashUtil.getStringHashValue("Angela Merkel");
+  public static final long ASSIGNEE_HASH_2 = HashUtil.getStringHashValue("John Lennon");
 
   @Autowired private TestRestTemplate testRestTemplate;
   @Autowired private TaskMetricsStore taskMetricsStore;
@@ -68,19 +70,18 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
             UsageMetricDTO.class,
             parameters);
 
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
-    assertThat(response.getBody().getAssignees()).isEqualTo(List.of());
-    assertThat(response.getBody().getTotal()).isEqualTo(0);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(Objects.requireNonNull(response.getBody()).getTotal()).isZero();
   }
 
   @Test
   public void shouldReturnExpectedDataForCorrectTimeRange() {
     final OffsetDateTime now = OffsetDateTime.now();
-    insertMetricForAssignee("John Lennon", now);
-    insertMetricForAssignee("Angela Merkel", now);
-    insertMetricForAssignee("Angela Merkel", now);
-    insertMetricForAssignee("Angela Merkel", now);
-    insertMetricForAssignee("Angela Merkel", now);
+    insertMetricForAssignee(12L, "John Lennon", now);
+    insertMetricForAssignee(23L, "Angela Merkel", now);
+    insertMetricForAssignee(45L, "Angela Merkel", now);
+    insertMetricForAssignee(56L, "Angela Merkel", now);
+    insertMetricForAssignee(78L, "Angela Merkel", now);
 
     databaseTestExtension.refreshTasklistIndices();
 
@@ -88,8 +89,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
     parameters.put("endTime", now.plusSeconds(1L).format(FORMATTER));
 
-    final UsageMetricDTO expectedDto =
-        new UsageMetricDTO(List.of("Angela Merkel", "John Lennon")); // just repeat once
+    final UsageMetricDTO expectedDto = new UsageMetricDTO(2); // just repeat once
 
     Awaitility.await()
         .untilAsserted(
@@ -105,13 +105,13 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldReturnEmptyDataIfWrongTimeRange() throws IOException, InterruptedException {
+  public void shouldReturnEmptyDataIfWrongTimeRange() {
     final OffsetDateTime now = OffsetDateTime.now();
-    insertMetricForAssignee("John Lennon", now);
-    insertMetricForAssignee("Angela Merkel", now);
-    insertMetricForAssignee("Angela Merkel", now);
-    insertMetricForAssignee("Angela Merkel", now);
-    insertMetricForAssignee("Angela Merkel", now);
+    insertMetricForAssignee(12L, "John Lennon", now);
+    insertMetricForAssignee(23L, "Angela Merkel", now);
+    insertMetricForAssignee(45L, "Angela Merkel", now);
+    insertMetricForAssignee(56L, "Angela Merkel", now);
+    insertMetricForAssignee(78L, "Angela Merkel", now);
 
     databaseTestExtension.refreshTasklistIndices();
 
@@ -124,7 +124,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
             UsageMetricDTO.class,
             parameters);
 
-    final UsageMetricDTO expectedDto = new UsageMetricDTO(List.of());
+    final UsageMetricDTO expectedDto = new UsageMetricDTO(0);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo(expectedDto);
@@ -136,7 +136,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   public void shouldReturnOverTenThousandObjects() {
     final OffsetDateTime now = OffsetDateTime.now();
     for (int i = 0; i <= 10_000; i++) {
-      insertMetricForAssignee("Assignee " + i, now); // 10_001 different assignees
+      insertMetricForAssignee(123L, "Assignee " + i, now); // 10_001 different assignees
     }
     databaseTestExtension.refreshTasklistIndices();
 
@@ -150,11 +150,11 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
             parameters);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody().getTotal()).isEqualTo(10_001);
+    assertThat(Objects.requireNonNull(response.getBody()).getTotal()).isEqualTo(10_001);
   }
 
   @Test
-  public void providesCompletedTasks() throws IOException, InterruptedException {
+  public void providesCompletedTasks() {
     final OffsetDateTime now = OffsetDateTime.now();
 
     // given users: joe, jane and demo
@@ -192,14 +192,15 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
             parameters);
 
     // then
-    final UsageMetricDTO expectedDto = new UsageMetricDTO(List.of("jane", "demo", "joe"));
+    final UsageMetricDTO expectedDto = new UsageMetricDTO(3);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo(expectedDto);
   }
 
-  private void insertMetricForAssignee(final String assignee, final OffsetDateTime eventTime) {
-    final var task = new TaskEntity().setAssignee(assignee).setCompletionTime(eventTime);
-    taskMetricsStore.registerTaskCompleteEvent(task);
+  private void insertMetricForAssignee(
+      final long key, final String assignee, final OffsetDateTime eventTime) {
+    final var task = new TaskEntity().setKey(key).setAssignee(assignee).setCreationTime(eventTime);
+    taskMetricsStore.registerTaskAssigned(task);
   }
 }

@@ -78,6 +78,7 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
   public TopologyAssert isHealthy() {
     isNotNull();
 
+    boolean hasHealthyPartition = false;
     for (final BrokerInfo broker : actual.getBrokers()) {
       for (final PartitionInfo partition : broker.getPartitions()) {
         if (partition.getHealth() != PartitionBrokerHealth.HEALTHY) {
@@ -85,7 +86,13 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
               "Expected all partitions to be healthy, but partition <%d> of broker <%d> is <%s>",
               partition.getPartitionId(), broker.getNodeId(), partition.getHealth());
         }
+        hasHealthyPartition = true;
       }
+    }
+
+    if (!hasHealthyPartition) {
+      throw failure(
+          "Expected at least one partition to be healthy, but no healthy partitions were found in the topology.");
     }
 
     return this;
@@ -275,6 +282,36 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
       throw failure(
           "Expected topology not to contain broker with ID <%d>, but found the following: <%s>",
           nodeId, brokerIds);
+    }
+
+    return myself;
+  }
+
+  /**
+   * Fails if the topology contains a broker that is leader for the given partition.
+   *
+   * @param partitionId id of the partition
+   * @return itself for chaining
+   */
+  public TopologyAssert doesNotContainLeaderForPartition(final int partitionId) {
+    isNotNull();
+
+    final var leaderForPartition =
+        actual.getBrokers().stream()
+            .filter(
+                b ->
+                    b.getPartitions().stream()
+                        .filter(PartitionInfo::isLeader)
+                        .anyMatch(p -> p.getPartitionId() == partitionId))
+            .map(BrokerInfo::getNodeId)
+            .findAny();
+
+    if (leaderForPartition.isPresent()) {
+      {
+        throw failure(
+            "Expected topology not to contain leader for partition <%d>, but found broker <%d>",
+            partitionId, leaderForPartition.get());
+      }
     }
 
     return myself;

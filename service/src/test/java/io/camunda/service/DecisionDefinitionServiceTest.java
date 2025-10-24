@@ -52,6 +52,8 @@ public final class DecisionDefinitionServiceTest {
             mock(SecurityContextProvider.class),
             client,
             decisionRequirementServices,
+            null,
+            mock(ApiServicesExecutorProvider.class),
             null);
   }
 

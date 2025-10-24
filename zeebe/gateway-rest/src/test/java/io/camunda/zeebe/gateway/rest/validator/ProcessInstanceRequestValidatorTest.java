@@ -9,9 +9,13 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,7 +28,7 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept valid processDefinitionKey format")
   void shouldAcceptValidProcessDefinitionKey() {
-    final var request = new ProcessInstanceCreationInstruction();
+    final var request = new ProcessInstanceCreationInstructionByKey();
     request.setProcessDefinitionKey("123456789");
 
     final Optional<ProblemDetail> result =
@@ -33,11 +37,56 @@ class ProcessInstanceRequestValidatorTest {
     assertThat(result).isEmpty();
   }
 
+  @Test
+  @DisplayName("Should accept valid tags")
+  void shouldAcceptValidTags() {
+    final var request = new ProcessInstanceCreationInstructionByKey();
+    request.setProcessDefinitionKey("123456789");
+    request.setTags(Set.of("valid-tag", "another-tag"));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should reject invalid tags")
+  void shouldRejectInvalidTags() {
+    final var request = new ProcessInstanceCreationInstructionByKey();
+    request.setProcessDefinitionKey("123456789");
+    request.setTags(Set.of("1 invalid-tag", "another-tag"));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isPresent();
+    final ProblemDetail problem = result.get();
+    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getDetail()).contains("is not valid. Tags must start with a letter");
+  }
+
+  @Test
+  @DisplayName("Should reject too many tags")
+  void shouldRejectTooManyTags() {
+    final var request = new ProcessInstanceCreationInstructionByKey();
+    request.setProcessDefinitionKey("123456789");
+    request.setTags(Set.of("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isPresent();
+    final ProblemDetail problem = result.get();
+    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getDetail()).contains("The provided number of tags");
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"abc", "12.34", "12abc", "", " "})
   @DisplayName("Should reject invalid processDefinitionKey formats")
-  void shouldRejectInvalidProcessDefinitionKey(String invalidKey) {
-    final var request = new ProcessInstanceCreationInstruction();
+  void shouldRejectInvalidProcessDefinitionKey(final String invalidKey) {
+    final var request = new ProcessInstanceCreationInstructionByKey();
     request.setProcessDefinitionKey(invalidKey);
 
     final Optional<ProblemDetail> result =
@@ -55,8 +104,7 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept null processDefinitionKey when processDefinitionId is provided")
   void shouldAcceptNullProcessDefinitionKeyWhenIdProvided() {
-    final var request = new ProcessInstanceCreationInstruction();
-    request.setProcessDefinitionKey(null);
+    final var request = new ProcessInstanceCreationInstructionById();
     request.setProcessDefinitionId("process-id");
 
     final Optional<ProblemDetail> result =
@@ -66,43 +114,16 @@ class ProcessInstanceRequestValidatorTest {
   }
 
   @Test
-  @DisplayName("Should reject when both processDefinitionKey and processDefinitionId are null")
-  void shouldRejectWhenBothKeyAndIdAreNull() {
-    final var request = new ProcessInstanceCreationInstruction();
-    request.setProcessDefinitionKey(null);
-    request.setProcessDefinitionId(null);
-
-    final Optional<ProblemDetail> result =
-        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
-
-    assertThat(result).isPresent();
-    final ProblemDetail problem = result.get();
-    assertThat(problem.getDetail())
-        .contains("At least one of [processDefinitionId, processDefinitionKey] is required");
-  }
-
-  @Test
-  @DisplayName("Should reject when both processDefinitionKey and processDefinitionId are provided")
-  void shouldRejectWhenBothKeyAndIdProvided() {
-    final var request = new ProcessInstanceCreationInstruction();
-    request.setProcessDefinitionKey("123456789");
-    request.setProcessDefinitionId("process-id");
-
-    final Optional<ProblemDetail> result =
-        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
-
-    assertThat(result).isPresent();
-    final ProblemDetail problem = result.get();
-    assertThat(problem.getDetail())
-        .contains("Only one of [processDefinitionId, processDefinitionKey] is allowed");
-  }
-
-  @Test
   @DisplayName("Should accept valid targetProcessDefinitionKey format in migration request")
   void shouldAcceptValidTargetProcessDefinitionKey() {
-    final var request = new ProcessInstanceMigrationBatchOperationPlan();
-    request.setTargetProcessDefinitionKey("987654321");
-    request.setMappingInstructions(java.util.List.of());
+
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey("987654321");
+    migrationPlan.setMappingInstructions(java.util.List.of());
+
+    final var request = new ProcessInstanceMigrationBatchOperationRequest();
+    request.setFilter(new ProcessInstanceFilter());
+    request.setMigrationPlan(migrationPlan);
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest(
@@ -119,10 +140,14 @@ class ProcessInstanceRequestValidatorTest {
   @ParameterizedTest
   @ValueSource(strings = {"xyz", "99.99", "99xyz", "", " "})
   @DisplayName("Should reject invalid targetProcessDefinitionKey formats in migration request")
-  void shouldRejectInvalidTargetProcessDefinitionKey(String invalidKey) {
-    final var request = new ProcessInstanceMigrationBatchOperationPlan();
-    request.setTargetProcessDefinitionKey(invalidKey);
-    request.setMappingInstructions(java.util.List.of());
+  void shouldRejectInvalidTargetProcessDefinitionKey(final String invalidKey) {
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey(invalidKey);
+    migrationPlan.setMappingInstructions(java.util.List.of());
+
+    final var request = new ProcessInstanceMigrationBatchOperationRequest();
+    request.setFilter(new ProcessInstanceFilter());
+    request.setMigrationPlan(migrationPlan);
 
     final Optional<ProblemDetail> result =
         ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest(
@@ -140,7 +165,7 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should handle edge case Long values")
   void shouldHandleEdgeCaseLongValues() {
-    final var request = new ProcessInstanceCreationInstruction();
+    final var request = new ProcessInstanceCreationInstructionByKey();
 
     // Test with maximum Long value
     request.setProcessDefinitionKey(String.valueOf(Long.MAX_VALUE));
@@ -154,7 +179,7 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should reject Long values that are too large")
   void shouldRejectLongValuesTooLarge() {
-    final var request = new ProcessInstanceCreationInstruction();
+    final var request = new ProcessInstanceCreationInstructionByKey();
     // Create a number larger than Long.MAX_VALUE
     request.setProcessDefinitionKey("99999999999999999999999999999");
 
@@ -173,7 +198,7 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept zero as valid Long value")
   void shouldAcceptZeroAsValidLong() {
-    final var request = new ProcessInstanceCreationInstruction();
+    final var request = new ProcessInstanceCreationInstructionByKey();
     request.setProcessDefinitionKey("0");
 
     final Optional<ProblemDetail> result =
@@ -185,7 +210,7 @@ class ProcessInstanceRequestValidatorTest {
   @Test
   @DisplayName("Should accept negative Long values")
   void shouldAcceptNegativeLongValues() {
-    final var request = new ProcessInstanceCreationInstruction();
+    final var request = new ProcessInstanceCreationInstructionByKey();
     request.setProcessDefinitionKey("-123456789");
 
     final Optional<ProblemDetail> result =

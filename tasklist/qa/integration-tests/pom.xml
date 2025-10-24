@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
   </parent>
   <artifactId>tasklist-it-tests</artifactId>
 
@@ -26,18 +26,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-common</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
       <scope>test</scope>
     </dependency>
@@ -45,12 +33,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-qa-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-870</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -66,10 +48,28 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-x-content</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -436,42 +436,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-elasticsearch-exporter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-opensearch-exporter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-exporter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-exporter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5-engine</artifactId>
       <scope>test</scope>
@@ -579,7 +543,6 @@
             <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.glassfish:jakarta.json</dependency>
-            <dependency>io.camunda:tasklist-importer-870</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
@@ -593,7 +556,7 @@
       <activation>
         <activeByDefault>true</activeByDefault>
         <property>
-          <name>camunda.tasklist.database</name>
+          <name>camunda.data.secondary-storage.type</name>
           <value>opensearch</value>
         </property>
       </activation>
@@ -661,7 +624,7 @@
       <activation>
         <activeByDefault>true</activeByDefault>
         <property>
-          <name>camunda.tasklist.database</name>
+          <name>camunda.data.secondary-storage.type</name>
           <value>elasticsearch</value>
         </property>
       </activation>

@@ -50,9 +50,19 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
   public SearchQueryResult<DecisionInstanceEntity> search(
       final DecisionInstanceQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), DecisionInstanceSearchColumn.DECISION_INSTANCE_ID);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         DecisionInstanceDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = decisionInstanceMapper.count(dbQuery);

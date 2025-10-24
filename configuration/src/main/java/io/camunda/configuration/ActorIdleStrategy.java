@@ -13,7 +13,8 @@ import java.time.Duration;
 import java.util.Set;
 
 public class ActorIdleStrategy {
-  private static final String PREFIX = "camunda.system.actor.idle.";
+  private static final String PREFIX = "camunda.system.actor.idle";
+
   private static final Set<String> LEGACY_MAX_SPINS_PROPERTIES =
       Set.of("zeebe.actor.idle.maxSpins");
   private static final Set<String> LEGACY_MAX_YIELDS_PROPERTIES =
@@ -32,7 +33,7 @@ public class ActorIdleStrategy {
 
   public long getMaxSpins() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "max-spins",
+        PREFIX + ".max-spins",
         maxSpins,
         Long.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -45,7 +46,7 @@ public class ActorIdleStrategy {
 
   public long getMaxYields() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "max-yields",
+        PREFIX + ".max-yields",
         maxYields,
         Long.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -58,7 +59,7 @@ public class ActorIdleStrategy {
 
   public Duration getMinParkPeriod() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "min-park-period",
+        PREFIX + ".min-park-period",
         minParkPeriod,
         Duration.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -71,7 +72,7 @@ public class ActorIdleStrategy {
 
   public Duration getMaxParkPeriod() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "max-park-period",
+        PREFIX + ".max-park-period",
         maxParkPeriod,
         Duration.class,
         BackwardsCompatibilityMode.SUPPORTED,

@@ -10,9 +10,8 @@ package io.camunda.tasklist.data.os;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.zeebe.ZeebeESConstants;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.io.IOException;
-import java.util.List;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,34 +26,30 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("dev-data")
 @Conditional(OpenSearchCondition.class)
-@ConditionalOnProperty(value = "camunda.tasklist.webappEnabled", matchIfMissing = true)
+@ConditionalOnProperty(value = "camunda.tasklist.webapp-enabled", matchIfMissing = true)
 @DependsOn("searchEngineSchemaInitializer")
 public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorOpenSearch.class);
 
   @Autowired
-  @Qualifier("tasklistZeebeOsClient")
-  private OpenSearchClient zeebeOsClient;
+  @Qualifier("tasklistOsClient")
+  private OpenSearchClient tasklistOsClient;
 
   @Override
   public boolean shouldCreateData() {
     try {
 
       final boolean exists =
-          zeebeOsClient
-              .indices()
-              .exists(
-                  e ->
-                      e.index(
-                              List.of(
-                                  tasklistProperties.getZeebeOpenSearch().getPrefix()
-                                      + "*"
-                                      + ZeebeESConstants.DEPLOYMENT
-                                      + "*"))
-                          .allowNoIndices(false)
-                          .ignoreUnavailable(true))
-              .value();
+          tasklistOsClient
+                  .count(
+                      b ->
+                          b.index(
+                              new ProcessIndex(
+                                      tasklistProperties.getOpenSearch().getIndexPrefix(), false)
+                                  .getFullQualifiedName()))
+                  .count()
+              > 0;
 
       if (exists) {
         // data already exists
@@ -63,7 +58,7 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
       }
     } catch (final IOException io) {
       LOGGER.debug(
-          "Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.",
+          "Error occurred while checking existence of data in OS: {}. Demo data won't be created.",
           io.getMessage());
       return false;
     }

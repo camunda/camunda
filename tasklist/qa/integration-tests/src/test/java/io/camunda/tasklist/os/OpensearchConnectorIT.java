@@ -31,7 +31,6 @@ import net.bytebuddy.ByteBuddy;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,7 +47,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class
     },
-    properties = TasklistProperties.PREFIX + ".database=opensearch")
+    properties = {
+      "camunda.data.secondary-storage.type=opensearch",
+    })
 public class OpensearchConnectorIT {
 
   private static final OpensearchContainer<?> OPENSEARCH_CONTAINER =
@@ -92,34 +93,6 @@ public class OpensearchConnectorIT {
         WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
   }
 
-  @Test
-  void shouldSetCustomHeaderOnAllOsAsyncClientRequests() throws IOException {
-    // given
-    final var client = connector.tasklistOsAsyncClient();
-
-    // when
-    client.cluster().health(new HealthRequest.Builder().build());
-
-    // then
-    WIRE_MOCK_SERVER.verify(
-        new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
-        WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
-  }
-
-  @Test
-  void shouldSetCustomHeaderOnAllZeebeOSClientRequests() throws IOException {
-    // given
-    final var client = connector.tasklistZeebeOsClient();
-
-    // when
-    client.cluster().health(new HealthRequest.Builder().build());
-
-    // then
-    WIRE_MOCK_SERVER.verify(
-        new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
-        WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
-  }
-
   @DynamicPropertySource
   public static void setSearchPluginProperties(final DynamicPropertyRegistry registry)
       throws IOException {
@@ -143,9 +116,11 @@ public class OpensearchConnectorIT {
                 WireMock.aResponse().proxiedFrom(OPENSEARCH_CONTAINER.getHttpHostAddress())));
 
     setPluginConfig(registry, TasklistProperties.PREFIX + ".openSearch", plugin);
-    setPluginConfig(registry, TasklistProperties.PREFIX + ".zeebeOpenSearch", plugin);
-    registry.add(TasklistProperties.PREFIX + ".opensearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add(TasklistProperties.PREFIX + ".zeebeopensearch.url", WIRE_MOCK_SERVER::baseUrl);
+    // Unified configuration: db url + compatibility
+    registry.add("camunda.data.secondary-storage.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add("camunda.database.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add("camunda.operate.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add("camunda.tasklist.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
   }
 
   private static void setPluginConfig(

@@ -173,8 +173,9 @@ const SortableTable: React.FC<Props> = ({
                       const errorMessage = rowOperationError?.(row.id);
 
                       const expandRowStyleClasses = () => {
-                        if (batchOperationId)
+                        if (batchOperationId) {
                           return errorMessage ? 'errorRow' : 'successRow';
+                        }
 
                         return '';
                       };

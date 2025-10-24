@@ -15,14 +15,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,9 +37,11 @@ import org.springframework.test.json.JsonCompareMode;
 public class MappingRuleControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -46,10 +49,11 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(mappingRuleServices);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+  @ValueSource(strings = {"foo", "foo~", "Foo", "foo123", "foo_", "foo.", "foo@"})
   void createMappingRuleRuleShouldReturnCreated(final String id) {
     // given
     final var dto = validCreateMappingRuleRuleDTO();
@@ -247,9 +251,9 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+        "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
+        "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
+        "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectMappingRuleCreationWithIllegalCharactersInId(final String id) {
     // given
@@ -271,7 +275,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
               "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(IdentifierPatterns.ID_PATTERN, MAPPING_RULES_PATH));
+            .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, MAPPING_RULES_PATH));
     verifyNoInteractions(mappingRuleServices);
   }
 
@@ -329,6 +333,13 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void updateMappingRuleRuleShouldReturnOk(final String id) {
     // given
     final var dto = validUpdateMappingRuleRuleRequest(id);
+    final var request =
+        """
+            {
+              "claimName": "newClaimName",
+              "claimValue": "newClaimValue",
+              "name": "mapName"
+            }""";
     final var mappingRecord =
         new MappingRuleRecord()
             .setMappingRuleKey(1L)
@@ -346,7 +357,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .uri(MAPPING_RULES_PATH + "/" + id)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk();

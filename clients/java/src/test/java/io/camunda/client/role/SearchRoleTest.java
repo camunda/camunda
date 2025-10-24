@@ -26,7 +26,9 @@ import io.camunda.client.api.search.filter.ClientFilter;
 import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class SearchRoleTest extends ClientRestTest {
@@ -35,6 +37,9 @@ public class SearchRoleTest extends ClientRestTest {
 
   @Test
   public void shouldSearchRoleByRoleId() {
+    // given
+    gatewayService.onRoleRequest(ROLE_ID, Instancio.create(RoleResult.class));
+
     // when
     client.newRoleGetRequest(ROLE_ID).send().join();
 

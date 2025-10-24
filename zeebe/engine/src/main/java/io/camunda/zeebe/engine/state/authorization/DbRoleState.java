@@ -55,7 +55,7 @@ public class DbRoleState implements MutableRoleState {
   @Override
   public Optional<PersistedRole> getRole(final String roleId) {
     this.roleId.wrapString(roleId);
-    final var persistedRole = roleColumnFamily.get(this.roleId);
+    final var persistedRole = roleColumnFamily.get(this.roleId, PersistedRole::new);
     return Optional.ofNullable(persistedRole);
   }
 }

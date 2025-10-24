@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.signal;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
@@ -16,7 +17,6 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -125,6 +125,7 @@ public class SignalBroadcastAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+    assertThatNoSignalIsBroadcasted();
   }
 
   @Test
@@ -169,12 +170,24 @@ public class SignalBroadcastAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-        .withResourceId("*")
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .create(DEFAULT_USER.getUsername());
   }
 
   private long createProcessInstance() {
     return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+  }
+
+  private void assertThatNoSignalIsBroadcasted() {
+    final var limitPosition =
+        engine.signal().withSignalName("limitingRecord").broadcast().getPosition();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() < limitPosition)
+                .signalRecords()
+                .withIntent(SignalIntent.BROADCASTED)
+                .withSignalName(SIGNAL_NAME))
+        .isEmpty();
   }
 }

@@ -14,10 +14,18 @@ permissions:
 
 jobs:
   nightly-tests:
+    name: nightly-tests (${{ matrix.branch }} - Tasklist ${{ matrix.tasklist_mode }} mode)
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.6, stable/8.7, main] # Run all three branches in parallel
+        branch: [stable/8.6, stable/8.7, stable/8.8, main]
+        tasklist_mode: [v1, v2]
+        exclude:
+          # V2 mode only supported on main branch - exclude V2 for older branches
+          - branch: stable/8.6
+            tasklist_mode: v2
+          - branch: stable/8.7
+            tasklist_mode: v2
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -32,7 +40,15 @@ jobs:
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
+            if [[ "${{ matrix.tasklist_mode }}" == "v1" ]]; then
+              echo "Starting with Tasklist V1 mode enabled"
+              CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
+            else
+              echo "Starting with default Tasklist V2 mode"
+              export DATABASE=elasticsearch
+            echo "Starting Camunda with NON_STANDALONE:$NON_STANDALONE, database:$DATABASE"
             DATABASE=elasticsearch docker compose up -d camunda
+            fi
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -98,12 +114,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Clean install dependencies
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Import Secrets
@@ -141,6 +160,7 @@ jobs:
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -151,7 +171,13 @@ jobs:
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
 
-          npm run test -- --project=chromium
+          if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
+            echo "Running all tests in V2 mode, excluding V1-specific tests"
+            npm run test -- --project=chromium --ignore="tests/common-flows/v1/**" --ignore="tests/tasklist/v1/**""
+          else
+            echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
+            npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/"
+          fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -170,6 +196,6 @@ jobs:
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"

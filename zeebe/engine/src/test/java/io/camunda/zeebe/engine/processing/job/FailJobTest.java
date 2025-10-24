@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -78,6 +79,7 @@ public final class FailJobTest {
         .authorization()
         .newAuthorization()
         .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
         .withResourceId(PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withOwnerId(username)

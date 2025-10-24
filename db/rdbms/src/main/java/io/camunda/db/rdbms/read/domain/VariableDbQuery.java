@@ -16,7 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record VariableDbQuery(
-    VariableFilter filter, DbQuerySorting<VariableEntity> sort, DbQueryPage page) {
+    VariableFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
+    DbQuerySorting<VariableEntity> sort,
+    DbQueryPage page) {
 
   public static VariableDbQuery of(
       final Function<VariableDbQuery.Builder, ObjectBuilder<VariableDbQuery>> fn) {
@@ -28,11 +32,23 @@ public record VariableDbQuery(
     private static final VariableFilter EMPTY_FILTER = FilterBuilders.variable().build();
 
     private VariableFilter filter;
+    private List<String> authorizedResourceIds = List.of();
+    private List<String> authorizedTenantIds = List.of();
     private DbQuerySorting<VariableEntity> sort;
     private DbQueryPage page;
 
     public Builder filter(final VariableFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
       return this;
     }
 
@@ -63,7 +79,9 @@ public record VariableDbQuery(
     public VariableDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new VariableDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new VariableDbQuery(filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

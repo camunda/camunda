@@ -132,7 +132,7 @@ public class CreateUserTest {
         .hasOwnerType(AuthorizationOwnerType.USER)
         .hasResourceType(AuthorizationResourceType.USER)
         .hasResourceId(username)
-        .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.UPDATE);
+        .hasOnlyPermissionTypes(PermissionType.READ);
 
     // Verify that UserIntent.CREATE and UserIntent.CREATED events exist
     final var intents =

@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class BpmnElementContextImpl implements BpmnElementContext {
@@ -89,6 +90,11 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   @Override
   public BpmnEventType getBpmnEventType() {
     return recordValue.getBpmnEventType();
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return recordValue.getTags();
   }
 
   @Override

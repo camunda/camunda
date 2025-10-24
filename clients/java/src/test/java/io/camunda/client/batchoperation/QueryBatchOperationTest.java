@@ -20,17 +20,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.*;
+import io.camunda.client.protocol.rest.BatchOperationResponse.StateEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.time.OffsetDateTime;
 import java.util.*;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class QueryBatchOperationTest extends ClientRestTest {
 
   @Test
   public void shouldGetBatchOperationByKey() {
+    // given
+    final String batchOperationKey = "123";
+    gatewayService.onBatchOperationRequest(
+        batchOperationKey,
+        Instancio.create(BatchOperationResponse.class)
+            .state(StateEnum.UNKNOWN_DEFAULT_OPEN_API)
+            .batchOperationType(BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API)
+            .endDate(OffsetDateTime.now().toString())
+            .startDate(OffsetDateTime.now().toString())
+            .endDate(OffsetDateTime.now().toString()));
+
     // when
-    client.newBatchOperationGetRequest("123").send().join();
+    client.newBatchOperationGetRequest(batchOperationKey).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();

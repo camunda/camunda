@@ -17,6 +17,7 @@ import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,12 +34,13 @@ import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SchemaManager {
+public class SchemaManager implements CloseableSilently {
 
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
-  private final Collection<IndexDescriptor> indexDescriptors;
+  private final Collection<IndexDescriptor> allIndexDescriptors;
+  private final Collection<IndexDescriptor> indexOnlyDescriptors;
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final SearchEngineConfiguration config;
   private final IndexSchemaValidator schemaValidator;
@@ -48,13 +50,13 @@ public class SchemaManager {
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
-      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final SearchEngineConfiguration config,
       final ObjectMapper objectMapper) {
     this(
         searchEngineClient,
-        indexDescriptors,
+        indexOnlyDescriptors,
         indexTemplateDescriptors,
         config,
         new IndexSchemaValidator(objectMapper),
@@ -63,15 +65,17 @@ public class SchemaManager {
 
   private SchemaManager(
       final SearchEngineClient searchEngineClient,
-      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final SearchEngineConfiguration config,
       final IndexSchemaValidator schemaValidator,
       final SchemaManagerMetrics schemaManagerMetrics) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
-    this.indexDescriptors = indexDescriptors;
+    this.indexOnlyDescriptors = indexOnlyDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
+    allIndexDescriptors =
+        Stream.concat(indexOnlyDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
     this.config = config;
     this.schemaValidator = schemaValidator;
     retryDecorator = new RetryDecorator(config.schemaManager().getRetry());
@@ -81,7 +85,7 @@ public class SchemaManager {
   public SchemaManager withMetrics(final SchemaManagerMetrics schemaManagerMetrics) {
     return new SchemaManager(
         searchEngineClient,
-        indexDescriptors,
+        indexOnlyDescriptors,
         indexTemplateDescriptors,
         config,
         schemaValidator,
@@ -113,15 +117,22 @@ public class SchemaManager {
 
   private void initializeSchema() {
     LOG.info("Schema creation is enabled. Start Schema management.");
-    final var newIndexProperties = validateIndices(getAllIndexDescriptors());
+    final var newIndexProperties = validateIndices(allIndexDescriptors);
     //  used to create any indices/templates which don't exist
     initialiseResources();
 
     //  used to update existing indices/templates
-    LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
-    updateSchemaMappings(newIndexProperties);
+    if (!newIndexProperties.isEmpty()) {
+      LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
+      updateSchemaMappings(newIndexProperties);
+    }
     updateSchemaSettings();
+    createLifecyclePolicies();
 
+    LOG.info("Schema management completed.");
+  }
+
+  private void createLifecyclePolicies() {
     final RetentionConfiguration retention = config.retention();
     if (retention.isEnabled()) {
       LOG.info(
@@ -130,19 +141,30 @@ public class SchemaManager {
           retention.getMinimumAge());
       searchEngineClient.putIndexLifeCyclePolicy(
           retention.getPolicyName(), retention.getMinimumAge());
+
+      LOG.info(
+          "Create usage metrics ILM policy [name: '{}', retention: '{}']",
+          retention.getUsageMetricsPolicyName(),
+          retention.getUsageMetricsMinimumAge());
+      searchEngineClient.putIndexLifeCyclePolicy(
+          retention.getUsageMetricsPolicyName(), retention.getUsageMetricsMinimumAge());
     }
-    LOG.info("Schema management completed.");
   }
 
   private void updateSchemaSettings() {
-    getAllIndexDescriptors().forEach(this::updateIndexReplicaCount);
+    final var futures =
+        allIndexDescriptors.stream()
+            .map(
+                descriptor ->
+                    // run creation of indices async as virtual thread
+                    CompletableFuture.runAsync(
+                        () -> updateIndexSettings(descriptor), virtualThreadExecutor))
+            .toArray(CompletableFuture[]::new);
+
+    joinOnFutures(futures);
   }
 
-  private Collection<IndexDescriptor> getAllIndexDescriptors() {
-    return Stream.concat(indexDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
-  }
-
-  private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {
+  private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
     final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor.getIndexName());
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
       searchEngineClient.updateIndexTemplateSettings(
@@ -156,17 +178,17 @@ public class SchemaManager {
   }
 
   public void initialiseResources() {
-    initialiseIndices();
     initialiseIndexTemplates();
+    initialiseIndices();
   }
 
   private void initialiseIndices() {
-    if (indexDescriptors.isEmpty()) {
+    if (allIndexDescriptors.isEmpty()) {
       LOG.info("Do not create any indices, as descriptors are missing");
       return;
     }
 
-    final var missingIndices = getMissingIndices(indexDescriptors);
+    final var missingIndices = getMissingIndices(allIndexDescriptors);
     LOG.info("Found '{}' missing indices", missingIndices.size());
     final var futures =
         missingIndices.stream()
@@ -175,7 +197,7 @@ public class SchemaManager {
                     // run creation of indices async as virtual thread
                     CompletableFuture.runAsync(
                         () -> {
-                          LOG.info("Create missing index '{}'", descriptor.getFullQualifiedName());
+                          LOG.debug("Create missing index '{}'", descriptor.getFullQualifiedName());
                           searchEngineClient.createIndex(
                               descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
                         },
@@ -204,10 +226,10 @@ public class SchemaManager {
       LOG.info("Do not create any index templates, as descriptors are missing");
       return;
     }
-    LOG.info(
-        "Creating index templates based on '{}' descriptors.", indexTemplateDescriptors.size());
+    final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
+    LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
     final var futures =
-        indexTemplateDescriptors.stream()
+        missingIndexTemplates.stream()
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
@@ -237,7 +259,7 @@ public class SchemaManager {
   }
 
   /**
-   * Create an index template and it's matching index.
+   * Create an index template
    *
    * @param descriptor a description of the index template to create
    */
@@ -245,16 +267,8 @@ public class SchemaManager {
     try {
       searchEngineClient.createIndexTemplate(
           descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
-      LOG.info(
+      LOG.debug(
           "Index template '{}', has been created / already exists", descriptor.getTemplateName());
-
-      searchEngineClient.createIndex(
-          descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
-
-      LOG.info(
-          "Index '{}', for template '{}' has been created / already exists",
-          descriptor.getFullQualifiedName(),
-          descriptor.getTemplateName());
 
     } catch (final SearchEngineException e) {
       final var errMsg =
@@ -287,7 +301,7 @@ public class SchemaManager {
       final var newProperties = newFieldEntry.getValue();
 
       if (descriptor instanceof IndexTemplateDescriptor) {
-        LOG.info(
+        LOG.debug(
             "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
         searchEngineClient.createIndexTemplate(
             (IndexTemplateDescriptor) descriptor,
@@ -296,7 +310,7 @@ public class SchemaManager {
       } else {
         LOG.info(
             "Index alias: '{}'. New fields will be added '{}'",
-            descriptor.getFullQualifiedName(),
+            descriptor.getAlias(),
             newProperties);
       }
       searchEngineClient.putMapping(descriptor, newProperties);
@@ -305,7 +319,7 @@ public class SchemaManager {
 
   public List<String> truncateIndices() {
     final var indices =
-        getAllIndexDescriptors().stream().map(IndexDescriptor::getFullQualifiedName).toList();
+        allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
     indices.forEach(searchEngineClient::truncateIndex);
     return indices;
   }
@@ -388,12 +402,17 @@ public class SchemaManager {
     if (!config.schemaManager().isCreateSchema()) {
       return true;
     }
-    return getMissingIndices(getAllIndexDescriptors()).isEmpty()
+    return getMissingIndices(allIndexDescriptors).isEmpty()
         && getMissingIndexTemplates(indexTemplateDescriptors).isEmpty()
-        && validateIndices(getAllIndexDescriptors()).isEmpty();
+        && validateIndices(allIndexDescriptors).isEmpty();
   }
 
   public boolean isAllIndicesExist() {
-    return getMissingIndices(getAllIndexDescriptors()).isEmpty();
+    return getMissingIndices(allIndexDescriptors).isEmpty();
+  }
+
+  @Override
+  public void close() {
+    virtualThreadExecutor.close();
   }
 }

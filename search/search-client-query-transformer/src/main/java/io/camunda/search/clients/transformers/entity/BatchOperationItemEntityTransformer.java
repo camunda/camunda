@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.entity;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -44,6 +45,7 @@ public class BatchOperationItemEntityTransformer
       final io.camunda.webapps.schema.entities.operation.OperationEntity source) {
     return new BatchOperationItemEntity(
         source.getBatchOperationId(),
+        source.getType() != null ? BatchOperationType.valueOf(source.getType().name()) : null,
         source.getItemKey(),
         source.getProcessInstanceKey(),
         map(source.getState()),
@@ -55,6 +57,7 @@ public class BatchOperationItemEntityTransformer
       final io.camunda.webapps.schema.entities.operation.OperationEntity source) {
     return new BatchOperationItemEntity(
         source.getBatchOperationId(),
+        source.getType() != null ? BatchOperationType.valueOf(source.getType().name()) : null,
         // in legacy items only one of the following is set (processInstanceKey as default)
         ObjectUtils.firstNonNull(source.getIncidentKey(), source.getProcessInstanceKey()),
         source.getProcessInstanceKey(),

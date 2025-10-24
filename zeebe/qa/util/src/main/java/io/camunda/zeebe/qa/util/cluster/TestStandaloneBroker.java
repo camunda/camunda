@@ -8,16 +8,21 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
+import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -31,6 +36,7 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +53,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_ID = "default";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
-  private static final String RECORDING_EXPORTER_ID = "recordingExporter";
+  public static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
   private final CamundaSecurityProperties securityConfig;
 
@@ -56,7 +62,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         BrokerModuleConfiguration.class,
         CommonsModuleConfiguration.class,
         UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class);
+        UnifiedConfiguration.class,
+        GatewayRestPropertiesOverride.class,
+        SearchEngineConnectPropertiesOverride.class,
+        SearchEngineIndexPropertiesOverride.class);
 
     config = new BrokerBasedProperties();
 
@@ -134,6 +143,18 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // it when we override a property.
     AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
     return super.withProperty(key, value);
+  }
+
+  @Override
+  public TestStandaloneBroker withAuthenticationMethod(
+      final AuthenticationMethod authenticationMethod) {
+    // as mode is OIDC, and we have a user created by default in `TestStandaloneBroker`
+    // we need to reset the list of users to empty list as having pre-configured user in
+    // OIDC is not allowed
+    if (authenticationMethod == AuthenticationMethod.OIDC) {
+      securityConfig.getInitialization().setUsers(new ArrayList<>());
+    }
+    return super.withAuthenticationMethod(authenticationMethod);
   }
 
   @Override
@@ -313,16 +334,28 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "searchEngineConnectProperties",
         searchEngineConnectProperties,
         SearchEngineConnectProperties.class);
+    final var searchEngineIndexProperties = new SearchEngineIndexProperties();
+    withBean(
+        "searchEngineIndexProperties",
+        searchEngineIndexProperties,
+        SearchEngineIndexProperties.class);
     // enable schema creation as ES is used in the current tests
     withCreateSchema(true);
     return this;
   }
 
   public TestStandaloneBroker withRdbmsExporter() {
-    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms");
-    withProperty(
-        "camunda.database.url",
-        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    final String dbType = "rdbms";
+    final String dbUrl =
+        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+
+    // type
+    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, dbType);
+    withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, dbType);
+
+    // url
+    withProperty("camunda.database.url", dbUrl);
+
     withProperty("camunda.database.username", "sa");
     withProperty("camunda.database.password", "");
     withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");

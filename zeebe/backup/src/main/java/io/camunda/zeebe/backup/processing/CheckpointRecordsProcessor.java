@@ -49,11 +49,27 @@ public final class CheckpointRecordsProcessor
   private final CheckpointMetrics metrics;
   private DbCheckpointState checkpointState;
   private ProcessingScheduleService executor;
+  private ScalingStatusSupplier scalingInProgressSupplier;
+  private PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointRecordsProcessor(
       final BackupManager backupManager, final int partitionId, final MeterRegistry registry) {
     this.backupManager = backupManager;
     metrics = new CheckpointMetrics(registry);
+  }
+
+  public void setScalingInProgressSupplier(final ScalingStatusSupplier scalingInProgressSupplier) {
+    this.scalingInProgressSupplier = scalingInProgressSupplier;
+  }
+
+  /**
+   * Sets the supplier that provides the current partition count from routing information. This must
+   * be called before init() is called.
+   *
+   * @param partitionCountSupplier supplier that returns current partition count
+   */
+  public void setPartitionCountSupplier(final PartitionCountSupplier partitionCountSupplier) {
+    this.partitionCountSupplier = partitionCountSupplier;
   }
 
   @Override
@@ -63,8 +79,22 @@ public final class CheckpointRecordsProcessor
         new DbCheckpointState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
+    if (scalingInProgressSupplier == null) {
+      throw new IllegalStateException("Scaling in progress supplier is not initialized.");
+    }
+    if (partitionCountSupplier == null) {
+      throw new IllegalStateException("Partition count supplier is not initialized.");
+    }
+
     checkpointCreateProcessor =
-        new CheckpointCreateProcessor(checkpointState, backupManager, checkpointListeners, metrics);
+        new CheckpointCreateProcessor(
+            checkpointState,
+            backupManager,
+            checkpointListeners,
+            scalingInProgressSupplier,
+            partitionCountSupplier,
+            metrics);
+
     checkpointConfirmBackupProcessor = new CheckpointConfirmBackupProcessor(checkpointState);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);

@@ -25,10 +25,12 @@ import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.response.EvaluatedDecisionInputImpl;
 import io.camunda.client.impl.response.MatchedDecisionRuleImpl;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.client.protocol.rest.DecisionInstanceGetQueryResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -39,7 +41,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final long decisionInstanceKey;
   private final String decisionInstanceId;
   private final DecisionInstanceState state;
-  private final String evaluationDate;
+  private final OffsetDateTime evaluationDate;
   private final String evaluationFailure;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
@@ -49,6 +51,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final String decisionDefinitionName;
   private final int decisionDefinitionVersion;
   private final DecisionDefinitionType decisionDefinitionType;
+  private final long rootDecisionDefinitionKey;
   private final String tenantId;
   private final List<EvaluatedDecisionInput> evaluatedInputs;
   private final List<MatchedDecisionRule> matchedRules;
@@ -57,10 +60,10 @@ public class DecisionInstanceImpl implements DecisionInstance {
   public DecisionInstanceImpl(final DecisionInstanceResult item, final JsonMapper jsonMapper) {
     this(
         jsonMapper,
-        Long.parseLong(item.getDecisionInstanceKey()),
-        item.getDecisionInstanceId(),
+        Long.parseLong(item.getDecisionEvaluationKey()),
+        item.getDecisionEvaluationInstanceKey(),
         toDecisionInstanceState(item.getState()),
-        item.getEvaluationDate(),
+        ParseUtil.parseOffsetDateTimeOrNull(item.getEvaluationDate()),
         item.getEvaluationFailure(),
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
@@ -70,6 +73,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getDecisionDefinitionName(),
         item.getDecisionDefinitionVersion(),
         toDecisionDefinitionType(item.getDecisionDefinitionType()),
+        Long.parseLong(item.getRootDecisionDefinitionKey()),
         item.getTenantId(),
         null,
         null,
@@ -80,10 +84,10 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final DecisionInstanceGetQueryResult item, final JsonMapper jsonMapper) {
     this(
         jsonMapper,
-        Long.parseLong(item.getDecisionInstanceKey()),
-        item.getDecisionInstanceId(),
+        Long.parseLong(item.getDecisionEvaluationKey()),
+        item.getDecisionEvaluationInstanceKey(),
         toDecisionInstanceState(item.getState()),
-        item.getEvaluationDate(),
+        ParseUtil.parseOffsetDateTimeOrNull(item.getEvaluationDate()),
         item.getEvaluationFailure(),
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
@@ -93,6 +97,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getDecisionDefinitionName(),
         item.getDecisionDefinitionVersion(),
         toDecisionDefinitionType(item.getDecisionDefinitionType()),
+        Long.parseLong(item.getRootDecisionDefinitionKey()),
         item.getTenantId(),
         item.getEvaluatedInputs().stream()
             .map(input -> new EvaluatedDecisionInputImpl(input, jsonMapper))
@@ -108,7 +113,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final long decisionInstanceKey,
       final String decisionInstanceId,
       final DecisionInstanceState state,
-      final String evaluationDate,
+      final OffsetDateTime evaluationDate,
       final String evaluationFailure,
       final Long processDefinitionKey,
       final Long processInstanceKey,
@@ -118,6 +123,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final String decisionDefinitionName,
       final int decisionDefinitionVersion,
       final DecisionDefinitionType decisionDefinitionType,
+      final long rootDecisionDefinitionKey,
       final String tenantId,
       final List<EvaluatedDecisionInput> evaluatedInputs,
       final List<MatchedDecisionRule> matchedRules,
@@ -136,6 +142,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this.decisionDefinitionName = decisionDefinitionName;
     this.decisionDefinitionVersion = decisionDefinitionVersion;
     this.decisionDefinitionType = decisionDefinitionType;
+    this.rootDecisionDefinitionKey = rootDecisionDefinitionKey;
     this.tenantId = tenantId;
     this.evaluatedInputs = evaluatedInputs;
     this.matchedRules = matchedRules;
@@ -202,7 +209,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   }
 
   @Override
-  public String getEvaluationDate() {
+  public OffsetDateTime getEvaluationDate() {
     return evaluationDate;
   }
 
@@ -249,6 +256,11 @@ public class DecisionInstanceImpl implements DecisionInstance {
   @Override
   public DecisionDefinitionType getDecisionDefinitionType() {
     return decisionDefinitionType;
+  }
+
+  @Override
+  public long getRootDecisionDefinitionKey() {
+    return rootDecisionDefinitionKey;
   }
 
   @Override

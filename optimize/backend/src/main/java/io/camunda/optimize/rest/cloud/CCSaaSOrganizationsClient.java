@@ -12,6 +12,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -83,13 +84,17 @@ public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final AccountsOrganisationResponse that = (AccountsOrganisationResponse) o;
+      return Objects.equals(salesPlan, that.salesPlan);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hashCode(salesPlan);
     }
 
     @Override
@@ -123,13 +128,17 @@ public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final AccountsSalesPlanDto that = (AccountsSalesPlanDto) o;
+      return Objects.equals(type, that.type);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hashCode(type);
     }
 
     @Override

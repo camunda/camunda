@@ -164,39 +164,6 @@ final class FeatureFlagsCfgTest {
   }
 
   @Test
-  void shouldDisablePartitionScalingByDefault() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
-    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
-
-    // then
-    assertThat(featureFlagsCfg.isEnablePartitionScaling()).isFalse();
-  }
-
-  @Test
-  void shouldSetEnablePartitionScalingFromConfig() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
-    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
-
-    // then
-    assertThat(featureFlagsCfg.isEnablePartitionScaling()).isTrue();
-  }
-
-  @Test
-  void shouldSetEnablePartitionScalingFromEnv() {
-    // given
-    environment.put("zeebe.broker.experimental.features.enablePartitionScaling", "false");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
-    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
-
-    // then
-    assertThat(featureFlagsCfg.isEnablePartitionScaling()).isFalse();
-  }
-
-  @Test
   void shouldSetEnableMessageBodyOnExpiredFromConfig() {
     // given
     environment.put("zeebe.broker.experimental.features.enableMessageBodyOnExpired", "true");

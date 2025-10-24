@@ -26,24 +26,6 @@ class UpdateRoutingStateTransformerTest {
           .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
 
   @Test
-  void shouldReturnErrorWhenPartitionScalingIsDisabled() {
-    // given
-    final var transformer =
-        new UpdateRoutingStateTransformer(
-            false, // partition scaling disabled
-            Optional.empty());
-
-    // when
-    final var result = transformer.operations(currentTopology);
-
-    // then
-    EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft())
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessage("Partition scaling is disabled. Cannot update routing state.");
-  }
-
-  @Test
   void shouldGenerateUpdateRoutingStateOperationWhenEnabled() {
     // given
     final var routingState =
@@ -52,10 +34,7 @@ class UpdateRoutingStateTransformerTest {
                 1L,
                 new RoutingState.RequestHandling.AllPartitions(3),
                 new RoutingState.MessageCorrelation.HashMod(3)));
-    final var transformer =
-        new UpdateRoutingStateTransformer(
-            true, // partition scaling enabled
-            routingState);
+    final var transformer = new UpdateRoutingStateTransformer(routingState);
 
     // when
     final var result = transformer.operations(currentTopology);
@@ -71,10 +50,7 @@ class UpdateRoutingStateTransformerTest {
   @Test
   void shouldGenerateUpdateRoutingStateOperationWithEmptyRoutingState() {
     // given
-    final var transformer =
-        new UpdateRoutingStateTransformer(
-            true, // partition scaling enabled
-            Optional.empty());
+    final var transformer = new UpdateRoutingStateTransformer(Optional.empty());
 
     // when
     final var result = transformer.operations(currentTopology);

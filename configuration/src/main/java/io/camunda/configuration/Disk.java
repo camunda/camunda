@@ -10,10 +10,11 @@ package io.camunda.configuration;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Disk {
 
-  private static final String PREFIX = "camunda.data.primary-storage.disk.";
+  private static final String PREFIX = "camunda.data.primary-storage.disk";
 
   private static final Set<String> LEGACY_ENABLE_MONITORING_PROPERTIES =
       Set.of("zeebe.broker.data.disk.enableMonitoring");
@@ -30,7 +31,7 @@ public class Disk {
   /** Sets the interval at which the disk usage is monitored */
   private Duration monitoringInterval = Duration.ofSeconds(1);
 
-  private FreeSpace freeSpace = new FreeSpace();
+  @NestedConfigurationProperty private FreeSpace freeSpace = new FreeSpace();
 
   public FreeSpace getFreeSpace() {
     return freeSpace;
@@ -42,7 +43,7 @@ public class Disk {
 
   public boolean isMonitoringEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "monitoring-enabled",
+        PREFIX + ".monitoring-enabled",
         monitoringEnabled,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -55,7 +56,7 @@ public class Disk {
 
   public Duration getMonitoringInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "monitoring-interval",
+        PREFIX + ".monitoring-interval",
         monitoringInterval,
         Duration.class,
         BackwardsCompatibilityMode.SUPPORTED,

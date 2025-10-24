@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 
 /**
@@ -173,4 +174,9 @@ public interface ProcessInstanceRecordValue
    *     to the call activity in BPMN model containing an incident.
    */
   List<Integer> getCallingElementPath();
+
+  /**
+   * @return a set of tags associated with this process instance
+   */
+  Set<String> getTags();
 }

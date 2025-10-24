@@ -20,6 +20,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * Represents the authentication context for a user or client in Camunda, including (where
+ * appropriate) their username or client ID, group memberships, roles, tenants, mapping rules, and
+ * associated claims.
+ *
+ * <p>Either {@code authenticatedUsername} or {@code authenticatedClientId} must be set, but not
+ * both, unless the authentication represents an anonymous user in which case both can be null.
+ */
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record CamundaAuthentication(
     @JsonProperty("authenticated_username") String authenticatedUsername,
@@ -31,8 +39,18 @@ public record CamundaAuthentication(
     @JsonProperty("claims") Map<String, Object> claims)
     implements Serializable {
 
+  public CamundaAuthentication {
+    if (!isAnonymous(claims) && (authenticatedUsername != null && authenticatedClientId != null)) {
+      throw new IllegalArgumentException("Either username or clientId must be set, not both.");
+    }
+  }
+
   @JsonIgnore
   public boolean isAnonymous() {
+    return isAnonymous(claims);
+  }
+
+  private boolean isAnonymous(final Map<String, Object> claims) {
     if (claims != null && claims.containsKey(Authorization.AUTHORIZED_ANONYMOUS_USER)) {
       return ((boolean) claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER));
     }

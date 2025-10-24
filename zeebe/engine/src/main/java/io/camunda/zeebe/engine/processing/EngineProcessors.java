@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
@@ -90,7 +92,8 @@ public final class EngineProcessors {
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -126,7 +129,8 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
-    final var authCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+    final var authCheckBehavior =
+        new AuthorizationCheckBehavior(processingState, securityConfig, config);
     final var asyncRequestBehavior =
         new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
@@ -253,7 +257,7 @@ public final class EngineProcessors {
         writers,
         processingState,
         partitionsCount,
-        config.isCommandDistributionPaused());
+        config);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -320,7 +324,7 @@ public final class EngineProcessors {
         commandDistributionBehavior);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
-        keyGenerator, typedRecordProcessors, writers, securityConfig, featureFlags);
+        keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
     addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
 
@@ -336,7 +340,16 @@ public final class EngineProcessors {
         config,
         partitionId,
         routingInfo,
-        batchOperationMetrics);
+        batchOperationMetrics,
+        brokerRequestAuthorizationConverter);
+
+    ClusterVariableProcessors.addClusterVariableProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        processingState.getClusterVariableState(),
+        writers,
+        commandDistributionBehavior,
+        authCheckBehavior);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
@@ -608,7 +621,7 @@ public final class EngineProcessors {
       final Writers writers,
       final ProcessingState processingState,
       final int staticPartitionsCount,
-      final boolean isCommandDistributionPaused) {
+      final EngineConfiguration config) {
 
     {
       final var scheduledTaskState = scheduledTaskStateSupplier.get();
@@ -623,7 +636,7 @@ public final class EngineProcessors {
               RoutingInfo.dynamic(
                   scheduledTaskState.getRoutingState(),
                   RoutingInfo.forStaticPartitions(staticPartitionsCount)),
-              isCommandDistributionPaused));
+              config));
     }
 
     final var distributionState = processingState.getDistributionState();

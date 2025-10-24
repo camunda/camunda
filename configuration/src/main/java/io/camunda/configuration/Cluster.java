@@ -8,10 +8,12 @@
 package io.camunda.configuration;
 
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Cluster {
 
-  private static final String PREFIX = "camunda.cluster.";
+  private static final String PREFIX = "camunda.cluster";
+
   private static final String LEGACY_NODEID_PROPERTY = "zeebe.broker.cluster.nodeId";
   private static final String LEGACY_PARTITION_COUNT_PROPERTY =
       "zeebe.broker.cluster.partitionsCount";
@@ -20,10 +22,10 @@ public class Cluster {
   private static final String LEGACY_SIZE_PROPERTY = "zeebe.broker.cluster.clusterSize";
 
   /** Configuration for the distributed metadata manager in the cluster. */
-  private Metadata metadata = new Metadata();
+  @NestedConfigurationProperty private Metadata metadata = new Metadata();
 
   /** Network configuration for cluster communication. */
-  private Network network = new Network();
+  @NestedConfigurationProperty private Network network = new Network();
 
   /**
    * Specifies the unique id of this broker node in a cluster. The id should be between 0 and number
@@ -43,6 +45,15 @@ public class Cluster {
   /** The number of nodes in the cluster. */
   private int size = 1;
 
+  /**
+   * Configure parameters for SWIM protocol which is used to propagate cluster membership #
+   * information among brokers and gateways
+   */
+  @NestedConfigurationProperty private Membership membership = new Membership();
+
+  /** Configuration for the Raft protocol in the cluster. */
+  @NestedConfigurationProperty private Raft raft = new Raft();
+
   public Metadata getMetadata() {
     return metadata;
   }
@@ -61,7 +72,7 @@ public class Cluster {
 
   public int getNodeId() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "node-id",
+        PREFIX + ".node-id",
         nodeId,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -74,7 +85,7 @@ public class Cluster {
 
   public int getPartitionCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "partition-count",
+        PREFIX + ".partition-count",
         partitionCount,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -87,7 +98,7 @@ public class Cluster {
 
   public int getReplicationFactor() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "replication-factor",
+        PREFIX + ".replication-factor",
         replicationFactor,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -100,7 +111,7 @@ public class Cluster {
 
   public int getSize() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "size",
+        PREFIX + ".size",
         size,
         Integer.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
@@ -109,5 +120,21 @@ public class Cluster {
 
   public void setSize(final int size) {
     this.size = size;
+  }
+
+  public Membership getMembership() {
+    return membership;
+  }
+
+  public void setMembership(final Membership membership) {
+    this.membership = membership;
+  }
+
+  public Raft getRaft() {
+    return raft;
+  }
+
+  public void setRaft(final Raft raft) {
+    this.raft = raft;
   }
 }

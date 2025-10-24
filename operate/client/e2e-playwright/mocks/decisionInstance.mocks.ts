@@ -7,182 +7,155 @@
  */
 
 import {openFile} from '@/utils/openFile';
-import {Route} from '@playwright/test';
+import type {Route} from '@playwright/test';
+import type {
+  GetDecisionInstanceResponseBody,
+  QueryDecisionInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
-interface DecisionInstanceEntity {
-  id: string;
-  decisionName: string;
-  decisionVersion: number;
-  tenantId: string;
-  evaluationDate: string;
-  processInstanceId: string | null;
-  state: DecisionInstanceEntityState;
-  sortValues: [string, string];
-}
-type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
-type DecisionInstanceDto = {
-  id: string;
-  state: DecisionInstanceEntityState;
-  decisionType: 'DECISION_TABLE' | 'LITERAL_EXPRESSION';
-  decisionDefinitionId: string;
-  decisionId: string;
-  decisionName: string;
-  decisionVersion: number;
-  tenantId: string;
-  evaluationDate: string;
-  errorMessage: string | null;
-  processInstanceId: string | null;
-  result: string | null;
-  evaluatedInputs: Array<{
-    id: string;
-    name: string;
-    value: string | null;
-  }>;
-  evaluatedOutputs: Array<{
-    id: string;
-    ruleIndex: number;
-    ruleId: string;
-    name: string;
-    value: string | null;
-  }>;
-};
-type DrdDataDto = {
-  [decisionId: string]: [
-    {
-      decisionInstanceId: DecisionInstanceEntity['id'];
-      state: DecisionInstanceEntityState;
-    },
-  ];
-};
-
-const mockEvaluatedDecisionInstance: DecisionInstanceDto = {
-  id: '2251799813830820-1',
+const mockEvaluatedDecisionInstance: GetDecisionInstanceResponseBody = {
+  decisionEvaluationInstanceKey: '2251799813830820-1',
+  decisionEvaluationKey: '2251799813830820',
+  rootDecisionDefinitionKey: '2251799813687886',
   tenantId: '<default>',
+  decisionDefinitionKey: '2251799813687886',
+  decisionDefinitionId: 'invoiceClassification',
   state: 'EVALUATED',
-  decisionType: 'DECISION_TABLE',
-  decisionDefinitionId: '2251799813687886',
-  decisionId: 'invoiceClassification',
-  decisionName: 'Invoice Classification',
-  decisionVersion: 2,
+  decisionDefinitionName: 'Invoice Classification',
+  decisionDefinitionVersion: 2,
   evaluationDate: '2023-08-14T05:47:07.123+0000',
-  errorMessage: null,
-  processInstanceId: '2251799813830813',
-  result: '"budget"',
+  processInstanceKey: '2251799813830813',
+  processDefinitionKey: '2251799813830813',
+  elementInstanceKey: '2347238947239',
+  evaluationFailure: '',
   evaluatedInputs: [
     {
-      id: 'clause1',
-      name: 'Invoice Amount',
-      value: '1000',
+      inputId: 'clause1',
+      inputName: 'Invoice Amount',
+      inputValue: '1000',
     },
     {
-      id: 'InputClause_15qmk0v',
-      name: 'Invoice Category',
-      value: '"Misc"',
+      inputId: 'InputClause_15qmk0v',
+      inputName: 'Invoice Category',
+      inputValue: '"Misc"',
     },
   ],
-  evaluatedOutputs: [
+  matchedRules: [
     {
-      id: 'clause3',
-      name: 'Classification',
-      value: '"budget"',
       ruleId: 'DecisionRule_1ak4z14',
       ruleIndex: 2,
+      evaluatedOutputs: [
+        {
+          outputId: 'clause3',
+          outputName: 'Classification',
+          outputValue: '"budget"',
+        },
+      ],
     },
   ],
+  decisionDefinitionType: 'DECISION_TABLE',
+  result: '"budget"',
 };
 
-const mockEvaluatedDrdData: DrdDataDto = {
-  invoiceAssignApprover: [
-    {
-      decisionInstanceId: '2251799813830820-3',
-      state: 'EVALUATED',
-    },
-  ],
-  invoiceClassification: [
-    {
-      decisionInstanceId: '2251799813830820-1',
-      state: 'EVALUATED',
-    },
-  ],
-  amountToString: [
-    {
-      decisionInstanceId: '2251799813830820-2',
-      state: 'EVALUATED',
-    },
-  ],
-};
+const mockEvaluatedDecisionInstancesSearch: QueryDecisionInstancesResponseBody =
+  {
+    items: [
+      {
+        ...mockEvaluatedDecisionInstance,
+        decisionDefinitionId: 'invoiceAssignApprover',
+        decisionEvaluationInstanceKey: '2251799813830820-3',
+      },
+      {
+        ...mockEvaluatedDecisionInstance,
+        decisionDefinitionId: 'invoiceClassification',
+        decisionEvaluationInstanceKey: '2251799813830820-1',
+      },
+      {
+        ...mockEvaluatedDecisionInstance,
+        decisionDefinitionId: 'amountToString',
+        decisionEvaluationInstanceKey: '2251799813830820-2',
+      },
+    ],
+    page: {totalItems: 3},
+  };
 
 const mockEvaluatedXml = openFile(
   './e2e-playwright/mocks/resources/invoiceClassificationEvaluated.dmn',
 );
 
-const mockEvaluatedDecisionInstanceWithoutPanels: DecisionInstanceDto = {
-  id: '2251799813830820-2',
-  tenantId: '<default>',
-  state: 'EVALUATED',
-  decisionType: 'LITERAL_EXPRESSION',
-  decisionDefinitionId: '2251799813687887',
-  decisionId: 'amountToString',
-  decisionName: 'Convert amount to string',
-  decisionVersion: 1,
-  evaluationDate: '2023-08-14T05:47:07.123+0000',
-  errorMessage: null,
-  processInstanceId: '2251799813830813',
-  result: '"$1000"',
-  evaluatedInputs: [],
-  evaluatedOutputs: [],
-};
+const mockEvaluatedDecisionInstanceWithoutPanels: GetDecisionInstanceResponseBody =
+  {
+    decisionEvaluationInstanceKey: '2251799813830820-2',
+    decisionEvaluationKey: '2251799813830820',
+    tenantId: '<default>',
+    decisionDefinitionKey: '2251799813687887',
+    rootDecisionDefinitionKey: '2251799813687887',
+    decisionDefinitionId: 'amountToString',
+    state: 'EVALUATED',
+    decisionDefinitionName: 'Convert amount to string',
+    decisionDefinitionVersion: 1,
+    evaluationDate: '2023-08-14T05:47:07.123+0000',
+    processInstanceKey: '2251799813830813',
+    processDefinitionKey: '2251799813830813',
+    elementInstanceKey: '2347238947239',
+    evaluationFailure: '',
+    evaluatedInputs: [],
+    matchedRules: [],
+    decisionDefinitionType: 'LITERAL_EXPRESSION',
+    result: '"$1000"',
+  };
 
-const mockEvaluatedDrdDataWithoutPanels: DrdDataDto = {
-  invoiceAssignApprover: [
-    {
-      decisionInstanceId: '2251799813830820-3',
-      state: 'EVALUATED',
-    },
-  ],
-  invoiceClassification: [
-    {
-      decisionInstanceId: '2251799813830820-1',
-      state: 'EVALUATED',
-    },
-  ],
-  amountToString: [
-    {
-      decisionInstanceId: '2251799813830820-2',
-      state: 'EVALUATED',
-    },
-  ],
-};
+const mockEvaluatedDecisionInstancesSearchWithoutPanels: QueryDecisionInstancesResponseBody =
+  {
+    items: [
+      {
+        ...mockEvaluatedDecisionInstanceWithoutPanels,
+        decisionDefinitionId: 'invoiceAssignApprover',
+        decisionEvaluationInstanceKey: '2251799813830820-3',
+      },
+      {
+        ...mockEvaluatedDecisionInstanceWithoutPanels,
+        decisionDefinitionId: 'invoiceClassification',
+        decisionEvaluationInstanceKey: '2251799813830820-1',
+      },
+      {
+        ...mockEvaluatedDecisionInstanceWithoutPanels,
+        decisionDefinitionId: 'amountToString',
+        decisionEvaluationInstanceKey: '2251799813830820-2',
+      },
+    ],
+    page: {totalItems: 3},
+  };
 
 const mockEvaluatedXmlWithoutPanels = openFile(
   './e2e-playwright/mocks/resources/invoiceClassificationEvaluatedWithoutPanels.dmn',
 );
 
-const mockFailedDecisionInstance: DecisionInstanceDto = {
-  id: '6755399441062312-1',
+const mockFailedDecisionInstance: GetDecisionInstanceResponseBody = {
+  decisionEvaluationInstanceKey: '6755399441062312-1',
+  decisionEvaluationKey: '6755399441062312',
   tenantId: '<default>',
+  decisionDefinitionKey: '2251799813687886',
+  rootDecisionDefinitionKey: '2251799813687886',
+  decisionDefinitionId: 'invoiceClassification',
   state: 'FAILED',
-  decisionType: 'DECISION_TABLE',
-  decisionDefinitionId: '2251799813687886',
-  decisionId: 'invoiceClassification',
-  decisionName: 'Invoice Classification',
-  decisionVersion: 2,
+  decisionDefinitionName: 'Invoice Classification',
+  decisionDefinitionVersion: 2,
   evaluationDate: '2023-08-14T05:47:06.793+0000',
-  errorMessage:
+  processInstanceKey: '6755399441062307',
+  processDefinitionKey: '6755399441062307',
+  elementInstanceKey: '2347238947239',
+  evaluationFailure:
     "Expected to evaluate decision 'invoiceAssignApprover', but failed to evaluate expression 'amount': no variable found for name 'amount'",
-  processInstanceId: '6755399441062307',
-  result: 'null',
   evaluatedInputs: [],
-  evaluatedOutputs: [],
+  matchedRules: [],
+  decisionDefinitionType: 'DECISION_TABLE',
+  result: 'null',
 };
 
-const mockFailedDrdData: DrdDataDto = {
-  invoiceClassification: [
-    {
-      decisionInstanceId: '6755399441062312-1',
-      state: 'FAILED',
-    },
-  ],
+const mockFailedDecisionInstancesSearch: QueryDecisionInstancesResponseBody = {
+  items: [mockFailedDecisionInstance],
+  page: {totalItems: 1},
 };
 
 const mockFailedXml = openFile(
@@ -194,11 +167,11 @@ const mockEvaluatedLargeXml = openFile(
 
 function mockResponses({
   decisionInstanceDetail,
-  drdData,
+  decisionInstancesSearch,
   xml,
 }: {
-  decisionInstanceDetail?: DecisionInstanceDto;
-  drdData?: DrdDataDto;
+  decisionInstanceDetail?: GetDecisionInstanceResponseBody;
+  decisionInstancesSearch?: QueryDecisionInstancesResponseBody;
   xml?: string;
 }) {
   return (route: Route) => {
@@ -219,17 +192,17 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('drd-data')) {
+    if (route.request().url().includes('v2/decision-instances/search')) {
       return route.fulfill({
-        status: drdData === undefined ? 400 : 200,
-        body: JSON.stringify(drdData),
+        status: decisionInstancesSearch === undefined ? 400 : 200,
+        body: JSON.stringify(decisionInstancesSearch),
         headers: {
           'content-type': 'application/json',
         },
       });
     }
 
-    if (route.request().url().includes('/api/decision-instances/')) {
+    if (route.request().url().includes('/v2/decision-instances/')) {
       return route.fulfill({
         status: decisionInstanceDetail === undefined ? 400 : 200,
         body: JSON.stringify(decisionInstanceDetail),
@@ -260,13 +233,13 @@ function mockResponses({
 
 export {
   mockEvaluatedDecisionInstance,
-  mockEvaluatedDrdData,
+  mockEvaluatedDecisionInstancesSearch,
   mockEvaluatedXml,
   mockEvaluatedDecisionInstanceWithoutPanels,
-  mockEvaluatedDrdDataWithoutPanels,
+  mockEvaluatedDecisionInstancesSearchWithoutPanels,
   mockEvaluatedXmlWithoutPanels,
   mockFailedDecisionInstance,
-  mockFailedDrdData,
+  mockFailedDecisionInstancesSearch,
   mockFailedXml,
   mockEvaluatedLargeXml,
   mockResponses,

@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.config.controllers;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,8 +21,17 @@ public class TestApiController {
   public static final String DUMMY_OPERATE_INTERNAL_API_ENDPOINT = "/api/foo";
   public static final String DUMMY_V1_API_ENDPOINT = "/v1/foo";
   public static final String DUMMY_V2_API_ENDPOINT = "/v2/foo";
-  public static final String DUMMY_WEBAPP_ENDPOINT = "/decisions";
+  public static final String DUMMY_V2_API_AUTH_ENDPOINT = "/v2/auth";
+  public static final String DUMMY_WEBAPP_ENDPOINT = "/operate/decisions";
   public static final String DUMMY_UNPROTECTED_ENDPOINT = "/new/foo";
+  public static final String DUMMY_UNHANDLED_ENDPOINT = "/non-existent-endpoint";
+
+  private final CamundaAuthenticationProvider testAuthenticationProvider;
+
+  public TestApiController(
+      @Autowired(required = false) final CamundaAuthenticationProvider testAuthenticationProvider) {
+    this.testAuthenticationProvider = testAuthenticationProvider;
+  }
 
   @RequestMapping(DUMMY_OPERATE_INTERNAL_API_ENDPOINT)
   public @ResponseBody String dummyOperateInternalApiEndpoint() {
@@ -35,6 +46,14 @@ public class TestApiController {
   @RequestMapping(DUMMY_V2_API_ENDPOINT)
   public @ResponseBody String dummyV2ApiEndpoint() {
     return DEFAULT_RESPONSE;
+  }
+
+  @RequestMapping(DUMMY_V2_API_AUTH_ENDPOINT)
+  public @ResponseBody String dummyV2ApiAuthEndpoint() {
+    return testAuthenticationProvider != null
+            && testAuthenticationProvider.getCamundaAuthentication() != null
+        ? testAuthenticationProvider.getCamundaAuthentication().authenticatedUsername()
+        : "None";
   }
 
   @RequestMapping(DUMMY_WEBAPP_ENDPOINT)

@@ -13,9 +13,11 @@ import io.camunda.db.rdbms.sql.columns.RoleSearchColumn;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
 import io.camunda.search.clients.reader.RoleReader;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +41,18 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
   @Override
   public SearchQueryResult<RoleEntity> search(
       final RoleQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    if (shouldReturnEmptyResult(query.filter(), resourceAccessChecks)) {
+      return new SearchQueryResult.Builder<RoleEntity>().total(0).items(List.of()).build();
+    }
+
     final var dbSort = convertSort(query.sort(), RoleSearchColumn.ROLE_ID);
     final var dbQuery =
         RoleDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for roles with filter {}", dbQuery);
     final var totalHits = roleMapper.count(dbQuery);
@@ -61,5 +71,12 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
 
   private RoleEntity map(final RoleDbModel model) {
     return new RoleEntity(model.roleKey(), model.roleId(), model.name(), model.description());
+  }
+
+  private boolean shouldReturnEmptyResult(
+      final RoleFilter filter, final ResourceAccessChecks resourceAccessChecks) {
+    return (filter.roleIds() != null && filter.roleIds().isEmpty())
+        || (filter.memberIds() != null && filter.memberIds().isEmpty()
+            || shouldReturnEmptyResult(resourceAccessChecks));
   }
 }

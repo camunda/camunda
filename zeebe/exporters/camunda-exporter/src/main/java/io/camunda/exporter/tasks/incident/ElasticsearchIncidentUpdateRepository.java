@@ -33,6 +33,7 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -348,6 +349,15 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
     for (final var hit : hits) {
       final var entity = hit.source();
       final var newState = IncidentState.createFrom(entity.intent());
+
+      if (newState == null) {
+        final var errMsg =
+            String.format(
+                "Pending incident has a new state of [%s], which is not a valid IncidentState, should be one of %s",
+                entity.intent(), Arrays.toString(IncidentState.values()));
+        throw new IllegalStateException(errMsg);
+      }
+
       incidents.put(entity.key(), newState);
     }
 

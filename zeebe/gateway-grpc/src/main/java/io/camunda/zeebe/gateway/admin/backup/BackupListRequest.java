@@ -36,6 +36,14 @@ public class BackupListRequest extends BrokerRequest<BackupListResponse> {
     request.setBackupId(backupId);
   }
 
+  public String getPattern() {
+    return request.getPattern();
+  }
+
+  public void setPattern(final String pattern) {
+    request.setPattern(pattern);
+  }
+
   @Override
   public int getPartitionId() {
     return request.getPartitionId();

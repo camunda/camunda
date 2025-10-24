@@ -57,13 +57,13 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   private void init(final BackupRestoreTestContext testContext) {
     camundaClient =
         CamundaClient.newClientBuilder()
-            .gatewayAddress(testContext.getExternalZeebeContactPoint())
-            .usePlaintext()
+            .preferRestOverGrpc(false)
+            .grpcAddress(testContext.getZeebeGrpcAddress())
             .build();
 
     initClient(testContext);
 
-    indexPrefix = testContext.getZeebeIndexPrefix();
+    indexPrefix = testContext.getIndexPrefix();
   }
 
   protected abstract void initClient(BackupRestoreTestContext testContext);

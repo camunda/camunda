@@ -114,4 +114,18 @@ public class DbTenantStateTest {
     assertThat(tenant).isPresent();
     assertThat(tenant.get().getTenantKey()).isEqualTo(tenantKey);
   }
+
+  @Test
+  void shouldReturnNewCopiesOnGet() {
+    // given
+    final String id = "id";
+    tenantState.createTenant(new TenantRecord().setTenantId(id).setTenantKey(123L).setName("name"));
+
+    // when
+    final var tenant1 = tenantState.getTenantById(id).get();
+    final var tenant2 = tenantState.getTenantById(id).get();
+
+    // then
+    assertThat(tenant1).isNotSameAs(tenant2);
+  }
 }

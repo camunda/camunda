@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.test.TestClusterFactory;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -69,8 +70,10 @@ final class PartitionLeaveTest {
 
     try (final var client =
         CamundaClient.newClientBuilder()
-            .usePlaintext()
-            .gatewayAddress("localhost:" + broker0.getConfig().getGateway().getNetwork().getPort())
+            .preferRestOverGrpc(false)
+            .grpcAddress(
+                URI.create(
+                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
             .build()) {
       Awaitility.await()
           .untilAsserted(
@@ -124,8 +127,10 @@ final class PartitionLeaveTest {
 
     try (final var client =
         CamundaClient.newClientBuilder()
-            .usePlaintext()
-            .gatewayAddress("localhost:" + broker0.getConfig().getGateway().getNetwork().getPort())
+            .preferRestOverGrpc(false)
+            .grpcAddress(
+                URI.create(
+                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
             .build()) {
       Awaitility.await()
           .untilAsserted(
@@ -183,8 +188,10 @@ final class PartitionLeaveTest {
 
     try (final var client =
         CamundaClient.newClientBuilder()
-            .usePlaintext()
-            .gatewayAddress("localhost:" + broker0.getConfig().getGateway().getNetwork().getPort())
+            .preferRestOverGrpc(false)
+            .grpcAddress(
+                URI.create(
+                    "http://localhost:" + broker0.getConfig().getGateway().getNetwork().getPort()))
             .build()) {
       Awaitility.await()
           .untilAsserted(
@@ -227,6 +234,8 @@ final class PartitionLeaveTest {
             atomixCluster,
             brokerClient,
             SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            null,
+            null,
             null,
             null,
             null);

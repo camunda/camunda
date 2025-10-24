@@ -13,6 +13,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
@@ -25,6 +26,7 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -41,21 +43,26 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
@@ -162,7 +169,7 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
+  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupMemberQuery query) {
     return SearchQueryResult.empty();
   }
 
@@ -205,6 +212,12 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
+      processDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
   public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
     return null;
   }
@@ -232,7 +245,7 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleMemberQuery filter) {
     return SearchQueryResult.empty();
   }
 
@@ -247,7 +260,7 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
+  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantMemberQuery filter) {
     return SearchQueryResult.empty();
   }
 
@@ -289,6 +302,12 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
       final MessageSubscriptionQuery filter) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
+      searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
     return SearchQueryResult.empty();
   }
 

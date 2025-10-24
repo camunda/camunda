@@ -15,8 +15,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -36,14 +34,14 @@ public class ProcessCache {
   public static final String NAMESPACE = "camunda.gateway.rest.cache";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
   private final LoadingCache<Long, ProcessCacheItem> cache;
-  private final ProcessElementProvider processElementProvider;
+  private final ProcessDefinitionProvider processDefinitionProvider;
 
   public ProcessCache(
       final Configuration configuration,
       final ProcessDefinitionServices processDefinitionServices,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
-    processElementProvider = new ProcessElementProvider(processDefinitionServices);
+    processDefinitionProvider = new ProcessDefinitionProvider(processDefinitionServices);
 
     final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
     final var cacheBuilder =
@@ -83,26 +81,18 @@ public class ProcessCache {
 
     @Override
     public ProcessCacheItem load(final Long processDefinitionKey) {
-      final var elements = new HashMap<String, String>();
-      processElementProvider.extractElementNames(
-          processDefinitionKey, (pdKey, node) -> elements.put(node.id(), node.name()));
-      return new ProcessCacheItem(Collections.unmodifiableMap(elements));
+      final var processData = processDefinitionProvider.extractProcessData(processDefinitionKey);
+      return ProcessCacheItem.from(processData);
     }
 
     @Override
     public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> processDefinitionKeys) {
-      final var processMap = new HashMap<Long, Map<String, String>>();
-      processElementProvider.extractElementNames(
-          (Set<Long>) processDefinitionKeys,
-          (pdKey, element) -> {
-            final var elementMap = processMap.computeIfAbsent(pdKey, key -> new HashMap<>());
-            elementMap.put(element.id(), element.name());
-          });
-      return processMap.entrySet().stream()
+      final var processDataMap =
+          processDefinitionProvider.extractProcessData((Set<Long>) processDefinitionKeys);
+      return processDataMap.entrySet().stream()
           .collect(
               Collectors.toMap(
-                  Map.Entry::getKey,
-                  entry -> new ProcessCacheItem(Collections.unmodifiableMap(entry.getValue()))));
+                  Map.Entry::getKey, entry -> ProcessCacheItem.from(entry.getValue())));
     }
   }
 

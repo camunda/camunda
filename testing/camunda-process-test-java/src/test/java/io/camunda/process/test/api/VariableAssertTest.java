@@ -26,7 +26,6 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
@@ -772,10 +771,10 @@ public class VariableAssertTest {
                           COMPLEX_VARIABLE_KEY,
                           List.class,
                           result -> Assertions.assertThat(result).hasSize(5)))
-          .hasMessage(
-              "Process instance [key: 1] should have a variable 'complex' of type 'java.util.List', but was: '"
-                  + AssertionJsonMapper.readJson(COMPLEX_VARIABLE_VALUE)
-                  + "'");
+          .hasMessageContainingAll(
+              "Process instance [key: 1] should have a variable 'complex' of type 'java.util.List', but the JSON mapping failed:\n",
+              "Error: Failed to read JSON: '" + COMPLEX_VARIABLE_VALUE + "'\n",
+              "Reason: com.fasterxml.jackson.databind.exc.MismatchedInputException: Cannot deserialize value of type `java.util.ArrayList<java.lang.Object>` from Object value (token `JsonToken.START_OBJECT`)");
     }
 
     @Test

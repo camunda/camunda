@@ -42,9 +42,7 @@ public class OpensearchVariableReader implements VariableReader {
 
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  @Qualifier("operateVariableTemplate")
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
   @Autowired private OperationReader operationReader;
 

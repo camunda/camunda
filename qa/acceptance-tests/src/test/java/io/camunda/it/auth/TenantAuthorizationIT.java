@@ -11,6 +11,7 @@ import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.GROUP;
+import static io.camunda.client.api.search.enums.ResourceType.MAPPING_RULE;
 import static io.camunda.client.api.search.enums.ResourceType.TENANT;
 import static io.camunda.client.api.search.enums.ResourceType.USER;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,16 +35,10 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -54,7 +49,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class TenantAuthorizationIT {
 
@@ -83,7 +77,9 @@ class TenantAuthorizationIT {
               new Permissions(TENANT, READ, List.of("*")),
               new Permissions(TENANT, UPDATE, List.of("*")),
               new Permissions(USER, CREATE, List.of("*")),
-              new Permissions(GROUP, CREATE, List.of("*"))));
+              new Permissions(GROUP, CREATE, List.of("*")),
+              new Permissions(MAPPING_RULE, CREATE, List.of("*")),
+              new Permissions(MAPPING_RULE, READ, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
@@ -233,8 +229,12 @@ class TenantAuthorizationIT {
       throws URISyntaxException, IOException, InterruptedException {
     // given
     final String clientId = Strings.newRandomValidIdentityId();
-    assignClientToTenant(
-        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, TENANT_ID_1, clientId);
+    adminClient
+        .newAssignClientToTenantCommand()
+        .clientId(clientId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
 
     // when/then
     Awaitility.await("Search returns clients by tenant")
@@ -256,26 +256,150 @@ class TenantAuthorizationIT {
     Assertions.assertThat(response.items()).isEmpty();
   }
 
-  // TODO once available in #35767, this test should use the client to make the request
-  private static void assignClientToTenant(
-      final String restAddress, final String username, final String tenantId, final String clientId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder().encodeToString("%s:%s".formatted(username, PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(
-                new URI(
-                    "%s%s%s%s%s"
-                        .formatted(restAddress, "v2/tenants/", tenantId, "/clients/", clientId)))
-            .PUT(BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
+  @Test
+  void assignClientToTenantShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignClientToTenantCommand()
+                    .clientId("clientId")
+                    .tenantId(TENANT_ID_1)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
 
-    // Send the request and get the response
-    final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+  @Test
+  void assignClientToTenantShouldAssignClientIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // when
+    final String clientId = "clientId";
+    camundaClient
+        .newAssignClientToTenantCommand()
+        .clientId(clientId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
 
-    assertThat(response.statusCode()).isEqualTo(204);
+    // then
+    Awaitility.await("Client is assigned to the tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var clients =
+                  camundaClient.newClientsByTenantSearchRequest(TENANT_ID_1).send().join();
+              Assertions.assertThat(clients.items())
+                  .anyMatch(r -> clientId.equals(r.getClientId()));
+            });
+  }
+
+  @Test
+  void unassignClientFromTenantShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignClientFromTenantCommand()
+                    .clientId("clientId")
+                    .tenantId(TENANT_ID_1)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void unassignClientFromTenantShouldUnassignClientIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // given - first assign the client to the tenant
+    final String clientId = "clientIdToUnassign";
+    camundaClient
+        .newAssignClientToTenantCommand()
+        .clientId(clientId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
+
+    // verify client is assigned
+    Awaitility.await("Client is assigned to the tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var clients =
+                  camundaClient.newClientsByTenantSearchRequest(TENANT_ID_1).send().join();
+              Assertions.assertThat(clients.items())
+                  .anyMatch(r -> clientId.equals(r.getClientId()));
+            });
+
+    // when - unassign the client from the tenant
+    camundaClient
+        .newUnassignClientFromTenantCommand()
+        .clientId(clientId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
+
+    // then - verify client is no longer assigned
+    Awaitility.await("Client is unassigned from the tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var clients =
+                  camundaClient.newClientsByTenantSearchRequest(TENANT_ID_1).send().join();
+              Assertions.assertThat(clients.items())
+                  .noneMatch(r -> clientId.equals(r.getClientId()));
+            });
+  }
+
+  @Test
+  void unassignMappingRuleFromTenantShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignMappingRuleFromTenantCommand()
+                    .mappingRuleId("mappingRuleId")
+                    .tenantId(TENANT_ID_1)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void unassignMappingRuleFromTenantShouldUnassignMappingRuleIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // given - create a mapping rule and assign it to tenant
+    final String mappingRuleName = UUID.randomUUID().toString();
+    final String mappingRuleId = Strings.newRandomValidIdentityId();
+    camundaClient
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingRuleId)
+        .name(mappingRuleName)
+        .claimName("email")
+        .claimValue("test@example.com")
+        .send()
+        .join();
+
+    camundaClient
+        .newAssignMappingRuleToTenantCommand()
+        .mappingRuleId(mappingRuleId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
+
+    // when - unassign the mapping rule from the tenant
+    camundaClient
+        .newUnassignMappingRuleFromTenantCommand()
+        .mappingRuleId(mappingRuleId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
+
+    // then - verify mapping rule is unassigned (this test validates the command works)
+    // Note: Full verification would require a mappingRulesByTenantSearchRequest method
   }
 
   private static void createTenant(final CamundaClient adminClient, final String tenantId) {

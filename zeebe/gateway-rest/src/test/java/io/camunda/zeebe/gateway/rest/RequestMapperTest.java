@@ -11,12 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,7 @@ class RequestMapperTest {
     final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationRequest();
     batchOperationInstruction.setMigrationPlan(migrationPlan);
     final var filter = new ProcessInstanceFilter();
+    filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
     batchOperationInstruction.setFilter(filter);
 
     // when
@@ -90,10 +93,13 @@ class RequestMapperTest {
         new ProcessInstanceModificationMoveBatchOperationInstruction()
             .sourceElementId("source1")
             .targetElementId("target1");
+    final var filter = new ProcessInstanceFilter();
+    filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
 
     final var modificationRequest =
         new ProcessInstanceModificationBatchOperationRequest()
             .addMoveInstructionsItem(moveInstruction);
+    modificationRequest.setFilter(filter);
 
     // when
     final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
@@ -117,10 +123,13 @@ class RequestMapperTest {
     // given
     final var moveInstruction =
         new ProcessInstanceModificationMoveBatchOperationInstruction().sourceElementId("source1");
+    final var filter = new ProcessInstanceFilter();
+    filter.setProcessDefinitionId(new AdvancedStringFilter().$like("process"));
 
     final var modificationRequest =
         new ProcessInstanceModificationBatchOperationRequest()
             .addMoveInstructionsItem(moveInstruction);
+    modificationRequest.setFilter(filter);
 
     // when
     final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =

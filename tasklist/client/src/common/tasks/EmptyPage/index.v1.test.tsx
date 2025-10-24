@@ -35,6 +35,19 @@ const getWrapper = () => {
   return Wrapper;
 };
 
+vi.mock('common/config/getClientConfig', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('common/config/getClientConfig')>();
+  return {
+    getClientConfig() {
+      return {
+        ...actual.getClientConfig(),
+        clientMode: 'v1',
+      };
+    },
+  };
+});
+
 describe('<EmptyPage />', () => {
   afterEach(() => {
     clearStateLocally('hasCompletedTask');

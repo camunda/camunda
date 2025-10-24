@@ -31,6 +31,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.UserEntity;
@@ -47,6 +48,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -58,6 +60,7 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -85,8 +88,9 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "spring.liquibase.enabled=false",
-      "camunda.database.type=rdbms",
       "zeebe.broker.exporters.rdbms.args.queueSize=0",
+      "camunda.data.secondary-storage.type=rdbms",
+      "zeebe.broker.exporters.rdbms.args.maxQueueSize=0",
       "camunda.database.index-prefix=C8_"
     })
 class RdbmsExporterIT {
@@ -122,7 +126,7 @@ class RdbmsExporterIT {
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
-    assertThat(processInstance).isNotNull();
+    assertThat(processInstance).isNotEmpty();
 
     // given
     final var processInstanceCompletedRecord = getProcessInstanceCompletedRecord(1L, key);
@@ -148,7 +152,7 @@ class RdbmsExporterIT {
     final var key =
         ((ProcessInstanceRecordValue) rootProcessInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
-    assertThat(processInstance).isNotNull();
+    assertThat(processInstance).isNotEmpty();
 
     // given
     final var rootProcessInstanceCompletedRecord =
@@ -225,7 +229,7 @@ class RdbmsExporterIT {
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
-    assertThat(processInstance).isNotNull();
+    assertThat(processInstance).isNotEmpty();
 
     final var variable = rdbmsService.getVariableReader().findOne(variableCreated.getKey());
     final VariableRecordValue variableRecordValue =
@@ -272,7 +276,7 @@ class RdbmsExporterIT {
     // then
     final var key = ((UserTaskRecordValue) userTaskRecord.getValue()).getUserTaskKey();
     final var userTask = rdbmsService.getUserTaskReader().findOne(key);
-    assertThat(userTask).isNotNull();
+    assertThat(userTask).isNotEmpty();
   }
 
   @Test
@@ -587,7 +591,81 @@ class RdbmsExporterIT {
     // then
     final var formKey = ((Form) formCreatedRecord.getValue()).getFormKey();
     final var formEntity = rdbmsService.getFormReader().findOne(formKey);
-    assertThat(formEntity).isNotNull();
+    assertThat(formEntity).isNotEmpty();
+  }
+
+  @Test
+  public void shouldExportMessageSubscription() {
+    // given
+    final var messageSubscriptionRecord =
+        ImmutableRecord.builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withIntent(ProcessMessageSubscriptionIntent.CREATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(messageSubscriptionRecord);
+
+    // then
+    final var messageSubscription =
+        rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
+    assertThat(messageSubscription).isNotEmpty();
+  }
+
+  @Test
+  public void shouldUpdateDeletedMessageSubscription() {
+    // given
+    final var messageSubscriptionRecord =
+        ImmutableRecord.builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withIntent(ProcessMessageSubscriptionIntent.CREATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    exporter.export(messageSubscriptionRecord);
+
+    // when
+    exporter.export(
+        ImmutableRecord.builder()
+            .from(messageSubscriptionRecord)
+            .withIntent(ProcessMessageSubscriptionIntent.DELETED)
+            .withPosition(3L)
+            .withTimestamp(System.currentTimeMillis())
+            .build());
+
+    // then
+    final var messageSubscription =
+        rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
+    assertThat(messageSubscription).isPresent();
+    assertThat(messageSubscription.get().messageSubscriptionState())
+        .isEqualTo(MessageSubscriptionState.DELETED);
+  }
+
+  @Test
+  public void shouldExportCorrelatedMessageSubscription() {
+    // given
+    final Record<ProcessMessageSubscriptionRecordValue> correlatedMessageSubscriptionRecord =
+        ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(correlatedMessageSubscriptionRecord);
+
+    // then
+    final var correlatedMessageSubscription =
+        rdbmsService
+            .getCorrelatedMessageSubscriptionReader()
+            .findOne(
+                correlatedMessageSubscriptionRecord.getValue().getMessageKey(),
+                correlatedMessageSubscriptionRecord.getKey());
+    assertThat(correlatedMessageSubscription).isNotEmpty();
   }
 
   @Test
@@ -602,7 +680,7 @@ class RdbmsExporterIT {
     final var mappingRuleId =
         ((MappingRuleRecordValue) mappingRuleCreatedRecord.getValue()).getMappingRuleId();
     final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
-    assertThat(mappingRule).isNotNull();
+    assertThat(mappingRule).isNotEmpty();
 
     // given
     final var mappingDeletedRecord = mappingRuleCreatedRecord.withIntent(MappingRuleIntent.DELETED);

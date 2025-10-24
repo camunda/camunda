@@ -24,6 +24,7 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ public class ProcessInstanceAssertj
   private final ElementAssertj elementAssertj;
   private final VariableAssertj variableAssertj;
   private final IncidentAssertj incidentAssertj;
+  private final MessageSubscriptionAssertj messageSubscriptionAssertj;
   private final String failureMessagePrefix;
   private final Function<String, ElementSelector> elementSelector;
 
@@ -53,11 +55,13 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssertj(
       final CamundaDataSource dataSource,
       final CamundaAssertAwaitBehavior awaitBehavior,
+      final CamundaAssertJsonMapper jsonMapper,
       final long processInstanceKey,
       final Function<String, ElementSelector> elementSelector) {
     this(
         dataSource,
         awaitBehavior,
+        jsonMapper,
         ProcessInstanceSelectors.byKey(processInstanceKey),
         elementSelector);
   }
@@ -65,6 +69,7 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssertj(
       final CamundaDataSource dataSource,
       final CamundaAssertAwaitBehavior awaitBehavior,
+      final CamundaAssertJsonMapper jsonMapper,
       final ProcessInstanceSelector processInstanceSelector,
       final Function<String, ElementSelector> elementSelector) {
     super(processInstanceSelector, ProcessInstanceAssertj.class);
@@ -74,8 +79,11 @@ public class ProcessInstanceAssertj
         String.format("Process instance [%s]", processInstanceSelector.describe());
     this.elementSelector = elementSelector;
     elementAssertj = new ElementAssertj(dataSource, awaitBehavior, failureMessagePrefix);
-    variableAssertj = new VariableAssertj(dataSource, awaitBehavior, failureMessagePrefix);
+    variableAssertj =
+        new VariableAssertj(dataSource, awaitBehavior, jsonMapper, failureMessagePrefix);
     incidentAssertj = new IncidentAssertj(dataSource, awaitBehavior, failureMessagePrefix);
+    messageSubscriptionAssertj =
+        new MessageSubscriptionAssertj(dataSource, awaitBehavior, failureMessagePrefix);
   }
 
   @Override
@@ -346,6 +354,48 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasActiveIncidents() {
     incidentAssertj.hasActiveIncidents(getProcessInstanceKey());
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isWaitingForMessage(final String messageName) {
+    messageSubscriptionAssertj.isWaitingForMessage(getProcessInstanceKey(), messageName);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isWaitingForMessage(
+      final String messageName, final String correlationKey) {
+    messageSubscriptionAssertj.isWaitingForMessage(
+        getProcessInstanceKey(), messageName, correlationKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isNotWaitingForMessage(final String messageName) {
+    messageSubscriptionAssertj.isNotWaitingForMessage(getProcessInstanceKey(), messageName);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert isNotWaitingForMessage(
+      final String messageName, final String correlationKey) {
+    messageSubscriptionAssertj.isNotWaitingForMessage(
+        getProcessInstanceKey(), messageName, correlationKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCorrelatedMessage(final String messageName) {
+    messageSubscriptionAssertj.hasCorrelatedMessage(getProcessInstanceKey(), messageName);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCorrelatedMessage(
+      final String messageName, final String correlationKey) {
+    messageSubscriptionAssertj.hasCorrelatedMessage(
+        getProcessInstanceKey(), messageName, correlationKey);
     return this;
   }
 

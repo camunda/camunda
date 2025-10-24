@@ -23,7 +23,10 @@ const defaultUiConfig = {
     console: 'http://console.com',
     operate: 'http://operate.com',
   },
-  onboarding: {orgId: 'orgId'},
+  onboarding: {
+    orgId: 'orgId',
+    clusterId: 'clusterId',
+  },
   notificationsUrl: 'notificationsUrl',
   validLicense: true,
   licenseType: 'production',
@@ -203,8 +206,8 @@ it('should display the notifications component in cloud mode', async () => {
 
   expect(node.find('NavbarWrapper').props()).toMatchObject({
     isCloud: true,
-    notificationsUrl: 'notificationsUrl',
     organizationId: 'orgId',
+    clusterId: 'clusterId',
     userToken: 'userToken',
     getNewUserToken: expect.any(Function),
   });

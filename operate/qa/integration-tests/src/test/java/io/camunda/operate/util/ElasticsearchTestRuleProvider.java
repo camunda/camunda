@@ -17,9 +17,6 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
-import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.operate.zeebeimport.RecordsReader;
-import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
@@ -44,14 +41,10 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -67,7 +60,6 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -86,24 +78,15 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Autowired protected RestHighLevelClient esClient;
 
-  @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
-
   @Autowired protected OperateProperties operateProperties;
-  @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   Map<Class<? extends ExporterEntity>, String> entityToESAliasMap;
   @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  @Qualifier("operateVariableTemplate")
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
-  @Autowired
-  @Qualifier("operateProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
@@ -160,19 +143,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void refreshSearchIndices() {
-    refreshZeebeIndices();
     refreshOperateSearchIndices();
-  }
-
-  @Override
-  public void refreshZeebeIndices() {
-    try {
-      final RefreshRequest refreshRequest =
-          new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
-      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (final Exception t) {
-      LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
-    }
   }
 
   @Override
@@ -183,74 +154,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Elasticsearch indices", t);
-    }
-  }
-
-  @Override
-  public void processAllRecordsAndWait(
-      final Integer maxWaitingRounds,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, predicate, null, arguments);
-  }
-
-  @Override
-  public void processAllRecordsAndWait(
-      final Predicate<Object[]> predicate, final Object... arguments) {
-    processAllRecordsAndWait(50, predicate, arguments);
-  }
-
-  @Override
-  public void processAllRecordsAndWait(
-      final Predicate<Object[]> predicate,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), 50, predicate, supplier, arguments);
-  }
-
-  @Override
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, predicate, null, arguments);
-  }
-
-  @Override
-  public void processRecordsAndWaitFor(
-      final Collection<RecordsReader> readers,
-      final Integer maxWaitingRounds,
-      final Predicate<Object[]> predicate,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
-    int waitingRound = 0;
-    final int maxRounds = maxWaitingRounds;
-    boolean found = predicate.test(arguments);
-    final long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      try {
-        if (supplier != null) {
-          supplier.get();
-        }
-        refreshSearchIndices();
-        refreshOperateSearchIndices();
-      } catch (final Exception e) {
-        LOGGER.error(e.getMessage(), e);
-      }
-      found = predicate.test(arguments);
-      if (!found) {
-        sleepFor(500);
-        waitingRound++;
-      }
-    }
-    final long finishedTime = System.currentTimeMillis() - start;
-    if (found) {
-      LOGGER.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
-    } else {
-      LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
-      //      throw new TestPrerequisitesFailedException("Conditions not met.");
     }
   }
 
@@ -274,13 +177,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     }
     LOGGER.debug("Elasticsearch indices are created after {} checks", checks);
     return areCreated;
-  }
-
-  @Override
-  public List<RecordsReader> getRecordsReaders(final ImportValueType importValueType) {
-    return recordsReaderHolder.getAllRecordsReaders().stream()
-        .filter(rr -> rr.getImportValueType().equals(importValueType))
-        .collect(Collectors.toList());
   }
 
   @Override

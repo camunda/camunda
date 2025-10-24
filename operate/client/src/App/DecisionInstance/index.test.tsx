@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
 import {
   render,
   screen,
@@ -15,13 +14,11 @@ import {
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
-import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {DecisionInstance} from './';
-import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
-import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
-import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -31,14 +28,6 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 const DECISION_INSTANCE_ID = '4294980768';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    drdStore.init();
-
-    return () => {
-      drdStore.reset();
-    };
-  }, []);
-
   return (
     <QueryClientProvider client={getMockQueryClient()}>
       <MemoryRouter
@@ -54,9 +43,12 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('<DecisionInstance />', () => {
   beforeEach(() => {
-    mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
+    mockSearchDecisionInstances().withSuccess({
+      items: [invoiceClassification],
+      page: {totalItems: 1},
+    });
     mockMe().withSuccess(createUser());
     mockMe().withSuccess(createUser());
   });
@@ -72,7 +64,7 @@ describe('<DecisionInstance />', () => {
     ).toBeInTheDocument();
 
     expect(document.title).toBe(
-      `Operate: Decision Instance ${DECISION_INSTANCE_ID} of ${invoiceClassification.decisionName}`,
+      `Operate: Decision Instance ${DECISION_INSTANCE_ID} of ${invoiceClassification.decisionDefinitionName}`,
     );
   });
 
@@ -192,8 +184,11 @@ describe('<DecisionInstance />', () => {
     unmount();
 
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
-    mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
+    mockSearchDecisionInstances().withSuccess({
+      items: [invoiceClassification],
+      page: {totalItems: 1},
+    });
 
     render(<DecisionInstance />, {wrapper: Wrapper});
 
@@ -255,9 +250,12 @@ describe('<DecisionInstance />', () => {
 
     unmount();
 
-    mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
+    mockSearchDecisionInstances().withSuccess({
+      items: [invoiceClassification],
+      page: {totalItems: 1},
+    });
 
     render(<DecisionInstance />, {wrapper: Wrapper});
 

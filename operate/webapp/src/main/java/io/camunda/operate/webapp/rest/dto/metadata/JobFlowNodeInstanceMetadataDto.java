@@ -9,8 +9,8 @@ package io.camunda.operate.webapp.rest.dto.metadata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.event.EventEntity;
-import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -35,15 +35,16 @@ public class JobFlowNodeInstanceMetadataDto extends FlowNodeInstanceMetadataDto
       final FlowNodeType flowNodeType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
-      final EventEntity event) {
-    super(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate, event);
-    final EventMetadataEntity eventMetadataEntity = event.getMetadata();
-    if (eventMetadataEntity != null) {
-      setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders())
-          .setJobDeadline(eventMetadataEntity.getJobDeadline())
-          .setJobRetries(eventMetadataEntity.getJobRetries())
-          .setJobType(eventMetadataEntity.getJobType())
-          .setJobWorker(eventMetadataEntity.getJobWorker());
+      final String eventId,
+      final EventEntity event,
+      final JobEntity job) {
+    super(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate, eventId, event);
+    if (job != null) {
+      setJobCustomHeaders(job.getCustomHeaders())
+          .setJobDeadline(job.getDeadline())
+          .setJobRetries(job.getRetries())
+          .setJobType(job.getType())
+          .setJobWorker(job.getWorker());
     }
   }
 

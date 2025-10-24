@@ -27,8 +27,7 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
 
@@ -37,11 +36,9 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
   private final String endDate = "2024-02-15T22:41:10.834+0000";
   @Autowired private FlowNodeInstanceDao dao;
 
-  @Autowired
-  @Qualifier("operateFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
-  @MockBean private ProcessCache processCache;
+  @MockitoBean private ProcessCache processCache;
   @Autowired private OperateDateTimeFormatter dateTimeFormatter;
 
   @Override

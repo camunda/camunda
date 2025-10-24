@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-testing</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -15,6 +15,7 @@
 
   <properties>
     <version.java>8</version.java>
+    <maven-commit-id-plugin-version>9.0.2</maven-commit-id-plugin-version>
     <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
@@ -50,6 +51,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
     <dependency>
@@ -95,6 +101,11 @@
     </dependency>
 
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
@@ -136,6 +147,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
       <scope>test</scope>
@@ -158,9 +175,21 @@
 
     <!-- Required to access the version as a resource-->
     <resources>
+      <!-- Regular resources with filtering enabled -->
       <resource>
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>coverage/static/media/**</exclude>
+        </excludes>
+      </resource>
+      <!-- Binary files with filtering disabled -->
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>coverage/static/media/**</include>
+        </includes>
       </resource>
     </resources>
 
@@ -180,8 +209,109 @@
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
 
+      <!-- Coverage frontend build with frontend-maven-plugin -->
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <configuration>
+          <workingDirectory>${project.basedir}/../camunda-process-test-coverage-frontend</workingDirectory>
+          <installDirectory>${project.basedir}/../camunda-process-test-coverage-frontend</installDirectory>
+        </configuration>
+        <executions>
+          <!-- Install Node and NPM -->
+          <execution>
+            <id>install-node-and-npm</id>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <nodeVersion>v22.9.0</nodeVersion>
+              <npmVersion>10.8.3</npmVersion>
+            </configuration>
+          </execution>
+          <!-- Install dependencies -->
+          <execution>
+            <id>npm-install</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <arguments>install</arguments>
+            </configuration>
+          </execution>
+          <!-- Build frontend (output: src/main/resources/coverage) -->
+          <execution>
+            <id>npm-build</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <arguments>run build</arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <createSourcesJar>true</createSourcesJar>
+              <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
+              <promoteTransitiveDependencies>false</promoteTransitiveDependencies>
+
+              <artifactSet>
+                <includes>
+                  <include>org.awaitility:awaitility</include>
+                </includes>
+              </artifactSet>
+
+              <relocations>
+                <!-- We shade the Awaitility dependency to avoid conflicts with Spring or the user's project. -->
+                <relocation>
+                  <pattern>org.awaitility.</pattern>
+                  <shadedPattern>io.camunda.shaded.awaitility.</shadedPattern>
+                </relocation>
+              </relocations>
+
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+        <version>${maven-commit-id-plugin-version}</version>
+        <configuration>
+          <generateGitPropertiesFile>true</generateGitPropertiesFile>
+          <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+          <includeOnlyProperties>
+            <includeOnlyProperty>^git.branch$</includeOnlyProperty>
+          </includeOnlyProperties>
+          <failOnNoGitDirectory>false</failOnNoGitDirectory>
+          <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+        </configuration>
+        <executions>
+          <execution>
+            <id>collect-git-info</id>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+            <phase>initialize</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
-
   </build>
-
 </project>

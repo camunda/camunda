@@ -30,9 +30,11 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
-import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
+import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
@@ -76,12 +78,25 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class CamundaServicesConfiguration {
 
   @Bean
+  public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
+      final SecurityConfiguration securityConfiguration) {
+    return new BrokerRequestAuthorizationConverter(securityConfiguration);
+  }
+
+  @Bean
   public UsageMetricsServices usageMetricsServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final UsageMetricsSearchClient usageMetricsSearchClient) {
+      final UsageMetricsSearchClient usageMetricsSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new UsageMetricsServices(
-        brokerClient, securityContextProvider, usageMetricsSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        usageMetricsSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -89,9 +104,17 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
-      final JobSearchClient jobSearchClient) {
+      final JobSearchClient jobSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new JobServices<>(
-        brokerClient, securityContextProvider, activateJobsHandler, jobSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        activateJobsHandler,
+        jobSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -99,22 +122,33 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
-      final DecisionRequirementsServices decisionRequirementsServices) {
+      final DecisionRequirementsServices decisionRequirementsServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new DecisionDefinitionServices(
         brokerClient,
         securityContextProvider,
         decisionDefinitionSearchClient,
         decisionRequirementsServices,
-        null);
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public DecisionInstanceServices decisionInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final DecisionInstanceSearchClient decisionInstanceSearchClient) {
+      final DecisionInstanceSearchClient decisionInstanceSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new DecisionInstanceServices(
-        brokerClient, securityContextProvider, decisionInstanceSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        decisionInstanceSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -122,9 +156,17 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final FormServices formServices) {
+      final FormServices formServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new ProcessDefinitionServices(
-        brokerClient, securityContextProvider, processDefinitionSearchClient, formServices, null);
+        brokerClient,
+        securityContextProvider,
+        processDefinitionSearchClient,
+        formServices,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -133,23 +175,34 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
-      final IncidentServices incidentServices) {
+      final IncidentServices incidentServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new ProcessInstanceServices(
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
-        null);
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public DecisionRequirementsServices decisionRequirementsServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementSearchClient decisionRequirementSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new DecisionRequirementsServices(
-        brokerClient, securityContextProvider, decisionRequirementSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        decisionRequirementSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -157,47 +210,97 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final ProcessCache processCache) {
+      final ProcessCache processCache,
+      final IncidentServices incidentServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new ElementInstanceServices(
-        brokerClient, securityContextProvider, flowNodeInstanceSearchClient, processCache, null);
+        brokerClient,
+        securityContextProvider,
+        flowNodeInstanceSearchClient,
+        processCache,
+        incidentServices,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public AdHocSubProcessActivityServices adHocSubProcessActivityServices(
-      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
-    return new AdHocSubProcessActivityServices(brokerClient, securityContextProvider, null);
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new AdHocSubProcessActivityServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public IncidentServices incidentServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final IncidentSearchClient incidentSearchClient) {
-    return new IncidentServices(brokerClient, securityContextProvider, incidentSearchClient, null);
+      final IncidentSearchClient incidentSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new IncidentServices(
+        brokerClient,
+        securityContextProvider,
+        incidentSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public RoleServices roleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final RoleSearchClient roleSearchClient) {
-    return new RoleServices(brokerClient, securityContextProvider, roleSearchClient, null);
+      final RoleSearchClient roleSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new RoleServices(
+        brokerClient,
+        securityContextProvider,
+        roleSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public TenantServices tenantServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final TenantSearchClient tenantSearchClient) {
-    return new TenantServices(brokerClient, securityContextProvider, tenantSearchClient, null);
+      final TenantSearchClient tenantSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new TenantServices(
+        brokerClient,
+        securityContextProvider,
+        tenantSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public GroupServices groupServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final GroupSearchClient groupSearchClient) {
-    return new GroupServices(brokerClient, securityContextProvider, groupSearchClient, null);
+      final GroupSearchClient groupSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new GroupServices(
+        brokerClient,
+        securityContextProvider,
+        groupSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -205,9 +308,17 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new UserServices(
-        brokerClient, securityContextProvider, userSearchClient, null, passwordEncoder);
+        brokerClient,
+        securityContextProvider,
+        userSearchClient,
+        null,
+        passwordEncoder,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -218,7 +329,9 @@ public class CamundaServicesConfiguration {
       final FormServices formServices,
       final ElementInstanceServices elementInstanceServices,
       final VariableServices variableServices,
-      final ProcessCache processCache) {
+      final ProcessCache processCache,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new UserTaskServices(
         brokerClient,
         securityContextProvider,
@@ -227,103 +340,185 @@ public class CamundaServicesConfiguration {
         elementInstanceServices,
         variableServices,
         processCache,
-        null);
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public VariableServices variableServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final VariableSearchClient variableSearchClient) {
-    return new VariableServices(brokerClient, securityContextProvider, variableSearchClient, null);
+      final VariableSearchClient variableSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new VariableServices(
+        brokerClient,
+        securityContextProvider,
+        variableSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public MessageServices messageServices(
-      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
-    return new MessageServices(brokerClient, securityContextProvider, null);
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new MessageServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public DocumentServices documentServices(
-      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final AuthorizationChecker authorizationChecker,
+      final SecurityConfiguration securityConfiguration,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new DocumentServices(
         brokerClient,
         securityContextProvider,
         null,
-        new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()));
+        new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
+        authorizationChecker,
+        securityConfiguration,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public AuthorizationServices authorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final AuthorizationSearchClient authorizationSearchClient) {
+      final AuthorizationSearchClient authorizationSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new AuthorizationServices(
-        brokerClient, securityContextProvider, authorizationSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        authorizationSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public ClockServices clockServices(
-      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
-    return new ClockServices(brokerClient, securityContextProvider, null);
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ClockServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public ResourceServices resourceServices(
-      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
-    return new ResourceServices(brokerClient, securityContextProvider, null);
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ResourceServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public SignalServices signalServices(
-      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
-    return new SignalServices(brokerClient, securityContextProvider, null);
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new SignalServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public BatchOperationServices batchOperationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final BatchOperationSearchClient batchOperationSearchClient) {
+      final BatchOperationSearchClient batchOperationSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new BatchOperationServices(
-        brokerClient, securityContextProvider, batchOperationSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        batchOperationSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public FormServices formServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final FormSearchClient formSearchClient) {
-    return new FormServices(brokerClient, securityContextProvider, formSearchClient, null);
+      final FormSearchClient formSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new FormServices(
+        brokerClient,
+        securityContextProvider,
+        formSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public MappingRuleServices mappingRuleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final MappingRuleSearchClient mappingRuleSearchClient) {
+      final MappingRuleSearchClient mappingRuleSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new MappingRuleServices(
-        brokerClient, securityContextProvider, mappingRuleSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        mappingRuleSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public MessageSubscriptionServices messageSubscriptionServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final MessageSubscriptionSearchClient messageSubscriptionSearchClient) {
+      final MessageSubscriptionSearchClient messageSubscriptionSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new MessageSubscriptionServices(
-        brokerClient, securityContextProvider, messageSubscriptionSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        messageSubscriptionSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
   public SecurityContextProvider securityContextProvider() {
     return new SecurityContextProvider();
-  }
-
-  @Bean
-  public AuthorizationChecker authorizationChecker(final AuthorizationReader authorizationReader) {
-    return new AuthorizationChecker(authorizationReader);
   }
 
   @Bean
@@ -340,5 +535,15 @@ public class CamundaServicesConfiguration {
 
     return new ProcessCache(
         cacheConfiguration, processDefinitionServices, brokerTopologyManager, meterRegistry);
+  }
+
+  @Bean
+  public ApiServicesExecutorProvider apiServicesExecutor(
+      final GatewayRestConfiguration configuration) {
+    return new ApiServicesExecutorProvider(
+        configuration.getApiExecutor().getCorePoolSizeMultiplier(),
+        configuration.getApiExecutor().getMaxPoolSizeMultiplier(),
+        configuration.getApiExecutor().getKeepAliveSeconds(),
+        configuration.getApiExecutor().getQueueCapacity());
   }
 }

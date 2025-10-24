@@ -7,9 +7,10 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
+import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ID;
 import static org.elasticsearch.client.Requests.searchRequest;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,9 +18,10 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +30,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
@@ -49,7 +52,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
+  @Autowired private PermissionsService permissionsService;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -89,11 +92,6 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
   private SearchRequest createSearchRequest(
       final BatchOperationRequestDto batchOperationRequestDto) {
-    final QueryBuilder queryBuilder =
-        termQuery(
-            BatchOperationTemplate.USERNAME,
-            camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
-
     final SortBuilder sort1, sort2;
     final Object[] querySearchAfter;
 
@@ -119,7 +117,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
     final SearchSourceBuilder sourceBuilder =
         searchSource()
-            .query(constantScoreQuery(queryBuilder))
+            .query(constantScoreQuery(allowedOperationsQuery()))
             .sort(sort1)
             .sort(sort2)
             .size(batchOperationRequestDto.getPageSize());
@@ -127,5 +125,10 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
       sourceBuilder.searchAfter(querySearchAfter);
     }
     return searchRequest(batchOperationTemplate.getAlias()).source(sourceBuilder);
+  }
+
+  private QueryBuilder allowedOperationsQuery() {
+    final var allowed = permissionsService.getBatchOperationsWithPermission(PermissionType.READ);
+    return allowed.isAll() ? QueryBuilders.matchAllQuery() : termsQuery(ID, allowed.getIds());
   }
 }

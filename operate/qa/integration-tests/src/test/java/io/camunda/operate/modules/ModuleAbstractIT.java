@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.modules;
 
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.modules.ModulesTestApplication;
 import org.junit.runner.RunWith;
@@ -21,12 +19,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(
     classes = {
       ModulesTestApplication.class,
-      UnifiedConfigurationHelper.class,
-      UnifiedConfiguration.class,
     },
     properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       "spring.profiles.active=test,consolidated-auth"

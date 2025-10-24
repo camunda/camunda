@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -52,7 +52,7 @@
     <version.zstd-jni>1.5.7-4</version.zstd-jni>
     <version.commons-text>1.14.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
-    <version.docker-java-api>3.5.2</version.docker-java-api>
+    <version.docker-java-api>3.5.3</version.docker-java-api>
     <version.elasticsearch>8.16.6</version.elasticsearch>
     <version.error-prone>2.41.0</version.error-prone>
     <version.grpc>1.73.0</version.grpc>
@@ -64,9 +64,8 @@
     <version.httpclient5>5.5</version.httpclient5>
     <version.httpcore5>5.3.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.8.0-alpha6</version.identity>
+    <version.identity>8.8.0-alpha8</version.identity>
     <version.instancio>5.5.0</version.instancio>
-    <version.surefire>3.5.3</version.surefire>
     <version.jackson>2.19.2</version.jackson>
     <version.junit>5.13.4</version.junit>
     <version.junit4>4.13.2</version.junit4>
@@ -75,7 +74,7 @@
     <version.mockito>5.18.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.10</version.msgpack>
-    <version.netty>4.1.119.Final</version.netty>
+    <version.netty>4.1.127.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.17.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
@@ -83,7 +82,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.31.1</version.protobuf>
     <version.protobuf-common>2.59.2</version.protobuf-common>
-    <version.micrometer>1.15.2</version.micrometer>
+    <version.micrometer>1.15.3</version.micrometer>
     <version.rocksdbjni>10.2.1</version.rocksdbjni>
     <version.sbe>1.35.6</version.sbe>
     <version.scala>2.13.16</version.scala>
@@ -98,14 +97,14 @@
     <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.3</version.netflix.concurrency>
-    <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
+    <version.zeebe-test-container>3.6.7</version.zeebe-test-container>
     <version.feel-scala>1.19.3</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.5</version.rest-assured>
-    <version.spring>6.2.8</version.spring>
-    <version.spring-security>6.5.2</version.spring-security>
-    <version.spring-boot>3.4.7</version.spring-boot>
-    <version.tomcat>10.1.43</version.tomcat>
+    <version.spring>6.2.11</version.spring>
+    <version.spring-security>6.5.5</version.spring-security>
+    <version.spring-boot>3.5.5</version.spring-boot>
+    <version.tomcat>10.1.44</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -117,29 +116,31 @@
     <version.byte-buddy>1.17.6</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
-    <version.immutables>2.10.1</version.immutables>
+    <version.immutables>2.11.4</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.181</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.9.3</version.spotbugs>
+    <version.spotbugs>4.9.4</version.spotbugs>
     <version.archunit>1.4.1</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
+    <version.jnr-ffi>2.2.17</version.jnr-ffi>
     <version.jnr-posix>3.1.20</version.jnr-posix>
     <version.zpt>8.7.9</version.zpt>
     <version.feign>13.6</version.feign>
     <version.google-sdk>26.64.0</version.google-sdk>
-    <version.azure-sdk>1.2.36</version.azure-sdk>
-    <version.awssdk>2.32.13</version.awssdk>
-    <version.toxiproxy>2.1.7</version.toxiproxy>
+    <version.azure-sdk>1.2.37</version.azure-sdk>
+    <version.awssdk>2.32.31</version.awssdk>
+    <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.19.2</version.jackson-annotations>
     <version.json-path>2.9.0</version.json-path>
     <version.swagger-annotations>2.2.34</version.swagger-annotations>
+    <version.swagger-parser>2.1.22</version.swagger-parser>
     <version.checker-qual>3.49.5</version.checker-qual>
     <version.java-jwt>4.5.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
@@ -155,6 +156,7 @@
     <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.2.2</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
+    <version.reflections>0.10.2</version.reflections>
 
     <version.commons-io>2.20.0</version.commons-io>
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
@@ -185,7 +187,7 @@
     <version.okio-jvm>3.15.0</version.okio-jvm>
     <version.jwks-rsa>0.22.2</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>10.4</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>10.4.2</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.27</version.nimbus-sdk>
     <version.keycloak>26.3.2</version.keycloak>
     <version.keycloak-client>26.0.6</version.keycloak-client>
@@ -220,11 +222,12 @@
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.9.3.2</plugin.version.spotbugs>
-    <plugin.version.surefire>3.5.2</plugin.version.surefire>
+    <plugin.version.spotbugs>4.9.6.0</plugin.version.spotbugs>
+    <plugin.version.surefire>3.5.4</plugin.version.surefire>
     <plugin.version.versions>2.18.0</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
+    <plugin.version.japicmp>0.23.1</plugin.version.japicmp>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.25.2</plugin.version.google-java-format>
@@ -233,7 +236,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.7.7</backwards.compat.version>
+    <backwards.compat.version>8.8.0</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -285,6 +288,11 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>debug-cli</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -478,6 +486,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-feel-tagged-parameters</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-snapshots</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -605,24 +619,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_7</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>operate-data-generator</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -724,24 +720,6 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-webjar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-870</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -920,7 +898,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+        <artifactId>camunda-spring-boot-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1180,7 +1158,7 @@
       <dependency>
         <groupId>org.apache.maven.surefire</groupId>
         <artifactId>surefire-shared-utils</artifactId>
-        <version>${version.surefire}</version>
+        <version>${plugin.version.surefire}</version>
       </dependency>
 
       <dependency>
@@ -1334,6 +1312,13 @@
         <groupId>org.instancio</groupId>
         <artifactId>instancio-core</artifactId>
         <version>${version.instancio}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.reflections</groupId>
+        <artifactId>reflections</artifactId>
+        <version>${version.reflections}</version>
         <scope>test</scope>
       </dependency>
 
@@ -1722,6 +1707,11 @@
         <version>${version.bouncycastle}</version>
       </dependency>
 
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-ffi</artifactId>
+        <version>${version.jnr-ffi}</version>
+      </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-posix</artifactId>
@@ -2157,24 +2147,6 @@
         <version>${version.caffeine}</version>
       </dependency>
 
-      <!-- Migration Module -->
-      <dependency>
-        <groupId>io.camunda.migration</groupId>
-        <artifactId>migration-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda.migration</groupId>
-        <artifactId>process-migration</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda.migration</groupId>
-        <artifactId>identity-migration</artifactId>
-        <version>${project.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -2345,7 +2317,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration></configuration>
+              <configuration/>
             </execution>
           </executions>
         </plugin>
@@ -2375,7 +2347,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"/>
             <skip>${skipUTs}</skip>
           </configuration>
           <dependencies>
@@ -2415,7 +2387,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"/>
             <skip>${skipITs}</skip>
           </configuration>
           <dependencies>
@@ -2505,7 +2477,7 @@
                   <argument>-classpath</argument>
                   <!-- automatically creates the classpath using all project dependencies,
                      also adding the project build directory -->
-                  <classpath></classpath>
+                  <classpath/>
                   <argument>uk.co.real_logic.sbe.SbeTool</argument>
                 </arguments>
                 <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
@@ -2540,7 +2512,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -2625,24 +2597,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
-                </rules>
-              </configuration>
-            </execution>
-            <execution>
-              <id>forbid-banned-dependencies</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <!-- ban the direct usage of the zeebe-client-java dependency -->
-                  <bannedDependencies>
-                    <excludes>
-                      <exclude>io.camunda:zeebe-client-java</exclude>
-                    </excludes>
-                    <searchTransitive>false</searchTransitive>
-                  </bannedDependencies>
+                  <banDuplicatePomDependencyVersions/>
                 </rules>
               </configuration>
             </execution>
@@ -2690,6 +2645,8 @@
                   <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
                   <dep>org.mariadb.jdbc:mariadb-java-client</dep>
+                  <dep>com.mysql:mysql-connector-j</dep>
+                  <dep>com.microsoft.sqlserver:mssql-jdbc</dep>
                   <dep>com.oracle.database.jdbc:ojdbc8</dep>
                   <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
@@ -2770,6 +2727,28 @@
               <useSpringBoot3>true</useSpringBoot3>
             </configOptions>
           </configuration>
+        </plugin>
+
+        <!-- Plugin to check for api changes -->
+        <plugin>
+          <groupId>com.github.siom79.japicmp</groupId>
+          <artifactId>japicmp-maven-plugin</artifactId>
+          <version>${plugin.version.japicmp}</version>
+          <configuration>
+            <skip>${japicmp.skip}</skip>
+            <parameter>
+              <accessModifier>private</accessModifier>
+              <postAnalysisScript>${project.basedir}/src/main/scripts/failOnNewFieldWithoutAnnotation.groovy</postAnalysisScript>
+            </parameter>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>cmp</goal>
+              </goals>
+              <phase>verify</phase>
+            </execution>
+          </executions>
         </plugin>
 
         <plugin>
@@ -2926,7 +2905,7 @@
             <configuration>
               <groups>strace</groups>
               <!-- Reset <excludedGroups> as it take precedence over <groups> -->
-              <excludedGroups combine.self="override"></excludedGroups>
+              <excludedGroups combine.self="override"/>
             </configuration>
           </plugin>
         </plugins>
@@ -2944,7 +2923,7 @@
             <configuration>
               <groups>performance</groups>
               <!-- Reset <excludedGroups> as it take precedence over <groups> -->
-              <excludedGroups combine.self="override"></excludedGroups>
+              <excludedGroups combine.self="override"/>
               <excludes>
                 <exclude>**/LargeStateControllerPerformanceTest.java</exclude>
               </excludes>

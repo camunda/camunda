@@ -9,10 +9,8 @@ package io.camunda.zeebe.engine.processing.metrics;
 
 import static io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
 import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
-import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,18 +18,20 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.List;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.Map;
 import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 class UsageMetricsExportProcessorTest {
   private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
@@ -40,13 +40,14 @@ class UsageMetricsExportProcessorTest {
   private StateWriter stateWriter;
   private UsageMetricsExportProcessor processor;
   private TypedRecord<UsageMetricRecord> record;
-  private ArgumentCaptor<UsageMetricRecord> recordArgumentCaptor;
+  private InstantSource clock;
 
   @BeforeEach
   void setUp() {
     stateWriter = mock(StateWriter.class);
     state = mock(MutableUsageMetricState.class);
     record = mock(TypedRecord.class);
+    clock = mock(InstantSource.class);
     final UsageMetricRecord recordValue = new UsageMetricRecord();
     final var keyGenerator = mock(KeyGenerator.class);
     final var writers = mock(Writers.class);
@@ -54,12 +55,14 @@ class UsageMetricsExportProcessorTest {
     when(writers.state()).thenReturn(stateWriter);
     when(stateWriter.canWriteEventOfLength(anyInt())).thenReturn(true);
     when(keyGenerator.nextKey()).thenReturn(1L);
-    when(record.getTimestamp()).thenReturn(2L);
     when(record.getValue()).thenReturn(recordValue);
+    when(clock.millis()).thenReturn(2L);
 
-    recordArgumentCaptor = ArgumentCaptor.forClass(UsageMetricRecord.class);
+    processor = new UsageMetricsExportProcessor(state, writers, keyGenerator, clock);
+  }
 
-    processor = new UsageMetricsExportProcessor(state, writers, keyGenerator);
+  private DirectBuffer toDirectBuffer(final Object data) {
+    return BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(data));
   }
 
   @Test
@@ -72,17 +75,7 @@ class UsageMetricsExportProcessorTest {
 
     // then
     verify(state).getActiveBucket();
-    verify(stateWriter)
-        .appendFollowUpEvent(
-            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
-    final var actual = recordArgumentCaptor.getValue();
-    assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
-    assertThat(actual.getEventType()).isEqualTo(EventType.NONE);
-    assertThat(actual.getResetTime()).isEqualTo(2);
-    assertThat(actual.getStartTime()).isEqualTo(TIME_NOT_SET);
-    assertThat(actual.getEndTime()).isEqualTo(TIME_NOT_SET);
-    assertThat(actual.getCounterValues()).isEmpty();
-    assertThat(actual.getSetValues()).isEmpty();
+    verifyAppendFollowUpNoneEvent(2L);
   }
 
   @Test
@@ -96,17 +89,7 @@ class UsageMetricsExportProcessorTest {
 
     // then
     verify(state).getActiveBucket();
-    verify(stateWriter)
-        .appendFollowUpEvent(
-            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
-    final var actual = recordArgumentCaptor.getValue();
-    assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
-    assertThat(actual.getEventType()).isEqualTo(EventType.NONE);
-    assertThat(actual.getResetTime()).isEqualTo(2);
-    assertThat(actual.getStartTime()).isEqualTo(TIME_NOT_SET);
-    assertThat(actual.getEndTime()).isEqualTo(TIME_NOT_SET);
-    assertThat(actual.getCounterValues()).isEmpty();
-    assertThat(actual.getSetValues()).isEmpty();
+    verifyAppendFollowUpNoneEvent(2L);
   }
 
   @Test
@@ -118,6 +101,7 @@ class UsageMetricsExportProcessorTest {
                 .setFromTime(1)
                 .setToTime(10)
                 .setTenantRPIMap(Map.of(TENANT_1, 10L)));
+    when(clock.millis()).thenReturn(3L);
 
     // when
     processor.processRecord(record);
@@ -126,15 +110,17 @@ class UsageMetricsExportProcessorTest {
     verify(state).getActiveBucket();
     verify(stateWriter)
         .appendFollowUpEvent(
-            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
-    final var actual = recordArgumentCaptor.getValue();
-    assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
-    assertThat(actual.getEventType()).isEqualTo(EventType.RPI);
-    assertThat(actual.getResetTime()).isEqualTo(2);
-    assertThat(actual.getStartTime()).isEqualTo(1);
-    assertThat(actual.getEndTime()).isEqualTo(10);
-    assertThat(actual.getCounterValues()).isEqualTo(Map.of(TENANT_1, 10L));
-    assertThat(actual.getSetValues()).isEqualTo(Map.of());
+            1L,
+            UsageMetricIntent.EXPORTED,
+            new UsageMetricRecord()
+                .setIntervalType(IntervalType.ACTIVE)
+                .setEventType(EventType.RPI)
+                .setResetTime((long) TIME_NOT_SET)
+                .setStartTime(1L)
+                .setEndTime(3L)
+                .setCounterValues(toDirectBuffer(Map.of(TENANT_1, 10L)))
+                .setSetValues(toDirectBuffer(Map.of())));
+    verifyAppendFollowUpNoneEvent(3L);
   }
 
   @Test
@@ -146,6 +132,7 @@ class UsageMetricsExportProcessorTest {
                 .setFromTime(1)
                 .setToTime(10)
                 .setTenantEDIMap(Map.of(TENANT_1, 10L)));
+
     // when
     processor.processRecord(record);
 
@@ -153,15 +140,17 @@ class UsageMetricsExportProcessorTest {
     verify(state).getActiveBucket();
     verify(stateWriter)
         .appendFollowUpEvent(
-            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
-    final var actual = recordArgumentCaptor.getValue();
-    assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
-    assertThat(actual.getEventType()).isEqualTo(EventType.EDI);
-    assertThat(actual.getResetTime()).isEqualTo(2);
-    assertThat(actual.getStartTime()).isEqualTo(1);
-    assertThat(actual.getEndTime()).isEqualTo(10);
-    assertThat(actual.getCounterValues()).isEqualTo(Map.of(TENANT_1, 10L));
-    assertThat(actual.getSetValues()).isEqualTo(Map.of());
+            1L,
+            UsageMetricIntent.EXPORTED,
+            new UsageMetricRecord()
+                .setIntervalType(IntervalType.ACTIVE)
+                .setEventType(EventType.EDI)
+                .setResetTime((long) TIME_NOT_SET)
+                .setStartTime(1L)
+                .setEndTime(2L)
+                .setCounterValues(toDirectBuffer(Map.of(TENANT_1, 10L)))
+                .setSetValues(toDirectBuffer(Map.of())));
+    verifyAppendFollowUpNoneEvent(2L);
   }
 
   @Test
@@ -173,6 +162,8 @@ class UsageMetricsExportProcessorTest {
                 .setFromTime(1)
                 .setToTime(10)
                 .setTenantTUMap(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1))));
+    when(clock.millis()).thenReturn(4L);
+
     // when
     processor.processRecord(record);
 
@@ -180,15 +171,17 @@ class UsageMetricsExportProcessorTest {
     verify(state).getActiveBucket();
     verify(stateWriter)
         .appendFollowUpEvent(
-            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
-    final var actual = recordArgumentCaptor.getValue();
-    assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
-    assertThat(actual.getEventType()).isEqualTo(EventType.TU);
-    assertThat(actual.getResetTime()).isEqualTo(2);
-    assertThat(actual.getStartTime()).isEqualTo(1);
-    assertThat(actual.getEndTime()).isEqualTo(10);
-    assertThat(actual.getCounterValues()).isEqualTo(Map.of());
-    assertThat(actual.getSetValues()).isEqualTo(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1)));
+            1L,
+            UsageMetricIntent.EXPORTED,
+            new UsageMetricRecord()
+                .setIntervalType(IntervalType.ACTIVE)
+                .setEventType(EventType.TU)
+                .setResetTime((long) TIME_NOT_SET)
+                .setStartTime(1L)
+                .setEndTime(4L)
+                .setCounterValues(toDirectBuffer(Map.of()))
+                .setSetValues(toDirectBuffer(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1)))));
+    verifyAppendFollowUpNoneEvent(4L);
   }
 
   @Test
@@ -207,25 +200,57 @@ class UsageMetricsExportProcessorTest {
 
     // then
     verify(state).getActiveBucket();
-    verify(stateWriter, times(3))
+    verify(stateWriter)
         .appendFollowUpEvent(
-            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
-    final List<UsageMetricRecord> actual = recordArgumentCaptor.getAllValues();
-    assertThat(actual).hasSize(3);
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getIntervalType)
-        .containsOnly(IntervalType.ACTIVE);
-    assertThat(actual).extracting(UsageMetricRecord::getResetTime).containsOnly(2L);
-    assertThat(actual).extracting(UsageMetricRecord::getStartTime).containsOnly(1L);
-    assertThat(actual).extracting(UsageMetricRecord::getEndTime).containsOnly(10L);
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getEventType)
-        .contains(EventType.RPI, EventType.EDI, EventType.TU);
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getCounterValues)
-        .contains(Map.of(TENANT_1, 10L), Map.of());
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getSetValues)
-        .contains(Map.of(), Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1)));
+            1L,
+            UsageMetricIntent.EXPORTED,
+            new UsageMetricRecord()
+                .setIntervalType(IntervalType.ACTIVE)
+                .setEventType(EventType.RPI)
+                .setResetTime((long) TIME_NOT_SET)
+                .setStartTime(1L)
+                .setEndTime(2L)
+                .setCounterValues(toDirectBuffer(Map.of(TENANT_1, 10)))
+                .setSetValues(toDirectBuffer(Map.of())));
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            1L,
+            UsageMetricIntent.EXPORTED,
+            new UsageMetricRecord()
+                .setIntervalType(IntervalType.ACTIVE)
+                .setEventType(EventType.EDI)
+                .setResetTime((long) TIME_NOT_SET)
+                .setStartTime(1L)
+                .setEndTime(2L)
+                .setCounterValues(toDirectBuffer(Map.of(TENANT_1, 10)))
+                .setSetValues(toDirectBuffer(Map.of())));
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            1L,
+            UsageMetricIntent.EXPORTED,
+            new UsageMetricRecord()
+                .setIntervalType(IntervalType.ACTIVE)
+                .setEventType(EventType.TU)
+                .setResetTime((long) TIME_NOT_SET)
+                .setStartTime(1L)
+                .setEndTime(2L)
+                .setCounterValues(toDirectBuffer(Map.of()))
+                .setSetValues(toDirectBuffer(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1)))));
+    verifyAppendFollowUpNoneEvent(2);
+  }
+
+  private void verifyAppendFollowUpNoneEvent(final long resetTime) {
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            1L,
+            UsageMetricIntent.EXPORTED,
+            new UsageMetricRecord()
+                .setIntervalType(IntervalType.ACTIVE)
+                .setEventType(EventType.NONE)
+                .setResetTime(resetTime)
+                .setStartTime((long) TIME_NOT_SET)
+                .setEndTime((long) TIME_NOT_SET)
+                .setCounterValues(toDirectBuffer(Map.of()))
+                .setSetValues(toDirectBuffer(Map.of())));
   }
 }

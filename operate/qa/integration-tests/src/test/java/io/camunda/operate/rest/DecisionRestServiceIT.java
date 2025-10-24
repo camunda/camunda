@@ -32,7 +32,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -51,30 +51,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
     })
 public class DecisionRestServiceIT extends OperateAbstractIT {
 
-  @MockBean protected DecisionReader decisionReader;
+  @MockitoBean protected DecisionReader decisionReader;
 
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
-  @MockBean private BatchOperationWriter batchOperationWriter;
-
-  @Test
-  public void testDecisionDefinitionXmlFailsWhenNoPermissions() throws Exception {
-    // given
-    final Long decisionDefinitionKey = 123L;
-    final String decisionId = "decisionId";
-    // when
-    when(decisionReader.getDecision(decisionDefinitionKey))
-        .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDecision(
-            decisionId, PermissionType.READ_DECISION_INSTANCE))
-        .thenReturn(false);
-    final MvcResult mvcResult =
-        getRequestShouldFailWithNoAuthorization(
-            getDecisionXmlByIdUrl(decisionDefinitionKey.toString()));
-    // then
-    assertErrorMessageContains(mvcResult, "No read permission for decision");
-  }
+  @MockitoBean private BatchOperationWriter batchOperationWriter;
 
   @Test
   public void testDeleteDecisionDefinition() throws Exception {
@@ -146,10 +127,6 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
             getDecisionByIdUrl(decisionDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No delete permission for decision");
-  }
-
-  private String getDecisionXmlByIdUrl(final String id) {
-    return DecisionRestService.DECISION_URL + "/" + id + "/xml";
   }
 
   private String getDecisionByIdUrl(final String id) {

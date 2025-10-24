@@ -28,15 +28,17 @@ public interface AssignRoleToMappingRuleCommandStep1 {
    */
   AssignRoleToMappingRuleCommandStep2 roleId(String roleId);
 
-  interface AssignRoleToMappingRuleCommandStep2
-      extends FinalCommandStep<AssignRoleToMappingRuleResponse> {
+  interface AssignRoleToMappingRuleCommandStep2 {
     /**
      * Sets the mapping rule ID.
      *
      * @param mappingRuleId the id of the mapping rule
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link AssignRoleToMappingRuleCommandStep3#send()}
+     *     to complete the command and send it to the broker.
      */
-    AssignRoleToMappingRuleCommandStep2 mappingRuleId(String mappingRuleId);
+    AssignRoleToMappingRuleCommandStep3 mappingRuleId(String mappingRuleId);
   }
+
+  interface AssignRoleToMappingRuleCommandStep3
+      extends FinalCommandStep<AssignRoleToMappingRuleResponse> {}
 }

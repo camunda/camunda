@@ -5,10 +5,10 @@
 name: Zeebe Weekly E2E tests
 
 on:
-  workflow_dispatch: { }
+  workflow_dispatch: {}
   schedule:
     # Run at 7:00 on every monday
-    - cron: '0 7 * * 1'
+    - cron: "0 7 * * 1"
 
 jobs:
   # This job will figure out the last supported versions based on the latest tags.
@@ -52,19 +52,19 @@ jobs:
       fail-fast: false
       matrix:
         branch:
-          - 'main'
+          - main
           - ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
           - ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
           - ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
         include:
-          - branch: 'main'
-            generation_template: 'Zeebe SNAPSHOT'
+          - branch: main
+            generation_template: "Zeebe SNAPSHOT"
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
             generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.latest-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
             generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.second-last-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.third-last-version) }}
+            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.third-last-version) }}
     runs-on: ubuntu-latest
     name: Weekly E2E
     steps:
@@ -92,8 +92,20 @@ jobs:
     with:
       branch: main
       generation: Zeebe SNAPSHOT
-      maxTestDuration: PT4H
+      maxTestDuration: PT2H
       clusterPlan: Production - M
       fault: '"scale-brokers"'
+      maxInstanceDuration: 40m
+    secrets: inherit
+
+  e2e-scaling-partitions-brokers:
+    name: Scaling brokers
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
+    with:
+      branch: main
+      generation: Zeebe SNAPSHOT
+      maxTestDuration: PT2H
+      clusterPlan: Production - M
+      fault: '"scale-partitions"'
       maxInstanceDuration: 40m
     secrets: inherit

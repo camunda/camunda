@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -66,10 +67,11 @@ public class UsersSearchIntegrationTest {
   @Test
   void shouldReturnNotFoundWhenGettingUserThatDoesNotExist() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newUserGetRequest("testUsername").send().join())
+    assertThatThrownBy(() -> camundaClient.newUserGetRequest("someUserName").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining("User with id 'testUsername' not found");
+        .hasMessageContaining(
+            ERROR_ENTITY_BY_ID_NOT_FOUND.formatted("User", "username", "someUserName"));
   }
 
   @Test

@@ -8,6 +8,7 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.TenantMemberEntity;
-import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.TenantMemberQuery;
 
-public interface TenantMemberReader extends SearchEntityReader<TenantMemberEntity, TenantQuery> {}
+public interface TenantMemberReader
+    extends SearchEntityReader<TenantMemberEntity, TenantMemberQuery> {}

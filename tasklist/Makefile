@@ -18,7 +18,6 @@ env-up: $(DATABASE) setup-maven-context
 	$(eval SPRING_PROFILES_ACTIVE = tasklist,broker,dev,dev-data,consolidated-auth)
 	$(eval MAIN_CLASS = io.camunda.application.StandaloneCamunda)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
-		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IMPORTER_ENABLED "false" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_BROKER_NETWORK_HOST "localhost" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME "demo" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD "demo" $(MAVEN_CONTEXT) && \

@@ -137,7 +137,7 @@ public final class OpensearchConnector {
   }
 
   private boolean shouldCreateAWSBasedTransport() {
-    if (credentialsProvider == null) {
+    if (credentialsProvider == null || !configuration.isAwsEnabled()) {
       return false;
     }
 

@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.Objects;
 
 public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends Intent>
     implements Record<VALUE> {
@@ -199,12 +200,48 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        position,
+        sequence,
+        sourceRecordPosition,
+        key,
+        timestamp,
+        partitionId,
+        recordType,
+        rejectionType,
+        rejectionReason,
+        brokerVersion,
+        valueType,
+        value,
+        intent,
+        authorizations,
+        operationReference);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeRecordDto<?, ?> that = (ZeebeRecordDto<?, ?>) o;
+    return position == that.position
+        && sourceRecordPosition == that.sourceRecordPosition
+        && key == that.key
+        && timestamp == that.timestamp
+        && partitionId == that.partitionId
+        && operationReference == that.operationReference
+        && Objects.equals(sequence, that.sequence)
+        && Objects.equals(recordType, that.recordType)
+        && Objects.equals(rejectionType, that.rejectionType)
+        && Objects.equals(rejectionReason, that.rejectionReason)
+        && Objects.equals(brokerVersion, that.brokerVersion)
+        && Objects.equals(valueType, that.valueType)
+        && Objects.equals(value, that.value)
+        && Objects.equals(intent, that.intent)
+        && Objects.equals(authorizations, that.authorizations);
   }
 
   @Override

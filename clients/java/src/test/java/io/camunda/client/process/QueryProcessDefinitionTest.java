@@ -22,14 +22,15 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilter;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
-import io.camunda.client.util.RestGatewayService;
 import java.util.List;
 import java.util.Objects;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class QueryProcessDefinitionTest extends ClientRestTest {
@@ -49,8 +50,12 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
 
   @Test
   void shouldGetProcessDefinitionForm() {
-    // when
+    // given
     final long processDefinitionKey = 1L;
+    gatewayService.onProcessDefinitionFormRequest(
+        processDefinitionKey, Instancio.create(FormResult.class).formKey("2"));
+
+    // when
     client.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
 
     // then
@@ -62,11 +67,17 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
 
   @Test
   public void shouldGetProcessDefinitionByKey() {
+    // given
+    final long processDefinitionKey = 123L;
+    gatewayService.onProcessDefinitionRequest(
+        processDefinitionKey,
+        Instancio.create(ProcessDefinitionResult.class).processDefinitionKey("2"));
+
     // when
-    client.newProcessDefinitionGetRequest(123L).send().join();
+    client.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
 
     // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
+    final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
     assertThat(request.getUrl()).isEqualTo("/v2/process-definitions/123");
     assertThat(request.getBodyAsString()).isEmpty();
@@ -91,11 +102,11 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         .filter(
             f ->
                 f.processDefinitionKey(5L)
-                    .name("Order process")
+                    .name(sp -> sp.eq("Order process"))
                     .resourceName("usertest/complex-process.bpmn")
                     .version(2)
                     .versionTag("alpha")
-                    .processDefinitionId("orderProcess")
+                    .processDefinitionId(sp -> sp.eq("orderProcess"))
                     .tenantId("<default>"))
         .send()
         .join();
@@ -151,25 +162,5 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertSort(sorts.get(4), "versionTag", SortOrderEnum.DESC);
     assertSort(sorts.get(5), "processDefinitionId", SortOrderEnum.DESC);
     assertSort(sorts.get(6), "tenantId", SortOrderEnum.ASC);
-  }
-
-  @Test
-  void shouldSearchWithFullPagination() {
-    // when
-    client
-        .newProcessDefinitionSearchRequest()
-        .page(p -> p.from(23).limit(5).before("b").after("a"))
-        .send()
-        .join();
-
-    // then
-    final ProcessDefinitionSearchQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest.getFrom()).isEqualTo(23);
-    assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getBefore()).isEqualTo("b");
-    assertThat(pageRequest.getAfter()).isEqualTo("a");
   }
 }

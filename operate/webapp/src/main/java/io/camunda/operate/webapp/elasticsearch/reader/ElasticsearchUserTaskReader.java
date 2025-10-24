@@ -30,7 +30,6 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -47,8 +46,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
   public ElasticsearchUserTaskReader(
       final TaskTemplate taskTemplate,
-      @Qualifier("operateSnapshotTaskVariableTemplate")
-          final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate) {
+      final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate) {
     this.taskTemplate = taskTemplate;
     this.snapshotTaskVariableTemplate = snapshotTaskVariableTemplate;
   }

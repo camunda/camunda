@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.role;
 
 import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRandomRoles;
+import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRandomRolesWithMembers;
 import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -119,7 +120,7 @@ public class RoleIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
-    createAndSaveRandomRoles(rdbmsWriter, b -> b.name("John Doe"));
+    createAndSaveRandomRolesWithMembers(rdbmsWriter, b -> b.name("John Doe"));
 
     final var searchResult =
         roleReader.search(

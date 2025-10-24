@@ -47,4 +47,32 @@ public interface ProcessInstanceSelector {
    * @param filter the filter used to limit the process instance search
    */
   default void applyFilter(final ProcessInstanceFilter filter) {}
+
+  /**
+   * Combines two process selectors together.
+   *
+   * @param other process instance selector to be added.
+   * @return the combined process instance selector
+   */
+  default ProcessInstanceSelector and(ProcessInstanceSelector other) {
+    final ProcessInstanceSelector self = this;
+
+    return new ProcessInstanceSelector() {
+      @Override
+      public boolean test(final ProcessInstance processInstance) {
+        return self.test(processInstance) && other.test(processInstance);
+      }
+
+      @Override
+      public String describe() {
+        return String.format("%s, %s", self.describe(), other.describe());
+      }
+
+      @Override
+      public void applyFilter(final ProcessInstanceFilter filter) {
+        self.applyFilter(filter);
+        other.applyFilter(filter);
+      }
+    };
+  }
 }

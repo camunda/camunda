@@ -9,7 +9,7 @@
 import type {
   QueryUserTasksResponseBody,
   UserTask,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {currentUser} from 'common/mocks/current-user';
 import {assignedTask} from './task';
 

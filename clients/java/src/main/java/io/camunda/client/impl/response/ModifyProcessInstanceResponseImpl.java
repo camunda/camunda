@@ -22,4 +22,6 @@ public class ModifyProcessInstanceResponseImpl implements ModifyProcessInstanceR
 
   public ModifyProcessInstanceResponseImpl(
       final GatewayOuterClass.ModifyProcessInstanceResponse response) {}
+
+  public ModifyProcessInstanceResponseImpl(final Void nothing) {}
 }

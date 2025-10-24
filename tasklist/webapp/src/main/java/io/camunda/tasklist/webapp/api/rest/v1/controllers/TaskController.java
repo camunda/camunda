@@ -10,7 +10,10 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.search.query.GroupQuery;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.GroupServices;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskByCandidateUserOrGroup;
 import io.camunda.tasklist.util.LazySupplier;
@@ -82,6 +85,7 @@ public class TaskController extends ApiErrorController {
   @Autowired private TaskMapper taskMapper;
   @Autowired private CamundaAuthenticationProvider authenticationProvider;
   @Autowired private UserGroupService userGroupService;
+  @Autowired private GroupServices groupServices;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private TasklistPermissionServices permissionServices;
 
@@ -110,6 +114,11 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<List<TaskSearchResponse>> searchTasks(
       @RequestBody(required = false) final TaskSearchRequest searchRequest) {
 
+    if (!permissionServices.hasWildcardPermissionToReadUserTask()) {
+      // We return an empty list here to match the behaviour of V2
+      return ResponseEntity.ok(Collections.emptyList());
+    }
+
     final var query =
         taskMapper.toTaskQuery(requireNonNullElse(searchRequest, new TaskSearchRequest()));
 
@@ -123,11 +132,13 @@ public class TaskController extends ApiErrorController {
         // this is backwards compatible with previous versions, but in the future this will change
         && userName != null
         && !userName.isEmpty()) {
-      final List<String> listOfUserGroups = userGroupService.getUserGroups();
       final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup =
           new TaskByCandidateUserOrGroup();
-      taskByCandidateUserOrGroup.setUserGroups(listOfUserGroups.toArray(String[]::new));
       taskByCandidateUserOrGroup.setUserName(userName);
+
+      final var setOfUserGroupNames = resolveGroupNames(userGroupService.getUserGroups());
+      taskByCandidateUserOrGroup.setUserGroups(setOfUserGroupNames.toArray(String[]::new));
+
       query.setTaskByCandidateUserOrGroup(taskByCandidateUserOrGroup);
     }
 
@@ -211,6 +222,10 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<TaskResponse> getTaskById(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
           final String taskId) {
+    if (!permissionServices.hasWildcardPermissionToReadUserTask()) {
+      throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
+    }
+
     final var taskSupplier = getTaskSupplier(taskId);
     if (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier)) {
       return ResponseEntity.ok(taskMapper.toTaskResponse(taskSupplier.get()));
@@ -221,7 +236,8 @@ public class TaskController extends ApiErrorController {
 
   private void checkTaskImplementation(final LazySupplier<TaskDTO> taskSupplier) {
     if (taskSupplier.get().getImplementation() != TaskImplementation.JOB_WORKER
-        && TasklistAuthenticationUtil.isApiUser()) {
+        && TasklistAuthenticationUtil.isApiUser(
+            authenticationProvider.getCamundaAuthentication())) {
       final TaskDTO task = taskSupplier.get();
       LOGGER.warn(
           "V1 API is used for task with id={} implementation={}",
@@ -243,13 +259,13 @@ public class TaskController extends ApiErrorController {
       // this is backwards compatible with previous versions, but in the future this will change
       return true;
     }
-    final List<String> listOfUserGroups = userGroupService.getUserGroups();
+    final Set<String> setOfUserGroups = resolveGroupNames(userGroupService.getUserGroups());
     final var task = taskSupplier.get();
     final boolean allUsersTask =
         task.getCandidateUsers() == null && task.getCandidateGroups() == null;
     final boolean candidateGroupTasks =
         task.getCandidateGroups() != null
-            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), listOfUserGroups);
+            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), setOfUserGroups);
     final boolean candidateUserTasks =
         task.getCandidateUsers() != null
             && Arrays.asList(task.getCandidateUsers()).contains(userName);
@@ -477,6 +493,11 @@ public class TaskController extends ApiErrorController {
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
           final String taskId,
       @RequestBody(required = false) final VariablesSearchRequest variablesSearchRequest) {
+    if (!permissionServices.hasWildcardPermissionToReadUserTask()) {
+      // We return an empty list here to match the behaviour of V2
+      return ResponseEntity.ok(Collections.emptyList());
+    }
+
     final Map<String, Boolean> variableNamesToReturnFullValue;
     if (variablesSearchRequest != null) {
       if (CollectionUtils.isNotEmpty(variablesSearchRequest.getVariableNames())
@@ -506,6 +527,22 @@ public class TaskController extends ApiErrorController {
     variables.forEach(resp -> unsetBigVariableValuesIfNeeded(resp, variableNamesToReturnFullValue));
 
     return ResponseEntity.ok(variables);
+  }
+
+  private Set<String> resolveGroupNames(final List<String> userGroupIds) {
+    // candidate groups use group names instead of group ids
+    // so we need to resolve the group names from the group ids
+    if (userGroupIds.isEmpty()) {
+      return Collections.EMPTY_SET;
+    }
+    final Set<String> setOfUserGroupIds = userGroupIds.stream().collect(Collectors.toSet());
+    final var groups =
+        groupServices
+            .withAuthentication(CamundaAuthentication.anonymous())
+            .search(
+                GroupQuery.of(
+                    groupQuery -> groupQuery.filter(filter -> filter.groupIds(setOfUserGroupIds))));
+    return groups.items().stream().map(g -> g.name()).collect(Collectors.toSet());
   }
 
   private LazySupplier<TaskDTO> getTaskSupplier(final String taskId) {

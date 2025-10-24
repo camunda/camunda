@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -95,6 +96,57 @@ public class DecisionDefinitionIT {
         .isEqualTo(decisionDefinition.decisionRequirementsId());
     assertThat(instance.decisionRequirementsKey())
         .isEqualTo(decisionDefinition.decisionRequirementsKey());
+  }
+
+  @TestTemplate
+  public void shouldFindByAuthorizedResourceId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionDefinitionDbReader decisionDefinitionReader =
+        rdbmsService.getDecisionDefinitionReader();
+
+    final var decisionDefinition = DecisionDefinitionFixtures.createRandomized(b -> b);
+    createAndSaveDecisionDefinition(rdbmsWriter, decisionDefinition);
+    createAndSaveRandomDecisionDefinitions(rdbmsWriter);
+
+    final var searchResult =
+        decisionDefinitionReader.search(
+            DecisionDefinitionQuery.of(b -> b),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                decisionDefinition.decisionDefinitionId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    final var instance = searchResult.items().getFirst();
+    assertThat(instance.decisionDefinitionKey())
+        .isEqualTo(decisionDefinition.decisionDefinitionKey());
+  }
+
+  @TestTemplate
+  public void shouldFindByAuthorizedTenantId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionDefinitionDbReader decisionDefinitionReader =
+        rdbmsService.getDecisionDefinitionReader();
+
+    final var decisionDefinition = DecisionDefinitionFixtures.createRandomized(b -> b);
+    createAndSaveDecisionDefinition(rdbmsWriter, decisionDefinition);
+    createAndSaveRandomDecisionDefinitions(rdbmsWriter);
+
+    final var searchResult =
+        decisionDefinitionReader.search(
+            DecisionDefinitionQuery.of(b -> b),
+            CommonFixtures.resourceAccessChecksFromTenantIds(decisionDefinition.tenantId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    final var instance = searchResult.items().getFirst();
+    assertThat(instance.decisionDefinitionKey())
+        .isEqualTo(decisionDefinition.decisionDefinitionKey());
   }
 
   @TestTemplate

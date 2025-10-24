@@ -27,6 +27,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,9 +110,24 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
 
   private ActorFuture<Void> awaitRedistributionProgress(
       final int desiredPartitionCount, final Set<Integer> redistributedPartitions) {
+    // awaits for deployment partition
+    final var partitions =
+        IntStream.rangeClosed(Protocol.DEPLOYMENT_PARTITION, desiredPartitionCount)
+            .boxed()
+            .toList();
+    return CompletableActorFuture.traverseIgnoring(
+        partitions,
+        i -> awaitRedistributionProgress(desiredPartitionCount, redistributedPartitions, i),
+        concurrencyControl);
+  }
+
+  private ActorFuture<Void> awaitRedistributionProgress(
+      final int desiredPartitionCount,
+      final Set<Integer> redistributedPartitions,
+      final int partitionId) {
     final var result = concurrencyControl.<Void>createFuture();
     brokerClient.sendRequestWithRetry(
-        new GetScaleUpProgress(),
+        new GetScaleUpProgress(partitionId),
         (key, response) -> {
           if (response.getDesiredPartitionCount() != desiredPartitionCount) {
             LOGGER.warn("Invalid GetScaleUpProgress response: got {}", response);

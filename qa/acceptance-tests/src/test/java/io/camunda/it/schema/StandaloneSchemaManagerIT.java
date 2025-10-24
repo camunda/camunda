@@ -63,16 +63,17 @@ final class StandaloneSchemaManagerIT {
   final TestStandaloneSchemaManager schemaManager =
       new TestStandaloneSchemaManager()
           .withProperty(
-              "zeebe.broker.exporters.elasticsearch.className",
+              "zeebe.broker.exporters.elasticsearch.class-name",
               ElasticsearchExporter.class.getName())
-          .withProperty("zeebe.broker.exporters.elasticsearch.args.index.createTemplate", "true")
+          .withProperty("zeebe.broker.exporters.elasticsearch.args.index.create-template", "true")
           .withProperty("zeebe.broker.exporters.elasticsearch.args.retention.enabled", "true")
           .withProperty(
               "zeebe.broker.exporters.elasticsearch.args.authentication.username", ADMIN_USER)
           .withProperty(
               "zeebe.broker.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD)
-          .withProperty("camunda.database.username", ADMIN_USER)
-          .withProperty("camunda.database.password", ADMIN_PASSWORD)
+          .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
           .withProperty("camunda.database.retention.enabled", "true");
 
   @TestZeebe(autoStart = false)
@@ -80,24 +81,15 @@ final class StandaloneSchemaManagerIT {
       new TestCamundaApplication()
           .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
           .withUnauthenticatedAccess()
-          .withProperty("camunda.database.username", APP_USER)
-          .withProperty("camunda.database.password", APP_PASSWORD)
           .withProperty(CREATE_SCHEMA_PROPERTY, "false")
-          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
+          .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
+          .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
           .withProperty(
-              "zeebe.broker.exporters.elasticsearch.className",
+              "zeebe.broker.exporters.elasticsearch.class-name",
               ElasticsearchExporter.class.getName())
-          .withProperty("camunda.operate.elasticsearch.username", APP_USER)
-          .withProperty("camunda.operate.elasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.operate.zeebeelasticsearch.username", APP_USER)
-          .withProperty("camunda.operate.zeebeelasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.tasklist.elasticsearch.username", APP_USER)
-          .withProperty("camunda.tasklist.elasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.tasklist.zeebeelasticsearch.username", APP_USER)
-          .withProperty("camunda.tasklist.zeebeelasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
+          .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
           .withExporter(
               CamundaExporter.class.getSimpleName(),
               cfg -> {
@@ -172,25 +164,21 @@ final class StandaloneSchemaManagerIT {
                     .putUser(r -> r.username(APP_USER).password(APP_PASSWORD).roles(APP_ROLE))
                     .created());
 
+    final String esUrl = "http://" + es.getHttpHostAddress();
+
     // Connect to ES in Standalone Schema Manager
     schemaManager
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "zeebe.broker.exporters.elasticsearch.args.url", "http://" + es.getHttpHostAddress());
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
+        .withProperty("zeebe.broker.exporters.elasticsearch.args.url", esUrl);
+
     // Connect to ES in Camunda
     camunda
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "camunda.tasklist.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
-            args -> ((Map) args.get("connect")).put("url", "http://" + es.getHttpHostAddress()))
+            args -> ((Map) args.get("connect")).put("url", esUrl))
         .updateExporterArgs(
-            ElasticsearchExporter.class.getSimpleName(),
-            args -> args.put("url", "http://" + es.getHttpHostAddress()));
+            ElasticsearchExporter.class.getSimpleName(), args -> args.put("url", esUrl));
   }
 
   @Test
@@ -239,8 +227,8 @@ final class StandaloneSchemaManagerIT {
                           .getFirst()
                           .getUserTaskKey(),
                   Objects::nonNull);
-      camundaClient.newUserTaskAssignCommand(userTaskKey).assignee("demo").send().join();
-      camundaClient.newUserTaskCompleteCommand(userTaskKey).send().join();
+      camundaClient.newAssignUserTaskCommand(userTaskKey).assignee("demo").send().join();
+      camundaClient.newCompleteUserTaskCommand(userTaskKey).send().join();
 
       // then -- process instance is completed
       Awaitility.await("process instance should be completed")

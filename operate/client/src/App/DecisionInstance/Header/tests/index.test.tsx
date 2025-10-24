@@ -12,10 +12,9 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Header} from '../index';
-import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -44,11 +43,13 @@ describe('<Header />', () => {
   it('should show a loading skeleton', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
-    decisionInstanceDetailsStore.fetchDecisionInstance(
-      MOCK_DECISION_INSTANCE_ID,
+    render(
+      <Header
+        decisionEvaluationInstanceKey={MOCK_DECISION_INSTANCE_ID}
+        onChangeDrdPanelState={() => void 0}
+      />,
+      {wrapper: Wrapper},
     );
-
-    render(<Header />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
@@ -60,11 +61,13 @@ describe('<Header />', () => {
   it('should show the decision instance details', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
-    decisionInstanceDetailsStore.fetchDecisionInstance(
-      MOCK_DECISION_INSTANCE_ID,
+    render(
+      <Header
+        decisionEvaluationInstanceKey={MOCK_DECISION_INSTANCE_ID}
+        onChangeDrdPanelState={() => void 0}
+      />,
+      {wrapper: Wrapper},
     );
-
-    render(<Header />, {wrapper: Wrapper});
 
     expect(await screen.findByTestId('EVALUATED-icon')).toBeInTheDocument();
     expect(
@@ -87,17 +90,21 @@ describe('<Header />', () => {
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('cell', {
-        name: invoiceClassification.decisionName,
+        name: invoiceClassification.decisionDefinitionName,
       }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole('cell', {name: MOCK_DECISION_INSTANCE_ID}),
+      await screen.findByRole('cell', {
+        name: invoiceClassification.decisionEvaluationInstanceKey,
+      }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('link', {
-        description: `View decision "${invoiceClassification.decisionName} version ${invoiceClassification.decisionVersion}" instances`,
+        description: `View decision "${invoiceClassification.decisionDefinitionName} version ${invoiceClassification.decisionDefinitionVersion}" instances`,
       }),
-    ).toHaveTextContent(invoiceClassification.decisionVersion.toString());
+    ).toHaveTextContent(
+      invoiceClassification.decisionDefinitionVersion.toString(),
+    );
     expect(
       screen.getByRole('cell', {
         name: '2022-01-20 13:26:52',
@@ -105,7 +112,7 @@ describe('<Header />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
-        description: `View process instance ${invoiceClassification.processInstanceId}`,
+        description: `View process instance ${invoiceClassification.processInstanceKey}`,
       }),
     ).toBeInTheDocument();
   });

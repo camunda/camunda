@@ -7,7 +7,7 @@
  */
 
 import {ZeebeGrpcClient} from '@camunda8/sdk/dist/zeebe';
-import {
+import type {
   CreateProcessInstanceResponse,
   DecisionDeployment,
   DeployResourceResponse,

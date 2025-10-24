@@ -1,0 +1,504 @@
+### Get Bearer token
+# @name get-bearer-token
+POST {{TOKEN_URL}}
+Content-Type: application/x-www-form-urlencoded
+
+    client_id= {{CLIENT_ID}}
+    &client_secret={{CLIENT_SECRET}}
+    &redirect_uri=http://localhost:8080/sso-callback
+    &scope=openid profile 6fe432f2-7dc3-4e13-b1b4-4cc8480c80b7/.default
+    &audience= {{AUDIENCE}}
+    &grant_type=client_credentials
+
+
+> {%
+  client.test("Get token should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 201");
+    client.global.set("TOKEN", response.body.access_token)
+  });
+%}
+
+### Create Mapping Rule Unauthorized
+# @name create-mapping-rule-unauthorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules
+Content-Type: application/json
+Accept: application/json
+
+{
+  "mappingRuleId": "mapping3",
+  "claimName": "test11",
+  "claimValue": "7657916d-baf8-4032-b70d-156f338a0f18",
+  "name": "mapping3"
+}
+
+> {%
+  client.test("Mapping rule creation should be unsuccessful", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+  });
+%}
+
+### Create Mapping Rule
+# @name create-mapping-rule
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "mappingRuleId": "mapping3",
+  "claimName": "test11",
+  "claimValue": "7657916d-baf8-4032-b70d-156f338a0f18",
+  "name": "mapping3"
+}
+
+> {%
+  client.test("Mapping rule creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("MAPPING_ID", response.body.mappingRuleId);
+  });
+%}
+
+### Create Tenant
+# @name create-tenant
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "tenantId": "testTenant1",
+  "name": "TestTenant1",
+  "description": "A test tenant."
+}
+
+> {%
+  client.test("Tenant creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("TENANT_ID", response.body.tenantId);
+  });
+%}
+
+### Assign Mapping Rule to Tenant
+# @name assign-mapping-rule
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule assignment should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Search Mapping for Tenant
+# @name search-mapping-for-tenant
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "mappingRuleId": "{{MAPPING_ID}}"
+  }
+}
+
+> {%
+  client.test("Mapping rule search should be successful", function () {
+    let expectedMappingId = client.global.get("MAPPING_ID");
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping rule was not found");
+  });
+%}
+
+### Remove Mapping Rule from Tenant
+# @name remove-mapping-rule
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule removal should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Create Group
+# @name create-group
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "groupId": "testGroup1",
+  "name": "TestGroup1"
+}
+
+> {%
+  client.test("Group creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("GROUP_ID", response.body.groupId);
+  });
+%}
+
+### Assign Mapping Rule to Group
+# @name assign-mapping-rule-to-group
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule assignment should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Search Mapping for Group
+# @name search-mapping-for-group
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/mapping-rules/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "mappingRuleId": "{{MAPPING_ID}}"
+  }
+}
+
+> {%
+  client.test("Mapping search should be successful", function () {
+    let expectedMappingId = client.global.get("MAPPING_ID");
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping was not found");
+  });
+%}
+
+### Remove Mapping Rule from Group
+# @name remove-mapping-rule-from-group
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule removal should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Create Role
+# @name create-role
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "roleId": "testRole",
+  "name": "TestRole"
+}
+
+> {%
+  client.test("Role creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("ROLE_ID", response.body.roleId);
+  });
+%}
+
+### Assign Mapping Rule to Role
+# @name assign-mapping-rule-to-role
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule assignment should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Search Mapping for Role
+# @name search-mapping-for-Role
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mapping-rules/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "mappingRuleId": "{{MAPPING_ID}}"
+  }
+}
+
+> {%
+  client.test("Mapping rule search should be successful", function () {
+    let expectedMappingId = client.global.get("MAPPING_ID");
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping rule was not found");
+  });
+%}
+
+### Remove Mapping Rule from Role
+# @name remove-mapping-rule-from-role
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule removal should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Update Mapping Rule
+# @name update-mapping-rule
+< {%
+  import {wait} from "../http/js/wait";
+  wait(2);
+%}
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "mapping31",
+  "claimName": "test111",
+  "claimValue": "7657916d-baf8-4032-b70d-156f338a0f18"
+}
+
+> {%
+  client.test("Mapping rule update should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.name === "mapping31", "Name was not updated correctly.");
+    client.assert(response.body.claimName === "test111", "Claim name was not updated correctly.");
+  });
+%}
+
+### Get Mapping Rule
+# @name get-mapping-rule
+< {%
+  import {wait} from "../http/js/wait";
+  wait(4);
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  let expectedMappingId = client.global.get("MAPPING_ID");
+
+  client.test("Mapping rule retrieval should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.mappingRuleId === expectedMappingId, "mappingId was not found.");
+  });
+%}
+
+### Search For Mapping Rule
+# @name search-mapping-rule
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "mappingRuleId": "{{MAPPING_ID}}"
+  }
+}
+
+> {%
+  let expectedMappingId = client.global.get("MAPPING_ID");
+
+  client.test("Mapping rule search should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping was not found");
+  });
+%}
+
+### Create Authorization for Mapping Rule
+# @name create-authorization-positive
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "CREATE",
+    "DELETE_DRD",
+    "DELETE_PROCESS",
+    "DELETE_FORM"
+  ],
+  "ownerType": "MAPPING_RULE",
+  "ownerId": "{{MAPPING_ID}}",
+  "resourceType": "RESOURCE",
+  "resourceId": "*"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Authorization key should not be empty", function () {
+    client.assert(response.body.authorizationKey !== "", "Authorization key is empty");
+    client.global.set("AUTHORIZATION_KEY", response.body.authorizationKey);
+  });
+%}
+
+###
+# @name delete-authorization-positive
+< {%
+  import {wait} from "../http/js/wait";
+  wait(4);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/{{AUTHORIZATION_KEY}}
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Authorization update should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.body === "" || response.body === null, "Response body is not empty");
+  });
+%}
+
+### Verify authorization is deleted
+# @name deleted-authorization-search
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "resourceId",
+      "order": "ASC"
+    }
+  ],
+  "filter": {
+    "ownerId": "{{MAPPING_ID}}",
+    "resourceType": "RESOURCE"
+  },
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("Authorization search should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+    console.log(response.headers);
+  });
+
+  client.test("Response should not contain authorizations for the specified ownerId", function () {
+    let expectedMappingId = client.global.get("MAPPING_ID");
+    const authorizations = response.body.items;
+    client.assert(Array.isArray(authorizations), "Response items are not an array");
+    client.assert(authorizations.length == 0, "Authorizations found for the specified ownerId");
+    authorizations.forEach(auth => {
+      client.assert(auth.ownerId != expectedMappingId, `Found authorization for the given resource type and ownerID: '${auth.ownerId}'`);
+    });
+  });
+%}
+
+### Delete Mapping Rule
+# @name delete-mapping-rule
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules/{{MAPPING_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule deletion should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Delete Tenant
+# @name delete-tenant
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Tenant deletion should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Delete Group
+# @name delete-group
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group deletion should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Delete Role
+# @name delete-role
+< {%
+  import {wait} from "../http/js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}
+Authorization: Bearer {{TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Role deletion should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}

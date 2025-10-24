@@ -19,6 +19,7 @@ public class UserTaskEntityMapper {
         dbModel.elementId(),
         dbModel.name(),
         dbModel.processDefinitionId(),
+        null, // filled later from ProcessCache in UserTaskService
         dbModel.creationDate(),
         dbModel.completionDate(),
         dbModel.assignee(),

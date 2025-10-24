@@ -17,6 +17,10 @@ final class TestRepository extends NoopArchiverRepository {
   final List<DocumentMove> moves = new ArrayList<>();
   ArchiveBatch batch;
 
+  public CompletableFuture<ArchiveBatch> getNextBatch() {
+    return CompletableFuture.completedFuture(batch);
+  }
+
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
     return CompletableFuture.completedFuture(batch);
@@ -24,6 +28,21 @@ final class TestRepository extends NoopArchiverRepository {
 
   @Override
   public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
+    return CompletableFuture.completedFuture(batch);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+    return CompletableFuture.completedFuture(batch);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
+    return CompletableFuture.completedFuture(batch);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
     return CompletableFuture.completedFuture(batch);
   }
 

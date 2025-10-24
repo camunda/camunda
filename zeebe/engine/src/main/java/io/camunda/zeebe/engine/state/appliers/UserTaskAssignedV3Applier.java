@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 
 public final class UserTaskAssignedV3Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
@@ -52,6 +53,8 @@ public final class UserTaskAssignedV3Applier
       }
     }
 
-    usageMetricState.recordTUMetric(value.getTenantId(), value.getAssignee());
+    if (StringUtils.isNotEmpty(value.getAssignee())) {
+      usageMetricState.recordTUMetric(value.getTenantId(), value.getAssignee());
+    }
   }
 }

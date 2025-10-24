@@ -9,14 +9,18 @@ package io.camunda.service;
 
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -36,8 +40,15 @@ public class ProcessDefinitionServices
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final FormServices formServices,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.formServices = formServices;
   }
@@ -71,7 +82,9 @@ public class ProcessDefinitionServices
         securityContextProvider,
         processDefinitionSearchClient,
         formServices,
-        authentication);
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {
@@ -85,6 +98,17 @@ public class ProcessDefinitionServices
                             PROCESS_DEFINITION_READ_AUTHORIZATION,
                             ProcessDefinitionEntity::processDefinitionId)))
                 .getProcessDefinition(processDefinitionKey));
+  }
+
+  public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
+      getProcessDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
+    return executeSearchRequest(
+        () ->
+            processDefinitionSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .processDefinitionInstanceStatistics(query));
   }
 
   public Optional<FormEntity> getProcessDefinitionStartForm(final long processDefinitionKey) {

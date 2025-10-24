@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import type {Page, Locator} from '@playwright/test';
 
 export class Login {
   private page: Page;

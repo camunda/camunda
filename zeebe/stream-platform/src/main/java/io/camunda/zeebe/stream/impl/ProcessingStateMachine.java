@@ -15,6 +15,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -94,8 +95,13 @@ import org.slf4j.Logger;
  */
 public final class ProcessingStateMachine {
 
+  /**
+   * Warn message when the batch processing exceeded the maximum message size. If this message is
+   * ever changed, please also update the string in IdentitySetupOnStartupTest as it depends on it.
+   */
   public static final String WARN_MESSAGE_BATCH_PROCESSING_RETRY =
       "Expected to process commands in a batch, but exceeded the resulting batch size after processing {} commands (maxCommandsInBatch: {}).";
+
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_WRITE_RECORD_ABORTED =
       "Expected to write one or more follow-up records for record '{} {}' without errors, but exception was thrown.";
@@ -458,20 +464,26 @@ public final class ProcessingStateMachine {
   }
 
   private boolean tryExitOutOfErrorLoop(final Throwable error) {
+    final var rejectionReason =
+        """
+            Expected to process command %d (%s.%s), but caught an exception. Check broker logs \
+            (partition %s) for details, or ask your operator to do so."""
+            .formatted(
+                Protocol.encodePartitionId(context.getPartitionId(), currentRecord.getKey()),
+                metadata.getValueType(),
+                metadata.getIntent(),
+                context.getPartitionId());
     try {
       // If in error loop and the processing record is a user command
       if (errorHandlingPhase == ErrorHandlingPhase.USER_COMMAND_PROCESSING_ERROR_FAILED) {
         // First try to reject with proper error message
         LOG.debug(ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED, currentRecord, metadata, error);
-        tryRejectingIfUserCommand(error.getMessage());
+        tryRejectingIfUserCommand(rejectionReason);
         return true;
       } else if (errorHandlingPhase == ErrorHandlingPhase.USER_COMMAND_REJECT_FAILED) {
         LOG.warn(ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED, currentRecord, metadata, error);
         // try to reject with a generic error message
-        tryRejectingIfUserCommand(
-            String.format(
-                "Expected to process command, but caught an exception. Check broker logs (partition %s) for details.",
-                context.getPartitionId()));
+        tryRejectingIfUserCommand(rejectionReason);
         return true;
       }
     } catch (final Exception e) {

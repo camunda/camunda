@@ -19,7 +19,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
-import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.zeebe.containers.ZeebeContainer;
@@ -47,7 +47,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
       LoggerFactory.getLogger(OpensearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
   @Autowired public SearchEngineConfiguration searchEngineConfiguration;
-  @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
+  @Autowired protected RichOpenSearchClient richOpenSearchClient;
   protected ZeebeContainer zeebeContainer;
   @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
@@ -61,7 +61,6 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   public void starting(final Description description) {
     prefix = indexPrefixHolder.createNewIndexPrefix();
     LOGGER.info("Starting Camunda Exporter with prefix: {}", prefix);
-    operateProperties.getZeebeOpensearch().setPrefix(prefix);
     operateProperties.getOpensearch().setIndexPrefix(prefix);
     searchEngineConfiguration.connect().setIndexPrefix(prefix);
 
@@ -70,26 +69,33 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   @Override
   public void updateRefreshInterval(final String value) {
-    final ComponentTemplateSummary template =
-        zeebeRichOpenSearchClient.template().getComponentTemplate().get(prefix).template();
-    final IndexSettings indexSettings = template.settings().get("index");
-    final IndexSettings newSettings =
-        IndexSettings.of(b -> b.index(indexSettings).refreshInterval(ri -> ri.time(value)));
-    final IndexState newTemplate =
-        IndexState.of(t -> t.settings(newSettings).mappings(template.mappings()));
-    final var requestBuilder = componentTemplateRequestBuilder(prefix).template(newTemplate);
-    assertThat(
-            zeebeRichOpenSearchClient
-                .template()
-                .createComponentTemplateWithRetries(requestBuilder.build()))
-        .isTrue();
+    richOpenSearchClient.template().getComponentTemplate().entrySet().stream()
+        .filter(entry -> entry.getKey().startsWith(prefix))
+        .forEach(
+            componentTemplateSummary -> {
+              final ComponentTemplateSummary template =
+                  componentTemplateSummary.getValue().template();
+              final IndexSettings indexSettings = template.settings().get("index");
+              final IndexSettings newSettings =
+                  IndexSettings.of(
+                      b -> b.index(indexSettings).refreshInterval(ri -> ri.time(value)));
+              final IndexState newTemplate =
+                  IndexState.of(t -> t.settings(newSettings).mappings(template.mappings()));
+              final var requestBuilder =
+                  componentTemplateRequestBuilder(prefix).template(newTemplate);
+              assertThat(
+                      richOpenSearchClient
+                          .template()
+                          .createComponentTemplateWithRetries(requestBuilder.build()))
+                  .isTrue();
+            });
   }
 
   @Override
   public void refreshIndices(final Instant instant) {
     final String date =
         DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
-    zeebeRichOpenSearchClient.index().refresh(prefix + "*" + date);
+    richOpenSearchClient.index().refresh(prefix + "*" + date);
   }
 
   @Override
@@ -101,7 +107,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     }
     if (!failed) {
       TestUtil.removeAllIndices(
-          zeebeRichOpenSearchClient.index(), zeebeRichOpenSearchClient.template(), prefix);
+          richOpenSearchClient.index(), richOpenSearchClient.template(), prefix);
     }
   }
 
@@ -131,8 +137,8 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
     client =
         CamundaClient.newClientBuilder()
-            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-            .usePlaintext()
+            .preferRestOverGrpc(false)
+            .grpcAddress(zeebeContainer.getGrpcAddress())
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import fs from 'node:fs';
+import * as fs from 'node:fs';
 
 const openFile = (fileName: string) => {
   return fs.readFileSync(fileName).toString();

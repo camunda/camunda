@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Locator, Page} from '@playwright/test';
+import type {Locator, Page} from '@playwright/test';
 
 export class DeleteResourceModal {
   private readonly modal: Locator;

@@ -8,7 +8,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchUserTasks} from 'modules/api/v2/userTasks/searchUserTasks';
-import type {QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const USER_TASKS_BY_ELEMENT_INSTANCE_QUERY_KEY =
   'useGetUserTaskByElementInstance';

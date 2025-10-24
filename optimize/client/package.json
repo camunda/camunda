@@ -6,7 +6,7 @@
   "type": "module",
   "dependencies": {
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
-    "@camunda/camunda-composite-components": "^0.17.0",
+    "@camunda/camunda-composite-components": "^0.20.2",
     "@camunda/camunda-optimize-composite-components": "^0.0.16",
     "@carbon/icons-react": "^11.41.0",
     "@carbon/react": "^1.77.0",
@@ -29,7 +29,7 @@
     "react-date-range": "^2.0.0-alpha.3",
     "react-dom": "^19.0.0",
     "react-full-screen": "^1.1.1",
-    "react-grid-layout": "^1.4.1",
+    "react-grid-layout": "^1.5.2",
     "react-router": "5.3.4",
     "react-router-dom": "5.3.4",
     "react-table": "^7.8.0",

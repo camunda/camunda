@@ -19,15 +19,19 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1.UnassignRoleFromUserCommandStep2;
+import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1.UnassignRoleFromUserCommandStep3;
 import io.camunda.client.api.response.UnassignUserFromRoleResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignUserFromRoleResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UnassignRoleFromUserCommandImpl
-    implements UnassignRoleFromUserCommandStep1, UnassignRoleFromUserCommandStep2 {
+    implements UnassignRoleFromUserCommandStep1,
+        UnassignRoleFromUserCommandStep2,
+        UnassignRoleFromUserCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -46,7 +50,7 @@ public class UnassignRoleFromUserCommandImpl
   }
 
   @Override
-  public UnassignRoleFromUserCommandStep2 username(final String username) {
+  public UnassignRoleFromUserCommandStep3 username(final String username) {
     this.username = username;
     return this;
   }
@@ -64,7 +68,10 @@ public class UnassignRoleFromUserCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
     final HttpCamundaFuture<UnassignUserFromRoleResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
-        String.format("/roles/%s/users/%s", roleId, username), httpRequestConfig.build(), result);
+        String.format("/roles/%s/users/%s", roleId, username),
+        httpRequestConfig.build(),
+        UnassignUserFromRoleResponseImpl::new,
+        result);
     return result;
   }
 }

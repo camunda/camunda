@@ -16,7 +16,9 @@ import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +29,16 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 public class ProbesTestIT extends TasklistIntegrationTest {
+
+  private static String indexPrefixConfig;
+
+  @BeforeAll
+  public static void init() {
+    final String dbType =
+        (Optional.ofNullable("camunda.data.secondary-storage.type").orElse("elasticsearch"))
+            .toLowerCase();
+    indexPrefixConfig = "camunda.data.secondary-storage." + dbType + ".index-prefix";
+  }
 
   @Nested
   @ExtendWith(SpringExtension.class)
@@ -40,7 +52,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
 
     @DynamicPropertySource
     static void setProperties(final DynamicPropertyRegistry registry) {
-      registry.add("camunda.database.indexPrefix", () -> TestUtil.createRandomString(10));
+      registry.add(indexPrefixConfig, () -> TestUtil.createRandomString(10));
       registry.add("camunda.database.schema-manager.createSchema", () -> true);
     }
 
@@ -69,7 +81,7 @@ public class ProbesTestIT extends TasklistIntegrationTest {
 
     @DynamicPropertySource
     static void setProperties(final DynamicPropertyRegistry registry) {
-      registry.add("camunda.database.indexPrefix", () -> TestUtil.createRandomString(10));
+      registry.add(indexPrefixConfig, () -> TestUtil.createRandomString(10));
       registry.add("camunda.database.schema-manager.createSchema", () -> false);
     }
 

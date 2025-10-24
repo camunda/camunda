@@ -13,6 +13,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -100,7 +101,8 @@ public final class PartitionManagerImpl
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfig,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -135,7 +137,8 @@ public final class PartitionManagerImpl
             topologyManager,
             featureFlags,
             securityConfig,
-            searchClientsProxy);
+            searchClientsProxy,
+            brokerRequestAuthorizationConverter);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
@@ -491,7 +494,9 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> deleteExporter(final int partitionId, final String exporterId) {
-    throw new UnsupportedOperationException("deleteExporter not yet implemented");
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(() -> deleteExporter(partitionId, exporterId, result));
+    return result;
   }
 
   @Override
@@ -532,6 +537,36 @@ public final class PartitionManagerImpl
           }
 
           LOGGER.info("Disabled exporter {} on partition {}", exporterId, partitionId);
+          result.complete(null);
+        });
+  }
+
+  private void deleteExporter(
+      final int partitionId, final String exporterId, final ActorFuture<Void> result) {
+    final var partition = partitions.get(partitionId);
+    if (partition == null) {
+      result.completeExceptionally(
+          new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+      return;
+    }
+
+    if (partition.zeebePartition() == null) {
+      result.completeExceptionally(
+          new IllegalArgumentException(
+              "Expected to delete exporter on partition %s, but zeebePartition is not ready"
+                  .formatted(partitionId)));
+      return;
+    }
+    LOGGER.trace("Deleting exporter {} on partition {}", exporterId, partitionId);
+    concurrencyControl.runOnCompletion(
+        partition.zeebePartition().deleteExporter(exporterId),
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+            return;
+          }
+
+          LOGGER.info("Delete exporter {} on partition {}", exporterId, partitionId);
           result.complete(null);
         });
   }

@@ -166,7 +166,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             {
               "filter":{
                 "tenantId": "t",
-                "decisionRequirementsKey": 0,
+                "decisionRequirementsKey": "0",
                 "decisionRequirementsName": "name",
                 "version": 1,
                 "decisionRequirementsId": "drId",

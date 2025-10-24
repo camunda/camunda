@@ -37,10 +37,6 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
         .declareProperty(tenantTUMapProp);
   }
 
-  public boolean isInitialized() {
-    return fromTimeProp.getValue() != TIME_NOT_SET && toTimeProp.getValue() != TIME_NOT_SET;
-  }
-
   public long getFromTime() {
     return fromTimeProp.getValue();
   }
@@ -121,5 +117,17 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
       setTenantTUMap(tenantTUMap);
     }
     return this;
+  }
+
+  public PersistedUsageMetrics close(final long time) {
+    final var bucket = new PersistedUsageMetrics();
+    bucket.copyFrom(this);
+    // Ensure the fromTime is set. This can happen if metrics were recorded before the first
+    // applier.
+    if (getFromTime() == TIME_NOT_SET) {
+      bucket.setFromTime(time);
+    }
+    bucket.setToTime(time);
+    return bucket;
   }
 }

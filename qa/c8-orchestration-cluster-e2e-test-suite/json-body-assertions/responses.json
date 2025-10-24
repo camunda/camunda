@@ -1,0 +1,5483 @@
+{
+  "metadata": {
+    "sourceRepo": "https://github.com/camunda/camunda-orchestration-cluster-api",
+    "commit": "6b770a0fb85bcdcd5f00b194cbb414e88294084c",
+    "generatedAt": "2025-10-02T12:03:58.149Z",
+    "specPath": "specification/rest-api.yaml",
+    "specSha256": "b49a73ba78ef93977ace34f643187fe0a0b2393670db2dc995334e123fcb52c7"
+  },
+  "responses": [
+    {
+      "path": "/topology",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "brokers",
+            "type": "array<BrokerInfo>",
+            "children": {
+              "required": [
+                {
+                  "name": "host",
+                  "type": "string"
+                },
+                {
+                  "name": "nodeId",
+                  "type": "number"
+                },
+                {
+                  "name": "partitions",
+                  "type": "array<Partition>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "health",
+                        "type": "string",
+                        "enumValues": [
+                          "healthy",
+                          "unhealthy",
+                          "dead"
+                        ]
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "role",
+                        "type": "string",
+                        "enumValues": [
+                          "leader",
+                          "follower",
+                          "inactive"
+                        ]
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "port",
+                  "type": "number"
+                },
+                {
+                  "name": "version",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "clusterSize",
+            "type": "number"
+          },
+          {
+            "name": "gatewayVersion",
+            "type": "string"
+          },
+          {
+            "name": "lastCompletedChangeId",
+            "type": "string"
+          },
+          {
+            "name": "partitionsCount",
+            "type": "number"
+          },
+          {
+            "name": "replicationFactor",
+            "type": "number"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/license",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "isCommercial",
+            "type": "boolean"
+          },
+          {
+            "name": "licenseType",
+            "type": "string"
+          },
+          {
+            "name": "validLicense",
+            "type": "boolean"
+          }
+        ],
+        "optional": [
+          {
+            "name": "expiresAt",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/authentication/me",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "c8Links",
+            "type": "object"
+          },
+          {
+            "name": "canLogout",
+            "type": "boolean"
+          },
+          {
+            "name": "groups",
+            "type": "array<string>"
+          },
+          {
+            "name": "roles",
+            "type": "array<string>"
+          },
+          {
+            "name": "salesPlanType",
+            "type": "string"
+          },
+          {
+            "name": "tenants",
+            "type": "array<TenantResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "TenantId",
+                  "wrapper": true
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "authorizedComponents",
+            "type": "array<string>"
+          },
+          {
+            "name": "displayName",
+            "type": "string"
+          },
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/jobs/activation",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "jobs",
+            "type": "array<ActivatedJobResult>",
+            "children": {
+              "required": [
+                {
+                  "name": "customHeaders",
+                  "type": "object"
+                },
+                {
+                  "name": "deadline",
+                  "type": "number"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "jobKey",
+                  "type": "string"
+                },
+                {
+                  "name": "kind",
+                  "type": "string",
+                  "enumValues": [
+                    "BPMN_ELEMENT",
+                    "EXECUTION_LISTENER",
+                    "TASK_LISTENER",
+                    "AD_HOC_SUB_PROCESS"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "JobKindEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "listenerEventType",
+                  "type": "string",
+                  "enumValues": [
+                    "ASSIGNING",
+                    "CANCELING",
+                    "COMPLETING",
+                    "CREATING",
+                    "END",
+                    "START",
+                    "UNSPECIFIED",
+                    "UPDATING"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "JobListenerEventTypeEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionVersion",
+                  "type": "number"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "retries",
+                  "type": "number"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "type",
+                  "type": "string"
+                },
+                {
+                  "name": "variables",
+                  "type": "object"
+                },
+                {
+                  "name": "worker",
+                  "type": "string"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "tags",
+                  "type": "array<string>",
+                  "rawRefName": "TagSet"
+                },
+                {
+                  "name": "userTask",
+                  "type": "UserTaskProperties",
+                  "rawRefName": "UserTaskProperties",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "action",
+                        "type": "string"
+                      },
+                      {
+                        "name": "assignee",
+                        "type": "string"
+                      },
+                      {
+                        "name": "candidateGroups",
+                        "type": "array<string>"
+                      },
+                      {
+                        "name": "candidateUsers",
+                        "type": "array<string>"
+                      },
+                      {
+                        "name": "changedAttributes",
+                        "type": "array<string>"
+                      },
+                      {
+                        "name": "dueDate",
+                        "type": "string"
+                      },
+                      {
+                        "name": "followUpDate",
+                        "type": "string"
+                      },
+                      {
+                        "name": "formKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "priority",
+                        "type": "number"
+                      },
+                      {
+                        "name": "userTaskKey",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/jobs/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<JobSearchResult>",
+            "children": {
+              "required": [
+                {
+                  "name": "customHeaders",
+                  "type": "object"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "hasFailedWithRetriesLeft",
+                  "type": "boolean"
+                },
+                {
+                  "name": "jobKey",
+                  "type": "string"
+                },
+                {
+                  "name": "kind",
+                  "type": "string",
+                  "enumValues": [
+                    "BPMN_ELEMENT",
+                    "EXECUTION_LISTENER",
+                    "TASK_LISTENER",
+                    "AD_HOC_SUB_PROCESS"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "JobKindEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "listenerEventType",
+                  "type": "string",
+                  "enumValues": [
+                    "ASSIGNING",
+                    "CANCELING",
+                    "COMPLETING",
+                    "CREATING",
+                    "END",
+                    "START",
+                    "UNSPECIFIED",
+                    "UPDATING"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "JobListenerEventTypeEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "retries",
+                  "type": "number"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "CANCELED",
+                    "COMPLETED",
+                    "CREATED",
+                    "ERROR_THROWN",
+                    "FAILED",
+                    "MIGRATED",
+                    "RETRIES_UPDATED",
+                    "TIMED_OUT"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "JobStateEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "TenantId",
+                  "wrapper": true
+                },
+                {
+                  "name": "type",
+                  "type": "string"
+                },
+                {
+                  "name": "worker",
+                  "type": "string"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "deadline",
+                  "type": "string"
+                },
+                {
+                  "name": "deniedReason",
+                  "type": "string"
+                },
+                {
+                  "name": "endTime",
+                  "type": "string"
+                },
+                {
+                  "name": "errorCode",
+                  "type": "string"
+                },
+                {
+                  "name": "errorMessage",
+                  "type": "string"
+                },
+                {
+                  "name": "isDenied",
+                  "type": "boolean"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "TenantId",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "TenantId",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}",
+      "method": "PUT",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "TenantId",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}/users/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<TenantUserResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "username",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "Username",
+                  "wrapper": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}/clients/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<TenantClientResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "clientId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}/groups/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<TenantGroupResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "groupId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}/roles/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<RoleResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "roleId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}/mapping-rules/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<MappingRuleResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/tenants/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<TenantResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "TenantId",
+                  "wrapper": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/user-tasks/{userTaskKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "assignee",
+            "type": "string"
+          },
+          {
+            "name": "candidateGroups",
+            "type": "array<string>"
+          },
+          {
+            "name": "candidateUsers",
+            "type": "array<string>"
+          },
+          {
+            "name": "completionDate",
+            "type": "string"
+          },
+          {
+            "name": "creationDate",
+            "type": "string"
+          },
+          {
+            "name": "customHeaders",
+            "type": "object"
+          },
+          {
+            "name": "dueDate",
+            "type": "string"
+          },
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "externalFormReference",
+            "type": "string"
+          },
+          {
+            "name": "followUpDate",
+            "type": "string"
+          },
+          {
+            "name": "formKey",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "priority",
+            "type": "number"
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "processName",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "CREATING",
+              "CREATED",
+              "ASSIGNING",
+              "UPDATING",
+              "COMPLETING",
+              "COMPLETED",
+              "CANCELING",
+              "CANCELED",
+              "FAILED"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "UserTaskStateEnum",
+            "wrapper": true
+          },
+          {
+            "name": "tenantId",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "TenantId",
+            "wrapper": true
+          },
+          {
+            "name": "userTaskKey",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/user-tasks/{userTaskKey}/form",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "formId",
+            "type": "string"
+          },
+          {
+            "name": "formKey",
+            "type": "string"
+          },
+          {
+            "name": "schema",
+            "type": "object"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/user-tasks/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<UserTaskResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "assignee",
+                  "type": "string"
+                },
+                {
+                  "name": "candidateGroups",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "candidateUsers",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "completionDate",
+                  "type": "string"
+                },
+                {
+                  "name": "creationDate",
+                  "type": "string"
+                },
+                {
+                  "name": "customHeaders",
+                  "type": "object"
+                },
+                {
+                  "name": "dueDate",
+                  "type": "string"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "externalFormReference",
+                  "type": "string"
+                },
+                {
+                  "name": "followUpDate",
+                  "type": "string"
+                },
+                {
+                  "name": "formKey",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "priority",
+                  "type": "number"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionVersion",
+                  "type": "number"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processName",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "CREATING",
+                    "CREATED",
+                    "ASSIGNING",
+                    "UPDATING",
+                    "COMPLETING",
+                    "COMPLETED",
+                    "CANCELING",
+                    "CANCELED",
+                    "FAILED"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "UserTaskStateEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "TenantId",
+                  "wrapper": true
+                },
+                {
+                  "name": "userTaskKey",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/user-tasks/{userTaskKey}/variables/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<VariableResultBase>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "scopeKey",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "value",
+                  "type": "string"
+                },
+                {
+                  "name": "variableKey",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/variables/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<VariableResultBase>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "scopeKey",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "value",
+                  "type": "string"
+                },
+                {
+                  "name": "variableKey",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/variables/{variableKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "scopeKey",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "value",
+            "type": "string"
+          },
+          {
+            "name": "variableKey",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-definitions/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<ProcessDefinitionResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "hasStartForm",
+                  "type": "boolean"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "resourceName",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "version",
+                  "type": "number"
+                },
+                {
+                  "name": "versionTag",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-definitions/{processDefinitionKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "hasStartForm",
+            "type": "boolean"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "resourceName",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "number"
+          },
+          {
+            "name": "versionTag",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-definitions/{processDefinitionKey}/form",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "formId",
+            "type": "string"
+          },
+          {
+            "name": "formKey",
+            "type": "string"
+          },
+          {
+            "name": "schema",
+            "type": "object"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-definitions/{processDefinitionKey}/statistics/element-instances",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<ProcessElementStatisticsResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "active",
+                  "type": "number"
+                },
+                {
+                  "name": "canceled",
+                  "type": "number"
+                },
+                {
+                  "name": "completed",
+                  "type": "number"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "incidents",
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "variables",
+            "type": "object"
+          }
+        ],
+        "optional": [
+          {
+            "name": "tags",
+            "type": "array<string>",
+            "rawRefName": "TagSet"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/{processInstanceKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "hasIncident",
+            "type": "boolean"
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "ProcessDefinitionId",
+            "wrapper": true
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionName",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "startDate",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "ACTIVE",
+              "COMPLETED",
+              "TERMINATED"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "ProcessInstanceStateEnum",
+            "wrapper": true
+          },
+          {
+            "name": "tenantId",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "TenantId",
+            "wrapper": true
+          }
+        ],
+        "optional": [
+          {
+            "name": "endDate",
+            "type": "string"
+          },
+          {
+            "name": "parentElementInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "parentProcessInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionVersionTag",
+            "type": "string"
+          },
+          {
+            "name": "tags",
+            "type": "array<string>",
+            "rawRefName": "TagSet"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/{processInstanceKey}/sequence-flows",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<ProcessInstanceSequenceFlowResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "sequenceFlowId",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "TenantId",
+                  "wrapper": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/{processInstanceKey}/statistics/element-instances",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<ProcessElementStatisticsResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "active",
+                  "type": "number"
+                },
+                {
+                  "name": "canceled",
+                  "type": "number"
+                },
+                {
+                  "name": "completed",
+                  "type": "number"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "incidents",
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<ProcessInstanceResult>",
+            "children": {
+              "required": [
+                {
+                  "name": "hasIncident",
+                  "type": "boolean"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "ProcessDefinitionId",
+                  "wrapper": true
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionName",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionVersion",
+                  "type": "number"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "startDate",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "ACTIVE",
+                    "COMPLETED",
+                    "TERMINATED"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "ProcessInstanceStateEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "TenantId",
+                  "wrapper": true
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endDate",
+                  "type": "string"
+                },
+                {
+                  "name": "parentElementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "parentProcessInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionVersionTag",
+                  "type": "string"
+                },
+                {
+                  "name": "tags",
+                  "type": "array<string>",
+                  "rawRefName": "TagSet"
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-instances/{processInstanceKey}/incidents/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<IncidentResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "creationTime",
+                  "type": "string"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "errorMessage",
+                  "type": "string"
+                },
+                {
+                  "name": "errorType",
+                  "type": "string",
+                  "enumValues": [
+                    "UNSPECIFIED",
+                    "UNKNOWN",
+                    "IO_MAPPING_ERROR",
+                    "JOB_NO_RETRIES",
+                    "EXECUTION_LISTENER_NO_RETRIES",
+                    "TASK_LISTENER_NO_RETRIES",
+                    "AD_HOC_SUB_PROCESS_NO_RETRIES",
+                    "CONDITION_ERROR",
+                    "EXTRACT_VALUE_ERROR",
+                    "CALLED_ELEMENT_ERROR",
+                    "UNHANDLED_ERROR_EVENT",
+                    "MESSAGE_SIZE_EXCEEDED",
+                    "CALLED_DECISION_ERROR",
+                    "DECISION_EVALUATION_ERROR",
+                    "FORM_NOT_FOUND",
+                    "RESOURCE_NOT_FOUND"
+                  ]
+                },
+                {
+                  "name": "incidentKey",
+                  "type": "string"
+                },
+                {
+                  "name": "jobKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "ACTIVE",
+                    "MIGRATED",
+                    "RESOLVED",
+                    "PENDING"
+                  ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/cancellation",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "CANCEL_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "DELETE_PROCESS_INSTANCE",
+              "ADD_VARIABLE",
+              "UPDATE_VARIABLE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_PROCESS_DEFINITION"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "BatchOperationTypeEnum",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/incident-resolution",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "CANCEL_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "DELETE_PROCESS_INSTANCE",
+              "ADD_VARIABLE",
+              "UPDATE_VARIABLE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_PROCESS_DEFINITION"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "BatchOperationTypeEnum",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/migration",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "CANCEL_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "DELETE_PROCESS_INSTANCE",
+              "ADD_VARIABLE",
+              "UPDATE_VARIABLE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_PROCESS_DEFINITION"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "BatchOperationTypeEnum",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/modification",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "CANCEL_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "DELETE_PROCESS_INSTANCE",
+              "ADD_VARIABLE",
+              "UPDATE_VARIABLE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_PROCESS_DEFINITION"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "BatchOperationTypeEnum",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/process-instances/{processInstanceKey}/call-hierarchy",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/element-instances/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<ElementInstanceResult>",
+            "children": {
+              "required": [
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "elementName",
+                  "type": "string"
+                },
+                {
+                  "name": "hasIncident",
+                  "type": "boolean"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "startDate",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "type",
+                  "type": "string",
+                  "enumValues": [
+                    "UNSPECIFIED",
+                    "PROCESS",
+                    "SUB_PROCESS",
+                    "EVENT_SUB_PROCESS",
+                    "AD_HOC_SUB_PROCESS",
+                    "AD_HOC_SUB_PROCESS_INNER_INSTANCE",
+                    "START_EVENT",
+                    "INTERMEDIATE_CATCH_EVENT",
+                    "INTERMEDIATE_THROW_EVENT",
+                    "BOUNDARY_EVENT",
+                    "END_EVENT",
+                    "SERVICE_TASK",
+                    "RECEIVE_TASK",
+                    "USER_TASK",
+                    "MANUAL_TASK",
+                    "TASK",
+                    "EXCLUSIVE_GATEWAY",
+                    "INCLUSIVE_GATEWAY",
+                    "PARALLEL_GATEWAY",
+                    "EVENT_BASED_GATEWAY",
+                    "SEQUENCE_FLOW",
+                    "MULTI_INSTANCE_BODY",
+                    "CALL_ACTIVITY",
+                    "BUSINESS_RULE_TASK",
+                    "SCRIPT_TASK",
+                    "SEND_TASK",
+                    "UNKNOWN"
+                  ]
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endDate",
+                  "type": "string"
+                },
+                {
+                  "name": "incidentKey",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/element-instances/{elementInstanceKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "elementName",
+            "type": "string"
+          },
+          {
+            "name": "hasIncident",
+            "type": "boolean"
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "startDate",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "enumValues": [
+              "UNSPECIFIED",
+              "PROCESS",
+              "SUB_PROCESS",
+              "EVENT_SUB_PROCESS",
+              "AD_HOC_SUB_PROCESS",
+              "AD_HOC_SUB_PROCESS_INNER_INSTANCE",
+              "START_EVENT",
+              "INTERMEDIATE_CATCH_EVENT",
+              "INTERMEDIATE_THROW_EVENT",
+              "BOUNDARY_EVENT",
+              "END_EVENT",
+              "SERVICE_TASK",
+              "RECEIVE_TASK",
+              "USER_TASK",
+              "MANUAL_TASK",
+              "TASK",
+              "EXCLUSIVE_GATEWAY",
+              "INCLUSIVE_GATEWAY",
+              "PARALLEL_GATEWAY",
+              "EVENT_BASED_GATEWAY",
+              "SEQUENCE_FLOW",
+              "MULTI_INSTANCE_BODY",
+              "CALL_ACTIVITY",
+              "BUSINESS_RULE_TASK",
+              "SCRIPT_TASK",
+              "SEND_TASK",
+              "UNKNOWN"
+            ]
+          }
+        ],
+        "optional": [
+          {
+            "name": "endDate",
+            "type": "string"
+          },
+          {
+            "name": "incidentKey",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/decision-definitions/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<DecisionDefinitionResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "decisionDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionRequirementsId",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionRequirementsKey",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "version",
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/decision-definitions/{decisionDefinitionKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "decisionDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "decisionRequirementsId",
+            "type": "string"
+          },
+          {
+            "name": "decisionRequirementsKey",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/decision-requirements/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<DecisionRequirementsResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "decisionRequirementsId",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionRequirementsKey",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionRequirementsName",
+                  "type": "string"
+                },
+                {
+                  "name": "resourceName",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "version",
+                  "type": "number"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/decision-requirements/{decisionRequirementsKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "decisionRequirementsId",
+            "type": "string"
+          },
+          {
+            "name": "decisionRequirementsKey",
+            "type": "string"
+          },
+          {
+            "name": "decisionRequirementsName",
+            "type": "string"
+          },
+          {
+            "name": "resourceName",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "number"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/decision-instances/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<DecisionInstanceResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "decisionDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionName",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionType",
+                  "type": "string",
+                  "enumValues": [
+                    "DECISION_TABLE",
+                    "LITERAL_EXPRESSION",
+                    "UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "DecisionDefinitionTypeEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "decisionDefinitionVersion",
+                  "type": "number"
+                },
+                {
+                  "name": "decisionEvaluationInstanceKey",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "DecisionEvaluationInstanceKey",
+                  "wrapper": true
+                },
+                {
+                  "name": "decisionEvaluationKey",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "evaluationDate",
+                  "type": "string"
+                },
+                {
+                  "name": "evaluationFailure",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "result",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "EVALUATED",
+                    "FAILED",
+                    "UNSPECIFIED",
+                    "UNKNOWN"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "DecisionInstanceStateEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/decision-instances/{decisionEvaluationInstanceKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "decisionDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionName",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionType",
+            "type": "string",
+            "enumValues": [
+              "DECISION_TABLE",
+              "LITERAL_EXPRESSION",
+              "UNSPECIFIED",
+              "UNKNOWN"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "DecisionDefinitionTypeEnum",
+            "wrapper": true
+          },
+          {
+            "name": "decisionDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "decisionEvaluationInstanceKey",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "DecisionEvaluationInstanceKey",
+            "wrapper": true
+          },
+          {
+            "name": "decisionEvaluationKey",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "evaluatedInputs",
+            "type": "array<EvaluatedDecisionInputItem>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "inputId",
+                  "type": "string"
+                },
+                {
+                  "name": "inputName",
+                  "type": "string"
+                },
+                {
+                  "name": "inputValue",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "evaluationDate",
+            "type": "string"
+          },
+          {
+            "name": "evaluationFailure",
+            "type": "string"
+          },
+          {
+            "name": "matchedRules",
+            "type": "array<MatchedDecisionRuleItem>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "evaluatedOutputs",
+                  "type": "array<EvaluatedDecisionOutputItem>",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "outputId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "outputName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "outputValue",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "ruleId",
+                  "type": "string"
+                },
+                {
+                  "name": "ruleIndex",
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "result",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "EVALUATED",
+              "FAILED",
+              "UNSPECIFIED",
+              "UNKNOWN"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "DecisionInstanceStateEnum",
+            "wrapper": true
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/decision-definitions/evaluation",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "decisionDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionName",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "decisionEvaluationKey",
+            "type": "string"
+          },
+          {
+            "name": "decisionRequirementsId",
+            "type": "string"
+          },
+          {
+            "name": "decisionRequirementsKey",
+            "type": "string"
+          },
+          {
+            "name": "evaluatedDecisions",
+            "type": "array<EvaluatedDecisionResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "decisionDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionName",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionType",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionVersion",
+                  "type": "number"
+                },
+                {
+                  "name": "decisionEvaluationInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "evaluatedInputs",
+                  "type": "array<EvaluatedDecisionInputItem>",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "inputId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "inputName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "inputValue",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "matchedRules",
+                  "type": "array<MatchedDecisionRuleItem>",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "evaluatedOutputs",
+                        "type": "array<EvaluatedDecisionOutputItem>",
+                        "children": {
+                          "required": [],
+                          "optional": [
+                            {
+                              "name": "outputId",
+                              "type": "string"
+                            },
+                            {
+                              "name": "outputName",
+                              "type": "string"
+                            },
+                            {
+                              "name": "outputValue",
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "name": "ruleId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "ruleIndex",
+                        "type": "number"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "output",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "failedDecisionDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "failureMessage",
+            "type": "string"
+          },
+          {
+            "name": "output",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ],
+        "optional": [
+          {
+            "name": "decisionInstanceKey",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/authorizations",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "authorizationKey",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/authorizations/{authorizationKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "authorizationKey",
+            "type": "string"
+          },
+          {
+            "name": "ownerId",
+            "type": "string"
+          },
+          {
+            "name": "ownerType",
+            "type": "string",
+            "enumValues": [
+              "USER",
+              "CLIENT",
+              "ROLE",
+              "GROUP",
+              "MAPPING_RULE",
+              "UNSPECIFIED"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "OwnerTypeEnum",
+            "wrapper": true
+          },
+          {
+            "name": "permissionTypes",
+            "type": "array<string>"
+          },
+          {
+            "name": "resourceId",
+            "type": "string"
+          },
+          {
+            "name": "resourceType",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/authorizations/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<AuthorizationResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "authorizationKey",
+                  "type": "string"
+                },
+                {
+                  "name": "ownerId",
+                  "type": "string"
+                },
+                {
+                  "name": "ownerType",
+                  "type": "string",
+                  "enumValues": [
+                    "USER",
+                    "CLIENT",
+                    "ROLE",
+                    "GROUP",
+                    "MAPPING_RULE",
+                    "UNSPECIFIED"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "OwnerTypeEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "permissionTypes",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "resourceId",
+                  "type": "string"
+                },
+                {
+                  "name": "resourceType",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/roles",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "roleId",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/roles/{roleId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "roleId",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/roles/{roleId}",
+      "method": "PUT",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "roleId",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/roles/{roleId}/users/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<RoleUserResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "username",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "Username",
+                  "wrapper": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/roles/{roleId}/clients/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<RoleClientResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "clientId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/roles/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<RoleResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "roleId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/roles/{roleId}/groups/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<RoleGroupResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "groupId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/roles/{roleId}/mapping-rules/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<MappingRuleResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/groups",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "groupId",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/groups/{groupId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "groupId",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/groups/{groupId}",
+      "method": "PUT",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "groupId",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/groups/{groupId}/users/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<GroupUserResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "username",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "Username",
+                  "wrapper": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/groups/{groupId}/mapping-rules/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<MappingRuleResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/groups/{groupId}/roles/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<RoleResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "roleId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/groups/{groupId}/clients/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<GroupClientResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "clientId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/groups/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<GroupResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "groupId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/mapping-rules",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "claimName",
+            "type": "string"
+          },
+          {
+            "name": "claimValue",
+            "type": "string"
+          },
+          {
+            "name": "mappingRuleId",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/mapping-rules/{mappingRuleId}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "claimName",
+            "type": "string"
+          },
+          {
+            "name": "claimValue",
+            "type": "string"
+          },
+          {
+            "name": "mappingRuleId",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/mapping-rules/{mappingRuleId}",
+      "method": "PUT",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "claimName",
+            "type": "string"
+          },
+          {
+            "name": "claimValue",
+            "type": "string"
+          },
+          {
+            "name": "mappingRuleId",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/mapping-rules/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<MappingRuleResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/messages/publication",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "messageKey",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/messages/correlation",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "messageKey",
+            "type": "string"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/correlated-message-subscriptions/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<CorrelatedMessageSubscriptionResult>",
+            "children": {
+              "required": [
+                {
+                  "name": "correlationKey",
+                  "type": "string"
+                },
+                {
+                  "name": "correlationTime",
+                  "type": "string"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "messageKey",
+                  "type": "string"
+                },
+                {
+                  "name": "messageName",
+                  "type": "string"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "subscriptionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/message-subscriptions/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<MessageSubscriptionResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "correlationKey",
+                  "type": "string"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "lastUpdatedDate",
+                  "type": "string"
+                },
+                {
+                  "name": "messageName",
+                  "type": "string"
+                },
+                {
+                  "name": "messageSubscriptionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "messageSubscriptionState",
+                  "type": "string",
+                  "enumValues": [
+                    "CORRELATED",
+                    "CREATED",
+                    "DELETED",
+                    "MIGRATED"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "MessageSubscriptionStateEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "TenantId",
+                  "wrapper": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/documents",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "camunda.document.type",
+            "type": "string",
+            "enumValues": [
+              "camunda"
+            ]
+          },
+          {
+            "name": "contentHash",
+            "type": "string"
+          },
+          {
+            "name": "documentId",
+            "type": "string"
+          },
+          {
+            "name": "metadata",
+            "type": "DocumentMetadata",
+            "rawRefName": "DocumentMetadata",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "contentType",
+                  "type": "string"
+                },
+                {
+                  "name": "customProperties",
+                  "type": "object"
+                },
+                {
+                  "name": "expiresAt",
+                  "type": "string"
+                },
+                {
+                  "name": "fileName",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "size",
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          {
+            "name": "storeId",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/documents/batch",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "createdDocuments",
+            "type": "array<DocumentReference>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "camunda.document.type",
+                  "type": "string",
+                  "enumValues": [
+                    "camunda"
+                  ]
+                },
+                {
+                  "name": "contentHash",
+                  "type": "string"
+                },
+                {
+                  "name": "documentId",
+                  "type": "string"
+                },
+                {
+                  "name": "metadata",
+                  "type": "DocumentMetadata",
+                  "rawRefName": "DocumentMetadata",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "contentType",
+                        "type": "string"
+                      },
+                      {
+                        "name": "customProperties",
+                        "type": "object"
+                      },
+                      {
+                        "name": "expiresAt",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fileName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "processDefinitionId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "processInstanceKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "size",
+                        "type": "number"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "storeId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "failedDocuments",
+            "type": "array<DocumentCreationFailureDetail>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "detail",
+                  "type": "string"
+                },
+                {
+                  "name": "fileName",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/documents/batch",
+      "method": "POST",
+      "status": "207",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "createdDocuments",
+            "type": "array<DocumentReference>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "camunda.document.type",
+                  "type": "string",
+                  "enumValues": [
+                    "camunda"
+                  ]
+                },
+                {
+                  "name": "contentHash",
+                  "type": "string"
+                },
+                {
+                  "name": "documentId",
+                  "type": "string"
+                },
+                {
+                  "name": "metadata",
+                  "type": "DocumentMetadata",
+                  "rawRefName": "DocumentMetadata",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "contentType",
+                        "type": "string"
+                      },
+                      {
+                        "name": "customProperties",
+                        "type": "object"
+                      },
+                      {
+                        "name": "expiresAt",
+                        "type": "string"
+                      },
+                      {
+                        "name": "fileName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "processDefinitionId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "processInstanceKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "size",
+                        "type": "number"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "storeId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "failedDocuments",
+            "type": "array<DocumentCreationFailureDetail>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "detail",
+                  "type": "string"
+                },
+                {
+                  "name": "fileName",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/documents/{documentId}/links",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "expiresAt",
+            "type": "string"
+          },
+          {
+            "name": "url",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/users",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "Username",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/users/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<UserResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "email",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "username",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "Username",
+                  "wrapper": true
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/users/{username}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "Username",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/users/{username}",
+      "method": "PUT",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "Username",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/setup/user",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "Username",
+            "wrapper": true
+          }
+        ]
+      }
+    },
+    {
+      "path": "/incidents/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<IncidentResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "creationTime",
+                  "type": "string"
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "errorMessage",
+                  "type": "string"
+                },
+                {
+                  "name": "errorType",
+                  "type": "string",
+                  "enumValues": [
+                    "UNSPECIFIED",
+                    "UNKNOWN",
+                    "IO_MAPPING_ERROR",
+                    "JOB_NO_RETRIES",
+                    "EXECUTION_LISTENER_NO_RETRIES",
+                    "TASK_LISTENER_NO_RETRIES",
+                    "AD_HOC_SUB_PROCESS_NO_RETRIES",
+                    "CONDITION_ERROR",
+                    "EXTRACT_VALUE_ERROR",
+                    "CALLED_ELEMENT_ERROR",
+                    "UNHANDLED_ERROR_EVENT",
+                    "MESSAGE_SIZE_EXCEEDED",
+                    "CALLED_DECISION_ERROR",
+                    "DECISION_EVALUATION_ERROR",
+                    "FORM_NOT_FOUND",
+                    "RESOURCE_NOT_FOUND"
+                  ]
+                },
+                {
+                  "name": "incidentKey",
+                  "type": "string"
+                },
+                {
+                  "name": "jobKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "ACTIVE",
+                    "MIGRATED",
+                    "RESOLVED",
+                    "PENDING"
+                  ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/incidents/{incidentKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "creationTime",
+            "type": "string"
+          },
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "errorMessage",
+            "type": "string"
+          },
+          {
+            "name": "errorType",
+            "type": "string",
+            "enumValues": [
+              "UNSPECIFIED",
+              "UNKNOWN",
+              "IO_MAPPING_ERROR",
+              "JOB_NO_RETRIES",
+              "EXECUTION_LISTENER_NO_RETRIES",
+              "TASK_LISTENER_NO_RETRIES",
+              "AD_HOC_SUB_PROCESS_NO_RETRIES",
+              "CONDITION_ERROR",
+              "EXTRACT_VALUE_ERROR",
+              "CALLED_ELEMENT_ERROR",
+              "UNHANDLED_ERROR_EVENT",
+              "MESSAGE_SIZE_EXCEEDED",
+              "CALLED_DECISION_ERROR",
+              "DECISION_EVALUATION_ERROR",
+              "FORM_NOT_FOUND",
+              "RESOURCE_NOT_FOUND"
+            ]
+          },
+          {
+            "name": "incidentKey",
+            "type": "string"
+          },
+          {
+            "name": "jobKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "ACTIVE",
+              "MIGRATED",
+              "RESOLVED",
+              "PENDING"
+            ]
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/system/usage-metrics",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "activeTenants",
+            "type": "number"
+          },
+          {
+            "name": "assignees",
+            "type": "number"
+          },
+          {
+            "name": "decisionInstances",
+            "type": "number"
+          },
+          {
+            "name": "processInstances",
+            "type": "number"
+          },
+          {
+            "name": "tenants",
+            "type": "object"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/deployments",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "deploymentKey",
+            "type": "string"
+          },
+          {
+            "name": "deployments",
+            "type": "array<DeploymentMetadataResult>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "decisionDefinition",
+                  "type": "DeploymentDecisionResult",
+                  "rawRefName": "DeploymentDecisionResult",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "decisionDefinitionId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "decisionDefinitionKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "decisionRequirementsId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "decisionRequirementsKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "name": "tenantId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "number"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "decisionRequirements",
+                  "type": "DeploymentDecisionRequirementsResult",
+                  "rawRefName": "DeploymentDecisionRequirementsResult",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "decisionRequirementsId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "decisionRequirementsKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "decisionRequirementsName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "resourceName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "tenantId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "version",
+                        "type": "number"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "form",
+                  "type": "DeploymentFormResult",
+                  "rawRefName": "DeploymentFormResult",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "formId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "formKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "resourceName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "tenantId",
+                        "type": "string",
+                        "underlyingPrimitive": "string",
+                        "rawRefName": "TenantId",
+                        "wrapper": true
+                      },
+                      {
+                        "name": "version",
+                        "type": "number"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "processDefinition",
+                  "type": "DeploymentProcessResult",
+                  "rawRefName": "DeploymentProcessResult",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "processDefinitionId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "processDefinitionKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "processDefinitionVersion",
+                        "type": "number"
+                      },
+                      {
+                        "name": "resourceName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "tenantId",
+                        "type": "string"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "resource",
+                  "type": "DeploymentResourceResult",
+                  "rawRefName": "DeploymentResourceResult",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "resourceId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "resourceKey",
+                        "type": "string"
+                      },
+                      {
+                        "name": "resourceName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "tenantId",
+                        "type": "string",
+                        "underlyingPrimitive": "string",
+                        "rawRefName": "TenantId",
+                        "wrapper": true
+                      },
+                      {
+                        "name": "version",
+                        "type": "number"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/resources/{resourceKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "resourceId",
+            "type": "string"
+          },
+          {
+            "name": "resourceKey",
+            "type": "string"
+          },
+          {
+            "name": "resourceName",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "number"
+          },
+          {
+            "name": "versionTag",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/resources/{resourceKey}/content",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/signals/broadcast",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "signalKey",
+            "type": "string"
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/batch-operations/{batchOperationKey}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "CANCEL_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "DELETE_PROCESS_INSTANCE",
+              "ADD_VARIABLE",
+              "UPDATE_VARIABLE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_PROCESS_DEFINITION"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "BatchOperationTypeEnum",
+            "wrapper": true
+          },
+          {
+            "name": "endDate",
+            "type": "string"
+          },
+          {
+            "name": "errors",
+            "type": "array<BatchOperationError>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "message",
+                  "type": "string"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "type",
+                  "type": "string",
+                  "enumValues": [
+                    "QUERY_FAILED",
+                    "RESULT_BUFFER_SIZE_EXCEEDED"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "operationsCompletedCount",
+            "type": "number"
+          },
+          {
+            "name": "operationsFailedCount",
+            "type": "number"
+          },
+          {
+            "name": "operationsTotalCount",
+            "type": "number"
+          },
+          {
+            "name": "startDate",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "ACTIVE",
+              "CANCELED",
+              "COMPLETED",
+              "CREATED",
+              "FAILED",
+              "PARTIALLY_COMPLETED",
+              "SUSPENDED"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "path": "/batch-operations/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<BatchOperationResponse>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "batchOperationKey",
+                  "type": "string"
+                },
+                {
+                  "name": "batchOperationType",
+                  "type": "string",
+                  "enumValues": [
+                    "CANCEL_PROCESS_INSTANCE",
+                    "RESOLVE_INCIDENT",
+                    "MIGRATE_PROCESS_INSTANCE",
+                    "MODIFY_PROCESS_INSTANCE",
+                    "DELETE_PROCESS_INSTANCE",
+                    "ADD_VARIABLE",
+                    "UPDATE_VARIABLE",
+                    "DELETE_DECISION_DEFINITION",
+                    "DELETE_PROCESS_DEFINITION"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "BatchOperationTypeEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "endDate",
+                  "type": "string"
+                },
+                {
+                  "name": "errors",
+                  "type": "array<BatchOperationError>",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "message",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "type",
+                        "type": "string",
+                        "enumValues": [
+                          "QUERY_FAILED",
+                          "RESULT_BUFFER_SIZE_EXCEEDED"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "operationsCompletedCount",
+                  "type": "number"
+                },
+                {
+                  "name": "operationsFailedCount",
+                  "type": "number"
+                },
+                {
+                  "name": "operationsTotalCount",
+                  "type": "number"
+                },
+                {
+                  "name": "startDate",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "ACTIVE",
+                    "CANCELED",
+                    "COMPLETED",
+                    "CREATED",
+                    "FAILED",
+                    "PARTIALLY_COMPLETED",
+                    "SUSPENDED"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "path": "/batch-operation-items/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "optional": [
+          {
+            "name": "items",
+            "type": "array<BatchOperationItemResponse>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "batchOperationKey",
+                  "type": "string"
+                },
+                {
+                  "name": "errorMessage",
+                  "type": "string"
+                },
+                {
+                  "name": "itemKey",
+                  "type": "string"
+                },
+                {
+                  "name": "operationType",
+                  "type": "string",
+                  "enumValues": [
+                    "CANCEL_PROCESS_INSTANCE",
+                    "RESOLVE_INCIDENT",
+                    "MIGRATE_PROCESS_INSTANCE",
+                    "MODIFY_PROCESS_INSTANCE",
+                    "DELETE_PROCESS_INSTANCE",
+                    "ADD_VARIABLE",
+                    "UPDATE_VARIABLE",
+                    "DELETE_DECISION_DEFINITION",
+                    "DELETE_PROCESS_DEFINITION"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "BatchOperationTypeEnum",
+                  "wrapper": true
+                },
+                {
+                  "name": "processedDate",
+                  "type": "string"
+                },
+                {
+                  "name": "processInstanceKey",
+                  "type": "string"
+                },
+                {
+                  "name": "state",
+                  "type": "string",
+                  "enumValues": [
+                    "ACTIVE",
+                    "COMPLETED",
+                    "SKIPPED",
+                    "CANCELED",
+                    "FAILED"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

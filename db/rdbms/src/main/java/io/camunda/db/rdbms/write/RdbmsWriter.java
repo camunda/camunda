@@ -10,10 +10,12 @@ package io.camunda.db.rdbms.write;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -24,6 +26,7 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
+import io.camunda.db.rdbms.write.service.CorrelatedMessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
@@ -35,6 +38,7 @@ import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
+import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
@@ -73,6 +77,8 @@ public class RdbmsWriter {
   private final SequenceFlowWriter sequenceFlowWriter;
   private final UsageMetricWriter usageMetricWriter;
   private final UsageMetricTUWriter usageMetricTUWriter;
+  private final MessageSubscriptionWriter messageSubscriptionWriter;
+  private final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
 
   private final HistoryCleanupService historyCleanupService;
 
@@ -94,7 +100,9 @@ public class RdbmsWriter {
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
-      final BatchOperationMapper batchOperationMapper) {
+      final BatchOperationMapper batchOperationMapper,
+      final MessageSubscriptionMapper messageSubscriptionMapper,
+      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
@@ -127,6 +135,11 @@ public class RdbmsWriter {
     sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
     usageMetricWriter = new UsageMetricWriter(executionQueue, usageMetricMapper);
     usageMetricTUWriter = new UsageMetricTUWriter(executionQueue, usageMetricTUMapper);
+    messageSubscriptionWriter =
+        new MessageSubscriptionWriter(executionQueue, messageSubscriptionMapper);
+    correlatedMessageSubscriptionWriter =
+        new CorrelatedMessageSubscriptionWriter(
+            executionQueue, correlatedMessageSubscriptionMapper);
 
     historyCleanupService =
         new HistoryCleanupService(
@@ -140,7 +153,11 @@ public class RdbmsWriter {
             jobWriter,
             sequenceFlowWriter,
             batchOperationWriter,
-            metrics);
+            messageSubscriptionWriter,
+            correlatedMessageSubscriptionWriter,
+            metrics,
+            usageMetricWriter,
+            usageMetricTUWriter);
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
@@ -225,6 +242,14 @@ public class RdbmsWriter {
 
   public UsageMetricTUWriter getUsageMetricTUWriter() {
     return usageMetricTUWriter;
+  }
+
+  public MessageSubscriptionWriter getMessageSubscriptionWriter() {
+    return messageSubscriptionWriter;
+  }
+
+  public CorrelatedMessageSubscriptionWriter getCorrelatedMessageSubscriptionWriter() {
+    return correlatedMessageSubscriptionWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {

@@ -92,7 +92,6 @@ public class RemoteCamundaProcessTestExtensionIT {
           .withRemoteCamundaClientBuilderFactory(
               () ->
                   CamundaClient.newClientBuilder()
-                      .usePlaintext()
                       .restAddress(REMOTE_CAMUNDA_CONTAINER.getRestApiAddress())
                       .grpcAddress(REMOTE_CAMUNDA_CONTAINER.getGrpcApiAddress()))
           .withRemoteCamundaMonitoringApiAddress(

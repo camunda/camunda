@@ -14,7 +14,7 @@ import {TargetProcessField} from '../TargetProcessField';
 import {TargetVersionField} from '../TargetVersionField';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {Diagram} from 'modules/components/Diagram/v2';
+import {Diagram} from 'modules/components/Diagram';
 import {useEffect} from 'react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
@@ -78,7 +78,7 @@ const TargetDiagram: React.FC = observer(() => {
 
   const getFlowNodeCountByTargetId = () => {
     return Object.entries(
-      processInstanceMigrationStore.state.flowNodeMapping,
+      processInstanceMigrationStore.state.elementMapping,
     ).reduce<{
       [targetElementId: string]: number;
     }>((mappingByTarget, [sourceElementId, targetElementId]) => {
@@ -122,16 +122,18 @@ const TargetDiagram: React.FC = observer(() => {
         {data?.xml !== undefined && (
           <Diagram
             xml={data.xml}
-            selectableFlowNodes={data.selectableFlowNodes.map(
-              (flowNode) => flowNode.id,
-            )}
+            processDefinitionKey={selectedTargetProcessId}
+            selectableFlowNodes={[
+              ...data.selectableFlowNodes,
+              ...data.selectableSequenceFlows,
+            ].map((flowNode) => flowNode.id)}
             selectedFlowNodeIds={
-              processInstanceMigrationStore.selectedTargetFlowNodeId
-                ? [processInstanceMigrationStore.selectedTargetFlowNodeId]
+              processInstanceMigrationStore.selectedTargetElementId
+                ? [processInstanceMigrationStore.selectedTargetElementId]
                 : undefined
             }
             onFlowNodeSelection={
-              processInstanceMigrationStore.selectTargetFlowNode
+              processInstanceMigrationStore.selectTargetElement
             }
             overlaysData={
               isSummaryStep

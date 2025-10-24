@@ -62,7 +62,21 @@ export function useEnrichedUsers<P>(
 
       const usernames = members.map(({ username }) => username);
       const userResult = await callSearchUser({ usernames });
-      setUsers(userResult.data?.items || []);
+
+      const fullUsers = userResult.data?.items || [];
+
+      // Hydrate members while keeping order from original request
+      const orderedUsers = members.map((member) => {
+        // Inefficient, but we don't care as we search <100 items
+        const user = fullUsers.find((u) => u.username === member.username);
+        return {
+          username: member.username,
+          name: user?.name || "",
+          email: user?.email || "",
+        };
+      });
+
+      setUsers(orderedUsers);
       setSuccess(true);
     } catch {
       setUsers([]);

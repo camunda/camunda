@@ -17,15 +17,16 @@ package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.enums.BatchOperationErrorType;
 import io.camunda.client.api.search.response.BatchOperationError;
+import io.camunda.client.impl.util.EnumUtil;
 
 public class BatchOperationErrorImpl implements BatchOperationError {
 
   private final BatchOperationErrorType type;
   private final String message;
-  private final int partitionId;
+  private final Integer partitionId;
 
   public BatchOperationErrorImpl(final io.camunda.client.protocol.rest.BatchOperationError item) {
-    type = item.getType() != null ? BatchOperationErrorType.valueOf(item.getType().name()) : null;
+    type = EnumUtil.convert(item.getType(), BatchOperationErrorType.class);
     message = item.getMessage();
     partitionId = item.getPartitionId();
   }
@@ -41,7 +42,7 @@ public class BatchOperationErrorImpl implements BatchOperationError {
   }
 
   @Override
-  public int getPartitionId() {
+  public Integer getPartitionId() {
     return partitionId;
   }
 }

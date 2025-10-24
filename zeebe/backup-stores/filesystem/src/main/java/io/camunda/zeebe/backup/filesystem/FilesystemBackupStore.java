@@ -17,10 +17,14 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,28 +38,48 @@ import org.slf4j.event.Level;
  */
 public final class FilesystemBackupStore implements BackupStore {
 
-  public static final String ERROR_MSG_BACKUP_NOT_FOUND =
-      "Expected to restore from backup with id '%s', but does not exist.";
-  public static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
-      "Expected to restore from completed backup with id '%s', but was in state '%s'";
-  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  public static final String SEGMENTS_FILESET_NAME = "segments";
   private static final Logger LOG = LoggerFactory.getLogger(FilesystemBackupStore.class);
+
+  private static final String ERROR_MSG_BACKUP_NOT_FOUND =
+      "Expected to restore from backup with id '%s', but does not exist.";
+  private static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
+      "Expected to restore from completed backup with id '%s', but was in state '%s'";
+  private static final String SNAPSHOT_FILESET_NAME = "snapshot";
+  private static final String SEGMENTS_FILESET_NAME = "segments";
+  private static final String CONTENTS_PATH = "contents";
+  private static final String MANIFESTS_PATH = "manifests";
+
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
 
+  FilesystemBackupStore(final FilesystemBackupConfig config) {
+    this(config, Executors.newVirtualThreadPerTaskExecutor());
+  }
+
   FilesystemBackupStore(final FilesystemBackupConfig config, final ExecutorService executor) {
     validateConfig(config);
+
     this.executor = executor;
 
-    fileSetManager = new FileSetManager(config.basePath());
-    manifestManager = new ManifestManager(config.basePath());
+    final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
+    final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
+    try {
+      FileUtil.ensureDirectoryExists(contentsDir);
+      FileUtil.ensureDirectoryExists(manifestsDir);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(
+          "Unable to create backup directory structure; do you have the right permissions or configuration?",
+          e);
+    }
+
+    fileSetManager = new FileSetManager(contentsDir);
+    manifestManager = new ManifestManager(manifestsDir);
   }
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    LOG.info("Saving {}", backup.id());
+    LOG.debug("Saving {}", backup.id());
     return CompletableFuture.runAsync(
         () -> {
           final var manifest = manifestManager.createInitialManifest(backup);
@@ -148,24 +172,32 @@ public final class FilesystemBackupStore implements BackupStore {
             executor.shutdown();
             final var closed = executor.awaitTermination(1, TimeUnit.MINUTES);
             if (!closed) {
-              LOG.warn("Failed to orderly shutdown Filesystem Store Executor within one minute.");
+              LOG.debug(
+                  """
+                Expected file system backup store executor to shutdown within a minute, but one \
+                task is hanging; will forcefully shutdown, but some backup may not be written \
+                properly""");
               executor.shutdownNow();
             }
-          } catch (final Exception e) {
-            LOG.error("Failed to shutdown of Filesystem Store Executor.");
-            throw new RuntimeException(e);
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.debug(
+                """
+              Interrupted while awaiting shutdown of file system store executor, possible resource \
+              leak""",
+                e);
           }
         });
   }
 
   public static void validateConfig(final FilesystemBackupConfig config) {
     if (config.basePath() == null || config.basePath().isBlank()) {
-      throw new IllegalArgumentException("Base directory is required");
+      throw new IllegalArgumentException(
+          "Expected a basePath to be provided, but got [%s]".formatted(config.basePath()));
     }
   }
 
-  public static BackupStore of(
-      final FilesystemBackupConfig storeConfig, final ExecutorService executorService) {
-    return new FilesystemBackupStore(storeConfig, executorService).logging(LOG, Level.INFO);
+  public static BackupStore of(final FilesystemBackupConfig storeConfig) {
+    return new FilesystemBackupStore(storeConfig).logging(LOG, Level.INFO);
   }
 }

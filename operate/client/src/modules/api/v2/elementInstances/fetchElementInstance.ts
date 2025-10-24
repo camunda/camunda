@@ -9,18 +9,12 @@
 import {
   endpoints,
   type GetElementInstanceResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {requestWithThrow, type RequestResult} from 'modules/request';
+} from '@camunda/camunda-api-zod-schemas/8.8';
+import {requestWithThrow} from 'modules/request';
 
-const fetchElementInstance = async (params: {
-  elementInstanceKey: string;
-}): RequestResult<GetElementInstanceResponseBody> => {
+const fetchElementInstance = async (params: {elementInstanceKey: string}) => {
   return requestWithThrow<GetElementInstanceResponseBody>({
-    url: (
-      endpoints.getElementInstance.getUrl as (params: {
-        elementInstanceKey: string;
-      }) => string
-    )(params),
+    url: endpoints.getElementInstance.getUrl(params),
     method: endpoints.getElementInstance.method,
   });
 };

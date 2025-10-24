@@ -21,4 +21,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 public class UpdateRetriesJobResponseImpl implements UpdateRetriesJobResponse {
 
   public UpdateRetriesJobResponseImpl(final GatewayOuterClass.UpdateJobRetriesResponse response) {}
+
+  public UpdateRetriesJobResponseImpl(final Void nothing) {}
 }

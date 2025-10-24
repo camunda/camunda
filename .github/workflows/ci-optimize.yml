@@ -35,11 +35,12 @@ defaults:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Optimize
 
 jobs:
   # run every time this workflow is called
   optimize-backend-unit-tests:
-    name: "[UT] Back End / ${{matrix.suiteName}}"
+    name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -57,8 +58,9 @@ jobs:
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
 
+
   optimize-frontend-unit-tests:
-    name: "[UT] Front End / Core Features"
+    name: "Unit - Front End"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -68,9 +70,13 @@ jobs:
         working-directory: optimize/client
     env:
       LIMITS_CPU: 4
+      TEST_OWNER: Core Features
+      TEST_TYPE: Unit
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
@@ -108,10 +114,13 @@ jobs:
 
   hadolint:
     if: inputs.runBeTests
-    name: "[Linting] Dockerfile / Core Features"
+    name: "Tool / Dockerfile / Hadolint"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
     timeout-minutes: 4
+    env:
+      TEST_OWNER: Core Features
+      TEST_TYPE: Tool
     strategy:
       fail-fast: false
       matrix:
@@ -120,7 +129,9 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: ${{ matrix.dockerfile }}
@@ -130,6 +141,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "hadolint/${{ matrix.dockerfile }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}

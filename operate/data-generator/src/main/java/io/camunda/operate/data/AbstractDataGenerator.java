@@ -13,11 +13,11 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
-import io.camunda.operate.store.ZeebeStore;
-import io.camunda.operate.zeebe.ZeebeESConstants;
+import io.camunda.operate.store.ProcessStore;
 import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,7 +42,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
   @Autowired private SecurityConfiguration securityConfiguration;
   private boolean shutdown = false;
-  @Autowired private ZeebeStore zeebeStore;
+  @Autowired private ProcessStore processStore;
 
   @PostConstruct
   private void startDataGenerator() {
@@ -106,9 +106,13 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   public boolean shouldCreateData(final boolean manuallyCalled) {
     if (!manuallyCalled) { // when called manually, always create the data
-      final String zeebeIndexPrefix = zeebeStore.getZeebeIndexPrefix();
-      final boolean exists =
-          zeebeStore.zeebeIndicesExists(zeebeIndexPrefix + "*" + ZeebeESConstants.DEPLOYMENT + "*");
+      final boolean exists;
+      try {
+        exists = processStore.count() > 0;
+      } catch (final IOException e) {
+        LOGGER.warn("Error occurred when counting processes.", e);
+        return false;
+      }
       if (exists) {
         // data already exists
         LOGGER.debug("Data already exists in Zeebe.");

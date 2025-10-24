@@ -11,6 +11,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
@@ -22,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class EntityManager {
 
   final Map<String, TestUser> users = new ConcurrentHashMap<>();
+  final Map<String, TestClient> clients = new ConcurrentHashMap<>();
   final Map<String, TestGroup> groups = new ConcurrentHashMap<>();
   final Map<String, TestRole> roles = new ConcurrentHashMap<>();
   final Map<String, TestMappingRule> mappingRules = new ConcurrentHashMap<>();
@@ -46,6 +48,17 @@ public final class EntityManager {
                   .send()
                   .join();
               addPermissions(user.username(), OwnerType.USER, user.permissions());
+            });
+    return this;
+  }
+
+  public EntityManager withClients(final List<TestClient> clients) {
+    clients.stream()
+        .filter(client -> !this.clients.containsKey(client.clientId()))
+        .forEach(
+            client -> {
+              this.clients.put(client.clientId(), client);
+              addPermissions(client.clientId(), OwnerType.CLIENT, client.permissions());
             });
     return this;
   }
@@ -146,6 +159,14 @@ public final class EntityManager {
                   .send()
                   .join();
               break;
+            case CLIENT:
+              defaultClient
+                  .newAssignClientToGroupCommand()
+                  .clientId(membership.memberId())
+                  .groupId(groupId)
+                  .send()
+                  .join();
+              break;
             default:
               throw new IllegalArgumentException("Unsupported entity type: " + entityType);
           }
@@ -178,6 +199,14 @@ public final class EntityManager {
                   .newAssignRoleToMappingRuleCommand()
                   .roleId(roleId)
                   .mappingRuleId(membership.memberId())
+                  .send()
+                  .join();
+              break;
+            case CLIENT:
+              defaultClient
+                  .newAssignRoleToClientCommand()
+                  .roleId(roleId)
+                  .clientId(membership.memberId())
                   .send()
                   .join();
               break;

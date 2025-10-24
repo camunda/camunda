@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-it-tests</artifactId>
 
@@ -15,12 +15,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -137,16 +131,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-common</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_7</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
       <scope>test</scope>
@@ -234,11 +218,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test-autoconfigure</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -420,38 +399,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-elasticsearch-exporter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-exporter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-exporter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-opensearch-exporter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -462,9 +411,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.tomcat</groupId>
-      <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.9</version>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-xml-model</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -506,8 +454,10 @@
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
           <environmentVariables>
+            <CAMUNDA_TASKLIST_DATABASE>${itDatabase}</CAMUNDA_TASKLIST_DATABASE>
             <CAMUNDA_OPERATE_DATABASE>${itDatabase}</CAMUNDA_OPERATE_DATABASE>
             <CAMUNDA_DATABASE_TYPE>${itDatabase}</CAMUNDA_DATABASE_TYPE>
+            <CAMUNDA_DATA_SECONDARYSTORAGE_TYPE>${itDatabase}</CAMUNDA_DATA_SECONDARYSTORAGE_TYPE>
           </environmentVariables>
         </configuration>
         <executions>
@@ -532,7 +482,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.glassfish:jakarta.json</dependency>
             <dependency>com.unboundid:unboundid-ldapsdk</dependency>
-            <dependency>org.apache.tomcat:tomcat-annotations-api</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

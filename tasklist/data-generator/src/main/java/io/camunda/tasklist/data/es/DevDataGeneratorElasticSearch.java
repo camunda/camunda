@@ -7,16 +7,14 @@
  */
 package io.camunda.tasklist.data.es;
 
-import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED;
-
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.zeebe.ZeebeESConstants;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.io.IOException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.core.CountRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("dev-data")
 @Conditional(ElasticSearchCondition.class)
-@ConditionalOnProperty(value = "camunda.tasklist.webappEnabled", matchIfMissing = true)
+@ConditionalOnProperty(value = "camunda.tasklist.webapp-enabled", matchIfMissing = true)
 @DependsOn("searchEngineSchemaInitializer")
 public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
     implements DataGenerator {
@@ -38,28 +36,25 @@ public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorElasticSearch.class);
 
   @Autowired
-  @Qualifier("tasklistZeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient tasklistEsClient;
 
   @Override
   public boolean shouldCreateData() {
     try {
-      final GetIndexRequest request =
-          new GetIndexRequest(
-              tasklistProperties.getZeebeElasticsearch().getPrefix()
-                  + "*"
-                  + ZeebeESConstants.DEPLOYMENT
-                  + "*");
-      request.indicesOptions(LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED);
-      final boolean exists = zeebeEsClient.indices().exists(request, RequestOptions.DEFAULT);
+      final var request =
+          new CountRequest(
+              new ProcessIndex(tasklistProperties.getElasticsearch().getIndexPrefix(), true)
+                  .getFullQualifiedName());
+      final boolean exists = tasklistEsClient.count(request, RequestOptions.DEFAULT).getCount() > 0;
       if (exists) {
         // data already exists
-        LOGGER.debug("Data already exists in Zeebe.");
+        LOGGER.debug("Data already exists.");
         return false;
       }
     } catch (final IOException io) {
       LOGGER.debug(
-          "Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.",
+          "Error occurred while checking existence of data in ES: {}. Demo data won't be created.",
           io.getMessage());
       return false;
     }

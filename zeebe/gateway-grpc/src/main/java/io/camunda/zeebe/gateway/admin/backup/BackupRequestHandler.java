@@ -113,13 +113,13 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   @Override
-  public CompletionStage<List<BackupStatus>> listBackups() {
+  public CompletionStage<List<BackupStatus>> listBackups(final String prefix) {
     return checkTopologyComplete()
         .thenCompose(
             topology -> {
               final var backupsReceived =
                   topology.getPartitions().stream()
-                      .map(this::createListRequest)
+                      .map(partitionId -> createListRequest(partitionId, prefix))
                       .map(brokerClient::sendRequestWithRetry)
                       .toList();
 
@@ -305,9 +305,10 @@ public final class BackupRequestHandler implements BackupApi {
     return request;
   }
 
-  private BackupListRequest createListRequest(final Integer partitionId) {
+  private BackupListRequest createListRequest(final Integer partitionId, final String pattern) {
     final var request = new BackupListRequest();
     request.setPartitionId(partitionId);
+    request.setPattern(pattern);
     return request;
   }
 

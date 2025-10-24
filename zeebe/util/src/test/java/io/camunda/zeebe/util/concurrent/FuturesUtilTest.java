@@ -76,7 +76,7 @@ public class FuturesUtilTest {
   }
 
   @Nested
-  class ParTraversse {
+  class ParTraverse {
 
     @Test
     public void shouldReturnCompletedFutureWhenCollectionIsEmpty() {

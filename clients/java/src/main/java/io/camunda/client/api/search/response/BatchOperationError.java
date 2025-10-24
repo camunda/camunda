@@ -23,5 +23,5 @@ public interface BatchOperationError {
 
   String getMessage();
 
-  int getPartitionId();
+  Integer getPartitionId();
 }

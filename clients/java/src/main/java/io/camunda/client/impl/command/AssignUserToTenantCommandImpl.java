@@ -18,16 +18,20 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1.AssignUserToTenantCommandStep2;
+import io.camunda.client.api.command.AssignUserToTenantCommandStep1.AssignUserToTenantCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignUserToTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class AssignUserToTenantCommandImpl
-    implements AssignUserToTenantCommandStep1, AssignUserToTenantCommandStep2 {
+    implements AssignUserToTenantCommandStep1,
+        AssignUserToTenantCommandStep2,
+        AssignUserToTenantCommandStep3 {
 
   private String tenantId;
   private String username;
@@ -46,7 +50,7 @@ public final class AssignUserToTenantCommandImpl
   }
 
   @Override
-  public AssignUserToTenantCommandStep2 tenantId(final String tenantId) {
+  public AssignUserToTenantCommandStep3 tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -62,7 +66,8 @@ public final class AssignUserToTenantCommandImpl
   public CamundaFuture<AssignUserToTenantResponse> send() {
     final HttpCamundaFuture<AssignUserToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/users/%s", tenantId, username);
-    httpClient.put(endpoint, null, httpRequestConfig.build(), result);
+    httpClient.put(
+        endpoint, null, httpRequestConfig.build(), AssignUserToTenantResponseImpl::new, result);
     return result;
   }
 }

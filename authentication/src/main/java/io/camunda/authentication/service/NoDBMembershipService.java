@@ -17,41 +17,44 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 @ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipService {
 
   private final OidcGroupsLoader oidcGroupsLoader;
-  private final String groupsClaim;
+  private final boolean isGroupsClaimConfigured;
 
   public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
-    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
-    oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
+    oidcGroupsLoader =
+        new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
+    isGroupsClaimConfigured =
+        securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
   }
 
   @Override
   public CamundaAuthentication resolveMemberships(
       final Map<String, Object> tokenClaims,
-      final Map<String, Object> authenticatedClaims,
-      final String username,
-      final String clientId)
+      final String principalId,
+      final PrincipalType principalType)
       throws OAuth2AuthenticationException {
-    final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
     final Set<String> groups =
-        groupsClaimPresent
+        isGroupsClaimConfigured
             ? new HashSet<>(oidcGroupsLoader.load(tokenClaims))
             : Collections.emptySet();
 
     return CamundaAuthentication.of(
-        a ->
-            a.user(username)
-                .clientId(clientId)
-                .roleIds(Collections.emptyList())
-                .groupIds(groups.stream().toList())
-                .mappingRule(Collections.emptyList())
-                .tenants(Collections.emptyList())
-                .claims(authenticatedClaims));
+        a -> {
+          if (principalType.equals(PrincipalType.CLIENT)) {
+            a.clientId(principalId);
+          } else {
+            a.user(principalId);
+          }
+          return a.roleIds(Collections.emptyList())
+              .groupIds(groups.stream().toList())
+              .mappingRule(Collections.emptyList())
+              .tenants(Collections.emptyList())
+              .claims(tokenClaims);
+        });
   }
 }

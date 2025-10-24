@@ -1133,7 +1133,7 @@
             "h": 2,
             "w": 5,
             "x": 8,
-            "y": 112
+            "y": 231
           },
           "id": 117,
           "maxDataPoints": 100,
@@ -1212,7 +1212,7 @@
             "h": 2,
             "w": 4,
             "x": 13,
-            "y": 112
+            "y": 231
           },
           "id": 655,
           "maxDataPoints": 100,
@@ -1317,7 +1317,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 114
+            "y": 233
           },
           "id": 39,
           "options": {
@@ -1338,7 +1338,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"})",
+              "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"})",
               "legendFormat": "{{persistentvolumeclaim}}",
               "refId": "B"
             }
@@ -1411,7 +1411,7 @@
             "h": 6,
             "w": 5,
             "x": 8,
-            "y": 114
+            "y": 233
           },
           "id": 190,
           "options": {
@@ -1501,7 +1501,7 @@
             "h": 6,
             "w": 4,
             "x": 13,
-            "y": 114
+            "y": 233
           },
           "id": 612,
           "options": {
@@ -1645,7 +1645,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 114
+            "y": 233
           },
           "id": 33,
           "options": {
@@ -1667,7 +1667,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
+              "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\".*(orchestration|zeebe).*\"}",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -1679,7 +1679,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
+              "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\".*(orchestration|zeebe).*\"})",
               "hide": false,
               "interval": "",
               "legendFormat": "limit",
@@ -1690,7 +1690,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
+              "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\".*(orchestration|zeebe).*\"})",
               "interval": "",
               "legendFormat": "request",
               "refId": "C"
@@ -1763,7 +1763,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 168
+            "y": 287
           },
           "id": 622,
           "maxPerRow": 3,
@@ -2159,7 +2159,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 113
+            "y": 232
           },
           "id": 192,
           "options": {
@@ -2272,7 +2272,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 113
+            "y": 232
           },
           "id": 602,
           "options": {
@@ -2394,7 +2394,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 169
+            "y": 288
           },
           "id": 194,
           "options": {
@@ -2417,7 +2417,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) by (partition)",
+              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition)",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -2526,7 +2526,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 169
+            "y": 288
           },
           "id": 199,
           "options": {
@@ -2665,7 +2665,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 169
+            "y": 288
           },
           "id": 196,
           "options": {
@@ -2804,7 +2804,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 169
+            "y": 288
           },
           "id": 200,
           "options": {
@@ -2943,7 +2943,7 @@
             "h": 8,
             "w": 5,
             "x": 12,
-            "y": 173
+            "y": 292
           },
           "id": 198,
           "options": {
@@ -3082,7 +3082,7 @@
             "h": 8,
             "w": 7,
             "x": 17,
-            "y": 173
+            "y": 292
           },
           "id": 268,
           "options": {
@@ -3186,7 +3186,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 175
+            "y": 294
           },
           "id": 189,
           "options": {
@@ -3320,7 +3320,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 175
+            "y": 294
           },
           "id": 201,
           "options": {
@@ -3443,7 +3443,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 181
+            "y": 300
           },
           "id": 604,
           "interval": "1s",
@@ -3572,7 +3572,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 181
+            "y": 300
           },
           "id": 605,
           "interval": "1s",
@@ -3692,7 +3692,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 187
+            "y": 306
           },
           "id": 543,
           "options": {
@@ -3786,7 +3786,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 193
+            "y": 312
           },
           "id": 561,
           "options": {
@@ -3884,7 +3884,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 193
+            "y": 312
           },
           "id": 594,
           "options": {
@@ -4704,7 +4704,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 116
+            "y": 235
           },
           "id": 290,
           "options": {
@@ -4800,7 +4800,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 116
+            "y": 235
           },
           "id": 291,
           "options": {
@@ -4896,7 +4896,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 116
+            "y": 235
           },
           "id": 288,
           "options": {
@@ -4992,7 +4992,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 116
+            "y": 235
           },
           "id": 289,
           "options": {
@@ -5102,7 +5102,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 188
+            "y": 307
           },
           "id": 102,
           "options": {
@@ -5158,7 +5158,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 188
+            "y": 307
           },
           "id": 112,
           "options": {
@@ -5296,7 +5296,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 196
+            "y": 315
           },
           "id": 105,
           "options": {
@@ -5351,7 +5351,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 196
+            "y": 315
           },
           "id": 106,
           "options": {
@@ -5473,7 +5473,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 231
+            "y": 350
           },
           "id": 182,
           "options": {
@@ -5654,7 +5654,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*zeebe.*|core.*\", container=~\"zeebe.*|core.*\"}",
+              "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*(orchestration|zeebe).*\", container=~\".*(orchestration|zeebe).*\"}",
               "format": "time_series",
               "hide": false,
               "interval": "",
@@ -5669,7 +5669,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*zeebe.*|core.*\", container=~\"zeebe.*|core.*\"})",
+              "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*(orchestration|zeebe).*\", container=~\".*(orchestration|zeebe).*\"})",
               "hide": false,
               "interval": "",
               "legendFormat": "limit",
@@ -5682,7 +5682,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*zeebe.*|core.*\", container=~\"zeebe.*|core.*\"})",
+              "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\".*(orchestration|zeebe).*\", container=~\".*(orchestration|zeebe).*\"})",
               "interval": "",
               "legendFormat": "request",
               "range": true,
@@ -6169,7 +6169,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 118
+            "y": 237
           },
           "id": 579,
           "options": {
@@ -6260,7 +6260,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 118
+            "y": 237
           },
           "id": 580,
           "options": {
@@ -6355,7 +6355,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 174
+            "y": 293
           },
           "id": 285,
           "options": {
@@ -6464,7 +6464,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 174
+            "y": 293
           },
           "id": 286,
           "options": {
@@ -6943,7 +6943,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 259
+            "y": 378
           },
           "id": 260,
           "options": {
@@ -6964,9 +6964,9 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"})",
+              "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"})",
               "legendFormat": "{{persistentvolumeclaim}}",
-              "refId": "B"
+              "refId": "A"
             }
           ],
           "title": "PVC Disk Usage",
@@ -7035,7 +7035,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 264
+            "y": 383
           },
           "id": 379,
           "options": {
@@ -7130,7 +7130,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 264
+            "y": 383
           },
           "id": 381,
           "options": {
@@ -7251,7 +7251,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 272
+            "y": 391
           },
           "id": 37,
           "options": {
@@ -7359,7 +7359,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 272
+            "y": 391
           },
           "id": 40,
           "options": {
@@ -7457,7 +7457,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 280
+            "y": 399
           },
           "id": 122,
           "options": {
@@ -7556,7 +7556,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 280
+            "y": 399
           },
           "id": 124,
           "options": {
@@ -7654,7 +7654,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 288
+            "y": 407
           },
           "id": 126,
           "options": {
@@ -7752,7 +7752,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 288
+            "y": 407
           },
           "id": 127,
           "options": {
@@ -7824,7 +7824,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 297
+            "y": 416
           },
           "id": 339,
           "options": {
@@ -7922,7 +7922,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 297
+            "y": 416
           },
           "id": 341,
           "options": {
@@ -8059,7 +8059,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 305
+            "y": 424
           },
           "id": 343,
           "options": {
@@ -8183,7 +8183,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 305
+            "y": 424
           },
           "id": 345,
           "options": {
@@ -8305,7 +8305,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 315
+            "y": 434
           },
           "id": 347,
           "options": {
@@ -8400,7 +8400,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 315
+            "y": 434
           },
           "id": 349,
           "options": {
@@ -8495,7 +8495,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 323
+            "y": 442
           },
           "id": 353,
           "options": {
@@ -8591,7 +8591,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 323
+            "y": 442
           },
           "id": 351,
           "options": {
@@ -8900,7 +8900,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 113
+            "y": 232
           },
           "id": 133,
           "options": {
@@ -9000,7 +9000,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 113
+            "y": 232
           },
           "id": 135,
           "options": {
@@ -9099,7 +9099,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 169
+            "y": 288
           },
           "id": 28,
           "options": {
@@ -9223,7 +9223,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 176
+            "y": 295
           },
           "id": 593,
           "options": {
@@ -9312,7 +9312,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 186
+            "y": 305
           },
           "id": 233,
           "options": {
@@ -9397,7 +9397,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 186
+            "y": 305
           },
           "id": 269,
           "options": {
@@ -9481,7 +9481,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 193
+            "y": 312
           },
           "id": 420,
           "options": {
@@ -9563,7 +9563,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 193
+            "y": 312
           },
           "id": 419,
           "options": {
@@ -9683,7 +9683,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 200
+            "y": 319
           },
           "id": 310,
           "options": {
@@ -9811,7 +9811,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 200
+            "y": 319
           },
           "id": 311,
           "options": {
@@ -9899,7 +9899,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 207
+            "y": 326
           },
           "id": 235,
           "options": {
@@ -9982,7 +9982,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 207
+            "y": 326
           },
           "id": 234,
           "options": {
@@ -10119,7 +10119,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1415
+            "y": 1534
           },
           "id": 26,
           "options": {
@@ -10215,7 +10215,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1415
+            "y": 1534
           },
           "id": 27,
           "options": {
@@ -10282,7 +10282,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 1422
+            "y": 1541
           },
           "id": 22,
           "options": {
@@ -10376,7 +10376,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 1422
+            "y": 1541
           },
           "id": 23,
           "options": {
@@ -10470,7 +10470,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 1422
+            "y": 1541
           },
           "id": 24,
           "options": {
@@ -10579,7 +10579,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1416
+            "y": 1535
           },
           "id": 164,
           "options": {
@@ -10735,7 +10735,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1424
+            "y": 1543
           },
           "id": 166,
           "options": {
@@ -10853,7 +10853,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1424
+            "y": 1543
           },
           "id": 168,
           "options": {
@@ -11003,7 +11003,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1417
+            "y": 1536
           },
           "id": 278,
           "options": {
@@ -11142,7 +11142,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1417
+            "y": 1536
           },
           "id": 283,
           "options": {
@@ -11238,7 +11238,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1424
+            "y": 1543
           },
           "id": 373,
           "options": {
@@ -11335,7 +11335,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1432
+            "y": 1551
           },
           "id": 363,
           "options": {
@@ -11432,7 +11432,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1432
+            "y": 1551
           },
           "id": 406,
           "options": {
@@ -11529,7 +11529,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1439
+            "y": 1558
           },
           "id": 79,
           "options": {
@@ -11626,7 +11626,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1439
+            "y": 1558
           },
           "id": 114,
           "options": {
@@ -11680,7 +11680,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1446
+            "y": 1565
           },
           "id": 86,
           "options": {
@@ -11801,7 +11801,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1446
+            "y": 1565
           },
           "id": 305,
           "options": {
@@ -11866,7 +11866,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1453
+            "y": 1572
           },
           "id": 70,
           "options": {
@@ -12010,7 +12010,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1453
+            "y": 1572
           },
           "id": 72,
           "options": {
@@ -12109,7 +12109,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1461
+            "y": 1580
           },
           "id": 432,
           "interval": "1s",
@@ -12251,7 +12251,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1461
+            "y": 1580
           },
           "id": 95,
           "interval": "1s",
@@ -12370,7 +12370,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 1469
+            "y": 1588
           },
           "id": 205,
           "options": {
@@ -12497,7 +12497,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 1534
+            "y": 1653
           },
           "id": 209,
           "options": {
@@ -12572,7 +12572,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 1589
+            "y": 1708
           },
           "id": 396,
           "options": {
@@ -12637,7 +12637,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 1599
+            "y": 1718
           },
           "id": 215,
           "options": {
@@ -12753,7 +12753,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 188
+            "y": 307
           },
           "id": 180,
           "options": {
@@ -12849,7 +12849,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 196
+            "y": 315
           },
           "id": 368,
           "options": {
@@ -12946,7 +12946,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 196
+            "y": 315
           },
           "id": 411,
           "options": {
@@ -13042,7 +13042,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 203
+            "y": 322
           },
           "id": 300,
           "options": {
@@ -13113,7 +13113,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 203
+            "y": 322
           },
           "id": 89,
           "options": {
@@ -13197,7 +13197,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 210
+            "y": 329
           },
           "id": 401,
           "options": {
@@ -13320,7 +13320,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 210
+            "y": 329
           },
           "id": 416,
           "options": {
@@ -13413,7 +13413,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 217
+            "y": 336
           },
           "id": 386,
           "options": {
@@ -13496,7 +13496,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 217
+            "y": 336
           },
           "id": 81,
           "options": {
@@ -13581,7 +13581,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 223
+            "y": 342
           },
           "id": 426,
           "options": {
@@ -13703,7 +13703,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 223
+            "y": 342
           },
           "id": 427,
           "options": {
@@ -13769,7 +13769,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 230
+            "y": 349
           },
           "id": 78,
           "options": {
@@ -13851,7 +13851,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 230
+            "y": 349
           },
           "id": 391,
           "options": {
@@ -13935,7 +13935,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 236
+            "y": 355
           },
           "id": 559,
           "options": {
@@ -14054,7 +14054,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 236
+            "y": 355
           },
           "id": 560,
           "options": {
@@ -14163,7 +14163,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 189
+            "y": 308
           },
           "id": 356,
           "options": {
@@ -14223,7 +14223,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 195
+            "y": 314
           },
           "id": 357,
           "options": {
@@ -14307,7 +14307,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 195
+            "y": 314
           },
           "id": 358,
           "options": {
@@ -14429,7 +14429,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 203
+            "y": 322
           },
           "id": 586,
           "options": {
@@ -14525,7 +14525,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 203
+            "y": 322
           },
           "id": 589,
           "options": {
@@ -14621,7 +14621,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 203
+            "y": 322
           },
           "id": 590,
           "options": {
@@ -14717,7 +14717,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 212
+            "y": 331
           },
           "id": 606,
           "options": {
@@ -14816,7 +14816,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 212
+            "y": 331
           },
           "id": 607,
           "options": {
@@ -14925,7 +14925,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 220
+            "y": 339
           },
           "id": 608,
           "options": {
@@ -14948,7 +14948,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by (context, partition) (rate(zeebe_flow_control_outcome_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", outcome=\"accepted\"}[$__rate_interval]))",
+              "expr": "sum by (context, partition) (rate(zeebe_flow_control_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", outcome=\"accepted\"}[$__rate_interval]))",
               "instant": false,
               "legendFormat": "Partition {{partition}}: {{context}}",
               "range": true,
@@ -15017,7 +15017,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 220
+            "y": 339
           },
           "id": 609,
           "options": {
@@ -15040,7 +15040,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum by (context, partition, outcome) (rate(zeebe_flow_control_outcome_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", outcome!=\"accepted\"}[$__rate_interval]))",
+              "expr": "sum by (context, partition, outcome) (rate(zeebe_flow_control_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\", outcome!=\"accepted\"}[$__rate_interval]))",
               "instant": false,
               "legendFormat": "Partition {{partition}} rejected {{context}}: {{outcome}}",
               "range": true,
@@ -15113,7 +15113,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 228
+            "y": 347
           },
           "id": 610,
           "options": {
@@ -15223,7 +15223,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 228
+            "y": 347
           },
           "id": 611,
           "options": {
@@ -15285,7 +15285,7 @@
             "h": 9,
             "w": 6,
             "x": 0,
-            "y": 236
+            "y": 355
           },
           "id": 588,
           "options": {
@@ -15355,7 +15355,7 @@
             "h": 9,
             "w": 6,
             "x": 6,
-            "y": 236
+            "y": 355
           },
           "id": 591,
           "options": {
@@ -15426,7 +15426,7 @@
             "h": 9,
             "w": 5,
             "x": 12,
-            "y": 236
+            "y": 355
           },
           "id": 592,
           "options": {
@@ -15503,7 +15503,7 @@
             "h": 9,
             "w": 7,
             "x": 17,
-            "y": 236
+            "y": 355
           },
           "id": 613,
           "options": {
@@ -15620,7 +15620,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 192
+            "y": 311
           },
           "id": 154,
           "options": {
@@ -15717,7 +15717,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 192
+            "y": 311
           },
           "id": 144,
           "options": {
@@ -15813,7 +15813,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 198
+            "y": 317
           },
           "id": 142,
           "options": {
@@ -15910,7 +15910,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 204
+            "y": 323
           },
           "id": 151,
           "options": {
@@ -16007,7 +16007,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 204
+            "y": 323
           },
           "id": 152,
           "options": {
@@ -16104,7 +16104,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 210
+            "y": 329
           },
           "id": 150,
           "options": {
@@ -16201,7 +16201,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 216
+            "y": 335
           },
           "id": 147,
           "options": {
@@ -16298,7 +16298,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 216
+            "y": 335
           },
           "id": 149,
           "options": {
@@ -16394,7 +16394,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 223
+            "y": 342
           },
           "id": 148,
           "options": {
@@ -16490,7 +16490,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 229
+            "y": 348
           },
           "id": 155,
           "options": {
@@ -16586,7 +16586,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 229
+            "y": 348
           },
           "id": 156,
           "options": {
@@ -16680,7 +16680,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 237
+            "y": 356
           },
           "id": 158,
           "options": {
@@ -16777,7 +16777,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 237
+            "y": 356
           },
           "id": 157,
           "options": {
@@ -16873,7 +16873,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 237
+            "y": 356
           },
           "id": 146,
           "options": {
@@ -16969,7 +16969,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 243
+            "y": 362
           },
           "id": 159,
           "options": {
@@ -17065,7 +17065,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 243
+            "y": 362
           },
           "id": 160,
           "options": {
@@ -17162,7 +17162,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 243
+            "y": 362
           },
           "id": 153,
           "options": {
@@ -17261,7 +17261,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 250
+            "y": 369
           },
           "id": 603,
           "options": {
@@ -17590,7 +17590,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 24
+            "y": 143
           },
           "id": 667,
           "options": {
@@ -17690,7 +17690,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 24
+            "y": 143
           },
           "id": 683,
           "options": {
@@ -17747,7 +17747,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 151
           },
           "id": 670,
           "options": {
@@ -17832,7 +17832,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 151
           },
           "id": 673,
           "options": {
@@ -17912,7 +17912,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 40
+            "y": 159
           },
           "id": 669,
           "maxDataPoints": 494,
@@ -18040,7 +18040,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 40
+            "y": 159
           },
           "id": 674,
           "options": {
@@ -18103,7 +18103,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 48
+            "y": 167
           },
           "id": 678,
           "options": {
@@ -18187,7 +18187,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 48
+            "y": 167
           },
           "id": 668,
           "options": {
@@ -18273,7 +18273,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 56
+            "y": 175
           },
           "id": 672,
           "options": {
@@ -18393,7 +18393,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 56
+            "y": 175
           },
           "id": 665,
           "options": {
@@ -18468,7 +18468,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 371
+            "y": 490
           },
           "id": 20,
           "options": {
@@ -18591,7 +18591,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 371
+            "y": 490
           },
           "id": 255,
           "options": {
@@ -18646,7 +18646,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 381
+            "y": 500
           },
           "id": 21,
           "options": {
@@ -18768,7 +18768,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 381
+            "y": 500
           },
           "id": 185,
           "options": {
@@ -18869,7 +18869,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 391
+            "y": 510
           },
           "id": 52,
           "options": {
@@ -18943,7 +18943,7 @@
             "h": 9,
             "w": 10,
             "x": 0,
-            "y": 113
+            "y": 18
           },
           "id": 616,
           "options": {
@@ -18984,7 +18984,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19020,7 +19020,8 @@
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -19036,7 +19037,7 @@
             "h": 9,
             "w": 3,
             "x": 10,
-            "y": 113
+            "y": 18
           },
           "id": 617,
           "options": {
@@ -19054,7 +19055,7 @@
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19091,6 +19092,7 @@
                 "axisPlacement": "auto",
                 "axisSoftMax": 5,
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -19123,7 +19125,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -19139,7 +19142,7 @@
             "h": 9,
             "w": 11,
             "x": 13,
-            "y": 113
+            "y": 18
           },
           "id": 621,
           "options": {
@@ -19150,11 +19153,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "none"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19196,7 +19200,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 170
+            "y": 27
           },
           "id": 618,
           "options": {
@@ -19237,7 +19241,7 @@
               "unit": "short"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19274,6 +19278,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -19304,7 +19309,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -19319,7 +19325,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 175
+            "y": 32
           },
           "id": 628,
           "options": {
@@ -19332,11 +19338,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19386,6 +19393,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -19416,7 +19424,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -19431,7 +19440,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 175
+            "y": 32
           },
           "id": 623,
           "options": {
@@ -19442,11 +19451,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "single",
               "sort": "none"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19489,7 +19499,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 182
+            "y": 39
           },
           "id": 626,
           "options": {
@@ -19531,7 +19541,7 @@
               "reverse": false
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19586,6 +19596,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -19616,7 +19627,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -19631,7 +19643,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 182
+            "y": 39
           },
           "id": 627,
           "options": {
@@ -19642,11 +19654,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "single",
               "sort": "none"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19697,6 +19710,7 @@
                 "axisLabel": "",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
+                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 0,
                 "gradientMode": "none",
@@ -19727,7 +19741,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -19742,7 +19757,7 @@
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 188
+            "y": 45
           },
           "id": 643,
           "options": {
@@ -19757,10 +19772,12 @@
               "showLegend": true
             },
             "tooltip": {
+              "hideZeros": false,
               "mode": "multi",
               "sort": "desc"
             }
           },
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -19816,7 +19833,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 197
+            "y": 54
           },
           "id": 647,
           "options": {
@@ -19901,7 +19918,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 205
+            "y": 62
           },
           "id": 646,
           "options": {
@@ -20000,7 +20017,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 205
+            "y": 62
           },
           "id": 645,
           "options": {
@@ -20083,7 +20100,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 205
+            "y": 62
           },
           "id": 658,
           "options": {
@@ -20179,7 +20196,7 @@
             "h": 9,
             "w": 10,
             "x": 0,
-            "y": 223
+            "y": 19
           },
           "id": 630,
           "options": {
@@ -20220,7 +20237,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -20265,7 +20282,7 @@
             "h": 9,
             "w": 11,
             "x": 10,
-            "y": 223
+            "y": 19
           },
           "id": 636,
           "options": {
@@ -20315,7 +20332,7 @@
               "unit": "s"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -20338,27 +20355,21 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "The rate of failure of flush operations, averaged over 15s intervals",
           "fieldConfig": {
             "defaults": {
               "color": {
                 "mode": "thresholds"
               },
-              "links": [],
               "mappings": [],
               "thresholds": {
-                "mode": "percentage",
+                "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 15
+                    "color": "green",
+                    "value": 0
                   }
                 ]
-              },
-              "unit": "percentunit"
+              }
             },
             "overrides": []
           },
@@ -20366,9 +20377,9 @@
             "h": 9,
             "w": 3,
             "x": 21,
-            "y": 223
+            "y": 19
           },
-          "id": 631,
+          "id": 634,
           "options": {
             "minVizHeight": 75,
             "minVizWidth": 75,
@@ -20384,22 +20395,40 @@
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "editorMode": "builder",
-              "exemplar": true,
-              "expr": "rate(zeebe_rdbms_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} Exporter {{partition}}",
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
+              "format": "time_series",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "SQL Batch factor",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum(increase(zeebe_rdbms_exporter_merged_queue_item_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
+              "format": "time_series",
+              "hide": false,
+              "instant": false,
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "QueueItem merge factor",
+              "range": true,
+              "refId": "B"
             }
           ],
-          "title": "RDBMS Exporter (Flush Failure Rate)",
+          "title": "RDBMS Exporter JDBC Statements Batch factor",
           "type": "gauge"
         },
         {
@@ -20426,7 +20455,7 @@
             "h": 10,
             "w": 10,
             "x": 0,
-            "y": 232
+            "y": 28
           },
           "id": 633,
           "options": {
@@ -20467,7 +20496,7 @@
               "unit": "short"
             }
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -20494,181 +20523,206 @@
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "palette-classic"
+                "mode": "thresholds"
               },
               "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "axisSoftMin": 0,
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto",
+                  "wrapText": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
-                }
+                "filterable": false,
+                "inspect": false,
+                "minWidth": 75
               },
+              "decimals": 0,
+              "fieldMinMax": false,
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
-                    "value": 5
+                    "value": 80
                   }
                 ]
               }
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Queue items"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "SQL statements"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Merged items"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 10,
-            "w": 9,
+            "w": 11,
             "x": 10,
-            "y": 232
+            "y": 28
           },
-          "id": 634,
+          "id": 684,
           "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "enablePagination": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
+            "frameIndex": 6,
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Queue Items"
+              }
+            ]
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "12.1.0",
           "targets": [
-            {
-              "datasource": {
-                "uid": "$DS_PROMETHEUS"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
-              "format": "time_series",
-              "interval": "30s",
-              "intervalFactor": 1,
-              "legendFormat": "SQL Batch factor",
-              "range": true,
-              "refId": "A"
-            },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
+              "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(increase(zeebe_rdbms_exporter_merged_queue_item_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) / sum(increase(zeebe_rdbms_exporter_enqueued_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
-              "format": "time_series",
-              "hide": false,
-              "instant": false,
-              "interval": "30s",
-              "intervalFactor": 1,
-              "legendFormat": "QueueItem merge factor",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "RDBMS Exporter JDBC Statements Batch factor",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                }
-              },
-              "mappings": []
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 5,
-            "x": 19,
-            "y": 232
-          },
-          "id": 635,
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "pieType": "pie",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.4.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (statementId)",
-              "format": "time_series",
+              "expr": "sort(max by(statementId) (increase(zeebe_rdbms_exporter_executed_queue_item_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])))",
+              "format": "table",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "instant": true,
               "interval": "30s",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
-              "range": true,
-              "refId": "A"
+              "range": false,
+              "refId": "A",
+              "useBackend": false
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sort(max by(statementId) (increase(zeebe_rdbms_exporter_executed_statements_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])))",
+              "format": "table",
+              "fullMetaSearch": false,
+              "hide": false,
+              "includeNullMetadata": true,
+              "instant": true,
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "range": false,
+              "refId": "B",
+              "useBackend": false
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sort(max by(statementId) (increase(zeebe_rdbms_exporter_merged_queue_item_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])))",
+              "format": "table",
+              "fullMetaSearch": false,
+              "hide": false,
+              "includeNullMetadata": true,
+              "instant": true,
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "range": false,
+              "refId": "C",
+              "useBackend": false
             }
           ],
-          "title": "RDBMS Exporter Statements",
-          "type": "piechart"
+          "title": "RDBMS Exporter Queue Items",
+          "transformations": [
+            {
+              "id": "joinByField",
+              "options": {
+                "byField": "statementId",
+                "mode": "outer"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Time 1": true,
+                  "Time 2": true
+                },
+                "includeByName": {},
+                "indexByName": {},
+                "renameByName": {
+                  "Value #A": "Queue items",
+                  "Value #B": "SQL statements",
+                  "Value #C": "Merged items"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "desc": true,
+                    "field": "Queue items"
+                  }
+                ]
+              }
+            }
+          ],
+          "type": "table"
         }
       ],
       "title": "RDBMS Exporter",
@@ -20718,7 +20772,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 814
+            "y": 933
           },
           "id": 170,
           "maxPerRow": 6,
@@ -20802,7 +20856,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 826
+            "y": 945
           },
           "id": 174,
           "options": {
@@ -20878,7 +20932,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 826
+            "y": 945
           },
           "id": 265,
           "options": {
@@ -20958,7 +21012,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1423
+            "y": 1542
           },
           "id": 329,
           "options": {
@@ -21024,7 +21078,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1423
+            "y": 1542
           },
           "id": 319,
           "options": {
@@ -21084,7 +21138,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1431
+            "y": 1550
           },
           "id": 323,
           "maxDataPoints": 25,
@@ -21175,7 +21229,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1431
+            "y": 1550
           },
           "id": 325,
           "options": {
@@ -21273,7 +21327,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1439
+            "y": 1558
           },
           "id": 313,
           "options": {
@@ -21332,7 +21386,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1439
+            "y": 1558
           },
           "id": 321,
           "options": {
@@ -21428,7 +21482,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1447
+            "y": 1566
           },
           "id": 335,
           "options": {
@@ -21486,7 +21540,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1447
+            "y": 1566
           },
           "id": 317,
           "options": {
@@ -21548,7 +21602,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1455
+            "y": 1574
           },
           "id": 327,
           "options": {
@@ -21623,7 +21677,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 376
+            "y": 495
           },
           "id": 538,
           "options": {
@@ -21708,7 +21762,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 376
+            "y": 495
           },
           "id": 540,
           "options": {
@@ -21833,7 +21887,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 384
+            "y": 503
           },
           "id": 444,
           "options": {
@@ -21943,7 +21997,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 384
+            "y": 503
           },
           "id": 446,
           "options": {
@@ -22052,7 +22106,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 392
+            "y": 511
           },
           "id": 440,
           "options": {
@@ -22147,7 +22201,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 392
+            "y": 511
           },
           "id": 442,
           "options": {
@@ -22218,7 +22272,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 377
+            "y": 496
           },
           "id": 547,
           "options": {
@@ -22341,7 +22395,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 377
+            "y": 496
           },
           "id": 549,
           "options": {
@@ -22453,7 +22507,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 378
+            "y": 497
           },
           "id": 562,
           "options": {
@@ -22552,7 +22606,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 378
+            "y": 497
           },
           "id": 563,
           "options": {
@@ -22651,7 +22705,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 378
+            "y": 497
           },
           "id": 564,
           "options": {
@@ -22772,7 +22826,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 379
+            "y": 498
           },
           "id": 566,
           "options": {
@@ -22870,7 +22924,7 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 379
+            "y": 498
           },
           "id": 567,
           "options": {
@@ -22968,7 +23022,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 379
+            "y": 498
           },
           "id": 568,
           "options": {
@@ -23098,7 +23152,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 380
+            "y": 499
           },
           "id": 573,
           "options": {
@@ -23224,7 +23278,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 380
+            "y": 499
           },
           "id": 574,
           "options": {
@@ -23338,7 +23392,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 388
+            "y": 507
           },
           "id": 600,
           "options": {
@@ -23441,7 +23495,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 388
+            "y": 507
           },
           "id": 601,
           "options": {
@@ -23537,7 +23591,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 396
+            "y": 515
           },
           "id": 575,
           "options": {
@@ -23646,7 +23700,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 839
+            "y": 958
           },
           "id": 570,
           "options": {
@@ -23752,7 +23806,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 839
+            "y": 958
           },
           "id": 577,
           "options": {
@@ -23857,7 +23911,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 847
+            "y": 966
           },
           "id": 578,
           "options": {
@@ -23953,7 +24007,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 847
+            "y": 966
           },
           "id": 571,
           "options": {
@@ -24059,7 +24113,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1446
+            "y": 1565
           },
           "id": 582,
           "options": {
@@ -24150,7 +24204,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1446
+            "y": 1565
           },
           "id": 583,
           "options": {
@@ -24242,7 +24296,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1446
+            "y": 1565
           },
           "id": 584,
           "options": {
@@ -24347,7 +24401,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 383
+            "y": 502
           },
           "id": 596,
           "options": {
@@ -24444,7 +24498,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 383
+            "y": 502
           },
           "id": 597,
           "options": {
@@ -24506,7 +24560,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 391
+            "y": 510
           },
           "id": 598,
           "options": {
@@ -24631,7 +24685,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 391
+            "y": 510
           },
           "id": 599,
           "options": {
@@ -24753,7 +24807,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 173
+            "y": 292
           },
           "id": 680,
           "options": {
@@ -24851,7 +24905,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 173
+            "y": 292
           },
           "id": 666,
           "options": {
@@ -24908,7 +24962,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 181
+            "y": 300
           },
           "id": 681,
           "options": {
@@ -25006,7 +25060,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 181
+            "y": 300
           },
           "id": 682,
           "options": {
@@ -25160,7 +25214,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 384
+            "y": 503
           },
           "id": 664,
           "maxPerRow": 6,
@@ -25207,6 +25261,7 @@
       "type": "row"
     }
   ],
+  "preload": false,
   "refresh": "",
   "schemaVersion": 41,
   "tags": [],

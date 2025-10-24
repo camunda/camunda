@@ -20,10 +20,15 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class SetVariablesResponseImpl implements SetVariablesResponse {
 
+  private static final long DEFAULT_KEY = -1;
   private final long key;
 
   public SetVariablesResponseImpl(final GatewayOuterClass.SetVariablesResponse response) {
     key = response.getKey();
+  }
+
+  public SetVariablesResponseImpl(final Void nothing) {
+    key = DEFAULT_KEY;
   }
 
   @Override

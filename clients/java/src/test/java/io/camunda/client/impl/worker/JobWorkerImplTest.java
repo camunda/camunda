@@ -94,7 +94,9 @@ public final class JobWorkerImplTest {
 
     client =
         new CamundaClientImpl(
-            new CamundaClientBuilderImpl(), channel, GatewayGrpc.newStub(channel));
+            new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+            channel,
+            GatewayGrpc.newStub(channel));
   }
 
   @Test

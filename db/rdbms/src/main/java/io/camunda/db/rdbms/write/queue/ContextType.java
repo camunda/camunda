@@ -9,26 +9,28 @@ package io.camunda.db.rdbms.write.queue;
 
 public enum ContextType {
   AUTHORIZATION(true),
-  EXPORTER_POSITION(false),
+  BATCH_OPERATION(false),
+  CORRELATED_MESSAGE_SUBSCRIPTION(false),
   DECISION_DEFINITION(false),
   DECISION_INSTANCE(false),
+  EXPORTER_POSITION(false),
+  FLOW_NODE(false),
+  FORM(false),
   GROUP(false),
+  INCIDENT(false),
+  JOB(false),
+  MAPPING_RULE(false),
+  MESSAGE_SUBSCRIPTION(false),
   PROCESS_DEFINITION(false),
   PROCESS_INSTANCE(false),
-  FLOW_NODE(false),
-  TENANT(false),
-  INCIDENT(false),
-  VARIABLE(false),
   ROLE(false),
+  SEQUENCE_FLOW(false),
+  TENANT(false),
+  USAGE_METRIC(false),
+  USAGE_METRIC_TU(false),
   USER(false),
   USER_TASK(true),
-  FORM(false),
-  MAPPING_RULE(false),
-  BATCH_OPERATION(false),
-  JOB(false),
-  SEQUENCE_FLOW(false),
-  USAGE_METRIC(false),
-  USAGE_METRIC_TU(false);
+  VARIABLE(false);
 
   private final boolean preserveOrder;
 

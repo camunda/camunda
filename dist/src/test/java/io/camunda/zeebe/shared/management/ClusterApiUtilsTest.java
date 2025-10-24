@@ -10,6 +10,7 @@ package io.camunda.zeebe.shared.management;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
@@ -31,13 +32,15 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
+import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -71,7 +74,21 @@ final class ClusterApiUtilsTest {
   void shouldMapClusterChangeOperation(final ClusterConfigurationChangeOperation operation) {
     final var encoded = ClusterApiUtils.mapOperation(operation);
     assertThat(encoded).isNotNull();
+    assertThat(encoded.getOperation()).isNotEqualTo(OperationEnum.UNKNOWN);
     assertThat(OperationEnum.values())
+        .as("Operation " + operation + "is not mapped correctly")
+        .contains(encoded.getOperation());
+  }
+
+  @ParameterizedTest
+  @MethodSource("generateAllClusterConfigurationChangeOperationsAsArguments")
+  void shouldMapClusterCompletedOperation(final ClusterConfigurationChangeOperation operation) {
+    final var encoded =
+        ClusterApiUtils.mapCompletedOperation(
+            new CompletedOperation(operation, Instant.ofEpochSecond(17172371723L)));
+    assertThat(encoded).isNotNull();
+    assertThat(encoded.getOperation()).isNotEqualTo(OperationEnum.UNKNOWN);
+    assertThat(TopologyChangeCompletedInner.OperationEnum.values())
         .as("Operation " + operation + "is not mapped correctly")
         .contains(encoded.getOperation());
   }
@@ -221,7 +238,7 @@ final class ClusterApiUtilsTest {
   private static ClusterConfiguration getConfigWithTwoPartitions(final State exporterState) {
     final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(
                     "exporter-1",
                     new ExporterState(0, exporterState, Optional.empty()),
@@ -247,7 +264,7 @@ final class ClusterApiUtilsTest {
   }
 
   private static MemberState updateExporterState(
-      final MemberState m, final UnaryOperator<ExportersConfig> exporterUpdater) {
+      final MemberState m, final UnaryOperator<ExportingConfig> exporterUpdater) {
     return m.updatePartition(1, p -> p.updateConfig(c -> c.updateExporting(exporterUpdater)));
   }
 

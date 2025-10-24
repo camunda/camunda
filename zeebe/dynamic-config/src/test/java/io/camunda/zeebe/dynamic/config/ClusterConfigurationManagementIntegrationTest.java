@@ -256,7 +256,6 @@ class ClusterConfigurationManagementIntegrationTest {
             cluster.getMembershipService(),
             new ClusterConfigurationGossiperConfig(
                 Duration.ofSeconds(1), Duration.ofMillis(100), 2),
-            true,
             new NoopClusterChangeExecutor(),
             meterRegistry);
     return new TestNode(cluster, service);
@@ -307,13 +306,13 @@ class ClusterConfigurationManagementIntegrationTest {
           service.start(
               actorScheduler,
               new StaticConfiguration(
-                  false,
                   new ControllablePartitionDistributor().withPartitions(partitions),
                   clusterMembers,
                   cluster.getMembershipService().getLocalMember().id(),
                   List.of(),
                   3,
-                  DynamicPartitionConfig.init()));
+                  DynamicPartitionConfig.init(),
+                  "clusterId"));
       startFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {

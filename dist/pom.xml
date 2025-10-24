@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -16,6 +16,12 @@
   <name>Zeebe Distribution</name>
 
   <dependencies>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -105,6 +111,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-exporter</artifactId>
       <exclusions>
         <exclusion>
@@ -144,22 +155,6 @@
           <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>migration-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>process-migration</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>identity-migration</artifactId>
     </dependency>
 
     <dependency>
@@ -265,22 +260,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-webapp</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer</artifactId>
     </dependency>
 
     <dependency>
@@ -343,8 +328,19 @@
     </dependency>
 
     <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.oracle.database.jdbc</groupId>
       <artifactId>ojdbc8</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.microsoft.sqlserver</groupId>
+      <artifactId>mssql-jdbc</artifactId>
     </dependency>
 
     <dependency>
@@ -717,6 +713,16 @@
       <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>oracle-free</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
@@ -780,6 +786,8 @@
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
             -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
+          <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
+          <endorsedDir>driver-lib</endorsedDir>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
@@ -826,18 +834,6 @@
               <id>camunda</id>
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
-            <program>
-              <id>prefix-migration</id>
-              <mainClass>io.camunda.application.StandalonePrefixMigration</mainClass>
-            </program>
-            <program>
-              <id>identity-migration</id>
-              <mainClass>io.camunda.application.StandaloneIdentityMigration</mainClass>
-            </program>
-            <program>
-              <id>process-migration</id>
-              <mainClass>io.camunda.application.StandaloneProcessMigration</mainClass>
-            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -850,7 +846,7 @@
               <goal>assemble</goal>
             </goals>
             <phase>package</phase>
-            <configuration></configuration>
+            <configuration/>
           </execution>
         </executions>
       </plugin>
@@ -887,6 +883,8 @@
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.apache.httpcomponents.client5:httpclient5</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-bpmn-model</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:camunda-client-java</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -902,13 +900,9 @@
             <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
-            <dependency>io.camunda:operate-importer</dependency>
             <dependency>io.camunda:operate-webapp</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
-
-            <!-- used as resource but no classes -->
-            <dependency>io.camunda:camunda-db-rdbms-schema</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
@@ -919,8 +913,6 @@
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
-            <dep>io.camunda.migration:identity-migration</dep>
-            <dep>io.camunda.migration:process-migration</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>

@@ -87,12 +87,8 @@ public class ProcessReader {
   }
 
   private Set<String> getAllowedProcessIdsOrNullForAll() {
-    if (!permissionsService.permissionsEnabled()) {
-      return null;
-    }
-
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
-    return allowed == null || allowed.isAll() ? null : allowed.getIds();
+    return allowed.isAll() ? null : allowed.getIds();
   }
 }

@@ -30,7 +30,7 @@ const TargetVersionField: React.FC = observer(() => {
         type="inline"
         onChange={async ({selectedItem}) => {
           if (!isNil(selectedItem)) {
-            processInstanceMigrationStore.resetFlowNodeMapping();
+            processInstanceMigrationStore.resetElementMapping();
             processesStore.setSelectedTargetVersion(selectedItem);
           }
         }}

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler.startup;
 
 import static java.util.Collections.singletonList;
+import static org.slf4j.MDC.*;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -15,11 +16,13 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Executes a number of steps in a startup/shutdown process.
@@ -69,6 +72,7 @@ public final class StartupProcess<CONTEXT> {
   private boolean startupCalled = false;
   private ActorFuture<CONTEXT> shutdownFuture;
   private ActorFuture<CONTEXT> startupFuture;
+  private Map<String, String> loggingContext = Map.of();
 
   /**
    * Constructs the startup process
@@ -89,6 +93,24 @@ public final class StartupProcess<CONTEXT> {
   public StartupProcess(final Logger logger, final List<? extends StartupStep<CONTEXT>> steps) {
     this.steps = new ArrayDeque<>(Objects.requireNonNull(steps));
     this.logger = Objects.requireNonNull(logger);
+  }
+
+  /**
+   * @param loggingContext temporary logging context to set during execution of the steps. For
+   *     example, if the actor that executes this process is shared by different partitions, you can
+   *     provide this key to temporarily set the partitionId in the MDC which will be picked by the
+   *     logging during the execution of the steps. must not be {@code null}
+   * @param logger the logger to use for messages related to the startup process; must not be {@code
+   *     * null}
+   * @param steps the steps to execute; must not be {@code null}
+   */
+  public StartupProcess(
+      final Map<String, String> loggingContext,
+      final Logger logger,
+      final List<? extends StartupStep<CONTEXT>> steps) {
+    this.steps = new ArrayDeque<>(Objects.requireNonNull(steps));
+    this.logger = Objects.requireNonNull(logger);
+    this.loggingContext = Objects.requireNonNull(loggingContext);
   }
 
   /**
@@ -125,7 +147,9 @@ public final class StartupProcess<CONTEXT> {
       final ConcurrencyControl concurrencyControl,
       final CONTEXT context,
       final ActorFuture<CONTEXT> startupFuture) {
+    setCustomMDC();
     logger.debug("Startup was called with context: {}", context);
+    clearCustomMDC();
     if (startupCalled) {
       throw new IllegalStateException("startup(...) must only be called once");
     }
@@ -147,9 +171,13 @@ public final class StartupProcess<CONTEXT> {
       final ActorFuture<CONTEXT> startupFuture) {
     if (stepsToStart.isEmpty()) {
       startupFuture.complete(context);
+      setCustomMDC();
       logger.debug("Finished startup process");
+      clearCustomMDC();
     } else if (shutdownFuture != null) {
+      setCustomMDC();
       logger.info("Aborting startup process because shutdown was called");
+      clearCustomMDC();
       startupFuture.completeExceptionally(
           new StartupProcessShutdownException(
               "Aborting startup process because shutdown was called"));
@@ -159,11 +187,18 @@ public final class StartupProcess<CONTEXT> {
 
       logCurrentStepSynchronized("Startup", stepToStart);
 
+      final var before = System.nanoTime();
       final var stepStartupFuture = stepToStart.startup(context);
 
       concurrencyControl.runOnCompletion(
           stepStartupFuture,
           (contextReturnedByStep, error) -> {
+            final var completedAt = System.nanoTime();
+            logger.debug(
+                "StartupStep {} completed (error={}) took {} millis ",
+                stepToStart.getName(),
+                error != null,
+                (completedAt - before) / 1e6);
             if (error != null) {
               completeStartupFutureExceptionallySynchronized(startupFuture, stepToStart, error);
             } else {
@@ -178,8 +213,10 @@ public final class StartupProcess<CONTEXT> {
       final ActorFuture<CONTEXT> startupFuture,
       final StartupStep<CONTEXT> stepToStart,
       final Throwable error) {
+    setCustomMDC();
     logger.warn(
         "Aborting startup process due to exception during step " + stepToStart.getName(), error);
+    clearCustomMDC();
     startupFuture.completeExceptionally(
         aggregateExceptionsSynchronized(
             "Startup",
@@ -190,7 +227,9 @@ public final class StartupProcess<CONTEXT> {
       final ConcurrencyControl concurrencyControl,
       final CONTEXT context,
       final ActorFuture<CONTEXT> resultFuture) {
+    setCustomMDC();
     logger.debug("Shutdown was called with context: {}", context);
+    clearCustomMDC();
     if (shutdownFuture == null) {
       shutdownFuture = resultFuture;
 
@@ -208,7 +247,9 @@ public final class StartupProcess<CONTEXT> {
             concurrencyControl, context, shutdownFuture, new ArrayList<>());
       }
     } else {
+      setCustomMDC();
       logger.info("Shutdown already in progress");
+      clearCustomMDC();
 
       concurrencyControl.runOnCompletion(
           shutdownFuture,
@@ -260,11 +301,14 @@ public final class StartupProcess<CONTEXT> {
       final List<StartupProcessStepException> collectedExceptions) {
     if (collectedExceptions.isEmpty()) {
       shutdownFuture.complete(context);
+      setCustomMDC();
       logger.debug("Finished shutdown process");
+      clearCustomMDC();
     } else {
       final var umbrellaException =
           aggregateExceptionsSynchronized("Shutdown", collectedExceptions);
       shutdownFuture.completeExceptionally(umbrellaException);
+      setCustomMDC();
       logger.warn(umbrellaException.getMessage(), umbrellaException);
     }
   }
@@ -286,6 +330,28 @@ public final class StartupProcess<CONTEXT> {
   }
 
   private void logCurrentStepSynchronized(final String process, final StartupStep<CONTEXT> step) {
+    setCustomMDC();
     logger.info(process + " " + step.getName());
+    clearCustomMDC();
+  }
+
+  private void setCustomMDC() {
+    loggingContext.forEach(
+        (key, value) -> {
+          if (key != null && value != null) {
+            MDC.put(key, value);
+          }
+        });
+  }
+
+  private void clearCustomMDC() {
+    loggingContext
+        .keySet()
+        .forEach(
+            key -> {
+              if (key != null) {
+                MDC.remove(key);
+              }
+            });
   }
 }

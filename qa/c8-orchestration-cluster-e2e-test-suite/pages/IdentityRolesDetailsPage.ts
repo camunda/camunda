@@ -25,6 +25,8 @@ export class IdentityRolesDetailsPage {
   readonly unassignUserModalCancelButton: Locator;
   readonly unassignUserModalRemoveButton: Locator;
   readonly emptyState: Locator;
+  readonly userCell: (name: string) => Locator;
+  readonly userRow: (userName: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -74,7 +76,11 @@ export class IdentityRolesDetailsPage {
         name: 'remove user',
       },
     );
-    this.emptyState = page.getByText('Assign users to this Role');
+    this.emptyState = page.getByText('No users assigned to this role yet');
+    this.userCell = (userID: string) =>
+      this.assignedUsersList.getByRole('cell', {name: userID, exact: true});
+    this.userRow = (userName: string) =>
+      this.page.getByRole('row').filter({hasText: userName});
   }
 
   async assignUser(user: {
@@ -97,5 +103,12 @@ export class IdentityRolesDetailsPage {
     await waitForItemInList(this.page, item, {
       emptyStateLocator: this.emptyState,
     });
+  }
+
+  async unassignUserFromRole(userName: string): Promise<void> {
+    const userRow = this.userRow(userName);
+    await expect(userRow).toBeVisible({timeout: 30000});
+    await this.unassignUserButton(userName).click();
+    await this.unassignUserModalRemoveButton.click({timeout: 30000});
   }
 }

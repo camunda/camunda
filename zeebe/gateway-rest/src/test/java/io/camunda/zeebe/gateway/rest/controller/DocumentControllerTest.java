@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -454,5 +455,188 @@ public class DocumentControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
   }
 
-  // TODO: test error cases
+  @Test
+  void shouldReturnBadRequestWhenMetadataListLengthMismatch() throws Exception {
+    // given two files but only one metadataList entry
+    final var filename1 = "file.txt";
+    final var filename2 = "file2.txt";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content1 = new byte[] {1, 2, 3};
+    final var content2 = new byte[] {4, 5};
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("files", content1).filename(filename1).contentType(contentType);
+    multipartBodyBuilder.part("files", content2).filename(filename2).contentType(contentType);
+
+    final var mapper = new ObjectMapper();
+    final var meta1 =
+        new DocumentMetadata().contentType(contentType.toString()).fileName(filename1);
+    // Provide single-element JSON array to simulate mismatch
+    multipartBodyBuilder
+        .part("metadataList", mapper.writeValueAsString(List.of(meta1)))
+        .contentType(MediaType.APPLICATION_JSON);
+
+    // when / then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("metadataList length (1) does not match files length (2)");
+
+    // ensure service layer was not invoked
+    verify(documentServices, never()).createDocumentBatch(any());
+  }
+
+  @Test
+  void shouldCreateDocumentsBatchWithMetadataList() throws Exception {
+    // given
+    final var filename1 = "file.txt";
+    final var filename2 = "file2.txt";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content1 = new byte[] {1, 2, 3};
+    final var content2 = new byte[] {4, 5};
+    final var timestamp = OffsetDateTime.now();
+
+    final ArgumentCaptor<List<DocumentCreateRequest>> requestCaptor =
+        ArgumentCaptor.forClass(List.class);
+    final var ref =
+        new DocumentReferenceResponse(
+            "documentId",
+            "default",
+            "dummy_hash",
+            new DocumentMetadataModel(
+                contentType.toString(), filename1, timestamp, 0L, null, 123L, Map.of()));
+    when(documentServices.createDocumentBatch(any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(List.of(Either.right(ref), Either.right(ref))));
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("files", content1).filename(filename1).contentType(contentType);
+    multipartBodyBuilder.part("files", content2).filename(filename2).contentType(contentType);
+
+    final var mapper = new ObjectMapper();
+    final var metadataList =
+        List.of(
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename1)
+                .expiresAt(timestamp.toString())
+                .processInstanceKey("123"),
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename2)
+                .expiresAt(timestamp.toString())
+                .processInstanceKey("123"));
+    multipartBodyBuilder
+        .part("metadataList", mapper.writeValueAsString(metadataList))
+        .contentType(MediaType.APPLICATION_JSON);
+
+    // when / then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    verify(documentServices).createDocumentBatch(requestCaptor.capture());
+    final var values = requestCaptor.getValue();
+    assertThat(values).hasSize(2);
+    assertThat(values)
+        .extracting(d -> d.metadata().processInstanceKey())
+        .containsExactly(123L, 123L);
+    assertThat(values)
+        .extracting(d -> d.metadata().fileName())
+        .containsExactlyInAnyOrder(filename1, filename2);
+  }
+
+  @Test
+  void shouldRejectWhenBothRequestMetadataListAndHeadersProvided() throws Exception {
+    // given
+    final var filename1 = "file.txt";
+    final var filename2 = "file2.txt";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content1 = new byte[] {1, 2, 3};
+    final var content2 = new byte[] {4, 5};
+    final var timestamp = OffsetDateTime.now();
+
+    final ArgumentCaptor<List<DocumentCreateRequest>> requestCaptor =
+        ArgumentCaptor.forClass(List.class);
+    final var ref =
+        new DocumentReferenceResponse(
+            "documentId",
+            "default",
+            "dummy_hash",
+            new DocumentMetadataModel(
+                contentType.toString(), filename1, timestamp, 0L, null, 123L, Map.of()));
+    // Should not be invoked due to validation failure
+
+    final var mapper = new ObjectMapper();
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+
+    // Files with conflicting header metadata (processInstanceKey 999, different fileName hint)
+    multipartBodyBuilder
+        .part("files", content1)
+        .filename(filename1)
+        .contentType(contentType)
+        .header(
+            "X-Document-Metadata",
+            mapper.writeValueAsString(
+                new DocumentMetadata()
+                    .contentType(contentType.toString())
+                    .fileName("IGNORED-" + filename1)
+                    .processInstanceKey("999")));
+    multipartBodyBuilder
+        .part("files", content2)
+        .filename(filename2)
+        .contentType(contentType)
+        .header(
+            "X-Document-Metadata",
+            mapper.writeValueAsString(
+                new DocumentMetadata()
+                    .contentType(contentType.toString())
+                    .fileName("IGNORED-" + filename2)
+                    .processInstanceKey("999")));
+
+    // Preferred metadataList (processInstanceKey 123, original file names)
+    final var metadataList =
+        List.of(
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename1)
+                .processInstanceKey("123"),
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename2)
+                .processInstanceKey("123"));
+    multipartBodyBuilder
+        .part("metadataList", mapper.writeValueAsString(metadataList))
+        .contentType(MediaType.APPLICATION_JSON);
+
+    // when / then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("Specify either metadataList part or X-Document-Metadata headers, but not both");
+
+    verify(documentServices, never()).createDocumentBatch(any());
+  }
 }

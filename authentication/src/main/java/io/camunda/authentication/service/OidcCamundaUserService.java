@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.service;
 
-import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.CamundaUserDTO;
@@ -119,12 +119,12 @@ public class OidcCamundaUserService implements CamundaUserService {
     final var groups = authentication.authenticatedGroupIds();
     final var roles = authentication.authenticatedRoleIds();
     final var tenants = getTenantsForCamundaAuthentication(authentication);
-    final var authorizedApplications = getAuthorizedApplications(authentication);
+    final var authorizedComponents = getAuthorizedComponents(authentication);
     return new CamundaUserDTO(
         user.getFullName(),
         username,
         user.getEmail(),
-        authorizedApplications,
+        authorizedComponents,
         tenants,
         groups,
         roles,
@@ -164,13 +164,11 @@ public class OidcCamundaUserService implements CamundaUserService {
         clientRegistrationId, authenticationToken, request);
   }
 
-  protected List<String> getAuthorizedApplications(final CamundaAuthentication authentication) {
-    final var applicationAccess =
+  protected List<String> getAuthorizedComponents(final CamundaAuthentication authentication) {
+    final var componentAccess =
         resourceAccessProvider.resolveResourceAccess(
-            authentication, APPLICATION_ACCESS_AUTHORIZATION);
-    return applicationAccess.allowed()
-        ? applicationAccess.authorization().resourceIds()
-        : List.of();
+            authentication, COMPONENT_ACCESS_AUTHORIZATION);
+    return componentAccess.allowed() ? componentAccess.authorization().resourceIds() : List.of();
   }
 
   protected List<TenantEntity> getTenantsForCamundaAuthentication(

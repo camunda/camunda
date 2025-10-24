@@ -13,6 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -29,11 +33,23 @@ final class BulkIndexRequest implements ContentProducer {
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
+          .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
+          .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
+          .enable(Feature.ALLOW_SINGLE_QUOTES);
+
+  private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
+      new ObjectMapper()
+          .addMixIn(Record.class, RecordSequenceMixin.class)
+          .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
+          .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
   private static final String RECORD_AUTHORIZATIONS_PROPERTY = "authorizations";
+  private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
+      "decisionEvaluationInstanceKey";
+  private static final String AUTH_INFO_PROPERTY = "authInfo";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -77,10 +93,12 @@ final class BulkIndexRequest implements ContentProducer {
 
   private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
       throws IOException {
-    return MAPPER
+    final var mapper =
+        isPreviousVersionRecord(record.getBrokerVersion()) ? PREVIOUS_VERSION_MAPPER : MAPPER;
+    return mapper
         .writer()
         // Enhance the serialized record by its sequence number. The sequence number is not a part
-        // of the record itself but a special property for Opensearch. It can be used to limit
+        // of the record itself but a special property for Elasticsearch. It can be used to limit
         // the number of records when reading from the index, for example, by using a range query.
         // Read https://github.com/camunda/camunda/issues/10568 for details.
         .withAttribute(RECORD_SEQUENCE_PROPERTY, recordSequence.sequence())
@@ -133,9 +151,31 @@ final class BulkIndexRequest implements ContentProducer {
     }
   }
 
+  private static boolean isPreviousVersionRecord(final String brokerVersion) {
+    final SemanticVersion semanticVersion =
+        SemanticVersion.parse(brokerVersion)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Expected to parse valid semantic version, but got [%s]"
+                            .formatted(brokerVersion)));
+    final int currentMinorVersion =
+        VersionUtil.getSemanticVersion()
+            .map(SemanticVersion::minor)
+            .orElseThrow(
+                () -> new IllegalStateException("Expected to have a valid semantic version"));
+    return semanticVersion.minor() < currentMinorVersion;
+  }
+
   record BulkOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY})
   private static final class RecordSequenceMixin {}
+
+  @JsonIgnoreProperties({RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY})
+  private static final class EvaluatedDecisionMixin {}
+
+  @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
+  private static final class CommandDistributionMixin {}
 }

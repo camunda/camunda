@@ -11,13 +11,13 @@ import {test} from '../visual-fixtures';
 import {
   mockEvaluatedDecisionInstance,
   mockEvaluatedDecisionInstanceWithoutPanels,
-  mockEvaluatedDrdData,
-  mockEvaluatedDrdDataWithoutPanels,
+  mockEvaluatedDecisionInstancesSearch,
+  mockEvaluatedDecisionInstancesSearchWithoutPanels,
   mockEvaluatedLargeXml,
   mockEvaluatedXml,
   mockEvaluatedXmlWithoutPanels,
   mockFailedDecisionInstance,
-  mockFailedDrdData,
+  mockFailedDecisionInstancesSearch,
   mockFailedXml,
   mockResponses,
 } from '../mocks/decisionInstance.mocks';
@@ -53,7 +53,7 @@ test.describe('decision instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockEvaluatedDecisionInstance,
-        drdData: mockEvaluatedDrdData,
+        decisionInstancesSearch: mockEvaluatedDecisionInstancesSearch,
         xml: mockEvaluatedXml,
       }),
     );
@@ -85,7 +85,7 @@ test.describe('decision instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockEvaluatedDecisionInstance,
-        drdData: mockEvaluatedDrdData,
+        decisionInstancesSearch: mockEvaluatedDecisionInstancesSearch,
         xml: mockEvaluatedXml,
       }),
     );
@@ -110,7 +110,8 @@ test.describe('decision instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockEvaluatedDecisionInstanceWithoutPanels,
-        drdData: mockEvaluatedDrdDataWithoutPanels,
+        decisionInstancesSearch:
+          mockEvaluatedDecisionInstancesSearchWithoutPanels,
         xml: mockEvaluatedXmlWithoutPanels,
       }),
     );
@@ -130,7 +131,7 @@ test.describe('decision instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockEvaluatedDecisionInstance,
-        drdData: mockEvaluatedDrdData,
+        decisionInstancesSearch: mockEvaluatedDecisionInstancesSearch,
         xml: mockEvaluatedLargeXml,
       }),
     );
@@ -155,7 +156,7 @@ test.describe('decision instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockFailedDecisionInstance,
-        drdData: mockFailedDrdData,
+        decisionInstancesSearch: mockFailedDecisionInstancesSearch,
         xml: mockFailedXml,
       }),
     );
@@ -172,7 +173,7 @@ test.describe('decision instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockFailedDecisionInstance,
-        drdData: mockFailedDrdData,
+        decisionInstancesSearch: mockFailedDecisionInstancesSearch,
         xml: mockFailedXml,
       }),
     );

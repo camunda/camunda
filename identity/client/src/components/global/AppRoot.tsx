@@ -18,6 +18,7 @@ import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
 import LateLoading from "src/components/layout/LateLoading";
 import { addHandler, removeHandler } from "src/utility/api/request";
 import { activateSession } from "src/utility/auth";
+import { C3Provider } from "../layout/C3Provider";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -96,8 +97,8 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
   }
 
   if (
-    !camundaUser?.authorizedApplications.includes("identity") &&
-    !camundaUser?.authorizedApplications.includes("*")
+    !camundaUser?.authorizedComponents.includes("identity") &&
+    !camundaUser?.authorizedComponents.includes("*")
   ) {
     return (
       <>
@@ -127,8 +128,10 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
 const AppRoot: FC<{ children?: ReactNode }> = ({ children }) => (
   <AppRootWrapper>
     <ErrorBoundary>
-      <GlobalStyle />
-      <AppContent>{children}</AppContent>
+      <C3Provider>
+        <GlobalStyle />
+        <AppContent>{children}</AppContent>
+      </C3Provider>
     </ErrorBoundary>
   </AppRootWrapper>
 );

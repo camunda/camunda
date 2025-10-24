@@ -9,6 +9,7 @@ package io.camunda.authentication.config.controllers;
 
 import io.camunda.authentication.service.DefaultMembershipService;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -21,8 +22,9 @@ import org.springframework.context.annotation.Configuration;
 public class WebSecurityOidcTestContext {
 
   @Bean
-  public MappingRuleServices createMappingRuleServices() {
-    return new MappingRuleServices(null, null, null, null);
+  public MappingRuleServices createMappingRuleServices(
+      final ApiServicesExecutorProvider executorProvider) {
+    return new MappingRuleServices(null, null, null, null, executorProvider, null);
   }
 
   @Bean

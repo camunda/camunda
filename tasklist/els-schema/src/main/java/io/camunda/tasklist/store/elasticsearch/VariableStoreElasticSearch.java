@@ -8,12 +8,12 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
-import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.scroll;
+import static io.camunda.tasklist.util.ElasticsearchUtil.scrollInChunks;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_INSTANCE_KEY;
@@ -43,10 +43,8 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,23 +53,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.apache.commons.collections4.ListUtils;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermsQueryBuilder;
@@ -88,8 +76,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class VariableStoreElasticSearch implements VariableStore {
-  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
-  public static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired
@@ -98,67 +85,36 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Autowired
-  @Qualifier("tasklistVariableTemplate")
-  private VariableTemplate variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
-  @Autowired
-  @Qualifier("tasklistFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
-  @Autowired
-  @Qualifier("tasklistSnapshotTaskVariableTemplate")
-  private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
-  private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
-
-  @PostConstruct
-  void scheduleUpdateTermsCount() {
-    Executors.newSingleThreadScheduledExecutor()
-        .scheduleAtFixedRate(this::refreshMaxTermsCount, 30, 1800, TimeUnit.SECONDS);
-  }
 
   @Override
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
       final List<String> flowNodeInstanceIds,
       final List<String> varNames,
       final Set<String> fieldNames) {
-
-    final List<List<String>> flowNodeInstanceIdsChunks =
-        ListUtils.partition(flowNodeInstanceIds, maxTermsCount);
-
-    final List<VariableEntity> variableEntities = new ArrayList<>();
-    flowNodeInstanceIdsChunks.forEach(
-        chunk -> {
-          final TermsQueryBuilder flowNodeInstanceKeyQ = termsQuery(SCOPE_KEY, chunk);
-          TermsQueryBuilder varNamesQ = null;
-          if (isNotEmpty(varNames)) {
-            varNamesQ = termsQuery(VariableTemplate.NAME, varNames);
-          }
-          final SearchSourceBuilder searchSourceBuilder =
-              new SearchSourceBuilder()
-                  .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)));
-          applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
-
-          final SearchRequest searchRequest =
-              new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
-          try {
-            variableEntities.addAll(
-                scroll(searchRequest, VariableEntity.class, objectMapper, esClient));
-          } catch (final IOException e) {
-            final String message =
-                String.format(
-                    "Exception occurred, while obtaining all variables: %s", e.getMessage());
-            throw new TasklistRuntimeException(message, e);
-          }
-        });
-
-    return variableEntities;
+    try {
+      return scrollInChunks(
+          flowNodeInstanceIds,
+          tasklistProperties.getElasticsearch().getMaxTermsCount(),
+          chunk -> buildSearchVariablesByScopeFNIsAndVarNamesRequest(chunk, varNames, fieldNames),
+          VariableEntity.class,
+          objectMapper,
+          esClient);
+    } catch (final IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
   }
 
   @Override
@@ -239,40 +195,15 @@ public class VariableStoreElasticSearch implements VariableStore {
   }
 
   @Override
-  public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
-    final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
-
-    final TermsQueryBuilder processInstanceKeyQuery =
-        termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds);
-    final var flowNodeInstanceStateQuery =
-        termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
-
-    queryBuilder.must(flowNodeInstanceStateQuery);
-    queryBuilder.must(processInstanceKeyQuery);
-
-    final TermsQueryBuilder typeQuery =
-        QueryBuilders.termsQuery(
-            FlowNodeInstanceTemplate.TYPE,
-            FlowNodeType.AD_HOC_SUB_PROCESS.toString(),
-            FlowNodeType.USER_TASK.toString(),
-            FlowNodeType.SUB_PROCESS.toString(),
-            FlowNodeType.EVENT_SUB_PROCESS.toString(),
-            FlowNodeType.MULTI_INSTANCE_BODY.toString(),
-            FlowNodeType.PROCESS.toString());
-    queryBuilder.must(typeQuery);
-
-    final var query =
-        ElasticsearchUtil.joinWithAnd(
-            typeQuery, processInstanceKeyQuery, flowNodeInstanceStateQuery);
-    final SearchRequest searchRequest =
-        new SearchRequest(flowNodeInstanceIndex.getFullQualifiedName())
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(query))
-                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC)
-                    .size(tasklistProperties.getElasticsearch().getBatchSize()));
+  public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<Long> processInstanceKeys) {
     try {
-      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
+      return scrollInChunks(
+          processInstanceKeys,
+          tasklistProperties.getElasticsearch().getMaxTermsCount(),
+          this::buildSearchFNIByProcessInstanceKeysRequest,
+          FlowNodeInstanceEntity.class,
+          objectMapper,
+          esClient);
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());
@@ -337,31 +268,10 @@ public class VariableStoreElasticSearch implements VariableStore {
   }
 
   @Override
-  public void refreshMaxTermsCount() {
-    final GetSettingsResponse response;
-    try {
-      response =
-          esClient
-              .indices()
-              .getSettings(
-                  new GetSettingsRequest()
-                      .indices(variableIndex.getFullQualifiedName())
-                      .includeDefaults(true)
-                      .names(MAX_TERMS_COUNT_SETTING),
-                  RequestOptions.DEFAULT);
-      maxTermsCount =
-          Integer.parseInt(
-              response.getSetting(variableIndex.getFullQualifiedName(), MAX_TERMS_COUNT_SETTING));
-    } catch (final IOException | NumberFormatException e) {
-      LOGGER.warn("Failed to update max_terms_count setting", e);
-    }
-  }
-
-  @Override
-  public List<String> getProcessInstanceIdsWithMatchingVars(
+  public List<Long> getProcessInstanceKeysWithMatchingVars(
       final List<String> varNames, final List<String> varValues) {
 
-    final List<Set<String>> listProcessIdsMatchingVars = new ArrayList<>();
+    Set<Long> processInstanceKeys = null;
 
     for (int i = 0; i < varNames.size(); i++) {
       final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
@@ -369,46 +279,19 @@ public class VariableStoreElasticSearch implements VariableStore {
       boolQuery.must(QueryBuilders.termQuery(VALUE, varValues.get(i)));
 
       final SearchSourceBuilder searchSourceBuilder =
-          new SearchSourceBuilder().query(boolQuery).fetchSource(PROCESS_INSTANCE_KEY, null);
+          new SearchSourceBuilder()
+              .query(boolQuery)
+              .fetchSource(PROCESS_INSTANCE_KEY, null)
+              .size(tasklistProperties.getElasticsearch().getBatchSize());
 
       final SearchRequest searchRequest =
           new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
-      searchRequest.scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
 
-      final Set<String> processInstanceIds = new HashSet<>();
-
+      final Set<Long> currentKeys;
       try {
-        SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-        String scrollId = searchResponse.getScrollId();
-
-        List<String> scrollProcessIds =
-            Arrays.stream(searchResponse.getHits().getHits())
-                .map(hit -> hit.getSourceAsMap().get(PROCESS_INSTANCE_KEY))
-                .map(String::valueOf)
-                .collect(Collectors.toList());
-
-        processInstanceIds.addAll(scrollProcessIds);
-
-        while (scrollProcessIds.size() > 0) {
-          final SearchScrollRequest scrollRequest =
-              new SearchScrollRequest(scrollId).scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
-
-          searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-          scrollId = searchResponse.getScrollId();
-          scrollProcessIds =
-              Arrays.stream(searchResponse.getHits().getHits())
-                  .map(hit -> hit.getSourceAsMap().get(PROCESS_INSTANCE_KEY))
-                  .map(String::valueOf)
-                  .toList();
-          processInstanceIds.addAll(scrollProcessIds);
-        }
-
-        final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-        clearScrollRequest.addScrollId(scrollId);
-        esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
-
-        listProcessIdsMatchingVars.add(processInstanceIds);
-
+        currentKeys =
+            new HashSet<>(
+                ElasticsearchUtil.scrollFieldToList(searchRequest, PROCESS_INSTANCE_KEY, esClient));
       } catch (final IOException e) {
         final String message =
             String.format(
@@ -416,17 +299,76 @@ public class VariableStoreElasticSearch implements VariableStore {
                 varNames.get(i), e.getMessage());
         throw new TasklistRuntimeException(message, e);
       }
+      // Early exit if empty result
+      if (currentKeys.isEmpty()) {
+        return Collections.emptyList();
+      }
+      if (processInstanceKeys == null) {
+        processInstanceKeys = currentKeys;
+      } else {
+        processInstanceKeys.retainAll(currentKeys);
+        if (processInstanceKeys.isEmpty()) {
+          // Early exit if intersection is empty
+          return Collections.emptyList();
+        }
+      }
     }
+    return processInstanceKeys == null
+        ? Collections.emptyList()
+        : new ArrayList<>(processInstanceKeys);
+  }
 
-    // Find intersection of all sets
-    return new ArrayList<>(
-        listProcessIdsMatchingVars.stream()
-            .reduce(
-                (set1, set2) -> {
-                  set1.retainAll(set2);
-                  return set1;
-                })
-            .orElse(Collections.emptySet()));
+  private SearchRequest buildSearchFNIByProcessInstanceKeysRequest(
+      final List<Long> processInstanceKeys) {
+    final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+
+    final TermsQueryBuilder processInstanceKeyQuery =
+        termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys);
+    final var flowNodeInstanceStateQuery =
+        termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
+
+    queryBuilder.must(flowNodeInstanceStateQuery);
+    queryBuilder.must(processInstanceKeyQuery);
+
+    final TermsQueryBuilder typeQuery =
+        QueryBuilders.termsQuery(
+            FlowNodeInstanceTemplate.TYPE,
+            FlowNodeType.AD_HOC_SUB_PROCESS.toString(),
+            FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE.toString(),
+            FlowNodeType.USER_TASK.toString(),
+            FlowNodeType.SUB_PROCESS.toString(),
+            FlowNodeType.EVENT_SUB_PROCESS.toString(),
+            FlowNodeType.MULTI_INSTANCE_BODY.toString(),
+            FlowNodeType.PROCESS.toString());
+    queryBuilder.must(typeQuery);
+
+    final var query =
+        ElasticsearchUtil.joinWithAnd(
+            typeQuery, processInstanceKeyQuery, flowNodeInstanceStateQuery);
+    return new SearchRequest(flowNodeInstanceIndex.getFullQualifiedName())
+        .source(
+            new SearchSourceBuilder()
+                .query(constantScoreQuery(query))
+                .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC)
+                .size(tasklistProperties.getElasticsearch().getBatchSize()));
+  }
+
+  private SearchRequest buildSearchVariablesByScopeFNIsAndVarNamesRequest(
+      final List<String> scopeFlowNodeIds,
+      final List<String> varNames,
+      final Set<String> fieldNames) {
+    final TermsQueryBuilder flowNodeInstanceKeyQ = termsQuery(SCOPE_KEY, scopeFlowNodeIds);
+    TermsQueryBuilder varNamesQ = null;
+    if (isNotEmpty(varNames)) {
+      varNamesQ = termsQuery(VariableTemplate.NAME, varNames);
+    }
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)))
+            .size(tasklistProperties.getElasticsearch().getBatchSize());
+    applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
+
+    return new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
   }
 
   private UpdateRequest createUpsertRequest(final SnapshotTaskVariableEntity variableEntity) {

@@ -101,24 +101,6 @@ interface DecisionInstanceEntity {
   sortValues: [string, string];
 }
 
-interface ListenerEntity {
-  listenerType: 'EXECUTION_LISTENER' | 'TASK_LISTENER';
-  listenerKey: string;
-  state: 'ACTIVE' | 'COMPLETED' | 'FAILED';
-  jobType: string;
-  event:
-    | 'START'
-    | 'END'
-    | 'COMPLETING'
-    | 'ASSIGNING'
-    | 'CREATING'
-    | 'UPDATING'
-    | 'CANCELING'
-    | 'UNKNOWN'
-    | 'UNSPECIFIED';
-  time: string;
-  sortValues: ReadonlyArray<string>;
-}
 type SortOrder = 'asc' | 'desc';
 
 export type {
@@ -132,6 +114,5 @@ export type {
   ResourceBasedPermissionDto,
   ProcessInstanceEntity,
   DecisionInstanceEntity,
-  ListenerEntity,
   SortOrder,
 };

@@ -14,6 +14,7 @@ export class Diagram {
   readonly popover: Locator;
   readonly resetDiagramZoomButton: Locator;
   readonly diagramSpinner: Locator;
+  readonly downloadXMLButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -23,6 +24,9 @@ export class Diagram {
       name: /Reset diagram zoom/i,
     });
     this.diagramSpinner = page.getByTestId('diagram-spinner');
+    this.downloadXMLButton = page.getByRole('button', {
+      name: /Download XML/i,
+    });
   }
 
   async moveCanvasHorizontally(dx: number) {

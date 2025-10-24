@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>tasklist-webapp</artifactId>
@@ -21,12 +21,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer</artifactId>
-      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -78,9 +72,15 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-schema-manager</artifactId>
     </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
     </dependency>
 
     <!-- ZEEBE -->
@@ -132,21 +132,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-spring-boot-starter</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-logging</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.elasticsearch.client</groupId>
-          <artifactId>transport</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-autoconfigure</artifactId>
       <scope>test</scope>
     </dependency>
@@ -166,11 +151,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-oauth2-resource-server</artifactId>
     </dependency>
 
     <!-- OpenAPI -->
@@ -212,11 +192,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-webmvc</artifactId>
     </dependency>
 
     <dependency>
@@ -328,11 +303,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-core</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
@@ -412,6 +382,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
@@ -423,9 +398,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:tasklist-importer</dependency>
             <dependency>io.camunda:tasklist-webjar</dependency>
-            <dependency>io.camunda:identity-spring-boot-starter</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-log4j2</dependency>

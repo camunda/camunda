@@ -13,8 +13,10 @@ import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -38,8 +40,15 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.tenantSearchClient = tenantSearchClient;
   }
 
@@ -54,7 +63,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                 .searchTenants(query));
   }
 
-  public SearchQueryResult<TenantMemberEntity> searchMembers(final TenantQuery query) {
+  public SearchQueryResult<TenantMemberEntity> searchMembers(final TenantMemberQuery query) {
     return executeSearchRequest(
         () ->
             tenantSearchClient
@@ -67,7 +76,12 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   @Override
   public TenantServices withAuthentication(final CamundaAuthentication authentication) {
     return new TenantServices(
-        brokerClient, securityContextProvider, tenantSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        tenantSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<TenantRecord> createTenant(final TenantRequest request) {

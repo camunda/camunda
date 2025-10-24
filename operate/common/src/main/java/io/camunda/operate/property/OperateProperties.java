@@ -12,7 +12,13 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-/** This class contains all project configuration parameters. */
+/**
+ * This class contains all project configuration parameters.
+ *
+ * <p>NOTE: Some of the fields of this object are overridden with values coming from the Unified
+ * Configuration system, from the object
+ * io.camunda.configuration.beanoverrides.OperatePropertiesOverride
+ */
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
@@ -21,20 +27,9 @@ public class OperateProperties {
 
   private static final String UNKNOWN_VERSION = "unknown-version";
 
-  private boolean importerEnabled = true;
   private boolean webappEnabled = true;
 
   private boolean rfc3339ApiDateFormat = false;
-
-  private boolean persistentSessionsEnabled = false;
-
-  /** Indicates, whether CSRF prevention is enabled. */
-  private boolean csrfPreventionEnabled = true;
-
-  /** Standard user data */
-  private String userId = "demo";
-
-  private String displayName = "demo";
 
   private String password = "demo";
 
@@ -56,12 +51,6 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private OperateOpensearchProperties opensearch = new OperateOpensearchProperties();
 
-  @NestedConfigurationProperty
-  private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
-
-  @NestedConfigurationProperty
-  private ZeebeOpensearchProperties zeebeOpensearch = new ZeebeOpensearchProperties();
-
   @NestedConfigurationProperty private ZeebeProperties zeebe = new ZeebeProperties();
 
   @NestedConfigurationProperty
@@ -69,25 +58,11 @@ public class OperateProperties {
 
   @NestedConfigurationProperty private ImportProperties importer = new ImportProperties();
 
-  @NestedConfigurationProperty
-  private ClusterNodeProperties clusterNode = new ClusterNodeProperties();
-
-  @NestedConfigurationProperty private LdapProperties ldap = new LdapProperties();
-
-  @NestedConfigurationProperty private Auth0Properties auth0 = new Auth0Properties();
-
   @NestedConfigurationProperty private IdentityProperties identity = new IdentityProperties();
-
-  @NestedConfigurationProperty private AlertingProperties alert = new AlertingProperties();
 
   @NestedConfigurationProperty private CloudProperties cloud = new CloudProperties();
 
-  @NestedConfigurationProperty private OAuthClientProperties client = new OAuthClientProperties();
-
   @NestedConfigurationProperty private BackupProperties backup = new BackupProperties();
-
-  @NestedConfigurationProperty
-  private WebSecurityProperties webSecurity = new WebSecurityProperties();
 
   private DatabaseType database = DatabaseType.Elasticsearch;
 
@@ -101,18 +76,6 @@ public class OperateProperties {
 
   public boolean isElasticsearchDB() {
     return DatabaseType.Elasticsearch.equals(database);
-  }
-
-  public boolean isOpensearchDB() {
-    return DatabaseType.Opensearch.equals(database);
-  }
-
-  public boolean isImporterEnabled() {
-    return importerEnabled;
-  }
-
-  public void setImporterEnabled(final boolean importerEnabled) {
-    this.importerEnabled = importerEnabled;
   }
 
   public boolean isWebappEnabled() {
@@ -131,14 +94,6 @@ public class OperateProperties {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
-  public boolean isCsrfPreventionEnabled() {
-    return csrfPreventionEnabled;
-  }
-
-  public void setCsrfPreventionEnabled(final boolean csrfPreventionEnabled) {
-    this.csrfPreventionEnabled = csrfPreventionEnabled;
-  }
-
   public OperateElasticsearchProperties getElasticsearch() {
     return elasticsearch;
   }
@@ -155,52 +110,12 @@ public class OperateProperties {
     this.opensearch = opensearch;
   }
 
-  public ZeebeElasticsearchProperties getZeebeElasticsearch() {
-    return zeebeElasticsearch;
-  }
-
-  public void setZeebeElasticsearch(final ZeebeElasticsearchProperties zeebeElasticsearch) {
-    this.zeebeElasticsearch = zeebeElasticsearch;
-  }
-
-  public ZeebeOpensearchProperties getZeebeOpensearch() {
-    return zeebeOpensearch;
-  }
-
-  public void setZeebeOpensearch(final ZeebeOpensearchProperties zeebeOpensearch) {
-    this.zeebeOpensearch = zeebeOpensearch;
-  }
-
   public ZeebeProperties getZeebe() {
     return zeebe;
   }
 
   public void setZeebe(final ZeebeProperties zeebe) {
     this.zeebe = zeebe;
-  }
-
-  public LdapProperties getLdap() {
-    return ldap;
-  }
-
-  public void setLdap(final LdapProperties ldap) {
-    this.ldap = ldap;
-  }
-
-  public String getUserId() {
-    return userId;
-  }
-
-  public void setUserId(final String userId) {
-    this.userId = userId;
-  }
-
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public void setDisplayName(final String displayName) {
-    this.displayName = displayName;
   }
 
   public String getPassword() {
@@ -227,14 +142,6 @@ public class OperateProperties {
     this.importer = importer;
   }
 
-  public ClusterNodeProperties getClusterNode() {
-    return clusterNode;
-  }
-
-  public void setClusterNode(final ClusterNodeProperties clusterNode) {
-    this.clusterNode = clusterNode;
-  }
-
   public boolean isEnterprise() {
     return enterprise;
   }
@@ -243,39 +150,12 @@ public class OperateProperties {
     this.enterprise = enterprise;
   }
 
-  public Auth0Properties getAuth0() {
-    return auth0;
-  }
-
-  public OperateProperties setAuth0(final Auth0Properties auth0) {
-    this.auth0 = auth0;
-    return this;
-  }
-
-  public WebSecurityProperties getWebSecurity() {
-    return webSecurity;
-  }
-
-  public OperateProperties setWebSecurity(final WebSecurityProperties webSecurity) {
-    this.webSecurity = webSecurity;
-    return this;
-  }
-
   public IdentityProperties getIdentity() {
     return identity;
   }
 
   public void setIdentity(final IdentityProperties identity) {
     this.identity = identity;
-  }
-
-  public AlertingProperties getAlert() {
-    return alert;
-  }
-
-  public OperateProperties setAlert(final AlertingProperties alert) {
-    this.alert = alert;
-    return this;
   }
 
   public CloudProperties getCloud() {
@@ -287,31 +167,12 @@ public class OperateProperties {
     return this;
   }
 
-  public boolean isPersistentSessionsEnabled() {
-    return persistentSessionsEnabled;
-  }
-
-  public OperateProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
-    this.persistentSessionsEnabled = persistentSessionsEnabled;
-    return this;
-  }
-
   public List<String> getRoles() {
     return roles;
   }
 
   public void setRoles(final List<String> roles) {
     this.roles = roles;
-  }
-
-  @Deprecated(forRemoval = true)
-  public OAuthClientProperties getClient() {
-    return client;
-  }
-
-  @Deprecated(forRemoval = true)
-  public void setClient(final OAuthClientProperties client) {
-    this.client = client;
   }
 
   public BackupProperties getBackup() {

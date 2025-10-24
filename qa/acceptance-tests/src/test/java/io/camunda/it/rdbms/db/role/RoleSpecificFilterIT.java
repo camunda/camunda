@@ -37,10 +37,13 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -52,9 +55,15 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {
+      "spring.liquibase.enabled=false",
+      "camunda.data.secondary-storage.type=rdbms",
+      "logging.level.io.camunda.db.rdbms=TRACE"
+    })
 public class RoleSpecificFilterIT {
   public static final String ROLE_ID = "roleId";
+  public static final String ROLE_DESCRIPTION = "roleDescription";
   public static final long ROLE_KEY = 1337L;
   public static final String ROLE_NAME = "Role 1337";
   public static final String ENTITY_ID = "entityId";
@@ -105,6 +114,45 @@ public class RoleSpecificFilterIT {
     assertThat(roles.total()).isEqualTo(2);
   }
 
+  @ParameterizedTest
+  @CsvSource({"GROUP, 2", "CLIENT, 0"})
+  public void shouldFilterRolesForMemberType(final EntityType memberType, final int expectedCount) {
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var anotherRoleId = Strings.newRandomValidIdentityId();
+    final var group = GroupFixtures.createRandomized(b -> b);
+    final var otherGroup = GroupFixtures.createRandomized(b -> b);
+    final var userId = Strings.newRandomValidIdentityId();
+    createAndSaveUser(
+        rdbmsWriter,
+        UserFixtures.createRandomized(
+            b -> b.username(userId).name("User 1337").password("password")));
+    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriter, otherGroup);
+    createAndSaveRole(
+        rdbmsWriter, RoleFixtures.createRandomized(b -> b.roleId(roleId).name("Role 1337")));
+    createAndSaveRole(
+        rdbmsWriter,
+        RoleFixtures.createRandomized(b -> b.roleId(anotherRoleId).name("Another Role 1337")));
+
+    addUserToRole(roleId, userId);
+    addGroupToRole(roleId, group.groupId());
+    addGroupToRole(roleId, otherGroup.groupId());
+    addGroupToRole(anotherRoleId, group.groupId());
+
+    final var roles =
+        roleReader.search(
+            new RoleQuery(
+                new RoleFilter.Builder()
+                    .memberIdsByType(
+                        Map.of(memberType, Set.of(group.groupId(), otherGroup.groupId())))
+                    .build(),
+                RoleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(roles.total()).isEqualTo(expectedCount);
+    assertThat(roles.items()).hasSize(expectedCount);
+  }
+
   @Test
   public void shouldFilterRolesForTenant() {
     final var tenant = TenantFixtures.createRandomized(b -> b);
@@ -142,7 +190,9 @@ public class RoleSpecificFilterIT {
     createAndSaveRandomRolesWithMembers(rdbmsWriter);
     createAndSaveRole(
         rdbmsWriter,
-        RoleFixtures.createRandomized(b -> b.roleId(ROLE_ID).roleKey(ROLE_KEY).name(ROLE_NAME)));
+        RoleFixtures.createRandomized(
+            b ->
+                b.roleId(ROLE_ID).description(ROLE_DESCRIPTION).roleKey(ROLE_KEY).name(ROLE_NAME)));
     RoleMemberFixtures.createAndSaveRandomRoleMember(
         rdbmsWriter, b -> b.roleId(ROLE_ID).entityId(ENTITY_ID).entityType(ENTITY_TYPE.name()));
 
@@ -159,7 +209,8 @@ public class RoleSpecificFilterIT {
     return List.of(
         new RoleFilter.Builder().roleId(ROLE_ID).build(),
         new RoleFilter.Builder().name(ROLE_NAME).build(),
-        new RoleFilter.Builder().memberId(ENTITY_ID).childMemberType(ENTITY_TYPE).build());
+        new RoleFilter.Builder().memberId(ENTITY_ID).childMemberType(ENTITY_TYPE).build(),
+        new RoleFilter.Builder().description(ROLE_DESCRIPTION).build());
   }
 
   private void addGroupToRole(final String roleId, final String entityId) {

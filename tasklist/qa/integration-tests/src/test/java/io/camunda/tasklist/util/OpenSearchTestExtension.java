@@ -7,33 +7,33 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.store.opensearch.VariableStoreOpenSearch.MAX_TERMS_COUNT_SETTING;
-import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.indices.FlushRequest;
-import org.opensearch.client.opensearch.indices.GetIndicesSettingsRequest;
-import org.opensearch.client.opensearch.indices.IndexSettings;
-import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.nodes.Stats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
-@ConditionalOnProperty(name = "camunda.tasklist.database", havingValue = "opensearch")
+@ConditionalOnProperty(name = "camunda.data.secondary-storage.type", havingValue = "opensearch")
 public class OpenSearchTestExtension
     implements DatabaseTestExtension,
         BeforeEachCallback,
@@ -58,13 +58,8 @@ public class OpenSearchTestExtension
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
-  @Autowired
-  @Qualifier("tasklistZeebeOsClient")
-  private OpenSearchClient zeebeOsClient;
-
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private SearchEngineConfiguration searchEngineConfiguration;
-  @Autowired private RecordsReaderHolder recordsReaderHolder;
   private boolean failed = false;
   @Autowired private TestSchemaManager schemaManager;
 
@@ -78,7 +73,6 @@ public class OpenSearchTestExtension
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
-      tasklistProperties.getZeebeOpenSearch().setPrefix(indexPrefix);
       searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     schemaManager.createSchema();
@@ -107,57 +101,10 @@ public class OpenSearchTestExtension
   }
 
   @Override
-  public void setIndexMaxTermsCount(final String indexName, final int maxTermsCount)
-      throws IOException {
-
-    osClient
-        .indices()
-        .putSettings(
-            PutIndicesSettingsRequest.of(
-                f ->
-                    f.index(indexName)
-                        .settings(IndexSettings.of(s -> s.maxTermsCount(maxTermsCount)))));
-  }
-
-  @Override
-  public int getIndexMaxTermsCount(final String indexName) throws IOException {
-    return osClient
-        .indices()
-        .getSettings(
-            new GetIndicesSettingsRequest.Builder()
-                .index(indexName)
-                .includeDefaults(true)
-                .name(MAX_TERMS_COUNT_SETTING)
-                .build())
-        .get(indexName)
-        .settings()
-        .index()
-        .maxTermsCount();
-  }
-
-  @Override
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
         .describedAs("There are too many open scroll contexts left.")
         .isLessThanOrEqualTo(maxOpenScrollContexts);
-  }
-
-  @Override
-  public void refreshIndexesInElasticsearch() {
-    refreshZeebeIndices();
-    refreshTasklistIndices();
-  }
-
-  @Override
-  public void refreshZeebeIndices() {
-    try {
-      zeebeOsClient
-          .indices()
-          .refresh(
-              r -> r.index(List.of(tasklistProperties.getZeebeOpenSearch().getPrefix() + "*")));
-    } catch (final Exception t) {
-      LOGGER.error("Could not refresh Zeebe OpenSearch indices", t);
-    }
   }
 
   @Override
@@ -177,50 +124,6 @@ public class OpenSearchTestExtension
   }
 
   @Override
-  public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(testCheck, null, arguments);
-  }
-
-  @Override
-  public void processRecordsAndWaitFor(
-      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
-    int waitingRound = 0;
-    final int maxRounds = 50;
-    boolean found = testCheck.test(arguments);
-    final long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      try {
-        if (supplier != null) {
-          supplier.get();
-        }
-        refreshIndexesInElasticsearch();
-      } catch (final Exception e) {
-        LOGGER.error(e.getMessage(), e);
-      }
-      found = testCheck.test(arguments);
-      if (!found) {
-        sleepFor(500);
-        waitingRound++;
-      }
-    }
-    final long finishedTime = System.currentTimeMillis() - start;
-
-    if (found) {
-      LOGGER.debug(
-          "Condition {} was met in round {} ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    } else {
-      LOGGER.error(
-          "Condition {} was not met after {} rounds ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    }
-  }
-
-  @Override
   public int getOpenScrollcontextSize() {
     int openContext = 0;
     try {
@@ -232,5 +135,32 @@ public class OpenSearchTestExtension
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public <T extends ExporterEntity> void bulkIndex(
+      final IndexDescriptor index,
+      final List<T> documents,
+      final Function<T, String> routingFunction)
+      throws IOException {
+    osClient.bulk(
+        b ->
+            b.refresh(Refresh.True)
+                .operations(
+                    documents.stream()
+                        .map(
+                            document ->
+                                new BulkOperation.Builder()
+                                    .index(
+                                        IndexOperation.of(
+                                            i ->
+                                                i.index(index.getFullQualifiedName())
+                                                    .id((document.getId()))
+                                                    .routing(routingFunction.apply(document))
+                                                    .document(
+                                                        CommonUtils.getJsonObjectFromEntity(
+                                                            document))))
+                                    .build())
+                        .toList()));
   }
 }

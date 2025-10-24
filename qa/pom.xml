@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -17,6 +17,7 @@
 
   <modules>
     <module>acceptance-tests</module>
+    <module>archunit-tests</module>
     <module>util</module>
   </modules>
 

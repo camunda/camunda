@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime.util;
 
+import io.camunda.process.test.impl.runtime.GitPropertiesUtil;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -26,18 +27,24 @@ import java.util.regex.Pattern;
  */
 public class VersionedPropertiesUtil {
   public static final String SNAPSHOT_VERSION = "SNAPSHOT";
+
+  private static final Pattern STABLE_BRANCH_VERSION_PATTERN =
+      Pattern.compile("(backport-\\d+-to-)?stable/(\\d+)\\.(\\d+)");
   private static final Pattern SEMANTIC_VERSION_PATTERN =
       Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-.*)?");
-  private static final String VERSION_FORMAT = "%d.%d.%d";
 
-  /**
-   * Format string for versions that include additional labels (e.g., alpha, rc). This is used to
-   * format semantic versions with non-SNAPSHOT labels.
-   */
-  private static final String LABELED_VERSION_FORMAT = "%d.%d.%d%s";
+  /** Format string for snapshot versions (e.g., 8.8-SNAPSHOT). */
+  private static final String SNAPSHOT_VERSION_FORMAT = "%d.%d-%s";
 
-  public static String getLatestReleasedVersion(
+  private final GitPropertiesUtil gitProperties;
+
+  public VersionedPropertiesUtil(final GitPropertiesUtil gitProperties) {
+    this.gitProperties = gitProperties;
+  }
+
+  public String getVersion(
       final Properties properties, final String propertyName, final String defaultValue) {
+    final String branchBasedSnapshotVersion = getBranchBasedSnapshotVersion(defaultValue);
 
     return PropertiesUtil.getPropertyOrDefault(
         properties,
@@ -46,34 +53,27 @@ public class VersionedPropertiesUtil {
             Optional.of(propertyValue)
                 .map(SEMANTIC_VERSION_PATTERN::matcher)
                 .filter(Matcher::find)
-                .map(
-                    matcher -> {
-                      final int major = Integer.parseInt(matcher.group(1));
-                      final int minor = Integer.parseInt(matcher.group(2));
-                      final int patch = Integer.parseInt(matcher.group(3));
-                      final String label = matcher.group(4);
-                      return getLatestReleasedVersion(major, minor, patch, label);
-                    })
+                .flatMap(matcher -> Optional.ofNullable(matcher.group(4)))
+                .filter(label -> label.contains(SNAPSHOT_VERSION))
+                .map(snapshotLabel -> branchBasedSnapshotVersion)
                 .orElse(propertyValue),
-        defaultValue);
+        branchBasedSnapshotVersion);
   }
 
-  private static String getLatestReleasedVersion(
-      final int major, final int minor, final int patch, final String label) {
+  private String getBranchBasedSnapshotVersion(final String defaultVersion) {
+    final Matcher stableBranchMatcher =
+        STABLE_BRANCH_VERSION_PATTERN.matcher(gitProperties.getBranch());
 
-    if (label == null) {
-      // release version
-      return String.format(VERSION_FORMAT, major, minor, patch);
-    } else if (!label.contains(SNAPSHOT_VERSION)) {
-      // alpha, rc or other labeled version
-      return String.format(LABELED_VERSION_FORMAT, major, minor, patch, label);
-    } else if (patch == 0) {
-      // current dev version
-      return SNAPSHOT_VERSION;
+    if (stableBranchMatcher.find()) {
+      final int stableBranchMajorVersion = Integer.parseInt(stableBranchMatcher.group(2));
+      final int stableBranchMinorVersion = Integer.parseInt(stableBranchMatcher.group(3));
+      return String.format(
+          SNAPSHOT_VERSION_FORMAT,
+          stableBranchMajorVersion,
+          stableBranchMinorVersion,
+          SNAPSHOT_VERSION);
     } else {
-      // maintenance dev version
-      final int previousPatchVersion = patch - 1;
-      return String.format(VERSION_FORMAT, major, minor, previousPatchVersion);
+      return defaultVersion;
     }
   }
 }

@@ -17,13 +17,13 @@
       <idArg column="FORM_KEY" javaType="java.lang.Long"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="FORM_ID" javaType="java.lang.String"/>
-      <arg column="SCHEMA" javaType="java.lang.String"/>
+      <arg column="SCHEMA_XML" javaType="java.lang.String"/>
       <arg column="VERSION" javaType="java.lang.Long"/>
     </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.FormDbModel">
-    INSERT INTO ${prefix}FORM (FORM_ID, FORM_KEY, TENANT_ID, SCHEMA, VERSION, IS_DELETED)
+    INSERT INTO ${prefix}FORM (FORM_ID, FORM_KEY, TENANT_ID, SCHEMA_XML, VERSION, IS_DELETED)
     VALUES (#{formId}, #{formKey}, #{tenantId}, #{schema}, #{version}, #{isDeleted})
   </insert>
 
@@ -31,7 +31,7 @@
     UPDATE ${prefix}FORM
     SET FORM_ID = #{formId},
         TENANT_ID  = #{tenantId},
-        SCHEMA     = #{schema},
+        SCHEMA_XML     = #{schema},
         VERSION    = #{version},
         IS_DELETED = #{isDeleted}
     WHERE FORM_KEY = #{formKey}
@@ -50,7 +50,7 @@
     FORM_KEY,
     TENANT_ID,
     FORM_ID,
-    SCHEMA,
+    SCHEMA_XML,
     VERSION
     FROM ${prefix}FORM
     <include refid="io.camunda.db.rdbms.sql.FormMapper.searchFilter"/>
@@ -73,6 +73,9 @@
       <foreach close=")" collection="filter.formKeys" item="value" open="("
         separator=", ">#{value}
       </foreach>
+    </if>
+    <if test="filter.tenantId != null">
+      AND TENANT_ID = #{filter.tenantId}
     </if>
   </sql>
 

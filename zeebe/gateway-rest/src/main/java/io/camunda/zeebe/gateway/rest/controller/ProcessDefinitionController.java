@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
@@ -17,14 +17,16 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -132,6 +134,13 @@ public class ProcessDefinitionController {
         .fold(RestErrorMapper::mapProblemToResponse, this::elementStatistics);
   }
 
+  @CamundaPostMapping(path = "/statistics/process-instances")
+  public ResponseEntity<ProcessDefinitionInstanceStatisticsQueryResult> processInstanceStatistics(
+      @RequestBody(required = false) final ProcessDefinitionInstanceStatisticsQuery query) {
+    return SearchQueryRequestMapper.toProcessDefinitionInstanceStatisticsQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getProcessDefinitionInstanceStatistics);
+  }
+
   private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     try {
@@ -141,6 +150,21 @@ public class ProcessDefinitionController {
               .elementStatistics(filter);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionElementStatisticsResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<ProcessDefinitionInstanceStatisticsQueryResult>
+      getProcessDefinitionInstanceStatistics(
+          final io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery query) {
+    try {
+      final var result =
+          processDefinitionServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getProcessDefinitionInstanceStatistics(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toProcessInstanceStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

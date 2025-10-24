@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -250,19 +250,5 @@
       <artifactId>opensearch-java</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>identity-migration</artifactId>
-    </dependency>
   </dependencies>
 </project>

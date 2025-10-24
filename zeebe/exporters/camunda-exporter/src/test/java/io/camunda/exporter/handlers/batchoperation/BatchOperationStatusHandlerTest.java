@@ -203,6 +203,7 @@ class BatchOperationStatusHandlerTest {
     void shouldFlushEntityFields() {
       final var entity = new OperationEntity();
       entity.setState(OperationState.COMPLETED);
+      entity.setType(handler.getRelevantOperationType());
       entity.setBatchOperationId(String.valueOf(batchOperationKey));
       entity.setItemKey(123L);
       entity.setProcessInstanceKey(456L);
@@ -222,6 +223,7 @@ class BatchOperationStatusHandlerTest {
               entity,
               Map.of(
                   OperationTemplate.STATE, entity.getState(),
+                  OperationTemplate.TYPE, entity.getType(),
                   OperationTemplate.BATCH_OPERATION_ID, entity.getBatchOperationId(),
                   OperationTemplate.ITEM_KEY, entity.getItemKey(),
                   OperationTemplate.PROCESS_INSTANCE_KEY, entity.getProcessInstanceKey(),

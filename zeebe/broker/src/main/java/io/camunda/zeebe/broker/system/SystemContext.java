@@ -12,6 +12,7 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
@@ -77,6 +78,7 @@ public final class SystemContext {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -90,7 +92,8 @@ public final class SystemContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -103,6 +106,7 @@ public final class SystemContext {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     initSystemContext();
   }
 
@@ -115,7 +119,9 @@ public final class SystemContext {
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -128,7 +134,8 @@ public final class SystemContext {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        null);
+        searchClientsProxy,
+        brokerRequestAuthorizationConverter);
   }
 
   private void initSystemContext() {
@@ -289,6 +296,42 @@ public final class SystemContext {
               config.getChunkSize()));
     }
 
+    if (config.getQueryRetryMax() < 0) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryMax must be greater than or equal to 0, but was %s",
+              config.getQueryRetryMax()));
+    }
+
+    if (config.getQueryRetryInitialDelay().isNegative()
+        || config.getQueryRetryInitialDelay().isZero()) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryInitialDelay must be positive, but was %s",
+              config.getQueryRetryInitialDelay()));
+    }
+
+    if (config.getQueryRetryMaxDelay().isNegative() || config.getQueryRetryMaxDelay().isZero()) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryMaxDelay must be positive, but was %s",
+              config.getQueryRetryMaxDelay()));
+    }
+
+    if (config.getQueryRetryMaxDelay().compareTo(config.getQueryRetryInitialDelay()) < 0) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperation.queryRetryInitialDelay of %s, but was %s",
+              config.getQueryRetryInitialDelay(), config.getQueryRetryMaxDelay()));
+    }
+
+    if (config.getQueryRetryBackoffFactor() < 1) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryRetryBackoffFactor must be greater than or equal to 1, but was %s",
+              config.getQueryRetryBackoffFactor()));
+    }
+
     if (!errors.isEmpty()) {
       throw new InvalidConfigurationException(
           "Invalid BatchOperations configuration: " + String.join(", ", errors), null);
@@ -445,5 +488,9 @@ public final class SystemContext {
 
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
+    return brokerRequestAuthorizationConverter;
   }
 }

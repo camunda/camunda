@@ -29,6 +29,7 @@ import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
+import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
@@ -52,12 +53,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class DecisionInstanceAssertTest {
 
   private static final String NAME = "name";
-  private static final String DECISION_INSTANCE_ID = "instanceId";
-  private static final String DECISION_INSTANCE_KEY = "1";
+  private static final String DECISION_EVALUATION_INSTANCE_KEY = "instanceId";
+  private static final String DECISION_EVALUATION_KEY = "1";
   private static final String PROCESS_DEFINITION_KEY = "2";
   private static final String PROCESS_INSTANCE_KEY = "3";
   private static final String DECISION_DEFINITION_KEY = "4";
   private static final String ELEMENT_INSTANCE_KEY = "5";
+  private static final String ROOT_DECISION_DEFINITION_KEY = "6";
   private static final int DECISION_DEFINITION_VERSION = 1;
 
   private static final String STRING_RESULT = "\"outputValue\"";
@@ -80,7 +82,7 @@ public class DecisionInstanceAssertTest {
       final DecisionInstance mockedDecisionInstance) {
 
     when(camundaDataSource.findDecisionInstances(any())).thenReturn(mockedSearchResults);
-    when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+    when(camundaDataSource.getDecisionInstance(DECISION_EVALUATION_INSTANCE_KEY))
         .thenReturn(mockedDecisionInstance);
   }
 
@@ -89,13 +91,14 @@ public class DecisionInstanceAssertTest {
     final DecisionInstanceResult basicResult =
         new DecisionInstanceResult()
             .decisionDefinitionName(NAME)
-            .decisionInstanceId(DECISION_INSTANCE_ID)
-            .decisionInstanceKey(DECISION_INSTANCE_KEY)
+            .decisionEvaluationInstanceKey(DECISION_EVALUATION_INSTANCE_KEY)
+            .decisionEvaluationKey(DECISION_EVALUATION_KEY)
             .processDefinitionKey(PROCESS_DEFINITION_KEY)
             .processInstanceKey(PROCESS_INSTANCE_KEY)
             .decisionDefinitionKey(DECISION_DEFINITION_KEY)
             .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-            .decisionDefinitionVersion(DECISION_DEFINITION_VERSION);
+            .decisionDefinitionVersion(DECISION_DEFINITION_VERSION)
+            .rootDecisionDefinitionKey(ROOT_DECISION_DEFINITION_KEY);
 
     return new DecisionInstanceImpl(resultBuilderFn.apply(basicResult), null);
   }
@@ -106,8 +109,8 @@ public class DecisionInstanceAssertTest {
 
     return new DecisionInstanceImpl(
         null,
-        Integer.parseInt(DECISION_INSTANCE_KEY),
-        DECISION_INSTANCE_ID,
+        Integer.parseInt(DECISION_EVALUATION_KEY),
+        DECISION_EVALUATION_INSTANCE_KEY,
         DecisionInstanceState.EVALUATED,
         null,
         null,
@@ -119,6 +122,7 @@ public class DecisionInstanceAssertTest {
         NAME,
         1,
         DecisionDefinitionType.DECISION_TABLE,
+        Long.parseLong(ROOT_DECISION_DEFINITION_KEY),
         "tenantId",
         Collections.emptyList(),
         rulesList,
@@ -174,6 +178,34 @@ public class DecisionInstanceAssertTest {
   }
 
   @Nested
+  public class CombineSelectors {
+    @Test
+    public void canCombineSelectors() {
+      // when
+      mockDecisionInstanceSearch(
+          decisionInstance(d -> d.state(DecisionInstanceStateEnum.EVALUATED)));
+
+      // then
+      final DecisionSelector combined =
+          DecisionSelectors.byName(NAME).and(DecisionSelectors.byProcessInstanceKey(3));
+
+      assertThatDecision(combined).isEvaluated();
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    public void combinedSelectorsRequireAllTestsToPass() {
+      // then
+      final DecisionSelector badCombination =
+          DecisionSelectors.byName("bad_name").and(DecisionSelectors.byProcessInstanceKey(3));
+
+      // then
+      Assertions.assertThatThrownBy(() -> assertThatDecision(badCombination).isEvaluated())
+          .hasMessage("No DecisionInstance [name: bad_name, processInstanceKey: 3] found.");
+    }
+  }
+
+  @Nested
   public class IsEvaluated {
 
     @Test
@@ -195,7 +227,8 @@ public class DecisionInstanceAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).isEvaluated())
-          .hasMessage("Expected DecisionInstance [name] to have been evaluated, but was failed");
+          .hasMessage(
+              "Expected DecisionInstance [name: name] to have been evaluated, but was failed");
     }
   }
 
@@ -222,7 +255,7 @@ public class DecisionInstanceAssertTest {
           .thenReturn(Collections.singletonList(wrongInstance))
           .thenReturn(Collections.singletonList(wrongInstance))
           .thenReturn(Collections.singletonList(correctInstance));
-      when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+      when(camundaDataSource.getDecisionInstance(DECISION_EVALUATION_INSTANCE_KEY))
           .thenReturn(wrongInstance)
           .thenReturn(wrongInstance)
           .thenReturn(wrongInstance)
@@ -242,14 +275,14 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '\"foo\"', but was '\"outputValue\"'");
+              "Expected DecisionInstance [name: name] to have output '\"foo\"', but was '\"outputValue\"'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '\"outputValue\"'");
+              "Expected DecisionInstance [name: name] to have output '{\"a\":\"b\"}', but was '\"outputValue\"'");
     }
 
     @Test
@@ -262,14 +295,14 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '\"foo\"', but was '{\"a\":\"b\",\"v\":2}'");
+              "Expected DecisionInstance [name: name] to have output '\"foo\"', but was '{\"a\":\"b\",\"v\":2}'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '{\"a\":\"b\",\"v\":2}'");
+              "Expected DecisionInstance [name: name] to have output '{\"a\":\"b\"}', but was '{\"a\":\"b\",\"v\":2}'");
     }
 
     @Test
@@ -282,14 +315,14 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '\"foo\"', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected DecisionInstance [name: name] to have output '\"foo\"', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected DecisionInstance [name: name] to have output '{\"a\":\"b\"}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
     }
   }
 
@@ -316,7 +349,7 @@ public class DecisionInstanceAssertTest {
           .thenReturn(Collections.singletonList(wrongInstance))
           .thenReturn(Collections.singletonList(wrongInstance))
           .thenReturn(Collections.singletonList(correctInstance));
-      when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+      when(camundaDataSource.getDecisionInstance(DECISION_EVALUATION_INSTANCE_KEY))
           .thenReturn(wrongInstance)
           .thenReturn(wrongInstance)
           .thenReturn(wrongInstance)
@@ -336,7 +369,7 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasMatchedRules(2))
           .hasMessage(
-              "Expected DecisionInstance [name] to have matched rules [2], but did not. Matches:\n"
+              "Expected DecisionInstance [name: name] to have matched rules [2], but did not. Matches:\n"
                   + "\t- matched: []\n"
                   + "\t- missing: [2]\n"
                   + "\t- unexpected: [1]");
@@ -373,7 +406,7 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasNotMatchedRules(1))
           .hasMessage(
-              "Expected DecisionInstance [name] to not have matched rules [1], but matched [1]");
+              "Expected DecisionInstance [name: name] to not have matched rules [1], but matched [1]");
     }
 
     @Test
@@ -386,7 +419,7 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThatDecision(DecisionSelectors.byName(NAME)).hasNotMatchedRules(4, 1, 5))
           .hasMessage(
-              "Expected DecisionInstance [name] to not have matched rules [4, 1, 5], but matched [1]");
+              "Expected DecisionInstance [name: name] to not have matched rules [4, 1, 5], but matched [1]");
     }
   }
 }

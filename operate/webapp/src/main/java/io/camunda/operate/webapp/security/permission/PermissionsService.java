@@ -15,10 +15,10 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.Set;
 
 public class PermissionsService {
@@ -69,12 +69,10 @@ public class PermissionsService {
   public Set<String> getResourcePermissions(
       final String resourceKey, final AuthorizationResourceType resourceType) {
     final Set<String> permissions = new HashSet<>();
-    if (isAuthorized()) {
-      final Set<PermissionType> permissionTypeSet =
-          authorizationChecker.collectPermissionTypes(
-              resourceKey, resourceType, getAuthentication());
-      permissionTypeSet.forEach(p -> permissions.add(p.name()));
-    }
+
+    final Set<PermissionType> permissionTypeSet =
+        authorizationChecker.collectPermissionTypes(resourceKey, resourceType, getAuthentication());
+    permissionTypeSet.forEach(p -> permissions.add(p.name()));
 
     return permissions;
   }
@@ -114,11 +112,14 @@ public class PermissionsService {
 
   public void verifyWildcardResourcePermission(
       final AuthorizationResourceType resourceType, final PermissionType permissionType) {
-    if (!hasPermissionForResourceType(Authorization.WILDCARD, resourceType, permissionType)) {
+    if (!hasPermissionForResourceType(
+        AuthorizationScope.WILDCARD_CHAR, resourceType, permissionType)) {
       throw new ForbiddenException(
           "%s:%s:%s permissions required to access this resource."
               .formatted(
-                  resourceType.toString(), Authorization.WILDCARD, permissionType.toString()));
+                  resourceType.toString(),
+                  AuthorizationScope.WILDCARD_CHAR,
+                  permissionType.toString()));
     }
   }
 
@@ -133,9 +134,6 @@ public class PermissionsService {
       final PermissionType permissionType) {
     if (!permissionsEnabled()) {
       return true;
-    }
-    if (!isAuthorized()) {
-      return false;
     }
     return isAuthorizedFor(resourceId, resourceType, permissionType);
   }
@@ -161,6 +159,10 @@ public class PermissionsService {
         AuthorizationResourceType.DECISION_DEFINITION, permissionType);
   }
 
+  public ResourcesAllowed getBatchOperationsWithPermission(final PermissionType permissionType) {
+    return getResourcesWithPermission(AuthorizationResourceType.BATCH, permissionType);
+  }
+
   /**
    * getResourcesWithPermission
    *
@@ -171,9 +173,6 @@ public class PermissionsService {
       final AuthorizationResourceType resourceType, final PermissionType permissionType) {
     if (!permissionsEnabled()) {
       return ResourcesAllowed.wildcard();
-    }
-    if (!isAuthorized()) {
-      return ResourcesAllowed.withIds(Set.of());
     }
 
     final var authorization =
@@ -196,16 +195,6 @@ public class PermissionsService {
    */
   public boolean permissionsEnabled() {
     return securityConfiguration.getAuthorizations().isEnabled();
-  }
-
-  private boolean isAuthorized() {
-    return (getAuthenticatedUsername() != null);
-  }
-
-  private String getAuthenticatedUsername() {
-    return Optional.ofNullable(getAuthentication())
-        .map(CamundaAuthentication::authenticatedUsername)
-        .orElse(null);
   }
 
   private boolean isAuthorizedFor(

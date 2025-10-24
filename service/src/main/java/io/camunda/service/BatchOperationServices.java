@@ -17,6 +17,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -40,15 +41,27 @@ public final class BatchOperationServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final BatchOperationSearchClient batchOperationSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.batchOperationSearchClient = batchOperationSearchClient;
   }
 
   @Override
   public BatchOperationServices withAuthentication(final CamundaAuthentication authentication) {
     return new BatchOperationServices(
-        brokerClient, securityContextProvider, batchOperationSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        batchOperationSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override

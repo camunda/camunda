@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.client.protocol.rest.MappingRuleCreateResult;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class CreateMappingRuleTest extends ClientRestTest {
@@ -31,6 +33,9 @@ public class CreateMappingRuleTest extends ClientRestTest {
 
   @Test
   void shouldCreateMappingRule() {
+    // given
+    gatewayService.onCreateMappingRuleRequest(Instancio.create(MappingRuleCreateResult.class));
+
     // when
     client
         .newCreateMappingRuleCommand()

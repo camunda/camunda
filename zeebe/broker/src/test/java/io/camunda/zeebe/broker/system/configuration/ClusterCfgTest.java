@@ -40,6 +40,7 @@ public final class ClusterCfgTest {
       "zeebe.broker.cluster.configManager.gossip.syncRequestTimeout";
   private static final String ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_GOSSIP_FANOUT =
       "zeebe.broker.cluster.configManager.gossip.gossipFanout";
+  private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_ID = "zeebe.broker.cluster.clusterId";
 
   @Test
   public void shouldUseDefaults() {
@@ -64,6 +65,7 @@ public final class ClusterCfgTest {
     assertThat(defaultCfg.getClusterSize()).isEqualTo(1);
     assertThat(defaultCfg.getInitialContactPoints()).isEqualTo(List.of());
     assertThat(defaultCfg.getConfigManager()).isEqualTo(ConfigManagerCfg.defaultConfig());
+    assertThat(defaultCfg.getClusterId()).isNull();
   }
 
   @Test
@@ -74,6 +76,7 @@ public final class ClusterCfgTest {
     environment.put(ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT, "2");
     environment.put(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "3");
     environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "2");
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_ID, "cluster-id");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -84,6 +87,7 @@ public final class ClusterCfgTest {
     assertThat(cfgCluster.getPartitionsCount()).isEqualTo(2);
     assertThat(cfgCluster.getReplicationFactor()).isEqualTo(3);
     assertThat(cfgCluster.getNodeId()).isEqualTo(2);
+    assertThat(cfgCluster.getClusterId()).isEqualTo("cluster-id");
   }
 
   @Test

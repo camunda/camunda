@@ -12,6 +12,7 @@ import { Launch } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { Description, Title, Grid, Content } from "./components";
 import ForbiddenIcon from "src/assets/images/forbidden.svg";
+import { docsUrl } from "src/configuration";
 
 const ForbiddenPage: FC = () => {
   const { t, Translate } = useTranslate();
@@ -31,11 +32,7 @@ const ForbiddenPage: FC = () => {
             />
           </Description>
         </Stack>
-        <Link
-          href="https://docs.camunda.io/"
-          target="_blank"
-          renderIcon={Launch}
-        >
+        <Link href={docsUrl} target="_blank" renderIcon={Launch}>
           {t("forbiddenPageLinkLabel")}
         </Link>
       </Content>

@@ -53,47 +53,6 @@ test.describe('HTO User Flow Tests', () => {
     },
   });
 
-  test('User Task Most Common Flow', async ({
-    operateHomePage,
-    operateProcessesPage,
-    taskDetailsPage,
-    taskPanelPage,
-    operateProcessInstancePage,
-    page,
-    loginPage,
-  }) => {
-    await test.step('View Process Instance in Operate, complete User Task in Tasklist & assert process complete in Operate', async () => {
-      await navigateToApp(page, 'operate');
-      await loginPage.login('demo', 'demo');
-      await expect(operateHomePage.operateBanner).toBeVisible();
-      await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
-      await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName('Job_Worker_Process');
-      await operateProcessesPage.clickProcessInstanceLink();
-      await operateProcessInstancePage.activeIconAssertion();
-
-      await navigateToApp(page, 'tasklist');
-      await loginPage.login('demo', 'demo');
-      await completeTaskWithRetry(
-        taskPanelPage,
-        taskDetailsPage,
-        'Job_Worker_Process',
-        'medium',
-      );
-
-      await navigateToApp(page, 'operate');
-      await loginPage.login('demo', 'demo');
-
-      await expect(operateHomePage.processesTab).toBeVisible({timeout: 120000});
-      await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName('Job_Worker_Process');
-      await operateProcessesPage.clickProcessCompletedCheckbox();
-      await sleep(10000);
-      await operateProcessesPage.clickProcessInstanceLink();
-      await operateProcessInstancePage.completedIconAssertion();
-    });
-  });
-
   test('User Task Editing Variables Flow', async ({
     page,
     operateHomePage,

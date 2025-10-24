@@ -60,7 +60,7 @@ public class DbTenantState implements MutableTenantState {
   @Override
   public Optional<PersistedTenant> getTenantById(final String tenantId) {
     this.tenantId.wrapString(tenantId);
-    final var persistedTenant = tenantsColumnFamily.get(this.tenantId);
+    final var persistedTenant = tenantsColumnFamily.get(this.tenantId, PersistedTenant::new);
     return Optional.ofNullable(persistedTenant);
   }
 }

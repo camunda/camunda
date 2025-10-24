@@ -28,11 +28,14 @@ import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.UNIFIED_CONFIGURATION_CAMUNDA_ENV_DATABASE_TYPE;
 
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.UUID;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -49,7 +52,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   private static final String READY_ENDPOINT = "/actuator/health/status";
   private static final String TOPOLOGY_ENDPOINT = "/v2/topology";
 
-  private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth";
+  private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth,security";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
 
   private static final String CAMUNDA_EXPORTER_CLASSNAME = "io.camunda.exporter.CamundaExporter";
@@ -79,8 +82,48 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
             ContainerRuntimePorts.CAMUNDA_REST_API);
   }
 
+  public CamundaContainer withMultiTenancy() {
+    withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_ENABLED,
+            MultiTenancyConfiguration.MULTITENANCY_ENABLED)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE,
+            MultiTenancyConfiguration.ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_MULTITENANCY_CHECKS_ENABLED,
+            MultiTenancyConfiguration.CAMUNDA_SECURITY_MULTITENANCY_CHECKS_ENABLED)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_MULTITENANCY_API_ENABLED,
+            MultiTenancyConfiguration.CAMUNDA_SECURITY_MULTITENANCY_API_ENABLED)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED,
+            MultiTenancyConfiguration.CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API,
+            MultiTenancyConfiguration.CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_NAME,
+            MultiTenancyConfiguration.MULTITENANCY_USER_NAME)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_EMAIL,
+            MultiTenancyConfiguration.MULTITENANCY_USER_EMAIL)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_USERNAME,
+            MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_PASSWORD,
+            MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_ADMIN_ROLE,
+            MultiTenancyConfiguration.MULTITENANCY_USER_ADMIN_ROLE)
+        .waitingFor(newBasicAuthWaitStrategy());
+
+    return this;
+  }
+
   public CamundaContainer withH2() {
     withEnv(CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
+        .withEnv(UNIFIED_CONFIGURATION_CAMUNDA_ENV_DATABASE_TYPE, DATABASE_TYPE)
         .withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, databaseUrL(UUID.randomUUID()))
         .withEnv(CAMUNDA_ENV_DATABASE_USERNAME, DATABASE_USERNAME)
         .withEnv(CAMUNDA_ENV_DATABASE_PASSWORD, DATABASE_PASSWORD)
@@ -114,13 +157,18 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         CAMUNDA_EXPORTER_BULK_SIZE);
 
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ELASTICSEARCH_URL, url);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBEELASTICSEARCH_URL, url);
 
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ELASTICSEARCH_URL, url);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBEELASTICSEARCH_URL, url);
 
     withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, url);
     return this;
+  }
+
+  public static HttpWaitStrategy newBasicAuthBrokerReadyCheck() {
+    return newDefaultBrokerReadyCheck()
+        .withBasicCredentials(
+            MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME,
+            MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD);
   }
 
   public static HttpWaitStrategy newDefaultBrokerReadyCheck() {
@@ -129,6 +177,13 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .forPort(ContainerRuntimePorts.CAMUNDA_MONITORING_API)
         .forStatusCodeMatching(status -> status >= 200 && status < 300)
         .withReadTimeout(DEFAULT_READINESS_TIMEOUT);
+  }
+
+  public static HttpWaitStrategy newBasicAuthTopologyReadyCheck() {
+    return newDefaultTopologyReadyCheck()
+        .withBasicCredentials(
+            MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME,
+            MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD);
   }
 
   public static HttpWaitStrategy newDefaultTopologyReadyCheck() {
@@ -150,6 +205,13 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
         .withStrategy(newDefaultBrokerReadyCheck())
         .withStrategy(newDefaultTopologyReadyCheck())
+        .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
+  }
+
+  private WaitAllStrategy newBasicAuthWaitStrategy() {
+    return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
+        .withStrategy(newBasicAuthBrokerReadyCheck())
+        .withStrategy(newBasicAuthTopologyReadyCheck())
         .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
   }
 
@@ -198,6 +260,37 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
     public static String databaseUrL(final UUID uuid) {
       return "jdbc:h2:mem:cpt+" + uuid + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+    }
+  }
+
+  /**
+   * Contains all configuration values required for running a self-managed, multitenancy-enabled
+   * Camunda test runtime.
+   */
+  public static class MultiTenancyConfiguration {
+    public static final String MULTITENANCY_ENABLED = "true";
+    public static final String ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE = "basic";
+    public static final String CAMUNDA_SECURITY_MULTITENANCY_CHECKS_ENABLED = "true";
+    public static final String CAMUNDA_SECURITY_MULTITENANCY_API_ENABLED = "true";
+    public static final String CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI = "false";
+    public static final String CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED = "true";
+    /*
+     * Although the {@see io.camunda.security.configuration.InitializationConfiguration} creates a
+     * demo user by default, the user is explicity defined here in case the demo user, for whatever
+     * reason, should change in the future.
+     */
+    public static final String MULTITENANCY_USER_NAME = "demo";
+    public static final String MULTITENANCY_USER_EMAIL = "demo@example.com";
+    public static final String MULTITENANCY_USER_USERNAME = "demo";
+    public static final String MULTITENANCY_USER_PASSWORD = "demo";
+    public static final String MULTITENANCY_USER_ADMIN_ROLE = "demo";
+
+    public static String getBasicAuthCredentials() {
+      final String basicAuthString =
+          String.format("%s:%s", MULTITENANCY_USER_USERNAME, MULTITENANCY_USER_PASSWORD);
+
+      return new String(
+          Base64.getEncoder().encode(basicAuthString.getBytes(StandardCharsets.UTF_8)));
     }
   }
 }

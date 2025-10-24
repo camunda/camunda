@@ -16,8 +16,8 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = LicenseController.class)
@@ -42,7 +42,7 @@ public class LicenseControllerTest extends RestControllerTest {
           "isCommercial": true
       }""";
 
-  @MockBean ManagementServices managementServices;
+  @MockitoBean ManagementServices managementServices;
 
   @Test
   void shouldReturnProperSaaSResponse() {

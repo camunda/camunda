@@ -7,15 +7,12 @@
  */
 package io.camunda.optimize.upgrade.es;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.RequestBase;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -27,7 +24,6 @@ import co.elastic.clients.elasticsearch.core.ReindexRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateByQueryRequest;
 import co.elastic.clients.elasticsearch.indices.AliasDefinition;
-import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.UpdateAliasesRequest;
@@ -235,26 +231,6 @@ public class SchemaUpgradeClientES
       LOG.debug(
           "Index template [{}] does not exist and will therefore not be deleted.",
           indexTemplateName);
-    }
-  }
-
-  @Override
-  public void createIndexFromTemplate(final String indexNameWithSuffix) {
-    final CreateIndexRequest createIndexRequest =
-        CreateIndexRequest.of(c -> c.index(indexNameWithSuffix));
-    try {
-      databaseClient.createIndex(createIndexRequest);
-    } catch (final ElasticsearchException e) {
-      if (e.status() == BAD_REQUEST.code()
-          && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
-        LOG.debug("Index {} from template already exists.", indexNameWithSuffix);
-      } else {
-        throw e;
-      }
-    } catch (final Exception e) {
-      final String message =
-          String.format("Could not create index %s from template.", indexNameWithSuffix);
-      throw new OptimizeRuntimeException(message, e);
     }
   }
 

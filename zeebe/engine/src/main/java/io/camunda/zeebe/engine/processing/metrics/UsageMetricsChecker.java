@@ -12,7 +12,6 @@ import static java.util.Optional.ofNullable;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
-import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -59,8 +58,7 @@ public class UsageMetricsChecker implements Task {
     LOG.trace("UsageMetricsChecker running...");
 
     taskResultBuilder.appendCommandRecord(
-        UsageMetricIntent.EXPORT,
-        new UsageMetricRecord().setIntervalType(IntervalType.ACTIVE).setEventType(EventType.NONE));
+        UsageMetricIntent.EXPORT, new UsageMetricRecord().setEventType(EventType.NONE));
 
     if (shouldReschedule) {
       schedule(false);

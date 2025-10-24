@@ -12,6 +12,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -26,15 +27,27 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FormSearchClient formSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.formSearchClient = formSearchClient;
   }
 
   @Override
   public FormServices withAuthentication(final CamundaAuthentication authentication) {
     return new FormServices(
-        brokerClient, securityContextProvider, formSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        formSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override

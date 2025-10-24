@@ -180,6 +180,9 @@ public interface JobClient {
   /**
    * Activates and streams jobs of a specific type.
    *
+   * <p>This command will always try to use the gRPC communication protocol, even if the client is
+   * configured to prefer REST (streaming over REST is not supported).
+   *
    * <pre>{@code
    * final Consumer<ActivatedJob> consumer = ...; // do something with the consumed job
    * final CamundaFuture<StreamJobsResponse> stream = jobClient

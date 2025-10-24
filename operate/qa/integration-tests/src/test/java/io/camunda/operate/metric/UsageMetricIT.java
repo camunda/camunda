@@ -23,12 +23,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -38,8 +38,6 @@ import org.springframework.test.context.junit4.SpringRunner;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "management.endpoints.web.exposure.include = usage-metrics",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
@@ -57,13 +55,13 @@ public class UsageMetricIT {
       "/actuator/usage-metrics/decision-instances?startTime={startTime}&endTime={endTime}";
 
   @Autowired private TestRestTemplate testRestTemplate;
-  @MockBean private MetricsStore metricsStore;
+  @MockitoBean private MetricsStore metricsStore;
 
   @LocalManagementPort private int managementPort;
 
   @Test
   public void validateProcessInstanceActuatorEndpointRegistered() {
-    when(metricsStore.retrieveProcessInstanceCount(any(), any())).thenReturn(3L);
+    when(metricsStore.retrieveProcessInstanceCount(any(), any(), any())).thenReturn(3L);
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");
@@ -80,7 +78,7 @@ public class UsageMetricIT {
 
   @Test
   public void validateDecisionInstanceActuatorEndpointRegistered() {
-    when(metricsStore.retrieveDecisionInstanceCount(any(), any())).thenReturn(4L);
+    when(metricsStore.retrieveDecisionInstanceCount(any(), any(), any())).thenReturn(4L);
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");

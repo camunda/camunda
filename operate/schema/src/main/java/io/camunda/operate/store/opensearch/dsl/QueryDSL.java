@@ -96,6 +96,10 @@ public interface QueryDSL {
     return RangeQuery.of(q -> q.field(field).gt(json(gt)).lte(json(lte)))._toQuery();
   }
 
+  static <A> Query gteLt(final String field, final A gte, final A lt) {
+    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lt(json(lt)))._toQuery();
+  }
+
   static Query hasChildQuery(final String type, final Query query) {
     return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))
         ._toQuery();

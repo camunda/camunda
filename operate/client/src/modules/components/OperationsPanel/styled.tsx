@@ -8,14 +8,20 @@
 
 import styled from 'styled-components';
 
-const OperationsList = styled.ul`
-  li:last-child {
-    border-bottom: none;
-  }
+const OperationsList = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+const ScrollContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 `;
 
 const EmptyMessageContainer = styled.div`
   padding: var(--cds-spacing-05);
 `;
 
-export {OperationsList, EmptyMessageContainer};
+export {OperationsList, EmptyMessageContainer, ScrollContainer};

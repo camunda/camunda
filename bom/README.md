@@ -41,3 +41,15 @@ For example, you can use it to import the
 </dependencies>
 ```
 
+Also, you can use it to import the
+Camunda Spring Boot Starter
+
+```xml
+<dependencies>
+  <dependency>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-spring-boot-starter</artifactId>
+  </dependency>
+</dependencies>
+```
+

@@ -72,7 +72,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.UPDATE)
             .addResourceId(persistedUser.getUsername());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
@@ -102,13 +102,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
   }
 
   private UserRecord overlayUser(final UserRecord persistedUser, final UserRecord updatedUser) {
-    if (!updatedUser.getName().isEmpty()) {
-      persistedUser.setName(updatedUser.getName());
-    }
-
-    if (!updatedUser.getEmail().isEmpty()) {
-      persistedUser.setEmail(updatedUser.getEmail());
-    }
+    persistedUser.setName(updatedUser.getName());
+    persistedUser.setEmail(updatedUser.getEmail());
 
     if (!updatedUser.getPassword().isEmpty()) {
       persistedUser.setPassword(updatedUser.getPassword());

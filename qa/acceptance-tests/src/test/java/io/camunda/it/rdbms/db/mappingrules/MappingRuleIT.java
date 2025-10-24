@@ -15,13 +15,17 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.filter.MappingRuleFilter;
+import io.camunda.search.filter.MappingRuleFilter.Claim;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.sort.MappingRuleSort;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,6 +127,69 @@ public class MappingRuleIT {
                         .build(),
                     MappingRuleSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // Verify the search result
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    final var instance = searchResult.items().getFirst();
+    assertThat(instance).isNotNull();
+    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
+  }
+
+  @TestTemplate
+  public void shouldFindMappingRuleByClaims(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+
+    // Create and save a mapping rule
+    final MappingRuleDbModel mappingRule1 = MappingRuleFixtures.createRandomized();
+    createAndSaveMappingRule(rdbmsWriter, mappingRule1);
+    final MappingRuleDbModel mappingRule2 = MappingRuleFixtures.createRandomized();
+    createAndSaveMappingRule(rdbmsWriter, mappingRule2);
+
+    // Search for the mapping rule by claimValue
+    final var searchResult =
+        rdbmsService
+            .getMappingRuleReader()
+            .search(
+                new MappingRuleQuery(
+                    new MappingRuleFilter.Builder()
+                        .claims(
+                            List.of(
+                                new Claim(mappingRule1.claimName(), mappingRule1.claimValue()),
+                                new Claim(mappingRule2.claimName(), mappingRule2.claimValue())))
+                        .build(),
+                    MappingRuleSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // Verify the search result
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(MappingRuleEntity::mappingRuleId))
+        .containsExactly(mappingRule1.mappingRuleId(), mappingRule2.mappingRuleId());
+  }
+
+  @TestTemplate
+  public void shouldFindMappingRuleByAuthorizationResourceId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+
+    // Create and save a mapping rule
+    final MappingRuleDbModel randomizedMappingRule = MappingRuleFixtures.createRandomized();
+    createAndSaveMappingRule(rdbmsWriter, randomizedMappingRule);
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b);
+
+    // Search for the mapping rule by claimValue
+    final var searchResult =
+        rdbmsService
+            .getMappingRuleReader()
+            .search(
+                MappingRuleQuery.of(b -> b),
+                CommonFixtures.resourceAccessChecksFromResourceIds(
+                    randomizedMappingRule.mappingRuleId()));
 
     // Verify the search result
     assertThat(searchResult).isNotNull();

@@ -18,7 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
-import io.camunda.process.test.api.mock.JobWorkerMock;
+import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
@@ -64,7 +64,7 @@ public interface CamundaProcessTestContext {
    * @deprecated used to keep compatibility with the Zeebe client injection
    */
   @Deprecated
-  ZeebeClient createZeebeClient(Consumer<ZeebeClientBuilder> modifier);
+  ZeebeClient createZeebeClient(final Consumer<ZeebeClientBuilder> modifier);
 
   /**
    * @return the URI of Camunda's gRPC API address
@@ -117,7 +117,7 @@ public interface CamundaProcessTestContext {
    * @param jobType the job type to mock, matching the `zeebeJobType` in the BPMN model.
    * @return a {@see JobWorkerMock} instance for configuring the mock behavior.
    */
-  JobWorkerMock mockJobWorker(final String jobType);
+  JobWorkerMockBuilder mockJobWorker(final String jobType);
 
   /**
    * Mocks a child process with the specified ID.
@@ -140,6 +140,14 @@ public interface CamundaProcessTestContext {
    * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
    */
   void completeJob(final String jobType);
+
+  /**
+   * Completes a job of the specified type with the variables from the example data property of the
+   * related BPMN element. If no property is defined, it completes the job without variables.
+   *
+   * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
+   */
+  void completeJobWithExampleData(final String jobType);
 
   /**
    * Completes a job of the specified type and sets the provided variables.
@@ -170,19 +178,19 @@ public interface CamundaProcessTestContext {
       final String jobType, final String errorCode, final Map<String, Object> variables);
 
   /**
-   * Completes a user task with the specified task name.
+   * Completes a user task with the given BPMN element ID.
    *
-   * @param taskName the name of the user task to complete
+   * @param elementId the BPMN element ID of the user task to complete
    */
-  void completeUserTask(final String taskName);
+  void completeUserTask(final String elementId);
 
   /**
-   * Completes a user task with the specified task name and sets the provided variables.
+   * Completes a user task with the given BPMN element ID and sets the provided variables.
    *
-   * @param taskName the name of the user task to complete
+   * @param elementId the BPMN element ID of the user task to complete
    * @param variables a map of variables to set when completing the user task
    */
-  void completeUserTask(final String taskName, final Map<String, Object> variables);
+  void completeUserTask(final String elementId, final Map<String, Object> variables);
 
   /**
    * Completes a user task that matches the specified selector.
@@ -199,6 +207,24 @@ public interface CamundaProcessTestContext {
    */
   void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables);
+
+  /**
+   * Completes a user task with the given element ID with the variables from the example data
+   * property of the related BPMN element. If no property is defined, it completes the user task
+   * without variables.
+   *
+   * @param elementId the elementId of the user task and its associated example data
+   */
+  void completeUserTaskWithExampleData(final String elementId);
+
+  /**
+   * Completes a user task with the given element selector with the variables from the example data
+   * property of the related BPMN element. If no property is defined, it completes the user task
+   * without variables.
+   *
+   * @param userTaskSelector the selector to identify the user task to complete
+   */
+  void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector);
 
   /**
    * Mocks a DMN decision with the specified decision ID and sets the provided variables.

@@ -19,14 +19,20 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.response.UserTaskProperties;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ActivatedJobImpl implements ActivatedJob {
@@ -50,6 +56,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final UserTaskProperties userTask;
   private final JobKind kind;
   private final ListenerEventType listenerEventType;
+  private final Set<String> tags;
 
   private Map<String, Object> variablesAsMap;
 
@@ -78,6 +85,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     userTask = job.hasUserTask() ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
     kind = EnumUtil.convert(job.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
+    tags = Collections.unmodifiableSet(new HashSet<>(job.getTagsList()));
   }
 
   public ActivatedJobImpl(
@@ -112,6 +120,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     userTask = job.getUserTask() != null ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
     kind = EnumUtil.convert(job.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
+    tags =
+        job.getTags() == null ? Collections.emptySet() : Collections.unmodifiableSet(job.getTags());
   }
 
   @Override
@@ -227,6 +237,19 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
+  public List<DocumentReferenceResponse> getDocumentReferences(final String name) {
+    final Object documentReference = getVariable(name);
+    return jsonMapper.transform(documentReference, DocumentReferenceResponseList.class).stream()
+        .map(DocumentReferenceResponse.class::cast)
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return tags;
+  }
+
+  @Override
   public String toString() {
     return toJson();
   }
@@ -246,4 +269,6 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private static Long parseLongOrEmpty(final String value) {
     return value == null ? -1 : Long.parseLong(value);
   }
+
+  static class DocumentReferenceResponseList extends ArrayList<DocumentReferenceResponseImpl> {}
 }

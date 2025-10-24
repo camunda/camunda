@@ -61,7 +61,8 @@ public class RoleMemberAddedHandlerTest {
     final var value = roleRecord.getValue();
     assertThat(idList)
         .containsExactly(
-            RoleIndex.JOIN_RELATION_FACTORY.createChildId(value.getRoleId(), value.getEntityId()));
+            RoleIndex.JOIN_RELATION_FACTORY.createChildId(
+                value.getRoleId(), value.getEntityId(), value.getEntityType()));
   }
 
   @Test

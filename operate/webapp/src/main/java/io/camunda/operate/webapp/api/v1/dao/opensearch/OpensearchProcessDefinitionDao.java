@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +38,7 @@ public class OpensearchProcessDefinitionDao
       final OpensearchQueryDSLWrapper queryDSLWrapper,
       final OpensearchRequestDSLWrapper requestDSLWrapper,
       final RichOpenSearchClient richOpenSearchClient,
-      final @Qualifier("operateProcessIndex") ProcessIndex processIndex) {
+      final ProcessIndex processIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processIndex = processIndex;
   }

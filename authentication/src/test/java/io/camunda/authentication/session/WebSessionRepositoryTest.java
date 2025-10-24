@@ -100,6 +100,21 @@ class WebSessionRepositoryTest {
   }
 
   @Test
+  void saveSessionWithLockAndRefreshAttributePersistsSession() {
+    // given
+    final var webSession = webSessionRepository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
+    webSession.setAttribute("lock", webSession.getId() + "LOCK");
+    webSession.setAttribute("refresh", Instant.now());
+
+    // when
+    webSessionRepository.save(webSession);
+
+    // then
+    assertThat(webSessionRepository.findById(webSession.getId())).isNotNull();
+  }
+
+  @Test
   void deleteExpiredWebSessions() {
     // given
     final var expiredLastAccessedTime =

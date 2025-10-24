@@ -68,15 +68,10 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
   @Qualifier("tasklistOsClient")
   OpenSearchClient openSearchClient;
 
-  @Autowired
-  @Qualifier("tasklistZeebeOsClient")
-  OpenSearchClient zeebeOsClient;
-
   @Disabled("Can be tested manually")
   @Test
   public void canConnect() {
     assertThat(openSearchClient).isNotNull();
-    assertThat(zeebeOsClient).isNotNull();
   }
 
   static class ElasticsearchStarter
@@ -93,11 +88,8 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               "camunda.tasklist.opensearch.username=elastic",
               "camunda.tasklist.opensearch.password=elastic",
               "camunda.tasklist.opensearch.clusterName=docker-cluster",
-              "camunda.tasklist.zeebeOpensearch.url=" + elsUrl,
-              "camunda.tasklist.zeebeOpensearch.username=elastic",
-              "camunda.tasklist.zeebeOpensearch.password=elastic",
-              "camunda.tasklist.zeebeOpensearch.clusterName=docker-cluster",
-              "camunda.tasklist.zeebeOpensearch.prefix=zeebe-record")
+              "camunda.data.secondary-storage.opensearch.username=elastic",
+              "camunda.data.secondary-storage.opensearch.password=elastic")
           .applyTo(applicationContext.getEnvironment());
     }
   }

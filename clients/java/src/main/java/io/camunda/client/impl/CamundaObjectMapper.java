@@ -58,6 +58,16 @@ public final class CamundaObjectMapper implements JsonMapper {
   }
 
   @Override
+  public <T> T transform(final Object json, final Class<T> typeClass) {
+    try {
+      return objectMapper.convertValue(json, typeClass);
+    } catch (final IllegalArgumentException e) {
+      throw new InternalClientException(
+          String.format("Failed to transform object '%s' to class '%s'", json, typeClass), e);
+    }
+  }
+
+  @Override
   public Map<String, Object> fromJsonAsMap(final String json) {
     try {
       return objectMapper.readValue(json, MAP_TYPE_REFERENCE);

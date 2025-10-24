@@ -1,13 +1,16 @@
 springfox.documentation.swagger.v2.path: /documentation
+camunda:
+  data:
+    secondary-storage:
+      elasticsearch:
+        cluster-name: docker-cluster
+        host: localhost
+        port: 9200
+      opensearch:
+        cluster-name: opensearch-cluster
+        host: localhost
+        port: 9200
 camunda.operate:
-  elasticsearch:
-    clusterName: docker-cluster
-    host: localhost
-    port: 9200
-  opensearch:
-    clusterName: opensearch-cluster
-    host: localhost
-    port: 9200
   zeebe:
     gatewayAddress: localhost:26500
   zeebeElasticsearch:

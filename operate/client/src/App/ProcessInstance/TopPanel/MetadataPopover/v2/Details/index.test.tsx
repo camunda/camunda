@@ -360,4 +360,87 @@ describe('MetadataPopover <Details />', () => {
     expect(screen.getByText(/"jobType"/)).toBeInTheDocument();
     expect(screen.getByText(/"jobWorker"/)).toBeInTheDocument();
   });
+
+  it('should display message name and correlation key for service task with message subscription data', async () => {
+    const messageSubscriptionMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        type: 'SERVICE_TASK',
+        messageName: 'orderReceived',
+        correlationKey: 'order-123',
+      },
+    };
+
+    const {user} = render(
+      <Details
+        metaData={messageSubscriptionMetaData}
+        elementId="ServiceTask_1"
+      />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(
+      screen.getByText(/Element "ServiceTask_1" 123456789 Metadata/),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/"messageName": "orderReceived"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"correlationKey": "order-123"/),
+    ).toBeInTheDocument();
+  });
+
+  it('should not display message fields when message name and correlation key are absent', async () => {
+    const serviceTaskMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        type: 'SERVICE_TASK',
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={serviceTaskMetaData} elementId="ServiceTask_3" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(screen.queryByText(/"messageName"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"correlationKey"/)).not.toBeInTheDocument();
+  });
+
+  it('should display message subscription data for message events', async () => {
+    const messageEventMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        type: 'INTERMEDIATE_CATCH_EVENT',
+        messageName: 'clientMessage',
+        correlationKey: 'client-456',
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={messageEventMetaData} elementId="MessageEvent_1" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(
+      screen.getByText(/Element "MessageEvent_1" 123456789 Metadata/),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/"messageName": "clientMessage"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"correlationKey": "client-456"/),
+    ).toBeInTheDocument();
+  });
 });

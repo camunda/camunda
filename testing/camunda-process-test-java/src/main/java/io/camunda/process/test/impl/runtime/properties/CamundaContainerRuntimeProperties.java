@@ -18,9 +18,9 @@ package io.camunda.process.test.impl.runtime.properties;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyListOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyMapOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
-import static io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil.getLatestReleasedVersion;
 
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -32,26 +32,26 @@ public class CamundaContainerRuntimeProperties {
       "camundaDockerImageVersion";
   public static final String PROPERTY_NAME_CAMUNDA_ENV_VARS_PREFIX = "camundaEnvVars";
   public static final String PROPERTY_NAME_CAMUNDA_EXPOSED_PORTS_PREFIX = "camundaExposedPorts";
+  public static final String PROPERTY_NAME_CAMUNDA_LOGGER_NAME = "camundaLoggerName";
+  public static final String PROPERTY_NAME_CONNECTORS_LOGGER_NAME = "connectorsLoggerName";
 
-  private final String camundaVersion;
   private final String camundaDockerImageName;
   private final String camundaDockerImageVersion;
   private final Map<String, String> camundaEnvVars;
   private final List<Integer> camundaExposedPorts;
 
-  public CamundaContainerRuntimeProperties(final Properties properties) {
-    camundaVersion =
-        getLatestReleasedVersion(
-            properties,
-            PROPERTY_NAME_CAMUNDA_VERSION,
-            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
+  private final String camundaLoggerName;
+  private final String connectorsLoggerName;
+
+  public CamundaContainerRuntimeProperties(
+      final Properties properties, final VersionedPropertiesUtil versionedPropertiesReader) {
     camundaDockerImageName =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME);
     camundaDockerImageVersion =
-        getLatestReleasedVersion(
+        versionedPropertiesReader.getVersion(
             properties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
@@ -59,10 +59,16 @@ public class CamundaContainerRuntimeProperties {
     camundaExposedPorts =
         getPropertyListOrEmpty(
             properties, PROPERTY_NAME_CAMUNDA_EXPOSED_PORTS_PREFIX, Integer::parseInt);
-  }
-
-  public String getCamundaVersion() {
-    return camundaVersion;
+    camundaLoggerName =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_CAMUNDA_LOGGER_NAME,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_LOGGER_NAME);
+    connectorsLoggerName =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_CONNECTORS_LOGGER_NAME,
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME);
   }
 
   public String getCamundaDockerImageName() {
@@ -79,5 +85,13 @@ public class CamundaContainerRuntimeProperties {
 
   public List<Integer> getCamundaExposedPorts() {
     return camundaExposedPorts;
+  }
+
+  public String getCamundaLoggerName() {
+    return camundaLoggerName;
+  }
+
+  public String getConnectorsLoggerName() {
+    return connectorsLoggerName;
   }
 }

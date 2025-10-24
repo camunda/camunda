@@ -19,15 +19,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.util.ClientRestTest;
+import java.time.OffsetDateTime;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public final class GetDecisionInstanceTest extends ClientRestTest {
 
   @Test
   void shouldGetDecisionInstance() {
-    // when
+    // given
     final String decisionInstanceId = "1-1";
+    gatewayService.onDecisionInstanceRequest(
+        decisionInstanceId,
+        Instancio.create(DecisionInstanceResult.class)
+            .decisionEvaluationKey("1")
+            .decisionDefinitionKey("2")
+            .elementInstanceKey("3")
+            .processDefinitionKey("4")
+            .processInstanceKey("5")
+            .rootDecisionDefinitionKey("6")
+            .evaluationDate(OffsetDateTime.now().toString()));
+
+    // when
     client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
 
     // then

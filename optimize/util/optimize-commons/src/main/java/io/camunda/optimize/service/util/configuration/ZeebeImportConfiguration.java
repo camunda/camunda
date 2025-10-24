@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import java.util.Objects;
+
 public class ZeebeImportConfiguration {
 
   private int dynamicBatchSuccessAttempts;
@@ -41,13 +43,18 @@ public class ZeebeImportConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeImportConfiguration that = (ZeebeImportConfiguration) o;
+    return dynamicBatchSuccessAttempts == that.dynamicBatchSuccessAttempts
+        && maxEmptyPagesToImport == that.maxEmptyPagesToImport;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(dynamicBatchSuccessAttempts, maxEmptyPagesToImport);
   }
 
   @Override

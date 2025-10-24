@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.sorting;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class ReportSortingDto {
@@ -47,12 +48,19 @@ public class ReportSortingDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(by, order);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ReportSortingDto that = (ReportSortingDto) o;
+    return Objects.equals(by, that.by) && Objects.equals(order, that.order);
   }
 
   @Override

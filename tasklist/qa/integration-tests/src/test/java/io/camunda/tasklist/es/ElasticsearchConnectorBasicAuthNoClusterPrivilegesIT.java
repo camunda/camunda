@@ -58,11 +58,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
       UnifiedConfigurationHelper.class,
       UnifiedConfiguration.class
     },
-    properties = {
-      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
-    },
+    properties = {TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(
     initializers = {
@@ -81,8 +77,6 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
   private static final String TASKLIST_ES_PASSWORD = "tasklist_pwd";
   @Autowired RestHighLevelClient tasklistEsClient;
 
-  @Autowired RestHighLevelClient tasklistZeebeEsClient;
-
   @Autowired private TestRestTemplate testRestTemplate;
 
   @LocalManagementPort private int managementPort;
@@ -95,7 +89,6 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
   @Test
   public void canConnect() {
     assertThat(tasklistEsClient).isNotNull();
-    assertThat(tasklistZeebeEsClient).isNotNull();
     final var healthCheck =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health", Map.class);
@@ -117,12 +110,21 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
               "camunda.tasklist.elasticsearch.username=" + TASKLIST_ES_USER,
               "camunda.tasklist.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
               "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
+              // DB url
+              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
+              "camunda.database.url=" + elsUrl,
+              "camunda.operate.elasticsearch.url=" + elsUrl,
+              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
-              "camunda.tasklist.zeebeElasticsearch.url=" + elsUrl,
-              "camunda.tasklist.zeebeElasticsearch.username=" + TASKLIST_ES_USER,
-              "camunda.tasklist.zeebeElasticsearch.password=" + TASKLIST_ES_PASSWORD,
-              "camunda.tasklist.zeebeElasticsearch.clusterName=docker-cluster",
-              "camunda.tasklist.zeebeElasticsearch.prefix=zeebe-record",
+              // DB type
+              "camunda.data.secondary-storage.type=elasticsearch",
+              "camunda.database.type=elasticsearch",
+              "camunda.tasklist.database=elasticsearch",
+              "camunda.operate.database=elasticsearch",
+              // Unified config
+              "camunda.data.secondary-storage.elasticsearch.username=" + TASKLIST_ES_USER,
+              "camunda.data.secondary-storage.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
+              // Disable health check as tasklist ES client has no cluster privileges
               "camunda.tasklist.elasticsearch.healthCheckEnabled=false")
           .applyTo(applicationContext.getEnvironment());
     }

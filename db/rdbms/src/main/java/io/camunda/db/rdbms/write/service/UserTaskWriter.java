@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
@@ -111,16 +112,23 @@ public class UserTaskWriter {
 
   public void scheduleForHistoryCleanup(
       final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.USER_TASK,
-            WriteStatementType.UPDATE,
-            processInstanceKey,
-            "io.camunda.db.rdbms.sql.UserTaskMapper.updateHistoryCleanupDate",
-            new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
-                .processInstanceKey(processInstanceKey)
-                .historyCleanupDate(historyCleanupDate)
-                .build()));
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new UpdateHistoryCleanupDateMerger(
+                ContextType.USER_TASK, processInstanceKey, historyCleanupDate));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.USER_TASK,
+              WriteStatementType.UPDATE,
+              processInstanceKey,
+              "io.camunda.db.rdbms.sql.UserTaskMapper.updateHistoryCleanupDate",
+              new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+                  .processInstanceKey(processInstanceKey)
+                  .historyCleanupDate(historyCleanupDate)
+                  .build()));
+    }
   }
 
   public void migrateToProcess(final UserTaskMigrationDbModel model) {

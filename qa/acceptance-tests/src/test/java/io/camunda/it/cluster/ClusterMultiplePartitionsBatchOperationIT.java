@@ -106,7 +106,7 @@ public class ClusterMultiplePartitionsBatchOperationIT {
         camundaClient
             .newCreateBatchOperationCommand()
             .processInstanceCancel()
-            .filter(new ProcessInstanceFilterImpl())
+            .filter(new ProcessInstanceFilterImpl().processDefinitionId("service_tasks_v1"))
             .send()
             .join();
     final var batchOperationKey = result.getBatchOperationKey();

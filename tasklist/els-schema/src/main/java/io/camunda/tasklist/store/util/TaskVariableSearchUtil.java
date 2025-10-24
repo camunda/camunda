@@ -15,9 +15,11 @@ import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -32,9 +34,13 @@ public class TaskVariableSearchUtil {
 
   @Autowired private VariableStore variableStore;
 
-  public Boolean checkIfVariablesExistInTask(
+  public List<String> getTaskIdsContainingVariables(
       final List<VariableStore.GetVariablesRequest> requests,
       final Map<String, String> variableNameAndVar) {
+
+    if (requests.isEmpty() || variableNameAndVar.isEmpty()) {
+      return Collections.emptyList();
+    }
 
     // build flow node trees (for each process instance)
     final Map<String, VariableStore.FlowNodeTree> flowNodeTrees = buildFlowNodeTrees(requests);
@@ -57,31 +63,13 @@ public class TaskVariableSearchUtil {
                 .get(0)
                 .getFieldNames()); // we assume here that all requests has the same list of  fields
 
-    final Map<String, List<VariableEntity>> variables =
-        buildResponse(flowNodeTrees, variableMaps, requests);
+    final var taskIdToVariablesMap =
+        buildTaskIdToVariablesMap(flowNodeTrees, variableMaps, requests);
 
-    for (final Map.Entry<String, List<VariableEntity>> taskEntry : variables.entrySet()) {
-      final List<VariableEntity> taskVariables = taskEntry.getValue();
-
-      for (final Map.Entry<String, String> variableEntry : variableNameAndVar.entrySet()) {
-        final String requiredVarName = variableEntry.getKey();
-        final String requiredVarValue = variableEntry.getValue();
-
-        // Check if the variable with the required name and value exists for the current task.
-        final boolean exists =
-            taskVariables.stream()
-                .anyMatch(
-                    varEntity ->
-                        requiredVarName.equals(varEntity.getName())
-                            && requiredVarValue.equals(varEntity.getValue()));
-
-        if (!exists) {
-          return false; // If the required variable doesn't exist for the task, return false.
-        }
-      }
-    }
-
-    return true;
+    return taskIdToVariablesMap.entrySet().stream()
+        .filter(e -> e.getValue().entrySet().containsAll(variableNameAndVar.entrySet()))
+        .map(Entry::getKey)
+        .toList();
   }
 
   private Map<String, VariableStore.FlowNodeTree> buildFlowNodeTrees(
@@ -90,7 +78,8 @@ public class TaskVariableSearchUtil {
         CollectionUtil.map(requests, VariableStore.GetVariablesRequest::getProcessInstanceId);
     // get all flow node instances for all process instance ids
     final List<FlowNodeInstanceEntity> flowNodeInstances =
-        variableStore.getFlowNodeInstances(processInstanceIds);
+        variableStore.getFlowNodeInstances(
+            processInstanceIds.stream().map(Long::parseLong).toList());
 
     final Map<String, VariableStore.FlowNodeTree> flowNodeTrees = new HashMap<>();
     for (final FlowNodeInstanceEntity flowNodeInstance : flowNodeInstances) {
@@ -170,12 +159,12 @@ public class TaskVariableSearchUtil {
         });
   }
 
-  private Map<String, List<VariableEntity>> buildResponse(
+  private Map<String, Map<String, String>> buildTaskIdToVariablesMap(
       final Map<String, VariableStore.FlowNodeTree> flowNodeTrees,
       final Map<String, VariableStore.VariableMap> variableMaps,
       final List<VariableStore.GetVariablesRequest> requests) {
 
-    final Map<String, List<VariableEntity>> response = new HashMap<>();
+    final Map<String, Map<String, String>> response = new HashMap<>();
 
     for (final VariableStore.GetVariablesRequest req : requests) {
       final VariableStore.FlowNodeTree flowNodeTree = flowNodeTrees.get(req.getProcessInstanceId());
@@ -185,12 +174,11 @@ public class TaskVariableSearchUtil {
       accumulateVariables(
           resultingVariableMap, variableMaps, flowNodeTree, req.getFlowNodeInstanceId());
 
-      response.put(
-          req.getTaskId(),
-          resultingVariableMap.entrySet().stream()
-              .sorted(Map.Entry.comparingByKey())
-              .map(e -> e.getValue())
-              .collect(Collectors.toList()));
+      response
+          .computeIfAbsent(req.getTaskId(), k -> new HashMap<>())
+          .putAll(
+              resultingVariableMap.values().stream()
+                  .collect(Collectors.toMap(VariableEntity::getName, VariableEntity::getValue)));
     }
     return response;
   }

@@ -140,7 +140,10 @@ public final class AuthorizationClient {
 
     public AuthorizationDeleteClient(final CommandWriter writer, final long authorizationKey) {
       this.writer = writer;
-      authorizationDeletionRecord = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+      authorizationDeletionRecord =
+          new AuthorizationRecord()
+              .setAuthorizationKey(authorizationKey)
+              .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
     }
 
     public AuthorizationDeleteClient expectRejection() {

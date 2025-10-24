@@ -21,7 +21,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty usernameProp = new StringProperty("username");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty emailProp = new StringProperty("email", "");
-  private final StringProperty passwordProp = new StringProperty("password", "");
+  private final StringProperty passwordProp = new StringProperty("password", "").sanitized();
 
   public UserRecord() {
     super(5);
@@ -69,6 +69,9 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   }
 
   public UserRecord setName(final String name) {
+    if (name == null) {
+      return this;
+    }
     nameProp.setValue(name);
     return this;
   }
@@ -84,6 +87,9 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   }
 
   public UserRecord setEmail(final String email) {
+    if (email == null) {
+      return this;
+    }
     emailProp.setValue(email);
     return this;
   }

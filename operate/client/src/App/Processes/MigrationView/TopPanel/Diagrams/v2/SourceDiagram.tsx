@@ -11,7 +11,7 @@ import {Header} from '../Header';
 import {DiagramWrapper} from '../styled';
 import {observer} from 'mobx-react';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {Diagram} from 'modules/components/Diagram/v2';
+import {Diagram} from 'modules/components/Diagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
@@ -24,7 +24,7 @@ import type {FlowNodeState} from 'modules/types/operate';
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
   const {
-    selectedSourceFlowNodeIds,
+    selectedSourceElementIds,
     state: {sourceProcessDefinitionKey},
   } = processInstanceMigrationStore;
 
@@ -75,10 +75,12 @@ const SourceDiagram: React.FC = observer(() => {
         {migrationSourceData?.xml !== undefined && (
           <Diagram
             xml={migrationSourceData.xml}
-            selectableFlowNodes={migrationSourceData.selectableFlowNodes.map(
-              (flowNode) => flowNode.id,
-            )}
-            selectedFlowNodeIds={selectedSourceFlowNodeIds}
+            processDefinitionKey={sourceProcessDefinitionKey ?? undefined}
+            selectableFlowNodes={[
+              ...migrationSourceData.selectableFlowNodes,
+              ...migrationSourceData.selectableSequenceFlows,
+            ].map((flowNode) => flowNode.id)}
+            selectedFlowNodeIds={selectedSourceElementIds}
             onFlowNodeSelection={(flowNodeId) => {
               processInstanceMigrationStore.selectSourceFlowNode(flowNodeId);
             }}

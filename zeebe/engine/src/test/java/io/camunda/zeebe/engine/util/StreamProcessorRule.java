@@ -201,6 +201,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.getProcessingState(getLogName(partitionId));
   }
 
+  public StreamProcessorMode getStreamProcessorMode() {
+    return streamProcessorMode;
+  }
+
   public RecordStream events() {
     return new RecordStream(streams.events(getLogName(startPartitionId)));
   }
@@ -278,6 +282,17 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
         key, requestStreamId, requestId, intent, recordValue, authorizedTenants);
+  }
+
+  @Override
+  public long writeCommand(
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String... authorizedTenants) {
+    return streamProcessingComposite.writeCommand(
+        requestStreamId, requestId, intent, recordValue, authorizedTenants);
   }
 
   @Override

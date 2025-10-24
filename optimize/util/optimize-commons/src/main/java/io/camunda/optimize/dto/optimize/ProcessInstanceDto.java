@@ -17,6 +17,7 @@ import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessInstanceDto implements OptimizeDto {
 
@@ -222,12 +223,46 @@ public class ProcessInstanceDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        processDefinitionKey,
+        processDefinitionVersion,
+        processDefinitionId,
+        processInstanceId,
+        businessKey,
+        startDate,
+        endDate,
+        duration,
+        state,
+        flowNodeInstances,
+        variables,
+        incidents,
+        dataSource,
+        tenantId);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessInstanceDto that = (ProcessInstanceDto) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(businessKey, that.businessKey)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(duration, that.duration)
+        && Objects.equals(state, that.state)
+        && Objects.equals(flowNodeInstances, that.flowNodeInstances)
+        && Objects.equals(variables, that.variables)
+        && Objects.equals(incidents, that.incidents)
+        && Objects.equals(dataSource, that.dataSource)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override

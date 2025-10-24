@@ -13,6 +13,9 @@ export class IdentityHeader {
   readonly logoutButton: Locator;
   readonly rolesTab: Locator;
   readonly tenantsTab: Locator;
+  readonly authorizationsTab: Locator;
+  readonly usersTab: Locator;
+  readonly groupsTab: Locator;
 
   constructor(page: Page) {
     this.openSettingsButton = page.getByRole('button', {
@@ -21,6 +24,14 @@ export class IdentityHeader {
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
     this.rolesTab = page.locator('nav a').filter({hasText: /^Roles$/});
     this.tenantsTab = page.locator('nav a').filter({hasText: /^Tenants$/});
+    this.authorizationsTab = page
+      .locator('nav a')
+      .filter({hasText: /^Authorizations$/});
+    this.usersTab = page.locator('nav a').filter({hasText: /^Users$/});
+    this.authorizationsTab = page
+      .locator('nav a')
+      .filter({hasText: /^Authorizations$/});
+    this.groupsTab = page.locator('nav a').filter({hasText: /^Groups$/});
   }
 
   async logout() {
@@ -34,5 +45,17 @@ export class IdentityHeader {
 
   async navigateToTenants() {
     await this.tenantsTab.click();
+  }
+
+  async navigateToAuthorizations() {
+    await this.authorizationsTab.click();
+  }
+
+  async navigateToUsers() {
+    await this.usersTab.click();
+  }
+
+  async navigateToGroups() {
+    await this.groupsTab.click();
   }
 }

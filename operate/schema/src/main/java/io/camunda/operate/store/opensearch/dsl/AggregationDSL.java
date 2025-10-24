@@ -73,6 +73,10 @@ public interface AggregationDSL {
     return TermsAggregation.of(a -> a.field(field).size(size).order(orderBy));
   }
 
+  static SumAggregation sumAggregation(String field) {
+    return SumAggregation.of(a -> a.field(field));
+  }
+
   static TopHitsAggregation topHitsAggregation(
       List<String> sourceFields, int size, SortOptions... sortOptions) {
     return TopHitsAggregation.of(

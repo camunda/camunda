@@ -22,7 +22,7 @@ import io.camunda.zeebe.broker.exporter.util.TestExporterFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -50,7 +50,7 @@ final class PartitionConfigurationManagerTest {
     private final String exporterId = "exporterA";
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(exporterId, new ExporterState(0, State.ENABLED, Optional.empty()))));
 
     @BeforeEach
@@ -70,7 +70,7 @@ final class PartitionConfigurationManagerTest {
       // given
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.disableExporter(exporterId))
+      when(mockExporterDirector.removeExporter(exporterId))
           .thenReturn(testConcurrencyControl.createCompletedFuture());
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
@@ -87,7 +87,7 @@ final class PartitionConfigurationManagerTest {
                   .state())
           .describedAs("Exporter state should be updated in the context")
           .isEqualTo(State.DISABLED);
-      verify(mockExporterDirector).disableExporter(exporterId);
+      verify(mockExporterDirector).removeExporter(exporterId);
     }
 
     @Test
@@ -115,12 +115,89 @@ final class PartitionConfigurationManagerTest {
       // given
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.disableExporter(exporterId))
+      when(mockExporterDirector.removeExporter(exporterId))
           .thenReturn(testConcurrencyControl.failedFuture(new RuntimeException("force fail")));
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
       // when - then
       assertThat(partitionConfigurationManager.disableExporter(exporterId))
+          .failsWithin(Duration.ofMillis(100))
+          .withThrowableOfType(ExecutionException.class)
+          .withMessageContaining("force fail");
+    }
+  }
+
+  @Nested
+  final class ExporterDelete {
+    private final String exporterId = "exporterA";
+    private final DynamicPartitionConfig partitionConfig =
+        new DynamicPartitionConfig(
+            new ExportingConfig(
+                Map.of(
+                    exporterId, new ExporterState(0, State.CONFIG_NOT_FOUND, Optional.empty()))));
+
+    @BeforeEach
+    void setup() {
+      partitionTransitionContext = new TestPartitionTransitionContext();
+      partitionTransitionContext.setExporterRepository(new ExporterRepository());
+      partitionConfigurationManager =
+          new PartitionConfigurationManager(
+              LOGGER,
+              partitionTransitionContext,
+              partitionTransitionContext.getExportedDescriptors(),
+              testConcurrencyControl);
+    }
+
+    @Test
+    void shouldDeleteExporterAndUpdateConfigInContext() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.removeExporter(exporterId))
+          .thenReturn(testConcurrencyControl.createCompletedFuture());
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when
+      partitionConfigurationManager.deleteExporter(exporterId).join();
+
+      // then
+      assertThat(
+              partitionTransitionContext
+                  .getDynamicPartitionConfig()
+                  .exporting()
+                  .exporters()
+                  .get(exporterId))
+          .isNull();
+      verify(mockExporterDirector).removeExporter(exporterId);
+    }
+
+    @Test
+    void shouldRemoveExporterFromConfigWhenExporterDirectorIsNotAvailable() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().exporters())
+          .containsKey(exporterId);
+
+      // when
+      partitionConfigurationManager.deleteExporter(exporterId).join();
+
+      // then
+      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().exporters())
+          .describedAs("Exporter should be removed from the context config")
+          .doesNotContainKey(exporterId);
+    }
+
+    @Test
+    void shouldFailFutureIfDeletingExporterFailed() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.removeExporter(exporterId))
+          .thenReturn(testConcurrencyControl.failedFuture(new RuntimeException("force fail")));
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when - then
+      assertThat(partitionConfigurationManager.deleteExporter(exporterId))
           .failsWithin(Duration.ofMillis(100))
           .withThrowableOfType(ExecutionException.class)
           .withMessageContaining("force fail");
@@ -136,7 +213,7 @@ final class PartitionConfigurationManagerTest {
     private final String exporterWithSameCustomExporterFactory = "exporterWithFactoryB";
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(
                     validExporterToInitialize,
                     new ExporterState(0, State.ENABLED, Optional.empty()))));

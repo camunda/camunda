@@ -29,9 +29,9 @@ jobs:
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-8-default
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
-    timeout-minutes: 21
+    timeout-minutes: 31
     strategy:
       fail-fast: false
       # The matrix is necessary to run separate analyses
@@ -84,11 +84,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@72ac5d753376b5769de0fe985b538b1b2dfe71b8
+      uses: camunda/infra-global-github-actions/fossa/setup@0cefec60b9a847594d0e33cddef4857772e3b09a
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@72ac5d753376b5769de0fe985b538b1b2dfe71b8
+      uses: camunda/infra-global-github-actions/fossa/info@0cefec60b9a847594d0e33cddef4857772e3b09a
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -111,7 +111,7 @@ jobs:
           optimize/pom.xml
 
     - name: Analyze project
-      uses: camunda/infra-global-github-actions/fossa/analyze@72ac5d753376b5769de0fe985b538b1b2dfe71b8
+      uses: camunda/infra-global-github-actions/fossa/analyze@0cefec60b9a847594d0e33cddef4857772e3b09a
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -123,7 +123,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@72ac5d753376b5769de0fe985b538b1b2dfe71b8
+      uses: camunda/infra-global-github-actions/fossa/pr-check@0cefec60b9a847594d0e33cddef4857772e3b09a
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}
@@ -137,7 +137,7 @@ jobs:
         path: ${{ matrix.project.path }}
         project: ${{ matrix.project.name }}
         revision: ${{ steps.info.outputs.head-revision }}
-        timeout: 20 # must be less than overall job timeout
+        timeout: 30 # must be less than overall job timeout
         timeout-start-time: ${{ steps.info.outputs.job-start-time }}
     - name: Observe build status
       if: always()

@@ -8,7 +8,9 @@
 package io.camunda.tasklist.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
@@ -34,23 +36,21 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 public class PropertiesTest {
 
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private UnifiedConfiguration unifiedConfiguration;
 
   @Test
   public void testProperties() {
-    assertThat(tasklistProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
-    assertThat(tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches()).isEqualTo(10);
+    // The file application-test-properties.yml only has data related to Elasticsearch.
+    assumeTrue(
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
+            == SecondaryStorageType.elasticsearch,
+        "Skipping because DB is not Elasticsearch");
+
     assertThat(tasklistProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");
-    assertThat(tasklistProperties.getElasticsearch().getHost()).isEqualTo("someHost");
-    assertThat(tasklistProperties.getElasticsearch().getPort()).isEqualTo(12345);
+    assertThat(tasklistProperties.getElasticsearch().getHost()).isEqualTo("localhost");
+    assertThat(tasklistProperties.getElasticsearch().getPort()).isEqualTo(9200);
     assertThat(tasklistProperties.getElasticsearch().getDateFormat()).isEqualTo("yyyy-MM-dd");
     assertThat(tasklistProperties.getElasticsearch().getBatchSize()).isEqualTo(111);
-    assertThat(tasklistProperties.getZeebeElasticsearch().getClusterName())
-        .isEqualTo("zeebeElasticClusterName");
-    assertThat(tasklistProperties.getZeebeElasticsearch().getHost()).isEqualTo("someOtherHost");
-    assertThat(tasklistProperties.getZeebeElasticsearch().getPort()).isEqualTo(54321);
-    assertThat(tasklistProperties.getZeebeElasticsearch().getDateFormat()).isEqualTo("dd-MM-yyyy");
-    assertThat(tasklistProperties.getZeebeElasticsearch().getBatchSize()).isEqualTo(222);
-    assertThat(tasklistProperties.getZeebeElasticsearch().getPrefix()).isEqualTo("somePrefix");
     assertThat(tasklistProperties.getZeebe().getGatewayAddress()).isEqualTo("someZeebeHost:999");
   }
 }

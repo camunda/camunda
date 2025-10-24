@@ -19,7 +19,7 @@ import {http, HttpResponse} from 'msw';
 import * as userMocks from 'common/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-import {endpoints} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.8';
 import {getQueryTasksResponseMock} from 'v2/mocks/tasks';
 import {unassignedTask} from 'v2/mocks/task';
 
@@ -36,19 +36,6 @@ const getWrapper = () => {
 
   return Wrapper;
 };
-
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig() {
-      return {
-        ...actual.getClientConfig(),
-        clientMode: 'v2',
-      };
-    },
-  };
-});
 
 describe('<EmptyPage />', () => {
   afterEach(() => {

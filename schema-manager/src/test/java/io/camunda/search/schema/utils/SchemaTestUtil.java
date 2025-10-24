@@ -101,6 +101,12 @@ public final class SchemaTestUtil {
                   Map.class);
       final var actualMappingsTree =
           TestObjectMapper.objectMapper().convertValue(mappings, Map.class);
+
+      // remove _meta for comparison as it is not part of the mapping validation as the diff
+      // is based only on the mapping properties
+      actualMappingsTree.remove("_meta");
+      expectedMappingsTree.remove("_meta");
+
       if (parseBoolean(actualMappingsTree.getOrDefault("dynamic", "false").toString())
           && parseBoolean(expectedMappingsTree.getOrDefault("dynamic", "false").toString())) {
         // if dynamic is true, skip mappings validation

@@ -9,6 +9,7 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
@@ -19,7 +20,7 @@ public interface GroupSearchClient {
 
   SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query);
 
-  SearchQueryResult<GroupMemberEntity> searchGroupMembers(GroupQuery query);
+  SearchQueryResult<GroupMemberEntity> searchGroupMembers(GroupMemberQuery query);
 
   GroupSearchClient withSecurityContext(SecurityContext securityContext);
 }

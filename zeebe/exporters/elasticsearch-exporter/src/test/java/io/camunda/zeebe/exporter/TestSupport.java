@@ -10,8 +10,10 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.EnumSet;
 import java.util.stream.Stream;
+import org.junit.jupiter.params.provider.Arguments;
 
 /** Collection of utilities for unit and integration tests. */
 final class TestSupport {
@@ -73,6 +75,7 @@ final class TestSupport {
       case ASYNC_REQUEST -> config.asyncRequest = value;
       case USAGE_METRIC -> config.usageMetrics = value;
       case RUNTIME_INSTRUCTION -> config.runtimeInstruction = value;
+      case CLUSTER_VARIABLE -> config.clusterVariable = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -129,5 +132,14 @@ final class TestSupport {
             ValueType.USAGE_METRIC,
             ValueType.MULTI_INSTANCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
+  }
+
+  static Stream<Arguments> provideValueTypesWithCurrentAndPreviousVersions() {
+    return TestSupport.provideValueTypes()
+        .flatMap(
+            valueType ->
+                Stream.of(
+                    Arguments.of(valueType, VersionUtil.getVersionLowerCase()),
+                    Arguments.of(valueType, VersionUtil.getPreviousVersion().toLowerCase())));
   }
 }

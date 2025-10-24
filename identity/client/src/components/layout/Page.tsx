@@ -46,14 +46,14 @@ const Page = styled(Content)`
 type PageHeaderProps = {
   title: string;
   linkText: string;
-  linkUrl: string;
+  docsLinkPath?: string;
   shouldShowDocumentationLink?: boolean;
 };
 
 export const PageHeader: FC<PageHeaderProps> = ({
   title,
   linkText,
-  linkUrl,
+  docsLinkPath,
   shouldShowDocumentationLink = true,
 }) => {
   const { Translate } = useTranslate();
@@ -65,7 +65,7 @@ export const PageHeader: FC<PageHeaderProps> = ({
         <PageSubTitle>
           <Translate i18nKey="moreInfo" values={{ linkText }}>
             For more information, see documentation on{" "}
-            <DocumentationLink path={linkUrl} withIcon>
+            <DocumentationLink path={docsLinkPath} withIcon>
               {linkText}
             </DocumentationLink>
           </Translate>

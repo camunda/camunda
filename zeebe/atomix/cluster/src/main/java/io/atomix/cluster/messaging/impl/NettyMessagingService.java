@@ -31,6 +31,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -86,6 +87,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -1213,7 +1215,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private class MessageDispatcher<M extends ProtocolMessage>
       extends SimpleChannelInboundHandler<Object> {
 
+    private static final Duration THROTTLED_LOGGER_INTERVAL = Duration.ofMinutes(5);
     private final Connection<M> connection;
+    private Map<Class<?>, Logger> loggers = null;
 
     MessageDispatcher(final Connection<M> connection) {
       this.connection = connection;
@@ -1246,8 +1250,21 @@ public final class NettyMessagingService implements ManagedMessagingService {
       } catch (final RejectedExecutionException e) {
         log.warn("Unable to dispatch message due to {}", e.getMessage());
       } catch (final ClassCastException e) {
-        log.error("Failed to dispatch message due to {}", e.getMessage());
+        final var logger = getLogger(message.getClass());
+        String subject = "UNKNOWN";
+        if (message instanceof final ProtocolRequest protocolMessage) {
+          subject = protocolMessage.subject();
+        }
+        logger.error("Failed to dispatch message with subject {}", subject, e);
       }
+    }
+
+    private Logger getLogger(final Class<?> clazz) {
+      if (loggers == null) {
+        loggers = new HashMap<>();
+      }
+      return loggers.computeIfAbsent(
+          clazz, k -> new ThrottledLogger(log, THROTTLED_LOGGER_INTERVAL));
     }
   }
 }

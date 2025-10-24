@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Route} from '@playwright/test';
-import {IncidentByErrorDto} from 'modules/api/incidents/fetchIncidentsByError';
-import {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
-import {CoreStatisticsDto} from 'modules/api/processInstances/fetchProcessCoreStatistics';
+import type {Route} from '@playwright/test';
+import type {
+  IncidentByErrorDto,
+  ProcessInstanceByNameDto,
+  CoreStatisticsDto,
+} from '@/types';
 
 const mockStatistics = {
   running: 891,

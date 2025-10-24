@@ -89,7 +89,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -100,9 +99,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeInstanceReader.class);
 
-  @Autowired
-  @Qualifier("operateFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 

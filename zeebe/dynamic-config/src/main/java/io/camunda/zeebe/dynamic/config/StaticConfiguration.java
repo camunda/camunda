@@ -17,13 +17,13 @@ import java.util.List;
 import java.util.Set;
 
 public record StaticConfiguration(
-    boolean enablePartitionScaling,
     PartitionDistributor partitionDistributor,
     Set<MemberId> clusterMembers,
     MemberId localMemberId,
     List<PartitionId> partitionIds,
     int replicationFactor,
-    DynamicPartitionConfig partitionConfig) {
+    DynamicPartitionConfig partitionConfig,
+    String clusterId) {
 
   public int partitionCount() {
     return partitionIds.size();
@@ -32,7 +32,7 @@ public record StaticConfiguration(
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return ConfigurationUtil.getClusterConfigFrom(
-        enablePartitionScaling, partitionDistribution, partitionConfig);
+        partitionDistribution, partitionConfig, clusterId);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {

@@ -26,6 +26,14 @@ public class BatchOperationCfg implements ConfigurationEntry {
   private int queryPageSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
   private int queryInClauseSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
 
+  private int queryRetryMax = EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX;
+  private Duration queryRetryInitialDelay =
+      EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY;
+  private Duration queryRetryMaxDelay =
+      EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
+  private int queryRetryBackoffFactor =
+      EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
+
   public Duration getSchedulerInterval() {
     return schedulerInterval;
   }
@@ -66,6 +74,38 @@ public class BatchOperationCfg implements ConfigurationEntry {
     this.queryInClauseSize = queryInClauseSize;
   }
 
+  public int getQueryRetryMax() {
+    return queryRetryMax;
+  }
+
+  public void setQueryRetryMax(final int queryRetryMax) {
+    this.queryRetryMax = queryRetryMax;
+  }
+
+  public Duration getQueryRetryInitialDelay() {
+    return queryRetryInitialDelay;
+  }
+
+  public void setQueryRetryInitialDelay(final Duration queryRetryMaxDelay) {
+    queryRetryInitialDelay = queryRetryMaxDelay;
+  }
+
+  public Duration getQueryRetryMaxDelay() {
+    return queryRetryMaxDelay;
+  }
+
+  public void setQueryRetryMaxDelay(final Duration queryRetryMaxDelay) {
+    this.queryRetryMaxDelay = queryRetryMaxDelay;
+  }
+
+  public int getQueryRetryBackoffFactor() {
+    return queryRetryBackoffFactor;
+  }
+
+  public void setQueryRetryBackoffFactor(final int queryRetryBackoffFactor) {
+    this.queryRetryBackoffFactor = queryRetryBackoffFactor;
+  }
+
   @Override
   public String toString() {
     return "BatchOperationCfg{"
@@ -79,6 +119,14 @@ public class BatchOperationCfg implements ConfigurationEntry {
         + queryPageSize
         + ", queryInClauseSize="
         + queryInClauseSize
+        + ", queryRetryMax="
+        + queryRetryMax
+        + ", queryRetryInitialDelay="
+        + queryRetryInitialDelay
+        + ", queryRetryMaxDelay="
+        + queryRetryMaxDelay
+        + ", queryRetryBackoffFactor="
+        + queryRetryBackoffFactor
         + '}';
   }
 }

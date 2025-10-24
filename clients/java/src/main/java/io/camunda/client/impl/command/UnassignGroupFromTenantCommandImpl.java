@@ -18,29 +18,40 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1.UnassignGroupFromTenantCommandStep2;
+import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1.UnassignGroupFromTenantCommandStep3;
 import io.camunda.client.api.response.UnassignGroupFromTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignGroupFromTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class UnassignGroupFromTenantCommandImpl
-    implements UnassignGroupFromTenantCommandStep1 {
+    implements UnassignGroupFromTenantCommandStep1,
+        UnassignGroupFromTenantCommandStep2,
+        UnassignGroupFromTenantCommandStep3 {
+
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final String tenantId;
+  private String tenantId;
   private String groupId;
 
-  public UnassignGroupFromTenantCommandImpl(final HttpClient httpClient, final String tenantId) {
+  public UnassignGroupFromTenantCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    this.tenantId = tenantId;
   }
 
   @Override
-  public UnassignGroupFromTenantCommandStep1 groupId(final String groupId) {
+  public UnassignGroupFromTenantCommandStep2 groupId(final String groupId) {
     this.groupId = groupId;
+    return this;
+  }
+
+  @Override
+  public UnassignGroupFromTenantCommandStep3 tenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 
@@ -57,7 +68,8 @@ public final class UnassignGroupFromTenantCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
     final HttpCamundaFuture<UnassignGroupFromTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/groups/%s", tenantId, groupId);
-    httpClient.delete(endpoint, httpRequestConfig.build(), result);
+    httpClient.delete(
+        endpoint, httpRequestConfig.build(), UnassignGroupFromTenantResponseImpl::new, result);
     return result;
   }
 }

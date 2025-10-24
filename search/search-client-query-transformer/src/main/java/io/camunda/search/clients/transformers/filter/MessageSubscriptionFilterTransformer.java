@@ -47,7 +47,7 @@ public class MessageSubscriptionFilterTransformer
         longOperations("processInstanceKey", filter.processInstanceKeyOperations()),
         stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()),
         longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()),
-        stringOperations(EVENT_TYPE, filter.messageSubscriptionTypeOperations()),
+        stringOperations(EVENT_TYPE, filter.messageSubscriptionStateOperations()),
         dateTimeOperations(DATE_TIME, filter.dateTimeOperations()),
         stringOperations("metadata.messageName", filter.messageNameOperations()),
         stringOperations("metadata.correlationKey", filter.correlationKeyOperations()),

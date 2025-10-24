@@ -43,7 +43,9 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.TagUtil;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -147,7 +149,7 @@ public final class ProcessInstanceCreationCreateProcessor
                 command.getValue().getTenantId())
             .addResourceId(processId);
 
-    final var isAuthorized = authCheckBehavior.isAuthorized(request);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isRight()) {
       return Either.right(deployedProcess);
     }
@@ -176,7 +178,9 @@ public final class ProcessInstanceCreationCreateProcessor
         process.getBpmnProcessId(),
         process.getTenantId());
 
-    final var processInstance = initProcessInstanceRecord(process, processInstanceKey);
+    final var processInstance =
+        initProcessInstanceRecord(process, processInstanceKey, record.getTags());
+
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
@@ -198,13 +202,16 @@ public final class ProcessInstanceCreationCreateProcessor
       final ProcessInstanceCreationRecord command, final DeployedProcess deployedProcess) {
     final var process = deployedProcess.getProcess();
     final var startInstructions = command.startInstructions();
+    final var tags = command.getTags();
 
     return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
         .flatMap(valid -> validateElementsExist(process, startInstructions))
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, startInstructions))
+        .flatMap(valid -> validateElementsNotInsideAdHocSubProcess(process, startInstructions))
         .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
+        .flatMap(valid -> validateTags(tags))
         .map(valid -> deployedProcess);
   }
 
@@ -279,6 +286,43 @@ public final class ProcessInstanceCreationCreateProcessor
     }
   }
 
+  private Either<Rejection, ?> validateElementsNotInsideAdHocSubProcess(
+      final ExecutableProcess process,
+      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
+
+    return startInstructions.stream()
+        .map(ProcessInstanceCreationStartInstruction::getElementId)
+        .filter(elementId -> isElementInsideAdHocSubProcess(process, elementId))
+        .findAny()
+        .map(
+            elementId ->
+                Either.left(
+                    new Rejection(
+                        RejectionType.INVALID_ARGUMENT,
+                        "Expected to create instance of process with start instructions but the element with id '%s' is inside an ad-hoc subprocess. The creation of elements inside an ad-hoc subprocess is not supported."
+                            .formatted(elementId))))
+        .orElse(VALID);
+  }
+
+  private boolean isElementInsideAdHocSubProcess(
+      final ExecutableProcess process, final String elementId) {
+    final var element = process.getElementById(wrapString(elementId));
+    return element != null && hasAdHocSubProcessScope(element);
+  }
+
+  private boolean hasAdHocSubProcessScope(final ExecutableFlowElement flowElement) {
+    final var flowScope = flowElement.getFlowScope();
+    if (flowScope == null) {
+      return false;
+    }
+
+    if (flowScope.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
+      return true;
+    } else {
+      return hasAdHocSubProcessScope(flowScope);
+    }
+  }
+
   private Either<Rejection, ?> validateTargetsSupportedElementType(
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
@@ -328,6 +372,30 @@ public final class ProcessInstanceCreationCreateProcessor
         .orElse(VALID);
   }
 
+  private Either<Rejection, ?> validateTags(final Set<String> tags) {
+    if (tags.size() > TagUtil.MAX_NUMBER_OF_TAGS) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(
+                  "Expected to create instance of process with tags, but the number of tags exceeds the limit of %s.",
+                  TagUtil.MAX_NUMBER_OF_TAGS)));
+    }
+
+    final List<String> invalidTags = tags.stream().filter(tag -> !TagUtil.isValidTag(tag)).toList();
+    if (!invalidTags.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to create instance of process with tags, but the tags '%s' are invalid. %s"
+                  .formatted(
+                      invalidTags.stream().collect(Collectors.joining("', '")),
+                      TagUtil.TAG_FORMAT_DESCRIPTION)));
+    }
+
+    return VALID;
+  }
+
   private boolean doesElementBelongToAnEventBasedGateway(
       final ExecutableProcess process, final String elementId) {
     final ExecutableFlowNode element = process.getElementById(elementId, ExecutableFlowNode.class);
@@ -354,7 +422,7 @@ public final class ProcessInstanceCreationCreateProcessor
   }
 
   private ProcessInstanceRecord initProcessInstanceRecord(
-      final DeployedProcess process, final long processInstanceKey) {
+      final DeployedProcess process, final long processInstanceKey, final Set<String> tags) {
     newProcessInstance.reset();
     newProcessInstance.setBpmnProcessId(process.getBpmnProcessId());
     newProcessInstance.setVersion(process.getVersion());
@@ -364,6 +432,7 @@ public final class ProcessInstanceCreationCreateProcessor
     newProcessInstance.setElementId(process.getProcess().getId());
     newProcessInstance.setFlowScopeKey(-1);
     newProcessInstance.setTenantId(process.getTenantId());
+    newProcessInstance.setTags(tags);
     return newProcessInstance;
   }
 

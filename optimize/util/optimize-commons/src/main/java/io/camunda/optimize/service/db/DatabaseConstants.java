@@ -59,7 +59,10 @@ public final class DatabaseConstants {
   public static final String BUSINESS_KEY_INDEX_NAME = "business-key";
   public static final String SETTINGS_INDEX_NAME = "settings";
   public static final String EXTERNAL_PROCESS_VARIABLE_INDEX_NAME = "external-process-variable";
-  public static final String INDEX_SUFFIX_PRE_ROLLOVER = "-000001";
+  // Before 8.8, Optimize indices could be templated and rolled over, and would have a numbered
+  // suffix. External variable indices were created with such a suffix, but otherwise they are not
+  // present
+  public static final String INDEX_SUFFIX = "-000001";
   public static final String INDEX = "_index";
   public static final String TOO_MANY_BUCKETS_EXCEPTION_TYPE = "too_many_buckets_exception";
   public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";

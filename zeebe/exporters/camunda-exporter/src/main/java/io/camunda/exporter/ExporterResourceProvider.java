@@ -31,6 +31,9 @@ public interface ExporterResourceProvider {
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper);
 
+  /** Resets the provider to its initial state. To avoid unnecessary resources consumptions. */
+  void reset();
+
   /**
    * This should return descriptors describing the desired state of all indices provided.
    *

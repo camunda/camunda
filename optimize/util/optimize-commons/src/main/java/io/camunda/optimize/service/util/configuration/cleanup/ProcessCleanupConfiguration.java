@@ -16,6 +16,7 @@ import io.camunda.optimize.util.SuppressionConstants;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -103,12 +104,23 @@ public class ProcessCleanupConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(enabled, cleanupMode, batchSize, processDefinitionSpecificConfiguration);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessCleanupConfiguration that = (ProcessCleanupConfiguration) o;
+    return enabled == that.enabled
+        && Objects.equals(cleanupMode, that.cleanupMode)
+        && Objects.equals(batchSize, that.batchSize)
+        && Objects.equals(
+            processDefinitionSpecificConfiguration, that.processDefinitionSpecificConfiguration);
   }
 
   @Override

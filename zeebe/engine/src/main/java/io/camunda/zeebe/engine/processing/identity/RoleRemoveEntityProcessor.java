@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -75,7 +74,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
             .addResourceId(record.getRoleId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
@@ -145,11 +144,8 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       final EntityType entityType,
       final String entityId) {
     return switch (entityType) {
-      case USER, CLIENT ->
-          true; // With simple mapping rules, any username or client id can be assigned
-      case GROUP ->
-          authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
-              || groupState.get(entityId).isPresent();
+      case USER, CLIENT, GROUP ->
+          true; // With simple mapping rules, any username, client id or group can be assigned
       case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       default -> false;
     };

@@ -7,5 +7,4 @@ zeebe:
         enableMessageTTLCheckerAsync: true
         enableTimerDueDateCheckerAsync: true
         enableStraightThroughProcessingLoopDetector: false
-        enablePartitionScaling: true
         enableMessageBodyOnExpired: false

@@ -1123,16 +1123,6 @@ public class ConfigurationService {
     return externalVariableConfiguration;
   }
 
-  public void setExternalVariableConfiguration(
-      final ExternalVariableConfiguration externalVariableConfiguration) {
-    this.externalVariableConfiguration = externalVariableConfiguration;
-  }
-
-  @JsonIgnore
-  public IndexRolloverConfiguration getVariableIndexRolloverConfiguration() {
-    return getExternalVariableConfiguration().getVariableIndexRollover();
-  }
-
   public GlobalCacheConfiguration getCaches() {
     if (caches == null) {
       caches = configJsonContext.read(CACHES_CONFIGURATION, GlobalCacheConfiguration.class);

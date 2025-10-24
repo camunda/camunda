@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
@@ -104,6 +105,31 @@ public class DefaultExporterResourceProviderTest {
                 .filter(BatchOperationChunkCreatedItemHandler.class::isInstance)
                 .toList())
         .isEmpty();
+  }
+
+  @Test
+  void shouldNotAddSameHandlerMultipleTimes() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getBatchOperation().setExportItemsOnCreation(true);
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // then
+    assertThat(provider.getExportHandlers())
+        .hasSize(
+            (int)
+                provider.getExportHandlers().stream()
+                    .map(ExportHandler::getClass)
+                    .distinct()
+                    .count());
   }
 
   static Stream<ExporterConfiguration> configProvider() {

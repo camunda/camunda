@@ -28,14 +28,16 @@ public interface AssignUserToTenantCommandStep1 {
    */
   AssignUserToTenantCommandStep2 username(String username);
 
-  interface AssignUserToTenantCommandStep2 extends FinalCommandStep<AssignUserToTenantResponse> {
+  interface AssignUserToTenantCommandStep2 {
     /**
      * Sets the tenant ID.
      *
      * @param tenantId the id of the tenant
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link AssignUserToTenantCommandStep3#send()} to
+     *     complete the command and send it to the broker.
      */
-    AssignUserToTenantCommandStep2 tenantId(String tenantId);
+    AssignUserToTenantCommandStep3 tenantId(String tenantId);
   }
+
+  interface AssignUserToTenantCommandStep3 extends FinalCommandStep<AssignUserToTenantResponse> {}
 }

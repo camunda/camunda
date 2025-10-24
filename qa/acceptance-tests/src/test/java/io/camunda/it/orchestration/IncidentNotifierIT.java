@@ -7,38 +7,37 @@
  */
 package io.camunda.it.orchestration;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.exporter.CamundaExporter;
-import io.camunda.exporter.notifier.HttpClientWrapper;
-import io.camunda.it.util.HttpRequestBodyTestUtility;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.io.IOException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -57,26 +56,55 @@ public class IncidentNotifierIT {
   private static final String JWT_TOKEN = JWT.create().sign(Algorithm.HMAC256("secretkey"));
   private static final String WEBHOOK_PATH = "/webhook";
   private static final String OAUTH_TOKEN_PATH = "/oauth/token";
-  private static final HttpClient HTTP_CLIENT = spy(HttpClient.newHttpClient());
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  // WireMock server to simulate token and webhook endpoints
+  private static WireMockServer wireMockServer;
 
   @BeforeAll
   public static void setUp() throws IOException, InterruptedException {
-    stubHttpClientResponses();
+    // start WireMock with dynamic port
+    wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+    wireMockServer.start();
+
+    // stub token endpoint
+    wireMockServer.stubFor(
+        post(urlEqualTo(OAUTH_TOKEN_PATH))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(String.format("{\"access_token\": \"%s\"}", JWT_TOKEN))));
+
+    // stub webhook endpoint
+    wireMockServer.stubFor(post(urlEqualTo(WEBHOOK_PATH)).willReturn(aResponse().withStatus(200)));
+
     final var camundaExporter = CamundaExporter.class.getSimpleName().toLowerCase();
+
+    // configure exporter to point to WireMock
     STANDALONE_CAMUNDA.withBrokerConfig(
         c -> {
           final var newArgs = new HashMap<>(c.getExporters().get(camundaExporter).getArgs());
+          final var baseUrl = wireMockServer.baseUrl();
           newArgs.put(
               "notifier",
               Map.of(
                   "webhook",
-                  "http://localhost:123" + WEBHOOK_PATH,
+                  baseUrl + WEBHOOK_PATH,
                   "auth0Domain",
-                  "camunda.domain"));
+                  "localhost:" + wireMockServer.port(),
+                  "auth0Protocol",
+                  "http"));
 
           c.getExporters().get(camundaExporter).setArgs(newArgs);
         });
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    if (wireMockServer != null && wireMockServer.isRunning()) {
+      wireMockServer.stop();
+    }
+    STANDALONE_CAMUNDA.stop();
   }
 
   @Test
@@ -86,23 +114,29 @@ public class IncidentNotifierIT {
       STANDALONE_CAMUNDA.awaitCompleteTopology();
     }
 
-    final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build();
-    final var incident = generateIncident(camundaClient);
-
-    waitForIncidentToExist(incident, camundaClient);
+    try (final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
+      final var incident = generateIncident(camundaClient);
+      waitForIncidentToExist(incident, camundaClient);
+    }
 
     await()
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
-            () ->
-                verify(HTTP_CLIENT)
-                    .send(
-                        argThat(
-                            req ->
-                                getIncidentsInRequestPayload(req) != null
-                                    && getIncidentsInRequestPayload(req).stream()
-                                        .allMatch(
-                                            incidents -> incidents.get("processVersion") != null)),
-                        any()));
+            () -> {
+              // get all webhook requests received by WireMock
+              final var requests = getRequestsToWebhook();
+              assertThat(
+                      requests.stream()
+                          .anyMatch(
+                              req -> {
+                                final var incidents =
+                                    getIncidentsInRequestPayload(req.getBodyAsString());
+                                return incidents != null
+                                    && incidents.stream()
+                                        .allMatch(map -> map.get("processVersion") != null);
+                              }))
+                  .isTrue();
+            });
   }
 
   @Test
@@ -112,25 +146,40 @@ public class IncidentNotifierIT {
       STANDALONE_CAMUNDA.start();
       STANDALONE_CAMUNDA.awaitCompleteTopology();
     }
-
-    final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build();
-    final var incident = generateIncident(camundaClient);
-
-    // then
-    waitForIncidentToExist(incident, camundaClient);
+    final ProcessInstanceEvent incident;
+    try (final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
+      incident = generateIncident(camundaClient);
+      // then
+      waitForIncidentToExist(incident, camundaClient);
+    }
 
     await()
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
-            () ->
-                verify(HTTP_CLIENT)
-                    .send(
-                        argThat(
-                            req ->
-                                req.uri().toString().endsWith(WEBHOOK_PATH)
-                                    && req.method().equalsIgnoreCase("POST")
-                                    && incidentsInRequestContainProcessInstanceKey(
-                                        req, incident.getProcessInstanceKey())),
-                        any()));
+            () -> {
+              final var requests = getRequestsToWebhook();
+              assertThat(
+                      requests.stream()
+                          .anyMatch(
+                              req -> {
+                                if (!req.getUrl().endsWith(WEBHOOK_PATH)) {
+                                  return false;
+                                }
+                                if (!"POST".equalsIgnoreCase(req.getMethod().getName())) {
+                                  return false;
+                                }
+                                final var incidents =
+                                    getIncidentsInRequestPayload(req.getBodyAsString());
+                                final String incidentKey =
+                                    String.valueOf(incident.getProcessInstanceKey());
+                                return incidents.stream()
+                                    .anyMatch(
+                                        map ->
+                                            String.valueOf(map.get("processInstanceId"))
+                                                .equals(incidentKey));
+                              }))
+                  .isTrue();
+            });
   }
 
   private void waitForIncidentToExist(
@@ -147,49 +196,20 @@ public class IncidentNotifierIT {
                             inc.getProcessInstanceKey().equals(incident.getProcessInstanceKey())));
   }
 
-  private boolean incidentsInRequestContainProcessInstanceKey(
-      final HttpRequest httpRequest, final Long processInstanceKey) {
-    return getIncidentsInRequestPayload(httpRequest).stream()
-        .anyMatch(map -> map.get("processInstanceId").equals(processInstanceKey.toString()));
+  private List<LoggedRequest> getRequestsToWebhook() {
+    return wireMockServer.getAllServeEvents().stream()
+        .map(ServeEvent::getRequest)
+        .filter(req -> req.getUrl().endsWith(WEBHOOK_PATH))
+        .collect(Collectors.toList());
   }
 
-  private List<Map<String, Object>> getIncidentsInRequestPayload(final HttpRequest httpRequest) {
+  private List<Map<String, Object>> getIncidentsInRequestPayload(final String body) {
     try {
-      final var incidents =
-          MAPPER.readTree(HttpRequestBodyTestUtility.extractBody(httpRequest)).at("/alerts");
-      return MAPPER.convertValue(incidents, List.class);
+      final var incidents = MAPPER.readTree(body).at("/alerts");
+      return MAPPER.convertValue(incidents, new TypeReference<>() {});
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private static void stubHttpClientResponses() throws IOException, InterruptedException {
-    final var mockTokenResponse = mock(HttpResponse.class);
-    when(mockTokenResponse.statusCode()).thenReturn(200);
-    when(mockTokenResponse.body())
-        .thenReturn(String.format("{\"access_token\": \"%s\"}", JWT_TOKEN));
-
-    final var mockWebhookResponse = mock(HttpResponse.class);
-    when(mockWebhookResponse.statusCode()).thenReturn(200);
-
-    doAnswer(
-            ctx -> {
-              final HttpRequest req = ctx.getArgument(0);
-              final var url = req.uri().toString();
-              final var method = req.method();
-
-              if (url.endsWith(WEBHOOK_PATH) && method.equalsIgnoreCase("POST")) {
-                return mockWebhookResponse;
-              } else if (url.endsWith(OAUTH_TOKEN_PATH) && method.equalsIgnoreCase("POST")) {
-                return mockTokenResponse;
-              }
-
-              return HTTP_CLIENT.send(req, ctx.getArgument(1));
-            })
-        .when(HTTP_CLIENT)
-        .send(any(HttpRequest.class), any());
-
-    HttpClientWrapper.setHttpClient(HTTP_CLIENT);
   }
 
   private SearchResponse<Incident> getIncidents(final CamundaClient camundaClient) {

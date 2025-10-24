@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.utils;
 
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,5 +40,12 @@ public class ExportUtil {
           key);
       return processInstanceKey + "/" + key;
     }
+  }
+
+  public static String tenantOrDefault(final String tenantId) {
+    if (tenantId == null || tenantId.isEmpty()) {
+      return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    }
+    return tenantId;
   }
 }

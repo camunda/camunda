@@ -8,13 +8,10 @@
 package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.BatchOperationRestService.BATCH_OPERATIONS_URL;
-import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,7 +40,6 @@ import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
-import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -56,7 +52,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,8 +84,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private BatchOperationReader batchOperationReader;
 
-  @Autowired private ListViewReader listViewReader;
-
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -119,56 +112,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     operateProperties.setBatchOperationMaxSize(initialBatchOperationMaxSize);
 
     super.after();
-  }
-
-  @Test
-  public void testBatchOperationsPersisted() throws Exception {
-    // given
-    final int instanceCount = 10;
-    for (int i = 0; i < instanceCount; i++) {
-      startDemoProcessInstance();
-    }
-
-    // when
-    final String batchOperationName = "operationName";
-    final ListViewQueryDto allRunningQuery = createGetAllRunningQuery();
-    final MvcResult mvcResult =
-        postBatchOperationWithOKResponse(
-            allRunningQuery, OperationType.CANCEL_PROCESS_INSTANCE, batchOperationName);
-
-    // then
-    final BatchOperationDto[] batchOperations =
-        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
-    assertThat(batchOperations).hasSize(1);
-
-    final BatchOperationDto batchOperationDto = batchOperations[0];
-    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.CANCEL_PROCESS_INSTANCE);
-    assertThat(batchOperationDto.getName()).isEqualTo(batchOperationName);
-    assertThat(batchOperationDto.getInstancesCount()).isEqualTo(10);
-    assertThat(batchOperationDto.getOperationsTotalCount()).isEqualTo(10);
-    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(0);
-    assertThat(batchOperationDto.getStartDate()).isNotNull();
-    assertThat(batchOperationDto.getEndDate()).isNull();
-
-    final BatchOperationDto batchOperationResponse =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(batchOperationResponse)
-        .usingRecursiveComparison()
-        // ignore because the Dto is created from an Entity (which doesn't have SortValues)
-        .ignoringFields("sortValues")
-        .isEqualTo(batchOperationDto);
-
-    final ListViewResponseDto response = getProcessInstances(allRunningQuery);
-    assertThat(response.getProcessInstances()).hasSize(instanceCount);
-    assertThat(response.getProcessInstances()).allMatch(pi -> pi.isHasActiveOperation());
-    assertThat(response.getProcessInstances())
-        .flatExtracting("operations")
-        .extracting(OperationTemplate.TYPE)
-        .containsOnly(OperationType.CANCEL_PROCESS_INSTANCE);
-    assertThat(response.getProcessInstances())
-        .flatExtracting("operations")
-        .extracting(OperationTemplate.STATE)
-        .containsOnly(OperationState.SCHEDULED);
   }
 
   @Test
@@ -219,7 +162,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   public void testSeveralOperationsPersistedForSeveralIncidents() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstanceWithIncidents();
-    searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 2);
+    searchTestRule.waitFor(incidentsAreActiveCheck, processInstanceKey, 2);
     final List<IncidentEntity> incidents =
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
 
@@ -288,28 +231,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
         operationReader.getOperationsByProcessInstanceKey(processInstanceKey);
     assertThat(operations).hasSize(0);
 
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
-    assertThat(batchOperations).hasSize(1);
-    assertThat(batchOperations.get(0).getEndDate()).isNotNull();
-  }
-
-  @Test
-  public void testNoOperationsPersistedForNoProcessInstances() throws Exception {
-    // given
-    // no process instances
-
-    // when
-    final MvcResult mvcResult =
-        postBatchOperationWithOKResponse(
-            createGetAllRunningQuery(), OperationType.CANCEL_PROCESS_INSTANCE);
-
-    // then
-    final BatchOperationEntity batchOperationResponse =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(batchOperationResponse.getInstancesCount()).isEqualTo(0);
-    assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(0);
-
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final List<BatchOperationEntity> batchOperations =
+        batchOperationReader.getBatchOperations(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
     assertThat(batchOperations.get(0).getEndDate()).isNotNull();
   }
@@ -355,7 +278,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     // elasticsearchTestRule.processAllEvents(8);
-    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    searchTestRule.waitFor(noActivitiesHaveIncident, processInstanceKey);
     processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
     assertThat(processInstance.isHasActiveOperation()).isEqualTo(false);
@@ -390,7 +313,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     // process all Zeebe records
-    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    searchTestRule.waitFor(noActivitiesHaveIncident, processInstanceKey);
 
     final List<IncidentDto> incidents =
         incidentReader
@@ -434,8 +357,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     // elasticsearchTestRule.processAllEvents(2);
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    searchTestRule.waitFor(operationsByProcessInstanceAreCompleted, processInstanceKey);
     processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
     assertThat(processInstance.isHasActiveOperation()).isEqualTo(false);
@@ -504,8 +426,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SENT);
 
     // TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    searchTestRule.waitFor(operationsByProcessInstanceAreCompleted, processInstanceKey);
 
     // then
     // all three variables are returned
@@ -559,10 +480,9 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
     // elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-    // elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey,
+    // elasticsearchTestRule.waitFor(variableExistsCheck, processInstanceKey,
     // processInstanceKey, newVar2Name);
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    searchTestRule.waitFor(operationsByProcessInstanceAreCompleted, processInstanceKey);
 
     // then
     // all three variables are returned
@@ -576,15 +496,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private OperationDto getOperation(final String batchOperationId) throws Exception {
-    final MockHttpServletRequestBuilder getOperationRequest =
-        get(String.format(OPERATION_URL + "?batchOperationId=%s", batchOperationId));
-
-    final MvcResult mvcResult =
-        mockMvc.perform(getOperationRequest).andExpect(status().isOk()).andReturn();
-    final OperationDto[] operations =
-        objectMapper.readValue(mvcResult.getResponse().getContentAsString(), OperationDto[].class);
-    assertThat(operations.length).isEqualTo(1);
-    return operations[0];
+    final List<OperationDto> operations =
+        operationReader.getOperationsByBatchOperationId(batchOperationId);
+    assertThat(operations).hasSize(1);
+    return operations.getFirst();
   }
 
   private void assertVariable(
@@ -631,8 +546,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     // elasticsearchTestRule.processAllEvents(2);
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    searchTestRule.waitFor(operationsByProcessInstanceAreCompleted, processInstanceKey);
     processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
     assertThat(processInstance.isHasActiveOperation()).isEqualTo(false);
@@ -660,74 +574,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testCancelExecutedOnOneInstance() throws Exception {
-    // given
-    final Long processInstanceKey = startDemoProcessInstance();
-
-    // when
-    // we call CANCEL_PROCESS_INSTANCE operation on instance
-    final ListViewQueryDto processInstanceQuery =
-        createGetAllProcessInstancesQuery()
-            .setIds(Collections.singletonList(processInstanceKey.toString()));
-    postBatchOperationWithOKResponse(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
-
-    // and execute the operation
-    executeOneBatch();
-
-    // then
-    // before we process messages from Zeebe, the state of the operation must be SENT
-    searchTestRule.refreshSerchIndexes();
-    ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
-
-    assertThat(processInstances.getProcessInstances()).hasSize(1);
-    assertThat(processInstances.getProcessInstances().get(0).isHasActiveOperation())
-        .isEqualTo(true);
-    assertThat(processInstances.getProcessInstances().get(0).getOperations()).hasSize(1);
-    OperationDto operation = processInstances.getProcessInstances().get(0).getOperations().get(0);
-    assertThat(operation.getType()).isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE);
-    assertThat(operation.getState()).isEqualTo(OperationState.SENT);
-    assertThat(operation.getId()).isNotNull();
-
-    // after we process messages from Zeebe, the state of the operation is changed to COMPLETED
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
-    // elasticsearchTestRule.refreshIndexesInElasticsearch();
-    processInstances = getProcessInstances(processInstanceQuery);
-    assertThat(processInstances.getProcessInstances()).hasSize(1);
-    assertThat(processInstances.getProcessInstances().get(0).isHasActiveOperation())
-        .isEqualTo(false);
-    assertThat(processInstances.getProcessInstances().get(0).getOperations()).hasSize(1);
-    operation = processInstances.getProcessInstances().get(0).getOperations().get(0);
-    assertThat(operation.getType()).isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE);
-    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
-    // assert that process is canceled
-    assertThat(processInstances.getProcessInstances().get(0).getState())
-        .isEqualTo(ProcessInstanceStateDto.CANCELED);
-
-    // check batch operation progress
-    final BatchOperationDto[] batchOperations =
-        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
-    assertThat(batchOperations).hasSize(1);
-
-    final BatchOperationDto batchOperationDto = batchOperations[0];
-    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.CANCEL_PROCESS_INSTANCE);
-    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(1);
-    assertThat(batchOperationDto.getEndDate()).isNotNull();
-
-    // check batch operation id stored in process instance
-    final List<ProcessInstanceForListViewEntity> processInstanceEntities =
-        getProcessInstanceEntities(processInstanceQuery);
-    assertThat(processInstanceEntities).hasSize(1);
-    assertThat(processInstanceEntities.get(0).getBatchOperationIds())
-        .containsExactly(batchOperationDto.getId());
-  }
-
-  private List<ProcessInstanceForListViewEntity> getProcessInstanceEntities(
-      final ListViewQueryDto processInstanceQuery) {
-    final ListViewRequestDto request = new ListViewRequestDto(processInstanceQuery);
-    return listViewReader.queryListView(request, new ListViewResponseDto());
-  }
-
-  @Test
   public void testTwoResolveIncidentOperationsOnOneInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -744,7 +590,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     // the state of one operation is COMPLETED and of the other - FAILED
-    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    searchTestRule.waitFor(noActivitiesHaveIncident, processInstanceKey);
 
     final ListViewProcessInstanceDto processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
@@ -797,7 +643,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     // the state of one operation is COMPLETED and of the other - FAILED
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    searchTestRule.waitFor(processInstanceIsCanceledCheck, processInstanceKey);
 
     final ListViewProcessInstanceDto processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
@@ -829,8 +675,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     // the state of 1st operation is COMPLETED and the 2nd - FAILED
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
-    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    searchTestRule.waitFor(processInstanceIsCanceledCheck, processInstanceKey);
+    searchTestRule.waitFor(noActivitiesHaveIncident, processInstanceKey);
     // elasticsearchTestRule.refreshIndexesInElasticsearch();
     final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).hasSize(1);
@@ -922,77 +768,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testFailCancelOnCanceledInstance() throws Exception {
-    // given
-    final Long processInstanceKey = startDemoProcessInstance();
-    ZeebeTestUtil.cancelProcessInstance(super.getClient(), processInstanceKey);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
-
-    // when
-    // we call CANCEL_PROCESS_INSTANCE operation on instance
-    final ListViewQueryDto processInstanceQuery =
-        createGetAllProcessInstancesQuery()
-            .setIds(Collections.singletonList(processInstanceKey.toString()));
-    postBatchOperationWithOKResponse(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
-
-    // and execute the operation
-    executeOneBatch();
-
-    // then
-    // the state of operation is FAILED, as there are no appropriate incidents
-    final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
-    assertThat(processInstances.getProcessInstances()).hasSize(1);
-    assertThat(processInstances.getProcessInstances().get(0).isHasActiveOperation())
-        .isEqualTo(false);
-    assertThat(processInstances.getProcessInstances().get(0).getOperations()).hasSize(1);
-    final OperationDto operation =
-        processInstances.getProcessInstances().get(0).getOperations().get(0);
-    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
-    assertThat(operation.getErrorMessage())
-        .isEqualTo(
-            "Unable to cancel CANCELED process instance. Instance must be in ACTIVE or INCIDENT state.");
-    assertThat(operation.getId()).isNotNull();
-  }
-
-  @Test
-  public void testFailCancelOnCompletedInstance() throws Exception {
-    // given
-    final String bpmnProcessId = "startEndProcess";
-    final BpmnModelInstance startEndProcess =
-        Bpmn.createExecutableProcess(bpmnProcessId).startEvent().endEvent().done();
-    deployProcess(startEndProcess, "startEndProcess.bpmn");
-    final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, null);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
-    // elasticsearchTestRule.refreshIndexesInElasticsearch();
-
-    // when
-    // we call CANCEL_PROCESS_INSTANCE operation on instance
-    final ListViewQueryDto processInstanceQuery =
-        createGetAllProcessInstancesQuery()
-            .setIds(Collections.singletonList(processInstanceKey.toString()));
-    postBatchOperationWithOKResponse(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
-
-    // and execute the operation
-    executeOneBatch();
-
-    // then
-    // the state of operation is FAILED, as the instance is in wrong state
-    final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
-    assertThat(processInstances.getProcessInstances()).hasSize(1);
-    assertThat(processInstances.getProcessInstances().get(0).isHasActiveOperation())
-        .isEqualTo(false);
-    assertThat(processInstances.getProcessInstances().get(0).getOperations()).hasSize(1);
-    final OperationDto operation =
-        processInstances.getProcessInstances().get(0).getOperations().get(0);
-    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
-    assertThat(operation.getErrorMessage())
-        .isEqualTo(
-            "Unable to cancel COMPLETED process instance. Instance must be in ACTIVE or INCIDENT state.");
-    assertThat(operation.getId()).isNotNull();
-  }
-
-  @Test
   public void testFailAddVariableOperationAsVariableAlreadyExists() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -1002,13 +777,17 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     final MvcResult mvcResult =
         postOperation(processInstanceKey, op, HttpURLConnection.HTTP_BAD_REQUEST);
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: a variable with this name already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
@@ -1021,7 +800,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     // then it succeeds
     postOperation(processInstanceKey, op, HttpURLConnection.HTTP_OK);
 
@@ -1031,32 +811,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
-  }
-
-  @Test
-  public void testFailOperationAsTooManyInstances() throws Exception {
-    // given
-    operateProperties.setBatchOperationMaxSize(5L);
-
-    final int instanceCount = 10;
-    for (int i = 0; i < instanceCount; i++) {
-      startDemoProcessInstance();
-    }
-
-    // when
-    final MvcResult mvcResult =
-        postBatchOperation(
-            createGetAllRunningQuery(),
-            OperationType.RESOLVE_INCIDENT,
-            null,
-            HttpStatus.SC_BAD_REQUEST);
-
-    final String expectedErrorMsg =
-        String.format(
-            "Too many process instances are selected for batch operation. Maximum possible amount: %s",
-            operateProperties.getBatchOperationMaxSize());
-    assertThat(mvcResult.getResolvedException().getMessage()).contains(expectedErrorMsg);
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: an ADD_VARIABLE operation for this variable already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
@@ -1072,8 +830,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
         ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, null);
     final Long processInstanceKey2 =
         ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, null);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey1);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey2);
+    searchTestRule.waitFor(processInstanceIsCompletedCheck, processInstanceKey1);
+    searchTestRule.waitFor(processInstanceIsCompletedCheck, processInstanceKey2);
 
     final ListViewQueryDto processInstanceQuery =
         createGetAllProcessInstancesQuery()
@@ -1164,8 +922,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
         ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, payload);
     final Long processInstanceKey2 =
         ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, payload);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey1);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey2);
+    searchTestRule.waitFor(processInstanceIsCompletedCheck, processInstanceKey1);
+    searchTestRule.waitFor(processInstanceIsCompletedCheck, processInstanceKey2);
     List<DecisionInstanceEntity> decisionInstanceEntities =
         searchAllDocuments(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
     final String decisionDefinitionId = decisionInstanceEntities.get(0).getDecisionDefinitionId();

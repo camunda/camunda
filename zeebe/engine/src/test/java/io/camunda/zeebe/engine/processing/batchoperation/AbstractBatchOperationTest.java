@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -26,13 +28,13 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,6 +63,8 @@ abstract class AbstractBatchOperationTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
   protected final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
+  protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
+      Mockito.mock(BrokerRequestAuthorizationConverter.class);
 
   @Rule
   public final EngineRule engine =
@@ -73,8 +77,13 @@ abstract class AbstractBatchOperationTest {
                   cfg.getInitialization()
                       .getDefaultRoles()
                       .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))))
-          .withEngineConfig(cfg -> cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE))
-          .withSearchClientsProxy(searchClientsProxy);
+          .withEngineConfig(
+              cfg ->
+                  cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
+                      .setBatchOperationQueryRetryMax(2)
+                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(100)))
+          .withSearchClientsProxy(searchClientsProxy)
+          .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
 
   @Before
   public void setUp() {
@@ -104,6 +113,7 @@ abstract class AbstractBatchOperationTest {
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
       authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
     return engine
@@ -143,6 +153,7 @@ abstract class AbstractBatchOperationTest {
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
       authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
     return engine
@@ -206,6 +217,7 @@ abstract class AbstractBatchOperationTest {
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
       authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
     return engine
@@ -249,6 +261,7 @@ abstract class AbstractBatchOperationTest {
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
       authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
     return engine
@@ -281,7 +294,8 @@ abstract class AbstractBatchOperationTest {
         null,
         false,
         null,
-        null);
+        null,
+        Set.of());
   }
 
   protected IncidentEntity fakeIncidentEntity(
@@ -322,8 +336,8 @@ abstract class AbstractBatchOperationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.BATCH)
-        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-        .withResourceId("*")
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .create(DEFAULT_USER.getUsername());
   }
 
@@ -336,8 +350,8 @@ abstract class AbstractBatchOperationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-        .withResourceId("*")
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .create(DEFAULT_USER.getUsername());
   }
 }

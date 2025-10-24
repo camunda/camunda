@@ -22,6 +22,15 @@ services:
     ports:
       - "5432:5432"
 
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    restart: always
+    environment:
+      ACCEPT_EULA: y
+      MSSQL_SA_PASSWORD: Camunda#8_demo
+    ports:
+      - "1433:1433"
+
   mariadb:
     image: mariadb:11.8
     restart: always
@@ -30,6 +39,17 @@ services:
       MARIADB_DATABASE: camunda
       MARIADB_USER: camunda
       MARIADB_PASSWORD: demo
+    ports:
+      - "3306:3306"
+
+  mysql:
+    image: mysql:8.4
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: camunda
+      MYSQL_USER: camunda
+      MYSQL_PASSWORD: demo
     ports:
       - "3306:3306"
 

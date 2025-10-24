@@ -75,7 +75,11 @@ public class TaskMapper {
       String taskDescriptions =
           Arrays.stream(allVariables)
               .filter(variable -> variable.getName().equals(TASK_DESCRIPTION))
-              .map(VariableSearchResponse::getValue)
+              .map(
+                  variable ->
+                      variable.getIsValueTruncated()
+                          ? variable.getValue()
+                          : variable.getPreviewValue())
               .map(value -> value.replaceAll("\"", "")) // Remove quotes for FE
               .collect(Collectors.joining());
 
@@ -96,13 +100,8 @@ public class TaskMapper {
         .setName(variableDTO.getName())
         .setValue(
             variableDTO.getIsValueTruncated()
-                ? null
-                : variableDTO
-                    .getPreviewValue()) // Currently, for big variables, only truncated values are
-        // included in the Task Search response. So, we avoid
-        // retrieving the fullValue from the database and populate
-        // the output value with previewValue if it is not
-        // truncated.
+                ? variableDTO.getValue()
+                : variableDTO.getPreviewValue())
         .setIsValueTruncated(variableDTO.getIsValueTruncated())
         .setPreviewValue(variableDTO.getPreviewValue());
   }

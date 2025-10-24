@@ -9,7 +9,7 @@
 import {Section} from '@carbon/react';
 import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router-dom';
 import type {Process, Task} from 'v1/api/types';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {useTask} from 'v1/api/useTask.query';
 import {useProcessDefinition} from 'v1/api/useProcessDefinition.query';
@@ -33,6 +33,12 @@ type OutletContext = {
   refetch: () => void;
   process: Process | undefined;
 };
+const POLLING_STATES: Task['taskState'][] = [
+  'CANCELING',
+  'UPDATING',
+  'COMPLETING',
+  'ASSIGNING',
+] as const;
 
 const TaskDetailsLayout: React.FC = () => {
   const {id} = useTaskDetailsParams();
@@ -41,7 +47,15 @@ const TaskDetailsLayout: React.FC = () => {
   const {data: task, refetch} = useTask(id, {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    refetchInterval: 5000,
+    refetchInterval(query) {
+      const {data} = query.state;
+
+      if (data?.taskState && POLLING_STATES.includes(data.taskState)) {
+        return 5000;
+      }
+
+      return false;
+    },
   });
   const taskState = task?.taskState;
   const isTaskCompleted = taskState === 'COMPLETED';
@@ -51,7 +65,6 @@ const TaskDetailsLayout: React.FC = () => {
       enabled: task !== undefined && !isTaskCompleted,
     },
   );
-  const onAssignmentError = () => refetch();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const navigate = useNavigate();
@@ -127,7 +140,6 @@ const TaskDetailsLayout: React.FC = () => {
               id={task.id}
               taskState={task.taskState}
               assignee={task.assignee}
-              onAssignmentError={onAssignmentError}
             />
           }
         />

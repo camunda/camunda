@@ -449,6 +449,11 @@
       # Example:
       # clusterName: zeebe-cluster
 
+      # Allows to configure the cluster ID.
+      # This setting is used to identify the cluster and should be unique across clusters. If not configured, the cluster ID will be set with a new random UUID.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_CLUSTERID.
+      # clusterId:
+
       # Configure heartbeatInterval. The leader sends a heartbeat to a follower every heartbeatInterval.
       # Note: This is an advanced setting.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_HEARTBEATINTERVAL.
@@ -828,6 +833,7 @@
         #     userTask: true
         #     variable: true
         #     variableDocument: true
+        #     clusterVariable: true
         #     adHocSubProcessInstruction: true
         #
         #   retention:
@@ -912,6 +918,7 @@
         #     userTask: true
         #     variable: true
         #     variableDocument: true
+        #     clusterVariable: true
         #     adHocSubProcessInstruction: true
 
       # Camunda Exporter ----------
@@ -944,8 +951,8 @@
         #
         #   index:
         #     prefix:
-        #     zeebeIndexPrefix: zeebe-record
-        #     The 'zeebeIndexPrefix' must be the same value as the Elasticsearch exporter 'elasticsearch.args.index.prefix'
+        #     indexPrefix: zeebe-record
+        #     The 'indexPrefix' must be the same value as the Elasticsearch exporter 'elasticsearch.args.index.prefix'
         #     otherwise the exporter may never start.
         #     numberOfShards: 1
         #     numberOfReplicas: 0
@@ -962,6 +969,7 @@
         #       enabled: false
         #       minimumAge: 30d
         #       policyName: camunda-retention-policy
+        #       applyPolicyJobInterval: PT1H
         #
         #   batchOperations:
         #     exportItemsOnCreation: true
@@ -1344,6 +1352,18 @@
           # The default value is false, meaning that command redistribution is not paused.
           # pauseCommandDistribution: false
 
+          # Allows configuring command redistribution retry interval. This is the initial interval used when retrying
+          # command distributions that have not been acknowledged. This setting can also be set using the environment variable
+          # ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_REDISTRIBUTIONINTERVAL.
+          # The default value is 10 seconds.
+          # redistributionInterval: 10s
+
+          # Allows configuring the maximum backoff duration for command redistribution retries. The retry interval
+          # is doubled after each retry until it reaches this maximum duration. This setting can also be set using the environment variable
+          # ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_MAXBACKOFFDURATION.
+          # The default value is 5 minutes.
+          # maxBackoffDuration: 5m
+
         # batchOperation:
           # to avoid too large records, the set of executed items ina  batch operation is split into multiple chunks.
           # smaller values lead to more records needed to transport the items and the more metadata overhead is created.
@@ -1368,6 +1388,22 @@
           # A higher value will result in fewer queries to the secondaryDb, but may not be supported by all database systems. E.g. OracleDb only supports 1000 elements in an IN clause.
           # The default value is 1000, which is also the maximum supported by OracleDb.
           # queryInClauseSize: 1000
+
+          # Allows to configure the number of retries in case a query to the secondary database fails.
+          # The default value is 2, which means that in worst case the engine will query up to 3 times.
+          # queryRetryMax: 2
+
+          # Allows to configure the initial delay between retries in case a query to the secondary database fails.
+          # The default value is 1 second
+          # queryRetryInitialDelay: PT1S
+
+          # Allows to configure the max delay between retries in case a query to the secondary database fails.
+          # The default value is 60 second
+          # queryRetryMaxDelay: PT60S
+
+          # Allows to configure the factor by which the delay between retries is increased.
+          # The default value is 2, which means that the delay will be doubled after each retry.
+          # queryRetryBackoffFactor: 2
 
         # Allows to configure the maximum depth of child process instances that can be created.
         # The root process instance is considered depth `1`, and each called instance is considered

@@ -18,22 +18,22 @@ describe('batchModificationStore', () => {
   });
 
   it('should select target flow node', () => {
-    expect(batchModificationStore.state.selectedTargetFlowNodeId).toBeNull();
+    expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
 
     batchModificationStore.enable();
-    expect(batchModificationStore.state.selectedTargetFlowNodeId).toBeNull();
+    expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
 
-    batchModificationStore.selectTargetFlowNode('123');
-    expect(batchModificationStore.state.selectedTargetFlowNodeId).toBe('123');
+    batchModificationStore.selectTargetElement('123');
+    expect(batchModificationStore.state.selectedTargetElementId).toBe('123');
 
-    batchModificationStore.selectTargetFlowNode('456');
-    expect(batchModificationStore.state.selectedTargetFlowNodeId).toBe('456');
+    batchModificationStore.selectTargetElement('456');
+    expect(batchModificationStore.state.selectedTargetElementId).toBe('456');
 
-    batchModificationStore.selectTargetFlowNode(null);
-    expect(batchModificationStore.state.selectedTargetFlowNodeId).toBeNull();
+    batchModificationStore.selectTargetElement(null);
+    expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
 
-    batchModificationStore.selectTargetFlowNode('123');
+    batchModificationStore.selectTargetElement('123');
     batchModificationStore.reset();
-    expect(batchModificationStore.state.selectedTargetFlowNodeId).toBeNull();
+    expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
   });
 });

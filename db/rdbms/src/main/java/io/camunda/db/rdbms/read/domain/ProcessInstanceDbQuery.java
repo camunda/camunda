@@ -11,12 +11,17 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.util.ObjectBuilder;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessInstanceDbQuery(
-    ProcessInstanceFilter filter, DbQuerySorting<ProcessInstanceEntity> sort, DbQueryPage page) {
+    ProcessInstanceFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
+    DbQuerySorting<ProcessInstanceEntity> sort,
+    DbQueryPage page) {
 
   public static ProcessInstanceDbQuery of(
       final Function<ProcessInstanceDbQuery.Builder, ObjectBuilder<ProcessInstanceDbQuery>> fn) {
@@ -29,11 +34,23 @@ public record ProcessInstanceDbQuery(
         FilterBuilders.processInstance().build();
 
     private ProcessInstanceFilter filter;
+    private List<String> authorizedResourceIds = Collections.emptyList();
+    private List<String> authorizedTenantIds = Collections.emptyList();
     private DbQuerySorting<ProcessInstanceEntity> sort;
     private DbQueryPage page;
 
     public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
       return this;
     }
 
@@ -64,7 +81,10 @@ public record ProcessInstanceDbQuery(
     public ProcessInstanceDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new ProcessInstanceDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new ProcessInstanceDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 611,
   "links": [],
   "panels": [
     {
@@ -35,7 +35,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time needed for the importer to read documents from the zeebe records index for a single import batch.",
           "fieldConfig": {
@@ -120,7 +120,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": true,
@@ -135,7 +135,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
               "expr": "avg(rate(tasklist_import_index_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])/rate(tasklist_import_index_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[10m])>0)",
@@ -179,7 +179,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Throughput of documents processed and imported.",
           "fieldConfig": {
@@ -242,7 +242,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 369
+            "y": 753
           },
           "id": 32,
           "options": {
@@ -297,7 +297,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the time (latency) between writing the command to the dispatcher, processing, exporting, and then importing the record.",
           "fieldConfig": {
@@ -359,7 +359,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 376
+            "y": 760
           },
           "id": 33,
           "options": {
@@ -423,7 +423,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time it takes for the importer to read an record on average from ES",
           "fieldConfig": {
@@ -485,7 +485,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 381
+            "y": 765
           },
           "id": 34,
           "options": {
@@ -530,7 +530,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Time the import writer thread needs on average to process an ImportBatch (containing several Zeebe records).",
           "fieldConfig": {
@@ -592,7 +592,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 381
+            "y": 765
           },
           "id": 35,
           "options": {
@@ -637,7 +637,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time it takes to write the bulk requests (during importing) to ES on average.",
           "fieldConfig": {
@@ -699,7 +699,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 381
+            "y": 765
           },
           "id": 36,
           "options": {
@@ -741,7 +741,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "There is a queue of import jobs where each job has to import a batch of records. This details how many such jobs are currently in the queue.",
           "fieldConfig": {
@@ -802,7 +802,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 389
+            "y": 773
           },
           "id": 37,
           "options": {
@@ -866,7 +866,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Each time a non empty bulk request if flushed, this is how long the flush takes.",
           "fieldConfig": {
@@ -936,7 +936,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_camunda_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporterId=~\"$exporterId\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_camunda_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -951,7 +951,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The rate of failure of flush operations, averaged over 15s intervals",
           "fieldConfig": {
@@ -1020,7 +1020,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "When bulk request flushes fail, the type of error returned is counted.",
           "fieldConfig": {
@@ -1113,7 +1113,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time in seconds since the last flush.",
           "fieldConfig": {
@@ -1194,8 +1194,8 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "zeebe_camunda_exporter_since_last_flush_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}",
-              "legendFormat": "{{exporterId}} | partition-{{partition}}",
+              "expr": "min by (partition) (zeebe_camunda_exporter_since_last_flush_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "legendFormat": "partition-{{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -1206,7 +1206,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "How far behind each exporter is from exporting the records which have been committed.",
           "fieldConfig": {
@@ -1287,7 +1287,7 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"camundaexporter\"}) by (partition)",
+              "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=~\"(?i)camundaexporter\"}) by (partition)",
               "legendFormat": "partition {{partition}}",
               "range": true,
               "refId": "A"
@@ -1299,20 +1299,59 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "For every non empty flush of a bulk request, this is the number of entities flushed.",
           "fieldConfig": {
             "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
               "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
                 }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
               }
             },
             "overrides": []
@@ -1325,41 +1364,16 @@
           },
           "id": 11,
           "options": {
-            "calculate": false,
-            "calculation": {},
-            "cellGap": 2,
-            "cellValues": {},
-            "color": {
-              "exponent": 0.5,
-              "fill": "#ef843c",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
             "legend": {
-              "show": false
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "showValue": "never",
             "tooltip": {
+              "hideZeros": false,
               "mode": "single",
-              "showColorScale": false,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "short"
+              "sort": "none"
             }
           },
           "pluginVersion": "12.0.2",
@@ -1369,22 +1383,22 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_camunda_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_camunda_exporter_bulk_size_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition) / \nsum(increase(zeebe_camunda_exporter_bulk_size_count{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (partition)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
-              "legendFormat": "{{le}}",
+              "legendFormat": "partition-{{partition}}",
               "range": true,
               "refId": "A"
             }
           ],
           "title": "Camunda Exporter (Bulk Size)",
-          "type": "heatmap"
+          "type": "timeseries"
         },
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "How long an export request is open and collecting new records before flushing.",
           "fieldConfig": {
@@ -1473,9 +1487,9 @@
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "min by (partition) (\n  rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]) / \n  rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])\n)",
               "interval": "",
-              "legendFormat": "{{pod}} Exporter {{partition}}",
+              "legendFormat": "Partition {{partition}}",
               "range": true,
               "refId": "A"
             }
@@ -1486,7 +1500,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the rate of evictions of the process cache",
           "fieldConfig": {
@@ -1584,7 +1598,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the rate of access to the process cache per partition",
           "fieldConfig": {
@@ -1698,7 +1712,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The time the cache spent computing or retrieving the new value",
           "fieldConfig": {
@@ -1802,7 +1816,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Historgram, to show the distribution of the duration of search requests to find completed entities, which should be archived.",
           "fieldConfig": {
@@ -1901,7 +1915,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Historgram, to show the distribution of durations reindex requests take, to copy data from runtime to dated indices.",
           "fieldConfig": {
@@ -1984,7 +1998,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Historgram, to show the distribution of durations delete requests take, to delete data from runtime indices.",
           "fieldConfig": {
@@ -2067,7 +2081,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The rate of the loading data into the cache",
           "fieldConfig": {
@@ -2180,7 +2194,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Process instances which can be archived but are waiting to do so.",
           "fieldConfig": {
@@ -2261,7 +2275,7 @@
           "targets": [
             {
               "editorMode": "code",
-              "expr": "zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}\n",
+              "expr": "max by (partition) (zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
               "legendFormat": "Partition {{partition}}",
               "range": true,
               "refId": "A"
@@ -2273,7 +2287,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Histogram to show the distribution of the overall archiving duration, which includes searching, reindexing, and deletion.",
           "fieldConfig": {
@@ -2357,7 +2371,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the rate of archiving (in-progress) and archived process instance and batch operations. Batch operations or process instances need to be completed before being able to be archived. The rate is aggregated by partition.",
           "fieldConfig": {
@@ -2486,7 +2500,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Each time a non empty bulk request if flushed, this is how long the flush takes.",
           "fieldConfig": {
@@ -2508,7 +2522,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 118
+            "y": 502
           },
           "id": 2,
           "options": {
@@ -2569,7 +2583,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "The rate of failure of flush operations, averaged over 15s intervals",
           "fieldConfig": {
@@ -2632,7 +2646,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 118
+            "y": 502
           },
           "id": 3,
           "options": {
@@ -2667,7 +2681,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "For every non empty flush of a bulk request, this is the number of entities flushed.",
           "fieldConfig": {
@@ -2689,7 +2703,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 144
+            "y": 528
           },
           "id": 4,
           "options": {
@@ -2750,7 +2764,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Each bulk request has a number of records, the memory usage to flush this bulk request is crudely measured through content length and tracked here. ",
           "fieldConfig": {
@@ -2813,7 +2827,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 144
+            "y": 528
           },
           "id": 5,
           "options": {
@@ -2863,7 +2877,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "fieldConfig": {
             "defaults": {
@@ -2884,7 +2898,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 7
+            "y": 391
           },
           "id": 22,
           "options": {
@@ -2970,7 +2984,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 7
+            "y": 391
           },
           "id": 23,
           "options": {
@@ -3071,7 +3085,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 7
+            "y": 391
           },
           "id": 24,
           "options": {
@@ -3131,7 +3145,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 79
+            "y": 463
           },
           "id": 25,
           "options": {
@@ -3258,7 +3272,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 79
+            "y": 463
           },
           "id": 26,
           "options": {
@@ -3335,7 +3349,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 79
+            "y": 463
           },
           "id": 27,
           "options": {
@@ -3394,36 +3408,39 @@
           "text": "All",
           "value": "$__all"
         },
-        "definition": "label_values($cluster)",
+        "definition": "label_values(atomix_role,cluster)",
+        "description": "Kuberenetes cluster",
         "includeAll": true,
         "name": "cluster",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values($cluster)",
+          "query": "label_values(atomix_role,cluster)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
+        "sort": 1,
         "type": "query"
       },
       {
         "allValue": ".*",
         "current": {
-          "text": "All",
-          "value": "$__all"
+          "text": "load",
+          "value": "load"
         },
-        "definition": "label_values($namespace)",
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\"},namespace)",
         "includeAll": true,
         "name": "namespace",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values($namespace)",
+          "query": "label_values(atomix_role{cluster=~\"$cluster\"},namespace)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
+        "sort": 1,
         "type": "query"
       },
       {
@@ -3432,18 +3449,33 @@
           "text": "All",
           "value": "$__all"
         },
-        "definition": "label_values($partition)",
+        "definition": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partion)",
         "includeAll": true,
+        "multi": true,
         "name": "partition",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values($partition)",
+          "query": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partion)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
+        "label": "datasource",
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
         "refresh": 1,
         "regex": "",
-        "type": "query"
+        "type": "datasource"
       },
       {
         "allValue": ".*",
@@ -3451,17 +3483,19 @@
           "text": "All",
           "value": "$__all"
         },
-        "definition": "label_values($exporterId)",
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"},pod)",
         "includeAll": true,
-        "name": "exporterId",
+        "multi": true,
+        "name": "pod",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values($exporterId)",
+          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"},pod)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
+        "sort": 1,
         "type": "query"
       }
     ]
@@ -3473,6 +3507,6 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Data Layer",
-  "uid": "71add83b-578c-4493-8ea7-30580b17caf5",
+  "uid": "eulfd8z",
   "version": 1
 }

@@ -13,12 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
+import io.camunda.operate.util.XMLUtil;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.ByteArrayInputStream;
@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import javax.xml.parsers.ParserConfigurationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -36,9 +35,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Autowired private ProcessDefinitionDao dao;
 
-  @Autowired
-  @Qualifier("operateProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   private ProcessEntity pe1;
   private ProcessEntity pe2;

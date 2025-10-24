@@ -68,6 +68,7 @@ public class DecisionEvaluationHandlerTest {
     final ImmutableEvaluatedDecisionValue decisionValue =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionEvaluationInstanceKey("123-1")
             .build();
     final long expectedId = 123;
     final DecisionEvaluationRecordValue decisionRecordValue =
@@ -124,6 +125,7 @@ public class DecisionEvaluationHandlerTest {
     final ImmutableEvaluatedDecisionValue evaluatedDecision =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionEvaluationInstanceKey(recordKey + "-1")
             .withDecisionType(decisionType.name())
             .withMatchedRules(
                 List.of(
@@ -247,6 +249,7 @@ public class DecisionEvaluationHandlerTest {
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
             .withDecisionType(DecisionType.DECISION_TABLE.name())
+            .withDecisionEvaluationInstanceKey(recordKey + "-1")
             .build();
 
     final DecisionEvaluationRecordValue decisionRecordValue =
@@ -283,8 +286,14 @@ public class DecisionEvaluationHandlerTest {
             .from(factory.generateObject(DecisionEvaluationRecordValue.class))
             .withEvaluatedDecisions(
                 List.of(
-                    factory.generateObject(EvaluatedDecisionValue.class),
-                    factory.generateObject(EvaluatedDecisionValue.class)))
+                    ImmutableEvaluatedDecisionValue.builder()
+                        .from(factory.generateObject(EvaluatedDecisionValue.class))
+                        .withDecisionEvaluationInstanceKey(recordKey + "-1")
+                        .build(),
+                    ImmutableEvaluatedDecisionValue.builder()
+                        .from(factory.generateObject(EvaluatedDecisionValue.class))
+                        .withDecisionEvaluationInstanceKey(recordKey + "-2")
+                        .build()))
             .build();
 
     final Record<DecisionEvaluationRecordValue> decisionRecord =
@@ -296,6 +305,7 @@ public class DecisionEvaluationHandlerTest {
                     .withKey(recordKey));
 
     // when
+
     DecisionInstanceEntity decisionInstanceEntity =
         new DecisionInstanceEntity().setId(recordKey + "-1");
     underTest.updateEntity(decisionRecord, decisionInstanceEntity);
@@ -321,6 +331,7 @@ public class DecisionEvaluationHandlerTest {
     final ImmutableEvaluatedDecisionValue evaluatedDecision =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionEvaluationInstanceKey(recordKey + "-1")
             .withDecisionType(DecisionType.DECISION_TABLE.name())
             .withMatchedRules(
                 List.of(

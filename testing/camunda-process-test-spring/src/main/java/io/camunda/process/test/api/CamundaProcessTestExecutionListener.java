@@ -17,9 +17,17 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
+import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
+import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
+import io.camunda.process.test.impl.coverage.ProcessCoverage;
+import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
+import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
@@ -31,8 +39,6 @@ import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuild
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.spring.client.event.CamundaClientClosingEvent;
-import io.camunda.spring.client.event.CamundaClientCreatedEvent;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
@@ -57,13 +63,13 @@ import org.springframework.test.context.TestExecutionListener;
  * <ul>
  *   <li>Create a {@link CamundaClient} to inject in the test class
  *   <li>Create a {@link CamundaProcessTestContext} to inject in the test class
- *   <li>Publish a {@link CamundaClientCreatedEvent}
+ *   <li>Publish a {@link CamundaClientCreatedSpringEvent}
  * </ul>
  *
  * <p>After each test method:
  *
  * <ul>
- *   <li>Publish a {@link CamundaClientClosingEvent}
+ *   <li>Publish a {@link CamundaClientClosingSpringEvent}
  *   <li>Close created {@link CamundaClient}s
  *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
@@ -77,8 +83,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
+  private final ProcessCoverageBuilder processCoverageBuilder;
+  private final TestDeploymentService testDeploymentService;
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
+  private ProcessCoverage processCoverage;
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
@@ -87,38 +96,62 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private ZeebeClient zeebeClient;
 
   public CamundaProcessTestExecutionListener() {
-    this(CamundaProcessTestContainerRuntime.newBuilder(), System.err::println);
+    this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
   }
 
   CamundaProcessTestExecutionListener(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
+      final ProcessCoverageBuilder processCoverageBuilder,
       final Consumer<String> testResultPrintStream) {
     this.containerRuntimeBuilder = containerRuntimeBuilder;
+    this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
+    testDeploymentService = new TestDeploymentService();
   }
 
   @Override
   public void beforeTestClass(final TestContext testContext) {
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+
+    final JsonMapper jsonMapper = testContext.getApplicationContext().getBean(JsonMapper.class);
+    final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper =
+        testContext.getApplicationContext().getBean(io.camunda.zeebe.client.api.JsonMapper.class);
+
     // create runtime
-    runtime = buildRuntime(testContext);
+    runtime = buildRuntime(testContext, runtimeConfiguration);
     runtime.start();
 
-    camundaManagementClient =
-        new CamundaManagementClient(
-            runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    camundaManagementClient = createManagementClient(runtimeConfiguration);
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             runtime,
             createdClients::add,
             camundaManagementClient,
-            CamundaAssert.getAwaitBehavior());
+            CamundaAssert.getAwaitBehavior(),
+            jsonMapper,
+            zeebeJsonMapper);
+
+    // create process coverage
+    final CoverageReportConfiguration coverageReportConfiguration =
+        runtimeConfiguration.getCoverage();
+    processCoverage =
+        processCoverageBuilder
+            .testClass(testContext.getTestClass())
+            .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+            .reportDirectory(coverageReportConfiguration.getReportDirectory())
+            .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
+            .build();
+
+    // initialize json mapper
+    initializeJsonMapper(jsonMapper, zeebeJsonMapper);
   }
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
-    client = createClient(testContext, camundaProcessTestContext);
-    zeebeClient = createZeebeClient(testContext, camundaProcessTestContext);
+    client = createClient(camundaProcessTestContext);
+    zeebeClient = createZeebeClient(camundaProcessTestContext);
 
     // fill proxies
     testContext.getApplicationContext().getBean(CamundaClientProxy.class).setClient(client);
@@ -129,7 +162,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .setContext(camundaProcessTestContext);
 
     // publish Zeebe client
-    testContext.getApplicationContext().publishEvent(new CamundaClientCreatedEvent(this, client));
+    testContext
+        .getApplicationContext()
+        .publishEvent(new CamundaClientCreatedSpringEvent(this, client));
     testContext
         .getApplicationContext()
         .publishEvent(new ZeebeClientCreatedEvent(this, zeebeClient));
@@ -140,6 +175,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // deploy resources
+    testDeploymentService.deployTestResources(
+        testContext.getTestMethod(), testContext.getTestClass(), client);
   }
 
   @Override
@@ -148,14 +187,20 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       // Skip if the runtime is not created.
       return;
     }
-
+    try {
+      processCoverage.collectTestRunCoverage(testContext.getTestMethod().getName());
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test process coverage, skipping.", t);
+    }
     if (isTestFailed(testContext)) {
       printTestResults();
     }
     // reset assertions
     CamundaAssert.reset();
     // close Zeebe clients
-    testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
+    testContext
+        .getApplicationContext()
+        .publishEvent(new CamundaClientClosingSpringEvent(this, client));
     testContext
         .getApplicationContext()
         .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
@@ -183,7 +228,38 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       // Skip if the runtime is not created.
       return;
     }
+
+    try {
+      processCoverage.reportCoverage();
+    } catch (final Throwable t) {
+      LOG.warn("Failed to report process coverage, skipping.", t);
+    }
+
     runtime.close();
+  }
+
+  private void initializeJsonMapper(
+      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+
+    if (jsonMapper != null) {
+      CamundaAssert.setJsonMapper(jsonMapper);
+    } else if (zeebeJsonMapper != null) {
+      CamundaAssert.setJsonMapper(zeebeJsonMapper);
+    }
+  }
+
+  private CamundaManagementClient createManagementClient(
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    if (runtimeConfiguration.isMultiTenancyEnabled()) {
+      return CamundaManagementClient.createAuthenticatedClient(
+          runtime.getCamundaMonitoringApiAddress(),
+          runtime.getCamundaRestApiAddress(),
+          MultiTenancyConfiguration.getBasicAuthCredentials());
+    } else {
+      return CamundaManagementClient.createClient(
+          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    }
   }
 
   private void printTestResults() {
@@ -238,41 +314,25 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
   }
 
-  private CamundaProcessTestRuntime buildRuntime(final TestContext testContext) {
-    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
-        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+  private CamundaProcessTestRuntime buildRuntime(
+      final TestContext testContext,
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    final CamundaClientProperties clientProperties =
+        testContext.getApplicationContext().getBean(CamundaClientProperties.class);
 
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
-        containerRuntimeBuilder, runtimeConfiguration);
+        containerRuntimeBuilder, runtimeConfiguration, clientProperties);
   }
 
   private static CamundaClient createClient(
-      final TestContext testContext, final CamundaProcessTestContext camundaProcessTestContext) {
-    return camundaProcessTestContext.createClient(
-        builder -> {
-          if (hasBeanForType(testContext, JsonMapper.class)) {
-            final JsonMapper jsonMapper =
-                testContext.getApplicationContext().getBean(JsonMapper.class);
-            builder.withJsonMapper(jsonMapper);
-          }
-        });
+      final CamundaProcessTestContext camundaProcessTestContext) {
+    return camundaProcessTestContext.createClient();
   }
 
   private static ZeebeClient createZeebeClient(
-      final TestContext testContext, final CamundaProcessTestContext camundaProcessTestContext) {
-    return camundaProcessTestContext.createZeebeClient(
-        builder -> {
-          if (hasBeanForType(testContext, io.camunda.zeebe.client.api.JsonMapper.class)) {
-            builder.withJsonMapper(
-                testContext
-                    .getApplicationContext()
-                    .getBean(io.camunda.zeebe.client.api.JsonMapper.class));
-          }
-        });
-  }
-
-  private static boolean hasBeanForType(final TestContext testContext, final Class<?> type) {
-    return testContext.getApplicationContext().getBeanNamesForType(type).length > 0;
+      final CamundaProcessTestContext camundaProcessTestContext) {
+    return camundaProcessTestContext.createZeebeClient();
   }
 
   private static boolean isTestFailed(final TestContext testContext) {

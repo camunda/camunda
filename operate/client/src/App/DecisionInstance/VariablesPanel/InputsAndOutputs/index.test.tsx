@@ -17,26 +17,22 @@ import {
   assignApproverGroupWithoutVariables,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {InputsAndOutputs} from './index';
-import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
-import {useEffect} from 'react';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    return decisionInstanceDetailsStore.reset;
-  }, []);
-
-  return <>{children}</>;
-};
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+  <QueryClientProvider client={getMockQueryClient()}>
+    {children}
+  </QueryClientProvider>
+);
 
 describe('<InputsAndOutputs />', () => {
   it('should have section panels', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
-    decisionInstanceDetailsStore.fetchDecisionInstance('1');
-
-    render(<InputsAndOutputs />, {
+    render(<InputsAndOutputs decisionEvaluationInstanceKey="1" />, {
       wrapper: Wrapper,
     });
 
@@ -51,9 +47,9 @@ describe('<InputsAndOutputs />', () => {
   it('should show a loading skeleton', async () => {
     mockFetchDecisionInstance().withServerError();
 
-    decisionInstanceDetailsStore.fetchDecisionInstance('1');
-
-    render(<InputsAndOutputs />, {wrapper: Wrapper});
+    render(<InputsAndOutputs decisionEvaluationInstanceKey="1" />, {
+      wrapper: Wrapper,
+    });
 
     expect(screen.getByTestId('inputs-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('outputs-skeleton')).toBeInTheDocument();
@@ -69,9 +65,9 @@ describe('<InputsAndOutputs />', () => {
   it('should show empty message for failed decision instances with variables', async () => {
     mockFetchDecisionInstance().withSuccess(assignApproverGroup);
 
-    decisionInstanceDetailsStore.fetchDecisionInstance('1');
-
-    render(<InputsAndOutputs />, {wrapper: Wrapper});
+    render(<InputsAndOutputs decisionEvaluationInstanceKey="1" />, {
+      wrapper: Wrapper,
+    });
 
     expect(
       await screen.findByText(
@@ -89,9 +85,9 @@ describe('<InputsAndOutputs />', () => {
       assignApproverGroupWithoutVariables,
     );
 
-    decisionInstanceDetailsStore.fetchDecisionInstance('1');
-
-    render(<InputsAndOutputs />, {wrapper: Wrapper});
+    render(<InputsAndOutputs decisionEvaluationInstanceKey="1" />, {
+      wrapper: Wrapper,
+    });
 
     expect(
       await screen.findByText(
@@ -107,9 +103,9 @@ describe('<InputsAndOutputs />', () => {
   it('should load inputs and outputs', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
-    decisionInstanceDetailsStore.fetchDecisionInstance('1');
-
-    render(<InputsAndOutputs />, {wrapper: Wrapper});
+    render(<InputsAndOutputs decisionEvaluationInstanceKey="1" />, {
+      wrapper: Wrapper,
+    });
 
     await waitForElementToBeRemoved(() =>
       screen.queryByTestId('inputs-skeleton'),
@@ -154,9 +150,9 @@ describe('<InputsAndOutputs />', () => {
   it('should show an error', async () => {
     mockFetchDecisionInstance().withServerError();
 
-    decisionInstanceDetailsStore.fetchDecisionInstance('1');
-
-    render(<InputsAndOutputs />, {wrapper: Wrapper});
+    render(<InputsAndOutputs decisionEvaluationInstanceKey="1" />, {
+      wrapper: Wrapper,
+    });
 
     expect(
       await screen.findAllByText(/data could not be fetched/i),

@@ -15,16 +15,15 @@
   "prHourlyLimit": 10,
   "updateNotScheduled": false,
   "schedule": [
-    "before 8am every weekday",
-    "after 8pm every weekday"
+    "* 20-23,0-8 * * 1-5",
+    "* * * * 0,6"
   ],
-  "helmv3": {
-    "registryAliases": {
-      "helm-camunda-io": "https://helm.camunda.io"
-    }
-  },
+  "labels": [
+    "dependencies"
+  ],
   "vulnerabilityAlerts": {
     "labels": [
+      "dependencies",
       "area/security"
     ],
     "enabled": true
@@ -43,6 +42,7 @@
   ],
   "packageRules": [
     {
+      "description": "This rule is a Renovate performance optimization specifying only one URL to avoid redundant Maven Central lookups in mirrors.",
       "matchDatasources": [
         "maven"
       ],
@@ -69,6 +69,33 @@
         "major"
       ],
       "enabled": false
+    },
+    {
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "matchManagers": [
+        "dockerfile",
+        "maven-wrapper",
+        "github-actions",
+        "nvm",
+        "helmv3"
+      ],
+      "addLabels": [
+        "area/build",
+        "component/build-pipeline"
+      ]
+    },
+    {
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        ".github/**"
+      ],
+      "addLabels": [
+        "area/build",
+        "component/build-pipeline"
+      ]
     },
     {
       "description": "Allow minor updates for Spring and Spring-boot for stable branches where the Spring support window is not matching the Camunda support window yet. Right now these are 8.6+. Since Spring has a 1-year support cycle while C8 is supported for 18 months, we allow minor updates to help mitigate security risks.",
@@ -193,10 +220,17 @@
       "enabled": false
     },
     {
-      "description": "This additional prefix is used to skip Operate backend tests.",
+      "description": "This additional prefix is used to skip Operate backend tests based on branch name.",
       "matchManagers": [
         "npm",
         "nvm"
+      ],
+      "additionalBranchPrefix": "fe-"
+    },
+    {
+      "description": "This additional prefix is used to skip Operate backend tests based on branch name.",
+      "matchPackageNames": [
+        "mcr.microsoft.com/playwright"
       ],
       "additionalBranchPrefix": "fe-"
     },
@@ -249,12 +283,6 @@
     },
     {
       "matchPackageNames": [
-        "mcr.microsoft.com/playwright"
-      ],
-      "additionalBranchPrefix": "fe-"
-    },
-    {
-      "matchPackageNames": [
         "@types{/,}**"
       ],
       "groupName": "definitelyTyped"
@@ -273,8 +301,7 @@
     },
     {
       "matchManagers": [
-        "npm",
-        "nvm"
+        "npm"
       ],
       "matchPackageNames": [
         "*"
@@ -312,16 +339,6 @@
       "addLabels": [
         "automerge"
       ]
-    },
-    {
-      "description": "Skip maven-surefire-plugin updates, as 3.5.3 version has a bug preventing ArchUnit tests from running. https://issues.apache.org/jira/browse/SUREFIRE-2298",
-      "matchManagers": [
-        "maven"
-      ],
-      "matchPackageNames": [
-        "org.apache.maven.plugins:maven-surefire-plugin"
-      ],
-      "enabled": false
     }
   ],
   "dockerfile": {
@@ -329,7 +346,7 @@
       "/(^|\\/)([\\w-]+\\.)?[Dd]ockerfile$/"
     ],
     "ignorePaths": [
-      "zeebe/benchmarks/**",
+      "zeebe/load-tests/**",
       "clients/go/vendor/**"
     ]
   },

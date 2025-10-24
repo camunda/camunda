@@ -15,7 +15,7 @@ import {match, Pattern} from 'ts-pattern';
 import {Button, Heading, type InlineLoadingProps, Layer} from '@carbon/react';
 import {Information, Add} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import type {UserTask, CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {UserTask, CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
   ScrollableContent,
   TaskDetailsContainer,
@@ -80,8 +80,12 @@ const Variables: React.FC<Props> = ({
     },
   );
   const [editingVariable, setEditingVariable] = useState<string | undefined>();
-  const [submissionState, setSubmissionState] =
-    useState<NonNullable<InlineLoadingProps['status']>>('inactive');
+  const [localSubmissionState, setLocalSubmissionState] = useState<
+    NonNullable<InlineLoadingProps['status']>
+  >(() => (state === 'COMPLETING' ? 'active' : 'inactive'));
+
+  const submissionState =
+    state === 'COMPLETING' ? 'active' : localSubmissionState;
   const canCompleteTask =
     user.username === assignee && state === 'CREATED' && status === 'success';
   const hasEmptyNewVariable = (values: FormValues | undefined) =>
@@ -117,16 +121,16 @@ const Variables: React.FC<Props> = ({
         );
 
         try {
-          setSubmissionState('active');
+          setLocalSubmissionState('active');
           await onSubmit({
             ...existingVariables,
             ...newVariables,
           });
 
-          setSubmissionState('finished');
+          setLocalSubmissionState('finished');
         } catch (error) {
           onSubmitFailure(error as Error);
-          setSubmissionState('error');
+          setLocalSubmissionState('error');
         }
       }}
       initialValues={variables.reduce(
@@ -267,11 +271,15 @@ const Variables: React.FC<Props> = ({
                   <CompleteTaskButton
                     submissionState={submissionState}
                     onSuccess={() => {
-                      setSubmissionState('inactive');
                       onSubmitSuccess();
+                      setLocalSubmissionState('inactive');
                     }}
                     onError={() => {
-                      setSubmissionState('inactive');
+                      if (state === 'COMPLETING') {
+                        setLocalSubmissionState('active');
+                      } else {
+                        setLocalSubmissionState('inactive');
+                      }
                     }}
                     isHidden={state === 'COMPLETED'}
                     isDisabled={

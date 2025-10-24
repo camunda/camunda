@@ -73,5 +73,6 @@ public class IndicesCheck implements CloseableSilently {
   @Override
   public void close() {
     searchEngineClient.close();
+    schemaManager.close();
   }
 }

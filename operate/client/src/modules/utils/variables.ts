@@ -6,18 +6,40 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {modificationsStore} from 'modules/stores/modifications';
 import {applyOperation} from 'modules/api/processInstances/operations';
+import {TOKEN_OPERATIONS} from 'modules/constants';
 import type {InfiniteData} from '@tanstack/react-query';
 
 const getScopeId = () => {
   const {selection} = flowNodeSelectionStore.state;
   const {metaData} = flowNodeMetaDataStore.state;
 
-  return selection?.flowNodeInstanceId ?? metaData?.flowNodeInstanceId ?? null;
+  // First try to get actual instance ID
+  const actualInstanceId =
+    selection?.flowNodeInstanceId ?? metaData?.flowNodeInstanceId;
+  if (actualInstanceId) {
+    return actualInstanceId;
+  }
+
+  // In modification mode, if selecting from diagram, check for pending ADD_TOKEN
+  if (modificationsStore.state.status === 'enabled' && selection?.flowNodeId) {
+    const addTokenModification = modificationsStore.flowNodeModifications.find(
+      (modification) =>
+        modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
+        modification.flowNode.id === selection.flowNodeId,
+    );
+
+    if (addTokenModification && 'scopeId' in addTokenModification) {
+      return addTokenModification.scopeId;
+    }
+  }
+
+  return null;
 };
 
 const addVariable = async ({

@@ -43,7 +43,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -54,9 +53,7 @@ public class VariableReader extends AbstractReader
 
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableReader.class);
 
-  @Autowired
-  @Qualifier("operateVariableTemplate")
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
   @Autowired private OperationReader operationReader;
 

@@ -17,17 +17,18 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
-import io.camunda.spring.client.properties.CamundaClientProperties;
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
-@ConfigurationProperties(prefix = "io.camunda.process.test")
+@ConfigurationProperties(prefix = "camunda.process-test")
 public class CamundaProcessTestRuntimeConfiguration {
 
   private String camundaDockerImageName =
@@ -44,10 +45,32 @@ public class CamundaProcessTestRuntimeConfiguration {
       CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
   private Map<String, String> connectorsEnvVars = Collections.emptyMap();
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
+  private List<Integer> connectorsExposedPorts = Collections.emptyList();
+
+  private String camundaLoggerName = CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_LOGGER_NAME;
+  private String connectorsLoggerName =
+      CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME;
+
+  private boolean multiTenancyEnabled = false;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
+
+  @NestedConfigurationProperty
+  private CoverageReportConfiguration coverage = new CoverageReportConfiguration();
+
+  @Bean
+  @Primary
+  public CamundaProcessTestRuntimeConfiguration runtimeConfiguration(
+      final LegacyCamundaProcessTestRuntimeConfiguration legacyConfiguration) {
+    final CamundaProcessTestRuntimeConfiguration mergedConfig =
+        new CamundaProcessTestRuntimeConfiguration();
+
+    BeanUtils.copyProperties(legacyConfiguration, mergedConfig);
+
+    return mergedConfig;
+  }
 
   /**
    * Gets the Camunda docker image version.
@@ -58,7 +81,7 @@ public class CamundaProcessTestRuntimeConfiguration {
    */
   @Deprecated
   public String getCamundaVersion() {
-    return camundaDockerImageVersion;
+    return getCamundaDockerImageVersion();
   }
 
   /**
@@ -155,6 +178,30 @@ public class CamundaProcessTestRuntimeConfiguration {
     this.connectorsSecrets = connectorsSecrets;
   }
 
+  public List<Integer> getConnectorsExposedPorts() {
+    return connectorsExposedPorts;
+  }
+
+  public void setConnectorsExposedPorts(final List<Integer> connectorsExposedPorts) {
+    this.connectorsExposedPorts = connectorsExposedPorts;
+  }
+
+  public String getCamundaLoggerName() {
+    return camundaLoggerName;
+  }
+
+  public void setCamundaLoggerName(final String camundaLoggerName) {
+    this.camundaLoggerName = camundaLoggerName;
+  }
+
+  public String getConnectorsLoggerName() {
+    return connectorsLoggerName;
+  }
+
+  public void setConnectorsLoggerName(final String connectorsLoggerName) {
+    this.connectorsLoggerName = connectorsLoggerName;
+  }
+
   public CamundaProcessTestRuntimeMode getRuntimeMode() {
     return runtimeMode;
   }
@@ -171,39 +218,19 @@ public class CamundaProcessTestRuntimeConfiguration {
     this.remote = remote;
   }
 
-  public static class RemoteConfiguration {
+  public boolean isMultiTenancyEnabled() {
+    return multiTenancyEnabled;
+  }
 
-    @NestedConfigurationProperty
-    private CamundaClientProperties client = new CamundaClientProperties();
+  public void setMultiTenancyEnabled(final boolean multiTenancyEnabled) {
+    this.multiTenancyEnabled = multiTenancyEnabled;
+  }
 
-    private URI camundaMonitoringApiAddress =
-        CamundaProcessTestRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;
+  public CoverageReportConfiguration getCoverage() {
+    return coverage;
+  }
 
-    private URI connectorsRestApiAddress =
-        CamundaProcessTestRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
-
-    public CamundaClientProperties getClient() {
-      return client;
-    }
-
-    public void setClient(final CamundaClientProperties client) {
-      this.client = client;
-    }
-
-    public URI getCamundaMonitoringApiAddress() {
-      return camundaMonitoringApiAddress;
-    }
-
-    public void setCamundaMonitoringApiAddress(final URI camundaMonitoringApiAddress) {
-      this.camundaMonitoringApiAddress = camundaMonitoringApiAddress;
-    }
-
-    public URI getConnectorsRestApiAddress() {
-      return connectorsRestApiAddress;
-    }
-
-    public void setConnectorsRestApiAddress(final URI connectorsRestApiAddress) {
-      this.connectorsRestApiAddress = connectorsRestApiAddress;
-    }
+  public void setCoverage(final CoverageReportConfiguration coverage) {
+    this.coverage = coverage;
   }
 }

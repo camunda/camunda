@@ -7,6 +7,7 @@
  */
 package io.camunda.security.configuration;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class AuthorizeRequestConfiguration {
@@ -18,5 +19,38 @@ public class AuthorizeRequestConfiguration {
 
   public void setAdditionalParameters(final Map<String, Object> additionalParameters) {
     this.additionalParameters = additionalParameters;
+  }
+
+  public boolean isSet() {
+    return additionalParameters != null;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  // Builder class
+  public static class Builder {
+    private final Map<String, Object> additionalParameters;
+
+    public Builder() {
+      additionalParameters = new HashMap<>();
+    }
+
+    public Builder additionalParameter(final String key, final Object value) {
+      additionalParameters.put(key, value);
+      return this;
+    }
+
+    public Builder additionalParameters(final Map<String, Object> additionalParameters) {
+      this.additionalParameters.putAll(additionalParameters);
+      return this;
+    }
+
+    public AuthorizeRequestConfiguration build() {
+      final AuthorizeRequestConfiguration config = new AuthorizeRequestConfiguration();
+      config.setAdditionalParameters(additionalParameters);
+      return config;
+    }
   }
 }

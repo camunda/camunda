@@ -18,6 +18,7 @@ import {
   isOIDC,
   isCamundaGroupsEnabled,
   isTenantsApiEnabled,
+  isSaaS,
 } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
 
@@ -25,23 +26,25 @@ export const useGlobalRoutes = () => {
   const { t } = useTranslate();
   const { pathname } = useLocation();
 
-  const OIDCDependentRoutes = isOIDC
+  const OIDCDependentRoutes = !isOIDC
     ? [
-        {
-          path: `${Paths.mappingRules()}/*`,
-          key: Paths.mappingRules(),
-          label: t("mappingRules"),
-          element: <MappingRules />,
-        },
-      ]
-    : [
         {
           path: `${Paths.users()}/*`,
           key: Paths.users(),
           label: t("users"),
           element: <Users />,
         },
-      ];
+      ]
+    : !isSaaS
+      ? [
+          {
+            path: `${Paths.mappingRules()}/*`,
+            key: Paths.mappingRules(),
+            label: t("mappingRules"),
+            element: <MappingRules />,
+          },
+        ]
+      : [];
 
   const camundaGroupsDependentRoutes = isCamundaGroupsEnabled
     ? [

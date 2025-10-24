@@ -24,6 +24,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -54,6 +55,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -72,8 +74,15 @@ public final class ProcessInstanceServices
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
@@ -87,7 +96,9 @@ public final class ProcessInstanceServices
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
-        authentication);
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override
@@ -194,6 +205,10 @@ public final class ProcessInstanceServices
             .setStartInstructionsFromRecord(request.startInstructions())
             .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
 
+    if (request.tags() != null) {
+      brokerRequest.setTags(request.tags());
+    }
+
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
@@ -210,7 +225,8 @@ public final class ProcessInstanceServices
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setInstructions(request.startInstructions())
-            .setFetchVariables(request.fetchVariables());
+            .setFetchVariables(request.fetchVariables())
+            .setTags(request.tags());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -341,7 +357,8 @@ public final class ProcessInstanceServices
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions,
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
-      List<String> fetchVariables) {}
+      List<String> fetchVariables,
+      Set<String> tags) {}
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 

@@ -10,7 +10,7 @@
 # This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
 # and enables detailed reporting of test results.
 # description: Automates the build process for operate workflows
-# called by: operate-ci-core-features.yml, preview-env-build-and-deploy.yml
+# called by: operate-ci.yml, preview-env-build-and-deploy.yml
 # test location:
 # type: CI
 # owner: @camunda/core-features
@@ -100,7 +100,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
-          dockerhub: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+          dockerhub: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
           harbor: true
           java-distribution: adopt
           maven-cache-key-modifier: operate

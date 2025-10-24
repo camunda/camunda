@@ -9,6 +9,7 @@ package io.camunda.search.es.transformers.aggregator;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
@@ -18,6 +19,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.aggregations.SingleBucketAggregateBase;
 import co.elastic.clients.elasticsearch._types.aggregations.SingleMetricAggregateBase;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregateBase;
 import co.elastic.clients.elasticsearch._types.aggregations.TopHitsAggregate;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
@@ -37,10 +39,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchAggregationResultTransformer<T>
     implements SearchTransfomer<Map<String, Aggregate>, Map<String, AggregationResult>> {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(SearchAggregationResultTransformer.class);
   private static final String COMPOSITE_KEY_DELIMITER = "__";
   private final ElasticsearchTransformers transformers;
   private final List<SearchAggregator> aggregators;
@@ -106,6 +112,10 @@ public class SearchAggregationResultTransformer<T>
     final var topHitAggregator = findTopHitsAggregatorRecursively(aggregators, key);
 
     return new Builder().hits(toSearchQueryHits(hits, topHitAggregator.documentClass())).build();
+  }
+
+  private AggregationResult transformCardinalityAggregate(final CardinalityAggregate aggregate) {
+    return new Builder().docCount(aggregate.value()).build();
   }
 
   private <B extends MultiBucketBase> AggregationResult transformMultiBucketAggregate(
@@ -180,11 +190,12 @@ public class SearchAggregationResultTransformer<T>
             case Parent -> res = transformSingleBucketAggregate(aggregate.parent());
             case Filter -> res = transformSingleBucketAggregate(aggregate.filter());
             case Filters -> res = transformMultiBucketAggregate(aggregate.filters());
-            case Sterms -> res = transformMultiBucketAggregate(aggregate.sterms());
-            case Lterms -> res = transformLTermsBucketAggregate(aggregate.lterms());
+            case Sterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.sterms()));
+            case Lterms -> res = transformLTermsBucketAggregate(warnDocError(aggregate.lterms()));
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());
+            case Cardinality -> res = transformCardinalityAggregate(aggregate.cardinality());
             default ->
                 throw new IllegalStateException(
                     "Unsupported aggregation type: " + aggregate._kind());
@@ -192,6 +203,18 @@ public class SearchAggregationResultTransformer<T>
           result.put(key, res);
         });
     return result;
+  }
+
+  private <A extends MultiBucketAggregateBase<?>> A warnDocError(final A multiBucketAggregate) {
+    if (multiBucketAggregate instanceof final TermsAggregateBase<?> termsAggregate) {
+      final Long sumOtherDocCount = termsAggregate.sumOtherDocCount();
+      if (sumOtherDocCount != null && sumOtherDocCount > 0) {
+        LOGGER.warn(
+            "Terms aggregation encountered more buckets ({}) than the specified size.",
+            sumOtherDocCount);
+      }
+    }
+    return multiBucketAggregate;
   }
 
   private List<SearchQueryHit> toSearchQueryHits(

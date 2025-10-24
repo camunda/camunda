@@ -151,20 +151,6 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldQueryMembersByGroupId() {
-    // given
-    final var filter =
-        FilterBuilders.group((f) -> f.joinParentId("test-parent-id").memberType(USER));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    assertThat(searchRequest)
-        .isEqualTo(generateSearchQueryForParent("test-parent-id", USER.name()));
-  }
-
-  @Test
   void shouldQueryGroupsByMemberId() {
     // given
     final var filter =

@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
+import java.util.Collection;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -96,6 +97,27 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   public static <V> CompletableActorFuture<V> completedExceptionally(final Throwable throwable) {
     return new CompletableActorFuture<>(throwable);
+  }
+
+  /**
+   * Traverse the provided collection sequentially, applying the provided function making sure that
+   * the futures are started sequentially: When one computation completes, the next starts after it.
+   *
+   * @param collection To traverse to use as input for the function
+   * @param function The computation to execute for each element of the collection
+   * @return a Void future that will complete successfully if all Futures started complete
+   *     successfully. if one future returns an error, the computation is stopped (the rest of the
+   *     Future will not be started) and the error is returned
+   */
+  public static <A> ActorFuture<Void> traverseIgnoring(
+      final Collection<A> collection,
+      final Function<A, ActorFuture<Void>> function,
+      final Executor executor) {
+    ActorFuture<Void> future = completed();
+    for (final A a : collection) {
+      future = future.andThen(unused -> function.apply(a), executor);
+    }
+    return future;
   }
 
   @Override

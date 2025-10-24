@@ -16,5 +16,10 @@
     <Class name="io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkRecord"/>
     <Bug pattern="SING_SINGLETON_HAS_NONPRIVATE_CONSTRUCTOR"/>
   </Match>
+  <Match>
+    <!-- This is a false positive for property 'commitPosition' because it is updated with in an actor. So atomic updates are guaranteed. -->
+    <Class name="io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector"/>
+    <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>
+  </Match>
   <Bug pattern="AT_NONATOMIC_64BIT_PRIMITIVE"/>
 </FindBugsFilter>

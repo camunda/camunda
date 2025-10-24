@@ -27,15 +27,17 @@ public interface AssignGroupToTenantCommandStep1 {
    */
   AssignGroupToTenantCommandStep2 groupId(String groupId);
 
-  interface AssignGroupToTenantCommandStep2 extends FinalCommandStep<AssignGroupToTenantResponse> {
+  interface AssignGroupToTenantCommandStep2 {
 
     /**
      * Sets the tenant ID.
      *
      * @param tenantId the tenantId of the tenant
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link AssignGroupToTenantCommandStep3#send()} to
+     *     complete the command and send it to the broker.
      */
-    AssignGroupToTenantCommandStep2 tenantId(String tenantId);
+    AssignGroupToTenantCommandStep3 tenantId(String tenantId);
   }
+
+  interface AssignGroupToTenantCommandStep3 extends FinalCommandStep<AssignGroupToTenantResponse> {}
 }

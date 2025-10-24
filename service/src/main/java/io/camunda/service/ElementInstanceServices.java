@@ -12,8 +12,12 @@ import static io.camunda.service.authorization.Authorizations.ELEMENT_INSTANCE_R
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
@@ -31,18 +35,29 @@ public final class ElementInstanceServices
     extends SearchQueryService<
         ElementInstanceServices, FlowNodeInstanceQuery, FlowNodeInstanceEntity> {
 
+  private static final String FNI_ELEMENT_INSTANCE_PATTERN = "*FNI_%d*";
   private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
   private final ProcessCache processCache;
+  private final IncidentServices incidentServices;
 
   public ElementInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final ProcessCache processCache,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final IncidentServices incidentServices,
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
     this.processCache = processCache;
+    this.incidentServices = incidentServices;
   }
 
   @Override
@@ -52,7 +67,10 @@ public final class ElementInstanceServices
         securityContextProvider,
         flowNodeInstanceSearchClient,
         processCache,
-        authentication);
+        incidentServices,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override
@@ -82,6 +100,7 @@ public final class ElementInstanceServices
 
   private SearchQueryResult<FlowNodeInstanceEntity> search(
       final FlowNodeInstanceQuery query, final SecurityContext securityContext) {
+
     final var result =
         executeSearchRequest(
             () ->
@@ -134,6 +153,27 @@ public final class ElementInstanceServices
     return item.hasFlowNodeName()
         ? item
         : item.withFlowNodeName(cachedItem.getElementName(item.flowNodeId()));
+  }
+
+  public SearchQueryResult<IncidentEntity> searchIncidents(
+      final long elementInstanceKey, final IncidentQuery query) {
+    final var authenticatedIncidentServices = incidentServices.withAuthentication(authentication);
+    if (authenticatedIncidentServices == null) {
+      return SearchQueryResult.of();
+    }
+    final var elementInstance = getByKey(elementInstanceKey);
+    return authenticatedIncidentServices.search(
+        IncidentQuery.of(
+            b ->
+                b.filter(
+                        f ->
+                            f.treePathOperations(
+                                Operation.like(
+                                    String.format(
+                                        FNI_ELEMENT_INSTANCE_PATTERN,
+                                        elementInstance.flowNodeInstanceKey()))))
+                    .sort(query.sort())
+                    .page(query.page())));
   }
 
   public record SetVariablesRequest(

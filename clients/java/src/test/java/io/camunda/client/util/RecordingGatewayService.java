@@ -76,8 +76,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -486,6 +488,16 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final String bpmnProcessId,
       final int version,
       final long processInstanceKey) {
+    onCreateProcessInstanceRequest(
+        processDefinitionKey, bpmnProcessId, version, processInstanceKey, new HashSet<>());
+  }
+
+  public void onCreateProcessInstanceRequest(
+      final long processDefinitionKey,
+      final String bpmnProcessId,
+      final int version,
+      final long processInstanceKey,
+      final Set<String> tags) {
     addRequestHandler(
         CreateProcessInstanceRequest.class,
         request ->
@@ -494,6 +506,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .setBpmnProcessId(bpmnProcessId)
                 .setVersion(version)
                 .setProcessInstanceKey(processInstanceKey)
+                .addAllTags(tags)
                 .build());
   }
 

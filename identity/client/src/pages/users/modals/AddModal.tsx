@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useState } from "react";
+import { FC, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -19,20 +20,46 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [apiCall, { loading, error }] = useApiCall(createUser, {
     suppressErrorNotification: true,
   });
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [repeatedPassword, setRepeatedPassword] = useState("");
-  const [emailValid, setEmailValid] = useState(true);
-  const [passwordValid, setPasswordValid] = useState(true);
 
-  const handleSubmit = async () => {
+  type FormData = {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+    repeatedPassword: string;
+  };
+
+  const {
+    control,
+    handleSubmit,
+    formState: { touchedFields },
+    getValues,
+    watch,
+    trigger,
+  } = useForm<FormData>({
+    defaultValues: {
+      username: "",
+      name: "",
+      email: "",
+      password: "",
+      repeatedPassword: "",
+    },
+    mode: "all",
+  });
+
+  const password = watch("password");
+  useEffect(() => {
+    if (touchedFields.repeatedPassword) {
+      void trigger("repeatedPassword");
+    }
+  }, [password, touchedFields.repeatedPassword, trigger]);
+
+  const onSubmit = async (data: FormData) => {
     const { success } = await apiCall({
-      name,
-      email,
-      username,
-      password,
+      name: data.name,
+      email: data.email,
+      username: data.username,
+      password: data.password,
     });
 
     if (success) {
@@ -40,72 +67,93 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     }
   };
 
-  function validateEmail() {
-    setEmailValid(isValidEmail(email));
-  }
-
-  function validatePassword() {
-    if (password && repeatedPassword) {
-      setPasswordValid(password === repeatedPassword);
-    }
-  }
-
   return (
     <FormModal
       open={open}
       headline={t("createUser")}
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       loading={loading}
       error={error}
-      submitDisabled={
-        !name ||
-        !email ||
-        !username ||
-        !password ||
-        password !== repeatedPassword
-      }
       loadingDescription={t("creatingUser")}
       confirmLabel={t("createUser")}
     >
-      <TextField
-        label={t("username")}
-        value={username}
-        placeholder={t("enterUsernameOrUserId")}
-        onChange={setUsername}
-        autoFocus
+      <Controller
+        name="username"
+        control={control}
+        rules={{ required: t("usernameRequired") }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("username")}
+            placeholder={t("enterUsernameOrUserId")}
+            errors={fieldState.error?.message}
+            autoFocus
+          />
+        )}
       />
-      <TextField
-        label={t("name")}
-        value={name}
-        placeholder={t("enterName")}
-        onChange={setName}
+      <Controller
+        name="name"
+        control={control}
+        rules={{ required: t("nameRequired") }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("name")}
+            placeholder={t("enterName")}
+            errors={fieldState.error?.message}
+          />
+        )}
       />
-      <TextField
-        label={t("email")}
-        value={email}
-        placeholder={t("enterEmailAddress")}
-        onChange={setEmail}
-        type="email"
-        onBlur={validateEmail}
-        errors={!emailValid ? [t("pleaseEnterValidEmail")] : []}
+      <Controller
+        name="email"
+        control={control}
+        rules={{
+          required: t("emailRequired"),
+          validate: (value) =>
+            isValidEmail(value) || t("pleaseEnterValidEmail"),
+        }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("email")}
+            placeholder={t("enterEmailAddress")}
+            type="email"
+            errors={fieldState.error?.message}
+          />
+        )}
       />
-      <TextField
-        label={t("password")}
-        value={password}
-        placeholder={t("password")}
-        onChange={setPassword}
-        onBlur={validatePassword}
-        type="password"
+      <Controller
+        name="password"
+        control={control}
+        rules={{ required: t("passwordRequired") }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("password")}
+            placeholder={t("password")}
+            type="password"
+            errors={fieldState.error?.message}
+          />
+        )}
       />
-      <TextField
-        label={t("repeatPassword")}
-        value={repeatedPassword}
-        placeholder={t("repeatPassword")}
-        onChange={setRepeatedPassword}
-        onBlur={validatePassword}
-        type="password"
-        errors={!passwordValid ? [t("pleaseEnterValidPassword")] : []}
+      <Controller
+        name="repeatedPassword"
+        control={control}
+        rules={{
+          required: t("repeatPasswordRequired"),
+          validate: (value) =>
+            value === getValues("password") || t("pleaseEnterValidPassword"),
+        }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("repeatPassword")}
+            placeholder={t("repeatPassword")}
+            type="password"
+            errors={fieldState.error?.message}
+          />
+        )}
       />
     </FormModal>
   );

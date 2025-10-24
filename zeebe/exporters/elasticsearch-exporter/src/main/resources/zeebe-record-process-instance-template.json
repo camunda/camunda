@@ -60,6 +60,9 @@
             },
             "callingElementPath": {
               "enabled": false
+            },
+            "tags": {
+              "type": "keyword"
             }
           }
         }

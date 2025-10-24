@@ -25,6 +25,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
@@ -78,6 +79,63 @@ public class ElementAssertTest {
   private static ElementInstance newTerminatedElementInstance(final String elementId) {
     return ElementInstanceBuilder.newTerminatedElementInstance(elementId, PROCESS_INSTANCE_KEY)
         .build();
+  }
+
+  @Nested
+  public class CombineSelectors {
+    @Mock private ElementInstanceFilter elementInstanceFilter;
+    @Captor private ArgumentCaptor<Consumer<ElementInstanceFilter>> elementInstanceFilterCapture;
+
+    @BeforeEach
+    void configureMocks() {
+      final ElementInstance elementInstanceA = newActiveElementInstance("A");
+      final ElementInstance elementInstanceB = newActiveElementInstance("B");
+      final ElementInstance elementInstanceC = newCompletedElementInstance("C");
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Arrays.asList(elementInstanceA, elementInstanceB, elementInstanceC));
+    }
+
+    @AfterEach
+    void reset() {
+      CamundaAssert.setElementSelector(CamundaAssert.DEFAULT_ELEMENT_SELECTOR);
+    }
+
+    @Test
+    public void canCombineSelectors() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      final ElementSelector combined =
+          ElementSelectors.byName("element_A").and(ElementSelectors.byId("A"));
+
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveElements(combined);
+
+      verify(camundaDataSource).findElementInstances(elementInstanceFilterCapture.capture());
+
+      elementInstanceFilterCapture.getValue().accept(elementInstanceFilter);
+      verify(elementInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(elementInstanceFilter).elementId("A");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    public void combinedSelectorsRequireAllTestsToPass() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      final ElementSelector badCombination =
+          ElementSelectors.byName("element_Foo").and(ElementSelectors.byId("A"));
+
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasActiveElements(badCombination))
+          .hasMessageContaining(
+              "Process instance [key: 1] should have active elements ['element_Foo, A'] but the following elements were not active:");
+    }
   }
 
   @Nested

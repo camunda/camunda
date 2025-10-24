@@ -12,34 +12,61 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery">
     SELECT COUNT(*)
-    FROM ${prefix}GROUPS g
-    <if test="filter.memberIds != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
-      AND gm.ENTITY_TYPE = #{filter.childMemberType}
-    </if>
-    <if test="filter.tenantId != null">
-      JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
-    </if>
+    FROM ${prefix}GROUP_ g
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery"
     resultMap="io.camunda.db.rdbms.sql.GroupMapper.groupResultMap">
+SELECT
+  t.GROUP_KEY,
+    t.GROUP_ID,
+    t.NAME,
+    t.DESCRIPTION,
+    gm.GROUP_ID AS MEMBER_GROUP_ID,
+    gm.ENTITY_ID AS MEMBER_ENTITY_ID,
+    gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
+    FROM (
+    SELECT * FROM (
+    SELECT
+    g.GROUP_KEY,
+    g.GROUP_ID,
+    g.NAME,
+    g.DESCRIPTION
+    FROM ${prefix}GROUP_ g
+    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) t
+    LEFT JOIN ${prefix}GROUP_MEMBER gm ON t.GROUP_ID = gm.GROUP_ID
+    <if test="filter.childMemberType != null">
+      AND gm.ENTITY_TYPE = #{filter.childMemberType}
+    </if>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+  </select>
+
+  <select id="countMembers" parameterType="io.camunda.db.rdbms.read.domain.GroupMemberDbQuery">
+    SELECT COUNT(*)
+    FROM ${prefix}GROUP_MEMBER gm
+    JOIN ${prefix}GROUP_ g ON g.GROUP_ID = gm.GROUP_ID
+    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilter"/>
+  </select>
+
+  <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.GroupMemberDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.GroupMapper.groupMemberResultMap">
     SELECT * FROM (
     SELECT
     g.GROUP_KEY,
     g.GROUP_ID,
     g.NAME,
     g.DESCRIPTION,
-    gm.GROUP_ID AS MEMBER_GROUP_ID,
-    gm.ENTITY_ID AS MEMBER_ENTITY_ID,
-    gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
-    FROM ${prefix}GROUPS g
-    LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
-    <if test="filter.tenantId != null">
-      JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
-    </if>
-    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+    gm.ENTITY_ID,
+    gm.ENTITY_TYPE
+    FROM ${prefix}GROUP_MEMBER gm
+    JOIN ${prefix}GROUP_ g ON g.GROUP_ID = gm.GROUP_ID
+    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -48,6 +75,15 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
+    <!-- authorization filters -->
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND g.GROUP_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+
     <if test="filter.groupKey != null">AND g.GROUP_KEY = #{filter.groupKey}</if>
     <if test="filter.groupIdOperations != null and !filter.groupIdOperations.isEmpty()">
       <foreach collection="filter.groupIdOperations" item="operation">
@@ -56,14 +92,59 @@
       </foreach>
     </if>
     <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
-    <if test="filter.memberIds != null">
-      AND gm.ENTITY_ID IN
+    <if test="filter.description != null">AND g.DESCRIPTION = #{filter.description}</if>
+
+    <if
+      test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">
+      AND g.GROUP_ID IN ( SELECT gmf.GROUP_ID FROM ${prefix}GROUP_MEMBER gmf
+      WHERE
+      gmf.ENTITY_TYPE = #{filter.childMemberType}
+      AND gmf.ENTITY_ID IN
       <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
         #{memberId}
       </foreach>
-      AND gm.ENTITY_TYPE = #{filter.childMemberType}
+      )
     </if>
-    <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.memberIdsByType != null and !filter.memberIdsByType.isEmpty()">
+      AND g.GROUP_ID IN ( SELECT gmt.GROUP_ID FROM ${prefix}GROUP_MEMBER gmt
+      WHERE 1=1
+      <foreach collection="filter.memberIdsByType" index="memberType" item="values" open="AND ("
+        separator=" OR " close=")">
+        <if test="values != null and !values.isEmpty()">
+          gmt.ENTITY_TYPE = #{memberType} AND gmt.ENTITY_ID IN
+          <foreach collection="values" item="value" open="(" separator=" , " close=")">
+            #{value}
+          </foreach>
+        </if>
+      </foreach>
+      )
+    </if>
+    <if test="filter.tenantId != null">
+      AND g.GROUP_ID IN ( SELECT tm.ENTITY_ID FROM ${prefix}TENANT_MEMBER tm
+      WHERE tm.ENTITY_TYPE = 'GROUP'
+      AND tm.TENANT_ID = #{filter.tenantId})
+    </if>
+  </sql>
+
+  <sql id="searchMemberFilter">
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND g.GROUP_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+
+      <if test="filter.groupId != null">
+        AND g.GROUP_ID = #{filter.groupId}
+      </if>
+
+      <if test="filter.memberType != null">
+        AND gm.ENTITY_TYPE = #{filter.memberType}
+      </if>
+    </where>
   </sql>
 
   <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">
@@ -81,13 +162,21 @@
     </collection>
   </resultMap>
 
+  <resultMap id="groupMemberResultMap" type="io.camunda.db.rdbms.write.domain.GroupMemberDbModel">
+    <constructor>
+      <idArg column="GROUP_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_TYPE" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">
-    INSERT INTO ${prefix}GROUPS (GROUP_KEY, GROUP_ID, NAME, DESCRIPTION)
+    INSERT INTO ${prefix}GROUP_ (GROUP_KEY, GROUP_ID, NAME, DESCRIPTION)
     VALUES (#{groupKey}, #{groupId}, #{name}, #{description})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">
-    UPDATE ${prefix}GROUPS SET
+    UPDATE ${prefix}GROUP_ SET
                     NAME = #{name},
                     DESCRIPTION = #{description}
     WHERE GROUP_ID = #{groupId}
@@ -95,7 +184,7 @@
 
   <delete id="delete" parameterType="java.lang.String">
     DELETE
-    FROM ${prefix}GROUPS
+    FROM ${prefix}GROUP_
     WHERE GROUP_ID = #{groupId}
   </delete>
 

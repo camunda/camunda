@@ -83,12 +83,12 @@ public class DataGenerator {
   private void init(final BackupRestoreTestContext testContext) {
     camundaClient =
         CamundaClient.newClientBuilder()
-            .gatewayAddress(testContext.getExternalZeebeContactPoint())
-            .usePlaintext()
+            .preferRestOverGrpc(false)
+            .grpcAddress(testContext.getZeebeGrpcAddress())
             .build();
     esClient = testContext.getEsClient();
     operateRestClient = testContext.getOperateRestClient();
-    indexPrefix = testContext.getZeebeIndexPrefix();
+    indexPrefix = testContext.getIndexPrefix();
   }
 
   public void createData(final BackupRestoreTestContext testContext) {

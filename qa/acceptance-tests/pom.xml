@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-qa</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>camunda-qa-acceptance-tests</artifactId>
@@ -38,11 +38,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-backup</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-query-transformer</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -83,6 +78,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-qa-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -163,6 +163,11 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -248,24 +253,49 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-test-util</artifactId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>identity-migration</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-test-util</artifactId>
+      <artifactId>zeebe-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>1.21.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mssqlserver</artifactId>
+      <version>1.21.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mysql</artifactId>
+      <version>1.21.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mariadb</artifactId>
+      <version>1.21.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>oracle-free</artifactId>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
 
@@ -298,16 +328,17 @@
     </dependency>
 
     <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
@@ -315,19 +346,14 @@
     </dependency>
 
     <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>mariadb</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>oracle-free</artifactId>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -335,7 +361,11 @@
       <artifactId>ojdbc8</artifactId>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>com.microsoft.sqlserver</groupId>
+      <artifactId>mssql-jdbc</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.github.docker-java</groupId>
       <artifactId>docker-java-api</artifactId>
@@ -397,16 +427,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-common</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-common</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
       <scope>test</scope>
@@ -428,53 +448,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-opensearch</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-elasticsearch</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-schema-manager</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda.migration</groupId>
-      <artifactId>process-migration</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -490,11 +470,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -515,7 +490,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

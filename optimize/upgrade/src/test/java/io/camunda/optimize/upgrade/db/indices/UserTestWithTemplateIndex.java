@@ -25,7 +25,7 @@ public abstract class UserTestWithTemplateIndex<TBuilder>
 
   @Override
   public String getIndexNameInitialSuffix() {
-    return DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+    return DatabaseConstants.INDEX_SUFFIX;
   }
 
   @Override

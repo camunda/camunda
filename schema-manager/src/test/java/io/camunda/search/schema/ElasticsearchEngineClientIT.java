@@ -10,30 +10,28 @@ package io.camunda.search.schema;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.validateMappings;
+import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.UpdateRequest;
+import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.utils.SchemaTestUtil;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
-import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -55,7 +53,6 @@ public class ElasticsearchEngineClientIT {
     config.setUrl(CONTAINER.getHttpHostAddress());
     final var esConnector = new ElasticsearchConnector(config);
     elsClient = esConnector.createClient();
-
     elsEngineClient = new ElasticsearchEngineClient(elsClient, esConnector.objectMapper());
   }
 
@@ -307,85 +304,151 @@ public class ElasticsearchEngineClientIT {
     assertThat(complexProperty.get("eager_global_ordinals")).isEqualTo(true);
   }
 
-  @Nested
-  class ImportersCompleted {
-    final String indexPrefix = "";
-    final int partitionId = 1;
-    final IndexDescriptor importPositionIndex = new ImportPositionIndex(indexPrefix, true);
+  @Test
+  void shouldNotIssuePutIndexTemplateWhenSettingsUnchanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_no_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+    initialSettings.setTemplatePriority(50);
 
-    @BeforeEach
-    void setup() throws IOException {
-      elsClient
-          .indices()
-          .delete(r -> r.index(importPositionIndex.getFullQualifiedName()).ignoreUnavailable(true));
-      elsEngineClient.createIndex(importPositionIndex, new IndexConfiguration());
-    }
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
 
-    @Test
-    void shouldReturnRecordReadersCompletedIfAllReadersCompletedFieldIsTrue() throws IOException {
-      // given, when
-      elsClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
-      elsClient.indices().refresh();
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
 
-      // then
-      final var importersCompleted =
-          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(true);
-    }
+    // when
+    engineClient.updateIndexTemplateSettings(template, initialSettings);
 
-    @Test
-    void shouldReturnRecordReadersNotCompletedIfSomeReadersCompletedFieldIsFalse()
-        throws IOException {
-      elsClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
+    // then
+    verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
 
-      final var decisionEntity =
-          new ImportPositionEntity().setPartitionId(partitionId).setAliasName("decision");
+  @Test
+  void shouldIssuePutIndexTemplateWhenSettingsChanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
 
-      final var updateRequest =
-          new UpdateRequest.Builder<>()
-              .id(decisionEntity.getId())
-              .index(importPositionIndex.getFullQualifiedName())
-              .doc(Map.of("completed", false))
-              .build();
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
 
-      elsClient.update(updateRequest, ImportPositionEntity.class);
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
 
-      elsClient.indices().refresh();
+    final var updated = new IndexConfiguration();
+    updated.setNumberOfReplicas(2); // change
+    updated.setNumberOfShards(1); // same
 
-      final var importersCompleted =
-          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(false);
-    }
+    // when
+    engineClient.updateIndexTemplateSettings(template, updated);
 
-    @Test
-    void shouldReturnImportersCompletedForFreshInstall() {
-      final var importersCompleted =
-          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(true);
-    }
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
 
-    private BulkRequest createImportPositionDocuments(
-        final int partitionId, final IndexDescriptor importPositionIndex) {
-      final BulkRequest.Builder br = new BulkRequest.Builder();
-      Stream.of("process-instance", "decision", "job")
-          .map(
-              type ->
-                  new ImportPositionEntity()
-                      .setCompleted(true)
-                      .setPartitionId(partitionId)
-                      .setAliasName(type))
-          .forEach(
-              entity -> {
-                br.operations(
-                    op ->
-                        op.index(
-                            i ->
-                                i.index(importPositionIndex.getFullQualifiedName())
-                                    .id(entity.getId())
-                                    .document(entity)));
-              });
+  @Test
+  void shouldIssuePutIndexTemplateWhenTemplatePriorityChanged() throws IOException {
+    // given
+    final var template = createTestTemplateDescriptor("template_change", "/mappings.json");
+    final var initialSettings = new IndexConfiguration();
+    initialSettings.setNumberOfReplicas(0);
+    initialSettings.setNumberOfShards(1);
+    initialSettings.setTemplatePriority(50);
 
-      return br.build();
-    }
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, initialSettings, true);
+    reset(indicesSpy); // ignore create
+
+    final var updated = new IndexConfiguration();
+    updated.setNumberOfReplicas(0); // same
+    updated.setNumberOfShards(1); // same
+    updated.setTemplatePriority(100); // change
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, updated);
+
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  @Test
+  void shouldCreateIndexWithMetaNormally() throws IOException {
+    // given
+    final var descriptor =
+        createTestIndexDescriptor(
+            "index_name-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings_with_meta.json");
+
+    // when
+    final var indexSettings = new IndexConfiguration();
+    elsEngineClient.createIndex(descriptor, indexSettings);
+
+    // then
+    final var index =
+        elsClient
+            .indices()
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .get(descriptor.getFullQualifiedName());
+
+    SchemaTestUtil.validateMappings(index.mappings(), "/mappings_with_meta.json");
+
+    assertThat(index.mappings().meta()).isNotEmpty().containsKey("test_key");
+    assertThat(index.mappings().meta().get("test_key").to(String.class)).isEqualTo("test_value");
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
+    assertThat(index.settings().index().numberOfReplicas())
+        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+    assertThat(index.settings().index().numberOfShards())
+        .isEqualTo(indexSettings.getNumberOfShards().toString());
+  }
+
+  @Test
+  void shouldUpdateIndexMeta() throws IOException {
+    // given
+    final var descriptor =
+        createTestIndexDescriptor("index_name-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var indexSettings = new IndexConfiguration();
+    elsEngineClient.createIndex(descriptor, indexSettings);
+
+    // when
+    elsEngineClient.putIndexMeta(
+        descriptor.getFullQualifiedName(),
+        Map.of("string_key", "string_value", "bool_key", true, "int_key", 42));
+
+    // then
+    final var index =
+        elsClient
+            .indices()
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .get(descriptor.getFullQualifiedName());
+
+    SchemaTestUtil.validateMappings(index.mappings(), "/mappings.json");
+
+    assertThat(index.mappings().meta())
+        .isNotEmpty()
+        .containsKeys("string_key", "bool_key", "int_key");
+    assertThat(index.mappings().meta().get("string_key").to(String.class))
+        .isEqualTo("string_value");
+    assertThat(index.mappings().meta().get("bool_key").to(Boolean.class)).isTrue();
+    assertThat(index.mappings().meta().get("int_key").to(Integer.class)).isEqualTo(42);
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
+    assertThat(index.settings().index().numberOfReplicas())
+        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+    assertThat(index.settings().index().numberOfShards())
+        .isEqualTo(indexSettings.getNumberOfShards().toString());
   }
 }

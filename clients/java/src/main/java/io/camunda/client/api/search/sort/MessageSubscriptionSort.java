@@ -23,15 +23,13 @@ public interface MessageSubscriptionSort extends SearchRequestSort<MessageSubscr
 
   MessageSubscriptionSort processDefinitionId();
 
-  MessageSubscriptionSort processDefinitionKey();
-
   MessageSubscriptionSort processInstanceKey();
 
   MessageSubscriptionSort elementId();
 
   MessageSubscriptionSort elementInstanceKey();
 
-  MessageSubscriptionSort messageSubscriptionType();
+  MessageSubscriptionSort messageSubscriptionState();
 
   MessageSubscriptionSort lastUpdatedDate();
 

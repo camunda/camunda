@@ -24,6 +24,9 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
+import io.camunda.zeebe.engine.state.signal.SignalSubscription;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -32,6 +35,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor<SignalRecord> {
@@ -79,53 +84,43 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     final long eventKey = keyGenerator.nextKey();
     final var signalRecord = command.getValue();
 
-    if (!authCheckBehavior.isAssignedToTenant(command, signalRecord.getTenantId())) {
-      final var message =
-          "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
-              .formatted(signalRecord.getTenantId());
-      rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
-      return;
+    final var isAuthNeeded =
+        !authCheckBehavior.isInternalCommand(
+            command.hasRequestMetadata(), command.getBatchOperationReference());
+
+    // Check tenant authorization if not an internal command
+    if (isAuthNeeded) {
+      if (!authCheckBehavior.isAssignedToTenant(command, signalRecord.getTenantId())) {
+        final var message =
+            "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
+                .formatted(signalRecord.getTenantId());
+        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+        return;
+      }
     }
 
-    stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
+    triggerSignal(command, eventKey, isAuthNeeded);
 
-    signalSubscriptionState.visitBySignalName(
-        signalRecord.getSignalNameBuffer(),
-        signalRecord.getTenantId(),
-        subscription -> {
-          final var subscriptionRecord = subscription.getRecord();
-          final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
-          checkAuthorization(command, isStartEvent, subscriptionRecord);
-
-          if (isStartEvent) {
-            eventHandle.activateProcessInstanceForStartEvent(
-                subscriptionRecord.getProcessDefinitionKey(),
-                keyGenerator.nextKey(),
-                subscriptionRecord.getCatchEventIdBuffer(),
-                signalRecord.getVariablesBuffer(),
-                signalRecord.getTenantId());
-          } else {
-            activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
-          }
-        });
-
-    if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, SignalIntent.BROADCASTED, signalRecord, command);
+    // differentiate between internal and external commands for distribution
+    // if the command is external we distribute the authInfo coming from the command
+    // if the command is internal we distribute the authInfo as PRE_AUTHORIZED
+    if (isAuthNeeded) {
+      commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
+    } else {
+      final var authInfo = new AuthInfo();
+      authInfo.setFormat(AuthDataFormat.PRE_AUTHORIZED);
+      commandDistributionBehavior
+          .withKey(eventKey)
+          .unordered()
+          .distribute(command.getValueType(), command.getIntent(), command.getValue(), authInfo);
     }
-
-    commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<SignalRecord> command) {
-    final var value = command.getValue();
-    signalSubscriptionState.visitBySignalName(
-        value.getSignalNameBuffer(),
-        value.getTenantId(),
-        subscription -> activateElement(subscription.getRecord(), value.getVariablesBuffer()));
-
-    stateWriter.appendFollowUpEvent(command.getKey(), SignalIntent.BROADCASTED, command.getValue());
+    final var isAuthNeeded = !(command.getAuthInfo().getFormat() == AuthDataFormat.PRE_AUTHORIZED);
+    triggerSignal(command, command.getKey(), isAuthNeeded);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
@@ -180,8 +175,55 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
           command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, exception.getRejectionType(), exception.getMessage());
+      if (command.isCommandDistributed()) {
+        // If the command was distributed but doesn't pass auth checks on this partition, we still
+        // need to acknowledge the command to avoid it being stuck in retry.
+        commandDistributionBehavior.acknowledgeCommand(command);
+      }
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void triggerSignal(
+      final TypedRecord<SignalRecord> command, final long eventKey, final boolean isAuthNeeded) {
+    final var signalRecord = command.getValue();
+
+    final List<SignalSubscription> subscriptions = new ArrayList<>();
+    signalSubscriptionState.visitBySignalName(
+        signalRecord.getSignalNameBuffer(),
+        signalRecord.getTenantId(),
+        subscription -> {
+          final var subscriptionRecord = subscription.getRecord();
+          final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
+          if (isAuthNeeded) {
+            checkAuthorization(command, isStartEvent, subscriptionRecord);
+          }
+          final var copiedSubscription = new SignalSubscription();
+          copiedSubscription.copyFrom(subscription);
+          subscriptions.add(copiedSubscription);
+        });
+
+    stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
+
+    subscriptions.forEach(
+        subscription -> {
+          final var subscriptionRecord = subscription.getRecord();
+          final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
+          if (isStartEvent) {
+            eventHandle.activateProcessInstanceForStartEvent(
+                subscriptionRecord.getProcessDefinitionKey(),
+                keyGenerator.nextKey(),
+                subscriptionRecord.getCatchEventIdBuffer(),
+                signalRecord.getVariablesBuffer(),
+                signalRecord.getTenantId());
+          } else {
+            activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
+          }
+        });
+
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeEventOnCommand(eventKey, SignalIntent.BROADCASTED, signalRecord, command);
+    }
   }
 }

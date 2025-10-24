@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
@@ -42,7 +44,12 @@ public class MultiTenancyActivatableJobsPushTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition().withJobStreamer(JOB_STREAMER);
+      EngineRule.singlePartition()
+          .withJobStreamer(JOB_STREAMER)
+          .withSecurityConfig(
+              config -> {
+                config.getMultiTenancy().setChecksEnabled(true);
+              });
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -58,21 +65,41 @@ public class MultiTenancyActivatableJobsPushTest {
     final DirectBuffer worker = BufferUtil.wrapString("test");
     final Map<String, Object> variables = Map.of("a", "valA", "b", "valB", "c", "valC");
     final long timeout = 30000L;
+    final String username = Strings.newRandomValidIdentityId();
     final String tenantIdA = "tenant-a";
-    final String tenantIdB = "tenant-a";
+    final String tenantIdB = "tenant-b";
 
-    final JobActivationPropertiesImpl jobActivationProperties =
+    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
+    ENGINE.user().newUser(username).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdA)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+    final Map<String, Object> authorizationClaims = Map.of(AUTHORIZED_USERNAME, username);
+
+    final JobActivationPropertiesImpl jobActivationPropertiesA =
         new JobActivationPropertiesImpl()
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setFetchVariables(
-                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")));
-    final var jobStreamA =
-        JOB_STREAMER.addJobStream(
-            jobTypeBuffer, jobActivationProperties.setTenantIds(List.of(tenantIdA)));
-    final var jobStreamB =
-        JOB_STREAMER.addJobStream(
-            jobTypeBuffer, jobActivationProperties.setTenantIds(List.of(tenantIdB)));
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+            .setClaims(authorizationClaims)
+            .setTenantIds(List.of(tenantIdA));
+
+    final JobActivationPropertiesImpl jobActivationPropertiesB =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+            .setClaims(authorizationClaims)
+            .setTenantIds(List.of(tenantIdB));
+
+    final var jobStreamA = JOB_STREAMER.addJobStream(jobTypeBuffer, jobActivationPropertiesA);
+    final var jobStreamB = JOB_STREAMER.addJobStream(jobTypeBuffer, jobActivationPropertiesB);
 
     final int activationCount = 1;
 

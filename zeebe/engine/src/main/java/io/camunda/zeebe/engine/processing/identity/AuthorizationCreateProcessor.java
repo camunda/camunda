@@ -9,13 +9,13 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -30,8 +30,10 @@ public class AuthorizationCreateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final PermissionsBehavior permissionsBehavior;
-  private final UserState userState;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final AuthorizationEntityChecker authorizationEntityChecker;
 
   public AuthorizationCreateProcessor(
       final Writers writers,
@@ -44,8 +46,10 @@ public class AuthorizationCreateProcessor
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
+    authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
-    userState = processingState.getUserState();
+    authorizationEntityChecker = new AuthorizationEntityChecker(processingState);
   }
 
   @Override
@@ -59,8 +63,8 @@ public class AuthorizationCreateProcessor
                     record.getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
-        .flatMap(permissionsBehavior::mappingRuleExists)
         .flatMap(permissionsBehavior::permissionsAlreadyExist)
+        .flatMap(authorizationRecord -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
@@ -72,12 +76,18 @@ public class AuthorizationCreateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
-        .mappingRuleExists(command.getValue())
-        .flatMap(permissionsBehavior::permissionsAlreadyExist)
+        .permissionsAlreadyExist(command.getValue())
+        .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
-            ignored ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), AuthorizationIntent.CREATED, command.getValue()),
+            ignored -> {
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), AuthorizationIntent.CREATED, command.getValue());
+              sideEffectWriter.appendSideEffect(
+                  () -> {
+                    authorizationCheckBehavior.clearAuthorizationsCache();
+                    return true;
+                  });
+            },
             rejection ->
                 rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
@@ -96,5 +106,10 @@ public class AuthorizationCreateProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authorizationCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
   }
 }

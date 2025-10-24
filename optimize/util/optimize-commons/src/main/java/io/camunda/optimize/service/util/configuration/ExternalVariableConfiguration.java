@@ -8,23 +8,14 @@
 package io.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class ExternalVariableConfiguration {
-
-  private IndexRolloverConfiguration variableIndexRollover;
 
   @JsonProperty("import")
   private ExternalVariableImportConfiguration importConfiguration;
 
   public ExternalVariableConfiguration() {}
-
-  public IndexRolloverConfiguration getVariableIndexRollover() {
-    return variableIndexRollover;
-  }
-
-  public void setVariableIndexRollover(final IndexRolloverConfiguration variableIndexRollover) {
-    this.variableIndexRollover = variableIndexRollover;
-  }
 
   public ExternalVariableImportConfiguration getImportConfiguration() {
     return importConfiguration;
@@ -42,20 +33,23 @@ public class ExternalVariableConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(importConfiguration);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExternalVariableConfiguration that = (ExternalVariableConfiguration) o;
+    return Objects.equals(importConfiguration, that.importConfiguration);
   }
 
   @Override
   public String toString() {
-    return "ExternalVariableConfiguration(variableIndexRollover="
-        + getVariableIndexRollover()
-        + ", importConfiguration="
-        + getImportConfiguration()
-        + ")";
+    return "ExternalVariableConfiguration(importConfiguration=" + getImportConfiguration() + ")";
   }
 }

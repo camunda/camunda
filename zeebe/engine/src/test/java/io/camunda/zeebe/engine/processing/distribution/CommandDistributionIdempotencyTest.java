@@ -8,12 +8,14 @@
 package io.camunda.zeebe.engine.processing.distribution;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadPartitionCompleteProcessor;
@@ -21,6 +23,8 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadParti
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
@@ -63,6 +67,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -180,8 +185,8 @@ public class CommandDistributionIdempotencyTest {
                       .authorization()
                       .newAuthorization()
                       .withOwnerId(user.getValue().getUsername())
-                      .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                      .withResourceId("*")
+                      .withResourceMatcher(WILDCARD.getMatcher())
+                      .withResourceId(WILDCARD.getResourceId())
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermissions(PermissionType.READ)
                       .create();
@@ -200,8 +205,8 @@ public class CommandDistributionIdempotencyTest {
                           .authorization()
                           .newAuthorization()
                           .withOwnerId(user.getValue().getUsername())
-                          .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                          .withResourceId("*")
+                          .withResourceMatcher(WILDCARD.getMatcher())
+                          .withResourceId(WILDCARD.getResourceId())
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
                           .create()
@@ -224,15 +229,19 @@ public class CommandDistributionIdempotencyTest {
                           .authorization()
                           .newAuthorization()
                           .withOwnerId(user.getValue().getUsername())
-                          .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-                          .withResourceId("*")
+                          .withResourceMatcher(WILDCARD.getMatcher())
+                          .withResourceId(WILDCARD.getResourceId())
                           .withResourceType(AuthorizationResourceType.USER)
                           .withPermissions(PermissionType.READ)
                           .create()
                           .getValue()
                           .getAuthorizationKey();
 
-                  return ENGINE.authorization().updateAuthorization(key).update();
+                  return ENGINE
+                      .authorization()
+                      .updateAuthorization(key)
+                      .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                      .update();
                 }),
             AuthorizationUpdateProcessor.class
           },
@@ -669,6 +678,36 @@ public class CommandDistributionIdempotencyTest {
             UserUpdateProcessor.class
           },
           {
+            "ClusterVariable.CREATE is idempotent",
+            new Scenario(
+                ValueType.CLUSTER_VARIABLE,
+                ClusterVariableIntent.CREATE,
+                () ->
+                    ENGINE
+                        .clusterVariables()
+                        .withName("KEY_1")
+                        .setGlobalScope()
+                        .withValue("\"VALUE\"")
+                        .create()),
+            ClusterVariableCreateProcessor.class
+          },
+          {
+            "ClusterVariable.DELETE is idempotent",
+            new Scenario(
+                ValueType.CLUSTER_VARIABLE,
+                ClusterVariableIntent.DELETE,
+                () -> {
+                  ENGINE
+                      .clusterVariables()
+                      .withName("KEY_2")
+                      .setGlobalScope()
+                      .withValue("\"VALUE\"")
+                      .create();
+                  return ENGINE.clusterVariables().setGlobalScope().withName("KEY_2").delete();
+                }),
+            ClusterVariableDeleteProcessor.class
+          },
+          {
             "MessageSubscription.MIGRATE is idempotent",
             new Scenario(
                 ValueType.MESSAGE_SUBSCRIPTION,
@@ -731,7 +770,9 @@ public class CommandDistributionIdempotencyTest {
             () -> {
               // wait for retry mechanism to trigger second distribution
               // (while we intercepted the first acknowledgement)
-              ENGINE.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+              ENGINE
+                  .getClock()
+                  .addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
 
               // Make sure we have two records on the target partition
               assertThat(

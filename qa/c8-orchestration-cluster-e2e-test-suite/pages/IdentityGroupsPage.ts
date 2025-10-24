@@ -9,6 +9,11 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {sleep} from 'utils/sleep';
+import {defaultAssertionOptions} from '../utils/constants';
+import {
+  findLocatorInPaginatedList,
+  waitForItemInList,
+} from '../utils/waitForItemInList';
 
 export class IdentityGroupsPage {
   private page: Page;
@@ -33,13 +38,14 @@ export class IdentityGroupsPage {
   readonly closeDeleteGroupModal: Locator;
   readonly deleteGroupModalCancelButton: Locator;
   readonly deleteGroupModalDeleteButton: Locator;
-  readonly emptyState: Locator;
+  readonly emptyStateLocator: Locator;
   readonly assignUserButton: Locator;
   readonly searchBox: Locator;
   readonly searchBoxResult: Locator;
   readonly assignUserButtonModal: Locator;
   readonly selectGroupRow: (name: string) => Locator;
   readonly groupCell: (name: string) => Locator;
+  readonly groupsHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -125,13 +131,14 @@ export class IdentityGroupsPage {
         name: 'Delete group',
       },
     );
-    this.emptyState = page.getByText('No groups created yet');
+    this.emptyStateLocator = page.getByText('No groups created yet');
     this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
     this.searchBox = page.getByRole('searchbox');
     this.searchBoxResult = page.getByRole('listitem');
     this.assignUserButtonModal = page
       .getByLabel('Assign user')
       .getByRole('button', {name: 'Assign user'});
+    this.groupsHeading = this.page.getByRole('heading', {name: 'Groups'});
   }
 
   async navigateToGroups() {
@@ -165,7 +172,18 @@ export class IdentityGroupsPage {
   }
 
   async deleteGroup(groupName: string) {
-    await this.deleteGroupButton(groupName).click();
+    const group = this.groupCell(groupName);
+    await waitForItemInList(this.page, group, {
+      clickNext: true,
+      timeout: 30000,
+    });
+    await expect(async () => {
+      await expect(this.deleteGroupButton(groupName)).toBeVisible({
+        timeout: 20000,
+      });
+      await this.groupsHeading.click();
+      await this.deleteGroupButton(groupName).click();
+    }).toPass(defaultAssertionOptions);
     await expect(this.deleteGroupModal).toBeVisible();
     await this.deleteGroupModalDeleteButton.click();
     await expect(this.deleteGroupModal).toBeHidden();
@@ -176,6 +194,7 @@ export class IdentityGroupsPage {
   }
 
   async clickGroupId(groupName: string) {
+    await findLocatorInPaginatedList(this.page, this.groupCell(groupName));
     await this.selectGroupRow(groupName).click();
   }
 

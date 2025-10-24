@@ -7,11 +7,14 @@
  */
 package io.camunda.service;
 
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -23,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +35,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,16 +54,30 @@ public class AdHocSubProcessActivityServicesTest {
 
   @Mock private BrokerClient brokerClient;
   @Mock private SecurityContextProvider securityContextProvider;
+  @Mock private ApiServicesExecutorProvider executorProvider;
+
+  @Mock(strictness = Strictness.LENIENT)
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+
   @Captor private ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor;
 
   private AdHocSubProcessActivityServices services;
 
   @BeforeEach
   public void before() {
+    final Map<String, Object> tokenClaims = Map.of("claim", "value");
     final CamundaAuthentication authentication =
-        CamundaAuthentication.of(b -> b.claims(Map.of("claim", "value")));
+        CamundaAuthentication.of(b -> b.claims(tokenClaims));
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+    when(brokerRequestAuthorizationConverter.convert(eq(authentication)))
+        .thenReturn(Map.of(USER_TOKEN_CLAIMS, tokenClaims));
     services =
-        new AdHocSubProcessActivityServices(brokerClient, securityContextProvider, authentication);
+        new AdHocSubProcessActivityServices(
+            brokerClient,
+            securityContextProvider,
+            authentication,
+            executorProvider,
+            brokerRequestAuthorizationConverter);
   }
 
   @Test
@@ -106,7 +125,7 @@ public class AdHocSubProcessActivityServicesTest {
     // then
     assertThat(result).isEqualTo(expectedResponse);
     assertThat(requestCaptor.getValue().getAuthorization().getClaims())
-        .containsExactly(entry("claim", "value"));
+        .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("claim", "value")));
   }
 
   @Test
@@ -114,6 +133,8 @@ public class AdHocSubProcessActivityServicesTest {
     // given
     final CamundaAuthentication newAuthentication =
         CamundaAuthentication.of(b -> b.claims(Map.of("newClaim", "newValue")));
+    when(brokerRequestAuthorizationConverter.convert(eq(newAuthentication)))
+        .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of("newClaim", "newValue")));
 
     // when
     when(brokerClient.sendRequest(requestCaptor.capture()))
@@ -127,7 +148,7 @@ public class AdHocSubProcessActivityServicesTest {
     // then
     assertThat(newServices).isNotSameAs(services);
     assertThat(requestCaptor.getValue().getAuthorization().getClaims())
-        .containsExactly(entry("newClaim", "newValue"));
+        .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("newClaim", "newValue")));
   }
 
   @ParameterizedTest

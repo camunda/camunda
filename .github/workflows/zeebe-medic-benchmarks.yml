@@ -84,7 +84,7 @@ jobs:
     needs:
       - benchmark-data
       - delete-old-benchmarks
-    uses: ./.github/workflows/zeebe-benchmark.yml
+    uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
@@ -95,7 +95,7 @@ jobs:
       publish: "slack"
   setup-mixed-benchmark:
     name: Mixed Benchmark
-    uses: ./.github/workflows/zeebe-benchmark.yml
+    uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     needs:
       - benchmark-data
@@ -106,11 +106,10 @@ jobs:
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      benchmark-load: >
-        -f https://raw.githubusercontent.com/camunda/zeebe-benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
+      realistic: true
   setup-latency-benchmark:
     name: Latency Benchmark
-    uses: ./.github/workflows/zeebe-benchmark.yml
+    uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     needs:
       - benchmark-data
@@ -121,6 +120,38 @@ jobs:
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      benchmark-load: >
+      load-test-load: >
         --set starter.rate=1
-        --set workers.benchmark.replicas=1
+        --set workers.worker.replicas=1
+
+  notify:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [ delete-old-benchmarks, setup-normal-benchmark, setup-mixed-benchmark, setup-latency-benchmark ]
+    if: failure()
+    steps:
+      - uses: actions/checkout@v4
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: *Medic benchmark creation failed:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "@zeebe-medic Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }

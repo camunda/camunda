@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -47,6 +49,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public TenantDeleteProcessor(
@@ -64,6 +67,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
@@ -82,7 +86,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.DELETE)
             .addResourceId(persistedTenantRecord.get().getTenantId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
       return;
@@ -99,6 +103,12 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
+
     distributeCommand(command);
   }
 
@@ -113,6 +123,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(
                   command.getKey(), TenantIntent.DELETED, command.getValue());
+              sideEffectWriter.appendSideEffect(
+                  () -> {
+                    authCheckBehavior.clearAuthorizationsCache();
+                    return true;
+                  });
             },
             () ->
                 rejectCommand(
@@ -168,7 +183,10 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
     authorizationKeysForGroup.forEach(
         authorizationKey -> {
-          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          final var authorization =
+              new AuthorizationRecord()
+                  .setAuthorizationKey(authorizationKey)
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

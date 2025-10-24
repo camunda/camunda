@@ -28,16 +28,19 @@ public interface AssignMappingRuleToTenantCommandStep1 {
    */
   AssignMappingRuleToTenantCommandStep2 mappingRuleId(String mappingRuleId);
 
-  interface AssignMappingRuleToTenantCommandStep2
-      extends FinalCommandStep<AssignMappingRuleToTenantResponse> {
+  interface AssignMappingRuleToTenantCommandStep2 {
 
     /**
      * Sets the tenant ID.
      *
      * @param tenantId the tenantId of the tenant
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link
+     *     AssignMappingRuleToTenantCommandStep3#send()} to complete the command and send it to the
+     *     broker.
      */
-    AssignMappingRuleToTenantCommandStep2 tenantId(String tenantId);
+    AssignMappingRuleToTenantCommandStep3 tenantId(String tenantId);
   }
+
+  interface AssignMappingRuleToTenantCommandStep3
+      extends FinalCommandStep<AssignMappingRuleToTenantResponse> {}
 }

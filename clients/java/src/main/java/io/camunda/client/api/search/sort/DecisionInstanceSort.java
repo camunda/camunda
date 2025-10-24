@@ -58,6 +58,9 @@ public interface DecisionInstanceSort extends SearchRequestSort<DecisionInstance
   /** Sort by decisionType */
   DecisionInstanceSort decisionDefinitionType();
 
+  /** Sort by rootDecisionDefinitionKey */
+  DecisionInstanceSort rootDecisionDefinitionKey();
+
   /** Sort by tenantId */
   DecisionInstanceSort tenantId();
 }

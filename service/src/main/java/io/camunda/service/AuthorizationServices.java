@@ -14,6 +14,7 @@ import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -38,15 +40,27 @@ public class AuthorizationServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
   public AuthorizationServices withAuthentication(final CamundaAuthentication authentication) {
     return new AuthorizationServices(
-        brokerClient, securityContextProvider, authorizationSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        authorizationSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override
@@ -105,8 +119,7 @@ public class AuthorizationServices
   }
 
   private AuthorizationResourceMatcher getResourceMatcher(final String resourceId) {
-    // TODO: use WILDCARD constant or find another place to set the matcher
-    return "*".equals(resourceId)
+    return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
         ? AuthorizationResourceMatcher.ANY
         : AuthorizationResourceMatcher.ID;
   }

@@ -418,6 +418,9 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get('/v1/tasks/:taskId', () => {
+        return HttpResponse.json(taskMocks.completedTask());
+      }),
       http.post(
         '/v1/tasks/:taskId/variables/search',
         () => {
@@ -648,8 +651,48 @@ describe('<Task />', () => {
       '"valid_value"',
     );
     await user.click(screen.getByRole('button', {name: /^unassign$/i}));
+    nodeMockServer.use(
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.unassignedTask());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.unassignedTask());
+        },
+        {once: true},
+      ),
+    );
     await user.click(
       await screen.findByRole('button', {name: /^assign to me$/i}),
+    );
+
+    nodeMockServer.use(
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.assignedTask()]);
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTask());
+        },
+        {once: true},
+      ),
     );
 
     expect(

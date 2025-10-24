@@ -89,13 +89,19 @@ public final class MessageCorrelationCorrelateProcessor
   public void processRecord(final TypedRecord<MessageCorrelationRecord> command) {
     final var messageCorrelationRecord = command.getValue();
 
-    if (!authCheckBehavior.isAssignedToTenant(command, messageCorrelationRecord.getTenantId())) {
-      final var message =
-          "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
-              .formatted(messageCorrelationRecord.getTenantId());
-      rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
-      return;
+    // Check tenant authorization if not an internal command
+    final var isInternal =
+        authCheckBehavior.isInternalCommand(
+            command.hasRequestMetadata(), command.getBatchOperationReference());
+    if (!isInternal) {
+      if (!authCheckBehavior.isAssignedToTenant(command, messageCorrelationRecord.getTenantId())) {
+        final var message =
+            "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
+                .formatted(messageCorrelationRecord.getTenantId());
+        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+        return;
+      }
     }
 
     final long messageKey = keyGenerator.nextKey();
@@ -104,6 +110,28 @@ public final class MessageCorrelationCorrelateProcessor
         .setRequestId(command.getRequestId())
         .setRequestStreamId(command.getRequestStreamId());
 
+    // Collect correlations first without writing to state
+    final var correlatingSubscriptions = new Subscriptions();
+    final var messageData = createMessageData(messageKey, messageCorrelationRecord);
+
+    // Create a temporary subscriptions collector to check authorization first
+    final var tempCorrelatingSubscriptions = new Subscriptions();
+    correlateBehavior.collectMessageEventSubscriptions(messageData, tempCorrelatingSubscriptions);
+    correlateBehavior.collectMessageStartEventSubscriptions(
+        messageData, tempCorrelatingSubscriptions);
+
+    // Check authorization before writing anything to state
+    final var authorizationRejectionOptional =
+        isAuthorizedForAllSubscriptions(
+            command, tempCorrelatingSubscriptions, messageCorrelationRecord.getTenantId());
+    if (authorizationRejectionOptional.isPresent()) {
+      final var rejection = authorizationRejectionOptional.get();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    // Now that authorization passed, write the message and correlations to state
     final var messageRecord =
         new MessageRecord()
             .setName(command.getValue().getName())
@@ -116,20 +144,9 @@ public final class MessageCorrelationCorrelateProcessor
     stateWriter.appendFollowUpEvent(
         messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
 
-    final var correlatingSubscriptions = new Subscriptions();
-    final var messageData = createMessageData(messageKey, messageCorrelationRecord);
+    // Now actually correlate with state writes
     correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
     correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
-
-    final var authorizationRejectionOptional =
-        isAuthorizedForAllSubscriptions(
-            command, correlatingSubscriptions, messageCorrelationRecord.getTenantId());
-    if (authorizationRejectionOptional.isPresent()) {
-      final var rejection = authorizationRejectionOptional.get();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
-      return;
-    }
 
     if (correlatingSubscriptions.isEmpty()) {
       final var errorMessage =
@@ -137,23 +154,23 @@ public final class MessageCorrelationCorrelateProcessor
               command.getValue().getName(), command.getValue().getCorrelationKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-    } else {
-      correlatingSubscriptions
-          .getFirstMessageStartEventSubscription()
-          .ifPresent(
-              subscription -> {
-                messageCorrelationRecord.setProcessInstanceKey(
-                    subscription.getProcessInstanceKey());
-
-                stateWriter.appendFollowUpEvent(
-                    messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
-                responseWriter.writeEventOnCommand(
-                    messageKey,
-                    MessageCorrelationIntent.CORRELATED,
-                    messageCorrelationRecord,
-                    command);
-              });
+      return;
     }
+
+    correlatingSubscriptions
+        .getFirstMessageStartEventSubscription()
+        .ifPresent(
+            subscription -> {
+              messageCorrelationRecord.setProcessInstanceKey(subscription.getProcessInstanceKey());
+
+              stateWriter.appendFollowUpEvent(
+                  messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
+              responseWriter.writeEventOnCommand(
+                  messageKey,
+                  MessageCorrelationIntent.CORRELATED,
+                  messageCorrelationRecord,
+                  command);
+            });
 
     correlateBehavior.sendCorrelateCommands(messageData, correlatingSubscriptions);
 
@@ -195,7 +212,8 @@ public final class MessageCorrelationCorrelateProcessor
 
               final var processIdString = bufferAsString(subscription.getBpmnProcessId());
               request.get().addResourceId(processIdString);
-              final var rejectionOrAuthorized = authCheckBehavior.isAuthorized(request.get());
+              final var rejectionOrAuthorized =
+                  authCheckBehavior.isAuthorizedOrInternalCommand(request.get());
               rejectionOrAuthorized.ifLeft(rejection::set);
               return rejectionOrAuthorized.isRight();
             },

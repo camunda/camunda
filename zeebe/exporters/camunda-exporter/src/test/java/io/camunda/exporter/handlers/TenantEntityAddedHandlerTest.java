@@ -61,7 +61,7 @@ public class TenantEntityAddedHandlerTest {
     assertThat(idList)
         .containsExactly(
             TenantIndex.JOIN_RELATION_FACTORY.createChildId(
-                value.getTenantId(), value.getEntityId()));
+                value.getTenantId(), value.getEntityId(), value.getEntityType()));
   }
 
   @Test

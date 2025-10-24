@@ -11,7 +11,7 @@ import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {modificationsStore} from 'modules/stores/modifications';
 import {formatDate} from './date';
-import type {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.8';
 import {reaction} from 'mobx';
 import {
   flowNodeSelectionStore,

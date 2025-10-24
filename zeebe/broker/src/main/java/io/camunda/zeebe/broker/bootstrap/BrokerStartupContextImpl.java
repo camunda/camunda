@@ -13,6 +13,7 @@ import static java.util.Objects.requireNonNull;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -67,6 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -99,7 +101,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -118,6 +121,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
     partitionListeners.addAll(additionalPartitionListeners);
+    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
   @VisibleForTesting
@@ -135,7 +139,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
 
     this(
         brokerInfo,
@@ -154,7 +160,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        null);
+        searchClientsProxy,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override
@@ -401,5 +408,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setSnapshotApiRequestHandler(
       final SnapshotApiRequestHandler snapshotApiRequestHandler) {
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+  }
+
+  @Override
+  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
+    return brokerRequestAuthorizationConverter;
   }
 }

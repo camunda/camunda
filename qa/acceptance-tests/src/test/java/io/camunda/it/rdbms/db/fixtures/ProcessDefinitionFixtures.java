@@ -30,9 +30,22 @@ public final class ProcessDefinitionFixtures extends CommonFixtures {
             .resourceName("process_" + processDefinitionKey + ".bpmn")
             .version(version)
             .versionTag("Version " + version)
-            .tenantId("tenant-" + RANDOM.nextInt(1000));
+            .tenantId("tenant-" + processDefinitionKey);
 
     return builderFunction.apply(builder).build();
+  }
+
+  public static ProcessDefinitionDbModel createAndSaveRandomProcessDefinition(
+      final RdbmsWriter rdbmsWriter,
+      final Function<ProcessDefinitionDbModelBuilder, ProcessDefinitionDbModelBuilder>
+          builderFunction) {
+    final ProcessDefinitionDbModel randomized =
+        ProcessDefinitionFixtures.createRandomized(builderFunction);
+    rdbmsWriter.getProcessDefinitionWriter().create(randomized);
+
+    rdbmsWriter.flush();
+
+    return randomized;
   }
 
   public static void createAndSaveRandomProcessDefinitions(final RdbmsWriter rdbmsWriter) {

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
@@ -57,7 +58,7 @@ public final class MsgPackConverter {
       new TypeReference<>() {};
   private static final TypeReference<HashMap<String, Set<Long>>> SET_LONG_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
-  private static final TypeReference<HashMap<PermissionType, Set<String>>>
+  private static final TypeReference<HashMap<PermissionType, Set<AuthorizationScope>>>
       PERMISSION_MAP_TYPE_REFERENCE = new TypeReference<>() {};
 
   /*
@@ -190,7 +191,8 @@ public final class MsgPackConverter {
     return convertToMap(SET_LONG_MAP_TYPE_REFERENCE, buffer);
   }
 
-  public static Map<PermissionType, Set<String>> convertToPermissionMap(final DirectBuffer buffer) {
+  public static Map<PermissionType, Set<AuthorizationScope>> convertToPermissionMap(
+      final DirectBuffer buffer) {
     return convertToMap(PERMISSION_MAP_TYPE_REFERENCE, buffer);
   }
 

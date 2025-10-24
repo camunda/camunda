@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import java.util.List;
+import java.util.Objects;
 
 public class DatabaseConnection {
 
@@ -89,16 +90,32 @@ public class DatabaseConnection {
     this.awsEnabled = awsEnabled;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  protected boolean canEqual(final Object other) {
-    return other instanceof DatabaseConnection;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        connectionNodes,
+        timeout,
+        responseConsumerBufferLimitInMb,
+        skipHostnameVerification,
+        pathPrefix,
+        proxy);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DatabaseConnection that = (DatabaseConnection) o;
+    return Objects.equals(timeout, that.timeout)
+        && Objects.equals(responseConsumerBufferLimitInMb, that.responseConsumerBufferLimitInMb)
+        && Objects.equals(skipHostnameVerification, that.skipHostnameVerification)
+        && Objects.equals(connectionNodes, that.connectionNodes)
+        && Objects.equals(pathPrefix, that.pathPrefix)
+        && Objects.equals(proxy, that.proxy);
   }
 
   public Boolean isClusterTaskCheckingEnabled() {

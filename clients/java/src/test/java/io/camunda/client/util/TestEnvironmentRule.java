@@ -43,7 +43,7 @@ public final class TestEnvironmentRule extends ExternalResource {
   private final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
   public TestEnvironmentRule() {
-    this(b -> {});
+    this(b -> b.preferRestOverGrpc(false));
   }
 
   public TestEnvironmentRule(final Consumer<CamundaClientBuilder> clientConfigurator) {
@@ -62,6 +62,7 @@ public final class TestEnvironmentRule extends ExternalResource {
     serverRule.getServiceRegistry().addService(gatewayService);
 
     final ManagedChannel channel = serverRule.getChannel();
+
     clientConfigurator.accept(builder);
     gatewayStub = spy(CamundaClientImpl.buildGatewayStub(channel, builder));
     client = new CamundaClientImpl(builder, channel, gatewayStub);

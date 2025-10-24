@@ -7,9 +7,11 @@
  */
 package io.camunda.operate;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -18,7 +20,6 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-import java.util.Set;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -69,8 +70,7 @@ public class OperateQualifiedBeansArchTest {
                 }
               });
 
-  private static final String ZEEBE_OPENSEARCH_CLIENT_QUALIFIER = "zeebeOpensearchClient";
-  private static final String OPEN_SEARCH_CLIENT_QUALIFIER = "openSearchClient";
+  private static final String OPEN_SEARCH_CLIENT_QUALIFIER = "operateOpenSearchClient";
 
   @ArchTest
   public static final ArchRule AUTOWIRED_OS_CLIENT_FIELDS_SHOULD_HAVE_QUALIFIER =
@@ -80,12 +80,7 @@ public class OperateQualifiedBeansArchTest {
           .and()
           .haveRawType(OpenSearchClient.class)
           .should(
-              new ArchCondition<>(
-                  "have @Qualifier(\""
-                      + OPEN_SEARCH_CLIENT_QUALIFIER
-                      + "\") or @Qualifier(\""
-                      + ZEEBE_OPENSEARCH_CLIENT_QUALIFIER
-                      + "\")") {
+              new ArchCondition<>("have @Qualifier(\"" + OPEN_SEARCH_CLIENT_QUALIFIER + "\")") {
                 @Override
                 public void check(final JavaField field, final ConditionEvents events) {
                   final boolean hasQualifier = field.isAnnotatedWith(Qualifier.class);
@@ -95,27 +90,78 @@ public class OperateQualifiedBeansArchTest {
                             field,
                             "Field "
                                 + field.getFullName()
-                                + "in class "
+                                + " in class "
                                 + field.getOwner().getFullName()
                                 + " is missing @Qualifier(\""
                                 + OPEN_SEARCH_CLIENT_QUALIFIER
-                                + "\") or @Qualifier(\""
-                                + ZEEBE_OPENSEARCH_CLIENT_QUALIFIER
                                 + "\")"));
-                  } else if (!Set.of(
-                          OPEN_SEARCH_CLIENT_QUALIFIER, ZEEBE_OPENSEARCH_CLIENT_QUALIFIER)
-                      .contains(field.getAnnotationOfType(Qualifier.class).value())) {
+                  } else if (!field
+                      .getAnnotationOfType(Qualifier.class)
+                      .value()
+                      .equals(OPEN_SEARCH_CLIENT_QUALIFIER)) {
                     events.add(
                         SimpleConditionEvent.violated(
                             field,
                             "Field "
                                 + field.getFullName()
-                                + "in class "
+                                + " in class "
                                 + field.getOwner().getFullName()
                                 + " has @Qualifier(\"%s\")"
                                     .formatted(
                                         field.getAnnotationOfType(Qualifier.class).value())));
                   }
                 }
-              });
+              })
+          .allowEmptyShould(true);
+
+  @ArchTest
+  public static final ArchRule AUTOWIRED_OS_CLIENT_CONSTRUCTOR_PARAMS_SHOULD_HAVE_QUALIFIER =
+      constructors()
+          .that()
+          .areDeclaredInClassesThat()
+          .areAnnotatedWith(org.springframework.stereotype.Component.class)
+          .should(
+              new ArchCondition<>(
+                  "have OpenSearchClient parameters with @Qualifier(\""
+                      + OPEN_SEARCH_CLIENT_QUALIFIER
+                      + "\")") {
+                @Override
+                public void check(final JavaConstructor constructor, final ConditionEvents events) {
+                  constructor.getParameters().stream()
+                      .filter(param -> param.getRawType().isEquivalentTo(OpenSearchClient.class))
+                      .forEach(
+                          param -> {
+                            final boolean hasQualifier = param.isAnnotatedWith(Qualifier.class);
+                            if (!hasQualifier) {
+                              events.add(
+                                  SimpleConditionEvent.violated(
+                                      constructor,
+                                      "Constructor parameter "
+                                          + param.getIndex()
+                                          + " of type OpenSearchClient in constructor "
+                                          + constructor.getFullName()
+                                          + " is missing @Qualifier(\""
+                                          + OPEN_SEARCH_CLIENT_QUALIFIER
+                                          + "\")"));
+                            } else if (!param
+                                .getAnnotationOfType(Qualifier.class)
+                                .value()
+                                .equals(OPEN_SEARCH_CLIENT_QUALIFIER)) {
+                              events.add(
+                                  SimpleConditionEvent.violated(
+                                      constructor,
+                                      "Constructor parameter "
+                                          + param.getIndex()
+                                          + " of type OpenSearchClient in constructor "
+                                          + constructor.getFullName()
+                                          + " has @Qualifier(\"%s\")"
+                                              .formatted(
+                                                  param
+                                                      .getAnnotationOfType(Qualifier.class)
+                                                      .value())));
+                            }
+                          });
+                }
+              })
+          .allowEmptyShould(true);
 }

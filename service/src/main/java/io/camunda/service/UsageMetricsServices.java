@@ -15,6 +15,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -34,8 +35,15 @@ public final class UsageMetricsServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UsageMetricsSearchClient usageMetricsSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.usageMetricsSearchClient = usageMetricsSearchClient;
   }
 
@@ -45,11 +53,10 @@ public final class UsageMetricsServices
     if (query == null) {
       throw new IllegalArgumentException("Query must not be null");
     }
-    validateStartAndEndTime(query);
     final UsageMetricsSearchClient authUsageMetricsSearchClient =
         usageMetricsSearchClient.withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.usageMetric().read())));
+                authentication, Authorization.of(a -> a.system().readUsageMetric())));
 
     final CompletableFuture<UsageMetricStatisticsEntity> statsFuture =
         CompletableFuture.supplyAsync(
@@ -63,24 +70,14 @@ public final class UsageMetricsServices
     return SearchQueryResult.of(Tuple.of(statsFuture.join(), tuStatsFuture.join()));
   }
 
-  private void validateStartAndEndTime(final UsageMetricsQuery query) {
-    final var filter = query.filter();
-    if (filter.startTime() == null || filter.endTime() == null) {
-      throw new IllegalArgumentException("Query must have a start AND end time");
-    }
-    final var startTime = filter.startTime();
-    final var endTime = filter.endTime();
-    if (endTime.isBefore(startTime)) {
-      throw new IllegalArgumentException("End time must be after start time");
-    }
-    if (startTime.isAfter(endTime)) {
-      throw new IllegalArgumentException("Start time must be before end time");
-    }
-  }
-
   @Override
   public UsageMetricsServices withAuthentication(final CamundaAuthentication authentication) {
     return new UsageMetricsServices(
-        brokerClient, securityContextProvider, usageMetricsSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        usageMetricsSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 }

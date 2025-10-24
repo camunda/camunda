@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.util.configuration.db;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class DatabaseIndex {
 
@@ -77,12 +78,24 @@ public class DatabaseIndex {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        prefix, numberOfShards, numberOfReplicas, refreshInterval, nestedDocumentsLimit);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DatabaseIndex that = (DatabaseIndex) o;
+    return Objects.equals(numberOfShards, that.numberOfShards)
+        && Objects.equals(numberOfReplicas, that.numberOfReplicas)
+        && Objects.equals(nestedDocumentsLimit, that.nestedDocumentsLimit)
+        && Objects.equals(prefix, that.prefix)
+        && Objects.equals(refreshInterval, that.refreshInterval);
   }
 
   @Override

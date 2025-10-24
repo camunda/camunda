@@ -10,6 +10,7 @@ package io.camunda.exporter.config;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,13 +36,40 @@ public class ConfigValidatorTest {
             "CamundaExporter connect.type must be one of the supported types '[ELASTICSEARCH, OPENSEARCH]', but was: 'mysql'");
   }
 
-  @Test
-  void shouldNotAllowUnderscoreInIndexPrefix() {
+  @ParameterizedTest
+  @ValueSource(strings = {"prefix", "hyphenated-prefix", "char+prefix"})
+  void shouldAllowValidIndexPrefixes(final String testPrefix) {
     // given
-    config.getConnect().setIndexPrefix("i_am_invalid");
+    config.getConnect().setIndexPrefix(testPrefix);
 
     // when - then
-    assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
+    assertThatCode(() -> ConfigValidator.validate(config)).doesNotThrowAnyException();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", "_"})
+  void shouldNotAllowInvalidCharactersInIndexPrefix(final String testCharacter) {
+    // given
+    config.getConnect().setIndexPrefix("test-prefix" + testCharacter);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .hasMessageContaining(
+            "CamundaExporter index.prefix must not contain invalid characters [\\ / * ? \" < > | space _].")
+        .isInstanceOf(ExporterException.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {".", "+"})
+  void shouldNotAllowInvalidCharactersAtStartOfIndexPrefix(final String testCharacter) {
+    // given
+    config.getConnect().setIndexPrefix(testCharacter + "test-prefix");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .hasMessageContaining(
+            "CamundaExporter index.prefix must not begin with invalid characters [. +].")
+        .isInstanceOf(ExporterException.class);
   }
 
   @ParameterizedTest(name = "{0}")
@@ -174,5 +202,18 @@ public class ConfigValidatorTest {
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("CamundaExporter batchOperationCache.maxCacheSize must be >= 1.");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(strings = {"-PT1M", "PT0S"})
+  void shouldForbidNonStrictlyPositiveApplyPolicyJobInterval(
+      final Duration applyPolicyJobInterval) {
+    // given
+    config.getHistory().getRetention().setApplyPolicyJobInterval(applyPolicyJobInterval);
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter retention.applyPolicyJobInterval must be strictly positive.");
   }
 }

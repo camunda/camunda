@@ -15,4 +15,6 @@
  */
 package io.camunda.client.api.command;
 
-public interface ResumeBatchOperationStep1 extends FinalCommandStep<Void> {}
+import io.camunda.client.api.response.ResumeBatchOperationResponse;
+
+public interface ResumeBatchOperationStep1 extends FinalCommandStep<ResumeBatchOperationResponse> {}

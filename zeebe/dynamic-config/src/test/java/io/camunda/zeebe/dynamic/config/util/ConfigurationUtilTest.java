@@ -17,7 +17,7 @@ import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -31,7 +31,7 @@ class ConfigurationUtilTest {
   private static final String GROUP_NAME = "test";
   private final DynamicPartitionConfig partitionConfig =
       new DynamicPartitionConfig(
-          new ExportersConfig(
+          new ExportingConfig(
               Map.of("expA", new ExporterState(1, ExporterState.State.ENABLED, Optional.empty()))));
 
   @Test
@@ -56,7 +56,7 @@ class ConfigurationUtilTest {
 
     // when
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(true, partitionDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig, "clusterId");
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
@@ -246,7 +246,7 @@ class ConfigurationUtilTest {
 
     // when
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(true, partitionDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig, "clusterId");
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)

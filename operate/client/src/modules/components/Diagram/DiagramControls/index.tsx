@@ -12,18 +12,21 @@ import {
   ZoomResetButton,
   ZoomOutButton,
   ZoomInButton,
+  DownloadBPMNDefinitionXML,
 } from './styled';
 
 type Props = {
   handleZoomReset: () => void;
   handleZoomIn: () => void;
   handleZoomOut: () => void;
+  processDefinitionKey?: string;
 };
 
 const DiagramControls: React.FC<Props> = ({
   handleZoomReset,
   handleZoomIn,
   handleZoomOut,
+  processDefinitionKey,
 }) => {
   return (
     <ButtonContainer>
@@ -57,6 +60,11 @@ const DiagramControls: React.FC<Props> = ({
       >
         <Subtract />
       </ZoomOutButton>
+      {processDefinitionKey === undefined ? null : (
+        <DownloadBPMNDefinitionXML
+          processDefinitionKey={processDefinitionKey}
+        />
+      )}
     </ButtonContainer>
   );
 };

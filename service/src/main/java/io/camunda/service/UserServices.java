@@ -14,6 +14,7 @@ import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -37,8 +38,15 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
       final CamundaAuthentication authentication,
-      final PasswordEncoder passwordEncoder) {
-    super(brokerClient, securityContextProvider, authentication);
+      final PasswordEncoder passwordEncoder,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.userSearchClient = userSearchClient;
     this.passwordEncoder = passwordEncoder;
   }
@@ -57,7 +65,13 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   @Override
   public UserServices withAuthentication(final CamundaAuthentication authentication) {
     return new UserServices(
-        brokerClient, securityContextProvider, userSearchClient, authentication, passwordEncoder);
+        brokerClient,
+        securityContextProvider,
+        userSearchClient,
+        authentication,
+        passwordEncoder,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<UserRecord> createUser(final UserDTO request) {

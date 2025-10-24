@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>identity-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>identity-webjar</artifactId>
@@ -40,52 +40,64 @@
 
         <executions>
           <execution>
-            <id>install node and yarn</id>
+            <id>install node and npm</id>
             <goals>
-              <goal>install-node-and-yarn</goal>
+              <goal>install-node-and-npm</goal>
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
               <nodeVersion>${version.node}</nodeVersion>
-              <yarnVersion>${version.yarn}</yarnVersion>
+              <npmVersion>11.4.2</npmVersion>
             </configuration>
           </execution>
 
           <execution>
             <id>update package.json version</id>
             <goals>
-              <goal>yarn</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
-              <arguments>version ${project.version}</arguments>
+              <arguments>version ${project.version} --no-git-tag-version --allow-same-version</arguments>
             </configuration>
           </execution>
 
           <execution>
-            <id>yarn install</id>
+            <id>npm install</id>
             <goals>
-              <goal>yarn</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
+              <arguments>ci</arguments>
             </configuration>
           </execution>
 
           <execution>
-            <id>yarn build</id>
+            <id>npm build</id>
             <goals>
-              <goal>yarn</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
-              <arguments>build</arguments>
+              <arguments>run build</arguments>
             </configuration>
           </execution>
         </executions>
       </plugin>
 
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <configuration>
+            <skip>true</skip>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
 
   </build>
 

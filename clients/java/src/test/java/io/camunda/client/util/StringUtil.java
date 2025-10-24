@@ -29,4 +29,15 @@ public final class StringUtil {
   public static byte[] getBytes(final String value, final Charset charset) {
     return value.getBytes(charset);
   }
+
+  public static String repeat(final String s, final int count) {
+    if (count <= 0) {
+      return "";
+    }
+    final StringBuilder sb = new StringBuilder(s.length() * count);
+    for (int i = 0; i < count; i++) {
+      sb.append(s);
+    }
+    return sb.toString();
+  }
 }

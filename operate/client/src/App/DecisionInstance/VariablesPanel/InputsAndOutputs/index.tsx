@@ -6,9 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef, useState} from 'react';
-import {observer} from 'mobx-react';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ResizablePanel,
   SplitDirection,
@@ -22,6 +20,10 @@ import {
   ErrorMessage,
 } from './styled';
 import {Skeleton} from './Skeleton';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
+
+type RowProps = React.ComponentProps<typeof StructuredList>['rows'][number];
 
 const inputMappingsColumns = [
   {
@@ -49,10 +51,16 @@ const outputMappingsColumns = [
   },
 ];
 
-const InputsAndOutputs: React.FC = observer(() => {
-  const {
-    state: {status, decisionInstance},
-  } = decisionInstanceDetailsStore;
+type InputAndOutputProps = {
+  decisionEvaluationInstanceKey: DecisionInstance['decisionEvaluationInstanceKey'];
+};
+
+const InputsAndOutputs: React.FC<InputAndOutputProps> = ({
+  decisionEvaluationInstanceKey,
+}) => {
+  const {data: decisionInstance, status} = useDecisionInstance(
+    decisionEvaluationInstanceKey,
+  );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [clientWidth, setClientWidth] = useState(0);
@@ -63,6 +71,37 @@ const InputsAndOutputs: React.FC = observer(() => {
 
   const panelMinWidth = clientWidth / 3;
 
+  const evaluatedInputsRows = useMemo<RowProps[]>(() => {
+    if (!decisionInstance?.evaluatedInputs?.length) {
+      return [];
+    }
+
+    return decisionInstance.evaluatedInputs.map((input) => ({
+      key: input.inputId,
+      columns: [
+        {cellContent: input.inputName},
+        {cellContent: input.inputValue},
+      ],
+    }));
+  }, [decisionInstance?.evaluatedInputs]);
+
+  const evaluatedOutputRows = useMemo<RowProps[]>(() => {
+    if (!decisionInstance?.matchedRules?.length) {
+      return [];
+    }
+
+    return decisionInstance.matchedRules.flatMap((rule) => {
+      return rule.evaluatedOutputs.map<RowProps>((output) => ({
+        key: `${output.outputId}--${rule.ruleId}`,
+        columns: [
+          {cellContent: rule.ruleIndex},
+          {cellContent: output.outputName},
+          {cellContent: output.outputValue},
+        ],
+      }));
+    });
+  }, [decisionInstance?.matchedRules]);
+
   return (
     <Container ref={containerRef}>
       <ResizablePanel
@@ -72,84 +111,53 @@ const InputsAndOutputs: React.FC = observer(() => {
       >
         <Panel aria-label="input variables">
           {status !== 'error' && <Title>Inputs</Title>}
-          {status === 'initial' && (
+          {status === 'pending' && (
             <Skeleton
               dataTestId="inputs-skeleton"
               columnWidths={inputMappingsColumns.map(({width}) => width)}
             />
           )}
-          {status === 'fetched' &&
-            decisionInstance?.state === 'FAILED' &&
-            decisionInstance?.evaluatedInputs.length === 0 && (
+          {status === 'success' &&
+            decisionInstance.state === 'FAILED' &&
+            evaluatedInputsRows.length === 0 && (
               <EmptyMessage message="No input available because the evaluation failed" />
             )}
-          {status === 'fetched' &&
-            decisionInstance?.evaluatedInputs !== undefined &&
-            decisionInstance.evaluatedInputs.length > 0 && (
-              <StructuredList
-                label="Inputs"
-                headerSize="sm"
-                isFlush={false}
-                headerColumns={inputMappingsColumns}
-                rows={decisionInstance?.evaluatedInputs.map(
-                  ({id, name, value}) => {
-                    return {
-                      key: id,
-                      columns: [
-                        {
-                          cellContent: name,
-                        },
-                        {cellContent: value},
-                      ],
-                    };
-                  },
-                )}
-              />
-            )}
+          {status === 'success' && evaluatedInputsRows.length > 0 && (
+            <StructuredList
+              label="Inputs"
+              headerSize="sm"
+              isFlush={false}
+              headerColumns={inputMappingsColumns}
+              rows={evaluatedInputsRows}
+            />
+          )}
           {status === 'error' && <ErrorMessage />}
         </Panel>
         <Panel aria-label="output variables">
           {status !== 'error' && <Title>Outputs</Title>}
-          {status === 'initial' && (
+          {status === 'pending' && (
             <Skeleton
               dataTestId="outputs-skeleton"
               columnWidths={outputMappingsColumns.map(({width}) => width)}
             />
           )}
-          {status === 'fetched' && decisionInstance?.state !== 'FAILED' && (
+          {status === 'success' && decisionInstance.state !== 'FAILED' && (
             <StructuredList
               label="Outputs"
               headerSize="sm"
               isFlush={false}
               headerColumns={outputMappingsColumns}
-              rows={
-                decisionInstance?.evaluatedOutputs.map(
-                  ({id, ruleId, ruleIndex, name, value}) => {
-                    return {
-                      key: `${id}--${ruleId}`,
-                      columns: [
-                        {
-                          cellContent: ruleIndex,
-                        },
-                        {
-                          cellContent: name,
-                        },
-                        {cellContent: value},
-                      ],
-                    };
-                  },
-                ) ?? []
-              }
+              rows={evaluatedOutputRows}
             />
           )}
           {status === 'error' && <ErrorMessage />}
-          {decisionInstance?.state === 'FAILED' && (
+          {status === 'success' && decisionInstance.state === 'FAILED' && (
             <EmptyMessage message="No output available because the evaluation failed" />
           )}
         </Panel>
       </ResizablePanel>
     </Container>
   );
-});
+};
 
 export {InputsAndOutputs};

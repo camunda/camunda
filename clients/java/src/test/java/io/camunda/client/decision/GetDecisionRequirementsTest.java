@@ -19,19 +19,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.DecisionRequirementsResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class GetDecisionRequirementsTest extends ClientRestTest {
   @Test
   void shouldGetDecisionRequirements() {
-    // when
+    // given
     final long decisionRequirementsKey = 1L;
+    gatewayService.onDecisionRequirementsRequest(
+        decisionRequirementsKey,
+        Instancio.create(DecisionRequirementsResult.class).decisionRequirementsKey("3"));
+
+    // when
     client.newDecisionRequirementsGetRequest(decisionRequirementsKey).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/decision-requirements/" + decisionRequirementsKey);
+    assertThat(request.getUrl())
+        .isEqualTo(RestGatewayPaths.getDecisionRequirementsUrl(decisionRequirementsKey));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 }

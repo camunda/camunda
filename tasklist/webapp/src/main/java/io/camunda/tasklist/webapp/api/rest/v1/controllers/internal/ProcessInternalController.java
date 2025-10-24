@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
+import static io.camunda.tasklist.webapp.permission.TasklistPermissionServices.WILDCARD_RESOURCE;
 import static java.util.Objects.requireNonNullElse;
 
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -206,6 +207,9 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @GetMapping("publicEndpoints")
   public ResponseEntity<List<ProcessPublicEndpointsResponse>> getPublicEndpoints() {
+    if (!permissionServices.hasPermissionToReadProcessDefinition(WILDCARD_RESOURCE)) {
+      return ResponseEntity.ok(Collections.emptyList());
+    }
 
     final List<ProcessPublicEndpointsResponse> publicEndpoints;
 

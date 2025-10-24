@@ -77,12 +77,24 @@ public final class SortOptionBuilders {
     return new RoleSort.Builder();
   }
 
+  public static RoleMemberSort.Builder roleMember() {
+    return new RoleMemberSort.Builder();
+  }
+
   public static TenantSort.Builder tenant() {
     return new TenantSort.Builder();
   }
 
+  public static TenantMemberSort.Builder tenantMember() {
+    return new TenantMemberSort.Builder();
+  }
+
   public static GroupSort.Builder group() {
     return new GroupSort.Builder();
+  }
+
+  public static GroupMemberSort.Builder groupMember() {
+    return new GroupMemberSort.Builder();
   }
 
   public static AuthorizationSort.Builder authorization() {
@@ -133,13 +145,28 @@ public final class SortOptionBuilders {
     return fn.apply(role()).build();
   }
 
+  public static RoleMemberSort roleMember(
+      final Function<RoleMemberSort.Builder, ObjectBuilder<RoleMemberSort>> fn) {
+    return fn.apply(roleMember()).build();
+  }
+
   public static TenantSort tenant(
       final Function<TenantSort.Builder, ObjectBuilder<TenantSort>> fn) {
     return fn.apply(tenant()).build();
   }
 
+  public static TenantMemberSort tenantMember(
+      final Function<TenantMemberSort.Builder, ObjectBuilder<TenantMemberSort>> fn) {
+    return fn.apply(tenantMember()).build();
+  }
+
   public static GroupSort group(final Function<GroupSort.Builder, ObjectBuilder<GroupSort>> fn) {
     return fn.apply(group()).build();
+  }
+
+  public static GroupMemberSort groupMember(
+      final Function<GroupMemberSort.Builder, ObjectBuilder<GroupMemberSort>> fn) {
+    return fn.apply(groupMember()).build();
   }
 
   public static FormSort.Builder form() {
@@ -197,5 +224,30 @@ public final class SortOptionBuilders {
   public static MessageSubscriptionSort messageSubscription(
       final Function<MessageSubscriptionSort.Builder, ObjectBuilder<MessageSubscriptionSort>> fn) {
     return fn.apply(messageSubscription()).build();
+  }
+
+  public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
+    return new CorrelatedMessageSubscriptionSort.Builder();
+  }
+
+  public static CorrelatedMessageSubscriptionSort correlatedMessageSubscription(
+      final Function<
+              CorrelatedMessageSubscriptionSort.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionSort>>
+          fn) {
+    return fn.apply(correlatedMessageSubscription()).build();
+  }
+
+  public static ProcessDefinitionInstanceStatisticsSort.Builder
+      processDefinitionInstanceStatistics() {
+    return new ProcessDefinitionInstanceStatisticsSort.Builder();
+  }
+
+  public static ProcessDefinitionInstanceStatisticsSort processDefinitionInstanceStatistics(
+      final Function<
+              ProcessDefinitionInstanceStatisticsSort.Builder,
+              ObjectBuilder<ProcessDefinitionInstanceStatisticsSort>>
+          fn) {
+    return fn.apply(processDefinitionInstanceStatistics()).build();
   }
 }

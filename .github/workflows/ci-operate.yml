@@ -35,11 +35,12 @@ defaults:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Operate
 
 jobs:
   # run every time this CI file is called
   operate-backend-unit-tests:
-    name: "[UT] Back End / ${{matrix.suiteName}}"
+    name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -57,18 +58,23 @@ jobs:
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
 
+
   # Checks to see if Operate can properly build itself and a docker image
   build-operate-backend:
     if: inputs.runBeTests
-    name: "Build Checks"
+    name: "Build Back End"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+      TEST_OWNER: Core Features
+      TEST_TYPE: Build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
@@ -99,31 +105,266 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "team-core-features"
 
-  operate-frontend-tests:
+  fe-unit-tests:
     if: inputs.runFeTests
-    name: "[UT] Front End"
-    uses: ./.github/workflows/operate-ci-fe.yml
-    secrets: inherit
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    name: "Unit - Front End"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { } # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Unit
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run test
+        name: Unit & Integration tests
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  run-importer-tests:
-    if: inputs.runBeTests
-    name: "[IT] Importer Tests / Data Layer"
-    uses: ./.github/workflows/operate-run-tests.yml
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    with:
-      command: ./mvnw -pl operate -am verify -T1C -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2
-      testName: "Importer"
-    secrets: inherit
+  # Typescript Checker
+  operate-fe-type-check:
+    if: inputs.runFeTests
+    name: "Tool / Front End - TypeScript Type Check"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run ts-check
+        name: Type checks
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  # Front End Code linting
+  operate-fe-eslint:
+    if: inputs.runFeTests
+    name: "Tool / Front End - ESLint"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run eslint
+        name: ESLint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  # description: This workflow runs a11y accessibility tests on Operate
+  operate-fe-a11y-tests:
+    if: inputs.runFeTests
+    name: "Tool / Front End - a11y"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: Core Features
+    container:
+      image: mcr.microsoft.com/playwright:v1.54.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install node dependencies
+        run: npm ci
+      - name: Build frontend
+        run: npm run build
+      - name: Start server
+        run: npm run start:visual-regression &
+      - name: Run A11y tests
+        run: npm run test:a11y
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operate-a11y-report
+          path: operate/client/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  operate-fe-visual-regression-tests:
+    if: inputs.runFeTests
+    name: "Unit / Front End - Visual Regression"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: visual-regression
+      TEST_OWNER: Core Features
+    container:
+      image: mcr.microsoft.com/playwright:v1.54.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install node dependencies
+        run: npm ci
+      - name: Build frontend
+        run: npm run build:visual-regression
+      - name: Start server
+        run: npm run start:visual-regression &
+      - name: Run Visual regression tests
+        run: npm run test:visual
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operate-visual-regression-report
+          path: operate/client/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  operate-update-screenshots:
+    if: inputs.runFeTests
+    name: "Tool / Front End - Update Screenshots"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: screenshot-update
+      TEST_OWNER: Core Features
+    container:
+      image: mcr.microsoft.com/playwright:v1.54.0
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        name: Install dependencies
+      - name: Build frontend
+        run: npm run build
+      - name: Start server
+        run: npm run start:visual-regression &
+      - name: Run Playwright
+        working-directory: ./operate/client
+        run: npm run generate-screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Playwright report
+          path: ./operate/client/e2e-playwright/docs-screenshots
+          retention-days: 3
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
 
   run-backup-restore-tests:
     if: inputs.runBeTests
-    name: "[IT] Backup Restore Tests / Data Layer"
+    name: "Integration / Backup Restore ITs"
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       DOCKER_IMAGE_TAG: current-test
+      TEST_OWNER: Data Layer
+      TEST_TYPE: Integration
     services:
       registry:
         image: registry:3
@@ -131,6 +372,8 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-build
@@ -175,7 +418,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "team-data-layer"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

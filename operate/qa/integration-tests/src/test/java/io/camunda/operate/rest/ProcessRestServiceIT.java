@@ -33,7 +33,7 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -52,50 +52,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
     })
 public class ProcessRestServiceIT extends OperateAbstractIT {
 
-  @MockBean protected ProcessReader processReader;
+  @MockitoBean protected ProcessReader processReader;
 
-  @MockBean protected ProcessInstanceReader processInstanceReader;
+  @MockitoBean protected ProcessInstanceReader processInstanceReader;
 
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
-  @MockBean private BatchOperationWriter batchOperationWriter;
-
-  @Test
-  public void testProcessDefinitionByIdFailsWhenNoPermissions() throws Exception {
-    // given
-    final Long processDefinitionKey = 123L;
-    final String bpmnProcessId = "processId";
-    // when
-    when(processReader.getProcess(processDefinitionKey))
-        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(false);
-    final MvcResult mvcResult =
-        getRequestShouldFailWithNoAuthorization(getProcessByIdUrl(processDefinitionKey.toString()));
-    // then
-    assertErrorMessageContains(mvcResult, "No read permission for process");
-  }
-
-  @Test
-  public void testProcessDefinitionXmlFailsWhenNoPermissions() throws Exception {
-    // given
-    final Long processDefinitionKey = 123L;
-    final String bpmnProcessId = "processId";
-    // when
-    when(processReader.getProcess(processDefinitionKey))
-        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(false);
-    final MvcResult mvcResult =
-        getRequestShouldFailWithNoAuthorization(
-            getProcessXmlByIdUrl(processDefinitionKey.toString()));
-    // then
-    assertErrorMessageContains(mvcResult, "No read permission for process");
-  }
+  @MockitoBean private BatchOperationWriter batchOperationWriter;
 
   @Test
   public void testDeleteProcessDefinition() throws Exception {
@@ -173,9 +136,5 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
 
   public String getProcessByIdUrl(final String id) {
     return ProcessRestService.PROCESS_URL + "/" + id;
-  }
-
-  public String getProcessXmlByIdUrl(final String id) {
-    return ProcessRestService.PROCESS_URL + "/" + id + "/xml";
   }
 }

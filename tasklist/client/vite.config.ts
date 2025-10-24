@@ -59,7 +59,7 @@ export default defineConfig(({mode}) => ({
       }),
     },
     target: browserslistToEsbuild(),
-    sourcemap: true,
+    sourcemap: mode !== 'sbom',
   },
   esbuild: {
     banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
@@ -69,6 +69,9 @@ export default defineConfig(({mode}) => ({
     alias: {
       src: path.resolve(__dirname, './src'),
     },
+  },
+  optimizeDeps: {
+    exclude: ['monaco-editor'],
   },
   test: {
     globals: true,

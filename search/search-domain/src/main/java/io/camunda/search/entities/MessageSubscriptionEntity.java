@@ -18,7 +18,7 @@ public record MessageSubscriptionEntity(
     Long processInstanceKey,
     String flowNodeId,
     Long flowNodeInstanceKey,
-    MessageSubscriptionType messageSubscriptionType,
+    MessageSubscriptionState messageSubscriptionState,
     OffsetDateTime dateTime,
     String messageName,
     String correlationKey,
@@ -35,7 +35,7 @@ public record MessageSubscriptionEntity(
     private Long processInstanceKey;
     private String flowNodeId;
     private Long flowNodeInstanceKey;
-    private MessageSubscriptionType messageSubscriptionType;
+    private MessageSubscriptionState messageSubscriptionState;
     private OffsetDateTime dateTime;
     private String messageName;
     private String correlationKey;
@@ -71,8 +71,9 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
-    public Builder messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
-      this.messageSubscriptionType = messageSubscriptionType;
+    public Builder messageSubscriptionState(
+        final MessageSubscriptionState messageSubscriptionState) {
+      this.messageSubscriptionState = messageSubscriptionState;
       return this;
     }
 
@@ -104,7 +105,7 @@ public record MessageSubscriptionEntity(
           processInstanceKey,
           flowNodeId,
           flowNodeInstanceKey,
-          messageSubscriptionType,
+          messageSubscriptionState,
           dateTime,
           messageName,
           correlationKey,
@@ -112,9 +113,10 @@ public record MessageSubscriptionEntity(
     }
   }
 
-  public enum MessageSubscriptionType {
+  public enum MessageSubscriptionState {
     CORRELATED,
     CREATED,
-    MIGRATED,
+    DELETED,
+    MIGRATED
   }
 }

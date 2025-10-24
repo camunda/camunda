@@ -74,7 +74,7 @@ public class DecisionEvaluationEvaluteProcessor
                   record.getTenantId())
               .addResourceId(decisionId);
 
-      final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+      final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
       if (isAuthorized.isLeft()) {
         final var rejection = isAuthorized.getLeft();
         final String errorMessage =
@@ -103,11 +103,11 @@ public class DecisionEvaluationEvaluteProcessor
                   decisionBehavior.evaluateDecisionInDrg(
                       drg, BufferUtil.bufferAsString(decision.getDecisionId()), variables);
 
+              final var evaluationRecordKey = keyGenerator.nextKey();
               final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord>
                   evaluationRecordTuple =
-                      decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
-
-              final var evaluationRecordKey = keyGenerator.nextKey();
+                      decisionBehavior.createDecisionEvaluationEvent(
+                          decision, evaluationResult, evaluationRecordKey);
               stateWriter.appendFollowUpEvent(
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),

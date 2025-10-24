@@ -11,8 +11,8 @@ import {getStage} from './getStage';
 import type {
   InstanceEntityState,
   OperationEntityType,
-  DecisionInstanceEntityState,
 } from 'modules/types/operate';
+import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const EVENT_PREFIX = 'operate:';
 
@@ -96,7 +96,7 @@ type Events =
     }
   | {
       eventName: 'decision-instance-details-loaded';
-      state: DecisionInstanceEntityState;
+      state: DecisionInstanceState;
     }
   | {
       eventName: 'incidents-panel-opened';

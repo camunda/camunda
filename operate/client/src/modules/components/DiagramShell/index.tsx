@@ -9,10 +9,11 @@
 import {Loading} from '@carbon/react';
 import {Container, EmptyMessage, ErrorMessage} from './styled';
 import {EmptyMessage as BaseEmptyMessage} from '../EmptyMessage';
+import React from 'react';
 
 type DefaultProps = {
   children: React.ReactNode;
-  status: 'error' | 'loading' | 'content';
+  status: 'error' | 'loading' | 'content' | 'forbidden';
 };
 
 type WithEmptyMessageProps = {
@@ -47,6 +48,18 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
           <EmptyMessage
             $position={props.messagePosition}
             {...props.emptyMessage}
+          />
+        );
+      }
+
+      if (status === 'forbidden') {
+        const position =
+          'messagePosition' in props ? props.messagePosition : 'top';
+        return (
+          <ErrorMessage
+            $position={position}
+            message="Missing permissions to view the Definition"
+            additionalInfo="Please contact your organization owner or admin to give you the necessary permissions to read this definition"
           />
         );
       }

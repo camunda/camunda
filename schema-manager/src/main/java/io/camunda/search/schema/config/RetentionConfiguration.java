@@ -7,13 +7,22 @@
  */
 package io.camunda.search.schema.config;
 
+import java.time.Duration;
+
 public class RetentionConfiguration {
 
   private static final String DEFAULT_RETENTION_MINIMUM_AGE = "30d";
-  private static final String DEFAULT_RETENTION_POLICY_NAME = "camunda-history-retention-policy";
+  private static final String DEFAULT_RETENTION_POLICY_NAME = "camunda-retention-policy";
+  private static final String DEFAULT_USAGE_METRICS_MINIMUM_AGE = "730d"; // 2 years
+  private static final String DEFAULT_USAGE_METRICS_POLICY_NAME =
+      "camunda-usage-metrics-retention-policy";
+  private static final Duration DEFAULT_APPLY_POLICY_JOB_INTERVAL = Duration.ofHours(1);
   private boolean enabled = false;
   private String minimumAge = DEFAULT_RETENTION_MINIMUM_AGE;
   private String policyName = DEFAULT_RETENTION_POLICY_NAME;
+  private String usageMetricsMinimumAge = DEFAULT_USAGE_METRICS_MINIMUM_AGE;
+  private String usageMetricsPolicyName = DEFAULT_USAGE_METRICS_POLICY_NAME;
+  private Duration applyPolicyJobInterval = DEFAULT_APPLY_POLICY_JOB_INTERVAL;
 
   public boolean isEnabled() {
     return enabled;
@@ -39,6 +48,30 @@ public class RetentionConfiguration {
     this.policyName = policyName;
   }
 
+  public String getUsageMetricsMinimumAge() {
+    return usageMetricsMinimumAge;
+  }
+
+  public void setUsageMetricsMinimumAge(final String usageMetricsMinimumAge) {
+    this.usageMetricsMinimumAge = usageMetricsMinimumAge;
+  }
+
+  public String getUsageMetricsPolicyName() {
+    return usageMetricsPolicyName;
+  }
+
+  public void setUsageMetricsPolicyName(final String usageMetricsPolicyName) {
+    this.usageMetricsPolicyName = usageMetricsPolicyName;
+  }
+
+  public Duration getApplyPolicyJobInterval() {
+    return applyPolicyJobInterval;
+  }
+
+  public void setApplyPolicyJobInterval(final Duration applyPolicyJobInterval) {
+    this.applyPolicyJobInterval = applyPolicyJobInterval;
+  }
+
   @Override
   public String toString() {
     return "RetentionConfiguration{"
@@ -50,6 +83,14 @@ public class RetentionConfiguration {
         + ", policyName='"
         + policyName
         + '\''
+        + ", usageMetricsMinimumAge='"
+        + usageMetricsMinimumAge
+        + '\''
+        + ", usageMetricsPolicyName='"
+        + usageMetricsPolicyName
+        + '\''
+        + ", applyPolicyJobInterval="
+        + applyPolicyJobInterval
         + '}';
   }
 }

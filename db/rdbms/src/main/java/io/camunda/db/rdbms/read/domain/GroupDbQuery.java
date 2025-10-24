@@ -11,11 +11,16 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.util.ObjectBuilder;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record GroupDbQuery(GroupFilter filter, DbQuerySorting<GroupEntity> sort, DbQueryPage page) {
+public record GroupDbQuery(
+    GroupFilter filter,
+    List<String> authorizedResourceIds,
+    DbQuerySorting<GroupEntity> sort,
+    DbQueryPage page) {
 
   public static GroupDbQuery of(final Function<Builder, ObjectBuilder<GroupDbQuery>> fn) {
     return fn.apply(new Builder()).build();
@@ -26,11 +31,17 @@ public record GroupDbQuery(GroupFilter filter, DbQuerySorting<GroupEntity> sort,
     private static final GroupFilter EMPTY_FILTER = FilterBuilders.group().build();
 
     private GroupFilter filter;
+    private List<String> authorizedResourceIds = Collections.emptyList();
     private DbQuerySorting<GroupEntity> sort;
     private DbQueryPage page;
 
     public GroupDbQuery.Builder filter(final GroupFilter value) {
       filter = value;
+      return this;
+    }
+
+    public GroupDbQuery.Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
@@ -60,7 +71,8 @@ public record GroupDbQuery(GroupFilter filter, DbQuerySorting<GroupEntity> sort,
     public GroupDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new GroupDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      return new GroupDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }

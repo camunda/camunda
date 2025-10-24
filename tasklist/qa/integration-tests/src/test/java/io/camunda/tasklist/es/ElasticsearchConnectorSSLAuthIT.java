@@ -72,8 +72,6 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   @Autowired RestHighLevelClient tasklistEsClient;
 
-  @Autowired RestHighLevelClient tasklistZeebeEsClient;
-
   @BeforeAll
   public static void beforeClass() {
     assumeTrue(TestUtil.isElasticSearch());
@@ -83,7 +81,6 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
   @Test
   public void canConnect() {
     assertThat(tasklistEsClient).isNotNull();
-    assertThat(tasklistZeebeEsClient).isNotNull();
   }
 
   static class ElasticsearchStarter
@@ -97,21 +94,27 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
           String.format(
               "https://%s:%d/", elasticsearch.getHost(), elasticsearch.getFirstMappedPort());
       TestPropertyValues.of(
+              // DB url
+              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
+              "camunda.database.url=" + elsUrl,
+              "camunda.operate.elasticsearch.url=" + elsUrl,
+              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
+              // DB type
+              "camunda.data.secondary-storage.type=elasticsearch",
+              "camunda.database.type=elasticsearch",
+              "camunda.tasklist.database=elasticsearch",
+              "camunda.operate.database=elasticsearch",
+              //
               "camunda.tasklist.elasticsearch.username=elastic",
               "camunda.tasklist.elasticsearch.password=elastic",
               "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
               // "camunda.tasklist.elasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
               // "camunda.tasklist.elasticsearch.ssl.selfSigned=true",
               // "camunda.tasklist.elasticsearch.ssl.verifyHostname=true",
-              "camunda.tasklist.zeebeElasticsearch.url=" + elsUrl,
-              "camunda.tasklist.zeebeElasticsearch.username=elastic",
-              "camunda.tasklist.zeebeElasticsearch.password=elastic",
-              // "camunda.tasklist.zeebeElasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
-              // "camunda.tasklist.zeebeElasticsearch.ssl.selfSigned=true",
-              // "camunda.tasklist.zeebeElasticsearch.ssl.verifyHostname=true",
-              "camunda.tasklist.zeebeElasticsearch.clusterName=docker-cluster",
-              "camunda.tasklist.zeebeElasticsearch.prefix=zeebe-record")
+              // Unified config
+              "camunda.data.secondary-storage.elasticsearch.username=elastic",
+              "camunda.data.secondary-storage.elasticsearch.password=elastic")
           .applyTo(applicationContext.getEnvironment());
     }
   }

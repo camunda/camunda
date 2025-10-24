@@ -17,13 +17,12 @@ import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
+import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler;
+import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.EmbeddedFormHandler;
-import io.camunda.exporter.handlers.EventFromIncidentHandler;
-import io.camunda.exporter.handlers.EventFromJobHandler;
-import io.camunda.exporter.handlers.EventFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
@@ -42,8 +41,6 @@ import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHa
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
-import io.camunda.exporter.handlers.MetricFromDecisionEvaluationHandler;
-import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
@@ -53,12 +50,11 @@ import io.camunda.exporter.handlers.RoleMemberAddedHandler;
 import io.camunda.exporter.handlers.RoleMemberRemovedHandler;
 import io.camunda.exporter.handlers.SequenceFlowDeletedHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
-import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
 import io.camunda.exporter.handlers.TenantDeletedHandler;
 import io.camunda.exporter.handlers.TenantEntityAddedHandler;
 import io.camunda.exporter.handlers.TenantEntityRemovedHandler;
-import io.camunda.exporter.handlers.UsageMetricHandler;
+import io.camunda.exporter.handlers.UsageMetricExportedHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
@@ -93,15 +89,12 @@ import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -113,6 +106,8 @@ import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -184,7 +179,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
             new RoleMemberRemovedHandler(
                 indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
-            new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
             new UserCreatedUpdatedHandler(
                 indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
@@ -240,19 +234,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
-            new MetricFromProcessInstanceHandler(
-                indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
-            new TaskCompletedMetricHandler(
-                indexDescriptors.get(TasklistMetricIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
-            new EventFromIncidentHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
-            new EventFromJobHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
-            new EventFromProcessInstanceHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
             new EventFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
             new UserTaskHandler(
@@ -285,8 +269,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
             new MappingRuleDeletedHandler(
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
-            new MetricFromDecisionEvaluationHandler(
-                indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
             new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
             new MigratedVariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
@@ -324,15 +306,24 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ListViewFromIncidentResolutionOperationHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
-            new UsageMetricHandler(
-                indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName(),
-                indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName())));
+            new UsageMetricExportedHandler(
+                indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(UsageMetricTUTemplate.class).getFullQualifiedName()),
+            new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(
+                indexDescriptors
+                    .get(CorrelatedMessageSubscriptionTemplate.class)
+                    .getFullQualifiedName()),
+            new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
+                indexDescriptors
+                    .get(CorrelatedMessageSubscriptionTemplate.class)
+                    .getFullQualifiedName())));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
       exportHandlers.add(
           new BatchOperationChunkCreatedItemHandler(
-              indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
+              indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+              batchOperationCache));
       exportHandlers.add(
           new ListViewFromChunkItemHandler(
               indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()));
@@ -342,6 +333,28 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         Map.of(
             indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
+  }
+
+  @Override
+  public void reset() {
+    // clean up all references
+    indexDescriptors = null;
+    if (exportHandlers != null) {
+      exportHandlers.clear();
+      exportHandlers = null;
+    }
+    if (batchOperationCache != null) {
+      batchOperationCache.clear();
+      batchOperationCache = null;
+    }
+    if (formCache != null) {
+      formCache.clear();
+      formCache = null;
+    }
+    if (processCache != null) {
+      processCache.clear();
+      processCache = null;
+    }
   }
 
   @Override

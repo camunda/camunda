@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
@@ -26,9 +25,6 @@ public interface OperationReader {
       Long processInstanceKey, Long scopeKey);
 
   List<OperationEntity> getOperationsByProcessInstanceKey(Long processInstanceKey);
-
-  // this query will be extended
-  List<BatchOperationEntity> getBatchOperations(int pageSize);
 
   List<OperationDto> getOperationsByBatchOperationId(String batchOperationId);
 

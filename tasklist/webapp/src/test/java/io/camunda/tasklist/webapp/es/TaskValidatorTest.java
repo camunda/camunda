@@ -9,8 +9,6 @@ package io.camunda.tasklist.webapp.es;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -19,18 +17,14 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.property.FeatureFlagProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,20 +33,18 @@ public class TaskValidatorTest {
   public static final String TEST_USER = "TestUser";
 
   @Mock private CamundaAuthenticationProvider authenticationProvider;
-  @Mock private TasklistProperties tasklistProperties;
+  private TasklistProperties tasklistProperties;
 
-  @InjectMocks private TaskValidator instance;
+  private TaskValidator instance;
 
-  private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
+  private FeatureFlagProperties featureFlagProperties;
 
   @BeforeEach
   public void setUp() {
-    authenticationUtil = mockStatic(TasklistAuthenticationUtil.class);
-  }
+    this.tasklistProperties = new TasklistProperties();
+    this.featureFlagProperties = tasklistProperties.getFeatureFlag();
 
-  @AfterEach
-  public void tearDown() {
-    authenticationUtil.close();
+    instance = new TaskValidator(authenticationProvider, tasklistProperties);
   }
 
   @ParameterizedTest
@@ -79,11 +71,8 @@ public class TaskValidatorTest {
   @Test
   public void userCanNotPersistDraftTaskVariablesIfAssignedToAnotherPerson() {
     // given
-    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final var authentication = mock(CamundaAuthentication.class);
-    when(authentication.authenticatedUsername()).thenReturn(TEST_USER);
-    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    setAuthenticatedUser(TEST_USER);
+
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
 
@@ -101,8 +90,9 @@ public class TaskValidatorTest {
   @Test
   public void userCanNotPersistDraftTaskVariablesIfAssigneeIsNull() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+
+    setAuthenticatedUser(TEST_USER);
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanPersistDraftTaskVariables(task))
@@ -118,10 +108,8 @@ public class TaskValidatorTest {
   @Test
   public void userCanPersistDraftTaskVariablesWhenTaskIsAssignedToItself() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final var authentication = mock(CamundaAuthentication.class);
-    when(authentication.authenticatedUsername()).thenReturn(TEST_USER);
-    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    setAuthenticatedUser(TEST_USER);
+
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
@@ -132,9 +120,10 @@ public class TaskValidatorTest {
   @Test
   public void apiUserShouldBeAbleToPersistDraftTaskVariablesEvenIfTaskIsAssignedToAnotherPerson() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+
+    setAuthenticatedClient(TEST_USER);
 
     // when - then
     assertThatCode(() -> instance.validateCanPersistDraftTaskVariables(task))
@@ -164,11 +153,8 @@ public class TaskValidatorTest {
   @Test
   public void userCanNotCompleteTaskIfAssignedToAnotherPerson() {
     // given
-    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final var authentication = mock(CamundaAuthentication.class);
-    when(authentication.authenticatedUsername()).thenReturn(TEST_USER);
-    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    setAuthenticatedUser(TEST_USER);
+
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
 
@@ -187,8 +173,9 @@ public class TaskValidatorTest {
   @Test
   public void userCanNotCompleteTaskIfAssigneeIsNull() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+
+    setAuthenticatedUser(TEST_USER);
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanComplete(task))
@@ -205,10 +192,8 @@ public class TaskValidatorTest {
   public void userCanCompleteTheirOwnTask() {
     // given
 
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final var authentication = mock(CamundaAuthentication.class);
-    when(authentication.authenticatedUsername()).thenReturn(TEST_USER);
-    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    setAuthenticatedUser(TEST_USER);
+
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
@@ -218,12 +203,10 @@ public class TaskValidatorTest {
   @Test
   public void userCanCompleteOtherPersonTaskIfAllowNonSelfAssignment() {
     // given
-    when(tasklistProperties.getFeatureFlag())
-        .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(true));
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final var authentication = mock(CamundaAuthentication.class);
-    when(authentication.authenticatedUsername()).thenReturn("AnotherTestUser");
-    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    featureFlagProperties.setAllowNonSelfAssignment(true);
+
+    setAuthenticatedUser("AnotherTestUser");
+
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
@@ -231,11 +214,30 @@ public class TaskValidatorTest {
   }
 
   @Test
+  public void anonymousUserCannotCompleteAssignedTask() {
+    // given
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
+
+    setAnonymousUser();
+
+    // when - then
+    assertThatThrownBy(() -> instance.validateCanComplete(task))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage(
+            """
+          { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+            "detail": "Task is not assigned to null"
+          }
+          """);
+  }
+
+  @Test
   public void apiUserShouldBeAbleToCompleteOtherPersonTask() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+
+    setAuthenticatedClient(TEST_USER);
 
     // when - then
     assertThatCode(() -> instance.validateCanComplete(task)).doesNotThrowAnyException();
@@ -244,8 +246,9 @@ public class TaskValidatorTest {
   @Test
   public void apiUserShouldBeAbleToAssignToDifferentUsers() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final TaskEntity taskBefore = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+
+    setAuthenticatedClient(TEST_USER);
 
     // when - then
     assertThatCode(() -> instance.validateCanAssign(taskBefore, true)).doesNotThrowAnyException();
@@ -254,9 +257,10 @@ public class TaskValidatorTest {
   @Test
   public void apiUserShouldBeAbleToReassignToAnotherUser() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final TaskEntity taskBefore =
         new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
+
+    setAuthenticatedClient(TEST_USER);
 
     // when - then
     assertThatCode(() -> instance.validateCanAssign(taskBefore, true)).doesNotThrowAnyException();
@@ -265,9 +269,10 @@ public class TaskValidatorTest {
   @Test
   public void apiUserShouldBeAbleToReassignToAnotherUserWhenOverrideAllowed() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final TaskEntity taskBefore =
         new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
+
+    setAuthenticatedClient(TEST_USER);
 
     // when - then
     assertThatCode(() -> instance.validateCanAssign(taskBefore, true)).doesNotThrowAnyException();
@@ -276,12 +281,13 @@ public class TaskValidatorTest {
   @Test
   public void apiUserShouldNoBeAbleToReassignToAnotherUserWhenOverrideForbidden() {
     // given
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final TaskEntity taskBefore =
         new TaskEntity()
             .setAssignee("previously assigned user")
             .setState(TaskState.CREATED)
             .setId("123");
+
+    setAuthenticatedClient(TEST_USER);
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanAssign(taskBefore, false))
@@ -316,10 +322,10 @@ public class TaskValidatorTest {
   @Test
   public void nonApiUserShouldNotBeAbleToReassignToAnotherUser() {
     // given
-    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+
+    setAuthenticatedUser(TEST_USER);
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanAssign(task, true))
@@ -336,10 +342,10 @@ public class TaskValidatorTest {
   @Test
   public void nonApiUserShouldNotBeAbleToReassignToAnotherUserWhenOverrideAllowed() {
     // given
-    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
-    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+
+    setAuthenticatedUser(TEST_USER);
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanAssign(task, true))
@@ -386,5 +392,23 @@ public class TaskValidatorTest {
               "detail": "Task is not active"
             }
             """);
+  }
+
+  protected void setAuthenticatedUser(String name) {
+
+    final var authentication = CamundaAuthentication.of(b -> b.user(name));
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+  }
+
+  protected void setAuthenticatedClient(String id) {
+
+    final var authentication = CamundaAuthentication.of(b -> b.clientId(id));
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+  }
+
+  protected void setAnonymousUser() {
+
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.anonymous());
   }
 }

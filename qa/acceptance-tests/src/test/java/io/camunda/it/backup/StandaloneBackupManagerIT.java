@@ -72,16 +72,16 @@ final class StandaloneBackupManagerIT {
   @TestZeebe(autoStart = false)
   final TestStandaloneBackupManager backupManager =
       new TestStandaloneBackupManager()
-          .withProperty("camunda.database.username", ADMIN_USER)
-          .withProperty("camunda.database.password", ADMIN_PASSWORD)
-          .withProperty("camunda.backup.webapps.repositoryName", "els-test");
+          .withProperty("camunda.data.backup.repository-name", "els-test")
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD);
 
   // Configure the schema manager to create indices and templates in test setup
   @TestZeebe(autoStart = false)
   final TestStandaloneSchemaManager schemaManager =
       new TestStandaloneSchemaManager()
-          .withProperty("camunda.database.username", ADMIN_USER)
-          .withProperty("camunda.database.password", ADMIN_PASSWORD)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
           .withProperty("camunda.database.retention.enabled", "true");
 
   // Configure the Camunda single application with restricted access to the Elasticsearch
@@ -91,18 +91,10 @@ final class StandaloneBackupManagerIT {
           .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
           .withCreateSchema(false)
           .withUnauthenticatedAccess()
-          .withProperty("camunda.database.username", APP_USER)
-          .withProperty("camunda.database.password", APP_PASSWORD)
-          .withProperty("camunda.operate.elasticsearch.username", APP_USER)
-          .withProperty("camunda.operate.elasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.operate.zeebeelasticsearch.username", APP_USER)
-          .withProperty("camunda.operate.zeebeelasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.tasklist.elasticsearch.username", APP_USER)
-          .withProperty("camunda.tasklist.elasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.tasklist.zeebeelasticsearch.username", APP_USER)
-          .withProperty("camunda.tasklist.zeebeelasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
+          .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
+          .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
           .withExporter(
               CamundaExporter.class.getSimpleName(),
               cfg -> {
@@ -162,21 +154,20 @@ final class StandaloneBackupManagerIT {
                     .putUser(r -> r.username(APP_USER).password(APP_PASSWORD).roles(APP_ROLE))
                     .created());
 
+    final String esUrl = "http://" + es.getHttpHostAddress();
+
     // Connect to ES in Standalone Schema Manager
-    schemaManager.withProperty("camunda.database.url", "http://" + es.getHttpHostAddress());
+    schemaManager.withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl);
+
     // Connect to ES in Camunda
     camunda
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "camunda.tasklist.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
-            args -> ((Map) args.get("connect")).put("url", "http://" + es.getHttpHostAddress()));
+            args -> ((Map) args.get("connect")).put("url", esUrl));
+
     // Connect to ES in Backup Manager
-    backupManager.withProperty("camunda.database.url", "http://" + es.getHttpHostAddress());
+    backupManager.withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl);
   }
 
   @Test
@@ -199,7 +190,7 @@ final class StandaloneBackupManagerIT {
     backupManager.withBackupId(BACKUP_ID).start();
 
     // Wait for snapshots to be completed
-    final List<String> snapshots = waitForSnapshotsToBeCompleted(SNAPSHOT_NAME_PREFIX, 7);
+    final List<String> snapshots = waitForSnapshotsToBeCompleted(SNAPSHOT_NAME_PREFIX, 6);
     // Update the current state by completing the user task and the process instance
     completeUserTask(userTaskKey);
     // Assert that the state is updated: process instance is completed
@@ -358,7 +349,7 @@ final class StandaloneBackupManagerIT {
 
   private void completeUserTask(final long userTaskKey) {
     try (final var camundaClient = camunda.newClientBuilder().build()) {
-      camundaClient.newUserTaskCompleteCommand(userTaskKey).execute();
+      camundaClient.newCompleteUserTaskCommand(userTaskKey).execute();
     }
   }
 

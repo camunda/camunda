@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -27,13 +28,13 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,12 +48,14 @@ import org.springframework.test.json.JsonCompareMode;
 public class RoleControllerTest extends RestControllerTest {
 
   private static final String ROLE_BASE_URL = "/v2/roles";
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private UserServices userServices;
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -66,10 +69,11 @@ public class RoleControllerTest extends RestControllerTest {
         .thenReturn(mappingRuleServices);
     when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(groupServices);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+  @ValueSource(strings = {"foo", "foo~", "Foo", "foo123", "foo_", "foo.", "foo@"})
   void createRoleShouldReturnCreated(final String roleId) {
     // given
     final var roleName = "Test Role";
@@ -229,9 +233,9 @@ public class RoleControllerTest extends RestControllerTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+        "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
+        "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
+        "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectRoleCreationWithIllegalCharactersInId(final String roleId) {
     // when then
@@ -254,7 +258,7 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, ROLE_BASE_URL),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, ROLE_BASE_URL),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
@@ -465,7 +469,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingMissingMappingToRole() {
+  void shouldReturnErrorForAssigningMissingMappingToRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -495,7 +499,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingMappingToMissingRole() {
+  void shouldReturnErrorForAssigningMappingToMissingRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -522,7 +526,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidMappingIdWhenAssigningToRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = "mappingRuleId!";
@@ -547,13 +551,13 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingMappingToRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAssigningMappingToRole() {
     // given
     final String roleId = "roleId!";
     final String mappingRuleId = Strings.newRandomValidIdentityId();
@@ -578,7 +582,7 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
@@ -606,7 +610,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingMissingMappingFromRole() {
+  void shouldReturnErrorForUnassigningMissingMappingFromRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -636,7 +640,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingMappingFromMissingRole() {
+  void shouldReturnErrorForUnassigningMappingFromMissingRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -663,7 +667,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingMissingUserToRole() {
+  void shouldReturnErrorForAssigningMissingUserToRole() {
     // given
     final var roleId = "roleId";
     final var username = "username";
@@ -690,7 +694,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingUserToMissingRole() {
+  void shouldReturnErrorForAssigningUserToMissingRole() {
     // given
     final String roleId = "roleId";
     final String username = "username";
@@ -717,7 +721,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidUsernameWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidUsernameWhenAssigningToRole() {
     // given
     final String roleId = "roleId";
     final String username = "username!";
@@ -742,13 +746,13 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAssigningToRole() {
     // given
     final String roleId = "roleId!";
     final String username = "username";
@@ -773,7 +777,7 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
@@ -801,7 +805,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingMissingUserFromRole() {
+  void shouldReturnErrorForUnassigningMissingUserFromRole() {
     // given
     final var roleId = "roleId";
     final var username = "username";
@@ -828,7 +832,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingUserFromMissingRole() {
+  void shouldReturnErrorForUnassigningUserFromMissingRole() {
     // given
     final String roleId = "roleId";
     final String username = "username";
@@ -855,7 +859,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidUsernameWhenRemovingFromRole() {
+  void shouldReturnErrorForProvidingInvalidUsernameWhenUnassigningFromRole() {
     // given
     final String roleId = "roleId";
     final String username = "username!";
@@ -879,13 +883,13 @@ public class RoleControllerTest extends RestControllerTest {
                   "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenRemovingFromRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenUnassigningFromRole() {
     // given
     final String roleId = "roleId!";
     final String username = "username";
@@ -909,7 +913,7 @@ public class RoleControllerTest extends RestControllerTest {
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
@@ -937,7 +941,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingMissingGroupToRole() {
+  void shouldReturnErrorForAssigningMissingGroupToRole() {
     // given
     final var roleId = "roleId";
     final var groupId = "groupId";
@@ -964,7 +968,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForAddingGroupToMissingRole() {
+  void shouldReturnErrorForAssigningGroupToMissingRole() {
     // given
     final String roleId = "roleId";
     final String groupId = "groupId";
@@ -991,7 +995,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidGroupIdWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidGroupIdWhenAssigningToRole() {
     // given
     final String roleId = "roleId";
     final String groupId = "groupId!";
@@ -1016,13 +1020,13 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingGroupToRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAssigningGroupToRole() {
     // given
     final String roleId = "roleId!";
     final String groupId = "groupId";
@@ -1047,7 +1051,7 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
@@ -1075,7 +1079,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingMissingGroupFromRole() {
+  void shouldReturnErrorForUnassigningMissingGroupFromRole() {
     // given
     final var roleId = "roleId";
     final var groupId = "groupId";
@@ -1105,7 +1109,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForRemovingGroupFromMissingRole() {
+  void shouldReturnErrorForUnassigningGroupFromMissingRole() {
     // given
     final String roleId = "roleId";
     final String groupId = "groupId";
@@ -1132,7 +1136,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidGroupIdWhenRemovingFromRole() {
+  void shouldReturnErrorForProvidingInvalidGroupIdWhenUnassigningFromRole() {
     // given
     final String roleId = "roleId";
     final String groupId = "groupId!";
@@ -1156,13 +1160,13 @@ public class RoleControllerTest extends RestControllerTest {
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleIdWhenRemovingGroupFromRole() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenUnassigningGroupFromRole() {
     // given
     final String roleId = "roleId!";
     final String groupId = "groupId";
@@ -1186,7 +1190,7 @@ public class RoleControllerTest extends RestControllerTest {
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path),
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
             JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }

@@ -30,6 +30,8 @@ public class HistoryCleanupService {
   private final Duration minCleanupInterval;
   private final Duration maxCleanupInterval;
   private final int cleanupBatchSize;
+  private final Duration usageMetricsCleanup;
+  private final Duration usageMetricsTTL;
 
   private final RdbmsWriterMetrics metrics;
 
@@ -42,6 +44,10 @@ public class HistoryCleanupService {
   private final JobWriter jobWriter;
   private final SequenceFlowWriter sequenceFlowWriter;
   private final BatchOperationWriter batchOperationWriter;
+  private final MessageSubscriptionWriter messageSubscriptionWriter;
+  private final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
+  private final UsageMetricWriter usageMetricWriter;
+  private final UsageMetricTUWriter usageMetricTUWriter;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -56,7 +62,11 @@ public class HistoryCleanupService {
       final JobWriter jobWriter,
       final SequenceFlowWriter sequenceFlowWriter,
       final BatchOperationWriter batchOperationWriter,
-      final RdbmsWriterMetrics metrics) {
+      final MessageSubscriptionWriter messageSubscriptionWriter,
+      final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter,
+      final RdbmsWriterMetrics metrics,
+      final UsageMetricWriter usageMetricWriter,
+      final UsageMetricTUWriter usageMetricTUWriter) {
     LOG.info(
         "Creating HistoryCleanupService with default history ttl {}",
         config.history().defaultHistoryTTL());
@@ -72,6 +82,8 @@ public class HistoryCleanupService {
         config.history().batchOperationResolveIncidentHistoryTTL();
     minCleanupInterval = config.history().minHistoryCleanupInterval();
     maxCleanupInterval = config.history().maxHistoryCleanupInterval();
+    usageMetricsCleanup = config.history().usageMetricsCleanup();
+    usageMetricsTTL = config.history().usageMetricsTTL();
     cleanupBatchSize = config.history().historyCleanupBatchSize();
     this.processInstanceWriter = processInstanceWriter;
     this.incidentWriter = incidentWriter;
@@ -82,7 +94,11 @@ public class HistoryCleanupService {
     this.jobWriter = jobWriter;
     this.sequenceFlowWriter = sequenceFlowWriter;
     this.batchOperationWriter = batchOperationWriter;
+    this.messageSubscriptionWriter = messageSubscriptionWriter;
+    this.correlatedMessageSubscriptionWriter = correlatedMessageSubscriptionWriter;
     this.metrics = metrics;
+    this.usageMetricWriter = usageMetricWriter;
+    this.usageMetricTUWriter = usageMetricTUWriter;
   }
 
   public void scheduleProcessForHistoryCleanup(
@@ -101,6 +117,9 @@ public class HistoryCleanupService {
     decisionInstanceWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     jobWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     sequenceFlowWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
+    messageSubscriptionWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
+    correlatedMessageSubscriptionWriter.scheduleForHistoryCleanup(
+        processInstanceKey, historyCleanupDate);
   }
 
   public void scheduleBatchOperationForHistoryCleanup(
@@ -132,59 +151,102 @@ public class HistoryCleanupService {
   public Duration cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate) {
     LOG.trace("Cleanup history for partition {} with TTL before {}", partitionId, cleanupDate);
 
-    final var sample = metrics.measureHistoryCleanupDuration();
-    final long start = System.currentTimeMillis();
+    try (final var sample = metrics.measureHistoryCleanupDuration()) {
+      final long start = System.currentTimeMillis();
 
-    final var numDeletedRecords = new HashMap<String, Integer>();
-    numDeletedRecords.put(
-        "processInstance",
-        processInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "flowNodeInstance",
-        flowNodeInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "incident", incidentWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "userTask", userTaskWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "variable",
-        variableInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "decisionInstance",
-        decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "job", jobWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "sequenceFlow",
-        sequenceFlowWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "batchOperationItem",
-        batchOperationWriter.cleanupItemHistory(cleanupDate, cleanupBatchSize));
-    numDeletedRecords.put(
-        "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
-    final long end = System.currentTimeMillis();
-    sample.close();
+      final var numDeletedRecords = new HashMap<String, Integer>();
+      numDeletedRecords.put(
+          "processInstance",
+          processInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "flowNodeInstance",
+          flowNodeInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "incident", incidentWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "userTask", userTaskWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "variable",
+          variableInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "decisionInstance",
+          decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "job", jobWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "sequenceFlow",
+          sequenceFlowWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "batchOperationItem",
+          batchOperationWriter.cleanupItemHistory(cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "messageSubscription",
+          messageSubscriptionWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "correlatedMessageSubscription",
+          correlatedMessageSubscriptionWriter.cleanupHistory(
+              partitionId, cleanupDate, cleanupBatchSize));
+      final long end = System.currentTimeMillis();
+      logCleanUpInfo("", partitionId, numDeletedRecords, cleanupDate, end, start);
+      final var nextDuration =
+          calculateNewDuration(lastCleanupInterval.get(partitionId), numDeletedRecords);
+      LOG.trace("Schedule next cleanup for partition {} with TTL in {}", partitionId, nextDuration);
 
+      saveLastCleanupInterval(partitionId, nextDuration);
+      return nextDuration;
+    }
+  }
+
+  public Duration cleanupUsageMetricsHistory(final int partitionId, final OffsetDateTime now) {
+
+    final var cleanupDate = now.minus(usageMetricsTTL);
+    LOG.trace(
+        "Cleanup usage metrics history for partition {} with date before {}",
+        partitionId,
+        cleanupDate);
+
+    try (final var sample = metrics.measureUsageMetricsHistoryCleanupDuration()) {
+      final long start = System.currentTimeMillis();
+
+      final var numDeletedRecords = new HashMap<String, Integer>();
+      numDeletedRecords.put(
+          "usageMetrics",
+          usageMetricWriter.cleanupMetrics(partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "usageMetricsTU",
+          usageMetricTUWriter.cleanupMetrics(partitionId, cleanupDate, cleanupBatchSize));
+
+      final long end = System.currentTimeMillis();
+
+      logCleanUpInfo("Usage Metrics", partitionId, numDeletedRecords, cleanupDate, end, start);
+    }
+
+    return usageMetricsCleanup;
+  }
+
+  private static void logCleanUpInfo(
+      final String cleanupType,
+      final int partitionId,
+      final HashMap<String, Integer> numDeletedRecords,
+      final OffsetDateTime cleanupDate,
+      final long end,
+      final long start) {
     final int sum = numDeletedRecords.values().stream().mapToInt(Integer::intValue).sum();
 
-    LOG.debug("Deleted history records: {}", numDeletedRecords);
+    LOG.debug("Deleted {}history records: {}", cleanupType, numDeletedRecords);
     for (final var entry : numDeletedRecords.entrySet()) {
       LOG.debug("    Deleted {}s: {}", entry.getKey(), entry.getValue());
     }
 
     LOG.debug(
-        "Cleanup history for partition {} with TTL before {} took {} ms. Deleted {} records",
+        "{}Cleanup history for partition {} with TTL before {} took {} ms. Deleted {} records",
+        cleanupType,
         partitionId,
         cleanupDate,
         end - start,
         sum);
-
-    final var nextDuration =
-        calculateNewDuration(lastCleanupInterval.get(partitionId), numDeletedRecords);
-    LOG.trace("Schedule next cleanup for partition {} with TTL in {}", partitionId, nextDuration);
-
-    saveLastCleanupInterval(partitionId, nextDuration);
-    return nextDuration;
   }
 
   private void saveLastCleanupInterval(final int partitionId, final Duration nextDuration) {

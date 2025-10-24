@@ -35,6 +35,7 @@ public class EvaluateDecisionStub
         evaluationRecord.evaluatedDecisions().add();
     evaluatedDecisionRecord
         .setDecisionId("intermediateDecision")
+        .setDecisionEvaluationInstanceKey("testInstanceKey")
         .setDecisionKey(125L)
         .setDecisionName("Intermediate Decision")
         .setDecisionVersion(2)

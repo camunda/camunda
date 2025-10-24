@@ -1,0 +1,168 @@
+# description: Runs Request Validation tests on the C8 Orchestration Cluster REST API for 8.8+ versions nightly
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/request-validation
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: C8 Orchestration Cluster V2 Stateless Tests Nightly
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run all tests at midnight UTC
+
+permissions:
+  contents: read
+
+jobs:
+  request-validation-tests:
+    name: V2 Stateless Tests (${{ matrix.branch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [stable/8.8, main]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Start Camunda
+        run: |
+          echo "Starting Camunda with unified architecture"
+          DATABASE=elasticsearch docker compose up -d camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: List running Docker containers
+        run: docker ps -a
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        run: |
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            # 8.8+ unified architecture uses single container
+            tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+            operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+            identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+            
+            if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+              echo "Services are ready!"
+              ready=true
+              break
+            fi
+            echo "Waiting for services... ($i/90)"
+            echo "Response from Tasklist: $tasklist_status"
+            echo "Response from Operate: $operate_status"
+            echo "Response from Identity: $identity_status"
+            sleep 10
+          done
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: |
+          echo "Printing Docker logs for debugging..."
+          docker compose logs camunda
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+            qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator/package-lock.json
+      - name: Clean install dependencies
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Setup Node.js for request validation test generator
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Clean install dependencies for request validation test generator
+        shell: bash
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+      - name: Install Playwright Browsers
+        shell: bash
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Regenerate request validation tests
+        shell: bash
+        run: |
+          echo "Regenerating request validation tests from latest OpenAPI spec with full deep generation..."
+          npm run generate:full
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator
+        env:
+          CORE_APPLICATION_URL: "http://localhost:8080"
+
+      - name: Sync generated tests to main test suite
+        shell: bash
+        run: |
+          echo "Syncing generated tests to main test suite..."
+          npm run sync:tests
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator
+
+      - name: Run V2 Stateless tests
+        shell: bash
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          INCLUDE_SLACK_REPORTER: true
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          VERSION: ${{ matrix.branch }}
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          V2_STATELESS_TESTS: "true"
+        run: |
+          echo "Running V2 Stateless tests for branch: ${{ matrix.branch }}"
+          # Use custom project configuration for request validation tests only
+          npm run test -- --project=request-validation-tests
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: V2 Stateless Test Results (${{ matrix.branch }})
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
+          retention-days: 10

@@ -69,8 +69,4 @@ public class JacksonConfig {
   private DateTimeFormatter dateTimeFormatter() {
     return DateTimeFormatter.ofPattern(tasklistProperties.getElasticsearch().getDateFormat());
   }
-
-  private DateTimeFormatter localDateFormatter() {
-    return DateTimeFormatter.ofPattern(tasklistProperties.getZeebeElasticsearch().getDateFormat());
-  }
 }

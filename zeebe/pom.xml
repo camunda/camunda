@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -49,10 +49,10 @@
     <module>zb-db</module>
     <module>expression-language</module>
     <module>feel</module>
+    <module>feel-tagged-parameters</module>
     <module>dmn</module>
     <module>snapshot</module>
     <module>journal</module>
-    <module>benchmarks/project</module>
     <module>scheduler</module>
     <module>backup</module>
     <module>backup-stores/testkit</module>

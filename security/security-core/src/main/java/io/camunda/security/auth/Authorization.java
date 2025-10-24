@@ -11,12 +11,13 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.A
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DOCUMENT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.SYSTEM;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
@@ -24,6 +25,7 @@ import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISIO
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_USER_TASK;
@@ -42,8 +44,6 @@ public record Authorization<T>(
     @JsonProperty("permission_type") PermissionType permissionType,
     @JsonProperty("resource_ids") List<String> resourceIds,
     @JsonIgnore Function<T, String> resourceIdSupplier) {
-
-  public static final String WILDCARD = "*";
 
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final String resourceId) {
@@ -119,6 +119,10 @@ public record Authorization<T>(
       return resourceType(USER);
     }
 
+    public Builder<T> system() {
+      return resourceType(SYSTEM);
+    }
+
     public Builder<T> read() {
       return permissionType(READ);
     }
@@ -155,12 +159,16 @@ public record Authorization<T>(
       return permissionType(READ_DECISION_INSTANCE);
     }
 
+    public Builder<T> readUsageMetric() {
+      return permissionType(READ_USAGE_METRIC);
+    }
+
     public Builder<T> batchOperation() {
       return resourceType(BATCH);
     }
 
-    public Builder<T> usageMetric() {
-      return resourceType(USAGE_METRIC);
+    public Builder<T> document() {
+      return resourceType(DOCUMENT);
     }
 
     public Builder<T> resourceId(final String resourceId) {

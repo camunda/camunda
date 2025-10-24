@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.query.ui_configuration;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.util.Map;
+import java.util.Objects;
 
 public class UIConfigurationResponseDto {
 
@@ -254,12 +255,46 @@ public class UIConfigurationResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        logoutHidden,
+        maxNumDataSourcesForReport,
+        userTaskAssigneeAnalyticsEnabled,
+        emailEnabled,
+        sharingEnabled,
+        mixpanel,
+        onboarding,
+        optimizeVersion,
+        optimizeProfile,
+        validLicense,
+        licenseType,
+        isCommercial,
+        expiresAt,
+        notificationsUrl,
+        webappsLinks);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UIConfigurationResponseDto that = (UIConfigurationResponseDto) o;
+    return logoutHidden == that.logoutHidden
+        && maxNumDataSourcesForReport == that.maxNumDataSourcesForReport
+        && userTaskAssigneeAnalyticsEnabled == that.userTaskAssigneeAnalyticsEnabled
+        && emailEnabled == that.emailEnabled
+        && sharingEnabled == that.sharingEnabled
+        && validLicense == that.validLicense
+        && isCommercial == that.isCommercial
+        && Objects.equals(mixpanel, that.mixpanel)
+        && Objects.equals(onboarding, that.onboarding)
+        && Objects.equals(optimizeVersion, that.optimizeVersion)
+        && Objects.equals(optimizeProfile, that.optimizeProfile)
+        && Objects.equals(notificationsUrl, that.notificationsUrl)
+        && Objects.equals(webappsLinks, that.webappsLinks);
   }
 
   @Override

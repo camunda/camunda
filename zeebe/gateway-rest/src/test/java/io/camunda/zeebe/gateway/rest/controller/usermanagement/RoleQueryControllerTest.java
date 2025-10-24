@@ -18,11 +18,13 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -32,6 +34,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -42,12 +45,14 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(value = RoleController.class)
 public class RoleQueryControllerTest extends RestControllerTest {
   private static final String ROLE_BASE_URL = "/v2/roles";
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private UserServices userServices;
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -61,6 +66,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
         .thenReturn(mappingRuleServices);
     when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(groupServices);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test
@@ -228,10 +234,49 @@ public class RoleQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSortAndPaginateByLimitOnlySearchResult() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new RoleEntity(100L, "role1", "Role 1", "description 1"),
+                        new RoleEntity(300L, "role12", "Role 12", "description 12"),
+                        new RoleEntity(200L, "role2", "Role 2", "description 2")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(ROLE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "name", "order":  "ASC"}],
+              "page":  {"limit":  10}
+            }
+             """)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(roleServices)
+        .search(
+            new RoleQuery.Builder()
+                .sort(RoleSort.of(builder -> builder.name().asc()))
+                .page(SearchQueryPage.of(builder -> builder.size(10)))
+                .build());
+  }
+
+  @Test
   void shouldSearchUsersByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
@@ -278,8 +323,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
-                .filter(f -> f.memberType(EntityType.USER).joinParentId(roleId))
+            new RoleMemberQuery.Builder()
+                .filter(f -> f.memberType(EntityType.USER).roleId(roleId))
                 .build());
   }
 
@@ -352,7 +397,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   public void shouldSearchClientsByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
@@ -399,8 +444,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
-                .filter(f -> f.joinParentId(roleId).memberType(EntityType.CLIENT))
+            new RoleMemberQuery.Builder()
+                .filter(f -> f.roleId(roleId).memberType(EntityType.CLIENT))
                 .build());
   }
 
@@ -408,7 +453,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchGroupsByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(2)
@@ -450,8 +495,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
-                .filter(f -> f.joinParentId(roleId).memberType(EntityType.GROUP))
+            new RoleMemberQuery.Builder()
+                .filter(f -> f.roleId(roleId).memberType(EntityType.GROUP))
                 .build());
   }
 }

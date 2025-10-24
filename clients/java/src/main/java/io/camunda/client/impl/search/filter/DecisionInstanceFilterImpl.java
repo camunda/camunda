@@ -42,13 +42,13 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionInstanceKey(final long decisionInstanceKey) {
-    filter.setDecisionInstanceKey(ParseUtil.keyToString(decisionInstanceKey));
+    filter.setDecisionEvaluationKey(ParseUtil.keyToString(decisionInstanceKey));
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionInstanceId(final String decisionInstanceId) {
-    filter.decisionInstanceId(decisionInstanceId);
+    filter.decisionEvaluationInstanceKey(decisionInstanceId);
     return this;
   }
 
@@ -116,6 +116,19 @@ public class DecisionInstanceFilterImpl
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setElementInstanceKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter rootDecisionDefinitionKey(final long rootDecisionDefinitionKey) {
+    return rootDecisionDefinitionKey(b -> b.eq(rootDecisionDefinitionKey));
+  }
+
+  @Override
+  public DecisionInstanceFilter rootDecisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setRootDecisionDefinitionKey(provideSearchRequestProperty(property));
     return this;
   }
 

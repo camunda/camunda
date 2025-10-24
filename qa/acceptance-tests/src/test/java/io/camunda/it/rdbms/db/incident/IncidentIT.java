@@ -8,6 +8,8 @@
 package io.camunda.it.rdbms.db.incident;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveIncident;
 import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -110,6 +112,51 @@ public class IncidentIT {
     final var instance = searchResult.items().getFirst();
 
     compareIncident(instance, original);
+  }
+
+  @TestTemplate
+  public void shouldFindIncidentByAuthorizedResourceId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader processInstanceReader = rdbmsService.getIncidentReader();
+
+    final var original = IncidentFixtures.createRandomized(b -> b);
+    createAndSaveIncident(rdbmsWriter, original);
+    createAndSaveRandomIncidents(rdbmsWriter);
+
+    final var searchResult =
+        processInstanceReader.search(
+            IncidentQuery.of(b -> b),
+            resourceAccessChecksFromResourceIds(original.processDefinitionId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    compareIncident(searchResult.items().getFirst(), original);
+  }
+
+  @TestTemplate
+  public void shouldFindIncidentByAuthorizedTenantId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader processInstanceReader = rdbmsService.getIncidentReader();
+
+    final var original = IncidentFixtures.createRandomized(b -> b);
+    createAndSaveIncident(rdbmsWriter, original);
+    createAndSaveRandomIncidents(rdbmsWriter);
+
+    final var searchResult =
+        processInstanceReader.search(
+            IncidentQuery.of(b -> b), resourceAccessChecksFromTenantIds(original.tenantId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    compareIncident(searchResult.items().getFirst(), original);
   }
 
   @TestTemplate

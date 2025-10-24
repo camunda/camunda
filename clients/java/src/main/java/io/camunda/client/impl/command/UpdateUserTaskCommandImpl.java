@@ -22,6 +22,7 @@ import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.response.UpdateUserTaskResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UpdateUserTaskResponseImpl;
 import io.camunda.client.protocol.rest.Changeset;
 import io.camunda.client.protocol.rest.UserTaskUpdateRequest;
 import java.time.Duration;
@@ -61,6 +62,7 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
         "/user-tasks/" + userTaskKey,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
+        UpdateUserTaskResponseImpl::new,
         result);
     return result;
   }

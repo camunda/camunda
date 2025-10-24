@@ -7,14 +7,8 @@
  */
 package io.camunda.operate.webapp;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,17 +23,6 @@ public class StartupBean {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupBean.class);
 
-  @Autowired(required = false)
-  private RestHighLevelClient esClient;
-
-  @Autowired(required = false)
-  private RestHighLevelClient zeebeEsClient;
-
-  @Autowired(required = false)
-  private ElasticsearchClient elasticsearchClient;
-
-  @Autowired private OperateProperties operateProperties;
-
   @Autowired private OperationExecutor operationExecutor;
 
   @PostConstruct
@@ -47,14 +30,5 @@ public class StartupBean {
     LOGGER.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
     LOGGER.info("INIT: DONE");
-  }
-
-  @PreDestroy
-  public void shutdown() {
-    if (DatabaseInfo.isElasticsearch()) {
-      LOGGER.info("Shutdown elasticsearch clients.");
-      ElasticsearchConnector.closeEsClient(esClient);
-      ElasticsearchConnector.closeEsClient(zeebeEsClient);
-    }
   }
 }

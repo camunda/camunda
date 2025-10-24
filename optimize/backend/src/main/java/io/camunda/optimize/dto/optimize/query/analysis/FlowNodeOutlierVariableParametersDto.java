@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.analysis;
 
+import java.util.Objects;
+
 public class FlowNodeOutlierVariableParametersDto extends FlowNodeOutlierParametersDto {
 
   protected String variableName;
@@ -41,16 +43,24 @@ public class FlowNodeOutlierVariableParametersDto extends FlowNodeOutlierParamet
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final FlowNodeOutlierVariableParametersDto that = (FlowNodeOutlierVariableParametersDto) o;
+    return Objects.equals(variableName, that.variableName)
+        && Objects.equals(variableTerm, that.variableTerm);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), variableName, variableTerm);
   }
 
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof FlowNodeOutlierVariableParametersDto;
-  }
-
-  @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }

@@ -7,8 +7,7 @@
  */
 
 import {openFile} from '@/utils/openFile';
-import {completedInstance} from './';
-import {InstanceMock} from '.';
+import {completedInstance, type InstanceMock} from './index';
 
 const completedOrderProcessInstance: InstanceMock = {
   ...completedInstance,

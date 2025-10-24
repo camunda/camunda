@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Form} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {Form} from '@camunda/camunda-api-zod-schemas/8.8';
 import schema from '@/resources/bigForm.json' assert {type: 'json'};
 
 const mockForm = (customFields: Partial<Form> = {}): Form => ({

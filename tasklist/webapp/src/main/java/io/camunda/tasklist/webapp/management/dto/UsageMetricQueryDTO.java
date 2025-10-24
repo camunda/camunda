@@ -22,6 +22,8 @@ public class UsageMetricQueryDTO {
   @DateTimeFormat(pattern = ElasticsearchProperties.DATE_FORMAT_DEFAULT)
   private OffsetDateTime endTime;
 
+  private String tenantId;
+
   private int pageSize = DEFAULT_PAGE_SIZE;
   private String[] searchAfter;
   private String[] searchBefore;
@@ -66,6 +68,14 @@ public class UsageMetricQueryDTO {
     this.searchBefore = searchBefore;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -78,13 +88,14 @@ public class UsageMetricQueryDTO {
     return pageSize == that.pageSize
         && Objects.equals(startTime, that.startTime)
         && Objects.equals(endTime, that.endTime)
+        && Objects.equals(tenantId, that.tenantId)
         && Arrays.equals(searchAfter, that.searchAfter)
         && Arrays.equals(searchBefore, that.searchBefore);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(startTime, endTime, pageSize);
+    int result = Objects.hash(startTime, endTime, tenantId, pageSize);
     result = 31 * result + Arrays.hashCode(searchAfter);
     result = 31 * result + Arrays.hashCode(searchBefore);
     return result;

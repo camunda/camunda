@@ -21,7 +21,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 public class HttpClientUtil {
 
-  public static String getReponseAsString(final ClassicHttpResponse response) {
+  public static String getResponseAsString(final ClassicHttpResponse response) {
     return Optional.ofNullable(response.getEntity())
         .map(
             entity -> {

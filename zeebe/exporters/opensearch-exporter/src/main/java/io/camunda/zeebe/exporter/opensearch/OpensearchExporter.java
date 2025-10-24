@@ -64,18 +64,30 @@ public class OpensearchExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    client = createClient();
+    try {
+      client = createClient();
+      recordCounters =
+          controller
+              .readMetadata()
+              .map(this::deserializeExporterMetadata)
+              .map(OpensearchExporterMetadata::getRecordCountersByValueType)
+              .filter(counters -> !counters.isEmpty())
+              .map(OpensearchRecordCounters::new)
+              .orElse(new OpensearchRecordCounters());
 
-    recordCounters =
-        controller
-            .readMetadata()
-            .map(this::deserializeExporterMetadata)
-            .map(OpensearchExporterMetadata::getRecordCountersByValueType)
-            .map(OpensearchRecordCounters::new)
-            .orElse(new OpensearchRecordCounters());
-
-    scheduleDelayedFlush();
-    log.info("Exporter opened");
+      scheduleDelayedFlush();
+      log.info("Exporter opened");
+    } catch (final Exception ex) {
+      if (client != null) {
+        try {
+          client.close();
+          client = null;
+        } catch (final Exception e) {
+          log.warn("Failed to close the opensearch client", e);
+        }
+      }
+      throw ex;
+    }
   }
 
   @Override
@@ -359,6 +371,9 @@ public class OpensearchExporter implements Exporter {
       }
       if (index.runtimeInstruction) {
         createValueIndexTemplate(ValueType.RUNTIME_INSTRUCTION, version);
+      }
+      if (index.clusterVariable) {
+        createValueIndexTemplate(ValueType.CLUSTER_VARIABLE, version);
       }
     }
 

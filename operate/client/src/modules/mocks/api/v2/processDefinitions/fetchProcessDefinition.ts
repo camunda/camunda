@@ -10,7 +10,7 @@ import {mockGetRequest} from 'modules/mocks/api/mockRequest';
 import {
   endpoints,
   type ProcessDefinition,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const mockFetchProcessDefinition = (processDefinitionKey: string) =>
   mockGetRequest<ProcessDefinition>(

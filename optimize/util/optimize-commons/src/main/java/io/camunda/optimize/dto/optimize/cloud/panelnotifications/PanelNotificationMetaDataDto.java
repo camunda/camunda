@@ -7,6 +7,9 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public final class PanelNotificationMetaDataDto {
 
   private final String identifier;
@@ -44,12 +47,22 @@ public final class PanelNotificationMetaDataDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(identifier, Arrays.hashCode(permissions), href, label);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PanelNotificationMetaDataDto that = (PanelNotificationMetaDataDto) o;
+    return Objects.equals(identifier, that.identifier)
+        && Arrays.equals(permissions, that.permissions)
+        && Objects.equals(href, that.href)
+        && Objects.equals(label, that.label);
   }
 
   @Override

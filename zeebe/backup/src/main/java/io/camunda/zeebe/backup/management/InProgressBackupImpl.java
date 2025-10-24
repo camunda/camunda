@@ -180,12 +180,8 @@ final class InProgressBackupImpl implements InProgressBackup {
     final ActorFuture<Void> filesCollected = concurrencyControl.createFuture();
     try {
       long maxIndex = 0L;
-      if (availableValidSnapshots != null) {
-        maxIndex =
-            availableValidSnapshots.stream()
-                .mapToLong(PersistedSnapshot::getIndex)
-                .max()
-                .orElse(0L);
+      if (reservedSnapshot != null) {
+        maxIndex = reservedSnapshot.getIndex();
       }
       final var segments = journalInfoProvider.getTailSegments(maxIndex);
       segments.whenComplete(

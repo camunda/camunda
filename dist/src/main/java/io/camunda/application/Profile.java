@@ -33,9 +33,6 @@ public enum Profile {
   CONSOLIDATED_AUTH("consolidated-auth"),
   IDENTITY_AUTH("identity-auth"),
 
-  // migration profiles
-  IDENTITY_MIGRATION("identity-migration"),
-  PROCESS_MIGRATION("process-migration"),
   // indicating legacy standalone application
   STANDALONE("standalone");
 

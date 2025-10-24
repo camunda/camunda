@@ -40,9 +40,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -59,13 +59,13 @@ public class ProcessInstanceQueryControllerIT {
 
   private MockMvc mockMvc;
 
-  @MockBean private ProcessInstanceDao processInstanceDao;
+  @MockitoBean private ProcessInstanceDao processInstanceDao;
 
-  @MockBean private SequenceFlowDao sequenceFlowDao;
+  @MockitoBean private SequenceFlowDao sequenceFlowDao;
 
-  @MockBean private FlowNodeStatisticsDao flowNodeStatisticsDao;
+  @MockitoBean private FlowNodeStatisticsDao flowNodeStatisticsDao;
 
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean private PermissionsService permissionsService;
 
   @Before
   public void setupMockMvc() {
@@ -104,7 +104,7 @@ public class ProcessInstanceQueryControllerIT {
 
   @Test
   public void shouldAcceptQueryWithFilter() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { \"" + VERSION + "\": \"1\" } }");
+    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { \"" + VERSION + "\": 1 } }");
     verify(processInstanceDao)
         .search(new Query<ProcessInstance>().setFilter(new ProcessInstance().setProcessVersion(1)));
   }
@@ -112,7 +112,7 @@ public class ProcessInstanceQueryControllerIT {
   @Test
   public void shouldAcceptQueryWithParentKeyFilter() throws Exception {
     assertPostToWithSucceed(
-        URI + SEARCH, "{\"filter\": { " + "\"" + VERSION + "\": \"1\"," + "\"parentKey\": 345} }");
+        URI + SEARCH, "{\"filter\": { " + "\"" + VERSION + "\": 1," + "\"parentKey\": 345} }");
     verify(processInstanceDao)
         .search(
             new Query<ProcessInstance>()
@@ -123,7 +123,7 @@ public class ProcessInstanceQueryControllerIT {
   public void shouldAcceptQueryWithParentProcessInstanceKeyFilter() throws Exception {
     assertPostToWithSucceed(
         URI + SEARCH,
-        "{\"filter\": { " + "\"" + VERSION + "\": \"1\"," + "\"parentProcessInstanceKey\": 345} }");
+        "{\"filter\": { " + "\"" + VERSION + "\": 1," + "\"parentProcessInstanceKey\": 345} }");
 
     verify(processInstanceDao)
         .search(

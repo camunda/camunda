@@ -17,9 +17,9 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
-import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
@@ -95,11 +95,11 @@ public class SnapshotApiRequestHandlerTest {
 
     final var clusterService = mock(ClusterEventService.class);
     final var brokerTopology = mock(BrokerTopologyManager.class);
-    final var clusterState = new BrokerClusterStateImpl();
-    clusterState.addBrokerIfAbsent(1);
-    clusterState.addPartitionIfAbsent(1);
-    clusterState.setPartitionLeader(1, 1, 1);
-    clusterState.setBrokerAddressIfPresent(1, serverAddress);
+    final var clusterState = mock(BrokerClusterState.class);
+    when(clusterState.getLeaderForPartition(1)).thenReturn(1);
+    when(clusterState.getBrokerAddress(1)).thenReturn(serverAddress);
+    when(clusterState.getPartitions()).thenReturn(List.of(1));
+
     when(brokerTopology.getTopology()).thenReturn(clusterState);
     final var metrics = mock(BrokerClientRequestMetrics.class);
     brokerClient =

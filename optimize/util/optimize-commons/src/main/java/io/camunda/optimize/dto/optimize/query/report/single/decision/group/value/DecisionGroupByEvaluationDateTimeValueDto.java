@@ -42,13 +42,18 @@ public class DecisionGroupByEvaluationDateTimeValueDto implements DecisionGroupB
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionGroupByEvaluationDateTimeValueDto that =
+        (DecisionGroupByEvaluationDateTimeValueDto) o;
+    return unit == that.unit;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(unit);
   }
 
   @Override

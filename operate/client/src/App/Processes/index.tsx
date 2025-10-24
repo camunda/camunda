@@ -15,8 +15,6 @@ import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {Modal} from '@carbon/react';
 
 const Processes: React.FC = observer(() => {
-  const {hasPendingRequest} = processInstanceMigrationStore.state;
-
   useEffect(() => {
     return processInstanceMigrationStore.reset;
   }, []);
@@ -26,14 +24,6 @@ const Processes: React.FC = observer(() => {
       shouldInterrupt: processInstanceMigrationStore.isEnabled,
     });
 
-  useEffect(() => {
-    // this effect is necessary to bypass the callback prompt when a migration
-    // is triggered from migration view (MigrationView/Footer/index.tsx)
-    if (hasPendingRequest) {
-      confirmNavigation();
-    }
-  }, [hasPendingRequest, confirmNavigation]);
-
   return (
     <>
       {processInstanceMigrationStore.isEnabled ? (
@@ -42,7 +32,7 @@ const Processes: React.FC = observer(() => {
         <ListView />
       )}
 
-      {isNavigationInterrupted && !hasPendingRequest && (
+      {processInstanceMigrationStore.isEnabled && isNavigationInterrupted && (
         <Modal
           open={isNavigationInterrupted}
           modalHeading="Leave Migration Mode"

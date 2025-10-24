@@ -14,6 +14,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -302,33 +305,87 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void shouldRejectCommandIfElementIsDuplicated() {
-    final var rejection =
-        ENGINE
-            .adHocSubProcessActivity()
-            .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
-            .withElementIds("A")
-            .withElementIds("A")
-            .expectRejection()
-            .activate();
+  public void shouldAllowDuplicateElementsActivation() {
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
+        .withElementIds("A")
+        .withElementIds("A")
+        .activate();
 
-    RecordAssert.assertThat(rejection)
-        .describedAs(
-            "Expected activation to be rejected because duplicate flow nodes are provided.")
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given."
-                .formatted(adHocSubProcessInstanceKey));
+    // assert that "A" got activated twice and no rejection occurred
+    final var activatedA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .limit(2)
+            .toList();
 
+    assertThat(activatedA)
+        .describedAs("Expected duplicate activations for the same element to be allowed")
+        .hasSize(2);
+
+    // also verify there is an ACTIVATED event for the command
     assertThat(
             RecordingExporter.adHocSubProcessInstructionRecords()
                 .withAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey)
-                .limit(2))
-        .extracting(Record::getRecordType, Record::getIntent)
+                .limit(record -> record.getIntent() == AdHocSubProcessInstructionIntent.ACTIVATED))
+        .extracting(Record::getIntent)
+        .contains(AdHocSubProcessInstructionIntent.ACTIVATED);
+  }
+
+  @Test
+  public void shouldSetVariableOnCompletingAdHocSubProcess() {
+    // given
+    final var jobType = "routing-agent";
+    final String processId = "process";
+
+    deployProcess(
+        processId,
+        adHocSubProcess -> {
+          adHocSubProcess.zeebeInputExpression("1", "b");
+
+          adHocSubProcess.task("A");
+          adHocSubProcess.task("B");
+          adHocSubProcess.task("C");
+          adHocSubProcess.zeebeJobType(jobType);
+        });
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("a", 1).create();
+
+    // when
+    final JobResult jobResult = new JobResult();
+    jobResult.setCompletionConditionFulfilled(true);
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(jobType)
+        .withVariables(Map.of("a", 2, "b", 2, "c", 2))
+        .withResult(jobResult)
+        .complete();
+
+    // then
+    final long adHocSubProcessInstanceKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(6))
+        .extracting(
+            r -> r.getValue().getName(),
+            r -> r.getValue().getValue(),
+            r -> r.getValue().getScopeKey(),
+            r -> r.getIntent())
         .contains(
-            tuple(RecordType.COMMAND, AdHocSubProcessInstructionIntent.ACTIVATE),
-            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessInstructionIntent.ACTIVATE))
-        .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessInstructionIntent.ACTIVATED));
+            Assertions.tuple("a", "2", processInstanceKey, VariableIntent.UPDATED), // updated
+            Assertions.tuple(
+                "b", "2", adHocSubProcessInstanceKey, VariableIntent.UPDATED), // updated
+            Assertions.tuple("c", "2", processInstanceKey, VariableIntent.CREATED)); // created
   }
 
   private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {

@@ -44,7 +44,7 @@ import {
   startPolling as startPollingFlowNodeInstance,
 } from 'modules/utils/flowNodeInstance';
 import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
-import {type ProcessInstance as ProcessInstanceType} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance as ProcessInstanceType} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
   useIsRootNodeSelected,
   useRootNode,
@@ -68,7 +68,11 @@ const stopPolling = () => {
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
   const {data: processTitle} = useProcessTitle();
-  const {data: callHierarchy} = useCallHierarchy();
+  const {processInstanceKey} = processInstance ?? {};
+  const {data: callHierarchy} = useCallHierarchy(
+    {processInstanceKey: processInstanceKey!},
+    {enabled: processInstanceKey !== undefined},
+  );
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const isRootNodeSelected = useIsRootNodeSelected();
   const rootNode = useRootNode();

@@ -8,10 +8,7 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {authAPI} from 'utils/apiHelpers';
 import {createInstances, deploy} from 'utils/zeebeClient';
-
-const baseURL = process.env.CORE_APPLICATION_URL;
 
 test.beforeAll(async () => {
   await Promise.all([
@@ -21,24 +18,26 @@ test.beforeAll(async () => {
     ]),
   ]);
   await createInstances('Form_User_Task_API', 1, 3);
-  await authAPI('demo', 'demo');
 });
 
 test.describe('API tests', () => {
-  test.use({
-    storageState: 'utils/.auth',
-    baseURL: baseURL,
-  });
+  const auth = Buffer.from(`demo:demo`).toString('base64');
+  const requestHeaders = {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${auth}`,
+    },
+  };
 
   test('Search for tasks', async ({request}) => {
-    const response = await request.post('/v1/tasks/search');
+    const response = await request.post('/v1/tasks/search', requestHeaders);
     expect(response.status()).toBe(200);
   });
 
   test('Get a task via ID', async ({request}) => {
     let taskData: {id: string}[] = [];
     await expect(async () => {
-      const response = await request.post('/v1/tasks/search');
+      const response = await request.post('/v1/tasks/search', requestHeaders);
       expect(response.status()).toBe(200);
       taskData = await response.json();
       expect(taskData.length).toBeGreaterThan(0);
@@ -46,7 +45,10 @@ test.describe('API tests', () => {
       intervals: [3_000, 4_000, 5_000],
       timeout: 30_000,
     });
-    const response = await request.get(`/v1/tasks/${taskData[0].id}`);
+    const response = await request.get(
+      `/v1/tasks/${taskData[0].id}`,
+      requestHeaders,
+    );
     expect(response.status()).toBe(200);
   });
 });

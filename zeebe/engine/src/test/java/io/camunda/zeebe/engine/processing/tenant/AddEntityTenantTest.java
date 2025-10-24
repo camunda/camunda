@@ -213,28 +213,32 @@ public class AddEntityTenantTest {
   }
 
   @Test
-  public void shouldRejectAddingNonExistingGroupToTenantIfGroupsClaimDisabled() {
+  public void shouldAddNonExistingGroupToTenantIfGroupsClaimDisabled() {
     // given
+    final var entityType = GROUP;
     final var groupId = Strings.newRandomValidIdentityId();
     final var tenantId = UUID.randomUUID().toString();
     engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
 
-    // when
-    final var rejection =
+    // when add user entity to tenant
+    final var updatedTenant =
         engine
             .tenant()
             .addEntity(tenantId)
             .withEntityId(groupId)
-            .withEntityType(GROUP)
-            .expectRejection()
-            .add();
+            .withEntityType(entityType)
+            .add()
+            .getValue();
 
-    // then
-    assertThat(rejection)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to add group with ID '%s' to tenant with ID '%s', but the group doesn't exist."
-                .formatted(groupId, tenantId));
+    // then assert that the entity was added correctly
+    assertThat(updatedTenant)
+        .describedAs(
+            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
+            entityType, groupId, tenantId)
+        .isNotNull()
+        .hasTenantId(tenantId)
+        .hasEntityType(entityType)
+        .hasEntityId(groupId);
   }
 
   @Test

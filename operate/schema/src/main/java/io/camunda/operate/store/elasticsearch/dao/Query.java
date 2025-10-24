@@ -14,7 +14,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
 public class Query {
 
@@ -29,7 +28,7 @@ public class Query {
     return instance;
   }
 
-  public static Query range(String field, Object gte, Object lte) {
+  public static Query range(String field, Object gte, Object lt) {
     final Query instance = new Query();
 
     RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(field);
@@ -37,8 +36,8 @@ public class Query {
       rangeQueryBuilder = rangeQueryBuilder.gte(gte);
     }
 
-    if (lte != null) {
-      rangeQueryBuilder = rangeQueryBuilder.lte(lte);
+    if (lt != null) {
+      rangeQueryBuilder = rangeQueryBuilder.lt(lt);
     }
 
     instance.queryBuilder = rangeQueryBuilder;
@@ -46,18 +45,11 @@ public class Query {
     return instance;
   }
 
-  public Query aggregate(String groupName, String fieldName, int limit) {
-    final TermsAggregationBuilder aggregation = AggregationBuilders.terms(groupName);
-    aggregation.field(fieldName);
-    aggregation.size(limit);
-    this.aggregationBuilder = aggregation;
+  public Query aggregate(String groupName, String fieldName) {
+    this.aggregationBuilder = AggregationBuilders.sum(groupName).field(fieldName);
     this.groupName = groupName;
 
     return this;
-  }
-
-  public Query aggregate(String groupName, String fieldName) {
-    return aggregate(groupName, fieldName, Integer.MAX_VALUE);
   }
 
   public Query and(Query andQuery) {

@@ -9,12 +9,10 @@
 import {
   endpoints,
   type GetProcessInstanceStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+} from '@camunda/camunda-api-zod-schemas/8.8';
+import {requestWithThrow} from 'modules/request';
 
-const fetchFlownodeInstancesStatistics = async (
-  processInstanceKey: string,
-): RequestResult<GetProcessInstanceStatisticsResponseBody> => {
+const fetchFlownodeInstancesStatistics = async (processInstanceKey: string) => {
   return requestWithThrow<GetProcessInstanceStatisticsResponseBody>({
     url: endpoints.getProcessInstanceStatistics.getUrl({
       processInstanceKey,

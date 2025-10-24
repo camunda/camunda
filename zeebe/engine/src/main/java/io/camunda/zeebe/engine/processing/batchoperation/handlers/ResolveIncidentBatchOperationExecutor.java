@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
@@ -24,11 +25,15 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
 
   final TypedCommandWriter commandWriter;
   final IncidentState incidentState;
+  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   public ResolveIncidentBatchOperationExecutor(
-      final TypedCommandWriter commandWriter, final IncidentState incidentState) {
+      final TypedCommandWriter commandWriter,
+      final IncidentState incidentState,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.commandWriter = commandWriter;
     this.incidentState = incidentState;
+    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
   @Override
@@ -55,13 +60,13 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
   private void resolveIncident(
       final long incidentKey, final PersistedBatchOperation batchOperation) {
     final var command = new IncidentRecord();
+    final var authentication = batchOperation.getAuthentication();
+    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     commandWriter.appendFollowUpCommand(
         incidentKey,
         IncidentIntent.RESOLVE,
         command,
         FollowUpCommandMetadata.of(
-            b ->
-                b.batchOperationReference(batchOperation.getKey())
-                    .claims(batchOperation.getAuthentication().claims())));
+            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
   }
 }

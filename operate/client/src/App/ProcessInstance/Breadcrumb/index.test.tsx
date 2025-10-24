@@ -14,7 +14,7 @@ import {Paths} from 'modules/Routes';
 import {
   type CallHierarchy,
   type ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const createWrapper = (initialPath: string = Paths.processInstance('123')) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (

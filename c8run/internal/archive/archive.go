@@ -12,10 +12,14 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
-const OpenFlagsForWriting = os.O_RDWR | os.O_CREATE | os.O_TRUNC
-const ReadWriteMode = 0755
+const (
+	OpenFlagsForWriting = os.O_RDWR | os.O_CREATE | os.O_TRUNC
+	ReadWriteMode       = 0755
+)
 
 func DownloadFile(filepath string, url string, authToken string) error {
 	// if the file already exists locally, don't download a new copy
@@ -28,7 +32,11 @@ func DownloadFile(filepath string, url string, authToken string) error {
 	if err != nil {
 		return fmt.Errorf("DownloadFile: failed to open file: %s\n%w\n%s", filepath, err, debug.Stack())
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close file")
+		}
+	}()
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
@@ -46,7 +54,11 @@ func DownloadFile(filepath string, url string, authToken string) error {
 	if err != nil {
 		return fmt.Errorf("DownloadFile: failed to download from url: %s\n%w\n%s", url, err, debug.Stack())
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close http response body")
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("DownloadFile: bad http status: %s", resp.Status)
@@ -63,9 +75,17 @@ func DownloadFile(filepath string, url string, authToken string) error {
 
 func CreateTarGzArchive(files []string, buf io.Writer) error {
 	gw := gzip.NewWriter(buf)
-	defer gw.Close()
+	defer func() {
+		if closeErr := gw.Close(); closeErr != nil {
+			log.Error().Err(closeErr).Msg("failed to close gzip writer")
+		}
+	}()
 	tw := tar.NewWriter(gw)
-	defer tw.Close()
+	defer func() {
+		if err := tw.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close tar writer")
+		}
+	}()
 
 	for _, file := range files {
 		err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
@@ -99,13 +119,21 @@ func ExtractTarGzArchive(filename string, xpath string) error {
 	if err != nil {
 		return fmt.Errorf("ExtractTarGzArchive: failed to open file %s, %w\n%s", filename, err, debug.Stack())
 	}
-	defer tarFile.Close()
+	defer func() {
+		if err := tarFile.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close tar file")
+		}
+	}()
 
 	gz, err := gzip.NewReader(tarFile)
 	if err != nil {
 		return fmt.Errorf("ExtractTarGzArchive: failed to create gzip reader %w\n%s", err, debug.Stack())
 	}
-	defer gz.Close()
+	defer func() {
+		if err := gz.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close gzip reader")
+		}
+	}()
 
 	absPath, err := filepath.Abs(xpath)
 	if err != nil {
@@ -175,7 +203,11 @@ func addToArchive(tw *tar.Writer, filename string) error {
 	if err != nil {
 		return fmt.Errorf("addToArchive: failed to open file %s\n%w\n%s", filename, err, debug.Stack())
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close file")
+		}
+	}()
 
 	info, err := file.Stat()
 	if err != nil {
@@ -207,10 +239,18 @@ func ZipSource(sources []string, target string) error {
 	if err != nil {
 		return fmt.Errorf("ZipSource: failed to open file %s\n%w\n%s", target, err, debug.Stack())
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close file")
+		}
+	}()
 
 	writer := zip.NewWriter(f)
-	defer writer.Close()
+	defer func() {
+		if err := writer.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close zip writer")
+		}
+	}()
 
 	for _, source := range sources {
 		err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
@@ -245,7 +285,11 @@ func ZipSource(sources []string, target string) error {
 			if err != nil {
 				return fmt.Errorf("ZipSource: failed to open file %s\n%w\n%s", path, err, debug.Stack())
 			}
-			defer f.Close()
+			defer func() {
+				if err := f.Close(); err != nil {
+					log.Error().Err(err).Msg("failed to close file")
+				}
+			}()
 
 			_, err = io.Copy(headerWriter, f)
 			if err != nil {
@@ -265,16 +309,20 @@ func UnzipSource(source, destination string) error {
 	if err != nil {
 		return fmt.Errorf("UnzipSource: failed to open file %s for reading\n%w\n%s", source, err, debug.Stack())
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close zip reader")
+		}
+	}()
 
-        // if destination does not exist, create it
-        _, err = os.Stat(destination)
-        if errors.Is(err, os.ErrNotExist) {
-                err = os.Mkdir(destination, ReadWriteMode)
-                if err != nil {
-                        return fmt.Errorf("UnzipSource: failed to create directory %s\n%w\n%s", destination, err, debug.Stack())
-                }
-        }
+	// if destination does not exist, create it
+	_, err = os.Stat(destination)
+	if errors.Is(err, os.ErrNotExist) {
+		err = os.Mkdir(destination, ReadWriteMode)
+		if err != nil {
+			return fmt.Errorf("UnzipSource: failed to create directory %s\n%w\n%s", destination, err, debug.Stack())
+		}
+	}
 
 	destinationAbsPath, err := filepath.Abs(destination)
 	if err != nil {
@@ -313,13 +361,21 @@ func unzipFile(f *zip.File, destination string) error {
 	if err != nil {
 		return fmt.Errorf("unzipFile: failed to open file %s\n%w\n%s", filePath, err, debug.Stack())
 	}
-	defer destinationFile.Close()
+	defer func() {
+		if err := destinationFile.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close destination file")
+		}
+	}()
 
 	zippedFile, err := f.Open()
 	if err != nil {
 		return fmt.Errorf("unzipFile: failed to open file %s\n%w\n%s", filePath, err, debug.Stack())
 	}
-	defer zippedFile.Close()
+	defer func() {
+		if err := zippedFile.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close zipped file")
+		}
+	}()
 
 	if _, err := io.Copy(destinationFile, zippedFile); err != nil {
 		return fmt.Errorf("unzipFile: failed to write to file %s\n%w\n%s", destination, err, debug.Stack())

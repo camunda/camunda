@@ -33,17 +33,20 @@ public class FlowNodeInstanceMetadataDto implements FlowNodeInstanceMetadata {
       final FlowNodeType flowNodeType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
+      final String eventId,
       final EventEntity event) {
     this.flowNodeId = flowNodeId;
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeType = flowNodeType;
     this.startDate = startDate;
     this.endDate = endDate;
-    eventId = event.getId();
-    final var eventMetadata = event.getMetadata();
-    if (eventMetadata != null) {
-      messageName = eventMetadata.getMessageName();
-      correlationKey = eventMetadata.getCorrelationKey();
+    this.eventId = eventId;
+    if (event != null) {
+      final var eventMetadata = event.getMetadata();
+      if (eventMetadata != null) {
+        messageName = eventMetadata.getMessageName();
+        correlationKey = eventMetadata.getCorrelationKey();
+      }
     }
   }
 

@@ -22,7 +22,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.concurrent.Executors;
 
 public final class BackupStoreTransitionStep implements PartitionTransitionStep {
 
@@ -133,9 +132,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final var brokerFilesystemConfig = backupCfg.getFilesystem();
       final var storeFilesystemConfig =
           FilesystemBackupStoreConfig.toStoreConfig(brokerFilesystemConfig);
-      final var filesystemStore =
-          FilesystemBackupStore.of(
-              storeFilesystemConfig, Executors.newVirtualThreadPerTaskExecutor());
+      final var filesystemStore = FilesystemBackupStore.of(storeFilesystemConfig);
       context.setBackupStore(filesystemStore);
       installed.complete(null);
     } catch (final Exception error) {

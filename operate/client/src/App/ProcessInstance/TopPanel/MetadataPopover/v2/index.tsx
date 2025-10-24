@@ -31,6 +31,9 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {useJobs} from 'modules/queries/jobs/useJobs';
+import {useSearchMessageSubscriptions} from 'modules/queries/messageSubscriptions/useSearchMessageSubscriptions';
+import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
+import {useDecisionDefinition} from 'modules/queries/decisionDefinitions/useDecisionDefinition';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -53,12 +56,18 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {data: statistics} = useFlownodeInstancesStatistics();
 
   const instanceCount = useMemo(() => {
-    if (!statistics?.items || !elementId) return null;
+    if (!statistics?.items || !elementId) {
+      return null;
+    }
     const elementStats = statistics.items.find(
       (stat) => stat.elementId === elementId,
     );
-    if (!elementStats) return 0;
-    if (isMultiInstance) return 1;
+    if (!elementStats) {
+      return 0;
+    }
+    if (isMultiInstance) {
+      return 1;
+    }
     return (
       elementStats.active +
       elementStats.completed +
@@ -121,14 +130,25 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       },
     );
 
+  const shouldFilterByElementInstance =
+    !!elementInstanceMetadata?.elementInstanceKey &&
+    elementInstanceMetadata?.type !== 'CALL_ACTIVITY' &&
+    elementInstanceMetadata?.type !== 'BUSINESS_RULE_TASK';
+
   const {
     data: elementInstancesIncidentsSearchResult,
     isLoading: isSearchingIncidents,
   } = useGetIncidentsByProcessInstance(
     processInstance?.processInstanceKey ?? '',
-    elementInstanceMetadata?.elementInstanceKey,
     {
-      enabled: !!processInstance?.processInstanceKey,
+      select: (result) => {
+        const elementInstanceKey = elementInstanceMetadata?.elementInstanceKey;
+        return shouldFilterByElementInstance && elementInstanceKey
+          ? result.items.filter(
+              (incident) => incident.elementInstanceKey === elementInstanceKey,
+            )
+          : result.items;
+      },
     },
   );
 
@@ -163,6 +183,51 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
+  const {
+    data: messageSubscriptionSearchResult,
+    isLoading: isSearchingMessageSubscription,
+  } = useSearchMessageSubscriptions(
+    {
+      filter: {
+        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled: !!elementInstanceMetadata?.elementInstanceKey,
+    },
+  );
+
+  const {
+    data: decisionInstanceSearchResult,
+    isLoading: isSearchingDecisionInstances,
+  } = useDecisionInstancesSearch(
+    {
+      filter: {
+        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled:
+        !!elementInstanceMetadata?.elementInstanceKey &&
+        elementInstanceMetadata?.type === 'BUSINESS_RULE_TASK',
+    },
+  );
+
+  const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
+    (instance) =>
+      instance.rootDecisionDefinitionKey === instance.decisionDefinitionKey,
+  );
+
+  const calledDecisionDefinitionId =
+    decisionInstanceSearchResult?.items?.[0]?.rootDecisionDefinitionKey;
+
+  const {
+    data: calledDecisionDefinition,
+    isLoading: isSearchingCalledDecisionDefinition,
+  } = useDecisionDefinition(calledDecisionDefinitionId ?? '', {
+    enabled: !!calledDecisionDefinitionId && !calledDecisionInstance,
+  });
+
   if (
     elementId === undefined ||
     metaData === null ||
@@ -170,7 +235,10 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     (!!elementInstanceId && isFetchingInstance) ||
     isSearchingUserTasks ||
     isSearchingProcessInstances ||
-    isSearchingJob
+    isSearchingJob ||
+    isSearchingMessageSubscription ||
+    isSearchingCalledDecisionDefinition ||
+    isSearchingDecisionInstances
   ) {
     return null;
   }
@@ -210,6 +278,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                 elementInstanceMetadata,
                 jobSearchResult?.[0],
                 processInstancesSearchResult?.items?.[0],
+                messageSubscriptionSearchResult?.items?.[0],
+                calledDecisionDefinition,
+                calledDecisionInstance,
                 elementInstanceMetadata.type === 'USER_TASK'
                   ? userTask
                   : undefined,

@@ -7,7 +7,7 @@
  */
 
 import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -46,7 +46,7 @@ const deploy = async (processFilePaths: string[]) => {
 
 const createInstances = async (
   processDefinitionId: string,
-  version: number,
+  processDefinitionVersion: number,
   numberOfInstances: number,
   variables?: JSONDoc,
 ) => {
@@ -54,7 +54,7 @@ const createInstances = async (
   for (let i = 0; i < numberOfInstances; i++) {
     const instance = await zeebe.createProcessInstance({
       processDefinitionId,
-      version,
+      processDefinitionVersion,
       variables: variables ?? {},
     });
     instances.push(instance);
@@ -64,14 +64,24 @@ const createInstances = async (
 
 const createSingleInstance = async (
   processDefinitionId: string,
-  version: number,
+  processDefinitionVersion: number,
   variables?: JSONDoc,
 ) => {
   return zeebe.createProcessInstance({
     processDefinitionId,
-    version,
+    processDefinitionVersion,
     variables: {...(variables ?? {})},
   });
 };
 
-export {deploy, createInstances, generateManyVariables, createSingleInstance};
+const cancelProcessInstance = async (processInstanceKey: string) => {
+  return zeebe.cancelProcessInstance({processInstanceKey});
+};
+
+export {
+  deploy,
+  createInstances,
+  generateManyVariables,
+  createSingleInstance,
+  cancelProcessInstance,
+};

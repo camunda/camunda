@@ -1,0 +1,44 @@
+{
+  "name": "camunda-coverage-app",
+  "version": "1.0.0",
+  "description": "A web application for visualizing Camunda process test coverage.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider react-scripts start",
+    "build": "cross-env BUILD_PATH=../camunda-process-test-java/src/main/resources/coverage NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "keywords": [
+    "camunda",
+    "coverage",
+    "react"
+  ],
+  "dependencies": {
+    "bootstrap": "^5.3.7",
+    "bootstrap-icons": "^1.13.1",
+    "bpmn-js": "^8.6.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "cross-env": "^10.0.0",
+    "react-scripts": "4.0.3"
+  },
+  "homepage": ".",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

@@ -1,0 +1,272 @@
+# description: The workflow sends notifications to Slack for activities on release branches
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
+---
+name: Release Branch Notifications
+
+on:
+  pull_request:
+    types: [labeled]
+    branches:
+      - main
+      - stable/**
+  push:
+    branches:
+      - release-*
+
+jobs:
+  validate-event:
+    name: Validate GitHub event for release branch activity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    outputs:
+      valid: ${{ steps.validate-event.outputs.valid }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Validate event
+        id: validate-event
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_ACTION: ${{ github.event.action }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_LABEL: ${{ github.event.label.name }}
+        run: |
+          set -euo pipefail
+
+          VALID="false"
+
+          # Regex for release branches: release-X.Y.Z or release-X.Y.Z-alphaK
+          RELEASE_REGEX="^release-[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?$"
+
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            # Direct release branch PRs
+            if [[ "$PR_BASE_REF" == "main" ]] || [[ "$PR_BASE_REF" =~ ^stable/[0-9]+\.[0-9]+$ ]]; then
+              if [[ "$GITHUB_EVENT_ACTION" == "labeled" && ("$PR_LABEL" =~ ^backport\ release-[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+                VALID="true"
+              fi
+            fi
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            if [[ "$GITHUB_REF_NAME" =~ $RELEASE_REGEX ]]; then
+              VALID="true"
+            fi
+          fi
+
+          echo "🔍 Validation result: $VALID"
+          echo "valid=$VALID" >> "$GITHUB_OUTPUT"
+  notify-release-activity:
+    name: Send Slack notification for release branch activity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    needs: validate-event
+    if: needs.validate-event.outputs.valid == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Determine action type and extract data
+        id: extract-data
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_ACTION: ${{ github.event.action }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_LABEL: ${{ github.event.label.name }}
+          PUSH_AUTHOR: ${{ github.event.pusher.name }}
+          HEAD_COMMIT_SHA: ${{ github.event.head_commit.id }}
+          HEAD_COMMIT_MSG: ${{ github.event.head_commit.message }}
+          HEAD_COMMIT_URL: ${{ github.event.head_commit.url }}
+          COMPARE_URL: ${{ github.event.compare }}
+          REPO_URL: ${{ github.event.repository.html_url }}
+        run: |
+          set -euo pipefail
+          
+          ACTION_TYPE=""
+          BRANCH_NAME=""
+          AUTHOR=""
+          LINK_TEXT=""
+          LINK_URL=""
+
+          echo "🔍 Processing event: $GITHUB_EVENT_NAME - $GITHUB_EVENT_ACTION"
+
+          # Determine event type and extract data
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            BRANCH_NAME="$PR_BASE_REF"
+            AUTHOR="$PR_AUTHOR"
+
+            # Truncate long titles
+            if [[ ${#PR_TITLE} -gt 80 ]]; then
+              PR_TITLE="${PR_TITLE:0:77}..."
+            fi
+
+            ACTION_TYPE="BACKPORTING"
+            LINK_TEXT="PR: #$PR_NUMBER - $PR_TITLE (Label: $PR_LABEL)"
+            LINK_URL="$PR_URL"
+
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            BRANCH_NAME="$GITHUB_REF_NAME"
+            AUTHOR="$PUSH_AUTHOR"
+
+            # Check if this is a merge commit (typically has "Merge pull request" in commit message)
+            if [[ -n "$HEAD_COMMIT_MSG" && "$HEAD_COMMIT_MSG" =~ ^Merge\ pull\ request\ #([0-9]+) ]]; then
+              ACTION_TYPE="MERGE COMPLETED"
+              PR_NUMBER="${BASH_REMATCH[1]}"
+              
+              # Extract PR title from commit message if available
+              # Merge commit format: "Merge pull request #123 from branch\n\nPR Title"
+              if [[ "$HEAD_COMMIT_MSG" =~ $'\n\n'(.+) ]]; then
+                PR_TITLE_FROM_COMMIT="${BASH_REMATCH[1]}"
+                # Truncate long titles
+                if [[ ${#PR_TITLE_FROM_COMMIT} -gt 60 ]]; then
+                  PR_TITLE_FROM_COMMIT="${PR_TITLE_FROM_COMMIT:0:57}..."
+                fi
+                LINK_TEXT="Merged PR: #$PR_NUMBER - $PR_TITLE_FROM_COMMIT"
+              else
+                LINK_TEXT="Merged PR: #$PR_NUMBER"
+              fi
+              
+              LINK_URL="$REPO_URL/pull/$PR_NUMBER"
+            else
+              # This is a direct push
+              ACTION_TYPE="DIRECT PUSH to release branch"
+              
+              if [[ -n "$HEAD_COMMIT_SHA" ]]; then
+                COMMIT_MSG="$HEAD_COMMIT_MSG"
+                COMMIT_SHA="$HEAD_COMMIT_SHA"
+
+                if [[ ${#COMMIT_MSG} -gt 60 ]]; then
+                  COMMIT_MSG="${COMMIT_MSG:0:57}..."
+                fi
+                LINK_TEXT="Commit: ${COMMIT_SHA:0:7} - $COMMIT_MSG"
+                LINK_URL="$HEAD_COMMIT_URL"
+              else
+                LINK_TEXT="Push to release branch"
+                LINK_URL="${COMPARE_URL:-$REPO_URL/tree/$GITHUB_REF_NAME}"
+              fi
+            fi
+          fi
+
+          if [[ -z "$ACTION_TYPE" || -z "$BRANCH_NAME" || -z "$AUTHOR" ]]; then
+            echo "::error::Failed to extract required data from GitHub event"
+            echo "::error::ACTION_TYPE: $ACTION_TYPE"
+            echo "::error::BRANCH_NAME: $BRANCH_NAME" 
+            echo "::error::AUTHOR: $AUTHOR"
+            exit 1
+          fi
+
+          # Escape quotes using Bash string replacement
+          ACTION_TYPE="${ACTION_TYPE//\"/\\\"}"
+          LINK_TEXT="${LINK_TEXT//\"/\\\"}"
+
+          # Output variables to GitHub Actions in a single block
+          {
+            echo "action_type=$ACTION_TYPE"
+            echo "branch_name=$BRANCH_NAME"
+            echo "author=$AUTHOR"
+            echo "link_text=$LINK_TEXT"
+            echo "link_url=$LINK_URL"
+          } >> "$GITHUB_OUTPUT"
+
+          # Debug output
+          echo "✅ Extracted data:"
+          echo "📝 Action Type: $ACTION_TYPE"
+          echo "🌿 Branch: $BRANCH_NAME"
+          echo "👤 Author: $AUTHOR"
+          echo "🔗 Link: $LINK_TEXT"
+      - name: Get Slack webhook from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+      - name: Send Slack notification
+        id: slack-notification
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        continue-on-error: true # Don't fail the workflow if Slack is down
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "📢 *Monorepo Release Branch Activity* — `${{ steps.extract-data.outputs.branch_name }}`"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ steps.extract-data.outputs.action_type }}*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": 
+                    {
+                      "type": "mrkdwn",
+                      "text": "🎯 *Repository:* ${{ github.repository }}"
+                    }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "📝 *Author:* ${{ steps.extract-data.outputs.author }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🔗 <${{ steps.extract-data.outputs.link_url }}|${{ steps.extract-data.outputs.link_text }}>"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Triggered by GitHub Actions • <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|View workflow run>"
+                    }
+                  ]
+                }
+              ]
+            }
+      - name: Log notification status
+        if: always()
+        run: |
+          if [[ "${{ steps.slack-notification.outcome }}" == "success" ]]; then
+            echo "✅ Slack notification sent successfully"
+            echo "::notice::Notified #top-monorepo-release about ${{ steps.extract-data.outputs.action_type }} on ${{ steps.extract-data.outputs.branch_name }}"
+          else
+            echo "⚠️ Slack notification failed but workflow continues"
+            echo "::warning::Failed to notify #top-monorepo-release about ${{ steps.extract-data.outputs.action_type }} on ${{ steps.extract-data.outputs.branch_name }}"
+          fi
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

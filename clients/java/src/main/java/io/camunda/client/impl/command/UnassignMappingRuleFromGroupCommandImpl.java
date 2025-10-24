@@ -19,15 +19,19 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1.UnassignMappingRuleFromGroupStep2;
+import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1.UnassignMappingRuleFromGroupStep3;
 import io.camunda.client.api.response.UnassignMappingRuleFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignMappingRuleFromGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UnassignMappingRuleFromGroupCommandImpl
-    implements UnassignMappingRuleFromGroupStep1, UnassignMappingRuleFromGroupStep2 {
+    implements UnassignMappingRuleFromGroupStep1,
+        UnassignMappingRuleFromGroupStep2,
+        UnassignMappingRuleFromGroupStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -46,7 +50,7 @@ public class UnassignMappingRuleFromGroupCommandImpl
   }
 
   @Override
-  public UnassignMappingRuleFromGroupStep2 groupId(final String groupId) {
+  public UnassignMappingRuleFromGroupStep3 groupId(final String groupId) {
     this.groupId = groupId;
     return this;
   }
@@ -68,6 +72,7 @@ public class UnassignMappingRuleFromGroupCommandImpl
         "/groups/" + groupId + "/mapping-rules/" + mappingRuleId,
         null,
         httpRequestConfig.build(),
+        UnassignMappingRuleFromGroupResponseImpl::new,
         result);
     return result;
   }

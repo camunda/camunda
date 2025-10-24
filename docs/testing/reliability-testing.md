@@ -46,7 +46,7 @@ The setup for all of our load tests is equal for better comparability. We use a 
 
 We always ran load tests with a three-node cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe (pre 8.8), we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) or the single Camunda application (with an embedded gateway). To validate that our data flow pipeline is working, we are running an Elasticsearch cluster with three nodes for any Camunda test cluster.
 
-On top of the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), the benchmark Helm Chart deploys different applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/zeebe/benchmarks/project).
+On top of the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), the benchmark Helm Chart deploys different applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
 
 Depending on the test variant, different process models are created and executed by the Starter and Worker applications. They only differ in configurations, which can be done by the respective [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm chart, and their [values files](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/values.yaml).
 
@@ -61,7 +61,7 @@ We run our load tests in different variants to cover different goals.
 A load test where we run some artificial load, ensuring that the system behaves reliably.
 
 ![normal](assets/normal.png)
-It contains only a start event, one service task, and an end event. Covering a straight-through processing use case, with a [bigger data set of ~45 kb](https://github.com/camunda/camunda/blob/main/zeebe/benchmarks/project/src/main/resources/bpmn/big_payload.json).
+It contains only a start event, one service task, and an end event. Covering a straight-through processing use case, with a [bigger data set of ~45 kb](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/big_payload.json).
 
 Reducing the used feature set to a small amount allows easy comparison between tests, as fewer variations and outside factors can influence test results. This test load is historical, as it was one of the first we designed. Likely might be replaced by the more realistic load tests.
 
@@ -82,7 +82,7 @@ Similar to the normal load test, we ran the artificial (normal) process model to
 
 #### Realistic load
 
-In the past year, we designed a new load test, where we ran a [more complex and more realistic process](https://github.com/camunda/camunda/blob/main/zeebe/benchmarks/project/src/main/resources/bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn) and [data set](https://github.com/camunda/camunda/blob/main/zeebe/benchmarks/project/src/main/resources/bpmn/realistic/realisticPayload.json).
+In the past year, we designed a new load test, where we ran a [more complex and more realistic process](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn) and [data set](https://github.com/camunda/camunda/blob/main/zeebe/load-tests/project/src/main/resources/bpmn/realistic/realisticPayload.json).
 
 As part of this test, we cover a wide variety of BPMN elements, like CallActivities, Multi-Instance, Sub-Processes, DMN, etc.
 
@@ -161,7 +161,7 @@ As of today (16 Jun 2025) we have the following tests running:
 
 #### Ad-Hoc load tests
 
-On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Zeebe Benchmark Workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-benchmark.yml), or deploying the [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/zeebe/benchmarks/setup).
+On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Zeebe Benchmark Workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-benchmark.yml), or deploying the [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/zeebe/load-tests/setup).
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
@@ -187,7 +187,70 @@ Arbitrary Helm arguments can be passed, making it easier to customize the load t
 
 ##### Creating manually
 
-As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark. The [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm chart repository contains a [detailed](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/README.md) guide regarding this.
+As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
+
+###### Requirements (local)
+
+To set up a load test from your local machine you need to have several tools installed.
+
+Follow these guide's to install each of them:
+
+* gcloud https://cloud.google.com/sdk/install
+* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
+* Helm 3.*  https://helm.sh/docs/intro/install/
+* docker https://docs.docker.com/install/
+* kubens/kubectx https://github.com/ahmetb/kubectx
+* OPTIONAL go https://golang.org/doc/install
+
+Some of the necessary steps you need to do are:
+
+```sh
+## Init gcloud
+gcloud init
+gcloud config set project zeebe-io
+gcloud container clusters get-credentials zeebe-cluster --zone europe-west1-b --project zeebe-io
+
+## to use google cloud docker registry
+gcloud auth configure-docker
+
+## install kubectl via gcloud cli
+gcloud components install kubectl
+
+## install helm
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+## add zeebe as helm repo
+helm version
+helm repo add zeebe https://helm.camunda.io
+helm repo add stable https://charts.helm.sh/stable
+helm repo update
+
+## install kubens
+curl -LO https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
+install kubens /usr/local/bin/
+```
+
+###### Best Practices Windows
+
+Running the load tests with Windows is possible, with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+The setup changes slightly compared to the Linux setup.
+
+These are the components to install on Windows:
+* Docker
+
+These are the components to install within the WSL:
+* gcloud https://cloud.google.com/sdk/install?hl=de
+* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
+* Helm 3.*  https://helm.sh/docs/intro/install/
+* kubens/kubectx https://github.com/ahmetb/kubectx
+
+When following the instructions above, execute all commands that deal with Docker in a Windows shell, and exeucte all other commands in the WSL shell.
+
+###### Installing manually
+
+The [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm chart repository contains a [detailed](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/README.md) guide regarding this.
 
 ```shell
 # Add the Zeebe benchmark chart to the local repository

@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.netty.util.NetUtil;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.agrona.CloseHelper;
@@ -50,9 +49,10 @@ public class BrokerSnapshotTest {
     journalReader = raftPartition.getServer().openReader();
     brokerAdminService = brokerRule.getBroker().getBrokerContext().getBrokerAdminService();
 
-    final String contactPoint = NetUtil.toSocketAddressString(brokerRule.getGatewayAddress());
     final CamundaClientBuilder camundaClientBuilder =
-        CamundaClient.newClientBuilder().usePlaintext().gatewayAddress(contactPoint);
+        CamundaClient.newClientBuilder()
+            .grpcAddress(brokerRule.getGrpcAddress())
+            .preferRestOverGrpc(false);
     client = camundaClientBuilder.build();
   }
 

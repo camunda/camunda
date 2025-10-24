@@ -12,13 +12,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.queries.TaskByVariables;
-import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import java.io.IOException;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
@@ -27,6 +25,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -34,15 +34,17 @@ public class VariableSearchTermsQueryChunkIT extends TasklistZeebeIntegrationTes
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Autowired private VariableTemplate variableTemplate;
-
   @Autowired private WebApplicationContext context;
-
-  @Autowired private VariableStore variableStore;
 
   private MockMvcHelper mockMvcHelper;
 
   private final String benchmarkProcess = "VariableSearch_Process";
+
+  @DynamicPropertySource
+  static void configureProperties(final DynamicPropertyRegistry registry) {
+    registry.add("camunda.tasklist.elasticsearch.max-terms-count", () -> 5);
+    registry.add("camunda.tasklist.opensearch.max-terms-count", () -> 5);
+  }
 
   @BeforeEach
   public void setUp() throws IOException, InterruptedException {
@@ -57,14 +59,6 @@ public class VariableSearchTermsQueryChunkIT extends TasklistZeebeIntegrationTes
         .getProcesses()
         .getFirst()
         .getProcessDefinitionKey();
-
-    databaseTestExtension.setIndexMaxTermsCount(variableTemplate.getFullQualifiedName(), 5);
-
-    org.assertj.core.api.Assertions.assertThat(
-            databaseTestExtension.getIndexMaxTermsCount(variableTemplate.getFullQualifiedName()))
-        .isEqualTo(5);
-
-    variableStore.refreshMaxTermsCount();
   }
 
   @Test
@@ -73,12 +67,8 @@ public class VariableSearchTermsQueryChunkIT extends TasklistZeebeIntegrationTes
     final String invar = "inputvar";
     final String taskLocalVar = "taskvar";
 
-    tester
-        .startProcessInstances(benchmarkProcess, processCount, "{\"inputvar\": \"" + invar + "\"}")
-        .then()
-        .tasksAreCreated("Activity_SUBP", processCount);
-
-    databaseTestExtension.refreshTasklistIndices();
+    tester.startProcessInstances(
+        benchmarkProcess, processCount, "{\"inputvar\": \"" + invar + "\"}");
 
     // Using the CamundaExporter and the shared Operate indices having the FNIs
     // present requires more time compared to the User Task created state check

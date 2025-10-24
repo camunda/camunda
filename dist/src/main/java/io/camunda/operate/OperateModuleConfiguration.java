@@ -28,9 +28,6 @@ import org.springframework.context.annotation.Profile;
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.operate\\.zeebeimport\\..*"),
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
           pattern = "io\\.camunda\\.operate\\.webapp\\..*")
     },
     // use fully qualified names as bean name, as we have classes with same names for different

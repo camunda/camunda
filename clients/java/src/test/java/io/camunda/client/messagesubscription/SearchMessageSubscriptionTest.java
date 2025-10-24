@@ -19,12 +19,11 @@ import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import io.camunda.client.api.search.enums.MessageSubscriptionType;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.MessageSubscriptionSearchQuery;
-import io.camunda.client.protocol.rest.MessageSubscriptionTypeEnum;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.client.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -63,11 +62,10 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
             f ->
                 f.messageSubscriptionKey(123L)
                     .processDefinitionId("process-definition-id")
-                    .processDefinitionKey(111L)
                     .processInstanceKey(456L)
                     .elementId("element-id")
                     .elementInstanceKey(789L)
-                    .messageSubscriptionType(MessageSubscriptionType.CREATED)
+                    .messageSubscriptionState(MessageSubscriptionState.CORRELATED)
                     .lastUpdatedDate(lastUpdatedDate)
                     .messageName("message-name")
                     .correlationKey("correlation-key")
@@ -84,17 +82,15 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertThat(request.getFilter().getProcessDefinitionId()).isNotNull();
     assertThat(request.getFilter().getProcessDefinitionId().get$Eq())
         .isEqualTo("process-definition-id");
-    assertThat(request.getFilter().getProcessDefinitionKey()).isNotNull();
-    assertThat(request.getFilter().getProcessDefinitionKey().get$Eq()).isEqualTo("111");
     assertThat(request.getFilter().getProcessInstanceKey()).isNotNull();
     assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("456");
     assertThat(request.getFilter().getElementId()).isNotNull();
     assertThat(request.getFilter().getElementId().get$Eq()).isEqualTo("element-id");
     assertThat(request.getFilter().getElementInstanceKey()).isNotNull();
     assertThat(request.getFilter().getElementInstanceKey().get$Eq()).isEqualTo("789");
-    assertThat(request.getFilter().getMessageSubscriptionType()).isNotNull();
-    assertThat(request.getFilter().getMessageSubscriptionType().get$Eq())
-        .isEqualTo(MessageSubscriptionTypeEnum.CREATED);
+    assertThat(request.getFilter().getMessageSubscriptionState()).isNotNull();
+    assertThat(request.getFilter().getMessageSubscriptionState().get$Eq())
+        .isEqualTo(MessageSubscriptionStateEnum.CORRELATED);
     assertThat(request.getFilter().getLastUpdatedDate()).isNotNull();
     assertThat(request.getFilter().getLastUpdatedDate().get$Eq())
         .isEqualTo(lastUpdatedDate.toString());
@@ -117,15 +113,13 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .asc()
                     .processDefinitionId()
                     .desc()
-                    .processDefinitionKey()
-                    .asc()
                     .processInstanceKey()
                     .desc()
                     .elementId()
                     .asc()
                     .elementInstanceKey()
                     .desc()
-                    .messageSubscriptionType()
+                    .messageSubscriptionState()
                     .asc()
                     .lastUpdatedDate()
                     .desc()
@@ -144,37 +138,16 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromMessageSubscriptionSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(11);
+    assertThat(sorts).hasSize(10);
     assertSort(sorts.get(0), "messageSubscriptionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "processDefinitionId", SortOrderEnum.DESC);
-    assertSort(sorts.get(2), "processDefinitionKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(3), "processInstanceKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(4), "elementId", SortOrderEnum.ASC);
-    assertSort(sorts.get(5), "elementInstanceKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(6), "messageSubscriptionType", SortOrderEnum.ASC);
-    assertSort(sorts.get(7), "lastUpdatedDate", SortOrderEnum.DESC);
-    assertSort(sorts.get(8), "messageName", SortOrderEnum.ASC);
-    assertSort(sorts.get(9), "correlationKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(10), "tenantId", SortOrderEnum.ASC);
-  }
-
-  @Test
-  void shouldSearchWithFullPagination() {
-    // When
-    client
-        .newMessageSubscriptionSearchRequest()
-        .page(p -> p.from(2).limit(3).before("beforeCursor").after("afterCursor"))
-        .send()
-        .join();
-
-    // Then
-    final MessageSubscriptionSearchQuery request =
-        gatewayService.getLastRequest(MessageSubscriptionSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest.getFrom()).isEqualTo(2);
-    assertThat(pageRequest.getLimit()).isEqualTo(3);
-    assertThat(pageRequest.getBefore()).isEqualTo("beforeCursor");
-    assertThat(pageRequest.getAfter()).isEqualTo("afterCursor");
+    assertSort(sorts.get(2), "processInstanceKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(3), "elementId", SortOrderEnum.ASC);
+    assertSort(sorts.get(4), "elementInstanceKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(5), "messageSubscriptionState", SortOrderEnum.ASC);
+    assertSort(sorts.get(6), "lastUpdatedDate", SortOrderEnum.DESC);
+    assertSort(sorts.get(7), "messageName", SortOrderEnum.ASC);
+    assertSort(sorts.get(8), "correlationKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(9), "tenantId", SortOrderEnum.ASC);
   }
 }

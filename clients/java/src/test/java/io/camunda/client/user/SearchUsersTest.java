@@ -21,7 +21,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.sort.UserSort;
+import io.camunda.client.protocol.rest.UserResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class SearchUsersTest extends ClientRestTest {
@@ -45,12 +48,16 @@ public class SearchUsersTest extends ClientRestTest {
 
   @Test
   public void shouldSearchUserByUsername() {
+    // given
+    final String username = "username";
+    gatewayService.onUserRequest(username, Instancio.create(UserResult.class));
+
     // when
-    client.newUserGetRequest("username").send().join();
+    client.newUserGetRequest(username).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/users/" + "username");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getUserUrl(username));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 

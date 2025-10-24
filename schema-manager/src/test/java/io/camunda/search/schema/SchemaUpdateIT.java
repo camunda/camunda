@@ -20,7 +20,6 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -49,19 +47,16 @@ class SchemaUpdateIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaUpdateIT.class);
 
-  private static String currentMinorVersion; // e.g. "8.8"
+  private static String currentMinorVersion; // e.g. "8.9"
 
-  private static String previousMinorSnapshotVersion; // e.g. "8.7-SNAPSHOT"
+  private static String previousMinorSnapshotVersion; // e.g. "8.8-SNAPSHOT"
 
   @BeforeAll
   static void beforeAll() {
     final var semanticVersion = VersionUtil.getSemanticVersion().get();
     currentMinorVersion = "%d.%d".formatted(semanticVersion.major(), semanticVersion.minor());
-    final var previousSemanticVersion =
-        SemanticVersion.parse(VersionUtil.getPreviousVersion()).get();
     previousMinorSnapshotVersion =
-        "%d.%d-SNAPSHOT"
-            .formatted(previousSemanticVersion.major(), previousSemanticVersion.minor());
+        "%d.%d-SNAPSHOT".formatted(semanticVersion.major(), semanticVersion.minor() - 1);
   }
 
   @BeforeEach
@@ -85,22 +80,19 @@ class SchemaUpdateIT {
                     .forPort(9600)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
-            .withEnv("CAMUNDA_OPERATE_DATABASE", databaseType.toString())
-            .withEnv("CAMUNDA_OPERATE_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_OPERATE_%s_NUMBEROFREPLICAS".formatted(databaseType.name()), "1")
+            .withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone")
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", databaseType.toString())
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
+            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
+            .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
+            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
+            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
             .withEnv(
-                "CAMUNDA_OPERATE_%s_INDEXPREFIX".formatted(databaseType.name()),
-                "%s-operate".formatted(indexPrefix))
-            .withEnv("CAMUNDA_OPERATE_ZEEBE%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_OPERATE_ARCHIVER_ILMENABLED", "true")
-            .withEnv("CAMUNDA_TASKLIST_DATABASE", databaseType.toString())
-            .withEnv("CAMUNDA_TASKLIST_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_TASKLIST_%s_NUMBEROFREPLICAS".formatted(databaseType.name()), "1")
+                "CAMUNDA_DATA_SECONDARY_STORAGE_%s_INDEX_PREFIX".formatted(databaseType.name()),
+                indexPrefix)
             .withEnv(
-                "CAMUNDA_TASKLIST_%s_INDEXPREFIX".formatted(databaseType.name()),
-                "%s-tasklist".formatted(indexPrefix))
-            .withEnv("CAMUNDA_TASKLIST_ZEEBE%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_TASKLIST_ARCHIVER_ILMENABLED", "true")) {
+                "CAMUNDA_DATA_SECONDARY_STORAGE_%s_INDEX_PREFIX".formatted(databaseType.name()),
+                indexPrefix)) {
       previousVersionContainer.start();
       previousVersionContainer.followOutput(new Slf4jLogConsumer(LOG));
     }
@@ -111,9 +103,15 @@ class SchemaUpdateIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws InterruptedException, IOException {
     // given
+    final int numberOfThreads = 12;
     // enable retention policy for the test and set replicas to 1
     config.retention().setEnabled(true);
     config.index().setNumberOfReplicas(1);
+    if (config.connect().getTypeEnum().isOpenSearch()) {
+      // Opensearch uses optimistic lock on ISM policies update, so we need to increase the retries
+      config.schemaManager().getRetry().setMaxRetries(numberOfThreads);
+      config.schemaManager().getRetry().setMaxRetryDelay(Duration.ofSeconds(1));
+    }
     final var indexDescriptors =
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
@@ -130,7 +128,6 @@ class SchemaUpdateIT {
     final var exceptions = new ConcurrentLinkedQueue<Throwable>();
 
     // when
-    final int numberOfThreads = 12;
     final var threads =
         IntStream.range(0, numberOfThreads)
             .mapToObj(
@@ -198,7 +195,7 @@ class SchemaUpdateIT {
       final SearchEngineConfiguration config,
       final SearchClientAdapter searchClientAdapter,
       final List<IndexTemplateDescriptor> indexTemplateDescriptors) {
-    final int archivePeriodInDays = 30;
+    final int archivePeriodInDays = 20;
     final LocalDate today = LocalDate.now();
     for (final var indexTemplate : indexTemplateDescriptors) {
       IntStream.range(0, archivePeriodInDays)
@@ -214,21 +211,5 @@ class SchemaUpdateIT {
               });
     }
     return archivePeriodInDays * indexTemplateDescriptors.size();
-  }
-
-  @AfterEach
-  void tearDown(
-      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
-      throws IOException {
-    if (config.connect().getTypeEnum().isElasticSearch()) {
-      // Delete the data streams to allow removal of associated index templates.
-      // Note: These stream is auto-created by Elasticsearch with the use of deprecated APIs in 8.7
-      // (ES client 7.x).
-      searchClientAdapter
-          .getElsClient()
-          .indices()
-          .deleteDataStream(
-              req -> req.name(".logs-deprecation.elasticsearch-default", "ilm-history-7"));
-    }
   }
 }

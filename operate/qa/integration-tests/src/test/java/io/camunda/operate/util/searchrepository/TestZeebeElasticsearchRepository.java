@@ -34,13 +34,14 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 public class TestZeebeElasticsearchRepository implements TestZeebeRepository {
   @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
+  @Qualifier("esClient")
+  protected RestHighLevelClient esClient;
 
   @Autowired private ObjectMapper objectMapper;
 
   @Override
-  public <R> List<R> scrollTerm(String index, String field, long value, Class<R> clazz) {
+  public <R> List<R> scrollTerm(
+      final String index, final String field, final long value, final Class<R> clazz) {
     final List<R> result = new ArrayList<>();
 
     final SearchRequest request =
@@ -56,9 +57,9 @@ public class TestZeebeElasticsearchRepository implements TestZeebeRepository {
     final Consumer<SearchHits> hitsConsumer = hits -> result.addAll(hitsToListR.apply(hits));
 
     try {
-      scroll(request, hitsConsumer, zeebeEsClient);
+      scroll(request, hitsConsumer, esClient);
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
   }

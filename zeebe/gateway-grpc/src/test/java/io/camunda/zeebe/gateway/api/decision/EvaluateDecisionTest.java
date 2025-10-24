@@ -96,6 +96,8 @@ public class EvaluateDecisionTest extends GatewayTest {
     final var expectedIntermediateDecisionResult = evaluationRecord.getEvaluatedDecisions().get(0);
     assertThat(intermediateResultResponse.getDecisionId())
         .isEqualTo(expectedIntermediateDecisionResult.getDecisionId());
+    assertThat(intermediateResultResponse.getDecisionEvaluationInstanceKey())
+        .isEqualTo(expectedIntermediateDecisionResult.getDecisionEvaluationInstanceKey());
     assertThat(intermediateResultResponse.getDecisionKey())
         .isEqualTo(expectedIntermediateDecisionResult.getDecisionKey());
     assertThat(intermediateResultResponse.getDecisionName())

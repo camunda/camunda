@@ -7,6 +7,46 @@
  */
 package io.camunda.zeebe.test.util.record;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION;
+import static io.camunda.zeebe.protocol.record.ValueType.ASYNC_REQUEST;
+import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.ValueType.CHECKPOINT;
+import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
+import static io.camunda.zeebe.protocol.record.ValueType.COMMAND_DISTRIBUTION;
+import static io.camunda.zeebe.protocol.record.ValueType.COMPENSATION_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
+import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
+import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION;
+import static io.camunda.zeebe.protocol.record.ValueType.ESCALATION;
+import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
+import static io.camunda.zeebe.protocol.record.ValueType.IDENTITY_SETUP;
+import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
+import static io.camunda.zeebe.protocol.record.ValueType.MULTI_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
+import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
+import static io.camunda.zeebe.protocol.record.ValueType.RUNTIME_INSTRUCTION;
+import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL;
+import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
+import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
+import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
+import static io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent.INPUT_COLLECTION_EVALUATED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNMENT_DENIED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETE_TASK_LISTENER;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETION_DENIED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.DENY_TASK_LISTENER;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATE_DENIED;
+import static io.camunda.zeebe.protocol.record.value.JobKind.EXECUTION_LISTENER;
+import static io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER;
 import static java.util.Comparator.comparing;
 import static java.util.Map.entry;
 import static java.util.Map.ofEntries;
@@ -19,25 +59,35 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
+import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -50,29 +100,42 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
+import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -81,6 +144,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,44 +161,55 @@ public class CompactRecordLogger {
   // List rather than Map to preserve order
   private static final List<Entry<String, String>> ABBREVIATIONS =
       List.of(
-          entry("COMPLETE_TASK_LISTENER", "COMP_TL"),
-          entry("DENY_TASK_LISTENER", "DENY_TL"),
-          entry("TASK_LISTENER", "TL"),
-          entry("EXECUTION_LISTENER", "EL"),
-          entry("ASSIGNMENT_DENIED", "ASGN_DENIED"),
-          entry("COMPLETION_DENIED", "COMP_DENIED"),
-          entry("UPDATE_DENIED", "UPDT_DENIED"),
-          entry("SEQUENCE_FLOW_TAKEN", "SQ_FLW_TKN"),
-          entry("AD_HOC_SUB_PROCESS_INSTRUCTION", "AHSP_INST"),
-          entry("PROCESS_INSTANCE_CREATION", "CREA"),
-          entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
-          entry("PROCESS_INSTANCE", "PI"),
-          entry("RUNTIME_INSTRUCTION", "RI"),
-          entry("PROCESS", "PROC"),
-          entry("TIMER", "TIME"),
-          entry("MESSAGE", "MSG"),
-          entry("SUBSCRIPTION", "SUB"),
-          entry("SEQUENCE", "SEQ"),
-          entry("DEPLOYMENT_DISTRIBUTION", "DPLY_DSTR"),
-          entry("DEPLOYMENT", "DPLY"),
-          entry("VARIABLE", "VAR"),
-          entry("DOCUMENT", "DOC"),
-          entry("ELEMENT_", ""),
-          entry("_ELEMENT", ""),
-          entry("EVENT", "EVNT"),
-          entry("DECISION_REQUIREMENTS", "DRG"),
-          entry("EVALUATION", "EVAL"),
-          entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
-          entry("SIGNAL", "SIG"),
-          entry("COMMAND_DISTRIBUTION", "DSTR"),
-          entry("USER_TASK", "UT"),
-          entry("ROLE", "RL"),
-          entry("GROUP", "GR"),
-          entry("MAPPING", "MAP"),
-          entry("ASYNC_REQUEST", "ASYNC"),
-          entry("MULTI_INSTANCE", "MI"),
-          entry("INPUT_COLLECTION_EVALUATED", "IN_COL_EVAL"),
-          entry("BATCH_OPERATION", "BO"));
+          entry(COMPLETE_TASK_LISTENER.name(), "COMP_TL"),
+          entry(DENY_TASK_LISTENER.name(), "DENY_TL"),
+          entry(TASK_LISTENER.name(), "TL"),
+          entry(COMPLETE_EXECUTION_LISTENER.name(), "COMP_EL"),
+          entry(EXECUTION_LISTENER.name(), "EL"),
+          entry(ASSIGNMENT_DENIED.name(), "ASGN_DENIED"),
+          entry(COMPLETION_DENIED.name(), "COMP_DENIED"),
+          entry(UPDATE_DENIED.name(), "UPDT_DENIED"),
+          entry(SEQUENCE_FLOW_TAKEN.name(), "SQ_FLW_TKN"),
+          entry(AD_HOC_SUB_PROCESS_INSTRUCTION.name(), "AHSP_INST"),
+          entry(PROCESS_INSTANCE_CREATION.name(), "CREA"),
+          entry(PROCESS_INSTANCE_MODIFICATION.name(), "MOD"),
+          entry(PROCESS_INSTANCE_MIGRATION.name(), "PI_MIGR"),
+          entry(PROCESS_INSTANCE.name(), "PI"),
+          entry("PROCESS_INSTANCE", "PI"), // partial matches in ValueType and ProcessInstanceIntent
+          entry(RUNTIME_INSTRUCTION.name(), "RI"),
+          entry("PROCESS", "PROC"), // partial matches in ValueType
+          entry(TIMER.name(), "TIME"),
+          entry("MESSAGE", "MSG"), // partial matches in ValueType
+          entry("SUBSCRIPTION", "SUB"), // partial matches in ValueType
+          entry("SEQUENCE", "SEQ"), // partial matches in ProcessInstanceIntent
+          entry(DEPLOYMENT_DISTRIBUTION.name(), "DPLY_DSTR"),
+          entry(DEPLOYMENT.name(), "DPLY"),
+          entry(VARIABLE_DOCUMENT.name(), "VAR_DOC"),
+          entry(VARIABLE.name(), "VAR"),
+          entry("ELEMENT_", ""), // partial matches in ProcessInstanceIntent
+          entry("_ELEMENT", ""), // partial matches in ProcessInstanceIntent
+          entry("EVENT", "EVNT"), // partial matches in ValueType
+          entry(DECISION_REQUIREMENTS.name(), "DRG"),
+          entry(DECISION_EVALUATION.name(), "DECISION_EVAL"),
+          entry(SIGNAL_SUBSCRIPTION.name(), "SIG_SUB"),
+          entry(SIGNAL.name(), "SIG"),
+          entry(COMMAND_DISTRIBUTION.name(), "DSTR"),
+          entry(USER_TASK.name(), "UT"),
+          entry(ROLE.name(), "RL"),
+          entry(GROUP.name(), "GR"),
+          entry(MAPPING_RULE.name(), "MAP_RULE"),
+          entry(ASYNC_REQUEST.name(), "ASYNC"),
+          entry(MULTI_INSTANCE.name(), "MI"),
+          entry(INPUT_COLLECTION_EVALUATED.name(), "IN_COL_EVAL"),
+          entry("BATCH_OPERATION", "BO"), // partial matches in ValueType
+          entry(AUTHORIZATION.name(), "AUTH"),
+          entry(COMPENSATION_SUBSCRIPTION.name(), "COMP_SUB"),
+          entry(USAGE_METRIC.name(), "USG_MTRC"),
+          entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"),
+          entry(ESCALATION.name(), "ESC"),
+          entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
+          entry(IDENTITY_SETUP.name(), "ID"),
+          entry(CHECKPOINT.name(), "CHK"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -142,6 +218,7 @@ public class CompactRecordLogger {
           entry(RecordType.COMMAND_REJECTION, 'R'));
 
   private final Map<ValueType, Function<Record<?>, String>> valueLoggers = new HashMap<>();
+
   private final int keyDigits;
   private final int valueTypeChars;
   private final int intentChars;
@@ -154,6 +231,8 @@ public class CompactRecordLogger {
   private ObjectMapper objectMapper;
 
   {
+    valueLoggers.put(ValueType.NULL_VAL, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.SBE_UNKNOWN, this::summarizeMiscValue);
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
     valueLoggers.put(ValueType.DEPLOYMENT_DISTRIBUTION, this::summarizeDeploymentDistribution);
     valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
@@ -166,6 +245,7 @@ public class CompactRecordLogger {
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, this::summarizeMessageStartEventSubscription);
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
+    valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
@@ -174,6 +254,7 @@ public class CompactRecordLogger {
     valueLoggers.put(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION, this::summarizeAdHocSubProcessInstruction);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
+    valueLoggers.put(ValueType.VARIABLE_DOCUMENT, this::summarizeVariableDocument);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     valueLoggers.put(ValueType.ERROR, this::summarizeError);
     valueLoggers.put(ValueType.PROCESS_EVENT, this::summarizeProcessEvent);
@@ -191,9 +272,16 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING_RULE, this::summarizeMappingRule);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
+    valueLoggers.put(ValueType.USER, this::summarizeUser);
+    valueLoggers.put(ValueType.AUTHORIZATION, this::summarizeAuthorization);
+    valueLoggers.put(ValueType.RESOURCE, this::summarizeResource);
+    valueLoggers.put(ValueType.RESOURCE_DELETION, this::summarizeResourceDeletion);
+    valueLoggers.put(ValueType.COMPENSATION_SUBSCRIPTION, this::summarizeCompensationSubscription);
     valueLoggers.put(ValueType.MULTI_INSTANCE, this::summarizeMultiInstance);
     valueLoggers.put(ValueType.RUNTIME_INSTRUCTION, this::summarizeRuntimeInstruction);
     valueLoggers.put(ValueType.BATCH_OPERATION_CREATION, this::summarizeBatchOperationCreation);
+    valueLoggers.put(
+        ValueType.BATCH_OPERATION_INITIALIZATION, this::summarizeBatchOperationInitialization);
     valueLoggers.put(ValueType.BATCH_OPERATION_CHUNK, this::summarizeBatchOperationChunk);
     valueLoggers.put(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, this::summarizeBatchOperationLifecycle);
@@ -201,6 +289,15 @@ public class CompactRecordLogger {
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
         this::summarizeBatchOperationPartitionLifecycle);
     valueLoggers.put(ValueType.BATCH_OPERATION_EXECUTION, this::summarizeBatchOperationExecution);
+    valueLoggers.put(ValueType.USAGE_METRIC, this::summarizeUsageMetrics);
+    valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
+    valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
+    valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
+    valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
+    valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
+    valueLoggers.put(ValueType.SCALE, this::summarizeScale);
+    valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
+    valueLoggers.put(ValueType.FORM, this::summarizeForm);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -208,7 +305,7 @@ public class CompactRecordLogger {
     multiPartition = isMultiPartition();
     hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
 
-    final var highestPosition = this.records.getLast().getPosition();
+    final var highestPosition = this.records.isEmpty() ? 0 : this.records.getLast().getPosition();
 
     int digits = 0;
     long num = highestPosition;
@@ -237,6 +334,10 @@ public class CompactRecordLogger {
             .mapToInt(String::length)
             .max()
             .orElse(0);
+  }
+
+  public Set<ValueType> getSupportedValueTypes() {
+    return valueLoggers.keySet();
   }
 
   public void log() {
@@ -404,9 +505,15 @@ public class CompactRecordLogger {
   }
 
   private String summarizeProcessInformation(final Process value) {
-    return String.format(
-        "%s -> %s (version:%d)",
-        value.getResourceName(), formatId(value.getBpmnProcessId()), value.getVersion());
+    return summarizeDeploymentMetadata(
+            value,
+            value.getResourceName(),
+            value.getBpmnProcessId(),
+            value.getProcessDefinitionKey(),
+            value.getVersion(),
+            value.getVersionTag(),
+            value.isDuplicate())
+        .toString();
   }
 
   private String summarizeElementInformation(
@@ -431,14 +538,6 @@ public class CompactRecordLogger {
     final var formattedInstanceKey = processInstanceKey < 0 ? "?" : shortenKey(processInstanceKey);
 
     return String.format(" in <process %s[%s]>", formattedDefinitionKey, formattedInstanceKey);
-  }
-
-  private String summarizeVariables(final Map<String, Object> variables) {
-    if (variables != null && !variables.isEmpty()) {
-      return " with variables: " + variables;
-    } else {
-      return " (no vars)";
-    }
   }
 
   private String summarizeIncident(final Record<?> record) {
@@ -498,9 +597,7 @@ public class CompactRecordLogger {
       result.append(" ").append(value.getErrorCode()).append(":").append(value.getErrorMessage());
     }
 
-    result
-        .append(summarizeCustomHeaders(value.getCustomHeaders()))
-        .append(summarizeVariables(value.getVariables()));
+    result.append(summarizeCustomHeaders(value.getCustomHeaders())).append(formatVariables(value));
 
     return result.toString();
   }
@@ -602,7 +699,7 @@ public class CompactRecordLogger {
       result.append(" correlationKey: ").append(value.getCorrelationKey());
     }
 
-    result.append(summarizeVariables(value.getVariables()));
+    result.append(formatVariables(value));
 
     return result.toString();
   }
@@ -630,7 +727,7 @@ public class CompactRecordLogger {
         .append("\"")
         .append(" starting <process ")
         .append(formatId(value.getBpmnProcessId()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -657,7 +754,7 @@ public class CompactRecordLogger {
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeVariables(value.getVariables()));
+        .append(formatVariables(value));
     return result.toString();
   }
 
@@ -671,6 +768,21 @@ public class CompactRecordLogger {
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeTreePath(value))
         .toString();
+  }
+
+  private String summarizeProcessInstanceBatch(final Record<?> record) {
+    final var value = (ProcessInstanceBatchRecordValue) record.getValue();
+    final var elementKey = value.getBatchElementInstanceKey();
+    final var processKey = value.getProcessInstanceKey();
+    final var result = new StringBuilder();
+
+    result.append("idx:").append(value.getIndex());
+    result.append(" PI:").append(shortenKey(processKey));
+    if (elementKey != processKey) {
+      result.append(" EI:").append(shortenKey(elementKey));
+    }
+
+    return result.append(formatTenant(value)).toString();
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {
@@ -705,7 +817,7 @@ public class CompactRecordLogger {
         .append(formatId(value.getBpmnProcessId()))
         .append(">")
         .append(summarizeStartInstructions(value.getStartInstructions()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -789,8 +901,8 @@ public class CompactRecordLogger {
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeVariables(value.getVariables()))
-        .append(" (tenant: %s)".formatted(value.getTenantId()));
+        .append(formatVariables(value))
+        .append(formatTenant(value));
 
     return result.toString();
   }
@@ -812,13 +924,30 @@ public class CompactRecordLogger {
 
     final var builder = new StringBuilder();
     builder
-        .append(String.format("%s->%s", value.getName(), value.getValue()))
+        .append(String.format("%s->%s", value.getName(), formatVariableValue(value.getValue())))
         .append(String.format(" in <process [%s]", shortenKey(value.getProcessInstanceKey())));
     if (value.getProcessInstanceKey() != value.getScopeKey()) {
       // only add if they're different, no need to state things twice
       builder.append(String.format(" at [%s]", shortenKey(value.getScopeKey())));
     }
     return builder.append(">").toString();
+  }
+
+  private String summarizeVariableDocument(final Record<?> record) {
+    final var value = (VariableDocumentRecordValue) record.getValue();
+
+    return "[%s] in <scope [%s]>%s%s"
+        .formatted(
+            value.getUpdateSemantics(),
+            shortenKey(value.getScopeKey()),
+            formatVariables(value),
+            formatTenant(value));
+  }
+
+  private String summarizeClusterVariable(final Record<?> record) {
+    final var value = (ClusterVariableRecordValue) record.getValue();
+    return "%s->%s%s"
+        .formatted(value.getName(), formatVariableValue(value.getValue()), formatTenant(value));
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
@@ -871,16 +1000,20 @@ public class CompactRecordLogger {
     return summarizeElementInformation(value.getTargetElementId(), value.getScopeKey())
         + summarizeProcessInformation(
             value.getProcessDefinitionKey(), value.getProcessInstanceKey())
-        + summarizeVariables(value.getVariables());
+        + formatVariables(value);
   }
 
   private String summarizeDecisionRequirements(final Record<?> record) {
     final var value = (DecisionRequirementsRecordValue) record.getValue();
-    return String.format(
-        "%s -> %s (version:%d)",
-        value.getResourceName(),
-        formatId(value.getDecisionRequirementsId()),
-        value.getDecisionRequirementsVersion());
+    return summarizeDeploymentMetadata(
+            value,
+            value.getResourceName(),
+            value.getDecisionRequirementsId(),
+            value.getDecisionRequirementsKey(),
+            value.getDecisionRequirementsVersion(),
+            null,
+            value.isDuplicate())
+        .toString();
   }
 
   private String summarizeDecision(final Record<?> record) {
@@ -895,14 +1028,41 @@ public class CompactRecordLogger {
 
   private String summarizeDecisionEvaluation(final Record<?> record) {
     final var value = (DecisionEvaluationRecordValue) record.getValue();
-    return new StringBuilder()
-        .append(value.getDecisionOutput())
-        .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
-        .append(summarizeVariables(value.getVariables()))
+
+    final var summary = new StringBuilder();
+
+    // On failure, show error message
+    if (record.getIntent() == DecisionEvaluationIntent.FAILED) {
+      // Show which decision failed (could be a required decision of the one being evaluated)
+      summary.append("Error in <decision ").append(formatId(value.getFailedDecisionId()));
+      if (value.getFailedDecisionId().equals(value.getDecisionId())) {
+        summary.append("[").append(formatKey(value.getDecisionKey())).append("]>");
+      } else {
+        summary
+            .append("> while evaluating <decision ")
+            .append(formatId(value.getDecisionId()))
+            .append("[")
+            .append(formatKey(value.getDecisionKey()))
+            .append("]>");
+      }
+
+      // Add input variables to facilitate debugging
+      summary.append(formatVariables(value));
+
+      // Add failure message
+      summary.append(": \"").append(value.getEvaluationFailureMessage()).append("\"");
+    } else { // On success, show decision input/output
+      summary
+          .append(value.getDecisionOutput())
+          .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
+          .append(formatVariables(value));
+    }
+    // In all cases, show variables and process/element information
+    summary
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()))
-        .toString();
+        .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
+    return summary.toString();
   }
 
   private String summarizeDecisionInformation(final String decisionId, final long decisionKey) {
@@ -916,7 +1076,7 @@ public class CompactRecordLogger {
         .append("\"")
         .append(value.getSignalName())
         .append("\"")
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -968,7 +1128,7 @@ public class CompactRecordLogger {
           summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()));
     }
 
-    result.append(summarizeVariables(value.getVariables()));
+    result.append(formatVariables(value));
 
     return result.toString();
   }
@@ -1011,7 +1171,7 @@ public class CompactRecordLogger {
     result
         .append(" processInstanceKey: ")
         .append(value.getProcessInstanceKey())
-        .append(summarizeVariables(value.getVariables()));
+        .append(formatVariables(value));
 
     return result.toString();
   }
@@ -1031,78 +1191,155 @@ public class CompactRecordLogger {
 
   private String summarizeRole(final Record<?> record) {
     final var value = (RoleRecordValue) record.getValue();
+    return summarizeRole(value);
+  }
 
-    final StringBuilder builder = new StringBuilder("Role[");
-    builder
-        .append("Key=")
-        .append(shortenKey(value.getRoleKey()))
-        .append(", Id=")
-        .append(formatId(value.getRoleId()))
-        .append(", Name=")
-        .append(formatId(value.getName()))
-        .append(", Description=")
-        .append(value.getDescription())
-        .append(", EntityId=")
-        .append(formatId(value.getEntityId()))
-        .append("]");
+  private String summarizeRole(final RoleRecordValue value) {
+    final StringJoiner joiner = new StringJoiner(", ", "Role[", "]");
 
-    return builder.toString();
+    if (value.getRoleKey() != -1) {
+      joiner.add("Key=" + shortenKey(value.getRoleKey()));
+    }
+
+    if (StringUtils.isNotBlank(value.getRoleId())) {
+      joiner.add("Id=" + formatId(value.getRoleId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getName())) {
+      joiner.add("Name=" + formatId(value.getName()));
+    }
+
+    if (StringUtils.isNotBlank(value.getDescription())) {
+      joiner.add("Description=" + value.getDescription());
+    }
+
+    if (StringUtils.isNotBlank(value.getEntityId())) {
+      joiner.add("EntityId=" + formatId(value.getEntityId()));
+    }
+
+    return joiner.toString();
   }
 
   private String summarizeTenant(final Record<?> record) {
     final var value = (TenantRecordValue) record.getValue();
+    return summarizeTenant(value);
+  }
 
-    final StringBuilder builder = new StringBuilder("Tenant[");
-    builder
-        .append("Key=")
-        .append(shortenKey(value.getTenantKey()))
-        .append(", Id=")
-        .append(formatId(value.getTenantId()))
-        .append(", Name=")
-        .append(formatId(value.getName()))
-        .append(", EntityId=")
-        .append(formatId(value.getEntityId()))
-        .append("]");
+  private String summarizeTenant(final TenantRecordValue value) {
+    final StringJoiner joiner = new StringJoiner(", ", "Tenant[", "]");
 
-    return builder.toString();
+    if (value.getTenantKey() != -1) {
+      joiner.add("Key=" + shortenKey(value.getTenantKey()));
+    }
+
+    if (StringUtils.isNotBlank(value.getTenantId())) {
+      joiner.add("Id=" + formatId(value.getTenantId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getName())) {
+      joiner.add("Name=" + formatId(value.getName()));
+    }
+
+    if (StringUtils.isNotBlank(value.getEntityId())) {
+      joiner.add("EntityId=" + formatId(value.getEntityId()));
+    }
+    return joiner.toString();
   }
 
   private String summarizeGroup(final Record<?> record) {
     final var value = (GroupRecordValue) record.getValue();
 
-    final StringBuilder builder = new StringBuilder("Group[");
-    builder
-        .append("Key=")
-        .append(shortenKey(value.getGroupKey()))
-        .append(", Id=")
-        .append(formatId(value.getGroupId()))
-        .append(", Name=")
-        .append(formatId(value.getName()))
-        .append(", EntityKey=")
-        .append(formatId(value.getEntityId()))
-        .append(", EntityType=")
-        .append(value.getEntityType())
-        .append("]");
+    final StringJoiner joiner = new StringJoiner(", ", "Group[", "]");
 
-    return builder.toString();
+    if (value.getGroupKey() != -1) {
+      joiner.add("Key=" + shortenKey(value.getGroupKey()));
+    }
+
+    if (StringUtils.isNotBlank(value.getGroupId())) {
+      joiner.add("Id=" + formatId(value.getGroupId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getName())) {
+      joiner.add("Name=" + formatId(value.getName()));
+    }
+
+    if (StringUtils.isNotBlank(value.getEntityId())) {
+      joiner.add("EntityKey=" + formatId(value.getEntityId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getEntityId())) {
+      joiner.add("EntityType=" + value.getEntityType());
+    }
+
+    return joiner.toString();
   }
 
   private String summarizeMappingRule(final Record<?> record) {
     final var value = (MappingRuleRecordValue) record.getValue();
+    return summarizeMappingRule(value);
+  }
 
-    final StringBuilder builder = new StringBuilder("MappingRule[");
+  private String summarizeMappingRule(final MappingRuleRecordValue value) {
+
+    final StringJoiner joiner = new StringJoiner(", ", "MappingRule[", "]");
+
+    if (value.getMappingRuleKey() != -1) {
+      joiner.add("Key=" + shortenKey(value.getMappingRuleKey()));
+    }
+
+    if (StringUtils.isNotBlank(value.getMappingRuleId())) {
+      joiner.add("mappingRuleId=" + formatId(value.getMappingRuleId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getClaimName())) {
+      joiner.add("claimName=" + value.getClaimName());
+    }
+
+    if (StringUtils.isNotBlank(value.getClaimValue())) {
+      joiner.add("claimValue=" + value.getClaimValue());
+    }
+
+    return joiner.toString();
+  }
+
+  private String summarizeUser(final Record<?> record) {
+    final var value = (UserRecordValue) record.getValue();
+    return summarizeUser(value, record.getKey() != value.getUserKey());
+  }
+
+  private String summarizeUser(final UserRecordValue value) {
+    return summarizeUser(value, true);
+  }
+
+  private String summarizeUser(final UserRecordValue value, final boolean includeUserKey) {
+    final StringBuilder builder = new StringBuilder();
+    if (includeUserKey) {
+      builder.append(shortenKey(value.getUserKey())).append(" ");
+    }
     builder
-        .append("Key=")
-        .append(shortenKey(value.getMappingRuleKey()))
-        .append(", mappingRuleId=")
-        .append(formatId(value.getMappingRuleId()))
-        .append(", claimName=")
-        .append(value.getClaimName())
-        .append(", claimValue=")
-        .append(value.getClaimValue())
-        .append("]");
+        .append("u=")
+        .append(formatId(value.getUsername()))
+        .append(" @=")
+        .append(value.getEmail())
+        .append(" n=")
+        .append(value.getName());
 
     return builder.toString();
+  }
+
+  private String summarizeAuthorization(final Record<?> record) {
+    final var value = (AuthorizationRecordValue) record.getValue();
+    return summarizeAuthorization(value);
+  }
+
+  private String summarizeAuthorization(final AuthorizationRecordValue value) {
+    return "%s %s can %s %s %s"
+        .formatted(
+            value.getOwnerType(),
+            formatId(value.getOwnerId()),
+            value.getPermissionTypes(),
+            value.getResourceType(),
+            formatId(value.getResourceId()));
   }
 
   private String summarizeAsyncRequest(final Record<?> record) {
@@ -1117,6 +1354,24 @@ public class CompactRecordLogger {
         .append(shortenKey(value.getScopeKey()))
         .append("]")
         .toString();
+  }
+
+  private String summarizeResource(final Record<?> record) {
+    final var value = (Resource) record.getValue();
+    return summarizeDeploymentMetadata(
+            value,
+            value.getResourceName(),
+            value.getResourceId(),
+            value.getResourceKey(),
+            value.getVersion(),
+            value.getVersionTag(),
+            value.isDuplicate())
+        .toString();
+  }
+
+  private String summarizeResourceDeletion(final Record<?> record) {
+    final var value = (ResourceDeletionRecordValue) record.getValue();
+    return "res:%s%s".formatted(shortenKey(value.getResourceKey()), formatTenant(value));
   }
 
   private String summarizeMultiInstance(final Record<?> record) {
@@ -1142,6 +1397,75 @@ public class CompactRecordLogger {
     return result.toString();
   }
 
+  protected String summarizeUsageMetrics(final Record<?> record) {
+    final var result = new StringBuilder();
+    final var value = (UsageMetricRecordValue) record.getValue();
+    result
+        .append(value.getEventType())
+        .append(":")
+        .append(value.getIntervalType())
+        .append(" ")
+        .append(formatTime("start", value.getStartTime()))
+        .append(" ")
+        .append(formatTime("end", value.getEndTime()))
+        .append(" ")
+        .append(formatTime("reset", value.getResetTime()))
+        .append(formatVariables(toMetricValueMap(value.getCounterValues(), value.getSetValues())));
+
+    return result.toString();
+  }
+
+  private String summarizeCompensationSubscription(final Record<?> record) {
+    final var result = new StringBuilder();
+    final var value = (CompensationSubscriptionRecordValue) record.getValue();
+    if (value.getThrowEventInstanceKey() < 0) {
+      // compensation subscription has not been triggered yet, for example:
+      // E COMP_SUB CREATED #28->#22 K11 "CompHandler" → "TaskToCompensate"[K08] in <process
+      // K03[K04]>
+      // explains that the compensation handler is registered for the compensable activity
+      result
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensationHandlerId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensationHandlerInstanceKey()))
+          .append("]")
+          .append(" → ")
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensableActivityId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensableActivityInstanceKey()))
+          .append("]")
+          .append(
+              summarizeProcessInformation(
+                  value.getProcessDefinitionKey(), value.getProcessInstanceKey()));
+    } else {
+      // an event was thrown triggering the compensation, for example:
+      // E COMP_SUB TRIGGERED #39->#22 K11 "CompThrowEvent"[K13] → "CompensationHandler"[K15] (no
+      // vars)
+      // explains that the throw event has triggered the compensation handler without vars
+      result
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getThrowEventId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getThrowEventInstanceKey()))
+          .append("]")
+          .append(" → ")
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensationHandlerId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensationHandlerInstanceKey()))
+          .append("]")
+          .append(formatVariables(value));
+    }
+
+    result.append(formatTenant(value));
+    return result.toString();
+  }
+
   private String summarizeBatchOperationCreation(final Record<?> record) {
     final var value = (BatchOperationCreationRecordValue) record.getValue();
 
@@ -1163,6 +1487,17 @@ public class CompactRecordLogger {
     final var value = (BatchOperationChunkRecordValue) record.getValue();
 
     return new StringBuilder().append("numItems=").append(value.getItems().size()).toString();
+  }
+
+  private String summarizeBatchOperationInitialization(final Record<?> record) {
+    final var value = (BatchOperationInitializationRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append("cursor=")
+        .append(value.getSearchResultCursor())
+        .append(", pageSize=")
+        .append(value.getSearchQueryPageSize())
+        .toString();
   }
 
   private String summarizeBatchOperationExecution(final Record<?> record) {
@@ -1195,9 +1530,323 @@ public class CompactRecordLogger {
     return sb.toString();
   }
 
+  private String summarizeProcessInstanceResult(final Record<?> record) {
+    final var value = (ProcessInstanceResultRecordValue) record.getValue();
+    return new StringBuilder()
+        .append(
+            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .append(formatVariables(value))
+        .toString();
+  }
+
+  private String summarizeEscalation(final Record<?> record) {
+    final var value = (EscalationRecordValue) record.getValue();
+
+    final StringBuilder summary = new StringBuilder();
+    summary
+        .append(formatId(value.getEscalationCode()))
+        .append(" (thrown by ")
+        .append(formatId(value.getThrowElementId()));
+    if (StringUtils.isNotBlank(value.getCatchElementId())) {
+      summary.append("; caught by ").append(formatId(value.getCatchElementId()));
+    }
+    summary.append(")");
+    summary.append(summarizeProcessInformation(null, value.getProcessInstanceKey()));
+
+    return summary.toString();
+  }
+
+  private String summarizeIdentitySetup(final Record<?> record) {
+    final var value = (IdentitySetupRecordValue) record.getValue();
+
+    final StringBuilder summary = new StringBuilder();
+
+    if (!value.getRoles().isEmpty()) {
+      summary.append(
+          value.getRoles().stream()
+              .map(this::summarizeRole)
+              .collect(Collectors.joining(", ", "Roles: {", "}")));
+    }
+
+    if (!value.getRoleMembers().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getRoleMembers().stream()
+              .map(this::summarizeRole)
+              .collect(Collectors.joining(", ", "Role members: {", "}")));
+    }
+
+    if (!value.getUsers().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getUsers().stream()
+              .map(this::summarizeUser)
+              .collect(Collectors.joining(", ", "Users: {", "}")));
+    }
+
+    if (value.getDefaultTenant() != null) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append("Default tenant: ").append(summarizeTenant(value.getDefaultTenant()));
+    }
+
+    if (!value.getTenantMembers().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getTenantMembers().stream()
+              .map(this::summarizeTenant)
+              .collect(Collectors.joining(", ", "Tenant members: {", "}")));
+    }
+
+    if (!value.getMappingRules().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getMappingRules().stream()
+              .map(this::summarizeMappingRule)
+              .collect(Collectors.joining(", ", "Mapping rules: {", "}")));
+    }
+
+    if (!value.getAuthorizations().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getAuthorizations().stream()
+              .map(this::summarizeAuthorization)
+              .collect(Collectors.joining(", ", "Authorizations: {", "}")));
+    }
+
+    return summary.toString();
+  }
+
+  private String summarizeScale(final Record<?> record) {
+    final var value = (ScaleRecordValue) record.getValue();
+
+    final StringBuilder summary = new StringBuilder();
+
+    switch (record.getIntent()) {
+      case ScaleIntent.SCALE_UP, ScaleIntent.SCALING_UP ->
+          summary
+              .append("Scale to ")
+              .append(value.getDesiredPartitionCount())
+              .append(" partitions");
+      case ScaleIntent.STATUS -> {} // No information in status request command
+      case ScaleIntent.STATUS_RESPONSE ->
+          summary
+              .append("Partitions: ")
+              .append(value.getRedistributedPartitions())
+              .append(" (")
+              .append(value.getRedistributedPartitions().size())
+              .append("/")
+              .append(value.getDesiredPartitionCount())
+              .append("; ")
+              .append(value.getMessageCorrelationPartitions())
+              .append(" in message correlation)");
+      case ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
+          ScaleIntent.PARTITION_BOOTSTRAPPED,
+          ScaleIntent.SCALED_UP ->
+          summary
+              .append("Partition: ")
+              .append(value.getRedistributedPartitions().iterator().next());
+      default -> summarizeMiscValue(record);
+    }
+
+    return summary.toString();
+  }
+
+  private String summarizeProcessInstanceMigration(final Record<?> record) {
+    final var value = (ProcessInstanceMigrationRecordValue) record.getValue();
+
+    final StringBuilder summary = new StringBuilder();
+
+    summary.append(shortenKey(value.getProcessInstanceKey()));
+    summary.append("->");
+    summary.append(shortenKey(value.getTargetProcessDefinitionKey()));
+
+    // Only include mapping in first record in order to avoid cluttering the logs.
+    // The MIGRATE record is referenced by the MIGRATED one so it's easy to find
+    // it if needed.
+    if (record.getIntent() == ProcessInstanceMigrationIntent.MIGRATE) {
+      if (value.getMappingInstructions().isEmpty()) {
+        summary.append(" (missing mapping)");
+      } else {
+        final StringJoiner mapping = new StringJoiner(", ", " (mapping: ", ")");
+        for (final var instruction : value.getMappingInstructions()) {
+          mapping.add(
+              formatId(instruction.getSourceElementId())
+                  + "->"
+                  + formatId(instruction.getTargetElementId()));
+        }
+        summary.append(mapping);
+      }
+    }
+
+    return summary.toString();
+  }
+
+  private String summarizeCheckpoint(final Record<?> record) {
+    final var value = (CheckpointRecordValue) record.getValue();
+    return "checkpoint %s @ #%s"
+        .formatted(value.getCheckpointId(), formatPosition(value.getCheckpointPosition()));
+  }
+
+  private String summarizeForm(final Record<?> record) {
+    final var value = (Form) record.getValue();
+    return summarizeDeploymentMetadata(
+            value,
+            value.getResourceName(),
+            value.getFormId(),
+            value.getFormKey(),
+            value.getVersion(),
+            value.getVersionTag(),
+            value.isDuplicate())
+        .toString();
+  }
+
+  private StringBuilder summarizeDeploymentMetadata(
+      final TenantOwned value,
+      final String resourceName,
+      final String id,
+      final long key,
+      final int version,
+      final String versionTag,
+      final boolean duplicate) {
+
+    final StringBuilder result = new StringBuilder();
+
+    result
+        .append(resourceName)
+        .append(" -> ")
+        .append(formatId(id))
+        .append("[")
+        .append(shortenKey(key))
+        .append("]")
+        .append(" (version:")
+        .append(version);
+
+    if (StringUtils.isNotEmpty(versionTag)) {
+      result.append(" tag:").append(versionTag);
+    }
+
+    result.append(")");
+
+    if (duplicate) {
+      result.append(" (dup)");
+    }
+
+    return result.append(formatTenant(value));
+  }
+
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
     return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);
+  }
+
+  private String formatTime(final String name, final long time) {
+    if (time == -1) {
+      return "%s[%s]".formatted(name, -1);
+    }
+    final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneOffset.UTC);
+    return "%s[%s]".formatted(name, shortenDateTime(dateTime));
+  }
+
+  private String formatTenant(final TenantOwned value) {
+    final String tenantId = value.getTenantId();
+    return StringUtils.isEmpty(tenantId) || TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
+        ? ""
+        : " (tenant: %s)".formatted(tenantId);
+  }
+
+  private String formatVariables(final RecordValueWithVariables value) {
+    final var variables = value.getVariables();
+    if (variables == null || variables.isEmpty()) {
+      return " (no vars)";
+    }
+
+    return " vars: "
+        + variables.entrySet().stream()
+            .sorted(Entry.comparingByKey())
+            .map(entry -> entry.getKey() + "=" + formatVariableValue(entry.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
+  }
+
+  private String formatVariables(final Map<String, Object> metricValues) {
+    if (metricValues == null || metricValues.isEmpty()) {
+      return " (no metricValues)";
+    }
+    return " metricValues: "
+        + metricValues.entrySet().stream()
+            .sorted(Entry.comparingByKey())
+            .map(entry -> entry.getKey() + "=" + formatVariableValue(entry.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
+  }
+
+  /**
+   * Combines metric values from counters or sets into a generic map.
+   *
+   * <p>If {@code counterValues} is not empty, its entries are added to the result map. Otherwise,
+   * {@code setValues} entries are added. Only one of the input maps is expected to be non-empty.
+   *
+   * @param counterValues a map of metric counters (String to Long)
+   * @param setValues a map of metric sets (String to Set<Long>)
+   * @return a generic map containing either counter or set values
+   */
+  public Map<String, Object> toMetricValueMap(
+      final Map<String, Long> counterValues, final Map<String, Set<Long>> setValues) {
+    final Map<String, Object> variables = new HashMap<>();
+    if (!counterValues.isEmpty()) {
+      variables.putAll(counterValues);
+    } else {
+      variables.putAll(setValues);
+    }
+    return variables;
+  }
+
+  /**
+   * Formats a variable value for logging.
+   *
+   * <ul>
+   *   <li>If the value is {@code null}, returns {@code "null"}.
+   *   <li>If the value is a {@code String}, it is wrapped in double quotes and shortened to a
+   *       maximum of 15 characters if necessary. The original string length is appended in the
+   *       format {@code "..(len)"}.
+   *   <li>All other types are converted to string without shortening or quotes.
+   * </ul>
+   *
+   * @param value the variable value to format
+   * @return a formatted string representation for logging
+   */
+  private String formatVariableValue(final Object value) {
+    if (value == null) {
+      return "null";
+    }
+
+    if (value instanceof String str) {
+      int length = str.length();
+
+      // strip outer quotes, if present
+      if (length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
+        str = str.substring(1, length - 1);
+        length -= 2; // adjust length after stripping quotes
+      }
+
+      final int maxLength = 15;
+      final var shortened =
+          length > maxLength ? str.substring(0, maxLength) + "..(" + length + ")" : str;
+
+      return "\"" + shortened + "\"";
+    }
+
+    return value.toString();
   }
 
   /**

@@ -32,4 +32,14 @@ public final class GroupMemberFixtures extends CommonFixtures {
     rdbmsWriter.getGroupWriter().addMember(createRandomized(builderFunction));
     rdbmsWriter.flush();
   }
+
+  public static void createAndSaveRandomGroupMembers(
+      final RdbmsWriter rdbmsWriter,
+      final Function<GroupMemberDbModel.Builder, GroupMemberDbModel.Builder> builderFunction) {
+    for (int i = 0; i < 20; i++) {
+      rdbmsWriter.getGroupWriter().addMember(createRandomized(builderFunction));
+    }
+
+    rdbmsWriter.flush();
+  }
 }

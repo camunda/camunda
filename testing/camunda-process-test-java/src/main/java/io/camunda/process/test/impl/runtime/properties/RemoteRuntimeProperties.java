@@ -17,14 +17,15 @@ package io.camunda.process.test.impl.runtime.properties;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.net.URI;
 import java.util.Properties;
 
 public class RemoteRuntimeProperties {
-  public static final String PROPERTY_NAME_REMOTE_CAMUNDA_MONITORING_API_ADDRESS =
+  public static final String PROPERTY_NAME_CAMUNDA_MONITORING_API_ADDRESS =
       "remote.camundaMonitoringApiAddress";
-  public static final String PROPERTY_NAME_REMOTE_CONNECTORS_REST_API_ADDRESS =
+  public static final String PROPERTY_NAME_CONNECTORS_REST_API_ADDRESS =
       "remote.connectorsRestApiAddress";
 
   private final URI camundaMonitoringApiAddress;
@@ -36,7 +37,7 @@ public class RemoteRuntimeProperties {
     camundaMonitoringApiAddress =
         getPropertyOrDefault(
             properties,
-            PROPERTY_NAME_REMOTE_CAMUNDA_MONITORING_API_ADDRESS,
+            PROPERTY_NAME_CAMUNDA_MONITORING_API_ADDRESS,
             v -> {
               try {
                 return URI.create(v);
@@ -49,7 +50,7 @@ public class RemoteRuntimeProperties {
     connectorsRestApiAddress =
         getPropertyOrDefault(
             properties,
-            PROPERTY_NAME_REMOTE_CONNECTORS_REST_API_ADDRESS,
+            PROPERTY_NAME_CONNECTORS_REST_API_ADDRESS,
             v -> {
               try {
                 return URI.create(v);
@@ -72,5 +73,9 @@ public class RemoteRuntimeProperties {
 
   public RemoteRuntimeClientProperties getRemoteClientProperties() {
     return remoteClientProperties;
+  }
+
+  public CamundaClientBuilder createCamundaClientBuilder() {
+    return remoteClientProperties.createCamundaClientBuilder();
   }
 }

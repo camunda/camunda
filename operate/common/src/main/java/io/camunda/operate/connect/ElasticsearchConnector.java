@@ -7,11 +7,6 @@
  */
 package io.camunda.operate.connect;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.cluster.HealthResponse;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.ElasticsearchTransport;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.ElasticsearchProperties;
@@ -20,11 +15,9 @@ import io.camunda.operate.property.SslProperties;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.util.VisibleForTesting;
-import jakarta.annotation.PreDestroy;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -65,9 +58,7 @@ public class ElasticsearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
   private PluginRepository esClientRepository = new PluginRepository();
-  private PluginRepository zeebeEsClientRepository = new PluginRepository();
   private final OperateProperties operateProperties;
-  private ElasticsearchClient elasticsearchClient;
 
   public ElasticsearchConnector(final OperateProperties operateProperties) {
     this.operateProperties = operateProperties;
@@ -78,92 +69,6 @@ public class ElasticsearchConnector {
     this.esClientRepository = esClientRepository;
   }
 
-  @VisibleForTesting
-  public void setZeebeEsClientRepository(final PluginRepository zeebeEsClientRepository) {
-    this.zeebeEsClientRepository = zeebeEsClientRepository;
-  }
-
-  public static void closeEsClient(final RestHighLevelClient esClient) {
-    if (esClient != null) {
-      try {
-        esClient.close();
-      } catch (final IOException e) {
-        LOGGER.error("Could not close esClient", e);
-      }
-    }
-  }
-
-  public static void closeEsClient(final ElasticsearchClient esClient) {
-    if (esClient != null) {
-      esClient.shutdown();
-    }
-  }
-
-  @Bean
-  public ElasticsearchClient elasticsearchClient() {
-    LOGGER.debug("Creating ElasticsearchClient ...");
-    final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-
-    esClientRepository.load(operateProperties.getElasticsearch().getInterceptorPlugins());
-
-    final RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig));
-    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, elsConfig));
-    }
-    final RestClient restClient =
-        restClientBuilder
-            .setHttpClientConfigCallback(
-                httpClientBuilder ->
-                    configureHttpClient(
-                        httpClientBuilder, elsConfig, esClientRepository.asRequestInterceptor()))
-            .build();
-
-    // Create the transport with a Jackson mapper
-    final ElasticsearchTransport transport =
-        new RestClientTransport(restClient, new JacksonJsonpMapper());
-
-    // And create the API client
-    elasticsearchClient = new ElasticsearchClient(transport);
-
-    if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
-      if (!checkHealth(elasticsearchClient)) {
-        LOGGER.warn("Elasticsearch cluster is not accessible");
-      } else {
-        LOGGER.debug("Elasticsearch connection was successfully created.");
-      }
-    } else {
-      LOGGER.warn("Elasticsearch cluster health check is disabled.");
-    }
-    return elasticsearchClient;
-  }
-
-  public boolean checkHealth(final ElasticsearchClient elasticsearchClient) {
-    final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    try {
-      return RetryOperation.<Boolean>newBuilder()
-          .noOfRetry(50)
-          .retryOn(
-              IOException.class,
-              co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
-          .delayInterval(3, TimeUnit.SECONDS)
-          .message(
-              String.format(
-                  "Connect to Elasticsearch cluster [%s] at %s",
-                  elsConfig.getClusterName(), elsConfig.getUrl()))
-          .retryConsumer(
-              () -> {
-                final HealthResponse healthResponse = elasticsearchClient.cluster().health();
-                LOGGER.info("Elasticsearch cluster health: {}", healthResponse.status());
-                return healthResponse.clusterName().equals(elsConfig.getClusterName());
-              })
-          .build()
-          .retry();
-    } catch (final Exception e) {
-      throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
-    }
-  }
-
   @Bean
   public RestHighLevelClient esClient() {
     // some weird error when ELS sets available processors number for Netty - see
@@ -171,26 +76,6 @@ public class ElasticsearchConnector {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     esClientRepository.load(operateProperties.getElasticsearch().getInterceptorPlugins());
     return createEsClient(operateProperties.getElasticsearch(), esClientRepository);
-  }
-
-  @Bean("zeebeEsClient")
-  public RestHighLevelClient zeebeEsClient() {
-    // some weird error when ELS sets available processors number for Netty - see
-    // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
-    zeebeEsClientRepository.load(operateProperties.getZeebeElasticsearch().getInterceptorPlugins());
-    return createEsClient(operateProperties.getZeebeElasticsearch(), zeebeEsClientRepository);
-  }
-
-  @PreDestroy
-  public void tearDown() {
-    if (elasticsearchClient != null) {
-      try {
-        elasticsearchClient._transport().close();
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
   }
 
   public RestHighLevelClient createEsClient(
@@ -346,7 +231,8 @@ public class ElasticsearchConnector {
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
-  public boolean checkHealth(final RestHighLevelClient esClient) {
+  @VisibleForTesting
+  boolean checkHealth(final RestHighLevelClient esClient) {
     final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()

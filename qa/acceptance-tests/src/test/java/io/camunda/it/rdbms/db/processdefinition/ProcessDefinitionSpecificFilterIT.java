@@ -24,6 +24,7 @@ import io.camunda.search.sort.ProcessDefinitionSort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,8 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class ProcessDefinitionSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
@@ -76,6 +78,49 @@ public class ProcessDefinitionSpecificFilterIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().processDefinitionKey()).isEqualTo(1337L);
+  }
+
+  @Test
+  public void shouldFindProcessDefinitionWithLatestVersion() {
+    createAndSaveProcessDefinition(
+        rdbmsWriter,
+        ProcessDefinitionFixtures.createRandomized(
+            b ->
+                b.processDefinitionKey(4711L)
+                    .processDefinitionId("sorting-test-process")
+                    .name("Sorting Test Process")
+                    .resourceName("sorting-test-process.bpmn")
+                    .versionTag("Version 1337")
+                    .version(1)
+                    .tenantId("sorting-tenant1")));
+
+    createAndSaveProcessDefinition(
+        rdbmsWriter,
+        ProcessDefinitionFixtures.createRandomized(
+            b ->
+                b.processDefinitionKey(4712L)
+                    .processDefinitionId("sorting-test-process")
+                    .name("Sorting Test Process")
+                    .resourceName("sorting-test-process.bpmn")
+                    .versionTag("Version 1337")
+                    .version(2)
+                    .tenantId("sorting-tenant1")));
+
+    final var searchResult =
+        processDefinitionReader.search(
+            new ProcessDefinitionQuery(
+                new ProcessDefinitionFilter.Builder()
+                    .processDefinitionIds("sorting-test-process")
+                    .isLatestVersion(true)
+                    .build(),
+                ProcessDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().processDefinitionId())
+        .isEqualTo("sorting-test-process");
+    assertThat(searchResult.items().getFirst().version()).isEqualTo(2L);
   }
 
   static List<ProcessDefinitionFilter> shouldFindProcessDefinitionWithSpecificFilterParameters() {

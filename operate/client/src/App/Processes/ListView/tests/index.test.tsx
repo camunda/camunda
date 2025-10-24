@@ -81,7 +81,7 @@ describe('Instances', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchBatchOperations().withSuccess([]);
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
 
   it('should render title and document title', async () => {

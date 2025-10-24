@@ -161,7 +161,7 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 requestTimeout(Duration requestTimeout);
 
     /**
-     * Set a list of variable names which should be fetch on job activation.
+     * Set a list of variable names which should be fetched on job activation.
      *
      * <p>The jobs which are activated by this worker will only contain variables from this list.
      *
@@ -173,7 +173,7 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 fetchVariables(List<String> fetchVariables);
 
     /**
-     * Set a list of variable names which should be fetch on job activation.
+     * Set a list of variable names which should be fetched on job activation.
      *
      * <p>The jobs which are activated by this worker will only contain variables from this list.
      *

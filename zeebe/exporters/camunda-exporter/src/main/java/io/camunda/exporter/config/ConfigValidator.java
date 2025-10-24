@@ -8,6 +8,7 @@
 package io.camunda.exporter.config;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -32,6 +33,7 @@ public final class ConfigValidator {
       Pattern.compile(PATTERN_DATE_INTERVAL_FORMAT).asPredicate();
   private static final Predicate<String> CHECK_ROLLOVER_INTERVAL =
       Pattern.compile(PATTERN_ROLLOVER_INTERVAL_FORMAT).asPredicate();
+  private static final Pattern INVALID_INDEX_PREFIX_CHARS = Pattern.compile("[\\\\/*?\"<>| _]");
 
   private ConfigValidator() {}
 
@@ -46,12 +48,16 @@ public final class ConfigValidator {
           e);
     }
 
-    if (configuration.getConnect().getIndexPrefix() != null
-        && configuration.getConnect().getIndexPrefix().contains("_")) {
-      throw new ExporterException(
-          String.format(
-              "CamundaExporter index.prefix must not contain underscore. Current value: %s",
-              configuration.getConnect().getIndexPrefix()));
+    final String configuredPrefix = configuration.getConnect().getIndexPrefix();
+    if (configuredPrefix != null) {
+      if (INVALID_INDEX_PREFIX_CHARS.matcher(configuredPrefix).find()) {
+        throw new ExporterException(
+            "CamundaExporter index.prefix must not contain invalid characters [\\ / * ? \" < > | space _].");
+      }
+      if (configuredPrefix.startsWith(".") || configuredPrefix.startsWith("+")) {
+        throw new ExporterException(
+            "CamundaExporter index.prefix must not begin with invalid characters [. +].");
+      }
     }
 
     final Integer numberOfShards = configuration.getIndex().getNumberOfShards();
@@ -128,6 +134,14 @@ public final class ConfigValidator {
     if (formCacheMaxCacheSize < 1) {
       throw new ExporterException(
           "CamundaExporter maxCacheSize must be >= 1. Current value: " + formCacheMaxCacheSize);
+    }
+
+    final Duration applyPolicyJobInterval =
+        configuration.getHistory().getRetention().getApplyPolicyJobInterval();
+    if (!applyPolicyJobInterval.isPositive()) {
+      throw new ExporterException(
+          "CamundaExporter retention.applyPolicyJobInterval must be strictly positive. Current value: "
+              + applyPolicyJobInterval);
     }
   }
 }

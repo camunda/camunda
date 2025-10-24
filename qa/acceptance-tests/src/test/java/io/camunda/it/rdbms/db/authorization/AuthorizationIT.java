@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -127,6 +128,31 @@ public class AuthorizationIT {
                 new AuthorizationFilter.Builder().resourceIds(resourceId).build(),
                 AuthorizationSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    final var instance = searchResult.items().getFirst();
+
+    compareAuthorizations(instance, authorization);
+  }
+
+  @TestTemplate
+  public void shouldFindByAuthorizedResourceId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+
+    final var authorization = AuthorizationFixtures.createRandomized(b -> b);
+    createAndSaveAuthorization(rdbmsWriter, authorization);
+    createAndSaveRandomAuthorizations(rdbmsWriter);
+
+    final var resourceId = authorization.resourceId();
+    final var searchResult =
+        authorizationReader.search(
+            AuthorizationQuery.of(b -> b),
+            CommonFixtures.resourceAccessChecksFromResourceIds(resourceId));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

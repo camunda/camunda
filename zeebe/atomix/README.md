@@ -22,7 +22,7 @@ In order to avoid broken builds (develop etc.) and improve the development cycle
 **Pros:**
 * we have the benefit of one build (everything is build together) - it doesn't break another branch
 * shorter development cycle, we can easily test changes in Atomix in a Zeebe branch
-* easier to create new benchmarks
+* easier to create new load tests
 * Atomix tests are run more often - which might lead also to new bugs
 * we can easily use our tools and plugins (LGTM, sonarcloud, licensecheck, checkstyle etc.)
 * make release process easier

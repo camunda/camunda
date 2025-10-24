@@ -20,10 +20,12 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -34,9 +36,11 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(value = MappingRuleController.class)
 public class MappingRuleQueryControllerTest extends RestControllerTest {
   private static final String MAPPING_RULE_BASE_URL = "/v2/mapping-rules";
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -44,6 +48,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(mappingRuleServices);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test
@@ -218,6 +223,48 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
             new MappingRuleQuery.Builder()
                 .sort(MappingRuleSort.of(builder -> builder.claimName().asc()))
                 .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
+                .build());
+  }
+
+  @Test
+  void shouldSortAndPaginateByLimitOnlySearchResult() {
+    // given
+    when(mappingRuleServices.search(any(MappingRuleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingRuleEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new MappingRuleEntity(
+                            "id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingRuleEntity(
+                            "id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingRuleEntity(
+                            "id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(MAPPING_RULE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "claimName", "order":  "ASC"}],
+              "page":  {"limit":  10}
+            }
+             """)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(mappingRuleServices)
+        .search(
+            new MappingRuleQuery.Builder()
+                .sort(MappingRuleSort.of(builder -> builder.claimName().asc()))
+                .page(SearchQueryPage.of(builder -> builder.size(10)))
                 .build());
   }
 

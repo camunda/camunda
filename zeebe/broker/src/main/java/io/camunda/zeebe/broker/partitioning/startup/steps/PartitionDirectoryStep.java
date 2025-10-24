@@ -18,9 +18,15 @@ import java.nio.file.Paths;
 
 public final class PartitionDirectoryStep implements StartupStep<PartitionStartupContext> {
 
+  private final String name;
+
+  public PartitionDirectoryStep(final int partitionId) {
+    name = String.format("Partition %d - Directory", partitionId);
+  }
+
   @Override
   public String getName() {
-    return "Partition Directory";
+    return name;
   }
 
   @Override

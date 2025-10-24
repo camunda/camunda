@@ -115,6 +115,11 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     doNotTouchProcessInstanceKeys.add(instanceKey);
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     completeTask(instanceKey, "task1", null);
+
+    final long rootCauseDecisionInstance =
+        ZeebeTestUtil.startProcessInstance(
+            true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null);
+    doNotTouchProcessInstanceKeys.add(rootCauseDecisionInstance);
   }
 
   @Override
@@ -286,6 +291,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_A), "develop/executionListeners.bpmn");
 
+    ZeebeTestUtil.deployDecision(
+        client, getTenant(TENANT_A), "develop/dmn-with-decisions-chain.dmn");
+
+    ZeebeTestUtil.deployProcess(
+        true, client, getTenant(TENANT_A), "develop/process-with-root-cause-decision.bpmn");
+
     // reverted in Zeebe https://github.com/camunda/camunda/issues/13640
     // ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A),
     // "develop/inclusiveGateway.bpmn");
@@ -372,6 +383,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(
             ZeebeTestUtil.startProcessInstance(
                 true, client, getTenant(TENANT_A), "executionListeners", null));
+
+        // Root cause decision process
+        processInstanceKeys.add(
+            ZeebeTestUtil.startProcessInstance(
+                true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null));
+
         // reverted in Zeebe https://github.com/camunda/camunda/issues/13640
         //        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client,
         // getTenant(TENANT_A), "inclusiveGatewayProcess",

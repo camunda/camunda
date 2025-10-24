@@ -14,9 +14,15 @@ import io.camunda.zeebe.scheduler.startup.StartupStep;
 
 public final class PartitionRegistrationStep implements StartupStep<PartitionStartupContext> {
 
+  private final String name;
+
+  public PartitionRegistrationStep(final int partitionId) {
+    name = String.format("Partition %d - Registration", partitionId);
+  }
+
   @Override
   public String getName() {
-    return "Partition Registration";
+    return name;
   }
 
   @Override

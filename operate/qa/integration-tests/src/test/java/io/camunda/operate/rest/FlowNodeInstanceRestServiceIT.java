@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(
@@ -52,9 +52,9 @@ import org.springframework.test.web.servlet.MvcResult;
     })
 public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
 
-  @MockBean protected ProcessInstanceReader processInstanceReader;
-  @MockBean private FlowNodeInstanceReader flowNodeInstanceReader;
-  @MockBean private PermissionsService permissionsService;
+  @MockitoBean protected ProcessInstanceReader processInstanceReader;
+  @MockitoBean private FlowNodeInstanceReader flowNodeInstanceReader;
+  @MockitoBean private PermissionsService permissionsService;
 
   @Test
   public void testFlowNodeInstancesFailsWhenNoPermissions() throws Exception {

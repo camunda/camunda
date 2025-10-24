@@ -116,24 +116,22 @@ public class ResourceDeletionDeleteProcessor
   public void processNewCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
     final long eventKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
 
-    tryDeleteResources(command);
+    tryDeleteResources(command, eventKey);
 
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
     commandDistributionBehavior
         .withKey(eventKey)
         .inQueue(DistributionQueue.DEPLOYMENT)
         .distribute(command);
-    responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETING, value, command);
+    responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETED, value, command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
-    stateWriter.appendFollowUpEvent(command.getKey(), ResourceDeletionIntent.DELETING, value);
 
-    tryDeleteResources(command);
+    tryDeleteResources(command, command.getKey());
 
     stateWriter.appendFollowUpEvent(command.getKey(), ResourceDeletionIntent.DELETED, value);
     commandDistributionBehavior.acknowledgeCommand(command);
@@ -170,11 +168,12 @@ public class ResourceDeletionDeleteProcessor
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
-  private void tryDeleteResources(final TypedRecord<ResourceDeletionRecord> command) {
+  private void tryDeleteResources(
+      final TypedRecord<ResourceDeletionRecord> command, final long eventKey) {
     final var value = command.getValue();
 
     final var resourceDeleted =
-        untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId));
+        untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
 
     if (!resourceDeleted) {
       throw new NoSuchResourceException(value.getResourceKey());
@@ -182,68 +181,75 @@ public class ResourceDeletionDeleteProcessor
   }
 
   private boolean tryDeleteResource(
-      final TypedRecord<ResourceDeletionRecord> command, final String tenantId) {
+      final TypedRecord<ResourceDeletionRecord> command,
+      final String tenantId,
+      final long eventKey) {
     final var value = command.getValue();
-    final var processOptional =
-        Optional.ofNullable(
-            processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId));
-    if (processOptional.isPresent()) {
-      final var process = processOptional.get();
-      checkAuthorization(
+
+    final var process = processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId);
+    if (process != null) {
+      return authorizeAndDelete(
           command,
-          AuthorizationResourceType.RESOURCE,
+          eventKey,
           PermissionType.DELETE_PROCESS,
           bufferAsString(process.getBpmnProcessId()),
-          process.getTenantId());
-      setTenantId(command, tenantId);
-      deleteProcess(process);
-      return true;
+          process.getTenantId(),
+          () -> deleteProcess(process));
     }
 
     final var drgOptional =
         decisionState.findDecisionRequirementsByTenantAndKey(tenantId, value.getResourceKey());
     if (drgOptional.isPresent()) {
       final var drg = drgOptional.get();
-      checkAuthorization(
+      return authorizeAndDelete(
           command,
-          AuthorizationResourceType.RESOURCE,
+          eventKey,
           PermissionType.DELETE_DRD,
           bufferAsString(drg.getDecisionRequirementsId()),
-          drg.getTenantId());
-      setTenantId(command, tenantId);
-      deleteDecisionRequirements(drg);
-      return true;
+          drg.getTenantId(),
+          () -> deleteDecisionRequirements(drg));
     }
 
     final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
     if (formOptional.isPresent()) {
       final var form = formOptional.get();
-      checkAuthorization(
+      return authorizeAndDelete(
           command,
-          AuthorizationResourceType.RESOURCE,
+          eventKey,
           PermissionType.DELETE_FORM,
           bufferAsString(form.getFormId()),
-          form.getTenantId());
-      setTenantId(command, tenantId);
-      deleteForm(form);
-      return true;
+          form.getTenantId(),
+          () -> deleteForm(form));
     }
 
     final var resourceOptional = resourceState.findResourceByKey(value.getResourceKey(), tenantId);
     if (resourceOptional.isPresent()) {
       final var resource = resourceOptional.get();
-      checkAuthorization(
+      return authorizeAndDelete(
           command,
-          AuthorizationResourceType.RESOURCE,
+          eventKey,
           PermissionType.DELETE_RESOURCE,
           bufferAsString(resource.getResourceId()),
-          resource.getTenantId());
-      setTenantId(command, tenantId);
-      deleteResource(resource);
-      return true;
+          resource.getTenantId(),
+          () -> deleteResource(resource));
     }
 
     return false;
+  }
+
+  private boolean authorizeAndDelete(
+      final TypedRecord<ResourceDeletionRecord> command,
+      final long eventKey,
+      final PermissionType permissionType,
+      final String resourceId,
+      final String tenantId,
+      final Runnable deletionAction) {
+    checkAuthorization(
+        command, AuthorizationResourceType.RESOURCE, permissionType, resourceId, tenantId);
+    stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, command.getValue());
+    setTenantId(command, tenantId);
+    deletionAction.run();
+    return true;
   }
 
   private void deleteDecisionRequirements(final DeployedDrg drg) {
@@ -442,7 +448,7 @@ public class ResourceDeletionDeleteProcessor
         new AuthorizationRequest(command, resourceType, permissionType, tenantId)
             .addResourceId(resourceId);
 
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
+    if (authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
       throw new ForbiddenException(authRequest);
     }
   }

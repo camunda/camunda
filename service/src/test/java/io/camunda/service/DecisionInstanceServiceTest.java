@@ -41,7 +41,12 @@ class DecisionInstanceServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new DecisionInstanceServices(
-            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
+            mock(BrokerClient.class),
+            mock(SecurityContextProvider.class),
+            client,
+            null,
+            mock(ApiServicesExecutorProvider.class),
+            null);
   }
 
   @Test

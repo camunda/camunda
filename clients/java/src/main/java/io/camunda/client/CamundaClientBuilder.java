@@ -15,7 +15,6 @@
  */
 package io.camunda.client;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.worker.JobHandler;
@@ -48,16 +47,6 @@ public interface CamundaClientBuilder {
    */
   CamundaClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides);
-
-  /**
-   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     CamundaClientBuilder#grpcAddress(URI)}
-   * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
-   *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
-   *     </code> .
-   */
-  @Deprecated
-  CamundaClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
    * @param restAddress the REST API address of a gateway that the client can connect to. The
@@ -158,9 +147,6 @@ public interface CamundaClientBuilder {
    */
   CamundaClientBuilder defaultRequestTimeoutOffset(Duration requestTimeoutOffset);
 
-  /** Use a plaintext connection between the client and the gateway. */
-  CamundaClientBuilder usePlaintext();
-
   /**
    * Path to a root CA certificate to be used instead of the certificate in the default default
    * store.
@@ -179,7 +165,7 @@ public interface CamundaClientBuilder {
   /**
    * Custom implementations of the gRPC {@code ClientInterceptor} middleware API. The interceptors
    * will be applied to every gRPC call that the client makes. More details can be found at {@link
-   * https://grpc.io/docs/guides/interceptors/}.
+   * <a href="https://grpc.io/docs/guides/interceptors/">grpc.io</a>}.
    */
   CamundaClientBuilder withInterceptors(ClientInterceptor... interceptor);
 
@@ -198,7 +184,7 @@ public interface CamundaClientBuilder {
    * <p>This method is intended for testing, but may safely be used outside of tests as an
    * alternative to DNS overrides.
    *
-   * <p>This setting does nothing if a {@link #usePlaintext() plaintext} connection is used.
+   * <p>This setting does nothing if a plaintext connection is used.
    *
    * @param authority The alternative authority to use, commonly in the form <code>host</code> or
    *     <code>host:port</code>
@@ -237,17 +223,13 @@ public interface CamundaClientBuilder {
 
   /**
    * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
-   * This is an experimental API which is present while we migrate the bulk of the API from gRPC to
-   * REST. Once done, this will also be removed.
+   * The default value is {@code true} (REST is preferred).
    *
-   * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
+   * <p>NOTE: job streaming is only supported via gRPC
    *
    * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
-   * @deprecated since 8.5, will be removed in 8.8
    * @return this builder for chaining
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
-  @Deprecated
   CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /**

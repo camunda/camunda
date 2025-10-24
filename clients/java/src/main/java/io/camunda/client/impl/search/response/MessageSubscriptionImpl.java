@@ -15,11 +15,12 @@
  */
 package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.search.enums.MessageSubscriptionType;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public class MessageSubscriptionImpl implements MessageSubscription {
@@ -30,8 +31,8 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final Long processInstanceKey;
   private final String elementId;
   private final Long elementInstanceKey;
-  private final MessageSubscriptionType messageSubscriptionType;
-  private final String lastUpdatedDate;
+  private final MessageSubscriptionState messageSubscriptionState;
+  private final OffsetDateTime lastUpdatedDate;
   private final String messageName;
   private final String correlationKey;
   private final String tenantId;
@@ -43,9 +44,9 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
-    messageSubscriptionType =
-        EnumUtil.convert(item.getMessageSubscriptionType(), MessageSubscriptionType.class);
-    lastUpdatedDate = item.getLastUpdatedDate();
+    messageSubscriptionState =
+        EnumUtil.convert(item.getMessageSubscriptionState(), MessageSubscriptionState.class);
+    lastUpdatedDate = ParseUtil.parseOffsetDateTimeOrNull(item.getLastUpdatedDate());
     messageName = item.getMessageName();
     correlationKey = item.getCorrelationKey();
     tenantId = item.getTenantId();
@@ -82,12 +83,12 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
-  public MessageSubscriptionType getMessageSubscriptionType() {
-    return messageSubscriptionType;
+  public MessageSubscriptionState getMessageSubscriptionState() {
+    return messageSubscriptionState;
   }
 
   @Override
-  public String getLastUpdatedDate() {
+  public OffsetDateTime getLastUpdatedDate() {
     return lastUpdatedDate;
   }
 
@@ -115,7 +116,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         processInstanceKey,
         elementId,
         elementInstanceKey,
-        messageSubscriptionType,
+        messageSubscriptionState,
         lastUpdatedDate,
         messageName,
         correlationKey,
@@ -137,7 +138,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         && Objects.equals(processInstanceKey, subscription.processInstanceKey)
         && Objects.equals(elementId, subscription.elementId)
         && Objects.equals(elementInstanceKey, subscription.elementInstanceKey)
-        && messageSubscriptionType == subscription.messageSubscriptionType
+        && messageSubscriptionState == subscription.messageSubscriptionState
         && Objects.equals(lastUpdatedDate, subscription.lastUpdatedDate)
         && Objects.equals(messageName, subscription.messageName)
         && Objects.equals(correlationKey, subscription.correlationKey)

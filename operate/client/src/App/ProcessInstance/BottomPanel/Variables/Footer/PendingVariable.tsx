@@ -25,7 +25,7 @@ const PendingVariable: React.FC = observer(() => {
   const {name, value} = pendingItem;
 
   return (
-    <Layer $hasPendingVariable data-testid={name}>
+    <Layer $hasPendingVariable data-testid={`pending-variable-${name}`}>
       <VariableName title={name}>{name}</VariableName>
       <VariableValue>{value}</VariableValue>
       <Operations showLoadingIndicator />

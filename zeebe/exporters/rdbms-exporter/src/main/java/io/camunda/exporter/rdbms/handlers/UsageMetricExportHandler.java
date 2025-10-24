@@ -28,18 +28,11 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricRecordValue> {
+public record UsageMetricExportHandler(
+    UsageMetricWriter usageMetricWriter, UsageMetricTUWriter usageMetricTUWriter)
+    implements RdbmsExportHandler<UsageMetricRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricExportHandler.class);
-
-  private final UsageMetricWriter usageMetricWriter;
-  private final UsageMetricTUWriter usageMetricTUWriter;
-
-  public UsageMetricExportHandler(
-      final UsageMetricWriter usageMetricWriter, final UsageMetricTUWriter usageMetricTUWriter) {
-    this.usageMetricWriter = usageMetricWriter;
-    this.usageMetricTUWriter = usageMetricTUWriter;
-  }
 
   @Override
   public boolean canExport(final Record<UsageMetricRecordValue> record) {
@@ -65,6 +58,7 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
     }
 
     final var startTime = DateUtil.toOffsetDateTime(value.getStartTime());
+    final var endTime = DateUtil.toOffsetDateTime(value.getEndTime());
     final var recordKey = usageMetricRecordValue.getKey();
     final var partitionId = usageMetricRecordValue.getPartitionId();
 
@@ -76,16 +70,29 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
         .forEach(
             (key, val) ->
                 usageMetricList.add(
-                    new UsageMetricDbModel(
-                        recordKey, startTime, key, eventType, val, partitionId)));
+                    new UsageMetricDbModel.Builder()
+                        .key(recordKey)
+                        .startTime(startTime)
+                        .endTime(endTime)
+                        .tenantId(key)
+                        .eventType(eventType)
+                        .value(val)
+                        .partitionId(partitionId)
+                        .build()));
     value.getSetValues().entrySet().stream()
         .flatMap(
             entry ->
                 entry.getValue().stream()
                     .map(
                         val ->
-                            new UsageMetricTUDbModel(
-                                recordKey, startTime, entry.getKey(), val, partitionId)))
+                            new UsageMetricTUDbModel.Builder()
+                                .key(recordKey)
+                                .startTime(startTime)
+                                .endTime(endTime)
+                                .tenantId(entry.getKey())
+                                .assigneeHash(val)
+                                .partitionId(partitionId)
+                                .build()))
         .forEach(usageMetricTUList::add);
 
     return new Tuple<>(usageMetricList, usageMetricTUList);

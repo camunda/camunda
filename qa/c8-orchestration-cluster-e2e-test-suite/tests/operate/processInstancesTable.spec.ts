@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
+import {defaultAssertionOptions} from '../../utils/constants';
 
 type ProcessInstance = {processInstanceKey: number};
 
@@ -72,7 +73,9 @@ test.describe('Process Instances Table', () => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
-  test('Sorting of process instances', async ({
+
+  // Skipped due to bug 38103: https://github.com/camunda/camunda/issues/38103
+  test.skip('Sorting of process instances', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
@@ -107,13 +110,15 @@ test.describe('Process Instances Table', () => {
         )
         .toContain(instanceIds[2].toString());
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(1).innerText(),
+        .poll(
+          () => operateProcessesPage.processInstancesTable.nth(1).innerText(),
+          defaultAssertionOptions,
         )
         .toContain(instanceIds[1].toString());
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(2).innerText(),
+        .poll(
+          () => operateProcessesPage.processInstancesTable.nth(2).innerText(),
+          defaultAssertionOptions,
         )
         .toContain(instanceIds[0].toString());
     });
@@ -268,6 +273,7 @@ test.describe('Process Instances Table', () => {
       await operateFiltersPanelPage.selectProcess(
         'Process For Infinite Scroll',
       );
+      await operateFiltersPanelPage.selectVersion('1');
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('300 results')).toBeVisible();

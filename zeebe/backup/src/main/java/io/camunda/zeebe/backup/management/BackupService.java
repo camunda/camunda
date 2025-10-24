@@ -72,7 +72,8 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Void> takeBackup(final long checkpointId, final long checkpointPosition) {
+  public ActorFuture<Void> takeBackup(
+      final long checkpointId, final long checkpointPosition, final int partitionCount) {
     final ActorFuture<Void> result = createFuture();
     actor.run(
         () -> {
@@ -81,7 +82,7 @@ public final class BackupService extends Actor implements BackupManager {
                   snapshotStore,
                   getBackupId(checkpointId),
                   checkpointPosition,
-                  numberOfPartitions,
+                  partitionCount,
                   actor,
                   segmentsDirectory,
                   journalInfoProvider);
@@ -100,9 +101,10 @@ public final class BackupService extends Actor implements BackupManager {
                       error);
                 } else {
                   LOG.info(
-                      "Backup {} at position {} completed",
+                      "Backup {} at position {} completed with {} partitions",
                       inProgressBackup.checkpointId(),
-                      inProgressBackup.checkpointPosition());
+                      inProgressBackup.checkpointPosition(),
+                      partitionCount);
                 }
               });
           backupResult.onComplete(result);
@@ -142,9 +144,9 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupStatus>> listBackups() {
+  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
     final var operationMetrics = metrics.startListingBackups();
-    final var resultFuture = internalBackupManager.listBackups(partitionId, actor);
+    final var resultFuture = internalBackupManager.listBackups(partitionId, pattern, actor);
     resultFuture.onComplete(operationMetrics::complete);
     resultFuture.onComplete(
         (ignore, error) -> {
@@ -175,6 +177,17 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   public void failInProgressBackup(final long lastCheckpointId) {
     internalBackupManager.failInProgressBackups(partitionId, lastCheckpointId, actor);
+  }
+
+  @Override
+  public void createFailedBackup(
+      final long checkpointId, final long checkpointPosition, final String failureReason) {
+    actor.run(
+        () -> {
+          final var backupId = getBackupId(checkpointId);
+          internalBackupManager.createFailedBackup(
+              backupId, checkpointPosition, failureReason, actor);
+        });
   }
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {

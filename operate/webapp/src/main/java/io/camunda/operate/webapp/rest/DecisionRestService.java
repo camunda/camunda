@@ -36,15 +36,6 @@ public class DecisionRestService extends InternalAPIErrorController {
   @Autowired private PermissionsService permissionsService;
   @Autowired private BatchOperationWriter batchOperationWriter;
 
-  @Operation(summary = "Get decision DMN XML")
-  @GetMapping(path = "/{id}/xml")
-  public String getDecisionDiagram(
-      @ValidLongId @PathVariable("id") final String decisionDefinitionId) {
-    final Long decisionDefinitionKey = Long.valueOf(decisionDefinitionId);
-    checkIdentityReadPermission(decisionDefinitionKey);
-    return decisionReader.getDiagram(decisionDefinitionKey);
-  }
-
   @Operation(summary = "List decisions grouped by decisionId")
   @GetMapping(path = "/grouped")
   @Deprecated
@@ -73,23 +64,19 @@ public class DecisionRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(final Long decisionDefinitionKey) {
-    if (permissionsService.permissionsEnabled()) {
-      final String decisionId = decisionReader.getDecision(decisionDefinitionKey).getDecisionId();
-      if (!permissionsService.hasPermissionForDecision(
-          decisionId, PermissionType.READ_DECISION_INSTANCE)) {
-        throw new NotAuthorizedException(
-            String.format("No read permission for decision %s", decisionId));
-      }
+    final String decisionId = decisionReader.getDecision(decisionDefinitionKey).getDecisionId();
+    if (!permissionsService.hasPermissionForDecision(
+        decisionId, PermissionType.READ_DECISION_DEFINITION)) {
+      throw new NotAuthorizedException(
+          String.format("No read permission for decision %s", decisionId));
     }
   }
 
   private void checkIdentityDeletePermission(final String decisionId) {
-    if (permissionsService.permissionsEnabled()) {
-      if (!permissionsService.hasPermissionForDecision(
-          decisionId, PermissionType.DELETE_DECISION_INSTANCE)) {
-        throw new NotAuthorizedException(
-            String.format("No delete permission for decision %s", decisionId));
-      }
+    if (!permissionsService.hasPermissionForDecision(
+        decisionId, PermissionType.DELETE_DECISION_INSTANCE)) {
+      throw new NotAuthorizedException(
+          String.format("No delete permission for decision %s", decisionId));
     }
   }
 }

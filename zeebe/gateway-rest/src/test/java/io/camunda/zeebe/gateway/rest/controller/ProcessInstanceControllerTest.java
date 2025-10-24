@@ -63,7 +63,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
              "processDefinitionVersion":-1,
              "processInstanceKey":"123",
              "tenantId":"tenantId",
-             "variables":{}
+             "variables":{},
+             "tags":[]
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
@@ -159,7 +160,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "processDefinitionVersion":-1,
               "processInstanceKey":"123",
               "tenantId":"<default>",
-              "variables":{}
+              "variables":{},
+              "tags":[]
             }""";
 
     // when / then
@@ -298,7 +300,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-                "processDefinitionKey": 123,
+                "processDefinitionKey": "123",
                 "awaitCompletion": true,
             "tenantId": "tenantId"
         }""";
@@ -432,7 +434,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-                "version": 1,
+                "processDefinitionVersion": 1,
                 "awaitCompletion": true
             }""";
 
@@ -440,9 +442,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
-                "detail":"At least one of [processDefinitionId, processDefinitionKey] is required.",
+                "detail":"At least one of [processDefinitionId, processDefinitionKey] is required",
                 "instance":"/v2/process-instances"
              }""";
 
@@ -469,17 +471,17 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "processDefinitionId": "bpmnProcessId",
-                "processDefinitionKey": 123,
-                "version": 1
+                "processDefinitionKey": "123",
+                "processDefinitionVersion": 1
             }""";
 
     final var expectedBody =
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
-                "detail":"Only one of [processDefinitionId, processDefinitionKey] is allowed.",
+                "detail":"Only one of [processDefinitionId, processDefinitionKey] is allowed",
                 "instance":"/v2/process-instances"
              }""";
 
@@ -657,7 +659,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "mappingInstructions": [
                 {
                   "sourceElementId": "sourceElementId1",
@@ -742,7 +744,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "operationReference": 123
             }""";
 
@@ -778,7 +780,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "mappingInstructions": [],
               "operationReference": 123
             }""";
@@ -815,7 +817,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "mappingInstructions": [
                 {
                   "sourceElementId": "sourceElementId1",
@@ -860,7 +862,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "mappingInstructions": [
                 {
                   "sourceElementId": "sourceElementId1",
@@ -919,19 +921,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                       }
                     }
                   ],
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -969,10 +971,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1016,11 +1018,11 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                       }
                     }
                   ],
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1064,10 +1066,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1100,19 +1102,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "activateInstructions": [
                 {
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1158,19 +1160,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                       "scopeId": "scopeId"
                     }
                   ],
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1211,17 +1213,17 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "activateInstructions": [
                 {
                   "elementId": "elementId",
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {},
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1269,19 +1271,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                       }
                     }
                   ],
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": -123
@@ -1327,7 +1329,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "processDefinitionId": "test-process-definition-id"
+              "filter":
+               {
+                  "processDefinitionId": "test-process-definition-id"
+                }
             }""";
 
     // when / then
@@ -1453,7 +1458,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "processDefinitionId": "test-process-definition-id"
+              "filter":
+               {
+                  "processDefinitionId": "test-process-definition-id"
+                }
             }""";
 
     // when / then
@@ -1542,6 +1550,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {"items":[
               {
+                "sequenceFlowId": "pi1_sequenceFlow1",
                 "processInstanceKey": "1",
                 "processDefinitionKey": "1",
                 "processDefinitionId": "pd1",
@@ -1635,5 +1644,527 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).searchIncidents(processInstanceKey, query);
+  }
+
+  @Test
+  void shouldRejectCancelProcessInstanceBatchOperationWithNoRequestBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"Bad Request",
+                "status":400,
+                "detail":"Required request body is missing",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectCancelProcessInstanceBatchOperationWithEmptyRequestBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectCancelProcessInstanceBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {}
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/cancellation"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResolveIncidentsBatchOperationWithNoRequestBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"Bad Request",
+                "status":400,
+                "detail":"Required request body is missing",
+                "instance":"/v2/process-instances/incident-resolution"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResolveIncidentsBatchOperationWithEmptyRequestBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/incident-resolution"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResolveIncidentsBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {}
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/incident-resolution"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWithNoFilter() {
+    // given
+    final var request =
+        """
+        {
+          "migrationPlan": {
+            "targetProcessDefinitionKey": "123",
+            "mappingInstructions": [
+              {
+                "sourceElementId": "a",
+                "targetElementId": "b"
+              }
+            ]
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {},
+          "migrationPlan": {
+            "targetProcessDefinitionKey": "123",
+            "mappingInstructions": [
+              {
+                "sourceElementId": "a",
+                "targetElementId": "b"
+              }
+            ]
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWithNoMigrationPlan() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+           {
+            "filter": {
+              "processDefinitionId": "test-process-definition-id"
+            }
+           }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No migrationPlan provided.",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWithEmptyMigrationPlan() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+           {
+            "filter": {
+              "processDefinitionId": "test-process-definition-id"
+            },
+            "migrationPlan": {}
+           }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No targetProcessDefinitionKey provided. No mappingInstructions provided.",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstancesBatchOperationWithNoFilter() {
+    // given
+    final var request =
+        """
+        {
+          "moveInstructions": [
+            {
+              "sourceElementId": "source1",
+              "targetElementId": "target1"
+            }
+          ]
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstancesBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {},
+          "moveInstructions": [
+            {
+              "sourceElementId": "source1",
+              "targetElementId": "target1"
+            }
+          ]
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstancesBatchOperationWithNoMoveInstructions() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+              "processDefinitionId": "test-process-definition-id"
+            }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No moveInstructions provided.",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstancesBatchOperationWithEmptyMoveInstructions() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+              "processDefinitionId": "test-process-definition-id"
+            },
+          "moveInstructions": []
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No moveInstructions provided.",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 }

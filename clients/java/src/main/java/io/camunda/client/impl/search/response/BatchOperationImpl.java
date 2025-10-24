@@ -19,8 +19,11 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationError;
+import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,8 +33,8 @@ public class BatchOperationImpl implements BatchOperation {
   private final String batchOperationKey;
   private final BatchOperationType type;
   private final BatchOperationState status;
-  private final String startDate;
-  private final String endDate;
+  private final OffsetDateTime startDate;
+  private final OffsetDateTime endDate;
   private final Integer operationsTotalCount;
   private final Integer operationsFailedCount;
   private final Integer operationsCompletedCount;
@@ -40,10 +43,7 @@ public class BatchOperationImpl implements BatchOperation {
 
   public BatchOperationImpl(final BatchOperationCreatedResult item) {
     batchOperationKey = item.getBatchOperationKey();
-    type =
-        item.getBatchOperationType() != null
-            ? BatchOperationType.valueOf(item.getBatchOperationType().name())
-            : null;
+    type = EnumUtil.convert(item.getBatchOperationType(), BatchOperationType.class);
     status = null;
     startDate = null;
     endDate = null;
@@ -54,13 +54,10 @@ public class BatchOperationImpl implements BatchOperation {
 
   public BatchOperationImpl(final BatchOperationResponse item) {
     batchOperationKey = item.getBatchOperationKey();
-    type =
-        item.getBatchOperationType() != null
-            ? BatchOperationType.valueOf(item.getBatchOperationType().name())
-            : null;
-    status = item.getState() != null ? BatchOperationState.valueOf(item.getState().name()) : null;
-    startDate = item.getStartDate();
-    endDate = item.getEndDate();
+    type = EnumUtil.convert(item.getBatchOperationType(), BatchOperationType.class);
+    status = EnumUtil.convert(item.getState(), BatchOperationState.class);
+    startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
+    endDate = ParseUtil.parseOffsetDateTimeOrNull(item.getEndDate());
     operationsTotalCount = item.getOperationsTotalCount();
     operationsFailedCount = item.getOperationsFailedCount();
     operationsCompletedCount = item.getOperationsCompletedCount();
@@ -87,12 +84,12 @@ public class BatchOperationImpl implements BatchOperation {
   }
 
   @Override
-  public String getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
   @Override
-  public String getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 

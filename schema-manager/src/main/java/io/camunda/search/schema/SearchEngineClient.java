@@ -20,12 +20,12 @@ public interface SearchEngineClient extends CloseableSilently {
 
   /**
    * @param indexDescriptor indexDescriptor
-   * @param settings settings
+   * @param indexConfiguration indexConfiguration
    * @param create If true, this request cannot replace or update existing index templates.
    */
   void createIndexTemplate(
       final IndexTemplateDescriptor indexDescriptor,
-      final IndexConfiguration settings,
+      final IndexConfiguration indexConfiguration,
       final boolean create);
 
   /**
@@ -43,12 +43,11 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge);
 
-  boolean importersCompleted(
-      final int partitionId, final List<IndexDescriptor> importPositionIndices);
+  void putIndexMeta(final String indexName, Map<String, Object> meta);
 
   void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexConfiguration currentSettings);
+      final IndexConfiguration indexConfiguration);
 
   void deleteIndex(final String indexName);
 

@@ -13,6 +13,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import java.util.Set;
 
 public final class CreateProcessInstanceWithResultStub
     implements RequestStub<
@@ -22,6 +23,7 @@ public final class CreateProcessInstanceWithResultStub
   public static final String PROCESS_ID = "process";
   public static final int PROCESS_VERSION = 1;
   public static final long PROCESS_KEY = 456;
+  public static final Set<String> TAGS = Set.of("tag1", "tag2");
 
   @Override
   public void registerWith(final StubbedBrokerClient brokerClient) {
@@ -44,6 +46,10 @@ public final class CreateProcessInstanceWithResultStub
     return PROCESS_KEY;
   }
 
+  public Set<String> getTags() {
+    return TAGS;
+  }
+
   @Override
   public BrokerResponse<ProcessInstanceResultRecord> handle(
       final BrokerCreateProcessInstanceWithResultRequest request) throws Exception {
@@ -55,7 +61,8 @@ public final class CreateProcessInstanceWithResultStub
         .setVersion(PROCESS_VERSION)
         .setTenantId(piCreationRecord.getTenantId())
         .setProcessDefinitionKey(PROCESS_KEY)
-        .setProcessInstanceKey(PROCESS_INSTANCE_KEY);
+        .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+        .setTags(TAGS);
 
     return new BrokerResponse<>(response, 0, PROCESS_INSTANCE_KEY);
   }

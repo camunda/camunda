@@ -8,21 +8,22 @@
 package io.camunda.it.client;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class GroupsByTenantIntegrationTest {
   private static CamundaClient camundaClient;
 
@@ -111,5 +112,15 @@ public class GroupsByTenantIntegrationTest {
     final var clientsSearchResponse =
         camundaClient.newGroupsByTenantSearchRequest("someTenantId").send().join();
     assertThat(clientsSearchResponse.items()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnNotFoundOnGetWhenGroupDoesNotExist() {
+    // when / then
+    Assertions.assertThatThrownBy(
+            () -> camundaClient.newGroupGetRequest("someGroupId").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(ERROR_ENTITY_BY_ID_NOT_FOUND.formatted("Group", "id", "someGroupId"));
   }
 }

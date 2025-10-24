@@ -17,7 +17,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,11 +32,11 @@ public class UsageMetricsFilterTransformer extends IndexFilterTransformer<UsageM
     final var queries =
         new ArrayList<>(
             dateTimeOperations(
-                UsageMetricIndex.EVENT_TIME,
+                UsageMetricTemplate.END_TIME,
                 List.of(Operation.gte(filter.startTime()), Operation.lt(filter.endTime()))));
 
     if (filter.tenantId() != null) {
-      queries.add(term(UsageMetricIndex.TENANT_ID, filter.tenantId()));
+      queries.add(term(UsageMetricTemplate.TENANT_ID, filter.tenantId()));
     }
 
     return and(queries);

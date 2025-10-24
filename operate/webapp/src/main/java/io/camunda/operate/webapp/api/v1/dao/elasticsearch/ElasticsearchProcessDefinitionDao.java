@@ -31,7 +31,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -40,9 +39,7 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessDefinition>
     implements ProcessDefinitionDao {
 
-  @Autowired
-  @Qualifier("operateProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Override
   public Results<ProcessDefinition> search(final Query<ProcessDefinition> query)

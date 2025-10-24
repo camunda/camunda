@@ -11,6 +11,7 @@ import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.utils.EntitySizeEstimator;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -30,6 +31,7 @@ import java.util.function.BiConsumer;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class ExporterBatchWriter {
   private final Map<EntityIdAndEntityType, EntityAndHandlers> cachedEntities = new HashMap<>();
+  private final Map<EntityIdAndEntityType, Long> cachedEntitySizes = new HashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
 
   private final Map<ValueType, List<ExportHandler>> handlers;
@@ -75,6 +77,8 @@ public final class ExporterBatchWriter {
     handler.updateEntity(record, entity);
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
 
+    cachedEntitySizes.put(cacheKey, EntitySizeEstimator.estimateEntitySize(entity));
+
     // we store all handlers for an entity to make sure not to miss any flushes
     entityAndHandlers.handlers.add(handler);
   }
@@ -100,6 +104,11 @@ public final class ExporterBatchWriter {
     reset();
   }
 
+  public int getBatchMemoryEstimateInMb() {
+    return (int) cachedEntitySizes.values().stream().mapToLong(Long::longValue).sum()
+        / (1024 * 1024);
+  }
+
   private void observeRecordTimestamps() {
     final var timestamps = new ArrayList<>(cachedRecordTimestamps.values());
     cachedRecordTimestamps.clear();
@@ -112,6 +121,7 @@ public final class ExporterBatchWriter {
 
   private void reset() {
     cachedEntities.clear();
+    cachedEntitySizes.clear();
   }
 
   public static final class Builder {

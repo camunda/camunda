@@ -7,6 +7,10 @@
  */
 package io.camunda.security.reader;
 
+import io.camunda.security.auth.Authorization;
+import java.util.List;
+import java.util.Optional;
+
 public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, TenantCheck tenantCheck) {
 
   public static ResourceAccessChecks disabled() {
@@ -16,5 +20,24 @@ public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, Tenant
   public static ResourceAccessChecks of(
       final AuthorizationCheck authorizationCheck, final TenantCheck tenantCheck) {
     return new ResourceAccessChecks(authorizationCheck, tenantCheck);
+  }
+
+  public List<String> getAuthorizedResourceIds() {
+    if (authorizationCheck == null || !authorizationCheck.enabled()) {
+      return List.of();
+    }
+
+    return Optional.of(authorizationCheck)
+        .map(AuthorizationCheck::authorization)
+        .map(Authorization::resourceIds)
+        .orElse(List.of());
+  }
+
+  public List<String> getAuthorizedTenantIds() {
+    if (tenantCheck == null || !tenantCheck.enabled()) {
+      return List.of();
+    }
+
+    return Optional.of(tenantCheck).map(TenantCheck::tenantIds).orElse(List.of());
   }
 }

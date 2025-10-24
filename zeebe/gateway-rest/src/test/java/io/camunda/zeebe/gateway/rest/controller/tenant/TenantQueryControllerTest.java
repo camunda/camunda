@@ -22,10 +22,12 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
@@ -35,6 +37,7 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +53,7 @@ import org.springframework.test.json.JsonCompareMode;
 public class TenantQueryControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   private static final List<TenantEntity> TENANT_ENTITIES =
       List.of(
@@ -221,6 +225,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -236,6 +241,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .thenReturn(groupServices);
     when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(roleServices);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test
@@ -531,15 +537,15 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldListMembersOfTypeClient() {
     // given
-    when(tenantServices.searchMembers(any(TenantQuery.class)))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)
                 .items(
                     List.of(
-                        new TenantMemberEntity("client1", EntityType.CLIENT),
-                        new TenantMemberEntity("client2", EntityType.CLIENT),
-                        new TenantMemberEntity("client3", EntityType.CLIENT)))
+                        new TenantMemberEntity("tenant1", "client1", EntityType.CLIENT),
+                        new TenantMemberEntity("tenant1", "client2", EntityType.CLIENT),
+                        new TenantMemberEntity("tenant1", "client3", EntityType.CLIENT)))
                 .build());
 
     // when / then
@@ -575,15 +581,15 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldListMembersOfTypeUser() {
     // given
-    when(tenantServices.searchMembers(any(TenantQuery.class)))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)
                 .items(
                     List.of(
-                        new TenantMemberEntity("user1", EntityType.USER),
-                        new TenantMemberEntity("user2", EntityType.USER),
-                        new TenantMemberEntity("user3", EntityType.USER)))
+                        new TenantMemberEntity("tenant1", "user1", EntityType.USER),
+                        new TenantMemberEntity("tenant1", "user2", EntityType.USER),
+                        new TenantMemberEntity("tenant1", "user3", EntityType.USER)))
                 .build());
 
     // when / then
@@ -619,15 +625,15 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldListMembersOfTypeGroup() {
     // given
-    when(tenantServices.searchMembers(any(TenantQuery.class)))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)
                 .items(
                     List.of(
-                        new TenantMemberEntity("group1", EntityType.GROUP),
-                        new TenantMemberEntity("group2", EntityType.GROUP),
-                        new TenantMemberEntity("group3", EntityType.GROUP)))
+                        new TenantMemberEntity("tenant1", "group1", EntityType.GROUP),
+                        new TenantMemberEntity("tenant1", "group2", EntityType.GROUP),
+                        new TenantMemberEntity("tenant1", "group3", EntityType.GROUP)))
                 .build());
 
     // when / then
@@ -737,9 +743,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Both after and before cannot be set at the same time.",
+                      "detail": "Failed to read request",
                       "instance": "%s"
                     }""",
                 SEARCH_TENANT_URL)));

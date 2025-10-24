@@ -8,6 +8,6 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.RoleMemberEntity;
-import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.RoleMemberQuery;
 
-public interface RoleMemberReader extends SearchEntityReader<RoleMemberEntity, RoleQuery> {}
+public interface RoleMemberReader extends SearchEntityReader<RoleMemberEntity, RoleMemberQuery> {}

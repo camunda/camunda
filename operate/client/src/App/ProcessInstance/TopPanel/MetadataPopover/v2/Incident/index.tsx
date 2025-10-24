@@ -11,8 +11,8 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {Header} from '../../Header';
-import type {Incident as IncidentDto} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {SummaryDataKey, SummaryDataValue} from '../../styled.tsx';
+import type {Incident as IncidentDto} from '@camunda/camunda-api-zod-schemas/8.8';
+import {SummaryDataKey, SummaryDataValue} from '../../styled';
 import {resolveIncidentErrorType} from './resolveIncidentErrorType';
 
 type Props = {
@@ -28,7 +28,7 @@ const Incident: React.FC<Props> = ({
   processInstanceId,
   onButtonClick,
 }) => {
-  if (incident === null) {
+  if (!incident || !incidentV2) {
     return null;
   }
 

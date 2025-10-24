@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -131,7 +132,7 @@ public final class EventAppliers implements EventApplier {
     registerEscalationAppliers();
     registerResourceDeletionAppliers();
 
-    registerAdHocSubProcessActivityActivationAppliers();
+    registerAdHocSubProcessInstructionAppliers(state);
 
     registerUserAppliers(state);
     registerAuthorizationAppliers(state);
@@ -145,10 +146,19 @@ public final class EventAppliers implements EventApplier {
     registerIdentitySetupAppliers();
     registerAsyncRequestAppliers(state);
     registerUsageMetricsAppliers(state);
-
     registerMultiInstanceAppliers(state);
-
+    registerClusterVariableEventAppliers(state);
     return this;
+  }
+
+  private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
+    register(
+        ClusterVariableIntent.CREATED,
+        new ClusterVariableCreatedApplier(state.getClusterVariableState()));
+    register(ClusterVariableIntent.UPDATED, NOOP_EVENT_APPLIER);
+    register(
+        ClusterVariableIntent.DELETED,
+        new ClusterVariableDeletedApplier(state.getClusterVariableState()));
   }
 
   private void registerMultiInstanceAppliers(final MutableProcessingState state) {
@@ -391,6 +401,11 @@ public final class EventAppliers implements EventApplier {
         2,
         new IncidentResolvedV2Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
+    register(
+        IncidentIntent.RESOLVED,
+        3,
+        new IncidentResolvedV3Applier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }
 
@@ -579,8 +594,11 @@ public final class EventAppliers implements EventApplier {
     register(ResourceDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 
-  private void registerAdHocSubProcessActivityActivationAppliers() {
+  private void registerAdHocSubProcessInstructionAppliers(final MutableProcessingState state) {
     register(AdHocSubProcessInstructionIntent.ACTIVATED, NOOP_EVENT_APPLIER);
+    register(
+        AdHocSubProcessInstructionIntent.COMPLETED,
+        new AdHocSubProcessInstructionCompletedApplier(state.getElementInstanceState()));
   }
 
   private void registerClockAppliers(final MutableProcessingState state) {

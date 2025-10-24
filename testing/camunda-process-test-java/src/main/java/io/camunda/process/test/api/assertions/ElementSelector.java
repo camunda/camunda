@@ -47,4 +47,32 @@ public interface ElementSelector {
    * @param filter the filter used to limit the element instance search
    */
   default void applyFilter(final ElementInstanceFilter filter) {}
+
+  /**
+   * Combines two element selectors together.
+   *
+   * @param other element instance selector to be added.
+   * @return the combined element instance selector
+   */
+  default ElementSelector and(ElementSelector other) {
+    final ElementSelector self = this;
+
+    return new ElementSelector() {
+      @Override
+      public boolean test(final ElementInstance elementInstance) {
+        return self.test(elementInstance) && other.test(elementInstance);
+      }
+
+      @Override
+      public String describe() {
+        return String.format("%s, %s", self.describe(), other.describe());
+      }
+
+      @Override
+      public void applyFilter(final ElementInstanceFilter filter) {
+        self.applyFilter(filter);
+        other.applyFilter(filter);
+      }
+    };
+  }
 }

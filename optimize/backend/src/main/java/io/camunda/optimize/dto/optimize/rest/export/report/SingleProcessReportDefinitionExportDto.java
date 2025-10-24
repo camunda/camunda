@@ -14,6 +14,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProces
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
 import jakarta.validation.constraints.NotNull;
+import java.util.Objects;
 
 public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
 
@@ -56,17 +57,24 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof SingleProcessReportDefinitionExportDto;
   }
 
   @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final SingleProcessReportDefinitionExportDto that = (SingleProcessReportDefinitionExportDto) o;
+    return Objects.equals(data, that.data);
+  }
+
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), data);
   }
 }

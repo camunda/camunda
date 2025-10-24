@@ -9,14 +9,19 @@ const testRailOptions = {
   outputFile: './test-results/junit-report.xml',
 };
 
-// Define reporters without SlackReporter
+const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
+
+// Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
+const isV2ModeEnabled =
+  process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
+
+// Reporters
 const useReportersWithoutSlack: any[] = [
   ['list'],
   ['junit', testRailOptions],
   ['html', {outputFolder: 'html-report'}],
 ];
 
-// Define reporters with SlackReporter
 const useReportersWithSlack: any[] = [
   [
     './node_modules/playwright-slack-report/dist/src/SlackReporter.js',
@@ -27,7 +32,9 @@ const useReportersWithSlack: any[] = [
       showInThread: true,
       meta: [
         {
-          key: `Nightly Test Results for Mono Repo - ${process.env.VERSION}`,
+          key: isV2StatelessTestsOnly
+            ? `Nightly V2 Stateless Test Results for Mono Repo - ${process.env.VERSION}`
+            : `Nightly Test Results for Mono Repo - ${process.env.VERSION}`,
           value: `<https://github.com/camunda/camunda/actions/runs/${process.env.GITHUB_RUN_ID}|📊>`,
         },
       ],
@@ -36,6 +43,7 @@ const useReportersWithSlack: any[] = [
   ...useReportersWithoutSlack,
 ];
 
+// Detect changed folders
 const args = process.argv.slice(2);
 const changedFoldersArgIndex = args.indexOf('--changed-folders');
 const changedFolders =
@@ -43,8 +51,130 @@ const changedFolders =
     ? args[changedFoldersArgIndex + 1].split(',')
     : [];
 
+// Projects
+const normalProjects = [
+  {
+    name: 'chromium',
+    use: devices['Desktop Chrome'],
+    testMatch: changedFolders.includes('chromium')
+      ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+      : isV2ModeEnabled
+        ? ['tests/**/*.spec.ts']
+        : [
+            'tests/tasklist/v1/**/*.spec.ts',
+            'tests/common-flows/v1/**/*.spec.ts',
+          ],
+    testIgnore: isV2ModeEnabled
+      ? [
+          'tests/tasklist/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/tasklist/v1/**',
+          'tests/common-flows/v1/**',
+        ]
+      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    teardown: 'chromium-subset',
+  },
+  {
+    name: 'chromium-subset',
+    testMatch: isV2ModeEnabled
+      ? 'tests/tasklist/task-panel.spec.ts'
+      : 'tests/tasklist/v1/task-panel.spec.ts',
+    use: devices['Desktop Chrome'],
+    testIgnore: 'v2-stateless-tests/**',
+  },
+  {
+    name: 'firefox',
+    use: devices['Desktop Firefox'],
+    testMatch: changedFolders.includes('firefox')
+      ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+      : isV2ModeEnabled
+        ? ['tests/**/*.spec.ts']
+        : [
+            'tests/tasklist/v1/**/*.spec.ts',
+            'tests/common-flows/v1/**/*.spec.ts',
+          ],
+    testIgnore: isV2ModeEnabled
+      ? [
+          'tests/tasklist/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/tasklist/v1/**',
+          'tests/common-flows/v1/**',
+        ]
+      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    teardown: 'firefox-subset',
+  },
+  {
+    name: 'firefox-subset',
+    testMatch: isV2ModeEnabled
+      ? 'tests/tasklist/task-panel.spec.ts'
+      : 'tests/tasklist/v1/task-panel.spec.ts',
+    use: devices['Desktop Firefox'],
+    testIgnore: 'v2-stateless-tests/**',
+  },
+  {
+    name: 'msedge',
+    use: devices['Desktop Edge'],
+    testMatch: changedFolders.includes('msedge')
+      ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+      : isV2ModeEnabled
+        ? ['tests/**/*.spec.ts']
+        : [
+            'tests/tasklist/v1/**/*.spec.ts',
+            'tests/common-flows/v1/**/*.spec.ts',
+          ],
+    testIgnore: isV2ModeEnabled
+      ? [
+          'tests/tasklist/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/tasklist/v1/**',
+          'tests/common-flows/v1/**',
+        ]
+      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    teardown: 'msedge-subset',
+  },
+  {
+    name: 'msedge-subset',
+    testMatch: isV2ModeEnabled
+      ? 'tests/tasklist/task-panel.spec.ts'
+      : 'tests/tasklist/v1/task-panel.spec.ts',
+    use: devices['Desktop Edge'],
+    testIgnore: 'v2-stateless-tests/**',
+  },
+  {
+    name: 'tasklist-v1-e2e',
+    testMatch: ['tests/tasklist/v1/*.spec.ts'],
+    use: devices['Desktop Edge'],
+    testIgnore: [
+      'tests/tasklist/v1/task-panel.spec.ts',
+      'v2-stateless-tests/**',
+    ],
+    teardown: 'chromium-subset',
+  },
+  {
+    name: 'tasklist-v2-e2e',
+    testMatch: ['tests/tasklist/*.spec.ts'],
+    use: devices['Desktop Edge'],
+    testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    teardown: 'chromium-subset',
+  },
+  {
+    name: 'identity-e2e',
+    testMatch: ['tests/identity/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    testIgnore: 'v2-stateless-tests/**',
+  },
+];
+
+const v2StatelessProjects = [
+  {
+    name: 'request-validation-tests',
+    testMatch: ['v2-stateless-tests/tests/request-validation/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+  },
+];
+
 export default defineConfig({
-  testDir: `./tests/`,
+  testDir: `./`,
   timeout: 12 * 60 * 1000,
   workers: 4,
   retries: 1,
@@ -56,57 +186,7 @@ export default defineConfig({
     actionTimeout: 10000,
     screenshot: 'only-on-failure',
   },
-  projects: [
-    {
-      name: 'chromium',
-      use: devices['Desktop Chrome'],
-      // Specify only tests in the changed folders for the 'chromium' project
-      testMatch: changedFolders.includes('chromium')
-        ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
-        : undefined,
-      testIgnore: 'task-panel.spec.ts',
-      teardown: 'chromium-subset',
-    },
-    {
-      name: 'chromium-subset',
-      testMatch: 'task-panel.spec.ts',
-      use: devices['Desktop Chrome'],
-    },
-    {
-      name: 'firefox',
-      use: devices['Desktop Firefox'],
-      testIgnore: 'task-panel.spec.ts',
-      teardown: 'firefox-subset',
-    },
-    {
-      name: 'firefox-subset',
-      testMatch: 'task-panel.spec.ts',
-      use: devices['Desktop Firefox'],
-    },
-    {
-      name: 'msedge',
-      use: devices['Desktop Edge'],
-      testIgnore: 'task-panel.spec.ts',
-      teardown: 'msedge-subset',
-    },
-    {
-      name: 'msedge-subset',
-      testMatch: 'task-panel.spec.ts',
-      use: devices['Desktop Edge'],
-    },
-    {
-      name: 'tasklist-v1-e2e',
-      testMatch: ['tests/tasklist/*.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
-      use: devices['Desktop Edge'],
-      testIgnore: 'task-panel.spec.ts',
-      teardown: 'chromium-subset',
-    },
-    {
-      name: 'identity-e2e',
-      testMatch: ['tests/identity/*.spec.ts'],
-      use: devices['Desktop Chrome'],
-    },
-  ],
+  projects: isV2StatelessTestsOnly ? v2StatelessProjects : normalProjects,
   reporter:
     process.env.INCLUDE_SLACK_REPORTER === 'true'
       ? useReportersWithSlack

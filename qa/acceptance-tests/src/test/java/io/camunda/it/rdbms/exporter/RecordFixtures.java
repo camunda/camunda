@@ -63,6 +63,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecord
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -490,105 +491,57 @@ public class RecordFixtures {
         .build();
   }
 
-  protected static ImmutableRecord<RecordValue> getBatchOperationCompletedRecord(
+  protected static Record<RecordValue> getBatchOperationCompletedRecord(
       final Long batchOperationKey, final Long position) {
-    final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(BatchOperationIntent.COMPLETED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-                .from(
-                    (ImmutableBatchOperationLifecycleManagementRecordValue)
-                        recordValueRecord.getValue())
-                .withBatchOperationKey(batchOperationKey)
-                .withErrors(emptyList())
-                .build())
-        .build();
+    return generateLifecycleRecord(
+        batchOperationKey, position, BatchOperationIntent.COMPLETED, false);
   }
 
-  protected static ImmutableRecord<RecordValue> getBatchOperationCompletedWithErrorsRecord(
+  protected static Record<RecordValue> getBatchOperationCompletedWithErrorsRecord(
       final Long batchOperationKey, final Long position) {
-    final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(BatchOperationIntent.COMPLETED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-                .from(
-                    (ImmutableBatchOperationLifecycleManagementRecordValue)
-                        recordValueRecord.getValue())
-                .withBatchOperationKey(batchOperationKey)
-                .build())
-        .build();
+    return generateLifecycleRecord(
+        batchOperationKey, position, BatchOperationIntent.COMPLETED, true);
   }
 
-  protected static ImmutableRecord<RecordValue> getBatchOperationLifecycleCanceledRecord(
+  protected static Record<RecordValue> getBatchOperationLifecycleCanceledRecord(
       final Long batchOperationKey, final Long position) {
-    final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(BatchOperationIntent.CANCELED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-                .from(
-                    (ImmutableBatchOperationLifecycleManagementRecordValue)
-                        recordValueRecord.getValue())
-                .withBatchOperationKey(batchOperationKey)
-                .build())
-        .build();
+    return generateLifecycleRecord(
+        batchOperationKey, position, BatchOperationIntent.CANCELED, false);
   }
 
-  protected static ImmutableRecord<RecordValue> getBatchOperationLifecycleSuspendedRecord(
+  protected static Record<RecordValue> getBatchOperationLifecycleSuspendedRecord(
       final Long batchOperationKey, final Long position) {
-    final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(BatchOperationIntent.SUSPENDED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-                .from(
-                    (ImmutableBatchOperationLifecycleManagementRecordValue)
-                        recordValueRecord.getValue())
-                .withBatchOperationKey(batchOperationKey)
-                .build())
-        .build();
+    return generateLifecycleRecord(
+        batchOperationKey, position, BatchOperationIntent.SUSPENDED, false);
   }
 
-  protected static ImmutableRecord<RecordValue> getBatchOperationLifecycleResumeRecord(
+  protected static Record<RecordValue> getBatchOperationLifecycleResumeRecord(
       final Long batchOperationKey, final Long position) {
-    final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
+    return generateLifecycleRecord(
+        batchOperationKey, position, BatchOperationIntent.RESUMED, false);
+  }
 
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(BatchOperationIntent.RESUMED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-                .from(
-                    (ImmutableBatchOperationLifecycleManagementRecordValue)
-                        recordValueRecord.getValue())
-                .withBatchOperationKey(batchOperationKey)
-                .build())
-        .build();
+  protected static Record<RecordValue> generateLifecycleRecord(
+      final Long batchOperationKey,
+      final Long position,
+      final BatchOperationIntent intent,
+      final boolean withErrors) {
+    final List<BatchOperationErrorValue> errors;
+    if (withErrors) {
+      errors = List.of(FACTORY.generateObject(BatchOperationErrorValue.class));
+    } else {
+      errors = emptyList();
+    }
+    final var value =
+        FACTORY
+            .generateObject(ImmutableBatchOperationLifecycleManagementRecordValue.class)
+            .withBatchOperationKey(batchOperationKey)
+            .withErrors(errors);
+
+    return FACTORY.generateRecord(
+        ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+        v -> v.withPosition(position).withTimestamp(System.currentTimeMillis()).withValue(value),
+        intent);
   }
 
   protected static ImmutableRecord<RecordValue> getCanceledProcessRecord(

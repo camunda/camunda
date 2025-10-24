@@ -7,7 +7,7 @@
  */
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {createIncident} from 'modules/testUtils';
+import {createEnhancedIncidentV2} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
 import {incidentsStore} from 'modules/stores/incidents';
@@ -43,30 +43,22 @@ const shortError = 'No data found for query $.orderId.';
 const longError =
   'Cannot compare values of different types: INTEGER and BOOLEAN';
 
-const firstIncident = createIncident({
-  errorType: {name: 'Error A', id: 'ERROR_A'},
+const firstIncident = createEnhancedIncidentV2({
+  errorType: 'IO_MAPPING_ERROR',
   errorMessage: shortError,
-  flowNodeId: 'StartEvent_1',
-  flowNodeInstanceId: '18239123812938',
-  rootCauseInstance: {
-    instanceId: '111111111111111111',
-    processDefinitionId: 'calledInstance',
-    processDefinitionName: 'Called Instance',
-  },
+  elementId: 'StartEvent_1',
+  elementInstanceKey: '18239123812938',
+  processInstanceKey: '111111111111111111',
+  processDefinitionId: 'calledInstance',
 });
 
-const secondIncident = createIncident({
-  errorType: {name: 'Error B', id: 'ERROR_A'},
+const secondIncident = createEnhancedIncidentV2({
+  errorType: 'CALLED_DECISION_ERROR',
   errorMessage: longError,
-  flowNodeId: 'Event_1db567d',
-  flowNodeInstanceId: id,
+  elementId: 'Event_1db567d',
+  elementInstanceKey: id,
 });
 
-const incidentsMock = {
-  incidents: [firstIncident, secondIncident],
-  count: 2,
-  errorTypes: [],
-  flowNodes: [],
-};
+const incidentsMock = [firstIncident, secondIncident];
 
 export {Wrapper, incidentsMock, firstIncident, secondIncident, shortError};

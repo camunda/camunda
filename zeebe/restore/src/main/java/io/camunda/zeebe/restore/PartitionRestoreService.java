@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -247,7 +248,7 @@ public class PartitionRestoreService {
         backupStore
             .list(
                 new BackupIdentifierWildcardImpl(
-                    Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
+                    Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId)))
             .join();
     final var validStatus =
         statuses.stream()

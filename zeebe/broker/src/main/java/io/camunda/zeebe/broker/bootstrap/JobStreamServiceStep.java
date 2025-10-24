@@ -21,6 +21,7 @@ import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -122,7 +123,11 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     mutable.wrap(buffer);
 
     return new ImmutableJobActivationPropertiesImpl(
-        mutable.worker(), mutable.timeout(), mutable.fetchVariables(), mutable.tenantIds());
+        mutable.worker(),
+        mutable.timeout(),
+        mutable.fetchVariables(),
+        mutable.tenantIds(),
+        mutable.claims());
   }
 
   @Override
@@ -134,7 +139,8 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       DirectBuffer worker,
       long timeout,
       Collection<DirectBuffer> fetchVariables,
-      Collection<String> tenantIds)
+      Collection<String> tenantIds,
+      Map<String, Object> claims)
       implements JobActivationProperties {
 
     @Override

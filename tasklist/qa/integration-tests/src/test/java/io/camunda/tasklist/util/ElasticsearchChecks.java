@@ -16,17 +16,13 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
-import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -41,15 +37,9 @@ import org.springframework.context.annotation.Configuration;
 @Conditional(ElasticSearchCondition.class)
 public class ElasticsearchChecks {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchChecks.class);
-
   @Autowired private ElasticsearchHelper elasticsearchHelper;
 
   @Autowired private ProcessStore processStore;
-
-  @Autowired
-  @Qualifier("tasklistSnapshotTaskVariableTemplate")
-  private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   /** Checks whether the process of given args[0] processId (Long) is deployed. */
   @Bean(name = PROCESS_IS_DEPLOYED_CHECK)

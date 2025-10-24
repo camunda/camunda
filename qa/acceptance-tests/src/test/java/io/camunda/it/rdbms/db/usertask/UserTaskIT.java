@@ -7,6 +7,8 @@
  */
 package io.camunda.it.rdbms.db.usertask;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveRandomUserTasks;
 import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveUserTask;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -169,6 +171,49 @@ public class UserTaskIT {
                         .build(),
                     UserTaskSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByAuthorizedResourceId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b),
+                resourceAccessChecksFromResourceIds(userTask.processDefinitionId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertUserTaskEntity(searchResult.items().getFirst(), userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByAuthorizedTenantId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+    createAndSaveRandomUserTasks(rdbmsService);
+
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskQuery.of(b -> b), resourceAccessChecksFromTenantIds(userTask.tenantId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -631,7 +676,14 @@ public class UserTaskIT {
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+
+    // compare only keys to avoid flaky test due random differences in candidate users/groups
+    assertThat(nextPage.items())
+        .extracting(ut -> ut.userTaskKey())
+        .isEqualTo(
+            searchResult.items().subList(15, 20).stream()
+                .map(UserTaskEntity::userTaskKey)
+                .toList());
   }
 
   private static void assertUserTaskEntity(
@@ -646,6 +698,7 @@ public class UserTaskIT {
             "dueDate",
             "followUpDate",
             "candidateUsers",
+            "processName",
             "candidateGroups")
         .isEqualTo(userTask);
     assertThat(instance.creationDate())

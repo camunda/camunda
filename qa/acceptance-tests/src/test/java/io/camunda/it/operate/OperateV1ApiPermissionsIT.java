@@ -16,10 +16,10 @@ import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INS
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
+import static io.camunda.it.util.TestHelper.deployDefaultTestDecisionProcessInstance;
 import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startDefaultTestDecisionProcessInstance;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForDecisionToBeEvaluated;
-import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
@@ -28,8 +28,8 @@ import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Decision;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
@@ -63,7 +63,6 @@ public class OperateV1ApiPermissionsIT {
       new TestCamundaApplication()
           .withAuthorizationsEnabled()
           .withBasicAuth()
-          .withAdditionalProfile(Profile.OPERATE)
           .withProperty("camunda.tasklist.webappEnabled", "false");
 
   // endpoint urls
@@ -213,38 +212,12 @@ public class OperateV1ApiPermissionsIT {
         adminClient.newIncidentSearchRequest().send().join().items().getFirst().getIncidentKey();
 
     // DMN
-    final var decisionDeployment =
-        adminClient
-            .newDeployResourceCommand()
-            .addResourceFromClasspath(String.format("decisions/%s", "decision_model.dmn"))
-            .send()
-            .join()
-            .getDecisions()
-            .getFirst();
-    waitForDecisionsToBeDeployed(adminClient, 1, 1);
-    final String dmnDecisionId = decisionDeployment.getDmnDecisionId();
-    deployResource(
-            adminClient,
-            Bpmn.createExecutableProcess("dmn_process")
-                .startEvent()
-                .businessRuleTask("dmn_task")
-                .zeebeCalledDecisionId(dmnDecisionId)
-                .zeebeResultVariable("{\"output1\": \"B\"}")
-                .endEvent()
-                .done(),
-            "dmn_process.bpmn")
-        .getProcesses()
-        .getFirst();
-    startProcessInstance(adminClient, "dmn_process").getProcessInstanceKey();
-    waitForDecisionToBeEvaluated(adminClient, 1);
-    decisionDefinitionKey =
-        adminClient
-            .newDecisionDefinitionSearchRequest()
-            .send()
-            .join()
-            .items()
-            .getFirst()
-            .getDecisionKey();
+    final Decision decision =
+        deployDefaultTestDecisionProcessInstance(adminClient, "decision_model.dmn");
+    startDefaultTestDecisionProcessInstance(
+        adminClient, decision.getDmnDecisionId(), "dmn_process");
+    decisionDefinitionKey = decision.getDecisionKey();
+    decisionRequirementsKey = decision.getDecisionRequirementsKey();
     decisionInstanceId =
         adminClient
             .newDecisionInstanceSearchRequest()
@@ -253,14 +226,6 @@ public class OperateV1ApiPermissionsIT {
             .items()
             .getFirst()
             .getDecisionInstanceId();
-    decisionRequirementsKey =
-        adminClient
-            .newDecisionRequirementsSearchRequest()
-            .send()
-            .join()
-            .items()
-            .getFirst()
-            .getDecisionRequirementsKey();
   }
 
   @ParameterizedTest
@@ -269,7 +234,7 @@ public class OperateV1ApiPermissionsIT {
       final String user, final String endpoint, final int expectedStatus, final String key)
       throws Exception {
     try (final var client = STANDALONE_CAMUNDA.newOperateClient(user, user)) {
-      final int statusCode = client.getRequest(endpoint, key).statusCode();
+      final int statusCode = client.sendGetRequest(endpoint, key).statusCode();
       assertThat(statusCode).isEqualTo(expectedStatus);
     }
   }
@@ -279,7 +244,7 @@ public class OperateV1ApiPermissionsIT {
   void shouldEvaluateSearchRequest(
       final String user, final String endpoint, final int expectedStatus) throws Exception {
     try (final var client = STANDALONE_CAMUNDA.newOperateClient(user, user)) {
-      final int statusCode = client.searchRequest(endpoint, "{}").statusCode();
+      final int statusCode = client.sendV1SearchRequest(endpoint, "{}").statusCode();
       assertThat(statusCode).isEqualTo(expectedStatus);
     }
   }
@@ -299,7 +264,7 @@ public class OperateV1ApiPermissionsIT {
 
     try (final var client = STANDALONE_CAMUNDA.newOperateClient(user, user)) {
       final int statusCode =
-          client.deleteRequest("v1/process-instances", processInstanceToDeleteKey).statusCode();
+          client.sendDeleteRequest("v1/process-instances", processInstanceToDeleteKey).statusCode();
       assertThat(statusCode).isEqualTo(expectedStatus);
     }
   }
@@ -572,11 +537,9 @@ public class OperateV1ApiPermissionsIT {
 
   private static Stream<Arguments> deleteRequestParameters() {
     return Stream.of(
-        /* depends on fix for https://github.com/camunda/camunda/issues/36067
         Arguments.of(AUTHORIZED_USERNAME, HttpStatus.OK.value()),
         Arguments.of(ROLE_AUTHORIZED_USERNAME, HttpStatus.OK.value()),
         Arguments.of(GROUP_AUTHORIZED_USERNAME, HttpStatus.OK.value()),
-        */
         Arguments.of(UNAUTHORIZED_USERNAME, HttpStatus.FORBIDDEN.value()));
   }
 }

@@ -96,9 +96,11 @@ public final class BpmnDecisionBehavior {
               final var evaluationResult =
                   decisionBehavior.evaluateDecisionInDrg(drg, decisionId, variables);
 
+              final var newDecisionEvaluationKey = keyGenerator.nextKey();
               final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> eventTuple =
-                  decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
-              writeDecisionEvaluationEvent(eventTuple, context);
+                  decisionBehavior.createDecisionEvaluationEvent(
+                      decision, evaluationResult, newDecisionEvaluationKey);
+              writeDecisionEvaluationEvent(eventTuple, context, newDecisionEvaluationKey);
 
               if (evaluationResult.isFailure()) {
                 return Either.left(
@@ -165,7 +167,8 @@ public final class BpmnDecisionBehavior {
 
   private void writeDecisionEvaluationEvent(
       final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> decisionEvaluationEventTuple,
-      final BpmnElementContext context) {
+      final BpmnElementContext context,
+      final long newDecisionEvaluationKey) {
 
     final DecisionEvaluationRecord evaluationEvent = decisionEvaluationEventTuple.getRight();
 
@@ -176,7 +179,6 @@ public final class BpmnDecisionBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setElementId(context.getElementId());
 
-    final var newDecisionEvaluationKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
         newDecisionEvaluationKey,
         decisionEvaluationEventTuple.getLeft(),

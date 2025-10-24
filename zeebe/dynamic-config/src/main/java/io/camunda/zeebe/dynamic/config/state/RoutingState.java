@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -64,6 +65,12 @@ public record RoutingState(
   public static RoutingState initializeWithPartitionCount(final int partitionCount) {
     return new RoutingState(
         1, new AllPartitions(partitionCount), new MessageCorrelation.HashMod(partitionCount));
+  }
+
+  private static void validatePartitionCount(final int partitionCount) {
+    if (partitionCount < 1) {
+      throw new IllegalArgumentException("Partition count must be greater than or equal to 1");
+    }
   }
 
   private static void validatePartitionId(final int partitionId) {
@@ -120,6 +127,8 @@ public record RoutingState(
       public ActivePartitions {
         Objects.requireNonNull(additionalActivePartitions);
         Objects.requireNonNull(inactivePartitions);
+        validatePartitionCount(basePartitionCount);
+
         for (final int activePartition : additionalActivePartitions) {
           validatePartitionId(activePartition);
           if (inactivePartitions.contains(activePartition)) {
@@ -136,8 +145,7 @@ public record RoutingState(
 
       @Override
       public Set<Integer> activePartitions() {
-        final var all =
-            new HashSet<Integer>(basePartitionCount + additionalActivePartitions.size());
+        final var all = new TreeSet<Integer>();
         all.addAll(allPartitions(basePartitionCount));
         all.addAll(additionalActivePartitions);
         all.removeAll(inactivePartitions);

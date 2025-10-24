@@ -9,7 +9,7 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.MessageSubscriptionEntity;
-import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.event.EventType;
 
@@ -25,21 +25,22 @@ public class MessageSubscriptionEntityTransformer
         value.getProcessInstanceKey(),
         value.getFlowNodeId(),
         value.getFlowNodeInstanceKey(),
-        toMessageSubscriptionType(value.getEventType()),
+        toMessageSubscriptionState(value.getEventType()),
         value.getDateTime(),
         value.getMetadata().getMessageName(),
         value.getMetadata().getCorrelationKey(),
         value.getTenantId());
   }
 
-  private MessageSubscriptionType toMessageSubscriptionType(final EventType value) {
+  private MessageSubscriptionState toMessageSubscriptionState(final EventType value) {
     if (value == null) {
       return null;
     }
     return switch (value) {
-      case CREATED -> MessageSubscriptionType.CREATED;
-      case MIGRATED -> MessageSubscriptionType.MIGRATED;
-      case CORRELATED -> MessageSubscriptionType.CORRELATED;
+      case CORRELATED -> MessageSubscriptionState.CORRELATED;
+      case CREATED -> MessageSubscriptionState.CREATED;
+      case MIGRATED -> MessageSubscriptionState.MIGRATED;
+      case DELETED -> MessageSubscriptionState.DELETED;
       default -> throw new IllegalArgumentException("Unknown EventType: " + value);
     };
   }

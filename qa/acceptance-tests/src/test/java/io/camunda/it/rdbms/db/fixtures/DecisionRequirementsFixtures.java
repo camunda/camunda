@@ -27,7 +27,7 @@ public final class DecisionRequirementsFixtures extends CommonFixtures {
             .decisionRequirementsId("requirement-" + decisionRequirementsKey)
             .name("requirement " + decisionRequirementsKey)
             .version(version)
-            .tenantId("tenant-" + RANDOM.nextInt(1000))
+            .tenantId("tenant-" + decisionRequirementsKey)
             .resourceName("requirement-" + decisionRequirementsKey + ".xml")
             .xml("<xml>" + decisionRequirementsKey + "</xml>");
 

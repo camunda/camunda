@@ -49,7 +49,7 @@ import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
  */
 final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntity<T>> {
   private static final List<ContentType> SUPPORTED_TEXT_CONTENT_TYPES =
-      Arrays.asList(ContentType.TEXT_XML);
+      Arrays.asList(ContentType.TEXT_XML, ContentType.TEXT_HTML, ContentType.TEXT_PLAIN);
   private final ObjectMapper json;
   private final Class<T> type;
   private final int chunkSize;
@@ -64,10 +64,12 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected void streamStart(final ContentType contentType) throws IOException {
-    if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
-      entityConsumer = new JsonApiEntityConsumer<>(json, type, true);
-    } else if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
+    if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
       entityConsumer = new JsonApiEntityConsumer<>(json, type, false);
+    } else if (Void.class.equals(type)) {
+      entityConsumer = new RawApiEntityConsumer<>(true, chunkSize);
+    } else if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
+      entityConsumer = new JsonApiEntityConsumer<>(json, type, true);
     } else {
       final boolean isResponse =
           String.class.equals(type)

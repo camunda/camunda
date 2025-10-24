@@ -11,7 +11,6 @@ import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.search.clients.reader.ProcessInstanceReader;
-import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -48,9 +47,19 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
   public SearchQueryResult<ProcessInstanceEntity> search(
       final ProcessInstanceQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         ProcessInstanceDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = processInstanceMapper.count(dbQuery);
@@ -60,10 +69,5 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
 
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
     return search(query, ResourceAccessChecks.disabled());
-  }
-
-  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(final long processInstanceKey) {
-    LOG.trace("[RDBMS DB] Query process instance flow node statistics with {}", processInstanceKey);
-    return processInstanceMapper.flowNodeStatistics(processInstanceKey);
   }
 }

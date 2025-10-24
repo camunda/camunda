@@ -44,14 +44,11 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
@@ -67,7 +64,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * down, should be done elsewhere (e.g. {@link FaultToleranceIT}
  */
 @Testcontainers
-@TestInstance(Lifecycle.PER_CLASS)
 final class ElasticsearchExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
@@ -85,8 +81,8 @@ final class ElasticsearchExporterIT {
   private TestClient testClient;
   private ExporterTestContext exporterTestContext;
 
-  @BeforeAll
-  public void beforeAll() {
+  @BeforeEach
+  public void beforeEach() {
     config.url = CONTAINER.getHttpHostAddress();
     config.setIncludeEnabledRecords(true);
     config.index.setNumberOfShards(1);
@@ -106,16 +102,12 @@ final class ElasticsearchExporterIT {
     exporter.open(controller);
   }
 
-  @AfterAll
-  void afterAll() {
-    CloseHelper.quietCloseAll(testClient);
-  }
-
-  @BeforeEach
-  void cleanup() {
-    config.setIncludeEnabledRecords(true);
+  @AfterEach
+  void afterEach() {
     testClient.deleteIndices();
-    exporter.configure(exporterTestContext);
+    testClient.deleteIndexTemplates();
+    testClient.deleteComponentTemplates();
+    CloseHelper.quietCloseAll(testClient);
   }
 
   @ParameterizedTest(name = "{0}")
@@ -239,15 +231,16 @@ final class ElasticsearchExporterIT {
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldExportOnlyRequiredRecords(final ValueType valueType) {
+  @ParameterizedTest(name = "{0} - version={1}")
+  @MethodSource(
+      "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
+  void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
     // given
     config.setIncludeEnabledRecords(false);
     exporter.configure(exporterTestContext);
     exporter.open(controller);
 
-    final var record = generateRecord(valueType);
+    final var record = generateRecord(valueType, version);
 
     // when
     export(record);
@@ -276,40 +269,18 @@ final class ElasticsearchExporterIT {
     }
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
-    // given
-    config.setIncludeEnabledRecords(false);
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-
-    final var record =
-        factory.generateRecord(
-            valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
-
-    // when
-    export(record);
-
-    // then
-    final var response = testClient.getExportedDocumentFor(record);
-    assertThat(response)
-        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
-        .containsExactly(
-            indexRouter.indexFor(record),
-            indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
-            record);
-  }
-
   private boolean export(final Record<?> record) {
     exporter.export(record);
     return true;
   }
 
+  private <T extends RecordValue> Record<T> generateRecord(
+      final ValueType valueType, final String version) {
+    return factory.generateRecord(valueType, r -> r.withBrokerVersion(version));
+  }
+
   private <T extends RecordValue> Record<T> generateRecord(final ValueType valueType) {
-    return factory.generateRecord(
-        valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+    return generateRecord(valueType, VersionUtil.getVersionLowerCase());
   }
 
   private <T extends RecordValue> Record<T> generateSupportedRecord(
@@ -492,6 +463,7 @@ final class ElasticsearchExporterIT {
         final Consumer<ElasticsearchExporterConfiguration> configurator) {
       configurator.accept(config);
       exporter.configure(exporterTestContext);
+      exporter.open(controller);
     }
 
     @Test

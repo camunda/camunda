@@ -1,0 +1,106 @@
+# type: CI
+# owner: @camunda/monorepo-devops-team
+
+#Description: 
+#This GitHub Actions workflow automatically monitors pull requests that are significantly behind the main branch and adds warning labels/comments to notify contributors.
+#It runs daily at 4 AM UTC to check all open PRs, can be triggered manually with dry-run or live modes, and also processes individual PRs during PR events.
+#The workflow intelligently filters out bot PRs and draft PRs, focusing only on human-created, ready-for-review pull requests.
+#It uses configurable thresholds to determine when a PR is outdated and generates daily summary reports for visibility. This helps maintain code quality by proactively identifying stale branches that need attention.
+name: Check Outdated PRs
+
+on:
+  schedule:
+    # Run daily at 4 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (no changes will be made)'
+        required: false
+        default: true
+        type: boolean
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  get-prs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      pr_list: ${{ steps.get_prs.outputs.pr_list }}
+    steps:
+      - name: Get PR list
+        id: get_prs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_OWNER: ${{ github.event.pull_request.head.repo.owner.login }}
+          PR_IS_DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            # Single PR mode - validate if PR is draft
+            if [[ -n "$PR_IS_DRAFT" && "$PR_IS_DRAFT" == "true" ]]; then
+              echo "⏭️  Skipping draft PR #$PR_NUMBER"
+              pr_list='[]'
+            else
+              echo "Processing single PR from pull_request event..."
+              pr_list='[{"pr_number": '"$PR_NUMBER"', "branch_name": "'"$PR_HEAD_REF"'", "base_branch": "'"$PR_BASE_REF"'", "repo_owner": "'"$PR_HEAD_OWNER"'"}]'
+            fi
+          else
+            # Batch mode - get all human-created, ready PRs
+            echo "Getting list of human-created, ready PRs..."
+            pr_list=$(gh api repos/"$GITHUB_REPOSITORY"/pulls --paginate --slurp | \
+            jq -c '[.[][] | select(
+              .base.ref == "main" and 
+              .state == "open" and
+              .head.repo.owner != null and 
+              .draft == false and
+              (.user.login | IN("app/dependabot", "dependabot[bot]", "backport-action", "app/renovate", "app/copilot-swe-agent", "app/", "renovate[bot]", "mend[bot]") | not) and
+              ([.labels[].name] | contains(["outdated-branch"]) | not)
+            ) | {
+              pr_number: .number,
+              branch_name: .head.ref,
+              base_branch: .base.ref,
+              repo_owner: .head.repo.owner.login
+            }]')
+          fi
+          
+          printf "pr_list=%s\n" "$pr_list" >> "$GITHUB_OUTPUT"
+          echo "Found $(echo "$pr_list" | jq length) PRs to process"
+
+  check-prs:
+    if: needs.get-prs.outputs.pr_list != '[]'
+    needs: get-prs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Process all PRs
+        id: process_prs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "🔍 Running in DRY-RUN mode - no labels or comments will be added"
+            echo "💡 Event: ${{ github.event_name }}"
+          else
+            echo "🚀 Running in LIVE mode - will add labels and comments"
+          fi
+          
+          echo '${{ needs.get-prs.outputs.pr_list }}' | ./.ci/scripts/outdated-pr-scripts/process-pr.sh "$DRY_RUN"

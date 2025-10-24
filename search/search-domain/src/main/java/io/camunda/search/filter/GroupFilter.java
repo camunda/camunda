@@ -10,7 +10,6 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
-import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -18,20 +17,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public record GroupFilter(
     Long groupKey,
     List<Operation<String>> groupIdOperations,
     String name,
     String description,
-    String joinParentId,
     Set<String> memberIds,
-    EntityType memberType,
     String tenantId,
     EntityType childMemberType,
     String roleId,
     Map<EntityType, Set<String>> memberIdsByType)
     implements FilterBase {
+
+  public static GroupFilter of(
+      final Function<GroupFilter.Builder, GroupFilter.Builder> builderFunction) {
+    return builderFunction.apply(new GroupFilter.Builder()).build();
+  }
 
   public Builder toBuilder() {
     return new Builder()
@@ -39,9 +42,7 @@ public record GroupFilter(
         .groupIdOperations(groupIdOperations)
         .name(name)
         .description(description)
-        .joinParentId(joinParentId)
         .memberIds(memberIds)
-        .memberType(memberType)
         .tenantId(tenantId)
         .childMemberType(childMemberType)
         .roleId(roleId)
@@ -53,9 +54,7 @@ public record GroupFilter(
     private List<Operation<String>> groupIdOperations;
     private String name;
     private String description;
-    private String joinParentId;
     private Set<String> memberIds;
-    private EntityType memberType;
     private String tenantId;
     private EntityType childMemberType;
     private String roleId;
@@ -105,22 +104,12 @@ public record GroupFilter(
       return this;
     }
 
-    public Builder joinParentId(final String value) {
-      joinParentId = value;
-      return this;
-    }
-
     public Builder memberId(final String value) {
       return memberIds(Set.of(value));
     }
 
     public Builder memberIds(final Set<String> value) {
       memberIds = value;
-      return this;
-    }
-
-    public Builder memberType(final EntityType value) {
-      memberType = value;
       return this;
     }
 
@@ -151,9 +140,7 @@ public record GroupFilter(
           groupIdOperations,
           name,
           description,
-          joinParentId,
           memberIds,
-          memberType,
           tenantId,
           childMemberType,
           roleId,

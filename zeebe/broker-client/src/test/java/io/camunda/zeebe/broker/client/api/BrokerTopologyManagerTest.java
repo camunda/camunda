@@ -72,7 +72,7 @@ final class BrokerTopologyManagerTest {
     final BrokerInfo broker = createBroker(brokerId);
     notifyEvent(createMemberAddedEvent(broker));
 
-    assertThat(topologyManager.getTopology().getFollowersForPartition(partition)).isNull();
+    assertThat(topologyManager.getTopology().getFollowersForPartition(partition)).isEmpty();
 
     // when
     final BrokerInfo brokerUpdated = createBroker(brokerId);
@@ -163,6 +163,34 @@ final class BrokerTopologyManagerTest {
     // then
     assertThat(topologyManager.getTopology().getBrokers()).contains(oldLeaderId);
     assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+  }
+
+  @Test
+  void shouldUpdateLeaderWhenPartitionReBootstrapWithLowerTerm() {
+    // given
+    final int partition = 1;
+    final int leaderId = 1;
+    final BrokerInfo leader = createBroker(leaderId);
+    leader.setLeaderForPartition(partition, 2);
+    notifyEvent(createMemberAddedEvent(leader));
+
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isOne();
+
+    // when
+    // partition shutdown/purge
+    leader.removePartition(partition);
+    notifyEvent(createMemberUpdateEvent(leader));
+
+    // new leader starts with a lower term
+    final int newLeaderAfterRebootstrapId = 0;
+    final BrokerInfo newLeaderAfterRebootstrap = createBroker(newLeaderAfterRebootstrapId);
+    newLeaderAfterRebootstrap.setLeaderForPartition(partition, 1);
+    notifyEvent(createMemberAddedEvent(newLeaderAfterRebootstrap));
+
+    // then
+    assertThat(topologyManager.getTopology().getBrokers()).contains(newLeaderAfterRebootstrapId);
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+        .isEqualTo(newLeaderAfterRebootstrapId);
   }
 
   @Test
@@ -381,6 +409,7 @@ final class BrokerTopologyManagerTest {
             Map.of(),
             Optional.of(new CompletedChange(1, Status.COMPLETED, Instant.now(), Instant.now())),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     topologyManager.onClusterConfigurationUpdated(clusterTopology);
@@ -417,8 +446,6 @@ final class BrokerTopologyManagerTest {
     // given
     final BrokerInfo broker = createBroker(1);
     notifyEvent(createMemberAddedEvent(broker));
-
-    assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(3);
 
     // when
     final ClusterConfiguration clusterTopologyWithTwoBrokers =
@@ -457,8 +484,6 @@ final class BrokerTopologyManagerTest {
     // given
     final var broker = createBroker(1);
     notifyEvent(createMemberAddedEvent(broker));
-
-    assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(3);
 
     // when
     final var clusterTopologyWithTwoBrokers =

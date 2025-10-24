@@ -9,9 +9,11 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class System {
-  private static final String PREFIX = "camunda.system.";
+  private static final String PREFIX = "camunda.system";
+
   private static final Set<String> LEGACY_CPU_THREAD_COUNT_PROPERTIES =
       Set.of("zeebe.broker.threads.cpuThreadCount");
   private static final Set<String> LEGACY_IO_THREAD_COUNT_PROPERTIES =
@@ -39,12 +41,13 @@ public class System {
    */
   private boolean clockControlled = false;
 
-  private Actor actor = new Actor();
-  private Upgrade upgrade = new Upgrade();
+  @NestedConfigurationProperty private Actor actor = new Actor();
+  @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
+  @NestedConfigurationProperty private Restore restore = new Restore();
 
   public int getCpuThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "cpu-thread-count",
+        PREFIX + ".cpu-thread-count",
         cpuThreadCount,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -57,7 +60,7 @@ public class System {
 
   public int getIoThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "io-thread-count",
+        PREFIX + ".io-thread-count",
         ioThreadCount,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -70,7 +73,7 @@ public class System {
 
   public boolean getClockControlled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "clock-controlled",
+        PREFIX + ".clock-controlled",
         clockControlled,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -95,5 +98,13 @@ public class System {
 
   public void setUpgrade(final Upgrade upgrade) {
     this.upgrade = upgrade;
+  }
+
+  public Restore getRestore() {
+    return restore;
+  }
+
+  public void setRestore(final Restore restore) {
+    this.restore = restore;
   }
 }

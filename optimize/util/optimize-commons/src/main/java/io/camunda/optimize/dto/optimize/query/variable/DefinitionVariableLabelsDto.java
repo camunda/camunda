@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
+import java.util.Objects;
 
 public class DefinitionVariableLabelsDto implements OptimizeDto {
 
@@ -48,12 +49,19 @@ public class DefinitionVariableLabelsDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(definitionKey, labels);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DefinitionVariableLabelsDto that = (DefinitionVariableLabelsDto) o;
+    return Objects.equals(definitionKey, that.definitionKey) && Objects.equals(labels, that.labels);
   }
 
   @Override

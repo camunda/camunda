@@ -136,6 +136,10 @@ schemas:
         $ref: "components.yaml#/schemas/TopologyChange"
       routing:
         $ref: "components.yaml#/schemas/RoutingState"
+      clusterId:
+        type: string
+        description: The unique ID of the cluster
+        example: "cluster-1234"
 
   RoutingState:
     description: The routing state, i.e. where requests are sent to and how messages are correlated
@@ -317,11 +321,13 @@ schemas:
           - UNKNOWN
           - PARTITION_DISABLE_EXPORTER
           - PARTITION_ENABLE_EXPORTER
+          - START_PARTITION_SCALE_UP
           - PARTITION_BOOTSTRAP
           - AWAIT_REDISTRIBUTION
           - AWAIT_RELOCATION
           - UPDATE_ROUTING_STATE
           - DELETE_HISTORY
+          - PARTITION_DELETE_EXPORTER
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:

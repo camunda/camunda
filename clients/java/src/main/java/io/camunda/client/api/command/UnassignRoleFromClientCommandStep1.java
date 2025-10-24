@@ -27,15 +27,17 @@ public interface UnassignRoleFromClientCommandStep1 {
    */
   UnassignRoleFromClientCommandStep2 roleId(String roleId);
 
-  interface UnassignRoleFromClientCommandStep2
-      extends FinalCommandStep<UnassignRoleFromClientResponse> {
+  interface UnassignRoleFromClientCommandStep2 {
     /**
      * Sets the client ID.
      *
      * @param clientId the id of the client
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link UnassignRoleFromClientCommandStep3#send()}
+     *     to complete the command and send it to the broker.
      */
-    UnassignRoleFromClientCommandStep2 clientId(String clientId);
+    UnassignRoleFromClientCommandStep3 clientId(String clientId);
   }
+
+  interface UnassignRoleFromClientCommandStep3
+      extends FinalCommandStep<UnassignRoleFromClientResponse> {}
 }

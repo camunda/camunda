@@ -184,7 +184,7 @@ jobs:
           # To avoid exiting on the first failure, we instead flip this to 1 as soon as one of the
           # command fails, and return this at the end; anything non 0 will cause the step to fail
           exitCode=0
-          JAVA_PROJECTS=(bom clients/java clients/spring-boot-starter-camunda-sdk zeebe/bpmn-model zeebe/exporter-api zeebe/gateway-protocol-impl zeebe/protocol)
+          JAVA_PROJECTS=(bom clients/java clients/camunda-spring-boot-starter zeebe/bpmn-model zeebe/exporter-api zeebe/gateway-protocol-impl zeebe/protocol)
 
           # Remember that when called from a sub-shell, the environment/globals are different
           function output() {

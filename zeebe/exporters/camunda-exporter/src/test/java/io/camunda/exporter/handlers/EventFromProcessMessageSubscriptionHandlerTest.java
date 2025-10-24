@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.exporter.handlers.EventFromIncidentHandler.ID_PATTERN;
+import static io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler.ID_PATTERN;
 import static io.camunda.webapps.schema.descriptors.template.EventTemplate.CORRELATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.EventTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,7 +55,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessMessageSubscriptionIntent.class,
-      names = {"CREATED", "MIGRATED"},
+      names = {"CREATED", "MIGRATED", "CORRELATED", "DELETED"},
       mode = Mode.INCLUDE)
   void shouldHandleRecord(final Intent intent) {
     // given
@@ -68,7 +68,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessMessageSubscriptionIntent.class,
-      names = {"CREATED", "MIGRATED"},
+      names = {"CREATED", "MIGRATED", "CORRELATED", "DELETED"},
       mode = Mode.EXCLUDE)
   void shouldNotHandleRecord(final Intent intent) {
     // given

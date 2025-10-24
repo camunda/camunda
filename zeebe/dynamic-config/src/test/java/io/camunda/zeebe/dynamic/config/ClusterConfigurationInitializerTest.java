@@ -206,13 +206,13 @@ final class ClusterConfigurationInitializerTest {
                 PartitionId.from("test", 1), Set.of(member), Map.of(member, 1), 1, member));
     return new StaticInitializer(
         new StaticConfiguration(
-            false,
             new ControllablePartitionDistributor().withPartitions(partitions),
             Set.of(member),
             member,
             List.of(partitionId),
             1,
-            DynamicPartitionConfig.init()));
+            DynamicPartitionConfig.init(),
+            "clusterId"));
   }
 
   private static final class TestClusterConfigurationNotifier

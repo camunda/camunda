@@ -13,13 +13,8 @@ import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {
-  createInstance,
-  createVariable,
-  createVariableV2,
-} from 'modules/testUtils';
+import {createInstance, createVariableV2} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {useEffect, act} from 'react';
@@ -30,11 +25,10 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
-import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const editLastNewVariableName = async (
   user: UserEvent,
@@ -130,7 +124,6 @@ describe('New Variable Modifications', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statisticsData,
     });
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -150,14 +143,14 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if fields are empty', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
@@ -187,8 +180,7 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -222,9 +214,13 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -301,11 +297,30 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if value field is empty or invalid', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
@@ -339,11 +354,10 @@ describe('New Variable Modifications', () => {
   });
 
   it('should create add variable modification on blur and update same modification if name or value is changed', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -525,11 +539,10 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not apply modification if value is the same as the last modification', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
@@ -594,10 +607,9 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -629,7 +641,6 @@ describe('New Variable Modifications', () => {
     await editLastNewVariableName(user, 'test2', 1);
     await editLastNewVariableValue(user, '456', 1);
 
-    mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
@@ -661,9 +672,9 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -710,7 +721,18 @@ describe('New Variable Modifications', () => {
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
-    mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockSearchVariables().withSuccess({
       items: [],
       page: {

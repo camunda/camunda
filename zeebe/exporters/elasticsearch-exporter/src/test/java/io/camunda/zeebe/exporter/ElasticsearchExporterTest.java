@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -79,6 +80,32 @@ final class ElasticsearchExporterTest {
     // then
     assertThatThrownBy(() -> exporter.export(mockRecord))
         .isInstanceOf(ElasticsearchExporterException.class);
+  }
+
+  @Test
+  void shouldNotFailOnOpenIfElasticMetadataDoesNotContainRecordCounters() {
+    // given
+    final var exporter = new ElasticsearchExporter();
+    exporter.configure(context);
+    final var storedMetadataAsJSON = "{\"recordCountersByValueType\":{}}";
+    final var serializedMetadata = storedMetadataAsJSON.getBytes(StandardCharsets.UTF_8);
+    controller.updateLastExportedRecordPosition(1, serializedMetadata);
+
+    // when
+    assertThatCode(() -> exporter.open(controller)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldCloseElasticsearchClientIfExporterFailedToOpen() throws IOException {
+    // given
+    final ExporterTestController controller = mock(ExporterTestController.class);
+    doThrow(new RuntimeException("Failed opening exporter!")).when(controller).readMetadata();
+
+    // then
+    assertThatThrownBy(() -> exporter.open(controller))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Failed opening exporter!");
+    verify(client).close();
   }
 
   @Nested
@@ -235,9 +262,10 @@ final class ElasticsearchExporterTest {
       verify(client, never()).putIndexTemplate(valueType);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-    void shouldCreateAllTemplatesOnPreviousVersion(final ValueType valueType) {
+    @ParameterizedTest(name = "{0} - version: {1}")
+    @MethodSource(
+        "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
+    void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
       // given
       config.index.createTemplate = true;
       config.setIncludeEnabledRecords(false);
@@ -248,11 +276,21 @@ final class ElasticsearchExporterTest {
       // when
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(valueType);
-      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getPreviousVersion());
+      when(recordMock.getBrokerVersion()).thenReturn(version);
       exporter.export(recordMock);
 
       // then
-      verify(client, times(1)).putIndexTemplate(valueType, VersionUtil.getPreviousVersion());
+      if (valueType == ValueType.PROCESS_INSTANCE
+          || valueType == ValueType.PROCESS
+          || valueType == ValueType.VARIABLE
+          || valueType == ValueType.INCIDENT
+          || valueType == ValueType.USER_TASK
+          || valueType == ValueType.DEPLOYMENT
+          || valueType == ValueType.JOB) {
+        verify(client, times(1)).putIndexTemplate(valueType, version);
+      } else {
+        verify(client, never()).putIndexTemplate(any(), any());
+      }
     }
   }
 
@@ -602,7 +640,6 @@ final class ElasticsearchExporterTest {
       final var expectedMetadataAsJSON =
           "{\"recordCountersByValueType\":{\"PROCESS_INSTANCE\":2,\"VARIABLE\":1}}";
       assertThat(controller.readMetadata())
-          .isPresent()
           .map(metadata -> new String(metadata, StandardCharsets.UTF_8))
           .hasValue(expectedMetadataAsJSON);
     }

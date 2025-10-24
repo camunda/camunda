@@ -15,10 +15,18 @@ public interface IndexMappingCreator<TBuilder> {
 
   String getIndexName();
 
+  /**
+   * From 8.8, Optimize no longer allow use of templates. The External Variable Index overrides this
+   * method, but no new implementation should do so
+   */
   default String getIndexNameInitialSuffix() {
     return "";
   }
 
+  /**
+   * From 8.8, Optimize no longer allow use of templates. The External Variable Index overrides this
+   * method, but no new implementation should do so
+   */
   default boolean isCreateFromTemplate() {
     return false;
   }

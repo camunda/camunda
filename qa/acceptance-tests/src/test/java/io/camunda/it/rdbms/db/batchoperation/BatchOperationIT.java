@@ -164,6 +164,7 @@ public class BatchOperationIT {
             .findFirst()
             .get();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(firstItem.operationType()).isEqualTo(batchOperation.operationType());
     assertThat(firstItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(firstItem.errorMessage()).isNull();
@@ -549,7 +550,8 @@ public class BatchOperationIT {
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().finishWithErrors(batchOperationKey, endDate, errors);
+    final var state = BatchOperationState.PARTIALLY_COMPLETED;
+    writer.getBatchOperationWriter().finishWithErrors(batchOperationKey, endDate, errors, state);
     writer.flush();
 
     // then
@@ -559,7 +561,7 @@ public class BatchOperationIT {
     final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
     assertThat(batchOperationEntity.endDate())
         .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
+    assertThat(batchOperationEntity.state()).isEqualTo(state);
     assertThat(batchOperationEntity.errors()).isNotNull();
     assertThat(batchOperationEntity.errors()).hasSize(2);
     final var error1 =
@@ -600,7 +602,10 @@ public class BatchOperationIT {
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().finishWithErrors(batchOperationKey, endDate, errors);
+    writer
+        .getBatchOperationWriter()
+        .finishWithErrors(
+            batchOperationKey, endDate, errors, BatchOperationState.PARTIALLY_COMPLETED);
     writer.flush();
 
     // then
@@ -748,7 +753,7 @@ public class BatchOperationIT {
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
   }
 

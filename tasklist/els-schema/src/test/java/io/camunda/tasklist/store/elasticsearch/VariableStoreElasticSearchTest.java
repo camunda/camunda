@@ -67,22 +67,80 @@ class VariableStoreElasticSearchTest {
 
     when(mockedResponse.getScrollId()).thenReturn("scrolling_id0");
 
-    final SearchHits mockedHints = mock();
-    when(mockedResponse.getHits()).thenReturn(mockedHints);
+    final SearchHits mockedHits = mock();
+    when(mockedResponse.getHits()).thenReturn(mockedHits);
 
-    when(mockedHints.getHits()).thenReturn(new SearchHit[] {});
+    when(mockedHits.getHits()).thenReturn(new SearchHit[] {});
 
     // When
-    final List<FlowNodeInstanceEntity> result = instance.getFlowNodeInstances(List.of("1234567"));
+    final List<FlowNodeInstanceEntity> result = instance.getFlowNodeInstances(List.of(1234567L));
 
     // Then
     verify(esClient, never()).scroll(any(SearchScrollRequest.class), any(RequestOptions.class));
 
     final SearchRequest capturedSearchRequest = searchRequestCaptor.getValue();
-    final String expectedAlias =
-        String.format("test-operate-flownode-instance-%s_", flowNodeInstanceIndex.getVersion());
-    assertThat(capturedSearchRequest.indices()).containsExactly(expectedAlias);
+    assertThat(capturedSearchRequest.indices())
+        .containsExactly(flowNodeInstanceIndex.getFullQualifiedName());
     assertThat(capturedSearchRequest.source().size()).isEqualTo(200);
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getVariablesByFlowNodeInstanceIdsShouldUseVariableIndex() throws Exception {
+    // Given
+    final SearchResponse mockedResponse = mock();
+    when(esClient.search(searchRequestCaptor.capture(), eq(RequestOptions.DEFAULT)))
+        .thenReturn(mockedResponse);
+
+    when(mockedResponse.getScrollId()).thenReturn("scrolling_id1");
+
+    final SearchHits mockedHits = mock();
+    when(mockedResponse.getHits()).thenReturn(mockedHits);
+
+    when(mockedHits.getHits()).thenReturn(new SearchHit[] {});
+
+    // When
+    final var result =
+        instance.getVariablesByFlowNodeInstanceIds(List.of("flowNodeId1"), null, null);
+
+    // Then
+    final SearchRequest capturedSearchRequest = searchRequestCaptor.getValue();
+    assertThat(capturedSearchRequest.indices())
+        .containsExactly(variableIndex.getFullQualifiedName());
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getVariablesByFlowNodeInstanceIdsWithVariableNamesShouldUseCorrectQuery() throws Exception {
+    // Given
+    final SearchResponse mockedResponse = mock();
+    when(esClient.search(searchRequestCaptor.capture(), eq(RequestOptions.DEFAULT)))
+        .thenReturn(mockedResponse);
+
+    when(mockedResponse.getScrollId()).thenReturn("scrolling_id2");
+
+    final SearchHits mockedHits = mock();
+    when(mockedResponse.getHits()).thenReturn(mockedHits);
+
+    when(mockedHits.getHits()).thenReturn(new SearchHit[] {});
+
+    // When
+    final List<String> varNames = List.of("varName1", "varName2");
+    final var result =
+        instance.getVariablesByFlowNodeInstanceIds(List.of("flowNodeId1"), varNames, null);
+
+    // Then
+    verify(esClient, never()).scroll(any(SearchScrollRequest.class), any(RequestOptions.class));
+
+    final SearchRequest capturedSearchRequest = searchRequestCaptor.getValue();
+    assertThat(capturedSearchRequest.indices())
+        .containsExactly(variableIndex.getFullQualifiedName());
+
+    // Verify query
+    final String queryAsString = capturedSearchRequest.source().toString();
+    assertThat(queryAsString)
+        .isEqualTo(
+            """
+           {"size":200,"query":{"constant_score":{"filter":{"bool":{"must":[{"terms":{"scopeKey":["flowNodeId1"],"boost":1.0}},{"terms":{"name":["varName1","varName2"],"boost":1.0}}],"adjust_pure_negative":true,"boost":1.0}},"boost":1.0}}}""");
   }
 }

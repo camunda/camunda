@@ -1,0 +1,74 @@
+# description: Runs legacy integration CI tests
+# test location: operate/qa/integration-tests
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: "[Legacy] Operate"
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+      - 'stable/**'
+      - 'release**'
+    paths:
+      - '.ci/**'
+      - '.github/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'operate.Dockerfile'
+      - 'operate/**'
+      - 'parent/*'
+      - 'pom.xml'
+      - 'webapps-common/**'
+      - 'zeebe/**'
+      - 'clients/**'
+  pull_request:
+    paths:
+      - '.ci/**'
+      - '.github/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'operate/**'
+      - 'pom.xml'
+      - 'operate.Dockerfile'
+      - 'parent/*'
+      - 'webapps-common/**'
+      - 'zeebe/**'
+      - 'clients/**'
+permissions:
+  contents: read
+
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
+jobs:
+  # builds image and pushes to Dockerhub if branch is `main`
+  run-operate-build:
+    name: "Build / Operate and Image"
+    uses: ./.github/workflows/operate-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+  # over 10min run time
+  run-core-features-integration-tests:
+    name: "Integration"
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: ./mvnw -f operate/qa/integration-tests verify -P operateCoreFeaturesIT -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
+      test-type: Core Features ITs
+      runner-type: gcp-core-32-default
+
+  run-data-layer-opensearch-tests:
+    name: "Integration"
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: ./mvnw -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
+      test-type: Opensearch ITs
+      runner-type: gcp-core-32-default

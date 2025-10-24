@@ -22,13 +22,10 @@ export default [
   {
     ignores: [
       "node_modules/",
-      "yarn.lock",
-      ".yarn/",
+      "package-lock.json",
       ".eslintcache",
       ".env",
-      "e2e/",
       "target/",
-      "playwright.config.ts",
       "vite.config.ts",
       "dist/",
     ],

@@ -46,8 +46,6 @@ public abstract class ZeebeContainerManager {
   }
 
   public void startContainer() {
-    updatePrefix();
-
     // Start zeebe
     final String zeebeVersion =
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
@@ -61,8 +59,8 @@ public abstract class ZeebeContainerManager {
 
     client =
         CamundaClient.newClientBuilder()
-            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-            .usePlaintext()
+            .preferRestOverGrpc(false)
+            .grpcAddress(zeebeContainer.getGrpcAddress())
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
 
@@ -81,8 +79,6 @@ public abstract class ZeebeContainerManager {
       }
     }
   }
-
-  protected abstract void updatePrefix();
 
   public void stopContainer() {
     testContainerUtil.stopZeebe(null);

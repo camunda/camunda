@@ -30,21 +30,29 @@ import java.util.function.Predicate;
 import org.apache.hc.core5.concurrent.FutureCallback;
 
 final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<HttpT>> {
-
+  private static final Predicate<Integer> DEFAULT_SUCCESS_PREDICATE =
+      code -> code >= 200 && code < 400;
   private final CompletableFuture<RespT> response;
-  private final JsonResponseTransformer<HttpT, RespT> transformer;
+  private final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer;
+  private final Predicate<Integer> successPredicate;
   private final Predicate<StatusCode> retryPredicate;
   private final Runnable retryAction;
   private final AtomicInteger remainingRetries;
 
   public ApiCallback(
       final CompletableFuture<RespT> response,
-      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
+      final Predicate<Integer> successPredicate,
       final Predicate<StatusCode> retryPredicate,
       final Runnable retryAction,
       final int maxRetries) {
     this.response = response;
     this.transformer = transformer;
+    if (successPredicate != null) {
+      this.successPredicate = successPredicate;
+    } else {
+      this.successPredicate = DEFAULT_SUCCESS_PREDICATE;
+    }
     this.retryPredicate = retryPredicate;
     this.retryAction = retryAction;
     remainingRetries = new AtomicInteger(maxRetries);
@@ -128,7 +136,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
   private void handleSuccessResponse(
       final ApiEntity<HttpT> body, final int code, final String reason) {
     if (body == null) {
-      response.complete(null);
+      completeResponse(code, reason, null);
       return;
     }
 
@@ -153,14 +161,18 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       return;
     }
 
+    completeResponse(code, reason, body.response());
+  }
+
+  private void completeResponse(final int code, final String reason, final HttpT httpResponse) {
     try {
-      response.complete(transformer.transform(body.response()));
+      response.complete(transformer.transform(httpResponse, code));
     } catch (final Exception e) {
       response.completeExceptionally(new MalformedResponseException(code, reason, e));
     }
   }
 
   private boolean wasSuccessful(final int code) {
-    return code >= 200 && code < 400;
+    return successPredicate.test(code);
   }
 }

@@ -14,7 +14,7 @@ import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {HttpResponse, http} from 'msw';
 import * as userMocks from 'common/mocks/current-user';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
-import {endpoints} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
   getProcessDefinitionMock,
   getQueryProcessDefinitionsResponseMock,
@@ -24,19 +24,6 @@ const definitionsMock = getQueryProcessDefinitionsResponseMock([
   getProcessDefinitionMock(),
   getProcessDefinitionMock(),
 ]);
-
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig() {
-      return {
-        ...actual.getClientConfig(),
-        clientMode: 'v2',
-      };
-    },
-  };
-});
 
 const getWrapper = () => {
   const mockClient = getMockQueryClient();

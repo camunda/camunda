@@ -15,14 +15,16 @@
  */
 package io.camunda.client.role;
 
-import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.RoleCreateRequest;
+import io.camunda.client.protocol.rest.RoleCreateResult;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class CreateRoleTest extends ClientRestTest {
@@ -33,6 +35,9 @@ public class CreateRoleTest extends ClientRestTest {
 
   @Test
   void shouldCreateRole() {
+    // given
+    gatewayService.onCreateRoleRequest(Instancio.create(RoleCreateResult.class));
+
     // when
     client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).description(DESCRIPTION).send().join();
 
@@ -45,6 +50,9 @@ public class CreateRoleTest extends ClientRestTest {
 
   @Test
   void shouldCreateRoleWithoutDescription() {
+    // given
+    gatewayService.onCreateRoleRequest(Instancio.create(RoleCreateResult.class));
+
     // when
     client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join();
 
@@ -59,7 +67,7 @@ public class CreateRoleTest extends ClientRestTest {
   void shouldRaiseExceptionOnRequestError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/roles", () -> new ProblemDetail().title("Not Found").status(404));
+        RestGatewayPaths.getRolesUrl(), () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join())
@@ -86,10 +94,11 @@ public class CreateRoleTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionIfRoleAlreadyExists() {
     // given
+    gatewayService.onCreateRoleRequest(Instancio.create(RoleCreateResult.class));
     client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join();
 
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/roles", () -> new ProblemDetail().title("Conflict").status(409));
+        RestGatewayPaths.getRolesUrl(), () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
     assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join())
@@ -101,7 +110,7 @@ public class CreateRoleTest extends ClientRestTest {
   void shouldHandleValidationErrorResponse() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/roles", () -> new ProblemDetail().title("Bad Request").status(400));
+        RestGatewayPaths.getRolesUrl(), () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
     assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join())

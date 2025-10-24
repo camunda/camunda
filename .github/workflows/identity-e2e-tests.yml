@@ -1,5 +1,5 @@
-# description: Workflow for Front-End end to end tests for Identity only. Tests will use a running instance of Identity for the API
-# test location: /identity/client/e2e/tests
+# description: Workflow for end to end tests for Identity only. Tests will use a running instance of Identity for the API
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/identity
 # type: CI
 # owner: @camunda/identity
 ---
@@ -76,9 +76,7 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./identity/client
-      - name: Install Playwright
-        run: yarn exec playwright install --with-deps chromium
-        working-directory: ./identity/client
+          package-manager: "npm"
       - name: Install QA Test Suite Dependencies
         run: npm install
         working-directory: ./qa/c8-orchestration-cluster-e2e-test-suite
@@ -94,14 +92,23 @@ jobs:
           -Dspring-boot.run.fork=true
         env:
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
+          CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL: http://localhost:9200
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://localhost:9200
+          CAMUNDA_TASKLIST_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_OPERATE_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_DATABASE_URL: http://localhost:9200
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 100
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS: false
+          CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS: false
           SPRING_PROFILES_ACTIVE: consolidated-auth,broker,identity
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: false
           CAMUNDA_SECURITY_AUTHENTICATION_METHOD: BASIC
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE: elasticsearch
+          CAMUNDA_DATA_SECONDARYSTORAGE_TYPE: elasticsearch
+          CAMUNDA_DATABASE_TYPE: elasticsearch
+          CAMUNDA_TASKLIST_DATABASE: elasticsearch
+          CAMUNDA_OPERATE_DATABASE: elasticsearch
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CREATESCHEMA: true
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_RETENTION_ENABLED: false
           CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: true

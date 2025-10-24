@@ -10,13 +10,16 @@ package io.camunda.tasklist.store.opensearch;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
+import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
+import static io.camunda.tasklist.util.OpenSearchUtil.scrollInChunks;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
@@ -46,7 +49,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -96,13 +98,13 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private VariableStore variableStoreElasticSearch;
+  @Autowired private VariableStore variableStoreOpensearch;
 
-  @Autowired
-  @Qualifier("tasklistSnapshotTaskVariableTemplate")
-  private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
+
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Override
   public TaskEntity getTask(final String id) {
@@ -124,9 +126,10 @@ public class TaskStoreOpenSearch implements TaskStore {
         t -> t.field(TaskTemplate.PROCESS_INSTANCE_ID).value(FieldValue.of(processInstanceId)));
 
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .query(q -> joinQueryBuilderWithAnd(flowNodeInstanceQuery, processInstanceIdQuery))
-            .fields(f -> f.field(TaskTemplate.KEY));
+            .fields(f -> f.field(TaskTemplate.KEY))
+            .size(tasklistProperties.getOpenSearch().getBatchSize());
 
     try {
       return OpenSearchUtil.scrollUserTaskKeysToList(searchRequest, osClient);
@@ -146,7 +149,7 @@ public class TaskStoreOpenSearch implements TaskStore {
         t -> t.field(TaskTemplate.PROCESS_DEFINITION_ID).value(FieldValue.of(processDefinitionId)));
 
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .query(q -> joinQueryBuilderWithAnd(flowNodeInstanceQuery, processInstanceIdQuery))
             .fields(f -> f.field(TaskTemplate.KEY));
     try {
@@ -286,6 +289,49 @@ public class TaskStoreOpenSearch implements TaskStore {
         asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
   }
 
+  private List<TaskEntity> getActiveTasksByProcessInstanceIds(
+      final List<String> processInstanceIds) {
+    try {
+      // the number of process instance ids may be large so we need to chunk them
+      return scrollInChunks(
+          processInstanceIds,
+          tasklistProperties.getOpenSearch().getMaxTermsCount(),
+          this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
+          TaskEntity.class,
+          osClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  private SearchRequest.Builder buildSearchCreatedTasksByProcessInstanceIdsRequest(
+      final List<String> processInstanceIds) {
+    return createSearchRequest(taskTemplate)
+        .query(
+            q ->
+                q.bool(
+                    b ->
+                        b.must(
+                                m ->
+                                    m.terms(
+                                        t ->
+                                            t.field(TaskTemplate.PROCESS_INSTANCE_ID)
+                                                .terms(
+                                                    terms ->
+                                                        terms.value(
+                                                            processInstanceIds.stream()
+                                                                .map(FieldValue::of)
+                                                                .toList()))))
+                            .must(
+                                m ->
+                                    m.term(
+                                        t ->
+                                            t.field(TaskTemplate.STATE)
+                                                .value(FieldValue.of(TaskState.CREATED.name()))))
+                            .must(m -> m.exists(t -> t.field(TaskTemplate.FLOW_NODE_INSTANCE_ID)))))
+        .size(tasklistProperties.getOpenSearch().getBatchSize());
+  }
+
   /**
    * In case of searchAfterOrEqual and searchBeforeOrEqual add additional task either at the
    * beginning of the list, or at the end, to conform with "orEqual" part.
@@ -360,7 +406,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     // TODO we can play around with query type here (2nd parameter), e.g. when we select for only
     // active tasks
     final SearchRequest.Builder sourceBuilder =
-        OpenSearchUtil.createSearchRequest(taskTemplate, getQueryTypeByTaskState(query.getState()));
+        createSearchRequest(taskTemplate, getQueryTypeByTaskState(query.getState()));
     sourceBuilder.query(esQuery.build());
     applySorting(sourceBuilder, query);
 
@@ -408,7 +454,9 @@ public class TaskStoreOpenSearch implements TaskStore {
         Arrays.stream(taskVariablesFilter).map(TaskByVariables::getValue).collect(toList());
 
     final List<String> processIdsCreatedFiltered =
-        variableStoreElasticSearch.getProcessInstanceIdsWithMatchingVars(varNames, varValues);
+        variableStoreOpensearch.getProcessInstanceKeysWithMatchingVars(varNames, varValues).stream()
+            .map(String::valueOf)
+            .toList();
 
     final List<String> tasksIdsCreatedFiltered =
         retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
@@ -838,7 +886,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private Hit<TaskEntity> getTaskRawResponse(final String id) throws IOException {
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .query(q -> q.term(t -> t.field(TaskTemplate.KEY).value(FieldValue.of(id))));
 
     final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
@@ -855,7 +903,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   private List<Hit<TaskEntity>> getTasksRawResponse(final List<String> ids) throws IOException {
     final var idTerms = ids.stream().map(FieldValue::of).toList();
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .query(s -> s.terms(f -> f.field(TaskTemplate.KEY).terms(t -> t.value(idTerms))));
 
     final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
@@ -956,30 +1004,18 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private List<String> retrieveTaskIdByProcessInstanceId(
       final List<String> processIds, final TaskByVariables[] taskVariablesFilter) {
-    final List<String> taskIdsCreated = new ArrayList<>();
-    final Map<String, String> variablesMap =
-        IntStream.range(0, taskVariablesFilter.length)
-            .boxed()
-            .collect(
-                Collectors.toMap(
-                    i -> taskVariablesFilter[i].getName(), i -> taskVariablesFilter[i].getValue()));
-
-    for (final String processId : processIds) {
-      final List<String> taskIds = getTaskIdsByProcessInstanceId(processId);
-      for (final String taskId : taskIds) {
-        final TaskEntity taskEntity = getTask(taskId);
-        if (taskEntity.getState() == TaskState.CREATED) {
-          final List<VariableStore.GetVariablesRequest> request =
-              Collections.singletonList(
-                  VariableStore.GetVariablesRequest.createFrom(taskEntity)
-                      .setVarNames(variablesMap.keySet().stream().toList()));
-          if (taskVariableSearchUtil.checkIfVariablesExistInTask(request, variablesMap)) {
-            taskIdsCreated.add(taskId);
-          }
-        }
-      }
-    }
-    return taskIdsCreated;
+    final var variablesMap =
+        Arrays.stream(taskVariablesFilter)
+            .collect(Collectors.toMap(TaskByVariables::getName, TaskByVariables::getValue));
+    final var tasks = getActiveTasksByProcessInstanceIds(processIds);
+    final var request =
+        tasks.stream()
+            .map(
+                task ->
+                    VariableStore.GetVariablesRequest.createFrom(task)
+                        .setVarNames(variablesMap.keySet().stream().toList()))
+            .toList();
+    return taskVariableSearchUtil.getTaskIdsContainingVariables(request, variablesMap);
   }
 
   private Query.Builder buildPriorityQuery(final TaskQuery query) {

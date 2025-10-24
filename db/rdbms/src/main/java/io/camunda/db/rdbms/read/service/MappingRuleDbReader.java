@@ -12,9 +12,11 @@ import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.columns.MappingRuleSearchColumn;
 import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,10 +42,20 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
   @Override
   public SearchQueryResult<MappingRuleEntity> search(
       final MappingRuleQuery query, final ResourceAccessChecks resourceAccessChecks) {
+
+    if (shouldReturnEmptyResult(query.filter(), resourceAccessChecks)) {
+      return new SearchQueryResult.Builder<MappingRuleEntity>().total(0).items(List.of()).build();
+    }
+
     final var dbSort = convertSort(query.sort(), MappingRuleSearchColumn.MAPPING_RULE_ID);
+
     final var dbQuery =
         MappingRuleDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .sort(dbSort)
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for mapping rule with filter {}", dbQuery);
     final var totalHits = mappingRuleMapper.count(dbQuery);
@@ -60,5 +72,19 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
 
   public SearchQueryResult<MappingRuleEntity> search(final MappingRuleQuery query) {
     return search(query, ResourceAccessChecks.disabled());
+  }
+
+  /**
+   * Checks if the search result should be empty based on resource and tenant authorization.
+   * Returns {@code true} if authorization is enabled but no authorized resource IDs are present.
+   *
+   * @param resourceAccessChecks the resource access checks containing authorization and tenant checks
+   * @return {@code true} if the search result should be empty, {@code false
+   */
+  private boolean shouldReturnEmptyResult(
+      final MappingRuleFilter filter, final ResourceAccessChecks resourceAccessChecks) {
+    return (filter.mappingRuleIds() != null && filter.mappingRuleIds().isEmpty())
+        || (resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }

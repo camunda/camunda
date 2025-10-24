@@ -27,7 +27,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 const mockUser = createUser({
   displayName: 'Franz Kafka',
   canLogout: true,
-  authorizedApplications: ['operate'],
+  authorizedComponents: ['operate'],
 });
 
 const mockSsoUser = createUser({
@@ -199,7 +199,7 @@ describe('User info', () => {
     const mockUser = createUser({
       displayName: 'Franz Kafka',
       canLogout: true,
-      authorizedApplications: ['tasklist'],
+      authorizedComponents: ['tasklist'],
     });
 
     mockMe().withSuccess(mockUser);

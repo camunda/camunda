@@ -12,6 +12,7 @@ import {deploy} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 test.beforeAll(async () => {
   await deploy([
@@ -113,6 +114,17 @@ test.describe('process page', () => {
 
     await tasklistProcessesPage.startProcessButton.click();
     await tasklistHeader.clickTasksTab();
+
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(
+          taskPanelPage.availableTasks.getByText('User_Task'),
+        ).toBeVisible();
+      },
+      onFailure: async () => {
+        console.log('User_Task not visible yet, retrying...');
+      },
+    });
 
     await taskPanelPage.openTask('User_Task');
 

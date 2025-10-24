@@ -8,7 +8,7 @@
 
 import {type Mixpanel} from 'mixpanel-browser';
 import {getStage} from 'common/config/getStage';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
 import type {MultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
 import {getClientConfig} from 'common/config/getClientConfig';
 
@@ -18,11 +18,8 @@ type Events =
       eventName:
         | 'task-unassigned'
         | 'task-assigned'
-        | 'task-assignment-delayed-notification'
         | 'task-unassignment-delayed-notification'
         | 'task-completion-delayed-notification'
-        | 'task-assignment-rejected-notification'
-        | 'task-unassignment-rejected-notification'
         | 'task-completion-rejected-notification'
         | 'processes-consent-refused'
         | 'processes-consent-accepted'

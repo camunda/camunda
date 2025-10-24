@@ -109,7 +109,8 @@ final class StartPartitionScaleUpApplierTest {
             initialConfiguration.members(),
             initialConfiguration.lastChange(),
             initialConfiguration.pendingChanges(),
-            Optional.of(routingState));
+            Optional.of(routingState),
+            initialConfiguration.clusterId());
 
     // when - trying to init the operation to scale up
     final var result = new StartPartitionScaleUpApplier(executor, 4).init(configuration);
@@ -132,7 +133,8 @@ final class StartPartitionScaleUpApplierTest {
             initialConfiguration.members(),
             initialConfiguration.lastChange(),
             initialConfiguration.pendingChanges(),
-            Optional.of(routingState));
+            Optional.of(routingState),
+            initialConfiguration.clusterId());
 
     // when - trying to init the operation to scale "up" to 2 partitions
     final var result = new StartPartitionScaleUpApplier(executor, 2).init(configuration);
@@ -155,7 +157,8 @@ final class StartPartitionScaleUpApplierTest {
             initialConfiguration.members(),
             initialConfiguration.lastChange(),
             initialConfiguration.pendingChanges(),
-            Optional.of(routingState));
+            Optional.of(routingState),
+            initialConfiguration.clusterId());
 
     // when - applying the operation to scale up to three once
     final var expectedFailure = new RuntimeException("Expected failure");
@@ -180,7 +183,8 @@ final class StartPartitionScaleUpApplierTest {
             initialConfiguration.members(),
             initialConfiguration.lastChange(),
             initialConfiguration.pendingChanges(),
-            Optional.of(routingState));
+            Optional.of(routingState),
+            initialConfiguration.clusterId());
 
     // when - applying the operation to scale up to three once
     when(executor.initiateScaleUp(anyInt())).thenReturn(CompletableActorFuture.completed(null));
@@ -201,7 +205,8 @@ final class StartPartitionScaleUpApplierTest {
             initialConfiguration.members(),
             initialConfiguration.lastChange(),
             initialConfiguration.pendingChanges(),
-            Optional.of(routingState));
+            Optional.of(routingState),
+            initialConfiguration.clusterId());
 
     // when - applying the operation to scale up to three once
     when(executor.initiateScaleUp(anyInt())).thenReturn(CompletableActorFuture.completed(null));

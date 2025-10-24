@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessInstance;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +76,10 @@ public class CamundaProcessTestResultPrinter {
         + formatVariables(result.getVariables())
         + "\n\n"
         + "Active incidents:\n"
-        + formatIncidents(result.getActiveIncidents());
+        + formatIncidents(result.getActiveIncidents())
+        + "\n\n"
+        + "Active message subscriptions:\n"
+        + formatMessageSubscriptions(result.getActiveMessageSubscriptions());
   }
 
   private static String formatVariables(final Map<String, String> variables) {
@@ -125,5 +129,24 @@ public class CamundaProcessTestResultPrinter {
   private static String formatElementInstance(final ElementInstance elementInstance) {
     final String name = Optional.ofNullable(elementInstance.getElementName()).orElse("");
     return String.format("- '%s' [name: '%s']", elementInstance.getElementId(), name);
+  }
+
+  private static String formatMessageSubscriptions(
+      final List<MessageSubscription> messageSubscriptions) {
+    if (messageSubscriptions.isEmpty()) {
+      return NO_ENTRIES;
+    } else {
+      return messageSubscriptions.stream()
+          .map(CamundaProcessTestResultPrinter::formatMessageSubscription)
+          .collect(Collectors.joining("\n"));
+    }
+  }
+
+  private static String formatMessageSubscription(final MessageSubscription subscription) {
+    return String.format(
+        "- '%s' [message-name: '%s', correlation-key: '%s']",
+        subscription.getElementId(),
+        subscription.getMessageName(),
+        subscription.getCorrelationKey());
   }
 }

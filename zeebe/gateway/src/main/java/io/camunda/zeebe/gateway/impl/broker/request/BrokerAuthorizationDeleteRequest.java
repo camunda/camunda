@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
@@ -21,6 +22,7 @@ public class BrokerAuthorizationDeleteRequest extends BrokerExecuteCommand<Autho
     super(ValueType.AUTHORIZATION, AuthorizationIntent.DELETE);
     request.setKey(authorizationKey);
     requestDto.setAuthorizationKey(authorizationKey);
+    requestDto.setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
   }
 
   @Override

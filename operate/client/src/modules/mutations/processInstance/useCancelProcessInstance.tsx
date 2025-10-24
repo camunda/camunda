@@ -6,22 +6,57 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  type UseMutationOptions,
+} from '@tanstack/react-query';
 import {cancelProcessInstance} from 'modules/api/v2/processInstances/cancelProcessInstance';
+import {fetchProcessInstance} from 'modules/api/v2/processInstances/fetchProcessInstance';
+import {getProcessInstanceQueryKey} from 'modules/queries/processInstance/useProcessInstance';
 
 function useCancelProcessInstance(
   processInstanceKey: string,
-  options?: Partial<UseMutationOptions>,
+  options?: Partial<UseMutationOptions> & {
+    shouldSkipResultCheck?: boolean;
+  },
 ) {
+  const queryClient = useQueryClient();
+  const {shouldSkipResultCheck, ...mutationOptions} = options ?? {};
+
   return useMutation({
     mutationFn: async () => {
       const response = await cancelProcessInstance(processInstanceKey);
       if (!response.ok) {
         throw new Error(response.statusText);
       }
+
+      if (shouldSkipResultCheck) {
+        return response;
+      }
+
+      await queryClient.fetchQuery({
+        queryKey: getProcessInstanceQueryKey(processInstanceKey),
+        queryFn: async () => {
+          const {response: processInstance, error} =
+            await fetchProcessInstance(processInstanceKey);
+
+          if (error) {
+            throw new Error(error.response?.statusText);
+          }
+
+          if (processInstance.state === 'ACTIVE') {
+            throw new Error('Process instance is still running');
+          }
+
+          return processInstance;
+        },
+        retry: true,
+      });
+
       return response;
     },
-    ...options,
+    ...mutationOptions,
   });
 }
 

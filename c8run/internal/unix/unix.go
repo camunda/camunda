@@ -15,11 +15,12 @@ import (
 
 func (w *UnixC8Run) OpenBrowser(ctx context.Context, url string) error {
 	var openBrowserCmdString string
-	if runtime.GOOS == "darwin" {
+	switch runtime.GOOS {
+	case "darwin":
 		openBrowserCmdString = "open"
-	} else if runtime.GOOS == "linux" {
+	case "linux":
 		openBrowserCmdString = "xdg-open"
-	} else {
+	default:
 		return fmt.Errorf("OpenBrowser: platform %s is not supported", runtime.GOOS)
 	}
 	openBrowserCmd := exec.CommandContext(ctx, openBrowserCmdString, url)
@@ -52,7 +53,7 @@ func (w *UnixC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersion s
 func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string) *exec.Cmd {
 	classPath := parentDir + "/*:" + parentDir + "/custom_connectors/*"
 	mainClass := "io.camunda.connector.runtime.app.ConnectorRuntimeApplication"
-	springConfigLocation := "--spring.config.location=" + parentDir + "/connectors-application.properties"
+	springConfigLocation := "--spring.config.additional-location=" + parentDir + "/connectors-application.properties"
 	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-cp", classPath, mainClass, springConfigLocation)
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return connectorsCmd

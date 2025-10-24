@@ -25,6 +25,7 @@ import io.camunda.zeebe.util.DateUtil;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class DecisionInstanceExportHandler
@@ -74,7 +75,10 @@ public class DecisionInstanceExportHandler
     final DecisionEvaluationRecordValue value = record.getValue();
     final var state = getState(record, value, index);
     final var key = record.getKey();
-    final var id = record.getKey() + "-" + index;
+    final var id =
+        !Objects.equals(evaluatedDecision.getDecisionEvaluationInstanceKey(), "")
+            ? evaluatedDecision.getDecisionEvaluationInstanceKey()
+            : String.format("%s-%d", key, index);
 
     return new DecisionInstanceDbModel.Builder()
         .decisionInstanceId(id)
@@ -98,6 +102,7 @@ public class DecisionInstanceExportHandler
         .evaluationFailure(
             state == DecisionInstanceState.FAILED ? value.getEvaluationFailureMessage() : null)
         .partitionId(record.getPartitionId())
+        .tenantId(value.getTenantId())
         .build();
   }
 

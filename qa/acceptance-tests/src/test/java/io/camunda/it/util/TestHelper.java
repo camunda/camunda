@@ -14,6 +14,8 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.CorrelateMessageResponse;
+import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -21,12 +23,19 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
+import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.Comparator;
@@ -165,6 +174,27 @@ public final class TestHelper {
         .join();
   }
 
+  public static CorrelateMessageResponse startProcessInstanceWithMessage(
+      final CamundaClient camundaClient, final String messageName) {
+    return camundaClient
+        .newCorrelateMessageCommand()
+        .messageName(messageName)
+        .withoutCorrelationKey()
+        .send()
+        .join();
+  }
+
+  public static ProcessInstanceEvent startProcessInstanceWithTags(
+      final CamundaClient camundaClient, final String bpmnProcessId, final Set<String> tags) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .tags(tags)
+        .send()
+        .join();
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
@@ -174,6 +204,18 @@ public final class TestHelper {
       createProcessInstanceCommandStep3.variables(payload);
     }
     return createProcessInstanceCommandStep3.send().join();
+  }
+
+  public static ProcessInstanceEvent startProcessInstance(
+      final CamundaClient camundaClient,
+      final String bpmnProcessId,
+      final Map<String, Object> variables) {
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 cmd =
+        camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+    if (variables != null && !variables.isEmpty()) {
+      cmd.variables(variables);
+    }
+    return cmd.send().join();
   }
 
   public static void waitForProcessInstancesToStart(
@@ -412,6 +454,19 @@ public final class TestHelper {
     return Map.of(VAR_TEST_SCOPE_ID, "\"" + scopeId + "\"");
   }
 
+  public static void waitForUserTasks(
+      final CamundaClient client, final Consumer<UserTaskFilter> filter, final int expectedCount) {
+    await("should have items with state")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var userTasks =
+                  client.newUserTaskSearchRequest().filter(filter).send().join().items();
+              assertThat(userTasks).hasSize(expectedCount);
+            });
+  }
+
   public static void waitForBatchOperationWithCorrectTotalCount(
       final CamundaClient camundaClient, final String batchOperationKey, final int expectedItems) {
     Awaitility.await("should start batch operation with correct total count")
@@ -617,10 +672,60 @@ public final class TestHelper {
             });
   }
 
+  public static Decision deployDefaultTestDecisionProcessInstance(
+      final CamundaClient camundaClient, final String dmnResource) {
+    final var decisionDeployment =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath(String.format("decisions/%s", dmnResource))
+            .send()
+            .join()
+            .getDecisions()
+            .getFirst();
+    waitForDecisionsToBeDeployed(
+        camundaClient,
+        decisionDeployment.getDecisionKey(),
+        decisionDeployment.getDecisionRequirementsKey(),
+        1,
+        1);
+    return decisionDeployment;
+  }
+
+  public static Process startDefaultTestDecisionProcessInstance(
+      final CamundaClient camundaClient, final String dmnDecisionId, final String bpmnProcessId) {
+    final var deployment =
+        deployResource(
+                camundaClient,
+                Bpmn.createExecutableProcess(bpmnProcessId)
+                    .startEvent()
+                    .businessRuleTask("dmn_task")
+                    .zeebeCalledDecisionId(dmnDecisionId)
+                    .zeebeResultVariable("{\"output1\": \"B\"}")
+                    .endEvent()
+                    .done(),
+                "dmn_process.bpmn")
+            .getProcesses()
+            .getFirst();
+    final long processInstanceKey =
+        startProcessInstance(camundaClient, bpmnProcessId).getProcessInstanceKey();
+    waitForDecisionToBeEvaluated(camundaClient, processInstanceKey, 1);
+    return deployment;
+  }
+
   public static void waitForDecisionsToBeDeployed(
       final CamundaClient camundaClient,
+      final long decisionKey,
+      final long decisionRequirementsKey,
       final int expectedDecisionDefinitions,
       final int expectedDecisionRequirements) {
+    final DecisionDefinitionFilter decisionDefinitionFilter =
+        decisionKey != -1
+            ? new DecisionDefinitionFilterImpl().decisionDefinitionKey(decisionKey)
+            : new DecisionDefinitionFilterImpl();
+    final DecisionRequirementsFilter decisionRequirementsFilter =
+        decisionRequirementsKey != -1
+            ? new DecisionRequirementsFilterImpl().decisionRequirementsKey(decisionRequirementsKey)
+            : new DecisionRequirementsFilterImpl();
     Awaitility.await("should receive data from ES")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -629,6 +734,7 @@ public final class TestHelper {
               assertThat(
                       camundaClient
                           .newDecisionDefinitionSearchRequest()
+                          .filter(decisionDefinitionFilter)
                           .send()
                           .join()
                           .items()
@@ -637,6 +743,7 @@ public final class TestHelper {
               assertThat(
                       camundaClient
                           .newDecisionRequirementsSearchRequest()
+                          .filter(decisionRequirementsFilter)
                           .send()
                           .join()
                           .items()
@@ -645,14 +752,29 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForDecisionsToBeDeployed(
+      final CamundaClient camundaClient,
+      final int expectedDecisionDefinitions,
+      final int expectedDecisionRequirements) {
+    waitForDecisionsToBeDeployed(
+        camundaClient, -1, -1, expectedDecisionDefinitions, expectedDecisionRequirements);
+  }
+
   public static void waitForDecisionToBeEvaluated(
-      final CamundaClient camundaClient, final int expectedDecisionInstances) {
+      final CamundaClient camundaClient,
+      final long processInstanceKey,
+      final int expectedDecisionInstances) {
     Awaitility.await("should deploy decision definitions and wait for import")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newDecisionInstanceSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
               assertThat(result.items()).hasSize(expectedDecisionInstances);
             });
   }
@@ -785,7 +907,9 @@ public final class TestHelper {
   }
 
   public static void waitUntilJobWorkerHasFailedJob(
-      final CamundaClient camundaClient, final int expectedProcesses) {
+      final CamundaClient camundaClient,
+      final Map<String, Object> variables,
+      final int expectedProcesses) {
     await("should wait until the process instance has been updated to reflect retries left.")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
@@ -793,10 +917,26 @@ public final class TestHelper {
               final var result =
                   camundaClient
                       .newProcessInstanceSearchRequest()
-                      .filter(f -> f.hasRetriesLeft(true))
+                      .filter(f -> f.hasRetriesLeft(true).variables(variables))
                       .send()
                       .join();
               assertThat(result.items().size()).isEqualTo(expectedProcesses);
+            });
+  }
+
+  public static void waitUntilJobExistsForProcessInstance(
+      final CamundaClient camundaClient, final long processInstanceKey) {
+    await("should wait until the process instance has an active job.")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newJobSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
+              assertThat(result.items()).hasSize(1);
             });
   }
 
@@ -816,13 +956,56 @@ public final class TestHelper {
 
   public static void waitForMessageSubscriptions(
       final CamundaClient camundaClient, final int expectedMessageSubscriptions) {
+    waitForMessageSubscriptions(camundaClient, f -> {}, expectedMessageSubscriptions);
+  }
+
+  public static void waitForMessageSubscriptions(
+      final CamundaClient camundaClient,
+      final Consumer<MessageSubscriptionFilter> filterConsumer,
+      final int expectedMessageSubscriptions) {
     Awaitility.await("should wait until message subscriptions are available")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newMessageSubscriptionSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newMessageSubscriptionSearchRequest()
+                      .filter(filterConsumer)
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedMessageSubscriptions);
+            });
+  }
+
+  public static void waitForCorrelatedMessageSubscriptions(
+      final CamundaClient camundaClient, final int expectedCorrelatedMessageSubscriptions) {
+    Awaitility.await("should wait until correlated message subscriptions are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newCorrelatedMessageSubscriptionSearchRequest().send().join();
+              assertThat(result.page().totalItems())
+                  .isEqualTo(expectedCorrelatedMessageSubscriptions);
+            });
+  }
+
+  public static void waitUntilAuthorizationVisible(
+      final CamundaClient camundaClient, final String owner, final String resource) {
+    Awaitility.await("should wait until authorization is visible")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(f -> f.ownerId(owner).resourceIds(resource))
+                      .send()
+                      .join();
+              assertThat(result.items().size()).isOne();
             });
   }
 

@@ -19,19 +19,20 @@
            pi.END_DATE,
            pi.TENANT_ID,
            CASE
-               WHEN pi.NUM_INCIDENTS = 0 THEN FALSE
-               ELSE TRUE
+               WHEN pi.NUM_INCIDENTS = 0 THEN ${false}
+               ELSE ${true}
            END AS HAS_INCIDENT,
            pi.PARENT_PROCESS_INSTANCE_KEY,
            pi.PARENT_ELEMENT_INSTANCE_KEY,
-           pi.ELEMENT_ID,
            pi.VERSION AS PROCESS_DEFINITION_VERSION,
            pi.TREE_PATH,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
-           pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+           pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
+           pit.TAG_VALUE AS TAG_VALUE
     FROM ${prefix}PROCESS_INSTANCE pi
            LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
-    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+           LEFT JOIN ${prefix}PROCESS_INSTANCE_TAG pit ON (pit.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY)
+    WHERE pi.PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </select>
 
   <select id="count" resultType="java.lang.Long">
@@ -39,15 +40,31 @@
     FROM ${prefix}PROCESS_INSTANCE pi
     <!-- TODO: only when definition filters are active -->
     LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchAndAuthFilter"/>
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery"
     resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT * FROM (
+    SELECT
+    pif.PROCESS_INSTANCE_KEY,
+    pif.PROCESS_DEFINITION_ID,
+    pif.PROCESS_DEFINITION_KEY,
+    pif.STATE,
+    pif.START_DATE,
+    pif.END_DATE,
+    pif.TENANT_ID,
+    pif.HAS_INCIDENT,
+    pif.PARENT_PROCESS_INSTANCE_KEY,
+    pif.PARENT_ELEMENT_INSTANCE_KEY,
+    pif.PROCESS_DEFINITION_VERSION,
+    pif.TREE_PATH,
+    pif.PROCESS_DEFINITION_NAME,
+    pif.PROCESS_DEFINITION_VERSION_TAG,
+    pit.TAG_VALUE AS TAG_VALUE
+    FROM (
+    SELECT *  FROM (
     SELECT
     pi.PROCESS_INSTANCE_KEY,
     pi.PROCESS_DEFINITION_ID,
@@ -57,82 +74,120 @@
     pi.END_DATE,
     pi.TENANT_ID,
     CASE
-        WHEN pi.NUM_INCIDENTS = 0 THEN FALSE
-        ELSE TRUE
+        WHEN pi.NUM_INCIDENTS = 0 THEN ${false}
+        ELSE ${true}
     END AS HAS_INCIDENT,
     pi.PARENT_PROCESS_INSTANCE_KEY,
     pi.PARENT_ELEMENT_INSTANCE_KEY,
-    pi.ELEMENT_ID,
     pi.VERSION PROCESS_DEFINITION_VERSION,
     pi.TREE_PATH,
     pd.NAME AS PROCESS_DEFINITION_NAME,
     pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
     FROM ${prefix}PROCESS_INSTANCE pi
     LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchAndAuthFilter"/>
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) pif
+    LEFT JOIN ${prefix}PROCESS_INSTANCE_TAG pit ON (pit.PROCESS_INSTANCE_KEY = pif.PROCESS_INSTANCE_KEY)
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <if test="_databaseId == 'mssql'">
+      <!-- MSSQL needs an OFFSET when sorting in subselects -->
+      OFFSET 0 ROWS
+    </if>
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+  </select>
+
+  <sql id="searchAndAuthFilter">
     <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND pi.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND pi.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
       <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
       <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
         AND (
         <foreach collection="filter.orFilters" item="filter" separator=" OR ">
           <trim prefix="(" suffix=")">
-            <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+            <trim prefixOverrides="AND">
+              <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+            </trim>
           </trim>
         </foreach>
-          )
+        )
       </if>
     </where>
-    ) t
-    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
-    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
-  </select>
+  </sql>
 
   <sql id="searchFilter">
-    <trim prefixOverrides="AND">
-      <!-- basic filters -->
-      <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
-        <foreach collection="filter.processInstanceKeyOperations" item="operation">
-          AND PROCESS_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
+    <!-- basic filters -->
+    <if
+      test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionIdOperations" item="operation">
+        AND pi.PROCESS_DEFINITION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+        AND pi.PROCESS_DEFINITION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.parentProcessInstanceKeyOperations != null and !filter.parentProcessInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.parentProcessInstanceKeyOperations" item="operation">
+        AND PARENT_PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.parentFlowNodeInstanceKeyOperations != null and !filter.parentFlowNodeInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.parentFlowNodeInstanceKeyOperations" item="operation">
+        AND PARENT_ELEMENT_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND pi.STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="operation">
+        AND pi.TENANT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.hasIncident != null">
+      <if test="filter.hasIncident == true">
+        AND pi.NUM_INCIDENTS > 0
       </if>
-      <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
-        <foreach collection="filter.processDefinitionIdOperations" item="operation">
-          AND pi.PROCESS_DEFINITION_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
+      <if test="filter.hasIncident == false">
+        AND pi.NUM_INCIDENTS = 0
       </if>
-      <if test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
-        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
-          AND pi.PROCESS_DEFINITION_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.parentProcessInstanceKeyOperations != null and !filter.parentProcessInstanceKeyOperations.isEmpty()">
-        <foreach collection="filter.parentProcessInstanceKeyOperations" item="operation">
-          AND PARENT_PROCESS_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.parentFlowNodeInstanceKeyOperations != null and !filter.parentFlowNodeInstanceKeyOperations.isEmpty()">
-        <foreach collection="filter.parentFlowNodeInstanceKeyOperations" item="operation">
-          AND PARENT_ELEMENT_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
-        <foreach collection="filter.stateOperations" item="operation">
-          AND pi.STATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
-        <foreach collection="filter.tenantIdOperations" item="operation">
-          AND pi.TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.hasIncident != null">
-        <if test="filter.hasIncident == true">
-          AND pi.NUM_INCIDENTS > 0
-        </if>
-        <if test="filter.hasIncident == false">
-          AND pi.NUM_INCIDENTS = 0
-        </if>
-      </if>
+    </if>
     <if test="filter.hasRetriesLeft != null">
       AND EXISTS (
       SELECT 1
@@ -143,7 +198,7 @@
         AND j.RETRIES > 0
       </if>
       <if test="filter.hasRetriesLeft == false">
-         AND j.RETRIES = 0
+        AND j.RETRIES = 0
       </if>
       )
     </if>
@@ -154,24 +209,30 @@
     <!-- date filters -->
     <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">
       <foreach collection="filter.startDateOperations" item="operation">
-        AND START_DATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND START_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
     <if test="filter.endDateOperations != null and !filter.endDateOperations.isEmpty()">
       <foreach collection="filter.endDateOperations" item="operation">
-        AND END_DATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND END_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
 
     <!-- process definition filters -->
-    <if test="filter.processDefinitionNameOperations != null and !filter.processDefinitionNameOperations.isEmpty()">
+    <if
+      test="filter.processDefinitionNameOperations != null and !filter.processDefinitionNameOperations.isEmpty()">
       <foreach collection="filter.processDefinitionNameOperations" item="operation">
-        AND pd.NAME <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND pd.NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.processDefinitionVersionOperations != null and !filter.processDefinitionVersionOperations.isEmpty()">
+    <if
+      test="filter.processDefinitionVersionOperations != null and !filter.processDefinitionVersionOperations.isEmpty()">
       <foreach collection="filter.processDefinitionVersionOperations" item="operation">
-        AND pd.VERSION <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND pd.VERSION
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
 
@@ -182,13 +243,16 @@
       FROM ${prefix}FLOW_NODE_INSTANCE fni
       WHERE fni.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
       <foreach collection="filter.flowNodeIdOperations" item="operation">
-        AND fni.FLOW_NODE_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND fni.FLOW_NODE_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
-    <if test="filter.flowNodeInstanceStateOperations != null and !filter.flowNodeInstanceStateOperations.isEmpty()">
-      <foreach collection="filter.flowNodeInstanceStateOperations" item="operation">
-        AND fni.STATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
+      <if
+        test="filter.flowNodeInstanceStateOperations != null and !filter.flowNodeInstanceStateOperations.isEmpty()">
+        <foreach collection="filter.flowNodeInstanceStateOperations" item="operation">
+          AND fni.STATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.hasFlowNodeInstanceIncident != null">
         <if test="filter.hasFlowNodeInstanceIncident == true">
           AND fni.INCIDENT_KEY IS NOT NULL
@@ -201,9 +265,11 @@
     </if>
 
     <!-- Variable filters -->
-    <if test="filter.processDefinitionVersionTagOperations != null and !filter.processDefinitionVersionTagOperations.isEmpty()">
+    <if
+      test="filter.processDefinitionVersionTagOperations != null and !filter.processDefinitionVersionTagOperations.isEmpty()">
       <foreach collection="filter.processDefinitionVersionTagOperations" item="operation">
-        AND pd.VERSION_TAG <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND pd.VERSION_TAG
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
 
@@ -234,32 +300,46 @@
         SELECT 1
         FROM INCIDENT i
         WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-        AND i.ERROR_MESSAGE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND i.ERROR_MESSAGE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         )
       </foreach>
     </if>
-    <if test="filter.incidentErrorHashCodeOperations != null and !filter.incidentErrorHashCodeOperations.isEmpty()">
+    <if
+      test="filter.incidentErrorHashCodeOperations != null and !filter.incidentErrorHashCodeOperations.isEmpty()">
       <foreach collection="filter.incidentErrorHashCodeOperations" item="operation">
         AND EXISTS (
         SELECT 1
         FROM INCIDENT i
         WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-        AND i.ERROR_MESSAGE_HASH <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND i.ERROR_MESSAGE_HASH
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         )
       </foreach>
     </if>
-      <if test="filter.batchOperationIdOperations != null and !filter.batchOperationIdOperations.isEmpty()">
-        AND EXISTS (
-        SELECT 1
-        FROM ${prefix}BATCH_OPERATION_ITEM boi
-        WHERE boi.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-        <foreach collection="filter.batchOperationIdOperations" item="operation">
-          AND boi.BATCH_OPERATION_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
+    <if
+      test="filter.batchOperationIdOperations != null and !filter.batchOperationIdOperations.isEmpty()">
+      AND EXISTS (
+      SELECT 1
+      FROM ${prefix}BATCH_OPERATION_ITEM boi
+      WHERE boi.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+      <foreach collection="filter.batchOperationIdOperations" item="operation">
+        AND boi.BATCH_OPERATION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+      )
+    </if>
+    <!-- Tag filters -->
+    <if test="filter.tags != null and !filter.tags.isEmpty()">
+      <foreach collection="filter.tags" item="tag" open="AND (" separator=" AND " close=")">
+        EXISTS (
+          SELECT 1
+          FROM ${prefix}PROCESS_INSTANCE_TAG pit
+          WHERE pit.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+            AND pit.TAG_VALUE = #{tag}
         )
-      </if>
-    </trim>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
@@ -279,7 +359,9 @@
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
     </constructor>
-
+    <collection property="tags" ofType="java.lang.String" javaType="java.util.Set">
+      <id column="TAG_VALUE"/>
+    </collection>
   </resultMap>
 
   <select id="flowNodeStatistics"
@@ -357,10 +439,21 @@
     WHERE PROCESS_INSTANCE_KEY = #{id}
   </update>
 
+  <insert id="insertTags" parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$ProcessInstanceTagsDto">
+    INSERT INTO ${prefix}PROCESS_INSTANCE_TAG (PROCESS_INSTANCE_KEY, TAG_VALUE)
+    VALUES
+      <foreach collection="tags" item="item" separator=",">
+        (#{processInstanceKey}, #{item.tagValue})
+      </foreach>
+  </insert>
+
   <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}PROCESS_INSTANCE
     SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+    WHERE PROCESS_INSTANCE_KEY IN
+    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
   </update>
 
   <delete id="cleanupHistory">

@@ -15,15 +15,15 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.api.search.enums.MessageSubscriptionType;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
-import io.camunda.client.api.search.filter.builder.MessageSubscriptionTypeProperty;
+import io.camunda.client.api.search.filter.builder.MessageSubscriptionStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
-import io.camunda.client.impl.search.filter.builder.MessageSubscriptionTypePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.MessageSubscriptionStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import java.time.OffsetDateTime;
@@ -67,19 +67,6 @@ public class MessageSubscriptionFilterImpl
   }
 
   @Override
-  public MessageSubscriptionFilter processDefinitionKey(final Long processDefinitionKey) {
-    return processDefinitionKey(f -> f.eq(processDefinitionKey));
-  }
-
-  @Override
-  public MessageSubscriptionFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongProperty property = new BasicLongPropertyImpl();
-    fn.accept(property);
-    filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
-    return this;
-  }
-
-  @Override
   public MessageSubscriptionFilter processInstanceKey(final Long processInstanceKey) {
     return processInstanceKey(f -> f.eq(processInstanceKey));
   }
@@ -119,17 +106,17 @@ public class MessageSubscriptionFilterImpl
   }
 
   @Override
-  public MessageSubscriptionFilter messageSubscriptionType(
-      final MessageSubscriptionType messageSubscriptionType) {
-    return messageSubscriptionType(f -> f.eq(messageSubscriptionType));
+  public MessageSubscriptionFilter messageSubscriptionState(
+      final MessageSubscriptionState messageSubscriptionState) {
+    return messageSubscriptionState(f -> f.eq(messageSubscriptionState));
   }
 
   @Override
-  public MessageSubscriptionFilter messageSubscriptionType(
-      final Consumer<MessageSubscriptionTypeProperty> fn) {
-    final MessageSubscriptionTypeProperty property = new MessageSubscriptionTypePropertyImpl();
+  public MessageSubscriptionFilter messageSubscriptionState(
+      final Consumer<MessageSubscriptionStateProperty> fn) {
+    final MessageSubscriptionStateProperty property = new MessageSubscriptionStatePropertyImpl();
     fn.accept(property);
-    filter.setMessageSubscriptionType(provideSearchRequestProperty(property));
+    filter.setMessageSubscriptionState(provideSearchRequestProperty(property));
     return this;
   }
 

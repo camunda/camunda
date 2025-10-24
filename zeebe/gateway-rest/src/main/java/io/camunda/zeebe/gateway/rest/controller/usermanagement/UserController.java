@@ -7,27 +7,29 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.authentication.ConditionalOnInternalUserManagement;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,20 +39,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequiresSecondaryStorage
 @RequestMapping("/v2/users")
+@ConditionalOnInternalUserManagement()
 public class UserController {
   private final UserServices userServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final SecurityConfiguration securityConfiguration;
 
   public UserController(
-      final UserServices userServices, final CamundaAuthenticationProvider authenticationProvider) {
+      final UserServices userServices,
+      final CamundaAuthenticationProvider authenticationProvider,
+      final SecurityConfiguration securityConfiguration) {
     this.userServices = userServices;
     this.authenticationProvider = authenticationProvider;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    return RequestMapper.toUserDTO(userRequest)
+    return RequestMapper.toUserRequest(
+            userRequest, securityConfiguration.getCompiledIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 

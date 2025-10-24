@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -28,13 +29,13 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
-import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,7 @@ import org.springframework.test.json.JsonCompareMode;
 public class GroupControllerTest {
 
   private static final String GROUP_BASE_URL = "/v2/groups";
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   @Nested
   @WebMvcTest(GroupController.class)
@@ -93,7 +95,6 @@ public class GroupControllerTest {
     @Test
     void shouldReturnErrorOnUpdate() {
       // given
-      final var groupKey = 111L;
       final var groupId = "111";
       final var groupName = "updatedName";
       final var description = "updatedDescription";
@@ -214,6 +215,7 @@ public class GroupControllerTest {
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private SecurityConfiguration securityConfiguration;
 
     @BeforeEach
     void setup() {
@@ -221,10 +223,11 @@ public class GroupControllerTest {
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
       when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(groupServices);
+      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+    @ValueSource(strings = {"foo", "foo~", "Foo", "foo123", "foo_", "foo.", "foo@"})
     void shouldAcceptCreateGroupRequest(final String groupId) {
       // given
       final var groupName = "testGroup";
@@ -376,9 +379,9 @@ public class GroupControllerTest {
     @ParameterizedTest
     @ValueSource(
         strings = {
-          "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-          "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-          "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+          "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
+          "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
+          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
         })
     void shouldRejectGroupCreationWithIllegalCharactersInId(final String groupId) {
       // when then
@@ -401,7 +404,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, GROUP_BASE_URL),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, GROUP_BASE_URL),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -544,10 +547,7 @@ public class GroupControllerTest {
 
     @ParameterizedTest
     @ValueSource(
-        strings = {
-          "foo~", "foo!", "foo$", "foo&", "foo*", "foo(", "foo)", "foo=", "foo+", "foo:", "foo'",
-          "foo,"
-        })
+        strings = {"foo!", "foo$", "foo&", "foo*", "foo(", "foo)", "foo=", "foo:", "foo'", "foo,"})
     void shouldRejectGroupUpdateWithIllegalCharactersInId(final String groupId) {
       // when then
       final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
@@ -570,7 +570,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -784,7 +784,7 @@ public class GroupControllerTest {
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -815,7 +815,7 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -1005,7 +1005,7 @@ public class GroupControllerTest {
                   "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
@@ -1035,7 +1035,7 @@ public class GroupControllerTest {
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }

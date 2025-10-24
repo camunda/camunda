@@ -17,7 +17,9 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.EventReader;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.entities.event.EventEntity;
+import java.util.Optional;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -36,15 +38,17 @@ public class OpensearchEventReader implements EventReader {
   }
 
   @Override
-  public EventEntity getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId) {
+  public Optional<EventEntity> getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId) {
     final var request =
         searchRequestBuilder(eventTemplate.getAlias())
             .query(withTenantCheck(term(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId)))
             .sort(sortOptions(EventTemplate.ID, SortOrder.Asc));
     final var response = richOpenSearchClient.doc().search(request, EventEntity.class);
-    if (response.hits().total().value() >= 1) {
-      return response.hits().hits().get(0).source();
+    final var total = response.hits().total();
+    final var totalHits = (total != null) ? total.value() : 0L;
+    if (totalHits >= 1) {
+      return response.hits().hits().stream().findFirst().map(Hit::source);
     }
-    return null;
+    return Optional.empty();
   }
 }

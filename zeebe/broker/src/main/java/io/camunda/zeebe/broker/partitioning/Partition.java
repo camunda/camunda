@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import static io.camunda.zeebe.scheduler.Actor.ACTOR_PROP_PARTITION_ID;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.partition.RaftPartition;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.scheduler.startup.StartupProcess;
 import io.camunda.zeebe.util.FileUtil;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,27 +69,30 @@ final class Partition {
     return new Partition(
         context,
         new StartupProcess<>(
+            Map.of(ACTOR_PROP_PARTITION_ID, context.partitionId().toString()),
             LOGGER,
             List.of(
-                new MetricsStep(),
-                new PartitionDirectoryStep(),
-                new SnapshotStoreStep(),
-                new RaftBootstrapStep(),
-                new ZeebePartitionStep(),
-                new PartitionRegistrationStep())));
+                new MetricsStep(context.partitionId()),
+                new PartitionDirectoryStep(context.partitionId()),
+                new SnapshotStoreStep(context.partitionId()),
+                new RaftBootstrapStep(context.partitionId()),
+                new ZeebePartitionStep(context.partitionId()),
+                new PartitionRegistrationStep(context.partitionId()))));
   }
 
   static Partition joining(final PartitionStartupContext context) {
     return new Partition(
         context,
         new StartupProcess<>(
+            Map.of(ACTOR_PROP_PARTITION_ID, context.partitionId().toString()),
+            LOGGER,
             List.of(
-                new MetricsStep(),
-                new PartitionDirectoryStep(),
-                new SnapshotStoreStep(),
-                new RaftJoinStep(),
-                new ZeebePartitionStep(),
-                new PartitionRegistrationStep())));
+                new MetricsStep(context.partitionId()),
+                new PartitionDirectoryStep(context.partitionId()),
+                new SnapshotStoreStep(context.partitionId()),
+                new RaftJoinStep(context.partitionId()),
+                new ZeebePartitionStep(context.partitionId()),
+                new PartitionRegistrationStep(context.partitionId()))));
   }
 
   ActorFuture<Partition> start() {

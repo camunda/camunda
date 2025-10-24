@@ -26,14 +26,19 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.assertj.core.api.Assertions;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class CreateProcessInstanceRestTest extends ClientRestTest {
@@ -41,8 +46,18 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
   public static final String ELEMENT_ID_A = "elementId_A";
   public static final String ELEMENT_ID_B = "elementId_B";
 
+  private static final ProcessInstanceResult DUMMY_RESPONSE =
+      Instancio.create(ProcessInstanceResult.class)
+          .processInstanceKey("1")
+          .parentProcessInstanceKey("2")
+          .parentElementInstanceKey("3")
+          .processDefinitionKey("4");
+
   @Test
   public void shouldCreateProcessInstanceByProcessInstanceKey() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     final ProcessInstanceEvent response =
         client.newCreateInstanceCommand().processDefinitionKey(123).send().join();
@@ -55,6 +70,9 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   @Test
   public void shouldCreateProcessInstanceByBpmnProcessId() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client.newCreateInstanceCommand().bpmnProcessId("testProcess").latestVersion().send().join();
 
@@ -67,6 +85,9 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   @Test
   public void shouldCreateProcessInstanceByBpmnProcessIdAndVersion() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client.newCreateInstanceCommand().bpmnProcessId("testProcess").version(123).send().join();
 
@@ -79,6 +100,9 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   @Test
   public void shouldCreateProcessInstanceWithStringVariables() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -99,6 +123,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final String variables = "{\"foo\": \"bar\"}";
     final InputStream inputStream =
         new ByteArrayInputStream(variables.getBytes(StandardCharsets.UTF_8));
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -119,6 +144,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     // given
     final String key = "key";
     final String value = "value";
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client.newCreateInstanceCommand().processDefinitionKey(123).variable(key, value).send().join();
@@ -131,6 +157,9 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   @Test
   public void shouldCreateProcessInstanceWithMapVariables() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -147,6 +176,9 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   @Test
   public void shouldCreateProcessInstanceWithObjectVariables() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -165,7 +197,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
   public void shouldRaiseAnErrorIfRequestFails() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getCreateProcessInstanceUrl(),
+        RestGatewayPaths.getProcessInstancesUrl(),
         () -> new ProblemDetail().title("Invalid request").status(400));
 
     // when
@@ -177,6 +209,9 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   @Test
   public void shouldAddStartInstruction() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -198,6 +233,9 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   @Test
   public void shouldAddMultipleStartInstructions() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newCreateInstanceCommand()
@@ -222,6 +260,9 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
 
   @Test
   public void shouldUseDefaultTenantId() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
     // when
     client.newCreateInstanceCommand().bpmnProcessId("test").latestVersion().send().join();
 
@@ -236,6 +277,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     // given
     final String bpmnProcessId = "testProcess";
     final String tenantId = "test-tenant";
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -258,6 +300,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final String bpmnProcessId = "testProcess";
     final int version = 3;
     final String tenantId = "test-tenant";
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -279,6 +322,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     // given
     final String customTenantId = "test-tenant";
     final Long processDefinitionKey = 1L;
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -293,6 +337,21 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(customTenantId);
     assertThat(request.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithTags() {
+    // given
+    final Set<String> tags = new HashSet<>(Arrays.asList("tag1", "tag2"));
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client.newCreateInstanceCommand().processDefinitionKey(123).tags(tags).send().join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    Assertions.assertThat(request.getTags()).isEqualTo(tags);
   }
 
   public static class VariableDocument {

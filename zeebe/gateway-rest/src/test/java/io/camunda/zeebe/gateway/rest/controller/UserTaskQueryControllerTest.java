@@ -63,6 +63,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "userTaskKey": "0",
                       "processInstanceKey": "1",
                       "processDefinitionKey": "2",
+                      "processName": "ProcessName",
                       "elementInstanceKey": "3",
                       "processDefinitionId": "b",
                       "state": "CREATED",
@@ -129,6 +130,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "userTaskKey": "0",
                       "processInstanceKey": "1",
                       "processDefinitionKey": "2",
+                      "processName": "ProcessName",
                       "elementInstanceKey": "3",
                       "processDefinitionId": "b",
                       "state": "CREATED",
@@ -172,6 +174,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "e", // elementBpmnId
                       "name",
                       "b", // bpmnProcessId
+                      "ProcessName",
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // creationTime
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // completionTime
                       "a", // assignee
@@ -224,6 +227,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 "e",
                 "name",
                 "b",
+                "ProcessName",
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 "a",
@@ -648,9 +652,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Both after and before cannot be set at the same time.",
+                  "detail": "Failed to read request",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);
@@ -848,6 +852,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "assignee",
         ops -> new UserTaskFilter.Builder().assigneeOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "tenantId",
+        ops -> new UserTaskFilter.Builder().tenantIdOperations(ops).build());
 
     return streamBuilder.build();
   }

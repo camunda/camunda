@@ -24,7 +24,7 @@ const ClientConfigSchema = z.object({
     .number()
     .optional()
     .default(4 * 1024 * 1024),
-  clientMode: z.enum(['v1', 'v2']).optional().default('v1'),
+  clientMode: z.enum(['v1', 'v2']).optional().default('v2'),
 });
 
 const DEFAULT_CLIENT_CONFIG = ClientConfigSchema.safeParse({}).data!;

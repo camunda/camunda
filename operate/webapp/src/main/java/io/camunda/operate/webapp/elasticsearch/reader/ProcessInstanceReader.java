@@ -93,15 +93,9 @@ public class ProcessInstanceReader {
 
   public ProcessInstanceCoreStatisticsDto getCoreStatistics() {
     final Map<String, Long> statistics;
-    if (permissionsService.permissionsEnabled()) {
-      final PermissionsService.ResourcesAllowed allowed =
-          permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
-      statistics =
-          processStore.getCoreStatistics(
-              (allowed == null || allowed.isAll()) ? null : allowed.getIds());
-    } else {
-      statistics = processStore.getCoreStatistics(null);
-    }
+    final PermissionsService.ResourcesAllowed allowed =
+        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
+    statistics = processStore.getCoreStatistics(allowed.isAll() ? null : allowed.getIds());
     final Long runningCount = statistics.get("running");
     final Long incidentCount = statistics.get("incidents");
     final ProcessInstanceCoreStatisticsDto processInstanceCoreStatisticsDto =

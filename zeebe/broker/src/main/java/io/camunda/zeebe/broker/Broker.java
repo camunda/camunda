@@ -90,7 +90,8 @@ public final class Broker implements AutoCloseable {
             systemContext.getUserServices(),
             systemContext.getPasswordEncoder(),
             systemContext.getJwtDecoder(),
-            systemContext.getSearchClientsProxy());
+            systemContext.getSearchClientsProxy(),
+            systemContext.getBrokerRequestAuthorizationConverter());
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);

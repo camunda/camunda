@@ -105,9 +105,9 @@ public class SchemaManagerConcurrencyIT {
 
     // then
     assertThat(exceptions).isEmpty();
-    // assert that both schema managers detected missing index
-    assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread1, List.class)).hasSize(1);
-    assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread2, List.class)).hasSize(1);
+    // assert that both schema managers detected missing indices ("index_name" and "template_name")
+    assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread1, List.class)).hasSize(2);
+    assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread2, List.class)).hasSize(2);
     // assert that the schema was correctly created
     final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
     final var retrievedIndexTemplate =

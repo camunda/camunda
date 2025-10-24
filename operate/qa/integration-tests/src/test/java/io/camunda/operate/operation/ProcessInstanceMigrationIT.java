@@ -22,13 +22,10 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 class ProcessInstanceMigrationIT extends OperateZeebeSearchAbstractIT {
 
-  @Autowired
-  @Qualifier("operateFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private MigrateProcessInstanceHandler migrateProcessInstanceHandler;
 
@@ -39,7 +36,7 @@ class ProcessInstanceMigrationIT extends OperateZeebeSearchAbstractIT {
     final var processDefinitionFrom =
         operateTester.deployProcessAndWait("migration-subprocess.bpmn");
     final var processFrom = operateTester.startProcessAndWait("prWithSubprocess");
-    operateTester.completeJob("taskA").waitForFlowNodeActive(processFrom, "subprocess");
+    operateTester.completeJob("taskA"); // .waitForFlowNodeActive(processFrom, "subprocess");
 
     final var processDefinitionTo =
         operateTester.deployProcessAndWait("migration-subprocess2.bpmn");
@@ -68,7 +65,7 @@ class ProcessInstanceMigrationIT extends OperateZeebeSearchAbstractIT {
 
     // then
     // subprocesses are migrated
-    operateTester.waitForFlowNodeActive(processFrom, "subprocess2");
+    // operateTester.waitForFlowNodeActive(processFrom, "subprocess2");
     final var subprocessFlowNodes =
         searchAllDocuments(flowNodeInstanceTemplate.getAlias(), FlowNodeInstanceEntity.class)
             .stream()

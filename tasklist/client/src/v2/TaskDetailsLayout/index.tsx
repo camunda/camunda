@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser, UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.8';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {Section} from '@carbon/react';
 import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';
@@ -32,12 +32,28 @@ type OutletContext = {
   refetch: () => void;
   processXml: string | undefined;
 };
+const POLLING_STATES: UserTask['state'][] = [
+  'CANCELING',
+  'UPDATING',
+  'COMPLETING',
+  'ASSIGNING',
+] as const;
 
 const TaskDetailsLayout: React.FC = () => {
   const {id} = useTaskDetailsParams();
   const {t} = useTranslation();
   const {data: currentUser} = useCurrentUser();
-  const {data: task, refetch} = useTask(id);
+  const {data: task, refetch} = useTask(id, {
+    refetchInterval(query) {
+      const {data} = query.state;
+
+      if (data?.state && POLLING_STATES.includes(data.state)) {
+        return 5000;
+      }
+
+      return false;
+    },
+  });
   const isTaskCompleted = task?.state === 'COMPLETED';
   const {data: processXml, isLoading: processLoading} = useProcessDefinitionXml(
     task?.processDefinitionKey ?? '',

@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints, type Variable} from '@vzeta/camunda-api-zod-schemas';
-import {type RequestResult, requestWithThrow} from 'modules/request';
+import {endpoints, type Variable} from '@camunda/camunda-api-zod-schemas/8.8';
+import {requestWithThrow} from 'modules/request';
 
-const getVariable = async (variableKey: string): RequestResult<Variable> => {
+const getVariable = async (variableKey: string) => {
   return requestWithThrow<Variable>({
     url: endpoints.getVariable.getUrl({variableKey}),
     method: endpoints.getVariable.method,

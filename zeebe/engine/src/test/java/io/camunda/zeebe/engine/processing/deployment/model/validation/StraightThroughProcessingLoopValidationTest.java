@@ -522,4 +522,61 @@ public class StraightThroughProcessingLoopValidationTest {
         .describedAs("Allow deployments of loops that aren't straight-through processed")
         .isNotNegative();
   }
+
+  @Test
+  public void shouldRejectDeploymentWithScriptTaskLoop() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .scriptTask(
+                        "task1", s -> s.zeebeExpression("= true").zeebeResultVariable("result"))
+                    .scriptTask(
+                        "task2", s -> s.zeebeExpression("= true").zeebeResultVariable("result"))
+                    .connectTo("task1")
+                    .done())
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(String.format("Process: %s", processId))
+        .contains(GENERIC_REJECTION_MESSAGE + "task1 > task2 > task1");
+  }
+
+  @Test
+  public void shouldDeployProcessWithJobBasedScriptTask() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .scriptTask(
+                        "task1", s -> s.zeebeExpression("= true").zeebeResultVariable("result"))
+                    .scriptTask("task2", s -> s.zeebeJobType("jonType").zeebeJobRetries("1"))
+                    .connectTo("task1")
+                    .done())
+            .deploy();
+
+    // then
+    assertThat(deployment.getKey())
+        .describedAs("Allow deployments of loops that aren't straight-through processed")
+        .isNotNegative();
+  }
 }

@@ -81,7 +81,12 @@ public class UpdateAuthorizationTest {
   @Test
   public void shouldRejectTheCommandIfAuthorizationDoesNotExist() {
     final var userNotFoundRejection =
-        engine.authorization().updateAuthorization(1L).expectRejection().update();
+        engine
+            .authorization()
+            .updateAuthorization(1L)
+            .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+            .expectRejection()
+            .update();
 
     Assertions.assertThat(userNotFoundRejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
@@ -170,7 +175,7 @@ public class UpdateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to create or update authorization with ownerId '%s', but a mapping rule with this ID does not exist."
+            "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist."
                 .formatted(nonexistentMappingRuleId));
   }
 }

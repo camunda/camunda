@@ -20,9 +20,11 @@ import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
+import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures;
 import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
+import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.filter.MappingRuleFilter;
@@ -43,7 +45,8 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class MappingRuleSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
@@ -120,6 +123,33 @@ public class MappingRuleSpecificFilterIT {
         .containsOnly(mappingRuleId1);
   }
 
+  @Test
+  public void shouldFilterMappingRulesForTenant() {
+    // Create and save a mapping rule
+    final var mappingRule1 = MappingRuleFixtures.createRandomized();
+    final var mappingRule2 = MappingRuleFixtures.createRandomized();
+    final var mappingRule3 = MappingRuleFixtures.createRandomized();
+    createAndSaveMappingRule(rdbmsWriter, mappingRule1);
+    createAndSaveMappingRule(rdbmsWriter, mappingRule2);
+    createAndSaveMappingRule(rdbmsWriter, mappingRule3);
+
+    final var tenant1 = TenantFixtures.createAndSaveTenant(rdbmsWriter);
+    final var tenant2 = TenantFixtures.createAndSaveTenant(rdbmsWriter);
+
+    assignMappingRuleToTenant(tenant1.tenantId(), mappingRule1.mappingRuleId());
+    assignMappingRuleToTenant(tenant2.tenantId(), mappingRule2.mappingRuleId());
+    assignMappingRuleToTenant(tenant2.tenantId(), mappingRule3.mappingRuleId());
+
+    final var mappingRules =
+        mappingRuleReader.search(
+            new MappingRuleQuery(
+                new MappingRuleFilter.Builder().tenantId(tenant1.tenantId()).build(),
+                MappingRuleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(mappingRules.total()).isEqualTo(1);
+  }
+
   private void assignMappingRuleToGroup(final String groupId, final String mappingRuleId) {
     rdbmsWriter
         .getGroupWriter()
@@ -131,6 +161,13 @@ public class MappingRuleSpecificFilterIT {
     rdbmsWriter
         .getRoleWriter()
         .addMember(new RoleMemberDbModel(roledId, mappingRuleId, MAPPING_RULE.name()));
+    rdbmsWriter.flush();
+  }
+
+  private void assignMappingRuleToTenant(final String tenantId, final String mappingRuleId) {
+    rdbmsWriter
+        .getTenantWriter()
+        .addMember(new TenantMemberDbModel(tenantId, mappingRuleId, MAPPING_RULE.name()));
     rdbmsWriter.flush();
   }
 }

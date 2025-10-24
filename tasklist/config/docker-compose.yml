@@ -78,7 +78,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.3.2
+    image: bitnami/keycloak:26.3.3
     ports:
       - "18080:8080"
     environment:
@@ -380,12 +380,9 @@ services:
       - 8081:8080
     environment:
       - CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX=e2etasklist
-      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX=e2e
       - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
       - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe-e2e:26503
       - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe-e2e:8088
-      - CAMUNDA_TASKLIST_IMPORTER.READERBACKOFF=0
-      - CAMUNDA_TASKLIST_IMPORTER_SCHEDULERBACKOFF=0
       - SPRING_PROFILES_ACTIVE=e2e-test
     depends_on:
       - elasticsearch

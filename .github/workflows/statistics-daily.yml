@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/statistics-daily.yml'
+      - '.ci/scripts/setup-medic-lookup.sh'
   workflow_dispatch: {}
 
 env:
@@ -20,7 +21,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
       - name: Import Secrets
         id: secrets
@@ -37,12 +38,12 @@ jobs:
 
       - name: Login to Google Cloud
         id: auth
-        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         with:
           credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
 
       - name: Setup Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@6189d56e4096ee891640bb02ac264be376592d6a # v2
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2
 
       - name: Print Google Cloud SDK version used
         shell: bash
@@ -65,7 +66,7 @@ jobs:
           # shellcheck disable=SC2016
           NUMBER_OF_FLAKYTESTS_JOBS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT COUNT(*) as number_of_all_jobs FROM `ci-30-162810.prod_ci_analytics.build_status_v2` WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=report_time AND report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ci_url="https://github.com/camunda/camunda" AND user_reason="flaky-tests"' | jq -r '.[0].number_of_all_jobs')
           # shellcheck disable=SC2016
-          TOP5_FLAKYTESTS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT test_class_name, test_name, COUNT(*) as number_of_flakes FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=ts.report_time AND ts.report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ts.ci_url="https://github.com/camunda/camunda" AND test_status = "flaky" GROUP BY test_class_name, test_name ORDER BY number_of_flakes DESC LIMIT 5')
+          TOP5_FLAKYTESTS=$(bq query --format=json --use_legacy_sql=false --quiet=true 'SELECT test_class_name, test_name, COUNT(*) as number_of_flakes, user_description FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts LEFT OUTER JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name WHERE TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY), INTERVAL 1 DAY)<=ts.report_time AND ts.report_time<=TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, DAY) AND ts.ci_url="https://github.com/camunda/camunda" AND test_status = "flaky" GROUP BY test_class_name, test_name, user_description ORDER BY number_of_flakes DESC LIMIT 5')
 
           {
             echo "MESSAGE<<EOF"
@@ -94,10 +95,10 @@ jobs:
               fi
 
               printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
-              # only notify if the owner is a team name and the number of flakes is above the threshold
-              if [ "${NUMBER_OF_FLAKES}" -ge "${FLAKY_TEST_THRESHOLD}" ]; then
+              # only notify if the owner is a team name and the number of flakes is above the threshold and there is no GH issue
+              if [ "${NUMBER_OF_FLAKES}" -ge "${FLAKY_TEST_THRESHOLD}" ] && [ -z "$GH_ISSUE_ID" ]; then
                 if [[ -n "${lookupTeamMedic[$TEST_OWNER]}" ]]; then
-                  printf "\t• %s\n" "${lookupTeamMedic[$TEST_OWNER]}"
+                  printf ":arrow_right: %s\n\n" "${lookupTeamMedic[$TEST_OWNER]}"
                 fi
               fi
 

@@ -91,6 +91,7 @@ public class TokenClaimsConverterNoDbTest {
     assertThat(result).isNotNull();
     assertThat(result.authenticatedUsername()).isEqualTo("testuser");
     assertThat(result.authenticatedGroupIds()).containsExactlyInAnyOrder("group1", "group2");
+    assertThat(result.claims()).isEqualTo(claims);
     // In no-db mode, no secondary storage access, so these should be empty
     assertThat(result.authenticatedRoleIds()).isEmpty();
     assertThat(result.authenticatedTenantIds()).isEmpty();
@@ -110,6 +111,7 @@ public class TokenClaimsConverterNoDbTest {
     assertThat(result).isNotNull();
     assertThat(result.authenticatedUsername()).isEqualTo("testuser");
     assertThat(result.authenticatedGroupIds()).isEmpty();
+    assertThat(result.claims()).isEqualTo(claims);
   }
 
   @Test
@@ -146,5 +148,6 @@ public class TokenClaimsConverterNoDbTest {
     assertThat(result).isNotNull();
     assertThat(result.authenticatedUsername()).isEqualTo("testuser");
     assertThat(result.authenticatedGroupIds()).isEmpty();
+    assertThat(result.claims()).isEqualTo(claims);
   }
 }

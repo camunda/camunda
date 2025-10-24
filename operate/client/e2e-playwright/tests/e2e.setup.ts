@@ -7,7 +7,7 @@
  */
 
 import {test} from '@playwright/test';
-import fs from 'fs';
+import * as fs from 'node:fs';
 
 test('Remove authentication file if exists', () => {
   if (fs.existsSync('playwright/.auth/user.json')) {

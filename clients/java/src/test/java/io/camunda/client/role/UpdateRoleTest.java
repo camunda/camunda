@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.protocol.rest.RoleUpdateRequest;
+import io.camunda.client.protocol.rest.RoleUpdateResult;
 import io.camunda.client.util.ClientRestTest;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class UpdateRoleTest extends ClientRestTest {
@@ -29,6 +31,9 @@ public class UpdateRoleTest extends ClientRestTest {
 
   @Test
   void shouldUpdateRole() {
+    // given
+    gatewayService.onUpdateRoleRequest(ROLE_ID, Instancio.create(RoleUpdateResult.class));
+
     // when
     client
         .newUpdateRoleCommand(ROLE_ID)

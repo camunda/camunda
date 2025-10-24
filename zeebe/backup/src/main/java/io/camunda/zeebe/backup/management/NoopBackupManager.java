@@ -30,9 +30,11 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Void> takeBackup(final long checkpointId, final long checkpointPosition) {
-    LOG.warn("Attempted to take backup, but cannot take backup. {}", errorMessage);
-    return CompletableActorFuture.completedExceptionally(new Exception(errorMessage));
+  public ActorFuture<Void> takeBackup(
+      final long checkpointId, final long checkpointPosition, final int partitionCount) {
+    final var result = new CompletableActorFuture<Void>();
+    result.completeExceptionally(new UnsupportedOperationException(errorMessage));
+    return result;
   }
 
   @Override
@@ -42,7 +44,7 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupStatus>> listBackups() {
+  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }
@@ -64,5 +66,11 @@ public class NoopBackupManager implements BackupManager {
       return;
     }
     LOG.warn("Attempted to update in progress backup, but cannot do it. {}", errorMessage);
+  }
+
+  @Override
+  public void createFailedBackup(
+      final long checkpointId, final long checkpointPosition, final String failureReason) {
+    LOG.warn("Attempted to create failed backup, but cannot do it. {}", errorMessage);
   }
 }

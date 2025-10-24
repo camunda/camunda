@@ -62,7 +62,20 @@ export function useEnrichedGroups<P>(
 
       const groupIds = members.map(({ groupId }) => groupId);
       const groupResult = await callSearchGroups({ groupIds });
-      setGroups(groupResult.data?.items || []);
+
+      const fullGroups = groupResult.data?.items || [];
+
+      // Hydrate members while keeping order from original request
+      const orderedGroups = members.map((member) => {
+        // Inefficient, but we don't care as we search <100 items
+        const group = fullGroups.find((u) => u.groupId === member.groupId);
+        return {
+          groupId: member.groupId,
+          name: group?.name || "",
+        };
+      });
+
+      setGroups(orderedGroups || []);
       setSuccess(true);
     } catch {
       setGroups([]);

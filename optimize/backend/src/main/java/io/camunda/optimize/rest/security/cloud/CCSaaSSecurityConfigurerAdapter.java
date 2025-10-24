@@ -59,6 +59,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -67,6 +69,7 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -82,9 +85,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
-  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
+  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
@@ -223,6 +226,23 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         configurationService, new AuthorizationRequestCookieValueMapper());
   }
 
+  @Bean
+  public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory() {
+    final var decoderFactory = new OidcIdTokenDecoderFactory();
+    decoderFactory.setJwtValidatorFactory(clientRegistration -> createIdTokenValidators());
+    return decoderFactory;
+  }
+
+  /** Creates JWT validators specifically for ID token validation during OAuth2 login */
+  @SuppressWarnings("unchecked")
+  private OAuth2TokenValidator<Jwt> createIdTokenValidators() {
+    // Only include role validation for ID tokens
+    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
+
+    // The role validation uses organization claims which are present in ID tokens
+    return JwtValidators.createDefaultWithValidators(roleValidator);
+  }
+
   @SuppressWarnings("unchecked")
   private JwtDecoder jwtDecoder() {
     final NimbusJwtDecoder jwtDecoder =
@@ -258,11 +278,9 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
     final OAuth2TokenValidator<Jwt> clusterIdValidator =
         new CustomClaimValidator(
             CAMUNDA_CLUSTER_ID_CLAIM_NAME, getAuth0Configuration().getClusterId());
-    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
     // The default validator already contains validation for timestamp and X509 thumbprint
     final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
-        JwtValidators.createDefaultWithValidators(
-            audienceValidator, clusterIdValidator, roleValidator);
+        JwtValidators.createDefaultWithValidators(audienceValidator, clusterIdValidator);
     jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
     return jwtDecoder;
   }

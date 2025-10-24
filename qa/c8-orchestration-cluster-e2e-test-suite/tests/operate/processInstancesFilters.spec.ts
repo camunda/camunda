@@ -18,7 +18,7 @@ type ProcessInstance = {processInstanceKey: number};
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 
-test.beforeAll(async ({request}) => {
+test.beforeAll(async () => {
   await deploy([
     './resources/processWithMultipleVersions_v_1.bpmn',
     './resources/processWithAnError.bpmn',
@@ -66,122 +66,28 @@ test.describe('Process Instances Filters', () => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
-  test('Filter process instances by parent key, date range, and error message', async ({
-    page,
-    operateProcessesPage,
-    operateFiltersPanelPage,
-  }) => {
-    await test.step('Filter by Parent Process Instance Key and assert results', async () => {
-      const callActivityProcessInstanceKey =
-        callActivityProcessInstance.processInstanceKey.toString();
-
-      await operateFiltersPanelPage.displayOptionalFilter(
-        'Parent Process Instance Key',
-      );
-      await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
-        callActivityProcessInstanceKey,
-      );
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeVisible();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(page.getByText('1 result')).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
-      await expect(operateProcessesPage.parentInstanceIdCell).toHaveText(
-        callActivityProcessInstanceKey,
-      );
-      expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
-    });
-
-    await test.step('Reset filter', async () => {
-      await operateFiltersPanelPage.clickResetFilters();
-      await expect(
-        operateFiltersPanelPage.parentProcessInstanceKey,
-      ).toBeHidden();
-      await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeGreaterThan(1);
-    });
-
-    await test.step('Filter by End Date Range and assert results', async () => {
-      await operateProcessesPage.clickProcessCompletedCheckbox();
-
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
-      const endDate = await operateProcessesPage.endDateCell.innerText();
-      const day =
-        endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
-
-      await operateFiltersPanelPage.displayOptionalFilter('End Date Range');
-      await operateFiltersPanelPage.pickDateTimeRange({
-        fromDay: '1',
-        toDay: `${day}`,
-      });
-      await operateFiltersPanelPage.clickApply();
-      await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
-
-      currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
-      await operateFiltersPanelPage.clickResetFilters();
-      await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeGreaterThan(currentRowCount);
-    });
-
-    await test.step('Filter by Error Message and assert results', async () => {
-      let currentRowCount =
-        await operateProcessesPage.processInstancesTable.count();
-      await operateFiltersPanelPage.displayOptionalFilter('Error Message');
-      await operateFiltersPanelPage.fillErrorMessageFilter(
-        "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
-      );
-      await expect
-        .poll(() => operateProcessesPage.processInstancesTable.count())
-        .toBeLessThan(currentRowCount);
-    });
-
-    await test.step('Filter by Start Date Range and assert results', async () => {
-      await operateFiltersPanelPage.displayOptionalFilter('Start Date Range');
-      await operateFiltersPanelPage.pickDateTimeRange({
-        fromDay: '1',
-        toDay: '1',
-        fromTime: '00:00:00',
-        toTime: '00:00:00',
-      });
-      await operateFiltersPanelPage.clickApply();
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeVisible();
-
-      await operateFiltersPanelPage.clickResetFilters();
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeHidden();
-
-      await expect(operateFiltersPanelPage.errorMessageFilter).toBeHidden();
-      await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
-    });
-  });
 
   test('Interaction between diagram and filters', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
+    page,
   }) => {
     await test.step('Filter by Process Name and assert version value', async () => {
       await operateFiltersPanelPage.selectProcess(
         'Process With Multiple Versions',
       );
-      await expect
-        .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
-        .toBe('2');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(() =>
+              operateFiltersPanelPage.processVersionFilter.innerText(),
+            )
+            .toBe('2');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Change version and see flow node filter has been reset', async () => {
@@ -189,9 +95,16 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('');
 
       await operateFiltersPanelPage.selectFlowNode('StartEvent_1');
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 60000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Select another flow node from the diagram', async () => {
@@ -318,6 +231,111 @@ test.describe('Process Instances Filters', () => {
           {exact: true},
         ),
       ).toBeVisible();
+    });
+  });
+
+  test('Filter process instances by parent key, date range, and error message', async ({
+    page,
+    operateProcessesPage,
+    operateFiltersPanelPage,
+  }) => {
+    await test.step('Filter by Parent Process Instance Key and assert results', async () => {
+      const callActivityProcessInstanceKey =
+        callActivityProcessInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Parent Process Instance Key',
+      );
+      await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
+        callActivityProcessInstanceKey,
+      );
+      await expect(
+        operateProcessesPage.noMatchingInstancesMessage,
+      ).toBeVisible();
+      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+      await expect(operateProcessesPage.parentInstanceIdCell).toHaveText(
+        callActivityProcessInstanceKey,
+      );
+      expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
+    });
+
+    await test.step('Reset filter', async () => {
+      await operateFiltersPanelPage.clickResetFilters();
+      await expect(
+        operateFiltersPanelPage.parentProcessInstanceKey,
+      ).toBeHidden();
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeGreaterThan(1);
+    });
+
+    await test.step('Filter by End Date Range and assert results', async () => {
+      await operateProcessesPage.clickProcessCompletedCheckbox();
+
+      let currentRowCount =
+        await operateProcessesPage.processInstancesTable.count();
+      const endDate = await operateProcessesPage.endDateCell.innerText();
+      const day =
+        endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
+
+      await operateFiltersPanelPage.displayOptionalFilter('End Date Range');
+      await operateFiltersPanelPage.pickDateTimeRange({
+        fromDay: '1',
+        toDay: `${day}`,
+      });
+      await operateFiltersPanelPage.clickApply();
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeLessThan(currentRowCount);
+
+      currentRowCount =
+        await operateProcessesPage.processInstancesTable.count();
+      await operateFiltersPanelPage.clickResetFilters();
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeGreaterThan(currentRowCount);
+    });
+
+    await test.step('Filter by Error Message and assert results', async () => {
+      let currentRowCount =
+        await operateProcessesPage.processInstancesTable.count();
+      await operateFiltersPanelPage.displayOptionalFilter('Error Message');
+      await operateFiltersPanelPage.fillErrorMessageFilter(
+        "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
+      );
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeLessThan(currentRowCount);
+    });
+
+    await test.step('Filter by Start Date Range and assert results', async () => {
+      await operateFiltersPanelPage.displayOptionalFilter('Start Date Range');
+      await operateFiltersPanelPage.pickDateTimeRange({
+        fromDay: '1',
+        toDay: '1',
+        fromTime: '00:00:00',
+        toTime: '00:00:00',
+      });
+      await operateFiltersPanelPage.clickApply();
+      await expect(
+        operateProcessesPage.noMatchingInstancesMessage,
+      ).toBeVisible();
+
+      await operateFiltersPanelPage.clickResetFilters();
+      await expect(
+        operateProcessesPage.noMatchingInstancesMessage,
+      ).toBeHidden();
+
+      await expect(operateFiltersPanelPage.errorMessageFilter).toBeHidden();
+      await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
   });
 });

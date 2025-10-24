@@ -42,9 +42,19 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
   public SearchQueryResult<UserTaskEntity> search(
       final UserTaskQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), UserTaskSearchColumn.USER_TASK_KEY);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         UserTaskDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
     final var totalHits = userTaskMapper.count(dbQuery);

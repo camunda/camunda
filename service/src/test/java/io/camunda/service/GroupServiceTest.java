@@ -7,9 +7,11 @@
  */
 package io.camunda.service;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +20,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -33,7 +36,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +48,8 @@ public class GroupServiceTest {
   private GroupSearchClient client;
   private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
+  private ApiServicesExecutorProvider executorProvider;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   @BeforeEach
   public void before() {
@@ -50,9 +57,19 @@ public class GroupServiceTest {
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(GroupSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+    brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
+    when(brokerRequestAuthorizationConverter.convert(eq(authentication)))
+        .thenReturn(Map.of(AUTHORIZED_USERNAME, authentication.authenticatedUsername()));
     services =
         new GroupServices(
-            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+            stubbedBrokerClient,
+            mock(SecurityContextProvider.class),
+            client,
+            authentication,
+            executorProvider,
+            brokerRequestAuthorizationConverter);
   }
 
   @Test

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
@@ -16,7 +17,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -71,8 +71,8 @@ public class CreateInitialAdminUserAuthorizationTest {
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.AUTHORIZATION)
         .withPermissions(PermissionType.CREATE)
-        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-        .withResourceId("*")
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .create(DEFAULT_USER.getUsername());
     engine
         .authorization()
@@ -81,8 +81,8 @@ public class CreateInitialAdminUserAuthorizationTest {
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.USER)
         .withPermissions(PermissionType.CREATE)
-        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-        .withResourceId("*")
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .create(DEFAULT_USER.getUsername());
     engine
         .authorization()
@@ -91,8 +91,8 @@ public class CreateInitialAdminUserAuthorizationTest {
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.ROLE)
         .withPermissions(PermissionType.UPDATE)
-        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-        .withResourceId("*")
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .create(DEFAULT_USER.getUsername());
     engine
         .role()
@@ -205,8 +205,8 @@ public class CreateInitialAdminUserAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
-        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
-        .withResourceId("*")
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .create(DEFAULT_USER.getUsername());
   }
 }

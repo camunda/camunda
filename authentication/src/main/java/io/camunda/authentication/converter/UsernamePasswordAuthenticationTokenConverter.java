@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.converter;
 
-import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
@@ -22,7 +21,6 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -95,7 +93,6 @@ public class UsernamePasswordAuthenticationTokenConverter
             a.user(username)
                 .roleIds(roles.stream().toList())
                 .groupIds(groups.stream().toList())
-                .tenants(tenants)
-                .claims(Map.of(AUTHORIZED_USERNAME, username)));
+                .tenants(tenants));
   }
 }

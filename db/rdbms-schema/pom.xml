@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-db</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -24,6 +24,10 @@
     <dependency>
       <groupId>org.liquibase</groupId>
       <artifactId>liquibase-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
     </dependency>
     <dependency>
       <groupId>com.github.vertical-blank</groupId>
@@ -61,6 +65,7 @@
           <mainClass>io.camunda.db.rdbms.LiquibaseScriptGenerator</mainClass>
           <arguments>
             <argument>${project.basedir}/target</argument>
+            <argument>${project.version}</argument>
           </arguments>
         </configuration>
         <executions>

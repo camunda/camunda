@@ -14,6 +14,7 @@ import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -28,15 +29,27 @@ public final class VariableServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final VariableSearchClient variableSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.variableSearchClient = variableSearchClient;
   }
 
   @Override
   public VariableServices withAuthentication(final CamundaAuthentication authentication) {
     return new VariableServices(
-        brokerClient, securityContextProvider, variableSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        variableSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override

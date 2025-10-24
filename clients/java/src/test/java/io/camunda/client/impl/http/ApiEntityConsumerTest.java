@@ -17,6 +17,7 @@ package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.impl.http.ApiEntity.Error;
 import io.camunda.client.impl.http.ApiEntity.Response;
@@ -31,13 +32,16 @@ import org.junit.jupiter.api.Test;
 
 class ApiEntityConsumerTest {
 
+  public static final ObjectMapper JSON_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
   @Test
   void testJsonApiEntityConsumerWithValidJsonResponse() throws IOException {
     // given
     final String jsonResponse = "{\"name\":\"test\",\"value\":123}";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
     final ApiEntityConsumer<TestEntity> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+        new ApiEntityConsumer<>(JSON_MAPPER, TestEntity.class, 2048);
 
     // when
     // Start the stream with the correct content type
@@ -56,67 +60,13 @@ class ApiEntityConsumerTest {
   }
 
   @Test
-  void testJsonApiEntityConsumerWithValidJsonOtherTypeResponse() throws IOException {
-    // given
-    final String jsonResponse = "{\"foo\":\"test\",\"bar\":123}";
-    final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
-    final ApiEntityConsumer<TestEntity> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
-
-    // when
-    // Start the stream with the correct content type
-    consumer.streamStart(ContentType.APPLICATION_JSON);
-    // Feed the data
-    consumer.data(byteBuffer, true);
-    // Generate the content
-    final ApiEntity<TestEntity> entity = consumer.generateContent();
-
-    // then
-    assertThat(entity).isInstanceOf(Error.class);
-    final ProblemDetail response = entity.problem();
-    assertThat(response).isNotNull();
-    assertThat(response.getTitle()).isEqualTo("Cannot parse the server JSON response");
-    assertThat(response.getDetail())
-        .contains(jsonResponse)
-        .contains("The client failed to parse the JSON response")
-        .contains("Unrecognized field \"foo\"");
-  }
-
-  @Test
-  void testJsonApiEntityConsumerWithValidJsonOtherTypeErrorResponse() throws IOException {
-    // given
-    final String jsonResponse = "{\"foo\":\"test\",\"bar\":123}";
-    final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
-    final ApiEntityConsumer<TestEntity> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
-
-    // when
-    // Start the stream with the correct content type
-    consumer.streamStart(ContentType.APPLICATION_PROBLEM_JSON);
-    // Feed the data
-    consumer.data(byteBuffer, true);
-    // Generate the content
-    final ApiEntity<TestEntity> entity = consumer.generateContent();
-
-    // then
-    assertThat(entity).isInstanceOf(Error.class);
-    final ProblemDetail response = entity.problem();
-    assertThat(response).isNotNull();
-    assertThat(response.getTitle()).isEqualTo("Cannot parse the server JSON response");
-    assertThat(response.getDetail())
-        .contains(jsonResponse)
-        .contains("The client failed to parse the JSON response")
-        .contains("Unrecognized field \"foo\"");
-  }
-
-  @Test
   void testJsonApiEntityConsumerWithProblemDetailResponse() throws IOException {
     // given
     final String problemDetailResponse =
         "{\"type\":\"about:blank\",\"title\":\"Something went wrong\",\"status\":400,\"detail\":\"Invalid request\",\"instance\":\"/v1/entity/123\"}";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(problemDetailResponse.getBytes());
     final ApiEntityConsumer<ProblemDetail> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), ProblemDetail.class, 2048);
+        new ApiEntityConsumer<>(JSON_MAPPER, ProblemDetail.class, 2048);
 
     // when
     // Start the stream with content type application/problem+json
@@ -143,7 +93,7 @@ class ApiEntityConsumerTest {
     final String textXmlResponse = "<xml/>";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(textXmlResponse.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), String.class, 2048);
+        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with a supported text content type (text/xml)
@@ -164,7 +114,7 @@ class ApiEntityConsumerTest {
         "<xml>Thís ís á UTF-8 text wíth specíal cháracters: €, ñ, ö, 测试</xml>";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(textXmlResponse.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), String.class, 2048);
+        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with a supported text content type (text/xml)
@@ -186,7 +136,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer1 = ByteBuffer.wrap(part1.getBytes(StandardCharsets.UTF_8));
     final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes(StandardCharsets.UTF_8));
     final ApiEntityConsumer<TestEntity> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+        new ApiEntityConsumer<>(JSON_MAPPER, TestEntity.class, 2048);
 
     // when
     // Start the stream with a supported content type (application/json)
@@ -212,7 +162,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer1 = ByteBuffer.wrap(part1.getBytes());
     final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), String.class, 2048);
+        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with a supported content type (text/xml)
@@ -230,25 +180,48 @@ class ApiEntityConsumerTest {
   }
 
   @Test
-  void testUnknownContentType() throws IOException {
+  void testRawApiEntityConsumerWithHtmlData() throws IOException {
     // given
-    final String unsupportedData = "<html>";
-    final ByteBuffer byteBuffer = ByteBuffer.wrap(unsupportedData.getBytes());
+    final String part1 = "<html>";
+    final String part2 = "</html>>";
+    final ByteBuffer byteBuffer1 = ByteBuffer.wrap(part1.getBytes());
+    final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), String.class, 2048);
+        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with an unsupported content type
     consumer.streamStart(ContentType.TEXT_HTML);
-    // Feed the data
+    // Feed the first part of the data
+    consumer.data(byteBuffer1, false);
+    // Feed the second part of the data
+    consumer.data(byteBuffer2, true);
+    // Generate the content (should return raw data as ByteBuffer)
+    final ApiEntity<String> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isInstanceOf(Response.class);
+    assertThat(entity.response()).isEqualTo(part1 + part2);
+  }
+
+  @Test
+  void testRawApiEntityConsumerWithPlainText() throws IOException {
+    // given
+    final String plain = "Just some plain text.";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(plain.getBytes());
+    final ApiEntityConsumer<String> consumer =
+        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
+
+    // when
+    // Start the stream with an unsupported content type
+    consumer.streamStart(ContentType.TEXT_PLAIN);
     consumer.data(byteBuffer, true);
     // Generate the content (should return raw data as ByteBuffer)
     final ApiEntity<String> entity = consumer.generateContent();
 
     // then
-    assertThat(entity).isInstanceOf(Unknown.class);
-    assertThat(StandardCharsets.UTF_8.decode(entity.unknown()).toString())
-        .isEqualTo(unsupportedData);
+    assertThat(entity).isInstanceOf(Response.class);
+    assertThat(entity.response()).isEqualTo(plain);
   }
 
   @Test
@@ -257,7 +230,7 @@ class ApiEntityConsumerTest {
     final String unsupportedData = "<unexpected/>";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(unsupportedData.getBytes());
     final ApiEntityConsumer<TestEntity> consumer =
-        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+        new ApiEntityConsumer<>(JSON_MAPPER, TestEntity.class, 2048);
 
     // when
     // Start the stream with a supported content type
@@ -271,6 +244,49 @@ class ApiEntityConsumerTest {
     assertThat(entity).isInstanceOf(Unknown.class);
     assertThat(StandardCharsets.UTF_8.decode(entity.unknown()).toString())
         .isEqualTo(unsupportedData);
+  }
+
+  @Test
+  void testVoidTypeWithApplicationJson() throws IOException {
+    // given
+
+    final ApiEntityConsumer<Void> consumer = new ApiEntityConsumer<>(JSON_MAPPER, Void.class, 2048);
+
+    // when
+    // Start the stream with application/json content type
+    consumer.streamStart(ContentType.APPLICATION_JSON);
+    // Generate the content
+    final ApiEntity<Void> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isNull();
+  }
+
+  @Test
+  void shouldProcessProblemDetailsEvenIfTheExpectedResponseWasVoid() throws IOException {
+    // given
+    final String problemDetailResponse =
+        "{\"type\":\"about:blank\",\"title\":\"Something went wrong\",\"status\":400,\"detail\":\"Invalid request\",\"instance\":\"/v1/entity/123\"}";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(problemDetailResponse.getBytes());
+    final ApiEntityConsumer<Void> consumer = new ApiEntityConsumer<>(JSON_MAPPER, Void.class, 2048);
+
+    // when
+    // Start the stream with application/problem+json content type
+    consumer.streamStart(ContentType.APPLICATION_PROBLEM_JSON);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+    // Generate the content
+    final ApiEntity<Void> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isInstanceOf(Error.class);
+    final ProblemDetail problemDetail = entity.problem();
+    assertThat(problemDetail).isNotNull();
+    assertThat(problemDetail.getType()).isEqualTo(URI.create("about:blank"));
+    assertThat(problemDetail.getTitle()).isEqualTo("Something went wrong");
+    assertThat(problemDetail.getStatus()).isEqualTo(400);
+    assertThat(problemDetail.getDetail()).isEqualTo("Invalid request");
+    assertThat(problemDetail.getInstance()).isEqualTo(URI.create("/v1/entity/123"));
   }
 
   // Test entity class used for JSON serialization/deserialization

@@ -101,6 +101,9 @@
                 "changedAttributes": {
                   "type": "text"
                 },
+                "tags": {
+                  "type": "keyword"
+                },
                 "result": {
                   "properties": {
                     "type": {

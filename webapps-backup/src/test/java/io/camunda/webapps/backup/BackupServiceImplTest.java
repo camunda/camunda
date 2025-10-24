@@ -16,6 +16,7 @@ import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -41,7 +42,6 @@ public class BackupServiceImplTest {
 
   private static final BackupPriorities DEFAULT_BACKUP_PRIORITIES =
       new BackupPriorities(
-          List.of(() -> "prio1"),
           List.of(() -> "prio2"),
           List.of(() -> "prio3"),
           List.of(() -> "prio4"),
@@ -90,43 +90,38 @@ public class BackupServiceImplTest {
     assertThat(backup.getScheduledSnapshots())
         .isEqualTo(
             List.of(
-                "camunda_webapps_1_8.3_part_1_of_5",
-                "camunda_webapps_1_8.3_part_2_of_5",
-                "camunda_webapps_1_8.3_part_3_of_5",
-                "camunda_webapps_1_8.3_part_4_of_5",
-                "camunda_webapps_1_8.3_part_5_of_5"));
+                "camunda_webapps_1_8.3_part_1_of_4",
+                "camunda_webapps_1_8.3_part_2_of_4",
+                "camunda_webapps_1_8.3_part_3_of_4",
+                "camunda_webapps_1_8.3_part_4_of_4"));
 
     Awaitility.await("All backups are done")
+        .atMost(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
               final var backupState = backupService.getBackupState(1L);
               assertThat(backupState).isNotNull();
               assertThat(backupState.getBackupId()).isEqualTo(1L);
               assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
-              assertThat(backupState.getDetails()).hasSize(5);
+              assertThat(backupState.getDetails()).hasSize(4);
               assertThat(backupState.getDetails())
                   .allSatisfy(detail -> detail.getState().equals("COMPLETED"));
             });
     final var snapshotRequests = backupRepository.snapshotRequests.get(1L);
     assertThat(snapshotRequests.stream().map(i -> i.indices().allIndices()))
-        .containsExactly(
-            List.of("prio1"),
-            List.of("prio2"),
-            List.of("prio3"),
-            List.of("prio4"),
-            List.of("prio5"));
+        .containsExactly(List.of("prio2"), List.of("prio3"), List.of("prio4"), List.of("prio5"));
   }
 
   @Test
   public void shouldReturnIndexNotFoundExceptionIfRequiredIndexIsMissing() {
     // given
-    backupRepository.addMissingIndices("prio1", "prio2");
+    backupRepository.addMissingIndices("prio2", "prio3");
     // when
     assertThatThrownBy(() -> backupService.getValidIndexPatterns())
         // then
         .isInstanceOf(IndexNotFoundException.class)
         // all indices, even if they have different priorities are reported
-        .hasMessageContaining("[prio1, prio2]");
+        .hasMessageContaining("[prio2, prio3]");
   }
 
   @Test
@@ -135,14 +130,10 @@ public class BackupServiceImplTest {
     backupService =
         makeBackupService(
             new BackupPriorities(
-                List.of(() -> "prio1"),
-                List.of(() -> "prio2"),
-                List.of(() -> "prio3"),
-                List.of(),
-                List.of()));
+                List.of(() -> "prio2"), List.of(() -> "prio3"), List.of(), List.of()));
     // backup #1 is taken with only 3 parts
     final var response = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
-    assertThat(response.getScheduledSnapshots()).hasSize(3);
+    assertThat(response.getScheduledSnapshots()).hasSize(2);
 
     // when
     backupService = makeBackupService(DEFAULT_BACKUP_PRIORITIES);
@@ -152,10 +143,7 @@ public class BackupServiceImplTest {
     assertThat(backupRepository.backups.get(1L)).isNull();
     // all the snapshot parts created are removed
     assertThat(backupRepository.removedSnasphotNames)
-        .contains(
-            "camunda_webapps_1_8.3_part_1_of_3",
-            "camunda_webapps_1_8.3_part_2_of_3",
-            "camunda_webapps_1_8.3_part_3_of_3");
+        .contains("camunda_webapps_1_*_part_1_of_2", "camunda_webapps_1_*_part_2_of_2");
   }
 
   private void waitForAllTasks() {

@@ -1,0 +1,53 @@
+# This workflow automatically inherits the 'Project Name' and 'Team' fields from a parent sub-issue
+# if the parent is in Project 173 (Core Features only). It ensures that sub-issues are correctly
+# associated with the same project and team as their parent, maintaining project consistency.
+#
+# The workflow triggers on issue creation or edit events, checks for a parent sub-issue relationship,
+# and, if found, copies the relevant fields from the parent to the child issue in the GitHub project.
+#
+# owner: @camunda/core-features
+
+name: Inherit Project & Team from Parent Sub-Issue (Core Features, Project 173)
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  inherit-from-parent: # owner: @camunda/core-features
+    permissions: {} # restrict default Github token permissions since we use a GitHub App token
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Import Secrets
+        id: vault-secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID}}
+          secrets: |
+            secret/data/github.com/organizations/camunda ISSUE_FIELD_INHERITANCE_GH_APP_ID;
+            secret/data/github.com/organizations/camunda ISSUE_FIELD_INHERITANCE_GH_APP_KEY;
+      - name: Generate a GitHub token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_ID }}
+          private-key: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_KEY }}
+      - uses: actions/checkout@v5
+      - name: Inherit fields from parent sub-issue if parent is in project 173(PVT_kwDOACVKPs4A1Kno)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            try {
+              const myScript = require('./.github/actions/core-features/inheritCoreFields.cjs');
+              await myScript({github,context,core})
+             } catch (error) {
+              console.error("Failed to run script:", error);
+              return;
+            }
+        env:
+          GHA_BEST_PRACTICES_LINTER: disabled

@@ -40,7 +40,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTask() {
     // when
-    client.newUserTaskUpdateCommand(123L).send().join();
+    client.newUpdateUserTaskCommand(123L).send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -52,7 +52,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithAction() {
     // when
-    client.newUserTaskUpdateCommand(123L).action("foo").send().join();
+    client.newUpdateUserTaskCommand(123L).action("foo").send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -64,7 +64,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithDueDate() {
     // when
-    client.newUserTaskUpdateCommand(123L).dueDate(TEST_TIME).send().join();
+    client.newUpdateUserTaskCommand(123L).dueDate(TEST_TIME).send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -76,7 +76,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithFollowUpDate() {
     // when
-    client.newUserTaskUpdateCommand(123L).followUpDate(TEST_TIME).send().join();
+    client.newUpdateUserTaskCommand(123L).followUpDate(TEST_TIME).send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -88,7 +88,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithDueDateAndFollowUpDate() {
     // when
-    client.newUserTaskUpdateCommand(123L).dueDate(TEST_TIME).followUpDate(TEST_TIME).send().join();
+    client.newUpdateUserTaskCommand(123L).dueDate(TEST_TIME).followUpDate(TEST_TIME).send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -102,7 +102,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithCandidateGroup() {
     // when
-    client.newUserTaskUpdateCommand(123L).candidateGroups("foo").send().join();
+    client.newUpdateUserTaskCommand(123L).candidateGroups("foo").send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -116,7 +116,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithCandidateGroups() {
     // when
-    client.newUserTaskUpdateCommand(123L).candidateGroups("foo", "bar").send().join();
+    client.newUpdateUserTaskCommand(123L).candidateGroups("foo", "bar").send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -131,7 +131,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   void shouldUpdateUserTaskWithCandidateGroupsList() {
     // when
     client
-        .newUserTaskUpdateCommand(123L)
+        .newUpdateUserTaskCommand(123L)
         .candidateGroups(Arrays.asList("foo", "bar"))
         .send()
         .join();
@@ -148,7 +148,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithCandidateUser() {
     // when
-    client.newUserTaskUpdateCommand(123L).candidateUsers("foo").send().join();
+    client.newUpdateUserTaskCommand(123L).candidateUsers("foo").send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -162,7 +162,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithCandidateUsers() {
     // when
-    client.newUserTaskUpdateCommand(123L).candidateUsers("foo", "bar").send().join();
+    client.newUpdateUserTaskCommand(123L).candidateUsers("foo", "bar").send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -176,7 +176,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateUserTaskWithCandidateUsersList() {
     // when
-    client.newUserTaskUpdateCommand(123L).candidateUsers(Arrays.asList("foo", "bar")).send().join();
+    client.newUpdateUserTaskCommand(123L).candidateUsers(Arrays.asList("foo", "bar")).send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -191,7 +191,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   void shouldClearUserTaskDueDate() {
     // given
     final UpdateUserTaskCommandStep1 updateUserTaskCommandStep1 =
-        client.newUserTaskUpdateCommand(123L).dueDate(TEST_TIME);
+        client.newUpdateUserTaskCommand(123L).dueDate(TEST_TIME);
 
     // when
     updateUserTaskCommandStep1.clearDueDate().send().join();
@@ -207,7 +207,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   void shouldClearUserTaskFollowUpDate() {
     // given
     final UpdateUserTaskCommandStep1 updateUserTaskCommandStep1 =
-        client.newUserTaskUpdateCommand(123L).followUpDate(TEST_TIME);
+        client.newUpdateUserTaskCommand(123L).followUpDate(TEST_TIME);
 
     // when
     updateUserTaskCommandStep1.clearFollowUpDate().send().join();
@@ -223,7 +223,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   void shouldClearUserTaskCandidateGroups() {
     // given
     final UpdateUserTaskCommandStep1 updateUserTaskCommandStep1 =
-        client.newUserTaskUpdateCommand(123L).candidateGroups("foo");
+        client.newUpdateUserTaskCommand(123L).candidateGroups("foo");
 
     // when
     updateUserTaskCommandStep1.clearCandidateGroups().send().join();
@@ -241,7 +241,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   void shouldClearUserTaskCandidateUsers() {
     // given
     final UpdateUserTaskCommandStep1 updateUserTaskCommandStep1 =
-        client.newUserTaskUpdateCommand(123L).candidateUsers("foo");
+        client.newUpdateUserTaskCommand(123L).candidateUsers("foo");
 
     // when
     updateUserTaskCommandStep1.clearCandidateUsers().send().join();
@@ -263,7 +263,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskUpdateCommand(123L).send().join())
+    assertThatThrownBy(() -> client.newUpdateUserTaskCommand(123L).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -271,7 +271,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   @Test
   void shouldUpdateTaskPriority() {
     // when
-    client.newUserTaskUpdateCommand(123L).priority(95).send().join();
+    client.newUpdateUserTaskCommand(123L).priority(95).send().join();
 
     // then
     final UserTaskUpdateRequest request =
@@ -292,7 +292,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
                 .detail("Priority field must be an integer between 0 and 100. Provided: 120"));
 
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskUpdateCommand(123L).priority(120).send().join())
+    assertThatThrownBy(() -> client.newUpdateUserTaskCommand(123L).priority(120).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Priority field must be an integer between 0 and 100. Provided: 120");
   }

@@ -12,12 +12,12 @@ import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,7 +65,20 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean("tasklistSnapshotTaskVariableTemplate")
+  @Bean
+  public UsageMetricTUTemplate usageMetricTUTemplate(
+      final TasklistProperties tasklistProperties,
+      final TasklistIndexPrefixHolder indexPrefixHolder) {
+    return new UsageMetricTUTemplate(
+        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
+      @Override
+      public String getIndexPrefix() {
+        return indexPrefixHolder.getIndexPrefix();
+      }
+    };
+  }
+
+  @Bean
   public SnapshotTaskVariableTemplate snapshotTaskVariableTemplate(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
@@ -91,8 +104,8 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean("tasklistVariableTemplate")
-  public VariableTemplate tasklistVariableTemplate(
+  @Bean
+  public VariableTemplate variableTemplate(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
     return new VariableTemplate(
@@ -104,7 +117,7 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean("tasklistFlowNodeInstanceTemplate")
+  @Bean
   public FlowNodeInstanceTemplate flowNodeInstanceTemplate(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
@@ -118,19 +131,6 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
-  public TasklistImportPositionIndex tasklistImportPositionIndex(
-      final TasklistProperties tasklistProperties,
-      final TasklistIndexPrefixHolder indexPrefixHolder) {
-    return new TasklistImportPositionIndex(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
-      @Override
-      public String getIndexPrefix() {
-        return indexPrefixHolder.getIndexPrefix();
-      }
-    };
-  }
-
-  @Bean("tasklistProcessIndex")
   public ProcessIndex processIndex(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {

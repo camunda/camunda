@@ -18,7 +18,9 @@ import io.camunda.zeebe.test.testcontainers.RemoteDebugger;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
+import io.zeebe.containers.ZeebeTopologyWaitStrategy;
 import io.zeebe.containers.ZeebeVolume;
+import java.net.URI;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -37,6 +39,7 @@ import org.testcontainers.utility.DockerImageName;
 
 final class ContainerState implements AutoCloseable {
 
+  public static final int PARTITION_COUNT = 2;
   private static final RetryPolicy<Void> CONTAINER_START_RETRY_POLICY =
       new RetryPolicy<Void>().withMaxRetries(5).withBackoff(3, 30, ChronoUnit.SECONDS);
   private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
@@ -131,7 +134,7 @@ final class ContainerState implements AutoCloseable {
   }
 
   public void start(final boolean enableDebug, final boolean withRemoteDebugging) {
-    final String contactPoint;
+    final URI grpcAddress;
     broker =
         new ZeebeContainer(brokerImage)
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
@@ -139,9 +142,15 @@ final class ContainerState implements AutoCloseable {
             .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
             .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
+            .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", String.valueOf(PARTITION_COUNT))
+            .withEnv("ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT", "32MB")
             .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "NONE")
+            .withEnv("CAMUNDA_DATABASE_TYPE", "NONE")
+            .withEnv("CAMUNDA_REST_ENABLED", "false")
+            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
             .withZeebeData(volume)
             .withNetwork(network);
     this.withRemoteDebugging = withRemoteDebugging;
@@ -174,7 +183,7 @@ final class ContainerState implements AutoCloseable {
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());
 
     if (gatewayImage == null) {
-      contactPoint = broker.getExternalGatewayAddress();
+      grpcAddress = broker.getGrpcAddress();
     } else {
       gateway =
           new ZeebeGatewayContainer(gatewayImage)
@@ -186,10 +195,11 @@ final class ContainerState implements AutoCloseable {
               .withNetwork(network);
 
       Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.self().start());
-      contactPoint = gateway.getExternalGatewayAddress();
+      grpcAddress = gateway.getGrpcAddress();
     }
 
-    client = CamundaClient.newClientBuilder().gatewayAddress(contactPoint).usePlaintext().build();
+    client =
+        CamundaClient.newClientBuilder().grpcAddress(grpcAddress).preferRestOverGrpc(false).build();
     partitionsActuator = PartitionsActuator.of(broker);
   }
 

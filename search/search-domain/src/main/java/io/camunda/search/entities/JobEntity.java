@@ -208,7 +208,8 @@ public record JobEntity(
   public enum JobKind {
     BPMN_ELEMENT,
     EXECUTION_LISTENER,
-    TASK_LISTENER
+    TASK_LISTENER,
+    AD_HOC_SUB_PROCESS
   }
 
   public enum ListenerEventType {

@@ -94,9 +94,9 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Build and Push Starter Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
       - name: Build and Push Worker Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.4.0

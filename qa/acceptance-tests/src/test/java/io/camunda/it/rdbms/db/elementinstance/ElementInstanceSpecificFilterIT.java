@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.elementinstance;
 
-import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveElementInstance;
+import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveRandomElementInstance;
 import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveRandomElementInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +39,8 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class ElementInstanceSpecificFilterIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
@@ -61,7 +62,7 @@ public class ElementInstanceSpecificFilterIT {
     createAndSaveRandomElementInstances(
         rdbmsWriter,
         b -> b.state(FlowNodeState.COMPLETED).type(FlowNodeType.BOUNDARY_EVENT).incidentKey(null));
-    createAndSaveElementInstance(
+    createAndSaveRandomElementInstance(
         rdbmsWriter,
         ElementInstanceFixtures.createRandomized(
             b ->
@@ -70,6 +71,7 @@ public class ElementInstanceSpecificFilterIT {
                     .processInstanceKey(123L)
                     .processDefinitionId("unique-process-124")
                     .processDefinitionKey(124L)
+                    .flowNodeScopeKey(124L)
                     .state(FlowNodeState.ACTIVE)
                     .type(FlowNodeType.SERVICE_TASK)
                     .tenantId("unique-tenant-1")
@@ -95,6 +97,7 @@ public class ElementInstanceSpecificFilterIT {
         FlowNodeInstanceFilter.of(b -> b.processInstanceKeys(123L)),
         FlowNodeInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
         FlowNodeInstanceFilter.of(b -> b.processDefinitionIds("unique-process-124")),
+        FlowNodeInstanceFilter.of(b -> b.elementInstanceScopeKeys(124L)),
         FlowNodeInstanceFilter.of(b -> b.states(FlowNodeState.ACTIVE.name())),
         FlowNodeInstanceFilter.of(b -> b.types(FlowNodeType.SERVICE_TASK)),
         FlowNodeInstanceFilter.of(b -> b.tenantIds("unique-tenant-1")),

@@ -17,6 +17,8 @@ import java.util.function.Function;
 
 public record DecisionDefinitionDbQuery(
     DecisionDefinitionFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
     DbQuerySorting<DecisionDefinitionEntity> sort,
     DbQueryPage page) {
 
@@ -31,6 +33,8 @@ public record DecisionDefinitionDbQuery(
         FilterBuilders.decisionDefinition().build();
 
     private DecisionDefinitionFilter filter;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
+    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<DecisionDefinitionEntity> sort;
     private DbQueryPage page;
 
@@ -64,11 +68,26 @@ public record DecisionDefinitionDbQuery(
       return sort(DbQuerySorting.of(fn));
     }
 
+    public DecisionDefinitionDbQuery.Builder authorizedResourceIds(
+        final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public DecisionDefinitionDbQuery.Builder authorizedTenantIds(
+        final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
+      return this;
+    }
+
     @Override
     public DecisionDefinitionDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new DecisionDefinitionDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new DecisionDefinitionDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

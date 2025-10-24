@@ -48,7 +48,6 @@ public class Metrics {
   //  Keys:
   public static final String TAG_KEY_NAME = "name",
       TAG_KEY_TYPE = "type",
-      TAG_KEY_IMPORT_POS_ALIAS = "importPositionAlias",
       TAG_KEY_PARTITION = "partition",
       TAG_KEY_STATUS = "status",
       TAG_KEY_BPMN_PROCESS_ID = "bpmnProcessId",

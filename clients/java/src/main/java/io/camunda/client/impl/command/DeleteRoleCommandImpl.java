@@ -21,6 +21,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteRoleResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.DeleteRoleResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -47,7 +48,8 @@ public class DeleteRoleCommandImpl implements DeleteRoleCommandStep1 {
   public CamundaFuture<DeleteRoleResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     final HttpCamundaFuture<DeleteRoleResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete("/roles/" + roleId, httpRequestConfig.build(), result);
+    httpClient.delete(
+        "/roles/" + roleId, httpRequestConfig.build(), DeleteRoleResponseImpl::new, result);
     return result;
   }
 }

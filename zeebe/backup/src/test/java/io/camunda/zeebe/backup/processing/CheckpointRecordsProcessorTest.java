@@ -9,6 +9,8 @@ package io.camunda.zeebe.backup.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.StreamClock;
@@ -37,6 +40,8 @@ import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.InstantSource;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +59,9 @@ final class CheckpointRecordsProcessorTest {
   // Used for verifying state in the tests
   private CheckpointState state;
   private ZeebeDb zeebedb;
+  private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
+  private final AtomicInteger dynamicPartitionCount =
+      new AtomicInteger(3); // Default partition count for tests
 
   @BeforeEach
   void setup() {
@@ -68,6 +76,9 @@ final class CheckpointRecordsProcessorTest {
 
     resultBuilder = new MockProcessingResultBuilder();
     processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
+
+    processor.setScalingInProgressSupplier(scalingInProgress::get);
+    processor.setPartitionCountSupplier(() -> (int) dynamicPartitionCount.get());
     processor.init(context);
 
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
@@ -107,8 +118,9 @@ final class CheckpointRecordsProcessorTest {
 
     // then
 
-    // backup is triggered
-    verify(backupManager, times(1)).takeBackup(checkpointId, checkpointPosition);
+    // backup is triggered with dynamic partition count
+    verify(backupManager, times(1))
+        .takeBackup(checkpointId, checkpointPosition, dynamicPartitionCount.get());
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -144,7 +156,7 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(checkpointId, checkpointPosition);
+    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(checkpointPosition), anyInt());
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -176,7 +188,8 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(lowerCheckpointId, checkpointPosition + 10);
+    verify(backupManager, never())
+        .takeBackup(eq(lowerCheckpointId), eq(checkpointPosition + 10), anyInt());
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -291,6 +304,8 @@ final class CheckpointRecordsProcessorTest {
     // given
     final RecordProcessorContextImpl context = createContext(null, zeebedb);
     processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
+    processor.setScalingInProgressSupplier(scalingInProgress::get);
+    processor.setPartitionCountSupplier(dynamicPartitionCount::get);
     final long checkpointId = 3;
     final long checkpointPosition = 30;
     state.setLatestCheckpointInfo(checkpointId, checkpointPosition);
@@ -484,5 +499,84 @@ final class CheckpointRecordsProcessorTest {
     // then - checkpoint state is unchanged
     assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
     assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
+  }
+
+  @Test
+  void shouldRejectCheckpointCreationWhenScalingInProgress() {
+    // given
+    final long checkpointId = 1;
+    final long checkpointPosition = 10;
+    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final MockTypedCheckpointRecord record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value, 1, 1);
+
+    // Set up scaling in progress supplier to return true
+    scalingInProgress.set(true);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    // backup is not triggered
+    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(checkpointPosition), anyInt());
+    // verify that failed backup is taken
+    verify(backupManager, times(1))
+        .createFailedBackup(
+            checkpointId,
+            checkpointPosition,
+            "Cannot create checkpoint while scaling is in progress");
+
+    // rejection response is sent
+    assertThat(result.response()).isNotNull();
+    final var rejectionEvent = result.response();
+    assertThat(rejectionEvent.intent()).isEqualTo(CheckpointIntent.CREATE);
+    assertThat(rejectionEvent.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectionEvent.rejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejectionEvent.rejectionReason())
+        .isEqualTo("Cannot create checkpoint while scaling is in progress");
+
+    // state is updated
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
+  }
+
+  @Test
+  void shouldUpdatePartitionCountDynamically() {
+    // given
+    final long firstCheckpointId = 1;
+    final long firstCheckpointPosition = 10;
+    final int firstPartitionCount = 3;
+    dynamicPartitionCount.set(firstPartitionCount);
+
+    final CheckpointRecord firstValue = new CheckpointRecord().setCheckpointId(firstCheckpointId);
+    final MockTypedCheckpointRecord firstRecord =
+        new MockTypedCheckpointRecord(
+            firstCheckpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, firstValue);
+
+    // when - first checkpoint creation
+    processor.process(firstRecord, resultBuilder);
+
+    // then - first backup uses first partition count
+    verify(backupManager, times(1))
+        .takeBackup(firstCheckpointId, firstCheckpointPosition, firstPartitionCount);
+
+    // given - change partition count
+    final long secondCheckpointId = 2;
+    final long secondCheckpointPosition = 20;
+    final int secondPartitionCount = 7; // Changed partition count
+    dynamicPartitionCount.set(secondPartitionCount);
+
+    final CheckpointRecord secondValue = new CheckpointRecord().setCheckpointId(secondCheckpointId);
+    final MockTypedCheckpointRecord secondRecord =
+        new MockTypedCheckpointRecord(
+            secondCheckpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, secondValue);
+
+    // when - second checkpoint creation
+    processor.process(secondRecord, resultBuilder);
+
+    // then - second backup uses updated partition count
+    verify(backupManager, times(1))
+        .takeBackup(secondCheckpointId, secondCheckpointPosition, secondPartitionCount);
   }
 }

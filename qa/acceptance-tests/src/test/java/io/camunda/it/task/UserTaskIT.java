@@ -88,7 +88,7 @@ public class UserTaskIT {
 
     var userTasks = fetchUserTasks(client, processInstanceId);
 
-    client.newUserTaskCompleteCommand(userTasks.getFirst().getUserTaskKey()).send().join();
+    client.newCompleteUserTaskCommand(userTasks.getFirst().getUserTaskKey()).send().join();
     // then
     waitForTask(
         client,
@@ -114,7 +114,7 @@ public class UserTaskIT {
     var userTasks = fetchUserTasks(client, processInstanceId);
 
     client
-        .newUserTaskUpdateCommand(userTasks.getFirst().getUserTaskKey())
+        .newUpdateUserTaskCommand(userTasks.getFirst().getUserTaskKey())
         .priority(99)
         .candidateUsers("demoUsers")
         .candidateGroups("demoGroup")
@@ -151,7 +151,7 @@ public class UserTaskIT {
     var userTasks = fetchUserTasks(client, processInstanceId);
 
     client
-        .newUserTaskAssignCommand(userTasks.getFirst().getUserTaskKey())
+        .newAssignUserTaskCommand(userTasks.getFirst().getUserTaskKey())
         .assignee("demo")
         .send()
         .join();
@@ -178,7 +178,7 @@ public class UserTaskIT {
 
     final var userTasks = fetchUserTasks(client, processInstanceId);
 
-    client.newUserTaskUnassignCommand(userTasks.getFirst().getUserTaskKey()).send().join();
+    client.newUnassignUserTaskCommand(userTasks.getFirst().getUserTaskKey()).send().join();
 
     // then
     Awaitility.await()

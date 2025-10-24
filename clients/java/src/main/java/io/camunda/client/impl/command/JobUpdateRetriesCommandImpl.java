@@ -100,7 +100,11 @@ public final class JobUpdateRetriesCommandImpl
   private CamundaFuture<UpdateRetriesJobResponse> sendRestRequest() {
     final HttpCamundaFuture<UpdateRetriesJobResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
-        "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
+        "/jobs/" + jobKey,
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        UpdateRetriesJobResponseImpl::new,
+        result);
     return result;
   }
 

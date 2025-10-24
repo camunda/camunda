@@ -21,4 +21,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 public class ResolveIncidentResponseImpl implements ResolveIncidentResponse {
 
   public ResolveIncidentResponseImpl(final GatewayOuterClass.ResolveIncidentResponse response) {}
+
+  public ResolveIncidentResponseImpl(final Void nothing) {}
 }

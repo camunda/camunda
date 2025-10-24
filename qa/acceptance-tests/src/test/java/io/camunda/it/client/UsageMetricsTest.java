@@ -36,6 +36,7 @@ public class UsageMetricsTest {
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(2);
+  public static final Duration TEN_SECONDS = Duration.ofSeconds(10);
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -52,9 +53,13 @@ public class UsageMetricsTest {
                       .setExportInterval(EXPORT_INTERVAL));
 
   private static final String ADMIN = "admin";
+  private static final String ASSIGNEE = "bar2";
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
+  private static final String TENANT_C = "tenantC";
   private static final String PROCESS_ID = "service_tasks_v1";
+  private static final String PROCESS_ID_2 = "PROCESS_WITH_USER_TASK_PRE_ASSIGNED";
+  private static Long userTaskKey;
 
   @UserDefinition
   private static final TestUser ADMIN_USER = new TestUser(ADMIN, "password", List.of());
@@ -80,25 +85,47 @@ public class UsageMetricsTest {
       throws InterruptedException {
     createTenant(adminClient, TENANT_A);
     createTenant(adminClient, TENANT_B);
+    createTenant(adminClient, TENANT_C);
     assignUserToTenant(adminClient, ADMIN, TENANT_A);
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
+    assignUserToTenant(adminClient, ADMIN, TENANT_C);
 
-    // Create PI & wait for metrics to be exported
+    // Create first batch of metrics
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
+    deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_A);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+    startProcessInstance(adminClient, PROCESS_ID_2, TENANT_A);
     waitForUsageMetrics(
         adminClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
-        res -> assertThat(res.getProcessInstances()).isEqualTo(1));
+        res -> {
+          assertThat(res.getProcessInstances()).isEqualTo(2);
+          assertThat(res.getAssignees()).isEqualTo(1);
+          assertThat(res.getActiveTenants()).isEqualTo(1);
+        });
 
     // Store first export time & wait 2 export intervals
     exportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
-    // Create PI for TENANT_B
+    // Create second batch of metrics
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
+    deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_B);
+    deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_C);
+    deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_C);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
+    startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
+    startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
+    startProcessInstance(adminClient, PROCESS_ID_2, TENANT_C);
+    startProcessInstance(adminClient, PROCESS_ID_2, TENANT_C);
+
+    // Reassign user task to a different assignee and await
+    reassignTask(adminClient, TENANT_A);
+
+    // Unassign a task for TENANT_C, assignee is set to empty string, make sure no assignee is
+    // stored
+    unassignTask(adminClient, TENANT_C);
 
     // Deploy a decision model for TENANT_A and evaluate it 2 times
     deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
@@ -109,14 +136,19 @@ public class UsageMetricsTest {
     deployResource(adminClient, "decisions/decision_model_1.dmn", TENANT_B);
     evaluateDecision(adminClient, "test_qa", Map.of("input1", "B"), TENANT_B);
 
-    // Wait for rPI and eDI metrics to be exported
+    assertTaskReassigned(adminClient);
+    assertDecisionsInstantiated(adminClient);
+
+    // Wait for all metrics to be exported
     waitForUsageMetrics(
         adminClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
         res -> {
-          assertThat(res.getProcessInstances()).isEqualTo(2);
+          assertThat(res.getProcessInstances()).isEqualTo(7);
           assertThat(res.getDecisionInstances()).isEqualTo(3);
+          assertThat(res.getAssignees()).isEqualTo(2); // bar + bar2
+          assertThat(res.getActiveTenants()).isEqualTo(3);
         });
   }
 
@@ -130,7 +162,7 @@ public class UsageMetricsTest {
         adminClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
 
     // then
-    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(2, 3, 0, 2, Map.of()));
+    assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(7, 3, 2, 3, Map.of()));
   }
 
   @Test
@@ -150,15 +182,17 @@ public class UsageMetricsTest {
     assertThat(actual)
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
+                7,
+                3,
                 2,
                 3,
-                0,
-                2,
                 Map.of(
                     TENANT_A,
-                    new UsageMetricsStatisticsItemImpl(1, 2, 0),
+                    new UsageMetricsStatisticsItemImpl(2, 2, 2), // bar + bar2
                     TENANT_B,
-                    new UsageMetricsStatisticsItemImpl(1, 1, 0))));
+                    new UsageMetricsStatisticsItemImpl(3, 1, 1),
+                    TENANT_C,
+                    new UsageMetricsStatisticsItemImpl(2, 0, 1))));
   }
 
   @Test
@@ -178,7 +212,7 @@ public class UsageMetricsTest {
     assertThat(actual)
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
-                1, 0, 0, 1, Map.of(TENANT_A, new UsageMetricsStatisticsItemImpl(1, 0, 0))));
+                2, 0, 1, 1, Map.of(TENANT_A, new UsageMetricsStatisticsItemImpl(2, 0, 1))));
   }
 
   @Test
@@ -199,7 +233,7 @@ public class UsageMetricsTest {
     assertThat(actual)
         .isEqualTo(
             new UsageMetricsStatisticsImpl(
-                1, 1, 0, 1, Map.of(TENANT_B, new UsageMetricsStatisticsItemImpl(1, 1, 0))));
+                3, 1, 1, 1, Map.of(TENANT_B, new UsageMetricsStatisticsItemImpl(3, 1, 1))));
   }
 
   private static DeploymentEvent deployResource(
@@ -244,5 +278,71 @@ public class UsageMetricsTest {
         .tenantId(tenant)
         .send()
         .join();
+  }
+
+  private static void reassignTask(final CamundaClient camundaClient, final String tenantId) {
+    Awaitility.await("user tasks should be available")
+        .atMost(TEN_SECONDS)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newUserTaskSearchRequest().send().join();
+              assertThat(result.items()).hasSize(5);
+              userTaskKey =
+                  result.items().stream()
+                      .filter(ut -> ut.getTenantId().equals(tenantId))
+                      .findFirst()
+                      .orElseThrow()
+                      .getUserTaskKey();
+            });
+    camundaClient
+        .newAssignUserTaskCommand(userTaskKey)
+        .assignee(ASSIGNEE)
+        .action("assignee")
+        .allowOverride(true)
+        .send()
+        .join();
+  }
+
+  private static void unassignTask(final CamundaClient camundaClient, final String tenantId) {
+    Awaitility.await("user tasks should be available")
+        .atMost(TEN_SECONDS)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newUserTaskSearchRequest().send().join();
+              assertThat(result.items()).hasSize(5);
+              userTaskKey =
+                  result.items().stream()
+                      .filter(ut -> ut.getTenantId().equals(tenantId))
+                      .findFirst()
+                      .orElseThrow()
+                      .getUserTaskKey();
+            });
+    camundaClient.newUnassignUserTaskCommand(userTaskKey).send().join();
+  }
+
+  private static void assertTaskReassigned(final CamundaClient adminClient) {
+    Awaitility.await("User tasks should have been reassigned")
+        .atMost(TEN_SECONDS)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () ->
+                assertThat(adminClient.newUserTaskSearchRequest().send().join())
+                    .satisfies(
+                        result ->
+                            assertThat(result.items().stream())
+                                .extracting("assignee")
+                                .contains("bar", ASSIGNEE)));
+  }
+
+  private static void assertDecisionsInstantiated(final CamundaClient adminClient) {
+    Awaitility.await("Decision instances should be available")
+        .atMost(TEN_SECONDS)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () ->
+                assertThat(adminClient.newDecisionInstanceSearchRequest().send().join())
+                    .satisfies(res -> assertThat(res.items()).hasSize(3)));
   }
 }

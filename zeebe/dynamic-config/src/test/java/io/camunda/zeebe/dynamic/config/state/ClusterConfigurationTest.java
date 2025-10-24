@@ -255,6 +255,7 @@ class ClusterConfigurationTest {
             Optional.of(
                 new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     ClusterConfigurationAssert.assertThatClusterTopology(finalTopology).hasSameTopologyAs(expected);
@@ -265,7 +266,7 @@ class ClusterConfigurationTest {
     // given
     final String exporterName = "exporter";
     final var exportersConfig =
-        new ExportersConfig(
+        new ExportingConfig(
             Map.of(exporterName, new ExporterState(1, ENABLED, Optional.of("other"))));
     final var config = new DynamicPartitionConfig(exportersConfig);
 
@@ -306,17 +307,19 @@ class ClusterConfigurationTest {
                     Map.of(1, PartitionState.active(1, DynamicPartitionConfig.uninitialized())))),
             Optional.empty(),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     final DynamicPartitionConfig validConfig =
         new DynamicPartitionConfig(
-            new ExportersConfig(Map.of("expA", new ExporterState(1, ENABLED, Optional.empty()))));
+            new ExportingConfig(Map.of("expA", new ExporterState(1, ENABLED, Optional.empty()))));
     final var topologyWithValidConfig =
         new ClusterConfiguration(
             0,
             Map.of(
                 member(1),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, validConfig)))),
+            Optional.empty(),
             Optional.empty(),
             Optional.empty(),
             Optional.empty());
@@ -340,12 +343,14 @@ class ClusterConfigurationTest {
     final var oldRoutingState =
         Optional.of(new RoutingState(1, new AllPartitions(3), new HashMod(3)));
     final var oldConfig =
-        new ClusterConfiguration(1, Map.of(), Optional.empty(), Optional.empty(), oldRoutingState);
+        new ClusterConfiguration(
+            1, Map.of(), Optional.empty(), Optional.empty(), oldRoutingState, Optional.empty());
 
     final var newRoutingState =
         Optional.of(new RoutingState(2, new AllPartitions(4), new HashMod(4)));
     final var newConfig =
-        new ClusterConfiguration(1, Map.of(), Optional.empty(), Optional.empty(), newRoutingState);
+        new ClusterConfiguration(
+            1, Map.of(), Optional.empty(), Optional.empty(), newRoutingState, Optional.empty());
 
     // when
     final var merged = oldConfig.merge(newConfig);

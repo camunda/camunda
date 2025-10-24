@@ -13,12 +13,12 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -46,15 +46,15 @@ public class DecisionInstanceController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaGetMapping(path = "/{decisionInstanceKey}")
+  @CamundaGetMapping(path = "/{decisionEvaluationInstanceKey}")
   public ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstanceById(
-      @PathVariable("decisionInstanceKey") final String decisionInstanceId) {
+      @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
               decisionInstanceServices
                   .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getById(decisionInstanceId)));
+                  .getById(decisionEvaluationInstanceKey)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }

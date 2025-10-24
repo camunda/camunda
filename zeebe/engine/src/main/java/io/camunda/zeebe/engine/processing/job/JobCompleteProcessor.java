@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -113,12 +114,14 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final JobProcessingMetrics jobMetrics;
   private final EventHandle eventHandle;
   private final ProcessingState processState;
+  private final VariableBehavior variableBehavior;
 
   public JobCompleteProcessor(
       final ProcessingState state,
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final VariableBehavior variableBehavior) {
     processState = state;
     userTaskState = state.getUserTaskState();
     elementInstanceState = state.getElementInstanceState();
@@ -131,6 +134,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             List.of(
                 this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
+                this::checkAdHocSubProcessCompletionConditionNotFulfilledForElementActivation,
                 this::checkTaskListenerJobForProvidingVariables,
                 this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
@@ -138,6 +142,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
                 this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
+    this.variableBehavior = variableBehavior;
   }
 
   @Override
@@ -200,7 +205,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
               userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
         }
       }
-      case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value);
+      case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value, elementInstance);
       default -> {
         final long scopeKey = elementInstance.getValue().getFlowScopeKey();
         final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
@@ -217,29 +222,78 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   }
 
   private void handleAdHocSubProcessJob(
-      final TypedCommandWriter commandWriter, final JobRecord jobRecord) {
+      final TypedCommandWriter commandWriter,
+      final JobRecord jobRecord,
+      final ElementInstance adHocSubProcessInstance) {
 
-    final List<JobResultActivateElementValue> activateElements =
-        jobRecord.getResult().getActivateElements();
+    final var jobResult = jobRecord.getResult();
 
-    final AdHocSubProcessInstructionRecord activationRecord =
+    final AdHocSubProcessInstructionRecord instructionRecord =
         new AdHocSubProcessInstructionRecord()
-            .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey());
+            .setAdHocSubProcessInstanceKey(jobRecord.getElementInstanceKey())
+            .setCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
+            .setCancelRemainingInstances(jobResult.isCancelRemainingInstances());
 
-    activateElements.stream()
-        .map(JobResultActivateElement.class::cast)
-        .forEach(
-            element ->
-                activationRecord
-                    .activateElements()
-                    .add()
-                    .setElementId(element.getElementId())
-                    .setVariables(element.getVariablesBuffer()));
+    if (!jobResult.getActivateElements().isEmpty()) {
+      jobResult.getActivateElements().stream()
+          .map(JobResultActivateElement.class::cast)
+          .forEach(
+              element ->
+                  instructionRecord
+                      .activateElements()
+                      .add()
+                      .setElementId(element.getElementId())
+                      .setVariables(element.getVariablesBuffer()));
 
-    commandWriter.appendFollowUpCommand(
-        jobRecord.getElementInstanceKey(),
-        AdHocSubProcessInstructionIntent.ACTIVATE,
-        activationRecord);
+      commandWriter.appendFollowUpCommand(
+          jobRecord.getElementInstanceKey(),
+          AdHocSubProcessInstructionIntent.ACTIVATE,
+          instructionRecord);
+    }
+
+    if (jobResult.isCompletionConditionFulfilled()) {
+      commandWriter.appendFollowUpCommand(
+          jobRecord.getElementInstanceKey(),
+          AdHocSubProcessInstructionIntent.COMPLETE,
+          instructionRecord);
+    }
+
+    if (jobRecord.getVariablesBuffer().capacity() > 0) {
+      propagateJobVariablesToAdHocSubProcess(jobRecord, adHocSubProcessInstance);
+    }
+  }
+
+  private void propagateJobVariablesToAdHocSubProcess(
+      final JobRecord completingJobRecord, final ElementInstance targetAdHocSubProcess) {
+    final var targetAdHocSubProcessInstanceValue = targetAdHocSubProcess.getValue();
+
+    variableBehavior.mergeDocument(
+        targetAdHocSubProcess.getKey(),
+        targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
+        targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
+        targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
+        targetAdHocSubProcessInstanceValue.getTenantId(),
+        completingJobRecord.getVariablesBuffer());
+  }
+
+  private Either<Rejection, JobRecord>
+      checkAdHocSubProcessCompletionConditionNotFulfilledForElementActivation(
+          final TypedRecord<JobRecord> command, final JobRecord job) {
+
+    if (job.getJobKind() == JobKind.AD_HOC_SUB_PROCESS) {
+      final List<String> elementsToBeActivated =
+          command.getValue().getResult().getActivateElements().stream()
+              .map(JobResultActivateElementValue::getElementId)
+              .toList();
+
+      return AdHocSubProcessUtils
+          .validateThatCompletionConditionIsNotFulfilledWhenActivatingElements(
+              job.getElementInstanceKey(),
+              command.getValue().getResult().isCompletionConditionFulfilled(),
+              elementsToBeActivated)
+          .map(right -> job);
+    }
+    return Either.right(job);
   }
 
   private Either<Rejection, JobRecord> checkAdHocSubprocessActivationTargetsAreValid(

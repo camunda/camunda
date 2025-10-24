@@ -43,7 +43,7 @@ import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from 'common/processes/empty-message-image.svg';
 import {ProcessTile} from 'common/processes/ProcessTile';
 import {getMultiModeProcessDisplayName} from 'common/processes/getMultiModeProcessDisplayName';
-import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Pagination} from './Pagination';
 import {
   START_FORM_FILTER_OPTIONS,

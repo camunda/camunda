@@ -22,6 +22,7 @@ import io.camunda.client.api.search.response.Job;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.JobSearchResult;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 public class JobImpl implements Job {
@@ -39,8 +40,8 @@ public class JobImpl implements Job {
   private final String errorCode;
   private final String errorMessage;
   private final Map<String, String> customerHeaders;
-  private final String deadline;
-  private final String endTime;
+  private final OffsetDateTime deadline;
+  private final OffsetDateTime endTime;
   private final String processDefinitionId;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
@@ -62,8 +63,8 @@ public class JobImpl implements Job {
     errorCode = item.getErrorCode();
     errorMessage = item.getErrorMessage();
     customerHeaders = item.getCustomHeaders();
-    deadline = item.getDeadline();
-    endTime = item.getEndTime();
+    deadline = ParseUtil.parseOffsetDateTimeOrNull(item.getDeadline());
+    endTime = ParseUtil.parseOffsetDateTimeOrNull(item.getEndTime());
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
@@ -138,12 +139,12 @@ public class JobImpl implements Job {
   }
 
   @Override
-  public String getDeadline() {
+  public OffsetDateTime getDeadline() {
     return deadline;
   }
 
   @Override
-  public String getEndTime() {
+  public OffsetDateTime getEndTime() {
     return endTime;
   }
 

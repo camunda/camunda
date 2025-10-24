@@ -36,7 +36,9 @@ import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.collections4.CollectionUtils;
@@ -156,7 +158,8 @@ public class TaskService {
       allowOverrideAssignment = true;
     }
 
-    final var isApiUser = TasklistAuthenticationUtil.isApiUser();
+    final var isApiUser =
+        TasklistAuthenticationUtil.isApiUser(authenticationProvider.getCamundaAuthentication());
     if (StringUtils.isEmpty(assignee) && isApiUser) {
       throw new InvalidRequestException("Assignee must be specified");
     }
@@ -177,19 +180,40 @@ public class TaskService {
     }
 
     final TaskEntity taskBefore = taskStore.getTask(taskId);
-    taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
-    final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
-    tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
+    final TaskEntity claimedTask;
+    if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
+      // Zeebe User Task
+      final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
+      tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
+      claimedTask = taskStore.makeCopyOf(taskBefore).setAssignee(taskAssignee);
+    } else {
+      // Job-based User Task
+      taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
+      final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
+      tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
+      claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
+    }
 
-    final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
     updateClaimedMetric(assignedTaskMetrics);
+    updateTaskAssignedMetric(claimedTask);
     return TaskDTO.createFrom(claimedTask, objectMapper);
   }
 
+  public void updateTaskAssignedMetric(final TaskEntity task) {
+    // Only write metrics when completing a Job-based User Tasks. With 8.7,
+    // metrics for completed (not Job-based) User Tasks are written by the
+    // handler "TaskCompletedMetricHandler" in the camunda-exporter
+    if (TaskImplementation.JOB_WORKER.equals(task.getImplementation())) {
+      taskMetricsStore.registerTaskAssigned(task);
+    }
+  }
+
   private String determineTaskAssignee(final String assignee, final String authenticatedUsername) {
-    return StringUtils.isEmpty(assignee) && !TasklistAuthenticationUtil.isApiUser()
+    return StringUtils.isEmpty(assignee)
+            && !TasklistAuthenticationUtil.isApiUser(
+                authenticationProvider.getCamundaAuthentication())
         ? authenticatedUsername
         : assignee;
   }
@@ -206,11 +230,23 @@ public class TaskService {
       LOGGER.info("Starting completion of task with ID: {}", taskId);
 
       final TaskEntity task = taskStore.getTask(taskId);
-      taskValidator.validateCanComplete(task);
-      tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
-      // persist completion and variables
-      final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
+      final TaskEntity completedTaskEntity;
+      if (task.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
+        // Zeebe User Task
+        tasklistServicesAdapter.completeUserTask(task, variablesMap);
+        completedTaskEntity =
+            taskStore
+                .makeCopyOf(task)
+                .setState(TaskState.COMPLETED)
+                .setCompletionTime(OffsetDateTime.now());
+      } else {
+        // Job-based User Task
+        taskValidator.validateCanComplete(task);
+        tasklistServicesAdapter.completeUserTask(task, variablesMap);
+        completedTaskEntity = taskStore.persistTaskCompletion(task);
+      }
+
       try {
         LOGGER.info("Start variable persistence: {}", taskId);
         variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
@@ -225,6 +261,7 @@ public class TaskService {
       }
 
       return TaskDTO.createFrom(completedTaskEntity, objectMapper);
+
     } catch (final HttpServerErrorException e) { // Track only internal server errors
       LOGGER.error("Error completing task with ID: {}. Details: {}", taskId, e.getMessage(), e);
       throw new TasklistRuntimeException("Error completing task with ID: " + taskId, e);
@@ -261,15 +298,24 @@ public class TaskService {
 
   public TaskDTO unassignTask(final String taskId) {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
-    taskValidator.validateCanUnassign(taskBefore);
-    final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
-    try {
-      tasklistServicesAdapter.unassignUserTask(taskEntity);
-    } catch (final Exception e) {
-      taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
-      throw e;
+    if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
+      // Zeebe User Task
+      tasklistServicesAdapter.unassignUserTask(taskBefore);
+      final TaskEntity taskEntity = taskStore.makeCopyOf(taskBefore).setAssignee(null);
+      return TaskDTO.createFrom(taskEntity, objectMapper);
+
+    } else {
+      // Job-based User Task
+      taskValidator.validateCanUnassign(taskBefore);
+      final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
+      try {
+        tasklistServicesAdapter.unassignUserTask(taskEntity);
+      } catch (final Exception e) {
+        taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
+        throw e;
+      }
+      return TaskDTO.createFrom(taskEntity, objectMapper);
     }
-    return TaskDTO.createFrom(taskEntity, objectMapper);
   }
 
   private boolean taskFormLinkIsNotComplete(final TaskEntity task) {
@@ -303,12 +349,6 @@ public class TaskService {
       final var authenticatedUsername = currentAuthentication.authenticatedUsername();
       final var completedTaskLabels = getTaskMetricLabels(task, authenticatedUsername);
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, completedTaskLabels);
-      // Only write metrics when completing a Job-based User Tasks. With 8.7,
-      // metrics for completed (not Job-based) User Tasks are written by the
-      // handler "TaskCompletedMetricHandler" in the camunda-exporter
-      if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
-        taskMetricsStore.registerTaskCompleteEvent(task);
-      }
     } catch (final Exception e) {
       LOGGER.error("Error updating completed task metric for task with ID: {}", task.getKey(), e);
       throw new TasklistRuntimeException(
@@ -319,7 +359,7 @@ public class TaskService {
   private String[] getTaskMetricLabels(final TaskEntity task, final String username) {
     final String keyUserId;
 
-    if (TasklistAuthenticationUtil.isApiUser()) {
+    if (TasklistAuthenticationUtil.isApiUser(authenticationProvider.getCamundaAuthentication())) {
       if (task.getAssignee() != null) {
         keyUserId = task.getAssignee();
       } else {

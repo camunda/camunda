@@ -21,6 +21,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteAuthorizationResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.DeleteAuthorizationResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -47,7 +48,11 @@ public class DeleteAuthorizationCommandImpl implements DeleteAuthorizationComman
   @Override
   public CamundaFuture<DeleteAuthorizationResponse> send() {
     final HttpCamundaFuture<DeleteAuthorizationResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete("/authorizations/" + authorizationKey, httpRequestConfig.build(), result);
+    httpClient.delete(
+        "/authorizations/" + authorizationKey,
+        httpRequestConfig.build(),
+        DeleteAuthorizationResponseImpl::new,
+        result);
     return result;
   }
 }

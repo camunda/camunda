@@ -10,7 +10,7 @@ import {mockGetRequest} from '../../mockRequest';
 import {
   endpoints,
   type GetElementInstanceResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const mockFetchElementInstance = (
   elementInstanceKey: string,

@@ -24,6 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
+import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
@@ -39,8 +40,6 @@ import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.ClockPinCommandStep1;
-import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
@@ -58,6 +57,7 @@ import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
+import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
@@ -68,24 +68,29 @@ import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
-import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
+import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
+import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
+import io.camunda.client.api.command.UnassignMappingRuleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
@@ -127,6 +132,7 @@ import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
+import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -135,6 +141,7 @@ import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.IncidentsByElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
@@ -160,6 +167,7 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AssignClientToGroupCommandImpl;
+import io.camunda.client.impl.command.AssignClientToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToTenantCommandImpl;
@@ -174,8 +182,6 @@ import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.client.impl.command.CancelBatchOperationCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
-import io.camunda.client.impl.command.ClockPinCommandImpl;
-import io.camunda.client.impl.command.ClockResetCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.client.impl.command.CreateAuthorizationCommandImpl;
@@ -192,6 +198,7 @@ import io.camunda.client.impl.command.CreateUserCommandImpl;
 import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
+import io.camunda.client.impl.command.DeleteMappingRuleCommandImpl;
 import io.camunda.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.client.impl.command.DeleteRoleCommandImpl;
 import io.camunda.client.impl.command.DeleteTenantCommandImpl;
@@ -199,31 +206,36 @@ import io.camunda.client.impl.command.DeleteUserCommandImpl;
 import io.camunda.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
-import io.camunda.client.impl.command.JobUpdateCommandImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
+import io.camunda.client.impl.command.PinClockCommandImpl;
 import io.camunda.client.impl.command.PublishMessageCommandImpl;
-import io.camunda.client.impl.command.RemoveUserFromTenantCommandImpl;
+import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
+import io.camunda.client.impl.command.StatusRequestImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.SuspendBatchOperationCommandImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignClientFromGroupCommandImpl;
+import io.camunda.client.impl.command.UnassignClientFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignMappingRuleFromGroupCommandImpl;
+import io.camunda.client.impl.command.UnassignMappingRuleFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromClientCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromMappingRuleCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromUserCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
+import io.camunda.client.impl.command.UnassignUserFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
+import io.camunda.client.impl.command.UpdateJobCommandImpl;
 import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserCommandImpl;
@@ -258,6 +270,7 @@ import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByTenantSearchRequestImpl;
+import io.camunda.client.impl.search.request.CorrelatedMessageSubscriptionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
@@ -266,6 +279,7 @@ import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
+import io.camunda.client.impl.search.request.IncidentsByElementInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentsByProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.JobSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingRulesByGroupSearchRequestImpl;
@@ -288,6 +302,7 @@ import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -423,7 +438,8 @@ public final class CamundaClientImpl implements CamundaClient {
 
   private static void configureConnectionSecurity(
       final CamundaClientConfiguration config, final NettyChannelBuilder channelBuilder) {
-    if (!config.isPlaintextConnectionEnabled()) {
+    final URI grpcAddress = config.getGrpcAddress();
+    if (!AddressUtil.isPlaintextConnection(grpcAddress)) {
       final String certificatePath = config.getCaCertificatePath();
       SslContext sslContext = null;
 
@@ -501,6 +517,11 @@ public final class CamundaClientImpl implements CamundaClient {
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest,
         config.preferRestOverGrpc());
+  }
+
+  @Override
+  public StatusRequestStep1 newStatusRequest() {
+    return new StatusRequestImpl(httpClient, config.getDefaultRequestTimeout());
   }
 
   @Override
@@ -633,7 +654,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public CorrelateMessageCommandStep1 newCorrelateMessageCommand() {
-    return new CorrelateMessageCommandImpl(httpClient, jsonMapper);
+    return new CorrelateMessageCommandImpl(config, httpClient, jsonMapper);
   }
 
   @Override
@@ -705,28 +726,28 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(final long userTaskKey) {
+  public CompleteUserTaskCommandStep1 newCompleteUserTaskCommand(final long userTaskKey) {
     return new CompleteUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
-  public AssignUserTaskCommandStep1 newUserTaskAssignCommand(final long userTaskKey) {
+  public AssignUserTaskCommandStep1 newAssignUserTaskCommand(final long userTaskKey) {
     return new AssignUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
-  public UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(final long userTaskKey) {
+  public UpdateUserTaskCommandStep1 newUpdateUserTaskCommand(final long userTaskKey) {
     return new UpdateUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
-  public UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(final long userTaskKey) {
+  public UnassignUserTaskCommandStep1 newUnassignUserTaskCommand(final long userTaskKey) {
     return new UnassignUserTaskCommandImpl(httpClient, userTaskKey);
   }
 
   @Override
   public UpdateJobCommandStep1 newUpdateJobCommand(final long jobKey) {
-    return new JobUpdateCommandImpl(jobKey, httpClient, jsonMapper);
+    return new UpdateJobCommandImpl(jobKey, httpClient, jsonMapper);
   }
 
   @Override
@@ -735,13 +756,13 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public ClockPinCommandStep1 newClockPinCommand() {
-    return new ClockPinCommandImpl(httpClient, jsonMapper);
+  public PinClockCommandStep1 newPinClockCommand() {
+    return new PinClockCommandImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public ClockResetCommandStep1 newClockResetCommand() {
-    return new ClockResetCommandImpl(httpClient);
+  public ResetClockCommandStep1 newResetClockCommand() {
+    return new ResetClockCommandImpl(httpClient);
   }
 
   @Override
@@ -992,6 +1013,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public DeleteMappingRuleCommandStep1 newDeleteMappingRuleCommand(final String mappingRuleId) {
+    return new DeleteMappingRuleCommandImpl(mappingRuleId, httpClient);
+  }
+
+  @Override
   public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand() {
     return new AssignUserToGroupCommandImpl(httpClient);
   }
@@ -1155,8 +1181,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand() {
-    return new RemoveUserFromTenantCommandImpl(httpClient);
+  public UnassignUserFromTenantCommandStep1 newUnassignUserFromTenantCommand() {
+    return new UnassignUserFromTenantCommandImpl(httpClient);
   }
 
   @Override
@@ -1165,9 +1191,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      final String tenantId) {
-    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantId);
+  public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand() {
+    return new UnassignGroupFromTenantCommandImpl(httpClient);
   }
 
   @Override
@@ -1178,6 +1203,21 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UnassignClientFromGroupCommandStep1 newUnassignClientFromGroupCommand() {
     return new UnassignClientFromGroupCommandImpl(httpClient);
+  }
+
+  @Override
+  public AssignClientToTenantCommandStep1 newAssignClientToTenantCommand() {
+    return new AssignClientToTenantCommandImpl(httpClient);
+  }
+
+  @Override
+  public UnassignClientFromTenantCommandStep1 newUnassignClientFromTenantCommand() {
+    return new UnassignClientFromTenantCommandImpl(httpClient);
+  }
+
+  @Override
+  public UnassignMappingRuleFromTenantCommandStep1 newUnassignMappingRuleFromTenantCommand() {
+    return new UnassignMappingRuleFromTenantCommandImpl(httpClient);
   }
 
   @Override
@@ -1315,6 +1355,19 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public MessageSubscriptionSearchRequest newMessageSubscriptionSearchRequest() {
     return new MessageSubscriptionSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public CorrelatedMessageSubscriptionSearchRequest
+      newCorrelatedMessageSubscriptionSearchRequest() {
+    return new CorrelatedMessageSubscriptionSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest newIncidentsByElementInstanceSearchRequest(
+      final long elementInstanceKey) {
+    return new IncidentsByElementInstanceSearchRequestImpl(
+        httpClient, jsonMapper, elementInstanceKey);
   }
 
   private JobClient newJobClient() {

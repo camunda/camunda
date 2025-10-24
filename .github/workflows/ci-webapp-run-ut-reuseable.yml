@@ -23,6 +23,8 @@ on:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: Core Features
+  TEST_TYPE: Unit
 
 defaults:
   run:
@@ -34,12 +36,16 @@ permissions: { }
 
 jobs:
   build:
-    name: Run Unit Tests
+    name: "Unit - Back End - ${{ inputs.suiteName}}"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 10
     permissions: { }
     steps:
       - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_product: "${{ inputs.componentName }}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
@@ -61,7 +67,6 @@ jobs:
           -Dsurefire.failIfNoSpecifiedTests=false -B -T 2 --no-snapshot-updates
           -D forkCount=7 -D skipITs -D skipQaBuild=true -D skipChecks -Dskip.docker
           -D surefire.rerunFailingTestsCount=3 -D junitThreadCount=16 -P skipFrontendBuild
-          -pl '-:optimize-schema-integrity-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -84,7 +89,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "${{inputs.suiteName}}"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

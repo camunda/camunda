@@ -24,6 +24,11 @@ export const createUniqueUser = (customId?: string) => {
   };
 };
 
+export const defaultAssertionOptions = {
+  intervals: [5_000, 10_000, 15_000],
+  timeout: 30_000,
+};
+
 // Create unique auth role with optional custom ID
 export const createUniqueAuthRole = (customId?: string) => {
   const id = customId || generateUniqueId();
@@ -62,6 +67,27 @@ export const createUniqueTenant = (customId?: string) => {
   };
 };
 
+// Create unique mapping rule with optional custom ID
+export const createUniqueMappingRule = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    id: `mapping${id}`,
+    name: `Test Mapping Rule ${id}`,
+    claimName: `claim${id}`,
+    claimValue: `value${id}`,
+  };
+};
+
+// Create unique edited mapping rule data with optional custom ID
+export const createEditedMappingRule = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    name: `Edited Mapping Rule ${id}`,
+    claimName: `edited-claim${id}`,
+    claimValue: `edited-value${id}`,
+  };
+};
+
 // Generic function to create specific test data with shared ID
 
 export const createUserAuthorization = (authRole: {name: string}) => ({
@@ -72,10 +98,13 @@ export const createUserAuthorization = (authRole: {name: string}) => ({
   accessPermissions: ['update', 'create', 'read', 'delete'],
 });
 
-export const createApplicationAuthorization = (authRole: {name: string}) => ({
-  ownerType: 'Role',
-  ownerId: authRole.name,
-  resourceType: 'Application',
+export const createComponentAuthorization = (
+  owner: {name: string},
+  ownerType: 'Role' | 'User' | 'Group' = 'Role',
+) => ({
+  ownerType,
+  ownerId: owner.name,
+  resourceType: 'Component',
   resourceId: '*',
   accessPermissions: ['access'],
 });
@@ -85,19 +114,23 @@ export const createTestData = (options: {
   user?: boolean;
   authRole?: boolean;
   userAuth?: boolean;
-  applicationAuth?: boolean;
+  componentAuth?: boolean;
   group?: boolean;
   editedGroup?: boolean;
   tenant?: boolean;
+  mappingRule?: boolean;
+  editedMappingRule?: boolean;
 }) => {
   const {
     user = false,
     authRole = false,
     userAuth = false,
-    applicationAuth = false,
+    componentAuth = false,
     group = false,
     editedGroup = false,
     tenant = false,
+    mappingRule = false,
+    editedMappingRule = false,
   } = options;
   const sharedId = generateUniqueId();
 
@@ -105,10 +138,12 @@ export const createTestData = (options: {
     user?: ReturnType<typeof createUniqueUser>;
     authRole?: ReturnType<typeof createUniqueAuthRole>;
     userAuth?: ReturnType<typeof createUserAuthorization>;
-    applicationAuth?: ReturnType<typeof createApplicationAuthorization>;
+    componentAuth?: ReturnType<typeof createComponentAuthorization>;
     group?: ReturnType<typeof createUniqueGroup>;
     editedGroup?: ReturnType<typeof createEditedGroup>;
     tenant?: ReturnType<typeof createUniqueTenant>;
+    mappingRule?: ReturnType<typeof createUniqueMappingRule>;
+    editedMappingRule?: ReturnType<typeof createEditedMappingRule>;
     id: string;
   } = {id: sharedId};
 
@@ -132,13 +167,21 @@ export const createTestData = (options: {
     result.tenant = createUniqueTenant(sharedId);
   }
 
+  if (mappingRule) {
+    result.mappingRule = createUniqueMappingRule(sharedId);
+  }
+
+  if (editedMappingRule) {
+    result.editedMappingRule = createEditedMappingRule(sharedId);
+  }
+
   // Create authorizations only if authRole is also created
   if (userAuth && result.authRole) {
     result.userAuth = createUserAuthorization(result.authRole);
   }
 
-  if (applicationAuth && result.authRole) {
-    result.applicationAuth = createApplicationAuthorization(result.authRole);
+  if (componentAuth && result.authRole) {
+    result.componentAuth = createComponentAuthorization(result.authRole);
   }
 
   return result;

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
 import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
+import io.camunda.zeebe.engine.util.client.ClusterVariableClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
@@ -127,8 +129,14 @@ public final class EngineRule extends ExternalResource {
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
   private Consumer<SecurityConfiguration> securityConfigModifier =
       cfg -> cfg.getAuthorizations().setEnabled(false);
-  private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
+  private Consumer<EngineConfiguration> engineConfigModifier =
+      cfg -> {
+        // identity setup is disabled by default so we can have deterministic writes
+        // if you need it enabled, use #withIdentitySetup
+        cfg.setEnableIdentitySetup(false);
+      };
   private SearchClientsProxy searchClientsProxy;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
 
   private EngineRule(final int partitionCount) {
@@ -184,7 +192,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public void start() {
-    start(StreamProcessorMode.PROCESSING, true);
+    start(environmentRule.getStreamProcessorMode(), true);
   }
 
   public void start(final StreamProcessorMode mode, final boolean awaitOpening) {
@@ -197,7 +205,7 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withIdentitySetup() {
     awaitIdentitySetup = true;
-    withFeatureFlags(ff -> ff.setEnableIdentitySetup(true));
+    withEngineConfig(c -> c.setEnableIdentitySetup(true));
     return this;
   }
 
@@ -262,6 +270,12 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withSearchClientsProxy(final SearchClientsProxy searchClientsProxy) {
     this.searchClientsProxy = searchClientsProxy;
+    return this;
+  }
+
+  public EngineRule withBrokerRequestAuthorizationConverter(
+      final BrokerRequestAuthorizationConverter authorizationConverter) {
+    brokerRequestAuthorizationConverter = authorizationConverter;
     return this;
   }
 
@@ -334,7 +348,8 @@ public final class EngineRule extends ExternalResource {
                         interPartitionCommandSender,
                         featureFlags,
                         jobStreamer,
-                        searchClientsProxy)
+                        searchClientsProxy,
+                        brokerRequestAuthorizationConverter)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));
@@ -472,6 +487,10 @@ public final class EngineRule extends ExternalResource {
 
   public VariableClient variables() {
     return new VariableClient(environmentRule);
+  }
+
+  public ClusterVariableClient clusterVariables() {
+    return new ClusterVariableClient(environmentRule);
   }
 
   public JobActivationClient jobs() {

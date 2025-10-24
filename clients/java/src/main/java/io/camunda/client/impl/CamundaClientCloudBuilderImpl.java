@@ -30,9 +30,11 @@ import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilde
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4.CamundaClientCloudBuilderStep5;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.client.impl.util.AddressUtil;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -99,31 +101,28 @@ public class CamundaClientCloudBuilderImpl
         properties,
         this::withClusterId,
         CLOUD_CLUSTER_ID,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLUSTER_ID);
+        LegacyZeebeClientProperties.CLOUD_CLUSTER_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         this::withClientId,
         CLOUD_CLIENT_ID,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_ID);
+        LegacyZeebeClientProperties.CLOUD_CLIENT_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         this::withClientId,
         CLOUD_CLIENT_SECRET,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET);
+        LegacyZeebeClientProperties.CLOUD_CLIENT_SECRET);
 
     BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
-        this::withRegion,
-        CLOUD_REGION,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_REGION);
+        properties, this::withRegion, CLOUD_REGION, LegacyZeebeClientProperties.CLOUD_REGION);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),
         STREAM_ENABLED,
-        io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED);
+        LegacyZeebeClientProperties.STREAM_ENABLED);
 
     innerBuilder.withProperties(properties);
 
@@ -138,12 +137,6 @@ public class CamundaClientCloudBuilderImpl
   public CamundaClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides) {
     innerBuilder.applyEnvironmentVariableOverrides(applyEnvironmentVariableOverrides);
-    return this;
-  }
-
-  @Override
-  public CamundaClientBuilder gatewayAddress(final String gatewayAddress) {
-    innerBuilder.gatewayAddress(gatewayAddress);
     return this;
   }
 
@@ -227,12 +220,6 @@ public class CamundaClientCloudBuilderImpl
   @Override
   public CamundaClientBuilder defaultRequestTimeoutOffset(final Duration requestTimeoutOffset) {
     innerBuilder.defaultRequestTimeoutOffset(requestTimeoutOffset);
-    return this;
-  }
-
-  @Override
-  public CamundaClientBuilder usePlaintext() {
-    innerBuilder.usePlaintext();
     return this;
   }
 
@@ -333,7 +320,7 @@ public class CamundaClientCloudBuilderImpl
   }
 
   private URI determineGrpcAddress() {
-    if (isNeedToSetCloudGrpcAddress() && isNeedToSetCloudGatewayAddress()) {
+    if (isNeedToSetCloudGrpcAddress()) {
       ensureNotNull("cluster id", clusterId);
       final String cloudGrpcAddress =
           String.format(
@@ -349,10 +336,10 @@ public class CamundaClientCloudBuilderImpl
       }
 
       Loggers.LOGGER.debug(
-          "Expected to use 'cluster id' to set gateway address in the client cloud builder, "
-              + "but overwriting with explicitly defined gateway address: {}.",
-          innerBuilder.getGatewayAddress());
-      return getURIFromString("https://" + innerBuilder.getGatewayAddress());
+          "Expected to use 'cluster id' to set grpc address in the client cloud builder, "
+              + "but overwriting with explicitly defined grpc address: {}.",
+          innerBuilder.getGrpcAddress());
+      return innerBuilder.getGrpcAddress();
     }
   }
 
@@ -364,8 +351,13 @@ public class CamundaClientCloudBuilderImpl
       ensureNotNull("client secret", clientSecret);
       final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
 
-      if (innerBuilder.isPlaintextConnectionEnabled()) {
-        Loggers.LOGGER.debug("Expected setting 'usePlaintext' to be 'false', but found 'true'.");
+      if (AddressUtil.isPlaintextConnection(innerBuilder.getGrpcAddress())
+          || AddressUtil.isPlaintextConnection(innerBuilder.getRestAddress())) {
+        Loggers.LOGGER.debug(
+            "Expected a secured protocol {} for gRPC and REST, but got {} and {}.",
+            AddressUtil.ENCRYPTED_SCHEMES,
+            innerBuilder.getGrpcAddress(),
+            innerBuilder.getRestAddress());
       }
       return builder
           .audience(String.format("%s.%s", ZEEBE_DOMAIN_COMPONENT, domain))
@@ -385,12 +377,6 @@ public class CamundaClientCloudBuilderImpl
     return innerBuilder.getGrpcAddress() == null
         || Objects.equals(
             innerBuilder.getGrpcAddress(), CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS);
-  }
-
-  private boolean isNeedToSetCloudGatewayAddress() {
-    return innerBuilder.getGatewayAddress() == null
-        || Objects.equals(
-            innerBuilder.getGatewayAddress(), CamundaClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS);
   }
 
   private boolean isNeedToSetCloudRestAddress() {

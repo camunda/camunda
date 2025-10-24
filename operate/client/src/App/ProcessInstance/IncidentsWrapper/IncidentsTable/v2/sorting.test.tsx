@@ -7,14 +7,9 @@
  */
 
 import {IncidentsTable} from '.';
-import {
-  createIncident,
-  createInstance,
-  createProcessInstance,
-} from 'modules/testUtils';
+import {createInstance, createProcessInstance} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
-import {incidentsStore} from 'modules/stores/incidents';
-import {Wrapper, incidentsMock, shortError} from './mocks';
+import {Wrapper, firstIncident, incidentsMock} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -33,35 +28,26 @@ describe('Sorting', () => {
   });
 
   it('should enable sorting for all', async () => {
-    incidentsStore.setIncidents(incidentsMock);
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(
+      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      {wrapper: Wrapper},
+    );
 
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Incident Type')).toBeEnabled();
-    expect(screen.getByText('Failing Flow Node')).toBeEnabled();
+    expect(screen.getByText('Failing Element')).toBeEnabled();
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Creation Date')).toBeEnabled();
     expect(screen.getByText('Error Message')).toBeEnabled();
     expect(await screen.findByText('Operations')).toBeInTheDocument();
   });
 
-  it('should disable sorting for jobId', () => {
-    const incidents = [
-      createIncident({
-        errorType: {
-          name: 'Error A',
-          id: 'ERROR-A',
-        },
-        errorMessage: shortError,
-        flowNodeId: 'Task A',
-        flowNodeInstanceId: 'flowNodeInstanceIdA',
-        jobId: null,
-      }),
-    ];
+  it('should disable sorting for jobKey', () => {
+    const incidents = [{...firstIncident, jobKey: ''}];
 
-    incidentsStore.setIncidents({...incidentsMock, incidents, count: 1});
-
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(<IncidentsTable processInstanceKey="1" incidents={incidents} />, {
+      wrapper: Wrapper,
+    });
     expect(
       screen.getByRole('button', {name: 'Sort by Creation Date'}),
     ).toBeInTheDocument();

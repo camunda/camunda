@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.util;
 
+import io.camunda.search.schema.config.RetentionConfiguration;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,6 +18,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,7 +79,7 @@ public final class DateOfArchivedDocumentsUtil {
   }
 
   public static CompletableFuture<String> getLastHistoricalArchiverDate(
-      final CompletableFuture<List<String>> listOfIndexes, final String zeebeIndexPrefix) {
+      final CompletableFuture<List<String>> listOfIndexes) {
     final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern(DATE_AND_HOUR_PATTERN);
     final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern(DATE_PATTERN);
     final Pattern indexDatePattern = Pattern.compile("_(\\d{4}-\\d{2}-\\d{2}(?:-\\d{2})?)");
@@ -84,7 +87,6 @@ public final class DateOfArchivedDocumentsUtil {
     return listOfIndexes.thenApply(
         indexes ->
             indexes.stream()
-                .filter(index -> !index.contains(zeebeIndexPrefix))
                 .map(
                     index -> {
                       final Matcher matcher = indexDatePattern.matcher(index);
@@ -117,12 +119,28 @@ public final class DateOfArchivedDocumentsUtil {
     final String unit = matcher.group(2);
 
     return switch (unit) {
+      case "s" -> new Temp(amount, ChronoUnit.SECONDS);
+      case "m" -> new Temp(amount, ChronoUnit.MINUTES);
       case "h" -> new Temp(amount, ChronoUnit.HOURS);
       case "d" -> new Temp(amount, ChronoUnit.DAYS);
       case "w" -> new Temp(amount * 7, ChronoUnit.DAYS);
       case "M" -> new Temp(amount, ChronoUnit.MONTHS);
       default -> throw new IllegalArgumentException("Unsupported time amount: " + unit);
     };
+  }
+
+  public static Optional<Duration> getRetentionPolicyMinimumAge(
+      final RetentionConfiguration retentionConfiguration, final String policyName) {
+    final String minimumAge;
+    if (policyName.equals(retentionConfiguration.getPolicyName())) {
+      minimumAge = retentionConfiguration.getMinimumAge();
+    } else if (policyName.equals(retentionConfiguration.getUsageMetricsPolicyName())) {
+      minimumAge = retentionConfiguration.getUsageMetricsMinimumAge();
+    } else {
+      return Optional.empty();
+    }
+    final var temp = parseTemporalAmount(minimumAge);
+    return Optional.of(Duration.of(temp.amount(), temp.chronoUnit()));
   }
 
   private static LocalDateTime parseFlexibleDateTime(final String dateStr, final String pattern) {

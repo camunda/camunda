@@ -15,16 +15,21 @@ import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +42,8 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class TenantSpecificFilterIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
@@ -51,6 +57,49 @@ public class TenantSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriter = rdbmsService.createWriter(0L);
+  }
+
+  @Test
+  public void shouldFindTenantWithChildMemberWithMemberIdsByType() {
+    createAndSaveRandomTenants(rdbmsWriter, b -> b);
+    final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
+    addGroupToTenant(tenant.tenantId(), "group-1");
+    addGroupToTenant(tenant.tenantId(), "group-2");
+    addUserToTenant(tenant.tenantId(), "user-1");
+    addUserToTenant(tenant.tenantId(), "user-2");
+
+    final var searchResult =
+        tenantReader.search(
+            new TenantQuery(
+                TenantFilter.of(b -> b.memberIdsByType(Map.of(EntityType.USER, Set.of("user-1")))),
+                TenantSort.of(b -> b),
+                SearchQueryPage.of(b -> b)));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(tenant.tenantKey());
+  }
+
+  @Test
+  public void shouldFindTenantWithChildMemberWithChildMemberId() {
+    createAndSaveRandomTenants(rdbmsWriter, b -> b);
+    final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
+    addGroupToTenant(tenant.tenantId(), "group-1");
+    addGroupToTenant(tenant.tenantId(), "group-2");
+    addUserToTenant(tenant.tenantId(), "user-1");
+    addUserToTenant(tenant.tenantId(), "user-2");
+
+    final var searchResult =
+        tenantReader.search(
+            new TenantQuery(
+                TenantFilter.of(
+                    b -> b.childMemberType(EntityType.USER).memberIds(Set.of("user-1"))),
+                TenantSort.of(b -> b),
+                SearchQueryPage.of(b -> b)));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(tenant.tenantKey());
   }
 
   @ParameterizedTest
@@ -77,5 +126,15 @@ public class TenantSpecificFilterIT {
         TenantFilter.of(b -> b.key(42L)),
         TenantFilter.of(b -> b.tenantId("tenant-42")),
         TenantFilter.of(b -> b.name("Tenant 42")));
+  }
+
+  private void addGroupToTenant(final String tenantId, final String entityId) {
+    rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "GROUP"));
+    rdbmsWriter.flush();
+  }
+
+  private void addUserToTenant(final String tenantId, final String entityId) {
+    rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
+    rdbmsWriter.flush();
   }
 }

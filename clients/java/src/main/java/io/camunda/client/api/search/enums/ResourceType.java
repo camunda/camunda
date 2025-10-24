@@ -20,7 +20,7 @@ public enum ResourceType {
   MAPPING_RULE,
   MESSAGE,
   BATCH,
-  APPLICATION,
+  COMPONENT,
   SYSTEM,
   TENANT,
   RESOURCE,
@@ -30,6 +30,6 @@ public enum ResourceType {
   GROUP,
   USER,
   ROLE,
-  USAGE_METRIC,
+  DOCUMENT,
   UNKNOWN_ENUM_VALUE,
 }

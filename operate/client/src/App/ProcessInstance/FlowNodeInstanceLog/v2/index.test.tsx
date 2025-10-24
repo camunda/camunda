@@ -30,7 +30,7 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {init} from 'modules/utils/flowNodeInstance';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
@@ -149,6 +149,24 @@ describe('FlowNodeInstanceLog', () => {
 
     expect(
       await screen.findByText('Instance History could not be fetched'),
+    ).toBeInTheDocument();
+  });
+
+  //TODO unskip when endpoint migrated
+  it.skip('should display permissions error when access to the process definition is forbidden', async () => {
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+    mockFetchProcessDefinitionXml().withServerError(403);
+    init(mockProcessInstance);
+
+    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Missing permissions to access Instance History'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Please contact your organization owner or admin to give you the necessary permissions to access this instance history',
+      ),
     ).toBeInTheDocument();
   });
 

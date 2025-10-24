@@ -13,8 +13,10 @@ import static io.camunda.service.authorization.Authorizations.ROLE_READ_AUTHORIZ
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -39,8 +41,15 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.roleSearchClient = roleSearchClient;
   }
 
@@ -55,7 +64,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
                 .searchRoles(query));
   }
 
-  public SearchQueryResult<RoleMemberEntity> searchMembers(final RoleQuery query) {
+  public SearchQueryResult<RoleMemberEntity> searchMembers(final RoleMemberQuery query) {
     return executeSearchRequest(
         () ->
             roleSearchClient
@@ -67,13 +76,11 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   public boolean hasMembersOfType(final String roleId, final EntityType entityType) {
     final var query =
-        RoleQuery.of(
+        RoleMemberQuery.of(
             builder ->
                 builder.filter(
                     filter ->
-                        filter
-                            .joinParentId(DefaultRole.ADMIN.getId())
-                            .memberType(EntityType.USER)));
+                        filter.roleId(DefaultRole.ADMIN.getId()).memberType(EntityType.USER)));
     final var members = searchMembers(query);
     return members.total() > 0;
   }
@@ -92,7 +99,12 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   @Override
   public RoleServices withAuthentication(final CamundaAuthentication authentication) {
     return new RoleServices(
-        brokerClient, securityContextProvider, roleSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        roleSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<RoleRecord> createRole(final CreateRoleRequest request) {

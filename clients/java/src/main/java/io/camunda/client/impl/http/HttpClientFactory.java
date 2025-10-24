@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
 import java.io.FileInputStream;
@@ -60,6 +61,7 @@ import org.apache.hc.core5.http.config.CharCodingConfig;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.net.URIBuilder;
+import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
@@ -109,7 +111,6 @@ public class HttpClientFactory {
 
     try {
       final URIBuilder builder = new URIBuilder(basePath).appendPath(REST_API_PATH);
-      builder.setScheme(config.isPlaintextConnectionEnabled() ? "http" : "https");
 
       return builder.build();
     } catch (final URISyntaxException e) {
@@ -134,7 +135,10 @@ public class HttpClientFactory {
             .setHostnameVerifier(hostnameVerifier)
             .build();
     final PoolingAsyncClientConnectionManager connectionManager =
-        PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
+        PoolingAsyncClientConnectionManagerBuilder.create()
+            .setTlsStrategy(tlsStrategy)
+            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
+            .build();
 
     final HttpAsyncClientBuilder builder =
         HttpAsyncClients.custom()
@@ -168,7 +172,8 @@ public class HttpClientFactory {
   }
 
   private SSLContext createSslContext() {
-    if (config.isPlaintextConnectionEnabled() || config.getCaCertificatePath() == null) {
+    if (AddressUtil.isPlaintextConnection(config.getRestAddress())
+        || config.getCaCertificatePath() == null) {
       return SSLContexts.createDefault();
     }
 

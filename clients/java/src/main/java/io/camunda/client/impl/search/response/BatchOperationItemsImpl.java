@@ -16,11 +16,13 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.BatchOperationItemResponse;
 import io.camunda.client.protocol.rest.BatchOperationItemSearchQueryResult;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,24 +45,31 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
   public static class BatchOperationItemImpl implements BatchOperationItem {
 
     private final String batchOperationKey;
+    private final BatchOperationType operationType;
     private final Long itemKey;
     private final Long processInstanceKey;
     private final BatchOperationItemState status;
-    private final String processedDate;
+    private final OffsetDateTime processedDate;
     private final String errorMessage;
 
     public BatchOperationItemImpl(final BatchOperationItemResponse item) {
       batchOperationKey = item.getBatchOperationKey();
+      operationType = EnumUtil.convert(item.getOperationType(), BatchOperationType.class);
       itemKey = ParseUtil.parseLongOrNull(item.getItemKey());
       processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
       status = EnumUtil.convert(item.getState(), BatchOperationItemState.class);
-      processedDate = item.getProcessedDate();
+      processedDate = ParseUtil.parseOffsetDateTimeOrNull(item.getProcessedDate());
       errorMessage = item.getErrorMessage();
     }
 
     @Override
     public String getBatchOperationKey() {
       return batchOperationKey;
+    }
+
+    @Override
+    public BatchOperationType getOperationType() {
+      return operationType;
     }
 
     @Override
@@ -74,7 +83,7 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
     }
 
     @Override
-    public String getProcessedDate() {
+    public OffsetDateTime getProcessedDate() {
       return processedDate;
     }
 

@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
@@ -79,12 +80,14 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   void before() {
     final var securityConfig = new SecurityConfiguration();
     final var authConfig = new AuthorizationsConfiguration();
+    final var engineConfig = new EngineConfiguration();
     authConfig.setEnabled(true);
     securityConfig.setAuthorizations(authConfig);
     final var multiTenancyConfig = new MultiTenancyConfiguration();
     multiTenancyConfig.setChecksEnabled(true);
     securityConfig.setMultiTenancy(multiTenancyConfig);
-    authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+    authorizationCheckBehavior =
+        new AuthorizationCheckBehavior(processingState, securityConfig, engineConfig);
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
     mappingRuleCreatedApplier =
@@ -243,6 +246,32 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     assertThat(authorizedTenantIds.isAuthorizedForTenantId(tenantId1)).isTrue();
     assertThat(authorizedTenantIds.isAuthorizedForTenantId(tenantId2)).isTrue();
     assertThat(authorizedTenantIds.isAuthorizedForTenantIds(List.of(tenantId1, tenantId2)))
+        .isTrue();
+    assertThat(authorizedTenantIds.isAuthorizedForTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
+        .isFalse();
+  }
+
+  @Test
+  void shouldGetUserAndMappingAuthorizedTenantIds() {
+    // given
+    final var user = createUser();
+    final var userTenantId = createAndAssignTenant(user.getUsername(), EntityType.USER);
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mappingRuleId = createMappingRule(claimName, claimValue).getMappingRuleId();
+    final var mappingTenantId = createAndAssignTenant(mappingRuleId, EntityType.MAPPING_RULE);
+    final var command =
+        mockCommandWithUserAndMappingRule(user.getUsername(), claimName, claimValue);
+
+    // when
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+
+    // then
+    assertThat(authorizedTenantIds.getAuthorizedTenantIds())
+        .containsExactlyInAnyOrder(userTenantId, mappingTenantId);
+    assertThat(authorizedTenantIds.isAuthorizedForTenantId(userTenantId)).isTrue();
+    assertThat(authorizedTenantIds.isAuthorizedForTenantId(mappingTenantId)).isTrue();
+    assertThat(authorizedTenantIds.isAuthorizedForTenantIds(List.of(userTenantId, mappingTenantId)))
         .isTrue();
     assertThat(authorizedTenantIds.isAuthorizedForTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
         .isFalse();
@@ -612,6 +641,42 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
+  void
+      shouldBeAuthorizedWhenUserHasPermissionAndMappingIsAssignedToRequestedTenantThroughGroupWithRole() {
+    // given
+    final var user = createUser();
+    final var mappingRule =
+        createMappingRule(Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId());
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
+    final var group =
+        createGroupAndAssignEntity(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
+    final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
+    final var tenantId = createAndAssignTenant(role.getRoleId(), EntityType.ROLE);
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations())
+        .thenReturn(
+            Map.of(
+                USER_TOKEN_CLAIMS,
+                Map.of(mappingRule.getClaimName(), mappingRule.getClaimValue()),
+                AUTHORIZED_USERNAME,
+                user.getUsername()));
+    when(command.hasRequestMetadata()).thenReturn(true);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType, tenantId)
+            .addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
   void shouldGetTenantsWhenUserIsAssignedToRequestedTenantThroughRole() {
     // given
     final var user = createUser();
@@ -707,11 +772,36 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     assertThat(tenantIds.getAuthorizedTenantIds()).containsOnly(tenantId);
   }
 
+  private TypedRecord<?> mockCommand(final String username) {
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_USERNAME, username));
+    when(command.hasRequestMetadata()).thenReturn(true);
+    return command;
+  }
+
+  private TypedRecord<?> mockCommandWithUserAndMappingRule(
+      final String username, final String claimName, final String claimValue) {
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations())
+        .thenReturn(
+            Map.of(
+                AUTHORIZED_USERNAME, username, USER_TOKEN_CLAIMS, Map.of(claimName, claimValue)));
+    when(command.hasRequestMetadata()).thenReturn(true);
+    return command;
+  }
+
   private TypedRecord<?> mockCommandWithMappingRule(
       final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
         .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of(claimName, claimValue)));
+    when(command.hasRequestMetadata()).thenReturn(true);
+    return command;
+  }
+
+  private TypedRecord<?> mockCommandWithAnonymousUser() {
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_ANONYMOUS_USER, true));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
   }
@@ -816,19 +906,5 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     tenant.setEntityId(entityId).setEntityType(entityType);
     tenantEntityAddedApplier.applyState(tenant.getTenantKey(), tenant);
     return tenant.getTenantId();
-  }
-
-  private TypedRecord<?> mockCommand(final String username) {
-    final var command = mock(TypedRecord.class);
-    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_USERNAME, username));
-    when(command.hasRequestMetadata()).thenReturn(true);
-    return command;
-  }
-
-  private TypedRecord<?> mockCommandWithAnonymousUser() {
-    final var command = mock(TypedRecord.class);
-    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_ANONYMOUS_USER, true));
-    when(command.hasRequestMetadata()).thenReturn(true);
-    return command;
   }
 }

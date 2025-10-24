@@ -16,17 +16,23 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.MessageSubscription;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import java.util.List;
@@ -45,6 +51,38 @@ public class CamundaDataSource {
   public List<ElementInstance> findElementInstancesByProcessInstanceKey(
       final long processInstanceKey) {
     return findElementInstances(filter -> filter.processInstanceKey(processInstanceKey));
+  }
+
+  public List<ProcessInstanceSequenceFlow> findSequenceFlowsByProcessInstanceKey(
+      final long processInstanceKey) {
+    return client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+  }
+
+  public List<ProcessDefinition> findProcessDefinitionsByProcessDefinitionId(
+      final String bpmnProcessId) {
+    return client
+        .newProcessDefinitionSearchRequest()
+        .filter(filter -> filter.processDefinitionId(bpmnProcessId))
+        .page(DEFAULT_PAGE_REQUEST)
+        .sort(sort -> sort.version().desc())
+        .send()
+        .join()
+        .items();
+  }
+
+  public ProcessDefinition findProcessDefinitionByProcessDefinitionId(final String bpmnProcessId) {
+    return findProcessDefinitionsByProcessDefinitionId(bpmnProcessId).stream()
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Process definition not found"));
+  }
+
+  public String getProcessDefinitionXmlByProcessDefinitionId(final String bpmnProcessId) {
+    return getProcessDefinitionXmlByProcessDefinitionKey(
+        findProcessDefinitionByProcessDefinitionId(bpmnProcessId).getProcessDefinitionKey());
+  }
+
+  public String getProcessDefinitionXmlByProcessDefinitionKey(final long processDefinitionKey) {
+    return client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join();
   }
 
   public List<ElementInstance> findElementInstances(final Consumer<ElementInstanceFilter> filter) {
@@ -121,5 +159,29 @@ public class CamundaDataSource {
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
     return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+  }
+
+  public List<MessageSubscription> findMessageSubscriptions(
+      final Consumer<MessageSubscriptionFilter> filter) {
+    return client
+        .newMessageSubscriptionSearchRequest()
+        .filter(filter)
+        .sort(sort -> sort.lastUpdatedDate().asc())
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
+  }
+
+  public List<CorrelatedMessageSubscription> findCorrelatedMessages(
+      final Consumer<CorrelatedMessageSubscriptionFilter> filter) {
+    return client
+        .newCorrelatedMessageSubscriptionSearchRequest()
+        .filter(filter)
+        .sort(sort -> sort.correlationTime().asc())
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
   }
 }

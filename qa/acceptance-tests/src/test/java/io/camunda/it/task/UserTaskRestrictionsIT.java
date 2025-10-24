@@ -60,8 +60,11 @@ public class UserTaskRestrictionsIT {
   private static final String USER2 = "user2";
   private static final String USER3 = "user3";
   private static final String USER4 = "user4";
+  private static final String USER5 = "user5";
   private static final String GROUP1 = "group1";
   private static final String GROUP2 = "group2";
+  private static final String GROUP3_ID = "group3";
+  private static final String GROUP3_NAME = "Group 3";
 
   private static final String PROCESS_ID_1 = "processWithCandidateUsers";
   private static final BpmnModelInstance PROCESS_1 =
@@ -86,11 +89,15 @@ public class UserTaskRestrictionsIT {
           .userTask("group1Task")
           .zeebeUserTask()
           .zeebeCandidateGroups(GROUP1)
-          .parallelGateway("endParallel")
+          .endEvent()
           .moveToNode("startParallel")
           .userTask("group2Task")
           .zeebeUserTask()
           .zeebeCandidateGroups(GROUP2)
+          .moveToNode("startParallel")
+          .userTask("group3Task")
+          .zeebeUserTask()
+          .zeebeCandidateGroups(GROUP3_NAME)
           .done();
 
   @UserDefinition
@@ -108,14 +115,14 @@ public class UserTaskRestrictionsIT {
       new TestUser(
           USER1,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
   private static final TestUser USER2_USER =
       new TestUser(
           USER2,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
   private static final TestUser USER3_USER = new TestUser(USER3, "password", List.of());
@@ -123,12 +130,15 @@ public class UserTaskRestrictionsIT {
   @UserDefinition
   private static final TestUser USER4_USER = new TestUser(USER4, "password", List.of());
 
+  @UserDefinition
+  private static final TestUser USER5_USER = new TestUser(USER5, "password", List.of());
+
   @GroupDefinition
   private static final TestGroup GROUP1_GROUP =
       new TestGroup(
           GROUP1,
           GROUP1,
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))),
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))),
           List.of(new Membership(USER3, EntityType.USER)));
 
   @GroupDefinition
@@ -136,8 +146,16 @@ public class UserTaskRestrictionsIT {
       new TestGroup(
           GROUP2,
           GROUP2,
-          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))),
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))),
           List.of(new Membership(USER4, EntityType.USER)));
+
+  @GroupDefinition
+  private static final TestGroup GROUP3_GROUP =
+      new TestGroup(
+          GROUP3_ID,
+          GROUP3_NAME,
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))),
+          List.of(new Membership(USER5, EntityType.USER)));
 
   private static long processInstanceKeyCandidateUsers;
   private static long processInstanceKeyCandidateGroups;
@@ -152,7 +170,7 @@ public class UserTaskRestrictionsIT {
     processInstanceKeyCandidateGroups = startEvent2.getProcessInstanceKey();
 
     awaitUserTaskBeingAvailable(adminClient, processInstanceKeyCandidateUsers, 2);
-    awaitUserTaskBeingAvailable(adminClient, processInstanceKeyCandidateGroups, 2);
+    awaitUserTaskBeingAvailable(adminClient, processInstanceKeyCandidateGroups, 3);
   }
 
   @Test
@@ -201,18 +219,25 @@ public class UserTaskRestrictionsIT {
         final var tasklistUser4RestClient =
             STANDALONE_CAMUNDA
                 .newTasklistClient()
-                .withAuthentication(USER4_USER.username(), USER4_USER.password()); ) {
+                .withAuthentication(USER4_USER.username(), USER4_USER.password());
+        final var tasklistUser5RestClient =
+            STANDALONE_CAMUNDA
+                .newTasklistClient()
+                .withAuthentication(USER5_USER.username(), USER5_USER.password()); ) {
 
       // when
       // searching for tasks available to user1 and user2 (no process instance key provided)
       final HttpResponse<String> user3Response = tasklistUser3RestClient.searchTasks(null);
       final HttpResponse<String> user4Response = tasklistUser4RestClient.searchTasks(null);
+      final HttpResponse<String> user5Response = tasklistUser5RestClient.searchTasks(null);
 
       // then
       assertThat(user3Response).isNotNull();
       assertThat(user4Response).isNotNull();
+      assertThat(user5Response).isNotNull();
       assertThat(user3Response.statusCode()).isEqualTo(200);
       assertThat(user4Response.statusCode()).isEqualTo(200);
+      assertThat(user5Response.statusCode()).isEqualTo(200);
 
       final TaskSearchResponse[] tasksUser3 =
           TestRestTasklistClient.OBJECT_MAPPER.readValue(
@@ -224,6 +249,11 @@ public class UserTaskRestrictionsIT {
               user4Response.body(), TaskSearchResponse[].class);
       assertThat(tasksUser4).hasSize(1);
       assertThat(tasksUser4[0].getCandidateGroups()).containsExactly(GROUP2);
+      final var tasksUser5 =
+          TestRestTasklistClient.OBJECT_MAPPER.readValue(
+              user5Response.body(), TaskSearchResponse[].class);
+      assertThat(tasksUser5).hasSize(1);
+      assertThat(tasksUser5[0].getCandidateGroups()).containsExactly(GROUP3_NAME);
     }
   }
 

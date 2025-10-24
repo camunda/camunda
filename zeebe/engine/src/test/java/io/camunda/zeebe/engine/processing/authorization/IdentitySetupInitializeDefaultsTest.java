@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.authorization;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterMode;
 import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterTestWatcherMode;
@@ -57,10 +57,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOwnerId(DefaultRole.ADMIN.getId())
                     .hasOwnerType(AuthorizationOwnerType.ROLE))
         .describedAs("Expect all admin role authorizations to have the wildcard resource ID")
-        .allSatisfy(
-            auth ->
-                Assertions.assertThat(auth)
-                    .hasResourceId(AuthorizationCheckBehavior.WILDCARD_PERMISSION))
+        .allSatisfy(auth -> Assertions.assertThat(auth).hasResourceId(WILDCARD.getResourceId()))
         .describedAs("Expect the admin role authorizations to have specific resource permissions")
         .satisfiesExactlyInAnyOrder(
             auth ->
@@ -85,12 +82,15 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(PermissionType.CREATE, PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.APPLICATION)
+                    .hasResourceType(AuthorizationResourceType.COMPONENT)
                     .hasOnlyPermissionTypes(PermissionType.ACCESS),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SYSTEM)
-                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.UPDATE),
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ,
+                        PermissionType.READ_USAGE_METRIC,
+                        PermissionType.UPDATE),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.TENANT)
@@ -119,12 +119,13 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.UPDATE_PROCESS_INSTANCE,
                         PermissionType.UPDATE_USER_TASK,
                         PermissionType.CREATE_PROCESS_INSTANCE,
+                        PermissionType.CANCEL_PROCESS_INSTANCE,
+                        PermissionType.MODIFY_PROCESS_INSTANCE,
                         PermissionType.DELETE_PROCESS_INSTANCE),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION)
-                    .hasOnlyPermissionTypes(
-                        PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
+                    .hasOnlyPermissionTypes(PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DECISION_DEFINITION)
@@ -174,8 +175,9 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
-                    .hasOnlyPermissionTypes(PermissionType.READ));
+                    .hasResourceType(AuthorizationResourceType.DOCUMENT)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE));
   }
 
   @Test
@@ -196,10 +198,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOwnerType(AuthorizationOwnerType.ROLE))
         .describedAs(
             "Expect all readonly-admin role authorizations to have the wildcard resource ID")
-        .allSatisfy(
-            auth ->
-                Assertions.assertThat(auth)
-                    .hasResourceId(AuthorizationCheckBehavior.WILDCARD_PERMISSION))
+        .allSatisfy(auth -> Assertions.assertThat(auth).hasResourceId(WILDCARD.getResourceId()))
         .describedAs(
             "Expect the readonly-admin role authorizations to have specific read permissions only")
         .satisfiesExactlyInAnyOrder(
@@ -217,12 +216,12 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.APPLICATION)
+                    .hasResourceType(AuthorizationResourceType.COMPONENT)
                     .hasOnlyPermissionTypes(PermissionType.ACCESS),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SYSTEM)
-                    .hasOnlyPermissionTypes(PermissionType.READ),
+                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.READ_USAGE_METRIC),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.TENANT)
@@ -266,7 +265,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)
-                    .hasResourceType(AuthorizationResourceType.USAGE_METRIC)
+                    .hasResourceType(AuthorizationResourceType.DOCUMENT)
                     .hasOnlyPermissionTypes(PermissionType.READ));
   }
 
@@ -293,10 +292,51 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                     .hasOnlyPermissionTypes(
                         PermissionType.READ_PROCESS_DEFINITION,
+                        PermissionType.CREATE_PROCESS_INSTANCE,
                         PermissionType.UPDATE_PROCESS_INSTANCE),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.MESSAGE)
+                    .hasOnlyPermissionTypes(PermissionType.CREATE),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.DOCUMENT)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE));
+  }
+
+  @Test
+  public void shouldCreateAppsIntegrationRoleByDefault() {
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
+                .authorizationRecords()
+                .withOwnerId(DefaultRole.APP_INTEGRATIONS.getId()))
+        .extracting(Record::getValue)
+        .describedAs(
+            "Expect all apps_integration role authorizations to be owned by the apps_integration role")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasOwnerId(DefaultRole.APP_INTEGRATIONS.getId())
+                    .hasOwnerType(AuthorizationOwnerType.ROLE))
+        .describedAs(
+            "Expect the apps_integration role authorizations to have specific resource permissions")
+        .satisfiesExactlyInAnyOrder(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ_PROCESS_DEFINITION,
+                        PermissionType.CREATE_PROCESS_INSTANCE,
+                        PermissionType.READ_PROCESS_INSTANCE,
+                        PermissionType.UPDATE_PROCESS_INSTANCE,
+                        PermissionType.READ_USER_TASK,
+                        PermissionType.UPDATE_USER_TASK),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.DOCUMENT)
                     .hasOnlyPermissionTypes(PermissionType.CREATE));
   }
 
@@ -316,10 +356,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOwnerId(DefaultRole.RPA.getId())
                     .hasOwnerType(AuthorizationOwnerType.ROLE))
         .describedAs("Expect all RPA role authorizations to have the wildcard resource ID")
-        .allSatisfy(
-            auth ->
-                Assertions.assertThat(auth)
-                    .hasResourceId(AuthorizationCheckBehavior.WILDCARD_PERMISSION))
+        .allSatisfy(auth -> Assertions.assertThat(auth).hasResourceId(WILDCARD.getResourceId()))
         .describedAs("Expect the RPA role authorizations to have specific resource permissions")
         .satisfiesExactlyInAnyOrder(
             auth ->

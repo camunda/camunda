@@ -70,27 +70,38 @@ public class ElasticsearchExporter implements Exporter {
     pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
-    // Re-create the schema manager on every configuration change
-    schemaManager = new ElasticsearchExporterSchemaManager(client, configuration);
     registry = context.getMeterRegistry();
   }
 
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    client = createClient();
 
-    recordCounters =
-        controller
-            .readMetadata()
-            .map(this::deserializeExporterMetadata)
-            .map(ElasticsearchExporterMetadata::getRecordCountersByValueType)
-            .map(ElasticsearchRecordCounters::new)
-            .orElse(new ElasticsearchRecordCounters());
+    try {
+      client = createClient();
+      recordCounters =
+          controller
+              .readMetadata()
+              .map(this::deserializeExporterMetadata)
+              .map(ElasticsearchExporterMetadata::getRecordCountersByValueType)
+              .filter(counters -> !counters.isEmpty())
+              .map(ElasticsearchRecordCounters::new)
+              .orElse(new ElasticsearchRecordCounters());
 
-    scheduleDelayedFlush();
-    schemaManager = new ElasticsearchExporterSchemaManager(client, configuration);
-    log.info("Exporter opened");
+      scheduleDelayedFlush();
+      schemaManager = new ElasticsearchExporterSchemaManager(client, configuration);
+      log.info("Exporter opened");
+    } catch (final Exception ex) {
+      if (client != null) {
+        try {
+          client.close();
+          client = null;
+        } catch (final Exception e) {
+          log.warn("Failed to close the elasticsearch client", e);
+        }
+      }
+      throw ex;
+    }
   }
 
   @Override

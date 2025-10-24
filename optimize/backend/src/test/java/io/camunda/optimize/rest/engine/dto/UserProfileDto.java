@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.engine.dto;
 
+import java.util.Objects;
+
 public class UserProfileDto {
 
   protected String id;
@@ -62,12 +64,22 @@ public class UserProfileDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(id, firstName, lastName, email);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UserProfileDto that = (UserProfileDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(firstName, that.firstName)
+        && Objects.equals(lastName, that.lastName)
+        && Objects.equals(email, that.email);
   }
 
   @Override

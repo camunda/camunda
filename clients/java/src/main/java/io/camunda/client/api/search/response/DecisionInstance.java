@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.response.EvaluatedDecisionInput;
 import io.camunda.client.api.response.MatchedDecisionRule;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface DecisionInstance {
@@ -39,7 +40,7 @@ public interface DecisionInstance {
   /**
    * @return the evaluation date of the decision instance
    */
-  String getEvaluationDate();
+  OffsetDateTime getEvaluationDate();
 
   /**
    * @return the evaluation failure of the decision instance
@@ -85,6 +86,11 @@ public interface DecisionInstance {
    * @return the decision type of the decision instance
    */
   DecisionDefinitionType getDecisionDefinitionType();
+
+  /**
+   * @return the root decision definition key of the decision instance
+   */
+  long getRootDecisionDefinitionKey();
 
   /**
    * @return the tenant id of the decision instance

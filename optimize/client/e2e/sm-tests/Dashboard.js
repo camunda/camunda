@@ -492,7 +492,7 @@ test('add a report from the dashboard', async (t) => {
 
   await t.expect(Common.selectedOption('Order process').exists).ok();
 
-  await t.click(Common.modalConfirmButton).hover(Common.addButton).click('.DashboardRenderer');
+  await t.click(Common.modalConfirmButton).click(e.dashboardContainer);
 
   await u.save(t);
 
@@ -676,17 +676,16 @@ test('drag a report in a Dashboard', async (t) => {
   await u.createNewDashboard(t);
   await u.addReportToDashboard(t, 'Blank report');
 
-  await t.dispatchEvent(e.gridItem, 'mousedown');
-  const leftOffset = await e.gridItem.getBoundingClientRectProperty('left');
+  const initialLeftOffset = await e.gridItem.getBoundingClientRectProperty('left');
   const DRAG_AMOUNT = 500;
-  await t.expect(leftOffset).lt(DRAG_AMOUNT);
+
+  // drop right
   await t.drag(e.gridItem, DRAG_AMOUNT, 0);
   const newLeftOffset = await e.gridItem.getBoundingClientRectProperty('left');
+  await t.expect(newLeftOffset).gt(initialLeftOffset);
 
-  await t.expect(newLeftOffset).gt(DRAG_AMOUNT);
-
+  // test after saving
   await u.save(t);
-
   const offsetAfterSave = await e.gridItem.getBoundingClientRectProperty('left');
-  await t.expect(offsetAfterSave).gt(DRAG_AMOUNT);
+  await t.expect(offsetAfterSave).gt(initialLeftOffset);
 });

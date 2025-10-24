@@ -13,12 +13,14 @@ import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompa
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.env.Environment;
 
 class UnifiedConfigurationHelperTest {
@@ -36,14 +38,14 @@ class UnifiedConfigurationHelperTest {
     UnifiedConfigurationHelper.setCustomEnvironment(mockEnvironment);
   }
 
-  private void setPropertyValues(String key, String value) {
-    Mockito.when(mockEnvironment.getProperty(key)).thenReturn(value);
-    Mockito.when(mockEnvironment.containsProperty(key)).thenReturn(true);
+  private void setPropertyValues(final String key, final String value) {
+    when(mockEnvironment.getProperty(key)).thenReturn(value);
+    when(mockEnvironment.containsProperty(key)).thenReturn(true);
   }
 
   // single legacy property and new property coexist with same value -> ok + warning
   @Test
-  void testNewDefinedLegacySingleLLegacyMatchAllowed() {
+  void testNewDefinedLegacySingleLegacyMatchAllowed() {
     // given
     final String newValue = "matchingValue";
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
@@ -78,7 +80,9 @@ class UnifiedConfigurationHelperTest {
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
                     NEW_PROPERTY, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES))
-        .withMessageContaining("Ambiguous legacy configuration");
+        .withMessageContaining("Ambiguous legacy configuration")
+        .withMessageContaining("legacy.prop1=legacyValue1")
+        .withMessageContaining("legacy.prop2=legacyValue2");
   }
 
   @Test
@@ -251,6 +255,26 @@ class UnifiedConfigurationHelperTest {
     final String actual =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             NEW_PROPERTY, defaultValue, String.class, mode, SINGLE_LEGACY_PROPERTY);
+    assertThat(actual).isEqualTo(expected);
+  }
+
+  @Test
+  void testParseLegacyPropertyIntoGenericSet() {
+    // given
+    final Set<Long> defaultValue = Collections.emptySet();
+    final BackwardsCompatibilityMode mode = SUPPORTED;
+
+    // when
+    setPropertyValues("legacy.prop1", "10,20");
+
+    final Set<Long> expected = Set.of(10L, 20L);
+    final Set<Long> actual =
+        UnifiedConfigurationHelper.validateLegacyConfiguration(
+            NEW_PROPERTY,
+            defaultValue,
+            ResolvableType.forClassWithGenerics(Set.class, Long.class),
+            mode,
+            SINGLE_LEGACY_PROPERTY);
     assertThat(actual).isEqualTo(expected);
   }
 }

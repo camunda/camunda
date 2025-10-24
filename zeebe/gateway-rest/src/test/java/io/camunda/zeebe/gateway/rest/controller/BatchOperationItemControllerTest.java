@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -125,6 +126,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                     [
                         {
                             "batchOperationKey":"1",
+                            "operationType":"CANCEL_PROCESS_INSTANCE",
                             "itemKey":"11",
                             "processInstanceKey":"12",
                             "state":"FAILED",
@@ -147,6 +149,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
       final String batchOperationKey) {
     return new BatchOperationEntity.BatchOperationItemEntity(
         batchOperationKey,
+        BatchOperationType.CANCEL_PROCESS_INSTANCE,
         11L,
         12L,
         BatchOperationItemState.FAILED,

@@ -12,11 +12,8 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -32,6 +29,8 @@ import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -61,13 +60,22 @@ public class IndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
-  public ImportPositionIndex getImportPositionIndex(
+  public UsageMetricTemplate getUsageMetricTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new ImportPositionIndex(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
+    return new UsageMetricTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateProcessIndex")
+  @Bean
+  public UsageMetricTUTemplate getUsageMetricTU(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new UsageMetricTUTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ProcessIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
@@ -86,7 +94,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new EventTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateFlowNodeInstanceTemplate")
+  @Bean
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate(
@@ -134,7 +142,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new JobTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateVariableTemplate")
+  @Bean
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate(
@@ -178,16 +186,8 @@ public class IndexTemplateDescriptorsConfigurator {
         operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateSnapshotTaskVariableTemplate")
-  public SnapshotTaskVariableTemplate getOperateSnapshotTaskVariableTemplate(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
-    return new SnapshotTaskVariableTemplate(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean("tasklistSnapshotTaskVariableTemplate")
-  public SnapshotTaskVariableTemplate getTasklistSnapshotTaskVariableTemplate(
+  @Bean
+  public SnapshotTaskVariableTemplate getSnapshotTaskVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new SnapshotTaskVariableTemplate(
@@ -199,39 +199,5 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new TaskTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean("tasklistVariableTemplate")
-  public VariableTemplate getTasklistVariableTemplate(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new VariableTemplate(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean("tasklistFlowNodeInstanceTemplate")
-  public FlowNodeInstanceTemplate getTasklistFlowNodeInstanceTemplate(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new FlowNodeInstanceTemplate(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean
-  public TasklistImportPositionIndex getTasklistImportPositionIndex(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new TasklistImportPositionIndex(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean("tasklistProcessIndex")
-  public ProcessIndex getTasklistProcessIndex(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new ProcessIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean
-  public OperateUserIndex getOperateUserIndex(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new OperateUserIndex(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 }

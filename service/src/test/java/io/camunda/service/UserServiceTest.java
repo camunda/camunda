@@ -19,6 +19,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +41,7 @@ public class UserServiceTest {
   private UserSearchClient client;
   private BrokerClient brokerClient;
   private CamundaAuthentication authentication;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   @BeforeEach
   public void before() {
@@ -48,13 +51,18 @@ public class UserServiceTest {
     authentication = mock(CamundaAuthentication.class);
     final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     userDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerUserDeleteRequest.class);
+    final ApiServicesExecutorProvider executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+    brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new UserServices(
             brokerClient,
             mock(SecurityContextProvider.class),
             client,
             authentication,
-            passwordEncoder);
+            passwordEncoder,
+            executorProvider,
+            brokerRequestAuthorizationConverter);
   }
 
   @Test

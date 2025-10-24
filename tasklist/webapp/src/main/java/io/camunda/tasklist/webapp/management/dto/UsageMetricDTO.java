@@ -7,31 +7,19 @@
  */
 package io.camunda.tasklist.webapp.management.dto;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 public class UsageMetricDTO {
-  /** Uniquely assigned users */
-  private List<String> assignees;
 
-  /** Total amount retrived in the current search */
+  /** Total amount retrieved in the current search */
   private int total;
 
-  public UsageMetricDTO() {}
-
-  public UsageMetricDTO(List<String> assignees) {
-    this.assignees = Objects.requireNonNullElseGet(assignees, ArrayList::new);
-
-    this.total = this.assignees.size();
+  public UsageMetricDTO() {
+    this.total = 0;
   }
 
-  public List<String> getAssignees() {
-    return assignees;
-  }
-
-  public void setAssignees(List<String> assignees) {
-    this.assignees = assignees;
+  public UsageMetricDTO(int size) {
+    this.total = size;
   }
 
   public int getTotal() {
@@ -51,16 +39,16 @@ public class UsageMetricDTO {
       return false;
     }
     final UsageMetricDTO that = (UsageMetricDTO) o;
-    return total == that.total && Objects.equals(assignees, that.assignees);
+    return total == that.total;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(assignees, total);
+    return Objects.hash(total);
   }
 
   @Override
   public String toString() {
-    return "UsageMetricDTO{" + "assignees=" + assignees + ", total=" + total + '}';
+    return "UsageMetricDTO{" + "total=" + total + '}';
   }
 }

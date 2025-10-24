@@ -7,16 +7,19 @@
  */
 package io.camunda.authentication.converter;
 
+import io.camunda.authentication.config.OidcAccessTokenDecoderFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -30,19 +33,21 @@ public class OidcUserAuthenticationConverter
       LoggerFactory.getLogger(OidcUserAuthenticationConverter.class);
 
   private final OAuth2AuthorizedClientRepository authorizedClientRepository;
-  private final JwtDecoder jwtDecoder;
+  private final OidcAccessTokenDecoderFactory accessTokenDecoderFactory;
   private final TokenClaimsConverter tokenClaimsConverter;
   private final HttpServletRequest request;
+  private final Map<String, JwtDecoder> jwtDecoders;
 
   public OidcUserAuthenticationConverter(
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
-      final JwtDecoder jwtDecoder,
+      final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
       final TokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request) {
     this.authorizedClientRepository = authorizedClientRepository;
-    this.jwtDecoder = jwtDecoder;
+    this.accessTokenDecoderFactory = accessTokenDecoderFactory;
     this.tokenClaimsConverter = tokenClaimsConverter;
     this.request = request;
+    jwtDecoders = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -79,7 +84,12 @@ public class OidcUserAuthenticationConverter
     return Optional.ofNullable(authorizedClient)
         .map(OAuth2AuthorizedClient::getAccessToken)
         .map(OAuth2AccessToken::getTokenValue)
-        .map(this::decodeAccessToken)
+        .map(
+            tokenValue -> {
+              final var clientRegistration = authorizedClient.getClientRegistration();
+              final var jwtDecoder = getJwtDecoder(clientRegistration);
+              return decodeAccessToken(jwtDecoder, tokenValue);
+            })
         .map(Jwt::getClaims)
         .orElse(null);
   }
@@ -91,13 +101,20 @@ public class OidcUserAuthenticationConverter
         clientRegistrationId, authenticationToken, request);
   }
 
-  protected Jwt decodeAccessToken(final String accessTokenValue) {
+  protected Jwt decodeAccessToken(final JwtDecoder jwtDecoder, final String accessTokenValue) {
     try {
       return jwtDecoder.decode(accessTokenValue);
     } catch (final JwtException e) {
       LOGGER.warn("Failed to decode Access Token: '{}', returning null", e.getMessage());
       return null;
     }
+  }
+
+  protected JwtDecoder getJwtDecoder(final ClientRegistration clientRegistration) {
+    final var clientRegistrationId = clientRegistration.getRegistrationId();
+    return jwtDecoders.computeIfAbsent(
+        clientRegistrationId,
+        k -> accessTokenDecoderFactory.createAccessTokenDecoder(clientRegistration));
   }
 
   protected Map<String, Object> getIdTokenClaims(

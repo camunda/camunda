@@ -97,20 +97,6 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldQueryMembersByTenantId() {
-    // given
-    final var filter =
-        FilterBuilders.tenant((f) -> f.joinParentId("test-parent-id").memberType(USER));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    assertThat(searchRequest)
-        .isEqualTo(generateSearchQueryForParent("test-parent-id", USER.name()));
-  }
-
-  @Test
   void shouldQueryTenantsByMemberId() {
     // given
     final var filter =
@@ -162,29 +148,6 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                                         q -> q.term(t -> t.field("name").value("TestTenant"))),
                                     SearchQuery.of(
                                         q -> q.term(t -> t.field("join").value("tenant"))))))));
-  }
-
-  private SearchQuery generateSearchQueryForParent(final String parentId, final String memberType) {
-    return SearchQuery.of(
-        q ->
-            q.bool(
-                b ->
-                    b.must(
-                        List.of(
-                            SearchQuery.of(
-                                q1 ->
-                                    q1.hasParent(
-                                        p ->
-                                            p.parentType("tenant")
-                                                .query(
-                                                    SearchQuery.of(
-                                                        q2 ->
-                                                            q2.term(
-                                                                t ->
-                                                                    t.field("tenantId")
-                                                                        .value(parentId)))))),
-                            SearchQuery.of(
-                                q1 -> q1.term(t -> t.field("memberType").value(memberType)))))));
   }
 
   @Test

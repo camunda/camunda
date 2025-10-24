@@ -16,8 +16,14 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
+import io.camunda.process.test.impl.coverage.ProcessCoverage;
+import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
+import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -32,6 +38,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -63,11 +70,17 @@ import org.slf4j.LoggerFactory;
  * <p>After each test method:
  *
  * <ul>
+ *   <li>Collect process coverage data
  *   <li>Close created {@link CamundaClient}s
  *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
  *
- * <p>The container runtime is closed once all tests have run.
+ * <p>After all tests have run:
+ *
+ * <ul>
+ *   <li>Report process coverage (JSON)
+ *   <li>Close container runtime
+ * </ul>
  */
 public class CamundaProcessTestExtension
     implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback {
@@ -84,20 +97,28 @@ public class CamundaProcessTestExtension
   private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
+  private final TestDeploymentService testDeploymentService = new TestDeploymentService();
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
+  private final ProcessCoverageBuilder processCoverageBuilder;
+  private ProcessCoverage processCoverage;
 
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
+
+  private JsonMapper jsonMapper;
+  private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
   private CamundaProcessTestContext camundaProcessTestContext;
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
+      final ProcessCoverageBuilder processCoverageBuilder,
       final Consumer<String> testResultPrintStream) {
     runtimeBuilder = containerRuntimeBuilder;
+    this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
@@ -117,7 +138,7 @@ public class CamundaProcessTestExtension
    * </pre>
    */
   public CamundaProcessTestExtension() {
-    this(CamundaProcessTestContainerRuntime.newBuilder(), System.err::println);
+    this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
   }
 
   @Override
@@ -126,21 +147,56 @@ public class CamundaProcessTestExtension
     runtime = runtimeBuilder.build();
     runtime.start();
 
-    camundaManagementClient =
-        new CamundaManagementClient(
-            runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    camundaManagementClient = createManagementClient(runtimeBuilder);
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             runtime,
             createdClients::add,
             camundaManagementClient,
-            CamundaAssert.getAwaitBehavior());
+            CamundaAssert.getAwaitBehavior(),
+            jsonMapper,
+            zeebeJsonMapper);
+
+    // create process coverage
+    processCoverage =
+        processCoverageBuilder
+            .testClass(context.getRequiredTestClass())
+            .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+            .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
+            .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
+            .build();
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
     store.put(STORE_KEY_RUNTIME, runtime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+
+    // initialize json mapper
+    initializeJsonMapper(jsonMapper, zeebeJsonMapper);
+  }
+
+  private CamundaManagementClient createManagementClient(
+      final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
+    if (runtimeBuilder.isMultiTenancyEnabled()) {
+      return CamundaManagementClient.createAuthenticatedClient(
+          runtime.getCamundaMonitoringApiAddress(),
+          runtime.getCamundaRestApiAddress(),
+          MultiTenancyConfiguration.getBasicAuthCredentials());
+    } else {
+      return CamundaManagementClient.createClient(
+          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    }
+  }
+
+  private void initializeJsonMapper(
+      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+
+    if (jsonMapper != null) {
+      CamundaAssert.setJsonMapper(jsonMapper);
+    } else if (zeebeJsonMapper != null) {
+      CamundaAssert.setJsonMapper(zeebeJsonMapper);
+    }
   }
 
   @Override
@@ -169,6 +225,12 @@ public class CamundaProcessTestExtension
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // deploy resources if present
+    testDeploymentService.deployTestResources(
+        context.getRequiredTestMethod(),
+        context.getRequiredTestClass(),
+        camundaProcessTestContext.createClient());
   }
 
   private <T> void injectField(
@@ -203,13 +265,19 @@ public class CamundaProcessTestExtension
   }
 
   @Override
-  public void afterEach(final ExtensionContext extensionContext) {
+  public void afterEach(final ExtensionContext context) {
     if (runtime == null) {
       // Skip if the runtime is not created.
       return;
     }
 
-    if (isTestFailed(extensionContext)) {
+    try {
+      processCoverage.collectTestRunCoverage(context.getDisplayName());
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test process coverage, skipping.", t);
+    }
+
+    if (isTestFailed(context)) {
       printTestResults();
     }
     CamundaAssert.reset();
@@ -268,6 +336,12 @@ public class CamundaProcessTestExtension
     if (runtime == null) {
       // Skip if the runtime is not created.
       return;
+    }
+
+    try {
+      processCoverage.reportCoverage();
+    } catch (final Throwable t) {
+      LOG.warn("Failed to report process coverage, skipping.", t);
     }
     runtime.close();
   }
@@ -435,10 +509,26 @@ public class CamundaProcessTestExtension
    *
    * @param camundaClientBuilderFactory the client builder to configure the connection
    * @return the extension builder
+   * @deprecated use {@link #withCamundaClientBuilderOverrides(Consumer)} instead.
+   * @since 8.8.0
    */
+  @Deprecated
   public CamundaProcessTestExtension withRemoteCamundaClientBuilderFactory(
       final CamundaClientBuilderFactory camundaClientBuilderFactory) {
-    runtimeBuilder.withRemoteCamundaClientBuilderFactory(camundaClientBuilderFactory);
+
+    runtimeBuilder.withCamundaClientBuilderFactory(camundaClientBuilderFactory);
+    return this;
+  }
+
+  /**
+   * Override the existing connection configuration to the Camunda runtime.
+   *
+   * @param camundaClientBuilderOverrides consumer that overrides the client builder's configuration
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaClientBuilderOverrides(
+      final Consumer<CamundaClientBuilder> camundaClientBuilderOverrides) {
+    runtimeBuilder.withCamundaClientBuilderOverrides(camundaClientBuilderOverrides);
     return this;
   }
 
@@ -463,6 +553,66 @@ public class CamundaProcessTestExtension
   public CamundaProcessTestExtension withRemoteConnectorsRestApiAddress(
       final URI remoteConnectorsRestApiAddress) {
     runtimeBuilder.withRemoteConnectorsRestApiAddress(remoteConnectorsRestApiAddress);
+    return this;
+  }
+
+  /**
+   * Configures the coverage report to exclude the given processes.
+   *
+   * @param processDefinitionIds the IDs of the process definitions to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageExcludedProcesses(
+      final String... processDefinitionIds) {
+    runtimeBuilder.withCoverageExcludedProcesses(Arrays.asList(processDefinitionIds));
+    return this;
+  }
+
+  /**
+   * Configures the output directory for the coverage reports. By default, the directory is {@code
+   * target/coverage-report/}.
+   *
+   * @param reportDirectory the directory to save the reports
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageReportDirectory(final String reportDirectory) {
+    runtimeBuilder.withCoverageReportDirectory(reportDirectory);
+    return this;
+  }
+
+  /**
+   * Enable or disable multi-tenancy in the runtime. By default, multi-tenancy is disabled.
+   *
+   * @param enabled set {@code true} to enable multi-tenancy
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
+    runtimeBuilder.withMultiTenancyEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Configure the JSON mapper for the client and the assertions.
+   *
+   * @param jsonMapper the JSON mapper to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withJsonMapper(final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+    return this;
+  }
+
+  /**
+   * Configure the JSON mapper for the client and the assertions.
+   *
+   * @param jsonMapper the JSON mapper to use
+   * @return the extension builder
+   * @deprecated for removal, use {@link #withJsonMapper(JsonMapper)} instead.
+   */
+  @Deprecated
+  public CamundaProcessTestExtension withJsonMapper(
+      final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
+    zeebeJsonMapper = jsonMapper;
     return this;
   }
 

@@ -18,15 +18,19 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1.AssignGroupToTenantCommandStep2;
+import io.camunda.client.api.command.AssignGroupToTenantCommandStep1.AssignGroupToTenantCommandStep3;
 import io.camunda.client.api.response.AssignGroupToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignGroupToTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class AssignGroupToTenantCommandImpl
-    implements AssignGroupToTenantCommandStep1, AssignGroupToTenantCommandStep2 {
+    implements AssignGroupToTenantCommandStep1,
+        AssignGroupToTenantCommandStep2,
+        AssignGroupToTenantCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -45,13 +49,13 @@ public final class AssignGroupToTenantCommandImpl
   }
 
   @Override
-  public AssignGroupToTenantCommandStep2 tenantId(final String tenantId) {
+  public AssignGroupToTenantCommandStep3 tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
   @Override
-  public AssignGroupToTenantCommandStep2 requestTimeout(final Duration timeout) {
+  public AssignGroupToTenantCommandStep3 requestTimeout(final Duration timeout) {
     httpRequestConfig.setResponseTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
@@ -65,6 +69,7 @@ public final class AssignGroupToTenantCommandImpl
         "/tenants/" + tenantId + "/groups/" + groupId,
         null, // No request body needed
         httpRequestConfig.build(),
+        AssignGroupToTenantResponseImpl::new,
         result);
     return result;
   }

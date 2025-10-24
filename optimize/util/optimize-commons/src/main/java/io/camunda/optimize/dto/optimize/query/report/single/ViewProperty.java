@@ -21,6 +21,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.view.StringV
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.TypedViewPropertyDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
+import java.util.Objects;
 import java.util.Optional;
 
 public class ViewProperty implements Combinable {
@@ -76,13 +77,17 @@ public class ViewProperty implements Combinable {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ViewProperty that = (ViewProperty) o;
+    return Objects.equals(viewPropertyDto, that.viewPropertyDto);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(viewPropertyDto);
   }
 
   @Override

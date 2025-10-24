@@ -19,15 +19,19 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1.UnassignClientFromGroupCommandStep2;
+import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1.UnassignClientFromGroupCommandStep3;
 import io.camunda.client.api.response.UnassignClientFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignClientFromGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UnassignClientFromGroupCommandImpl
-    implements UnassignClientFromGroupCommandStep1, UnassignClientFromGroupCommandStep2 {
+    implements UnassignClientFromGroupCommandStep1,
+        UnassignClientFromGroupCommandStep2,
+        UnassignClientFromGroupCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -46,7 +50,7 @@ public class UnassignClientFromGroupCommandImpl
   }
 
   @Override
-  public UnassignClientFromGroupCommandStep2 groupId(final String groupId) {
+  public UnassignClientFromGroupCommandStep3 groupId(final String groupId) {
     this.groupId = groupId;
     return this;
   }
@@ -67,6 +71,7 @@ public class UnassignClientFromGroupCommandImpl
         "/groups/" + groupId + "/clients/" + clientId,
         null, // No request body needed
         httpRequestConfig.build(),
+        UnassignClientFromGroupResponseImpl::new,
         result);
     return result;
   }

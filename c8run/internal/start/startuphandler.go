@@ -134,9 +134,10 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 		}
 		// fallback to bin/java.exe
 		if javaBinary == "" {
-			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+			switch runtime.GOOS {
+			case "linux", "darwin":
 				javaBinary = filepath.Join(javaHome, "bin", "java")
-			} else if runtime.GOOS == "windows" {
+			case "windows":
 				javaBinary = filepath.Join(javaHome, "bin", "java.exe")
 			}
 		}
@@ -154,6 +155,23 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 	return javaHome, javaBinary, nil
 }
 
+// ensureDefaultConfig verifies that <parentDir>/configuration/default.yaml exists.
+func ensureDefaultConfig(parentDir string) error {
+	configDir := filepath.Join(parentDir, "configuration")
+	appYAML := filepath.Join(configDir, "application.yaml")
+
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create configuration directory: %w", err)
+	}
+	if _, err := os.Stat(appYAML); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("missing default config at %s (expected /configuration/application.yaml). Please add it to your repo", appYAML)
+		}
+		return fmt.Errorf("failed to stat %s: %w", appYAML, err)
+	}
+	return nil
+}
+
 func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFunc, state *types.State, parentDir string) {
 	defer wg.Done()
 
@@ -165,6 +183,11 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
 	if err != nil {
 		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	if err := ensureDefaultConfig(parentDir); err != nil {
+		fmt.Printf("Failed to ensure default config: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -219,25 +242,29 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 
 	var extraArgs string
+	var slash string
+	switch runtime.GOOS {
+	case "linux", "darwin":
+		slash = "/"
+	case "windows":
+		slash = "\\"
+	}
+
+	// Always load the default config directory
+	extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, "configuration") + slash
+
+	// Optional user override (file or dir) — appended LAST => higher precedence
 	if settings.Config != "" {
 		path := filepath.Join(parentDir, settings.Config)
-		var slash string
-		switch runtime.GOOS {
-		case "linux", "darwin":
-			slash = "/"
-		case "windows":
-			slash = "\\"
-		}
-
 		configStat, err := os.Stat(path)
 		if err != nil {
-			fmt.Printf("Failed to read config file: %s\n", path)
+			fmt.Printf("Failed to read config path: %s\n", path)
 			os.Exit(1)
 		}
 		if configStat.IsDir() {
-			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.Config) + slash
+			extraArgs = extraArgs + ",file:" + path + slash
 		} else {
-			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.Config)
+			extraArgs = extraArgs + ",file:" + path
 		}
 	}
 

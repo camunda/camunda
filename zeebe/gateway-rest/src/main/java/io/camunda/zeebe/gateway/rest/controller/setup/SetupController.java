@@ -15,12 +15,12 @@ import io.camunda.service.UserServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +47,8 @@ public class SetupController {
       final UserServices userServices,
       final RoleServices roleServices,
       final SecurityConfiguration securityConfiguration,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final SecurityConfiguration securityConfig) {
     this.userServices = userServices;
     this.roleServices = roleServices;
     this.securityConfiguration = securityConfiguration;
@@ -72,7 +73,8 @@ public class SetupController {
           RestErrorMapper.mapErrorToProblem(exception));
     }
 
-    return RequestMapper.toUserDTO(request)
+    return RequestMapper.toUserRequest(
+            request, securityConfiguration.getCompiledIdValidationPattern())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->

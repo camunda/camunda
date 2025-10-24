@@ -17,4 +17,6 @@ package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.AssignUserToGroupResponse;
 
-public class AssignUserToGroupResponseImpl implements AssignUserToGroupResponse {}
+public class AssignUserToGroupResponseImpl implements AssignUserToGroupResponse {
+  public AssignUserToGroupResponseImpl(final Void nothing) {}
+}

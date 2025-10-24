@@ -10,20 +10,25 @@ package io.camunda.db.rdbms;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
+import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
+import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
+import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
+import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
 import io.camunda.db.rdbms.read.service.SequenceFlowDbReader;
 import io.camunda.db.rdbms.read.service.TenantDbReader;
+import io.camunda.db.rdbms.read.service.TenantMemberDbReader;
 import io.camunda.db.rdbms.read.service.UsageMetricTUDbReader;
 import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
@@ -45,12 +50,15 @@ public class RdbmsService {
   private final DecisionRequirementsDbReader decisionRequirementsReader;
   private final FlowNodeInstanceDbReader flowNodeInstanceReader;
   private final GroupDbReader groupReader;
+  private final GroupMemberDbReader groupMemberReader;
   private final IncidentDbReader incidentReader;
   private final ProcessDefinitionDbReader processDefinitionReader;
   private final ProcessInstanceDbReader processInstanceReader;
   private final VariableDbReader variableReader;
   private final RoleDbReader roleReader;
+  private final RoleMemberDbReader roleMemberReader;
   private final TenantDbReader tenantReader;
+  private final TenantMemberDbReader tenantMemberReader;
   private final UserDbReader userReader;
   private final UserTaskDbReader userTaskReader;
   private final FormDbReader formReader;
@@ -61,6 +69,8 @@ public class RdbmsService {
   private final JobDbReader jobReader;
   private final UsageMetricsDbReader usageMetricReader;
   private final UsageMetricTUDbReader usageMetricTUDbReader;
+  private final MessageSubscriptionDbReader messageSubscriptionReader;
+  private final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -70,12 +80,15 @@ public class RdbmsService {
       final DecisionRequirementsDbReader decisionRequirementsReader,
       final FlowNodeInstanceDbReader flowNodeInstanceReader,
       final GroupDbReader groupReader,
+      final GroupMemberDbReader groupMemberReader,
       final IncidentDbReader incidentReader,
       final ProcessDefinitionDbReader processDefinitionReader,
       final ProcessInstanceDbReader processInstanceReader,
       final VariableDbReader variableReader,
       final RoleDbReader roleReader,
+      final RoleMemberDbReader roleMemberReader,
       final TenantDbReader tenantReader,
+      final TenantMemberDbReader tenantMemberReader,
       final UserDbReader userReader,
       final UserTaskDbReader userTaskReader,
       final FormDbReader formReader,
@@ -85,7 +98,9 @@ public class RdbmsService {
       final BatchOperationItemDbReader batchOperationItemReader,
       final JobDbReader jobReader,
       final UsageMetricsDbReader usageMetricReader,
-      final UsageMetricTUDbReader usageMetricTUDbReader) {
+      final UsageMetricTUDbReader usageMetricTUDbReader,
+      final MessageSubscriptionDbReader messageSubscriptionReader,
+      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -93,12 +108,15 @@ public class RdbmsService {
     this.decisionInstanceReader = decisionInstanceReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
     this.groupReader = groupReader;
+    this.groupMemberReader = groupMemberReader;
     this.incidentReader = incidentReader;
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceReader = processInstanceReader;
+    this.roleMemberReader = roleMemberReader;
     this.tenantReader = tenantReader;
     this.variableReader = variableReader;
     this.roleReader = roleReader;
+    this.tenantMemberReader = tenantMemberReader;
     this.userReader = userReader;
     this.userTaskReader = userTaskReader;
     this.formReader = formReader;
@@ -109,6 +127,8 @@ public class RdbmsService {
     this.jobReader = jobReader;
     this.usageMetricReader = usageMetricReader;
     this.usageMetricTUDbReader = usageMetricTUDbReader;
+    this.messageSubscriptionReader = messageSubscriptionReader;
+    this.correlatedMessageSubscriptionReader = correlatedMessageSubscriptionReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -135,6 +155,10 @@ public class RdbmsService {
     return groupReader;
   }
 
+  public GroupMemberDbReader getGroupMemberReader() {
+    return groupMemberReader;
+  }
+
   public IncidentDbReader getIncidentReader() {
     return incidentReader;
   }
@@ -151,12 +175,20 @@ public class RdbmsService {
     return tenantReader;
   }
 
+  public TenantMemberDbReader getTenantMemberReader() {
+    return tenantMemberReader;
+  }
+
   public VariableDbReader getVariableReader() {
     return variableReader;
   }
 
   public RoleDbReader getRoleReader() {
     return roleReader;
+  }
+
+  public RoleMemberDbReader getRoleMemberReader() {
+    return roleMemberReader;
   }
 
   public UserDbReader getUserReader() {
@@ -197,6 +229,14 @@ public class RdbmsService {
 
   public JobDbReader getJobReader() {
     return jobReader;
+  }
+
+  public MessageSubscriptionDbReader getMessageSubscriptionReader() {
+    return messageSubscriptionReader;
+  }
+
+  public CorrelatedMessageSubscriptionDbReader getCorrelatedMessageSubscriptionReader() {
+    return correlatedMessageSubscriptionReader;
   }
 
   public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?

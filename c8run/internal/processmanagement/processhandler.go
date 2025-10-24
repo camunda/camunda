@@ -168,7 +168,11 @@ func (p *ProcessHandler) WritePIDToFile(pidPath string, pid int) error {
 		log.Err(err).Msg("Failed to open Pid file: " + pidPath)
 		return err
 	}
-	defer pidFile.Close()
+	defer func() {
+		if err := pidFile.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close pid file")
+		}
+	}()
 
 	_, err = pidFile.Write([]byte(strconv.Itoa(pid)))
 	if err != nil {

@@ -76,6 +76,9 @@
       },
       "deniedReason": {
         "type": "keyword"
+      },
+      "tags": {
+        "type": "keyword"
       }
     }
   }

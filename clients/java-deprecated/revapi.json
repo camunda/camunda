@@ -1,0 +1,499 @@
+[
+  {
+    "extension": "revapi.filter",
+    "id": "filter",
+    "configuration": {
+      "archives": {
+        "justification": "Ignore everything not included in the module itself",
+        "include": [
+          "io\\.camunda:zeebe-client-java:.*"
+        ]
+      },
+      "elements": {
+        "exclude": [
+          {
+            "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.client\\.impl(\\..*)?/"
+          },
+          {
+            "justification": "Ignore REST protocol class changes, there were significant ones due to breaking changes to the search API as well as experimental APIs.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.client\\.protocol\\.rest(\\..*)?/"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "extension": "revapi.differences",
+    "id": "differences",
+    "configuration": {
+      "differences": [
+        {
+          "justification": "Ignore new methods on all types, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
+          "code": "java.method.addedToInterface"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "annotationType": "io.camunda.zeebe.client.api.ExperimentalApi",
+          "justification": "The ExperimentalApi annotation is used to mark methods as 'in-development'. It is okay to remove it after a feature is implemented"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "annotationType": "io.camunda.zeebe.client.api.ExperimentalApi",
+          "justification": "The ExperimentalApi annotation is used to mark methods as 'in-development'. It is okay to change value field"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::changeset(io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset)",
+          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::getChangeset()",
+          "new": "method io.camunda.zeebe.client.protocol.rest.Changeset io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::getChangeset()",
+          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest::setChangeset(io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset)",
+          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset",
+          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest.JSON_PROPERTY_EXPIRES_AT",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest::expiresAt(java.lang.String)",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.lang.String io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest::getExpiresAt()",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest::setExpiresAt(java.lang.String)",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void java.util.HashMap<K, V>::clear() @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::compute(K, java.util.function.BiFunction<? super K, ? super V, ? extends V>) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::computeIfAbsent(K, java.util.function.Function<? super K, ? extends V>) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::computeIfPresent(K, java.util.function.BiFunction<? super K, ? super V, ? extends V>) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean java.util.HashMap<K, V>::containsKey(java.lang.Object) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean java.util.HashMap<K, V>::containsValue(java.lang.Object) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::copyOf(java.util.Map<? extends K, ? extends V>) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map.Entry<K, V> java.util.Map<K, V>::entry(K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Set<java.util.Map.Entry<K, V>> java.util.HashMap<K, V>::entrySet() @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void java.util.HashMap<K, V>::forEach(java.util.function.BiConsumer<? super K, ? super V>) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::get(java.lang.Object) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::getOrDefault(java.lang.Object, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean java.util.HashMap<K, V>::isEmpty() @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Set<K> java.util.HashMap<K, V>::keySet() @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::merge(K, V, java.util.function.BiFunction<? super V, ? super V, ? extends V>) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.HashMap<K, V> java.util.HashMap<K, V>::newHashMap(int) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of() @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V, K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V, K, V, K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V, K, V, K, V, K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V, K, V, K, V, K, V, K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V, K, V, K, V, K, V, K, V, K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V, K, V, K, V, K, V, K, V, K, V, K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::of(K, V, K, V, K, V, K, V, K, V, K, V, K, V, K, V, K, V, K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Map.Entry<? extends K, ? extends V>[] java.util.Map<K, V>::ofEntries(java.util.Map.Entry<? extends K, ? extends V>[]) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::put(K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void java.util.HashMap<K, V>::putAll(java.util.Map<? extends K, ? extends V>) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::putIfAbsent(K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::remove(java.lang.Object) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean java.util.HashMap<K, V>::remove(java.lang.Object, java.lang.Object) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method V java.util.HashMap<K, V>::replace(K, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean java.util.HashMap<K, V>::replace(K, V, V) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void java.util.HashMap<K, V>::replaceAll(java.util.function.BiFunction<? super K, ? super V, ? extends V>) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method int java.util.HashMap<K, V>::size() @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Collection<V> java.util.HashMap<K, V>::values() @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerInheritsFromClass",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerInheritsFromClass",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "enum io.camunda.zeebe.client.protocol.rest.DocumentReference.DocumentTypeEnum",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field io.camunda.zeebe.client.protocol.rest.DocumentReference.JSON_PROPERTY_DOCUMENT_TYPE",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.protocol.rest.DocumentReference io.camunda.zeebe.client.protocol.rest.DocumentReference::documentType(io.camunda.zeebe.client.protocol.rest.DocumentReference.DocumentTypeEnum)",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.protocol.rest.DocumentReference.DocumentTypeEnum io.camunda.zeebe.client.protocol.rest.DocumentReference::getDocumentType()",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.zeebe.client.protocol.rest.DocumentReference::setDocumentType(io.camunda.zeebe.client.protocol.rest.DocumentReference.DocumentTypeEnum)",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DocumentReference",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DocumentReference",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method <K, V> java.util.Map<K, V> java.util.Map<K, V>::ofEntries(java.util.Map.Entry<? extends K, ? extends V>[]) @ io.camunda.zeebe.client.protocol.rest.DocumentMetadata",
+          "justification": "Backport changes from 8.7"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
+          "new": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
+          "justification": "Added resource to deployment metadata"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.enumConstantOrderChanged",
+          "old": "field io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
+          "new": "field io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
+          "justification": "Added a missing enum EXECUTION_LISTENER_NO_RETRIES. The UNKNOWN_DEFAULT_OPEN_API enum is automatically added at the end of the list."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.enumConstantOrderChanged",
+          "old": "field io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
+          "new": "field io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
+          "justification": "Added a missing enum EXECUTION_LISTENER_NO_RETRIES. The UNKNOWN_DEFAULT_OPEN_API enum is automatically added at the end of the list."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4 io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4::withRegion(java.lang.String)",
+          "new": "method io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4.ZeebeClientCloudBuilderStep5 io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4::withRegion(java.lang.String)",
+          "justification": "Added new layer to configure domain"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1 io.camunda.zeebe.client.ZeebeClient::newAddPermissionsCommand(long)",
+          "justification": "This method was present in 8.7 but was not a functional API"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.api.command.CreateUserCommandStep1 io.camunda.zeebe.client.ZeebeClient::newUserCreateCommand()",
+          "justification": "This method was present in 8.7 but was not a functional API"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep3 io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep2::permission(io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum)",
+          "justification": "This method was present in 8.7 but was not a functional API"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep2 io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1::resourceType(io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum)",
+          "justification": "This method was present in 8.7 but was not a functional API"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface io.camunda.zeebe.client.api.command.CreateUserCommandStep1",
+          "justification": "This class was present in 8.7 but was not a functional API"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface io.camunda.zeebe.client.api.response.CreateUserResponse",
+          "justification": "This class was present in 8.7 but was not a functional API"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter::variable(io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest)",
+          "justification": "This method was present in 8.7 as part of an experimental API"
+        }
+      ]
+    }
+  }
+]

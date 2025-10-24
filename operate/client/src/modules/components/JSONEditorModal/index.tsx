@@ -68,7 +68,7 @@ const JSONEditorModal: React.FC<Props> = observer(
         }}
         onRequestSubmit={() => {
           if (isValid) {
-            onApply?.(editedValue);
+            onApply?.(JSON.stringify(JSON.parse(editedValue)));
           } else {
             editorRef.current?.showMarkers();
           }

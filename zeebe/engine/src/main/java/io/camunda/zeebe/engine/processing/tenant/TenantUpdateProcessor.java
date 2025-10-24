@@ -89,7 +89,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
             .addResourceId(persistedTenant.getTenantId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
       return false;
@@ -122,15 +122,12 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);
     responseWriter.writeEventOnCommand(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord, command);
-    distributeUpdate(updatedRecord);
-  }
 
-  private void distributeUpdate(final TenantRecord updatedTenant) {
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
         .withKey(distributionKey)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
-        .distribute(ValueType.TENANT, TenantIntent.UPDATE, updatedTenant);
+        .distribute(ValueType.TENANT, TenantIntent.UPDATE, updatedRecord, command.getAuthInfo());
   }
 
   private void rejectCommandWithUnauthorizedError(

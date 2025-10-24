@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 
@@ -80,8 +79,6 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
 
   public abstract void deleteTemplateIfExists(final String indexTemplateName);
 
-  public abstract void createIndexFromTemplate(final String indexNameWithSuffix);
-
   public abstract void addAliases(
       final Set<String> indexAliases, final String completeIndexName, final boolean isWriteAlias);
 
@@ -103,8 +100,7 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
       final Map<String, Object> parameters,
       final Set<String> additionalReadAliases) {
     if (indexMapping.isCreateFromTemplate()) {
-      updateIndexTemplateAndAssociatedIndexes(
-          indexMapping, mappingScript, parameters, additionalReadAliases);
+      migrateAllIndicesOfIndex(indexMapping, mappingScript, parameters, additionalReadAliases);
     } else {
       migrateSingleIndex(indexMapping, mappingScript, parameters, additionalReadAliases);
     }
@@ -141,11 +137,6 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
 
   public Optional<String> getSchemaVersion() {
     return metadataService.getSchemaVersion(databaseClient);
-  }
-
-  public void createOrUpdateTemplateWithoutAliases(
-      final IndexMappingCreator<BUILDER> mappingCreator) {
-    schemaManager.createOrUpdateTemplateWithoutAliases(databaseClient, mappingCreator);
   }
 
   public void createOrUpdateIndex(final IndexMappingCreator<BUILDER> indexMapping) {
@@ -257,58 +248,6 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
     return databaseType;
   }
 
-  private void updateIndexTemplateAndAssociatedIndexes(
-      final IndexMappingCreator<BUILDER> index,
-      final String mappingScript,
-      final Map<String, Object> parameters,
-      final Set<String> additionalReadAliases) {
-    final String indexAlias = getIndexAlias(index);
-    final String sourceTemplateName = getSourceIndexOrTemplateName(index, indexAlias);
-    // create new template & indices and reindex data to it
-    createOrUpdateTemplateWithoutAliases(index);
-    final Set<String> indexAliases = getAliases(indexAlias);
-    // this ensures the migration happens in a consistent order
-    final List<String> sortedIndices =
-        indexAliases.stream()
-            // we are only interested in indices based on the source template
-            // in resumed update scenarios this could also contain indices based on the
-            // targetTemplateName already
-            // which we don't need to care about
-            .filter(indexName -> indexName.contains(sourceTemplateName))
-            .sorted()
-            .toList();
-    for (final String sourceIndex : sortedIndices) {
-      final String suffix;
-      final Matcher suffixMatcher = indexSuffixPattern.matcher(sourceIndex);
-      if (suffixMatcher.find()) {
-        // sourceIndex is already suffixed
-        suffix = sourceIndex.substring(sourceIndex.lastIndexOf("-"));
-      } else {
-        // sourceIndex is not yet suffixed, use default suffix
-        suffix = index.getIndexNameInitialSuffix();
-      }
-
-      final String targetIndexName =
-          getIndexNameService().getOptimizeIndexTemplateNameWithVersion(index) + suffix;
-
-      final ALIASES existingAliases = getAllAliasesForIndex(sourceIndex);
-      setAllAliasesToReadOnly(sourceIndex, existingAliases);
-      createIndexFromTemplate(targetIndexName);
-      reindex(sourceIndex, targetIndexName, mappingScript, parameters);
-      applyAliasesToIndex(targetIndexName, existingAliases);
-      applyAdditionalReadOnlyAliasesToIndex(additionalReadAliases, targetIndexName);
-      // for rolled over indices only the last one is eligible as writeIndex
-      if (sortedIndices.indexOf(sourceIndex) == sortedIndices.size() - 1) {
-        // in case of retries it might happen that the default write index flag is overwritten as
-        // the source index
-        // was already set to be a read-only index for all associated indices
-        addAlias(indexAlias, targetIndexName, true);
-      }
-      deleteIndexIfExists(sourceIndex);
-      deleteTemplateIfExists(sourceTemplateName);
-    }
-  }
-
   private void migrateSingleIndex(
       final IndexMappingCreator<BUILDER> index,
       final String mappingScript,
@@ -340,6 +279,47 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
       // was already set to be a read-only index for all associated indices
       addAlias(indexAlias, targetIndexName, true);
       deleteIndexIfExists(sourceIndexName);
+    }
+  }
+
+  /**
+   * Historically, Optimize has used legacy templates to create External Variable indices. We use
+   * the migration of these indices as an opportunity to consolidate all indices created from this
+   * template into a single index. This would only be called if we want to migrate that index,
+   * otherwise we have to handle the case where multiple indices can exist for that mapping
+   */
+  private void migrateAllIndicesOfIndex(
+      final IndexMappingCreator<BUILDER> index,
+      final String mappingScript,
+      final Map<String, Object> parameters,
+      final Set<String> additionalReadAliases) {
+    final String indexAlias = getIndexAlias(index);
+    final Set<String> allIndicesForAlias;
+    try {
+      allIndicesForAlias = databaseClient.getAllIndicesForAlias(indexAlias);
+    } catch (final IOException e) {
+      throw new UpgradeRuntimeException("Could not fetch", e);
+    }
+    final String targetIndexName = getIndexNameService().getOptimizeIndexNameWithVersion(index);
+    createOrUpdateIndex(index);
+    for (final String sourceIndexName : allIndicesForAlias) {
+      if (!indexExists(sourceIndexName)) {
+        // if the expected source index is not available anymore there are only two possibilities:
+        // 1. it never existed (unexpected edge-case)
+        // 2. a previous upgrade run completed this step already
+        // in both cases, we take no action and assume we can continue
+      } else {
+        // create new index and reindex data to it
+        final ALIASES existingAliases = getAllAliasesForIndex(sourceIndexName);
+        setAllAliasesToReadOnly(sourceIndexName, existingAliases);
+        reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
+        applyAliasesToIndex(targetIndexName, existingAliases);
+        applyAdditionalReadOnlyAliasesToIndex(additionalReadAliases, targetIndexName);
+        // in case of retries it might happen that the default write index flag is overwritten as
+        // the source index was already set to be a read-only index for all associated indices
+        addAlias(indexAlias, targetIndexName, true);
+        deleteIndexIfExists(sourceIndexName);
+      }
     }
   }
 

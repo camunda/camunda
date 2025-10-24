@@ -317,12 +317,12 @@ public class TasklistTester {
   }
 
   public TasklistTester processIsDeployed() {
-    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    databaseTestExtension.waitFor(processIsDeployedCheck, processDefinitionKey);
     return this;
   }
 
   public TasklistTester processIsDeleted() {
-    databaseTestExtension.processAllRecordsAndWait(processIsDeletedCheck, processDefinitionKey);
+    databaseTestExtension.waitFor(processIsDeletedCheck, processDefinitionKey);
     return this;
   }
 
@@ -356,39 +356,35 @@ public class TasklistTester {
   }
 
   public TasklistTester taskIsCreated(final String flowNodeBpmnId) {
-    databaseTestExtension.processAllRecordsAndWait(
-        taskIsCreatedCheck, processInstanceId, flowNodeBpmnId);
+    databaseTestExtension.waitFor(taskIsCreatedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
   }
 
   public TasklistTester taskHasCandidateUsers(final String flowNodeBpmnId) {
-    databaseTestExtension.processAllRecordsAndWait(
-        taskHasCandidateUsers, processInstanceId, flowNodeBpmnId);
+    databaseTestExtension.waitFor(taskHasCandidateUsers, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
   }
 
   public TasklistTester tasksAreCreated(final String flowNodeBpmnId, final int taskCount) {
-    databaseTestExtension.processAllRecordsAndWait(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
+    databaseTestExtension.waitFor(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
   }
 
   public TasklistTester taskIsCanceled(final String flowNodeBpmnId) {
-    databaseTestExtension.processAllRecordsAndWait(
-        taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
+    databaseTestExtension.waitFor(taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CANCELED);
     return this;
   }
 
   public TasklistTester taskIsFailed(final String flowNodeBpmnId) {
-    databaseTestExtension.processAllRecordsAndWait(
-        taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
+    databaseTestExtension.waitFor(taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.FAILED);
     return this;
@@ -410,25 +406,24 @@ public class TasklistTester {
   }
 
   public TasklistTester taskIsCompleted(final String flowNodeBpmnId) {
-    databaseTestExtension.processAllRecordsAndWait(
-        taskIsCompletedCheck, processInstanceId, flowNodeBpmnId);
+    databaseTestExtension.waitFor(taskIsCompletedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.COMPLETED);
     return this;
   }
 
   public TasklistTester taskIsAssigned(final String taskId) {
-    databaseTestExtension.processAllRecordsAndWait(taskIsAssignedCheck, taskId);
+    databaseTestExtension.waitFor(taskIsAssignedCheck, taskId);
     return this;
   }
 
   public TasklistTester taskVariableExists(final String varName) {
-    databaseTestExtension.processAllRecordsAndWait(taskVariableExists, taskId, varName);
+    databaseTestExtension.waitFor(taskVariableExists, taskId, varName);
     return this;
   }
 
   public TasklistTester variablesExist(final String[] varNames) {
-    databaseTestExtension.processAllRecordsAndWait(variablesExist, varNames);
+    databaseTestExtension.waitFor(variablesExist, varNames);
     return this;
   }
 
@@ -487,7 +482,7 @@ public class TasklistTester {
                 flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
       }
     }
-    camundaClient.newUserTaskCompleteCommand(Long.valueOf(taskId)).variables(variables).send();
+    camundaClient.newCompleteUserTaskCommand(Long.valueOf(taskId)).variables(variables).send();
     return taskIsCompleted(flowNodeBpmnId);
   }
 

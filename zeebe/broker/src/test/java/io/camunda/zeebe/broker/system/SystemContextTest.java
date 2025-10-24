@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -372,7 +374,9 @@ final class SystemContextTest {
         new SecurityConfiguration(),
         mock(UserServices.class),
         mock(PasswordEncoder.class),
-        mock(JwtDecoder.class));
+        mock(JwtDecoder.class),
+        mock(SearchClientsProxy.class),
+        mock(BrokerRequestAuthorizationConverter.class));
   }
 
   @Test
@@ -531,5 +535,87 @@ final class SystemContextTest {
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
             "experimental.engine.batchOperation.queryInClauseSize must be greater than 0");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationQueryRetryMaxIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().getEngine().getBatchOperations().setQueryRetryMax(-1);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.queryRetryMax must be greater than or equal to 0");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationQueryRetryBackoffFactorInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().getEngine().getBatchOperations().setQueryRetryBackoffFactor(0);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.queryRetryBackoffFactor must be greater than or equal to");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationQueryRetryInitialDelayIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getBatchOperations()
+        .setQueryRetryInitialDelay(Duration.ofMillis(-1000));
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.queryRetryInitialDelay must be positive");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationQueryRetryMaxDelayIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getBatchOperations()
+        .setQueryRetryMaxDelay(Duration.ofMillis(-1000));
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.queryRetryMaxDelay must be positive");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationQueryRetryMaxDelayIsLowerThanInitialDelay() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getBatchOperations()
+        .setQueryRetryInitialDelay(Duration.ofMillis(1000));
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getBatchOperations()
+        .setQueryRetryMaxDelay(Duration.ofMillis(500));
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperation.queryRetryInitialDelay");
   }
 }

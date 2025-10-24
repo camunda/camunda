@@ -7,6 +7,28 @@
  */
 
 import {expect, Locator, Page} from '@playwright/test';
+import {sleep} from './sleep';
+
+export async function findLocatorInPaginatedList(
+  page: Page,
+  locator: Locator,
+): Promise<boolean> {
+  const maxPage = 20;
+  const nextButton = page.getByRole('button', {name: 'Next page'});
+
+  for (let i = 0; i < maxPage; i++) {
+    await sleep(500);
+    if (
+      (await locator.count()) > 0 ||
+      !(await nextButton.isVisible()) ||
+      (await nextButton.isDisabled())
+    ) {
+      return await locator.isVisible();
+    }
+    await nextButton.click();
+  }
+  return false;
+}
 
 export const waitForItemInList = async (
   page: Page,
@@ -15,34 +37,69 @@ export const waitForItemInList = async (
     shouldBeVisible?: boolean;
     timeout?: number;
     emptyStateLocator?: Locator;
-    clickAuthorizationsPageTab?: () => Promise<void>;
+    onAfterReload?: () => Promise<void>;
+    clickNext?: boolean;
+    retries?: number;
+    retryDelay?: number;
   },
 ) => {
   const {
     shouldBeVisible = true,
     timeout = 10000,
     emptyStateLocator,
-    clickAuthorizationsPageTab,
+    onAfterReload,
+    clickNext = false,
+    retries = 3,
+    retryDelay = 1000,
   } = options || {};
 
   const poll = expect.poll(
     async () => {
-      await page.reload();
+      let lastError: Error | undefined;
 
-      if (clickAuthorizationsPageTab) {
-        await clickAuthorizationsPageTab();
+      for (let retry = 0; retry <= retries; retry++) {
+        try {
+          await page.reload();
+
+          if (onAfterReload) {
+            await onAfterReload();
+          }
+
+          if (emptyStateLocator) {
+            await Promise.race([
+              page
+                .getByRole('cell')
+                .filter({hasText: /.+/, hasNot: page.locator('div')})
+                .first()
+                .waitFor(),
+              emptyStateLocator?.waitFor(),
+            ]);
+          } else {
+            await page
+              .getByRole('cell')
+              .filter({hasText: /.+/, hasNot: page.locator('div')})
+              .first()
+              .waitFor();
+          }
+
+          return clickNext
+            ? await findLocatorInPaginatedList(page, item)
+            : await item.isVisible();
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+
+          if (retry === retries) {
+            throw lastError;
+          }
+
+          console.log(
+            `Wait attempt ${retry + 1} failed, retrying in ${retryDelay}ms...`,
+          );
+          await sleep(retryDelay);
+        }
       }
 
-      if (emptyStateLocator) {
-        await Promise.race([
-          page.getByRole('cell').filter({hasText: /.+/}).first().waitFor(),
-          emptyStateLocator?.waitFor(),
-        ]);
-      } else {
-        await page.getByRole('cell').filter({hasText: /.+/}).first().waitFor();
-      }
-
-      return await item.isVisible();
+      throw lastError || new Error('All retry attempts failed');
     },
     {timeout},
   );

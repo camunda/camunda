@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
       - name: Log Input Variables
         run: |
@@ -204,14 +204,14 @@ jobs:
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
 
       - name: Login to infosec registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Checkout release branch
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
@@ -227,6 +227,10 @@ jobs:
         uses: YunaBraska/java-info-action@main
         with:
           work-dir: ./optimize
+
+      - name: Clean release
+        run: |
+          ./mvnw release:clean
 
       - name: Prepare release
         run: |
@@ -281,8 +285,9 @@ jobs:
           draft: true
           name: ${{ env.TAG }}
           tag_name: ${{ env.TAG }}
-          generate_release_notes: true
           make_latest: \"false\"
+          body: |
+            Please refer to the [Camunda Monorepo ${{ env.RELEASE_VERSION }} Release Notes](https://github.com/camunda/camunda/releases/tag/${{ env.RELEASE_VERSION }}) for full details.
 
       - name: Auto-update previous version
         run: |

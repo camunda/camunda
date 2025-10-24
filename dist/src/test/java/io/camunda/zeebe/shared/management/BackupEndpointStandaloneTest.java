@@ -13,37 +13,49 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {BackupEndpointStandalone.class})
 public abstract class BackupEndpointStandaloneTest {
 
-  @MockBean private BackupEndpoint backupEndpoint;
+  @MockitoBean private BackupEndpoint backupEndpoint;
   @Autowired private BackupEndpointStandalone backupEndpointStandalone;
 
   @Test
   public void shouldCallTakeWhenIsStandalone() {
+    // when
     backupEndpointStandalone.take(11L);
+
+    // then
     verify(backupEndpoint).take(11L);
   }
 
   @Test
   public void shouldCallListWhenIsStandalone() {
-    backupEndpointStandalone.list();
-    verify(backupEndpoint).list();
+    // when
+    backupEndpointStandalone.query(null);
+
+    // then
+    verify(backupEndpoint).query(null);
   }
 
   @Test
   public void shouldCallGetWhenIsStandalone() {
-    backupEndpointStandalone.status(11L);
-    verify(backupEndpoint).status(11L);
+    // when
+    backupEndpointStandalone.query("11");
+
+    // then
+    verify(backupEndpoint).query("11");
   }
 
   @Test
   public void shouldCallDeleteWhenIsStandalone() {
+    // when
     backupEndpointStandalone.delete(11L);
+
+    // then
     verify(backupEndpoint).delete(11L);
   }
 }

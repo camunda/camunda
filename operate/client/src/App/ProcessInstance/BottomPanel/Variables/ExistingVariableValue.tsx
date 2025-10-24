@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {validateValueComplete, validateValueValid} from './validators';
+import {
+  validateValueComplete,
+  validateValueNotEmpty,
+  validateValueValid,
+} from './validators';
 import {Field, useField, useForm, useFormState} from 'react-final-form';
 import {useEffect, useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
@@ -20,7 +24,7 @@ import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
 import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
-import type {Variable} from '@vzeta/camunda-api-zod-schemas';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 
@@ -133,7 +137,11 @@ const ExistingVariableValue: React.FC<Props> = observer(
           validate={
             pauseValidation
               ? () => undefined
-              : mergeValidators(validateValueComplete, validateValueValid)
+              : mergeValidators(
+                  validateValueComplete,
+                  validateValueValid,
+                  validateValueNotEmpty,
+                )
           }
           parse={(value) => value}
         >
@@ -144,12 +152,17 @@ const ExistingVariableValue: React.FC<Props> = observer(
               type="text"
               id={fieldName}
               hideLabel
+              disabled={formState.submitting}
               labelText="Value"
               placeholder="Value"
               data-testid="edit-variable-value"
               buttonLabel="Open JSON editor modal"
               tooltipPosition="left"
               onIconClick={() => {
+                if (formState.submitting) {
+                  return;
+                }
+
                 setIsModalVisible(true);
                 tracking.track({
                   eventName: 'json-editor-opened',

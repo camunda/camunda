@@ -16,30 +16,29 @@ import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-/** Tests retrieval of batch operation list taking into account current user name. */
+/** Tests retrieval of batch operation list taking into account BATCH READ permissions. */
 public class BatchOperationReaderIT extends OperateAbstractIT {
 
-  public static final String USER_1 = "user1";
-  public static final String USER_2 = "user2";
-
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-
-  private final ArrayList<String> user1OperationIds = new ArrayList<>();
-  private final ArrayList<String> user2OperationIds = new ArrayList<>();
+  @MockitoBean protected PermissionsService operatePermissionsService;
+  private final ArrayList<String> allOperationIds = new ArrayList<>();
 
   private final Comparator<BatchOperationDto> batchOperationEntityComparator =
       (o1, o2) -> {
@@ -64,23 +63,15 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testUser1Operations() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                USER_1,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
+  public void testHasBatchReadPermissions() throws Exception {
+    when(operatePermissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.wildcard());
 
     final BatchOperationDto op1 = assert3Pages();
 
     // finish 1st operation
     final BatchOperationEntity batchOperationEntity =
-        createBatchOperationEntity(op1.getStartDate(), OffsetDateTime.now(), USER_1);
+        createBatchOperationEntity(op1.getStartDate(), OffsetDateTime.now());
     batchOperationEntity.setId(op1.getId());
     searchTestRule.persistNew(batchOperationEntity);
     searchTestRule.refreshOperateSearchIndices();
@@ -121,35 +112,18 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
     page1.addAll(page2);
     page1.addAll(page3);
 
-    assertThat(page1).extracting("id").containsExactlyInAnyOrder(user1OperationIds.toArray());
+    assertThat(page1).extracting("id").containsExactlyInAnyOrder(allOperationIds.toArray());
     return page1.get(0);
   }
 
   @Test
-  public void testUser2Operations() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                USER_2,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
+  public void testNoBatchReadPermissions() throws Exception {
+    when(operatePermissionsService.getBatchOperationsWithPermission(PermissionType.READ))
+        .thenReturn(ResourcesAllowed.withIds(Set.of()));
     final List<BatchOperationDto> page1 =
         mockMvcTestRule.listFromResponse(
-            postRequest(new BatchOperationRequestDto(2, null, null)), BatchOperationDto.class);
-    assertThat(page1).hasSize(2);
-    assertThat(page1).isSortedAccordingTo(batchOperationEntityComparator);
-
-    final List<BatchOperationDto> page2 =
-        mockMvcTestRule.listFromResponse(
-            postRequest(new BatchOperationRequestDto(2, page1.get(1).getSortValues(), null)),
-            BatchOperationDto.class);
-    assertThat(page2).hasSize(0);
-
-    assertThat(page1).extracting("id").containsExactlyInAnyOrder(user2OperationIds.toArray());
+            postRequest(new BatchOperationRequestDto(10, null, null)), BatchOperationDto.class);
+    assertThat(page1).isEmpty();
   }
 
   protected void createData() {
@@ -158,42 +132,21 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
     final OffsetDateTime now = OffsetDateTime.now();
 
-    entities.add(
-        createBatchOperation(now.minus(5, ChronoUnit.MINUTES), null, USER_1, user1OperationIds));
-    entities.add(
-        createBatchOperation(now.minus(4, ChronoUnit.MINUTES), null, USER_1, user1OperationIds));
-    entities.add(
-        createBatchOperation(now.minus(3, ChronoUnit.MINUTES), null, USER_1, user1OperationIds));
+    entities.add(createBatchOperation(now.minus(5, ChronoUnit.MINUTES), null));
+    entities.add(createBatchOperation(now.minus(4, ChronoUnit.MINUTES), null));
+    entities.add(createBatchOperation(now.minus(3, ChronoUnit.MINUTES), null));
     entities.add(
         createBatchOperation(
-            now.minus(2, ChronoUnit.MINUTES),
-            now.minus(1, ChronoUnit.MINUTES),
-            USER_1,
-            user1OperationIds)); // finished
-    entities.add(
-        createBatchOperation(
-            now.minus(1, ChronoUnit.MINUTES), now, USER_1, user1OperationIds)); // finished
-
-    entities.add(
-        createBatchOperation(now.minus(5, ChronoUnit.MINUTES), null, USER_2, user2OperationIds));
-    entities.add(
-        createBatchOperation(
-            now.minus(4, ChronoUnit.MINUTES),
-            now.minus(3, ChronoUnit.MINUTES),
-            USER_2,
-            user2OperationIds)); // finished
-
+            now.minus(2, ChronoUnit.MINUTES), now.minus(1, ChronoUnit.MINUTES))); // finished
+    entities.add(createBatchOperation(now.minus(1, ChronoUnit.MINUTES), now)); // finished
     searchTestRule.persistNew(entities.toArray(new ExporterEntity[entities.size()]));
   }
 
   private ExporterEntity createBatchOperation(
-      final OffsetDateTime startDate,
-      final OffsetDateTime endDate,
-      final String username,
-      final ArrayList<String> userList) {
+      final OffsetDateTime startDate, final OffsetDateTime endDate) {
     final BatchOperationEntity batchOperationEntity =
-        createBatchOperationEntity(startDate, endDate, username);
-    userList.add(batchOperationEntity.getId());
+        createBatchOperationEntity(startDate, endDate);
+    allOperationIds.add(batchOperationEntity.getId());
     return batchOperationEntity;
   }
 

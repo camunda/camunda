@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,25 @@ final class AuthInfoTest {
     assertThat(authInfo.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.UNKNOWN);
     assertThat(authInfo.getAuthData()).isEqualTo("");
     assertThat(authInfo.getClaims()).isEqualTo(Map.of());
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/35177")
+  void shouldSanitizeOnToString() {
+    // given
+    final AuthInfo authInfo = new AuthInfo();
+    final String token = "token";
+    authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
+    authInfo.setAuthData(token);
+    authInfo.setClaims(Map.of("key", "value"));
+
+    // when
+    final var authInfoString = authInfo.toString();
+
+    // then
+    assertThat(authInfoString)
+        .isEqualTo(
+            """
+        {"format":"JWT","authData":"***","claims":"***"}""");
   }
 
   private void encodeDecode(final AuthInfo authInfo) {

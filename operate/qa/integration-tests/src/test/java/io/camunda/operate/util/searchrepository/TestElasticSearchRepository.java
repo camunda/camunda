@@ -8,7 +8,6 @@
 package io.camunda.operate.util.searchrepository;
 
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.requestOptions;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -44,7 +43,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
@@ -67,22 +65,8 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
-
-  @Autowired
   @Qualifier("operateObjectMapper")
   private ObjectMapper objectMapper;
-
-  @Override
-  public boolean isConnected() {
-    return esClient != null;
-  }
-
-  @Override
-  public boolean isZeebeConnected() {
-    return zeebeEsClient != null;
-  }
 
   @Override
   public boolean createIndex(final String indexName, final Map<String, ?> mapping)
@@ -292,17 +276,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
               e.getMessage(), processInstanceKey);
       throw new OperateRuntimeException(message, e);
     }
-  }
-
-  @Override
-  public boolean ilmPolicyExists(final String policyName) throws IOException {
-    final var request = new GetLifecyclePolicyRequest(policyName);
-    return esClient
-            .indexLifecycle()
-            .getLifecyclePolicy(request, requestOptions)
-            .getPolicies()
-            .get(policyName)
-        != null;
   }
 
   @Override

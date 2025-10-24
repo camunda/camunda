@@ -21,12 +21,14 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +61,7 @@ public class UserQueryControllerTest extends RestControllerTest {
               }
           }""";
   private static final String USERS_SEARCH_URL = "/v2/users/search";
+  private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
   private static final SearchQueryResult<UserEntity> SEARCH_QUERY_RESULT =
       new Builder<UserEntity>()
@@ -72,6 +75,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   @MockitoBean RoleServices roleServices;
   @MockitoBean PasswordEncoder passwordEncoder;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
@@ -79,6 +83,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(userServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userServices);
+    when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
   @Test
@@ -319,9 +324,9 @@ public class UserQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Both after and before cannot be set at the same time.",
+                      "detail": "Failed to read request",
                       "instance": "%s"
                     }""",
                 USERS_SEARCH_URL)));

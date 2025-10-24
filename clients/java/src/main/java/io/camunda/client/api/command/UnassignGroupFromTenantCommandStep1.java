@@ -17,15 +17,28 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UnassignGroupFromTenantResponse;
 
-public interface UnassignGroupFromTenantCommandStep1
-    extends FinalCommandStep<UnassignGroupFromTenantResponse> {
+public interface UnassignGroupFromTenantCommandStep1 {
 
   /**
    * Sets the group ID for the unassignment.
    *
    * @param groupId the ID of the group
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @return the builder for this command.
    */
-  UnassignGroupFromTenantCommandStep1 groupId(String groupId);
+  UnassignGroupFromTenantCommandStep2 groupId(String groupId);
+
+  interface UnassignGroupFromTenantCommandStep2 {
+
+    /**
+     * Sets the tenant ID.
+     *
+     * @param tenantId the ID of the tenant
+     * @return the builder for this command. Call {@link UnassignGroupFromTenantCommandStep3#send()}
+     *     to complete the command and send it to the broker.
+     */
+    UnassignGroupFromTenantCommandStep3 tenantId(String tenantId);
+  }
+
+  interface UnassignGroupFromTenantCommandStep3
+      extends FinalCommandStep<UnassignGroupFromTenantResponse> {}
 }

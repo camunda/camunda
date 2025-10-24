@@ -9,7 +9,10 @@
 import {useQuery} from '@tanstack/react-query';
 import {request} from 'common/api/request';
 import {api} from './index';
-import type {Form, ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {
+  Form,
+  ProcessDefinition,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 function useProcessStartForm(
   {processDefinitionKey}: Pick<ProcessDefinition, 'processDefinitionKey'>,

@@ -8,7 +8,7 @@
 package io.camunda.authentication.service;
 
 import static io.camunda.security.auth.Authorization.withAuthorization;
-import static io.camunda.service.authorization.Authorizations.APPLICATION_ACCESS_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.COMPONENT_ACCESS_AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,9 +68,8 @@ public class OidcCamundaUserServiceTest {
     when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(tenantServices);
     when(resourceAccessProvider.resolveResourceAccess(
-            any(CamundaAuthentication.class), eq(APPLICATION_ACCESS_AUTHORIZATION)))
-        .thenReturn(
-            ResourceAccess.allowed(withAuthorization(APPLICATION_ACCESS_AUTHORIZATION, "*")));
+            any(CamundaAuthentication.class), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(ResourceAccess.allowed(withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*")));
     userService =
         new OidcCamundaUserService(
             authenticationProvider,
@@ -159,47 +158,47 @@ public class OidcCamundaUserServiceTest {
   }
 
   @Test
-  void shouldIncludeAuthorizedApplications() {
+  void shouldIncludeAuthorizedComponents() {
     // given
-    final var allowedAuthorization = withAuthorization(APPLICATION_ACCESS_AUTHORIZATION, "operate");
+    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "operate");
     when(resourceAccessProvider.resolveResourceAccess(
-            eq(camundaAuthentication), eq(APPLICATION_ACCESS_AUTHORIZATION)))
+            eq(camundaAuthentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(allowedAuthorization));
 
     // when
     final var currentUser = userService.getCurrentUser();
 
     // then
-    assertThat(currentUser.authorizedApplications()).containsExactlyInAnyOrder("operate");
+    assertThat(currentUser.authorizedComponents()).containsExactlyInAnyOrder("operate");
   }
 
   @Test
-  void shouldContainWildcardInAuthorizedApplications() {
+  void shouldContainWildcardInAuthorizedComponents() {
     // given
-    final var allowedAuthorization = withAuthorization(APPLICATION_ACCESS_AUTHORIZATION, "*");
+    final var allowedAuthorization = withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*");
     when(resourceAccessProvider.resolveResourceAccess(
-            eq(camundaAuthentication), eq(APPLICATION_ACCESS_AUTHORIZATION)))
+            eq(camundaAuthentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.wildcard(allowedAuthorization));
 
     // when
     final var currentUser = userService.getCurrentUser();
 
     // then
-    assertThat(currentUser.authorizedApplications()).containsExactlyInAnyOrder("*");
+    assertThat(currentUser.authorizedComponents()).containsExactlyInAnyOrder("*");
   }
 
   @Test
-  void shouldReturnEmptyListOfAuthorizedApplicationIfDenied() {
+  void shouldReturnEmptyListOfAuthorizedComponentsIfDenied() {
     // given
     when(resourceAccessProvider.resolveResourceAccess(
-            eq(camundaAuthentication), eq(APPLICATION_ACCESS_AUTHORIZATION)))
-        .thenReturn(ResourceAccess.denied(APPLICATION_ACCESS_AUTHORIZATION));
+            eq(camundaAuthentication), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+        .thenReturn(ResourceAccess.denied(COMPONENT_ACCESS_AUTHORIZATION));
 
     // when
     final var currentUser = userService.getCurrentUser();
 
     // then
-    assertThat(currentUser.authorizedApplications()).isEmpty();
+    assertThat(currentUser.authorizedComponents()).isEmpty();
   }
 
   @Test

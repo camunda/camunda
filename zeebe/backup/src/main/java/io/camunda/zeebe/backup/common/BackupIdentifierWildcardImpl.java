@@ -12,13 +12,13 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import java.util.Optional;
 
 public record BackupIdentifierWildcardImpl(
-    Optional<Integer> nodeId, Optional<Integer> partitionId, Optional<Long> checkpointId)
+    Optional<Integer> nodeId, Optional<Integer> partitionId, CheckpointPattern checkpointPattern)
     implements BackupIdentifierWildcard {
 
   @Override
   public boolean matches(final BackupIdentifier id) {
     return (nodeId.isEmpty() || nodeId.get().equals(id.nodeId()))
         && (partitionId.isEmpty() || partitionId.get().equals(id.partitionId()))
-        && (checkpointId.isEmpty() || checkpointId.get().equals(id.checkpointId()));
+        && checkpointPattern.matches(id.checkpointId());
   }
 }

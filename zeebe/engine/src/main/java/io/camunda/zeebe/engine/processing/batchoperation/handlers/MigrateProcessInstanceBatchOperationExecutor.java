@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -23,11 +24,15 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
 
   final TypedCommandWriter commandWriter;
   final BatchOperationState batchOperationState;
+  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   public MigrateProcessInstanceBatchOperationExecutor(
-      final TypedCommandWriter commandWriter, final BatchOperationState batchOperationState) {
+      final TypedCommandWriter commandWriter,
+      final BatchOperationState batchOperationState,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.commandWriter = commandWriter;
     this.batchOperationState = batchOperationState;
+    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
   @Override
@@ -36,6 +41,8 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
 
     final var migrationPlan = batchOperation.getMigrationPlan();
 
+    final var authentication = batchOperation.getAuthentication();
+    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     final var command = new ProcessInstanceMigrationRecord();
     command.setProcessInstanceKey(processInstanceKey);
     command.setTargetProcessDefinitionKey(migrationPlan.getTargetProcessDefinitionKey());
@@ -54,8 +61,6 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
         ProcessInstanceMigrationIntent.MIGRATE,
         command,
         FollowUpCommandMetadata.of(
-            b ->
-                b.batchOperationReference(batchOperation.getKey())
-                    .claims(batchOperation.getAuthentication().claims())));
+            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
   }
 }

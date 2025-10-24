@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.variables;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveRandomVariables;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariable;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +19,7 @@ import io.camunda.db.rdbms.read.service.VariableDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -137,6 +139,59 @@ public class VariableIT {
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableByAuthorizedResourceId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final VariableDbModel randomizedVariable = VariableFixtures.createRandomized();
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+    createAndSaveRandomVariables(rdbmsService, b -> b);
+
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(b -> b),
+                CommonFixtures.resourceAccessChecksFromResourceIds(
+                    randomizedVariable.processDefinitionId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    final var instance = searchResult.items().getFirst();
+
+    assertThat(searchResult.items().getFirst().variableKey())
+        .isEqualTo(randomizedVariable.variableKey());
+  }
+
+  @TestTemplate
+  public void shouldFindVariableByAuthorizedTenantId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final VariableDbModel randomizedVariable = VariableFixtures.createRandomized();
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+    createAndSaveRandomVariables(rdbmsService, b -> b);
+
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(b -> b),
+                CommonFixtures.resourceAccessChecksFromTenantIds(randomizedVariable.tenantId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    final var instance = searchResult.items().getFirst();
+
+    assertThat(searchResult.items().getFirst().variableKey())
+        .isEqualTo(randomizedVariable.variableKey());
   }
 
   @TestTemplate

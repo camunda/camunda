@@ -11,37 +11,34 @@ import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
 import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
-import static io.camunda.search.test.utils.SearchDBExtension.ZEEBE_IDX_PREFIX;
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.awaitility.Awaitility.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
+import io.camunda.exporter.utils.EntitySizeEstimator;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -54,23 +51,21 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.awaitility.Awaitility;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -134,7 +129,7 @@ final class CamundaExporterIT {
               final var p2ExporterController = new ExporterTestController();
               p2Exporter.open(p2ExporterController);
             });
-    Awaitility.await("Partition one has been opened successfully")
+    await("Partition one has been opened successfully")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -214,7 +209,7 @@ final class CamundaExporterIT {
     // when
     final var currentPort = container.getFirstMappedPort();
     container.stop();
-    Awaitility.await().until(() -> !container.isRunning());
+    await().until(() -> !container.isRunning());
 
     final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
 
@@ -232,7 +227,7 @@ final class CamundaExporterIT {
         generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
     exporter.export(record2);
 
-    Awaitility.await()
+    await()
         .untilAsserted(() -> assertThat(controller.getPosition()).isEqualTo(record2.getPosition()));
   }
 
@@ -365,7 +360,7 @@ final class CamundaExporterIT {
             valueType,
             r ->
                 r.withBrokerVersion("8.8.0")
-                    .withIntent(IncidentIntent.RESOLVED)
+                    .withIntent(IncidentIntent.CREATED)
                     .withTimestamp(invalidTimestamp));
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
@@ -391,46 +386,54 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
-  void shouldNotExport870RecordButStillUpdateLastExportedPosition(
+  void shouldFailToOpenWhenSchemaMissingThenOpenAfterSchemaCreationAndExport(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
-    // given
+    // Do not create schema yet
+    final var exporter = spy(new CamundaExporter());
+    final var context = getContextFromConfig(config);
+    exporter.configure(context);
+
+    // Reset the spy interactions to only capture interactions during open
+    reset(exporter);
+
+    // First open should fail because schema is not yet created
+    final var firstController = new ExporterTestController();
+    assertThatThrownBy(() -> exporter.open(firstController))
+        .isInstanceOf(ExporterException.class)
+        .hasMessage("Schema is not ready for use");
+
+    // Exporter should have closed its resources in the failure path
+    verify(exporter, times(1)).close();
+
+    // Create schema now
     createSchemas(config);
-    final var recordPosition = 123456789L;
+
+    // Second open succeeds
+    final var secondController = new ExporterTestController();
+    assertThatNoException().isThrownBy(() -> exporter.open(secondController));
+
+    // Export a record
     final var record =
         factory.generateRecord(
             ValueType.USER,
-            r -> r.withBrokerVersion("8.7.0").withPosition(recordPosition),
+            r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
             UserIntent.CREATED);
+    exporter.export(record);
 
-    final CamundaExporter camundaExporter = new CamundaExporter();
-    final var controller = new ExporterTestController();
-    camundaExporter.configure(getContextFromConfig(config));
-    camundaExporter.open(controller);
+    // Position updated
+    assertThat(secondController.getPosition()).isEqualTo(record.getPosition());
 
-    // when
-    camundaExporter.export(record);
-
-    // then
-    assertThat(controller.getPosition()).isEqualTo(recordPosition);
-
-    final var handlersForRecordAndExpectedEntityId =
+    // Entity written to search engine
+    final var handler =
         getHandlers(config).stream()
-            .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
-            .filter(handler -> handler.handlesRecord(record))
-            .collect(
-                Collectors.toMap(
-                    Function.identity(), handler -> handler.generateIds(record).getFirst()));
-
-    assertThat(handlersForRecordAndExpectedEntityId).isNotEmpty();
-
-    for (final var entry : handlersForRecordAndExpectedEntityId.entrySet()) {
-      final var handler = entry.getKey();
-      final var entityId = entry.getValue();
-
-      assertThat(clientAdapter.get(entityId, handler.getIndexName(), handler.getEntityType()))
-          .isNull();
-    }
+            .filter(h -> h.getHandledValueType().equals(record.getValueType()))
+            .filter(h -> h.handlesRecord(record))
+            .findFirst()
+            .orElseThrow();
+    final var recordId = handler.generateIds(record).getFirst();
+    assertThat(clientAdapter.get(recordId, handler.getIndexName(), handler.getEntityType()))
+        .isNotNull();
   }
 
   @SuppressWarnings("unchecked")
@@ -472,7 +475,7 @@ final class CamundaExporterIT {
 
   private ExporterConfiguration getConnectConfigForContainer(final GenericContainer<?> container) {
     container.start();
-    Awaitility.await().until(container::isRunning);
+    await().until(container::isRunning);
 
     final var config = new ExporterConfiguration();
     config.getConnect().setUrl("http://localhost:" + container.getFirstMappedPort());
@@ -499,313 +502,75 @@ final class CamundaExporterIT {
         .setPartitionId(partitionId);
   }
 
-  @Nested
-  class ImportersCompletedTests {
-    private final ExporterTestController controller = spy(new ExporterTestController());
-    private final CamundaExporter camundaExporter = new CamundaExporter();
-    private final int partitionId = 1;
-    private final String importPositionIndexName =
-        new ImportPositionIndex(CUSTOM_PREFIX, true).getFullQualifiedName();
+  @TestTemplate
+  void shouldFlushWhenMemoryLimitReached(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    createSchemas(config);
+    final var exporter = new CamundaExporter();
 
-    @BeforeEach
-    void setup() {
-      controller.resetScheduledTasks();
-      controller.resetLastRanAt();
-    }
+    final var memoryLimit = 3;
+    config.getBulk().setMemoryLimit(memoryLimit);
+    final var context = getContextFromConfig(config);
+    exporter.configure(context);
 
-    @TestTemplate
-    void shouldMarkImportersAsCompletedEvenIfVersion88ZeebeIndicesExist(
-        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-        throws IOException {
-      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
-      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
-      createSchemas(config);
-      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.8.0", Map.of("key", "12345"));
+    final var exporterController = new ExporterTestController();
+    exporter.open(exporterController);
 
-      // adds a not complete position index document so exporter sees importing as not yet completed
-      indexImportPositionEntity("decision", false, clientAdapter);
-      clientAdapter.refresh();
+    // when
+    final var largeString = RandomStringUtils.randomAlphanumeric(250_000);
+    final var varEntity = new VariableEntity();
+    varEntity.setFullValue(largeString);
+    final var variableSize = EntitySizeEstimator.estimateEntitySize(varEntity);
 
-      final var context = spy(getContextFromConfig(config));
-      doReturn(partitionId).when(context).getPartitionId();
-      camundaExporter.configure(context);
-      camundaExporter.open(controller);
+    final var requiredVariableRecordsForFlush =
+        Math.ceil((double) (memoryLimit * 1024 * 1024) / variableSize);
 
-      controller.runScheduledTasks(Duration.ofMinutes(1));
+    final var varHandler =
+        getHandlers(config).stream()
+            .filter(handler -> VariableHandler.class.isAssignableFrom(handler.getClass()))
+            .findFirst()
+            .orElseThrow();
 
-      // when
-      final var record =
+    final List<String> varDocumentIds = new ArrayList<>();
+    for (int i = 0; i < requiredVariableRecordsForFlush; i++) {
+      final int finalI = i;
+      final var variableRecord =
           factory.generateRecord(
-              ValueType.USER,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
-              UserIntent.CREATED);
+              ValueType.VARIABLE,
+              r ->
+                  r.withValue(
+                          ImmutableVariableRecordValue.builder()
+                              .withValue(largeString)
+                              .withScopeKey(finalI)
+                              .build())
+                      .withBrokerVersion("8.8.0"));
+      exporter.export(variableRecord);
 
-      camundaExporter.export(record);
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
-      verify(controller, times(1))
-          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+      varDocumentIds.add(varHandler.generateIds(variableRecord).getFirst());
     }
 
-    @TestTemplate
-    void shouldFlushIfImporterNotCompletedButNoZeebeIndices(
-        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-        throws IOException {
-      // given
-      config.getIndex().setZeebeIndexPrefix(ZEEBE_IDX_PREFIX);
-      createSchemas(config);
-      indexImportPositionEntity("decision", false, clientAdapter);
-      clientAdapter.refresh();
+    clientAdapter.refresh();
 
-      // given
-      final var context = spy(getContextFromConfig(config));
-      doReturn(partitionId).when(context).getPartitionId();
-      camundaExporter.configure(context);
-      camundaExporter.open(controller);
+    // then
+    await()
+        .untilAsserted(
+            () -> {
+              final var varDocs =
+                  varDocumentIds.stream()
+                      .map(
+                          id -> {
+                            try {
+                              return clientAdapter.get(
+                                  id, varHandler.getIndexName(), varHandler.getEntityType());
+                            } catch (final IOException e) {
+                              throw new RuntimeException(e);
+                            }
+                          })
+                      .toList();
 
-      controller.runScheduledTasks(Duration.ofMinutes(1));
-
-      // when
-      final var record =
-          factory.generateRecord(
-              ValueType.USER,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
-              UserIntent.CREATED);
-
-      camundaExporter.export(record);
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
-      verify(controller, times(1))
-          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
-
-      final var authHandler =
-          getHandlers(config).stream()
-              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
-              .filter(handler -> handler.handlesRecord(record))
-              .findFirst()
-              .orElseThrow();
-      final var recordId = authHandler.generateIds(record).getFirst();
-
-      assertThat(
-              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
-          .isNotNull();
-    }
-
-    @TestTemplate
-    void shouldNotFlushIf87IndicesExistToBeImported(
-        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-        throws IOException {
-      // given
-      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
-      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
-      createSchemas(config);
-      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.7.0_", Map.of("key", "12345"));
-
-      // adds a not complete position index document so exporter sees importing as not yet completed
-      indexImportPositionEntity("decision", false, clientAdapter);
-      clientAdapter.refresh();
-
-      final var context = spy(getContextFromConfig(config));
-      doReturn(partitionId).when(context).getPartitionId();
-      camundaExporter.configure(context);
-      camundaExporter.open(controller);
-
-      // when
-      final var record =
-          factory.generateRecord(
-              ValueType.USER,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
-              UserIntent.CREATED);
-
-      camundaExporter.export(record);
-
-      // if importers completed this would trigger scheduled flush which would result in the
-      // record being visible in ES/OS
-      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(-1);
-      verify(controller, never()).updateLastExportedRecordPosition(eq(record.getPosition()), any());
-
-      final var authHandler =
-          getHandlers(config).stream()
-              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
-              .filter(handler -> handler.handlesRecord(record))
-              .findFirst()
-              .orElseThrow();
-      final var recordId = authHandler.generateIds(record).getFirst();
-
-      assertThat(
-              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
-          .isNull();
-    }
-
-    @TestTemplate
-    void shouldFlushIfImportersAreCompleted(
-        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-        throws IOException {
-      // given
-      createSchemas(config);
-      final var context = spy(getContextFromConfig(config));
-      doReturn(partitionId).when(context).getPartitionId();
-      camundaExporter.configure(context);
-      camundaExporter.open(controller);
-
-      controller.runScheduledTasks(Duration.ofMinutes(1));
-
-      // when
-      final var record =
-          factory.generateRecord(
-              ValueType.USER,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
-              UserIntent.CREATED);
-
-      camundaExporter.export(record);
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
-      verify(controller, times(1))
-          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
-
-      final var authHandler =
-          getHandlers(config).stream()
-              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
-              .filter(handler -> handler.handlesRecord(record))
-              .findFirst()
-              .orElseThrow();
-      final var recordId = authHandler.generateIds(record).getFirst();
-
-      assertThat(
-              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
-          .isNotNull();
-    }
-
-    @TestTemplate
-    void shouldRunDelayedFlushIfNotWaitingForImportersRegardlessOfImporterIndexState(
-        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-        throws IOException {
-      // given
-      createSchemas(config);
-      // an incomplete position index document so exporter sees importing as not yet completed
-      indexImportPositionEntity("decision", false, clientAdapter);
-      clientAdapter.refresh();
-
-      // increase bulk size so we flush via delayed flush, adding fewer records than bulk size
-      config.getBulk().setSize(5);
-      // ignore importer state, to export regardless of the importer state
-      config.getIndex().setShouldWaitForImporters(false);
-
-      final var context = spy(getContextFromConfig(config));
-      doReturn(partitionId).when(context).getPartitionId();
-      camundaExporter.configure(context);
-      camundaExporter.open(controller);
-
-      // when
-      final var record =
-          factory.generateRecord(
-              ValueType.USER,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
-              UserIntent.CREATED);
-
-      camundaExporter.export(record);
-
-      // as the importer state is ignored, this should trigger a flush still resulting in the
-      // record being visible in ES/OS
-      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
-
-      // then
-      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
-      verify(controller, atLeastOnce())
-          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
-
-      final var authHandler =
-          getHandlers(config).stream()
-              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
-              .filter(handler -> handler.handlesRecord(record))
-              .findFirst()
-              .orElseThrow();
-      final var recordId = authHandler.generateIds(record).getFirst();
-
-      assertThat(
-              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
-          .isNotNull();
-    }
-
-    @TestTemplate
-    @DisabledIfSystemProperty(
-        named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
-        matches = "^(?=\\s*\\S).*$",
-        disabledReason = "Ineligible test for AWS OS integration")
-    void shouldFailIfWaitingForImportersAndCachedRecordsCountReachesBulkSize(
-        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-        throws IOException {
-      // given
-      assertThat(config.getBulk().getSize()).isEqualTo(1);
-      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
-      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
-
-      // Simulate existing zeebe index so it will not skip the wait for importers
-      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.7.0_", Map.of("key", "12345"));
-
-      // if schemas are never created then import position indices do not exist and all checks about
-      // whether the importers are completed will return false.
-      final var provider = new DefaultExporterResourceProvider();
-      final var indexDescriptors = mock(IndexDescriptors.class);
-      when(indexDescriptors.indices())
-          .thenReturn(List.of()) // for schemaManager.isSchemaReadyForUse()
-          .thenReturn( // for importPositionIndices that is passed for
-              // searchEngineClient.importersCompleted;
-              List.of(
-                  new ImportPositionIndex(
-                      CUSTOM_PREFIX, config.getConnect().getTypeEnum().isElasticSearch())));
-      when(indexDescriptors.templates()).thenReturn(emptyList());
-      final var camundaExporter = new CamundaExporter(provider);
-      final var context = getContextFromConfig(config);
-      camundaExporter.configure(context);
-      provider.setIndexDescriptors(indexDescriptors);
-      camundaExporter.open(controller);
-
-      clientAdapter.index(
-          context.getPartitionId() + "-job",
-          importPositionIndexName,
-          new ImportPositionEntity().setCompleted(false).setPartitionId(context.getPartitionId()));
-
-      // when
-      final var record =
-          factory.generateRecord(
-              ValueType.USER,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
-              UserIntent.CREATED);
-
-      camundaExporter.export(record);
-
-      final var record2 =
-          factory.generateRecord(
-              ValueType.USER,
-              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
-              UserIntent.CREATED);
-
-      // then
-      assertThatThrownBy(() -> camundaExporter.export(record2))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining(
-              String.format(
-                  "Reached the max bulk size amount of cached records [%d] while waiting for importers to finish",
-                  config.getBulk().getSize()));
-    }
-
-    private void indexImportPositionEntity(
-        final String aliasName, final boolean completed, final SearchClientAdapter client)
-        throws IOException {
-      final var entity =
-          new ImportPositionEntity()
-              .setPartitionId(partitionId)
-              .setAliasName(aliasName)
-              .setCompleted(completed);
-
-      client.index(entity.getId(), importPositionIndexName, entity);
-    }
+              assertThat(varDocs).isNotNull().isNotEmpty().doesNotContainNull();
+            });
   }
 }

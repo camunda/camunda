@@ -24,7 +24,7 @@ public record MessageSubscriptionFilter(
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<String>> flowNodeIdOperations,
     List<Operation<Long>> flowNodeInstanceKeyOperations,
-    List<Operation<String>> messageSubscriptionTypeOperations,
+    List<Operation<String>> messageSubscriptionStateOperations,
     List<Operation<OffsetDateTime>> dateTimeOperations,
     List<Operation<String>> messageNameOperations,
     List<Operation<String>> correlationKeyOperations,
@@ -39,7 +39,7 @@ public record MessageSubscriptionFilter(
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<String>> flowNodeIdOperations;
     private List<Operation<Long>> flowNodeInstanceKeyOperations;
-    private List<Operation<String>> messageSubscriptionTypeOperations;
+    private List<Operation<String>> messageSubscriptionStateOperations;
     private List<Operation<OffsetDateTime>> dateTimeOperations;
     private List<Operation<String>> messageNameOperations;
     private List<Operation<String>> correlationKeyOperations;
@@ -135,19 +135,19 @@ public record MessageSubscriptionFilter(
       return this;
     }
 
-    public Builder messageSubscriptionTypes(final String value, final String... values) {
-      return messageSubscriptionTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    public Builder messageSubscriptionStates(final String value, final String... values) {
+      return messageSubscriptionStateOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
-    public final Builder messageSubscriptionTypeOperations(
+    public final Builder messageSubscriptionStateOperations(
         final Operation<String> operation, final Operation<String>... operations) {
-      return messageSubscriptionTypeOperations(collectValues(operation, operations));
+      return messageSubscriptionStateOperations(collectValues(operation, operations));
     }
 
-    public Builder messageSubscriptionTypeOperations(final List<Operation<String>> operations) {
-      messageSubscriptionTypeOperations =
-          addValuesToList(messageSubscriptionTypeOperations, operations);
+    public Builder messageSubscriptionStateOperations(final List<Operation<String>> operations) {
+      messageSubscriptionStateOperations =
+          addValuesToList(messageSubscriptionStateOperations, operations);
       return this;
     }
 
@@ -220,7 +220,7 @@ public record MessageSubscriptionFilter(
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeInstanceKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(messageSubscriptionTypeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(messageSubscriptionStateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(dateTimeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageNameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(correlationKeyOperations, Collections.emptyList()),

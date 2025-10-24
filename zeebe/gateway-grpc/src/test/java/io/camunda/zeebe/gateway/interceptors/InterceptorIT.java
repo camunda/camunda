@@ -15,6 +15,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -35,7 +36,6 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.netty.util.NetUtil;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -181,9 +181,10 @@ final class InterceptorIT {
 
   private CamundaClient createCamundaClient() {
     return CamundaClient.newClientBuilder()
-        .gatewayAddress(
-            NetUtil.toSocketAddressString(gateway.getGatewayCfg().getNetwork().toSocketAddress()))
-        .usePlaintext()
+        .preferRestOverGrpc(false)
+        .grpcAddress(
+            AddressUtil.composeGrpcAddress(
+                gateway.getGatewayCfg().getNetwork().toSocketAddress(), true))
         .build();
   }
 }

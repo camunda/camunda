@@ -15,9 +15,17 @@
  */
 package io.camunda.process.test.api;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import java.io.IOException;
@@ -29,9 +37,12 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.Testcontainers;
 
+@WireMockTest(httpPort = 9999)
 public class CamundaProcessTestConnectorsIT {
 
   // The ID is part of the connector configuration in the BPMN element
@@ -42,11 +53,17 @@ public class CamundaProcessTestConnectorsIT {
       new CamundaProcessTestExtension()
           .withConnectorsEnabled(true)
           .withConnectorsSecret(
-              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
+              "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness")
+          .withConnectorsSecret("BASE_URL", "http://host.testcontainers.internal:9999");
 
   // to be injected
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
+
+  @BeforeAll
+  static void setup() {
+    Testcontainers.exposeHostPorts(9999);
+  }
 
   @Test
   void shouldInvokeInAndOutboundConnectors() throws IOException {
@@ -97,5 +114,40 @@ public class CamundaProcessTestConnectorsIT {
     CamundaAssert.assertThatProcessInstance(processInstance)
         .isCompleted()
         .hasCompletedElements(byName("Wait for HTTP POST request"));
+  }
+
+  @Test
+  void shouldInvokeOutboundConnectors() {
+    // given
+    stubFor(
+        get(urlPathMatching("/test"))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody("{\"status\":\"okay\"}")));
+
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("connector-outbound-process.bpmn")
+        .send()
+        .join();
+
+    // when
+    final ProcessInstanceEvent processInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("outbound-connector-process")
+            .latestVersion()
+            .send()
+            .join();
+
+    // then
+    CamundaAssert.assertThatProcessInstance(processInstance)
+        .isCompleted()
+        .hasCompletedElements(byName("Mocked Outbound Connector"))
+        .hasVariable("status", "okay");
+
+    verify(getRequestedFor(urlEqualTo("/test")));
   }
 }

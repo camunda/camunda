@@ -15,16 +15,18 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +43,7 @@ public class CamundaProcessTestRuntimeBuilder {
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION;
 
   private String elasticsearchDockerImageName =
-      CamundaProcessTestRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_NAME;
+      CamundaProcessTestRuntimeDefaults.DEFAULT_ELASTICSEARCH_DOCKER_IMAGE_NAME;
   private String elasticsearchDockerImageVersion =
       CamundaProcessTestRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_VERSION;
 
@@ -60,11 +62,11 @@ public class CamundaProcessTestRuntimeBuilder {
       new ArrayList<>(CamundaProcessTestRuntimeDefaults.CAMUNDA_EXPOSED_PORTS);
   private final List<Integer> elasticsearchExposedPorts = new ArrayList<>();
   private final List<Integer> connectorsExposedPorts =
-      new ArrayList<>(CamundaProcessTestRuntimeDefaults.CAMUNDA_EXPOSED_PORTS);
+      new ArrayList<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_EXPOSED_PORTS);
 
   private String camundaLoggerName = CamundaProcessTestRuntimeDefaults.CAMUNDA_LOGGER_NAME;
   private String elasticsearchLoggerName =
-      CamundaProcessTestRuntimeDefaults.ELASTICSEARCH_LOGGER_NAME;
+      CamundaProcessTestRuntimeDefaults.DEFAULT_ELASTICSEARCH_LOGGER_NAME;
   private String connectorsLoggerName = CamundaProcessTestRuntimeDefaults.CONNECTORS_LOGGER_NAME;
 
   private boolean connectorsEnabled = CamundaProcessTestRuntimeDefaults.CONNECTORS_ENABLED;
@@ -74,29 +76,22 @@ public class CamundaProcessTestRuntimeBuilder {
   private CamundaProcessTestRuntimeMode runtimeMode =
       CamundaProcessTestRuntimeDefaults.RUNTIME_MODE;
 
-  private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-      () -> {
-        final CamundaClientBuilder camundaClientBuilder =
-            CamundaClient.newClientBuilder().usePlaintext();
-
-        // Make sure not to override the CamundaClient's default configuration
-        if (CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS != null) {
-          camundaClientBuilder.grpcAddress(
-              CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS);
-        }
-
-        if (CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_REST_ADDRESS != null) {
-          camundaClientBuilder.restAddress(
-              CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_REST_ADDRESS);
-        }
-
-        return camundaClientBuilder;
-      };
-
   private URI remoteCamundaMonitoringApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CAMUNDA_MONITORING_API_ADDRESS;
   private URI remoteConnectorsRestApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CONNECTORS_REST_API_ADDRESS;
+
+  private boolean isMultiTenancyEnabled = CamundaProcessTestRuntimeDefaults.MULTI_TENANCY_ENABLED;
+
+  private String coverageReportDirectory =
+      CamundaProcessTestRuntimeDefaults.COVERAGE_REPORT_DIRECTORY;
+
+  private List<String> coverageExcludedProcesses =
+      CamundaProcessTestRuntimeDefaults.COVERAGE_EXCLUDED_PROCESSES;
+
+  private CamundaClientBuilderFactory camundaClientBuilderFactory =
+      CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
+  private Consumer<CamundaClientBuilder> camundaClientOverrides = cb -> {};
 
   // ============ For testing =================
 
@@ -225,12 +220,6 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
-  public CamundaProcessTestRuntimeBuilder withRemoteCamundaClientBuilderFactory(
-      final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory) {
-    this.remoteCamundaClientBuilderFactory = remoteCamundaClientBuilderFactory;
-    return this;
-  }
-
   public CamundaProcessTestRuntimeBuilder withRemoteCamundaMonitoringApiAddress(
       final URI remoteCamundaMonitoringApiAddress) {
     this.remoteCamundaMonitoringApiAddress = remoteCamundaMonitoringApiAddress;
@@ -240,6 +229,35 @@ public class CamundaProcessTestRuntimeBuilder {
   public CamundaProcessTestRuntimeBuilder withRemoteConnectorsRestApiAddress(
       final URI remoteConnectorsRestApiAddress) {
     this.remoteConnectorsRestApiAddress = remoteConnectorsRestApiAddress;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withMultiTenancyEnabled(final boolean enabled) {
+    isMultiTenancyEnabled = enabled;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory clientFactory) {
+    camundaClientBuilderFactory = clientFactory;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCamundaClientBuilderOverrides(
+      final Consumer<CamundaClientBuilder> clientOverridesFn) {
+    camundaClientOverrides = clientOverridesFn;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCoverageReportDirectory(
+      final String coverageReportDirectory) {
+    this.coverageReportDirectory = coverageReportDirectory;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCoverageExcludedProcesses(
+      final List<String> coverageExcludedProcesses) {
+    this.coverageExcludedProcesses = coverageExcludedProcesses;
     return this;
   }
 
@@ -323,6 +341,10 @@ public class CamundaProcessTestRuntimeBuilder {
     return connectorsEnabled;
   }
 
+  public boolean isMultiTenancyEnabled() {
+    return isMultiTenancyEnabled;
+  }
+
   public Map<String, String> getConnectorsSecrets() {
     return connectorsSecrets;
   }
@@ -331,15 +353,36 @@ public class CamundaProcessTestRuntimeBuilder {
     return runtimeMode;
   }
 
-  public CamundaClientBuilderFactory getRemoteCamundaClientBuilderFactory() {
-    return remoteCamundaClientBuilderFactory;
-  }
-
   public URI getRemoteCamundaMonitoringApiAddress() {
     return remoteCamundaMonitoringApiAddress;
   }
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
+  }
+
+  public String getCoverageReportDirectory() {
+    return coverageReportDirectory;
+  }
+
+  public List<String> getCoverageExcludedProcesses() {
+    return coverageExcludedProcesses;
+  }
+
+  public CamundaClientBuilderFactory getConfiguredCamundaClientBuilderFactory() {
+    return () -> {
+      final CamundaClientBuilder clientBuilder = camundaClientBuilderFactory.get();
+
+      if (isMultiTenancyEnabled && runtimeMode == CamundaProcessTestRuntimeMode.MANAGED) {
+        clientBuilder.credentialsProvider(
+            CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
+                .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
+                .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+                .build());
+      }
+
+      camundaClientOverrides.accept(clientBuilder);
+      return clientBuilder;
+    };
   }
 }

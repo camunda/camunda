@@ -69,6 +69,8 @@ public class UserTaskServiceTest {
             elementInstanceServices,
             variableServices,
             processCache,
+            null,
+            mock(ApiServicesExecutorProvider.class),
             null);
 
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -187,15 +189,34 @@ public class UserTaskServiceTest {
     @Test
     void shouldReturnUserTaskWithCachedName() {
       final var entity =
-          Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::name), null)
+              .set(field(UserTaskEntity::processName), null)
+              .create();
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
-          .thenReturn(new ProcessCacheItem(Map.of(entity.elementId(), "cached name")));
+          .thenReturn(
+              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
 
       final var foundEntity = services.getByKey(entity.userTaskKey());
 
       assertThat(foundEntity.name()).isEqualTo("cached name");
+    }
+
+    @Test
+    void shouldReturnUserTaskWithProcessName() {
+      final var entity =
+          Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::processName), null).create();
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(processCache.getCacheItem(entity.processDefinitionKey()))
+          .thenReturn(
+              new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
+
+      final var foundEntity = services.getByKey(entity.userTaskKey());
+
+      assertThat(foundEntity.processName()).isEqualTo("ProcessName");
     }
 
     @Test
@@ -205,11 +226,12 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
-          .thenReturn(new ProcessCacheItem(Map.of("unknown-id", "cached name")));
+          .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
 
       final var foundEntity = services.getByKey(entity.userTaskKey());
 
       assertThat(foundEntity.name()).isEqualTo(entity.elementId());
+      assertThat(foundEntity.processName()).isEqualTo(entity.processName());
     }
 
     @Test
@@ -251,11 +273,26 @@ public class UserTaskServiceTest {
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
               ProcessCacheResult.of(
-                  entity.processDefinitionKey(), entity.elementId(), "cached name"));
+                  entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
 
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q));
 
       assertThat(searchQueryResult.items()).contains(entity.withName("cached name"));
+    }
+
+    @Test
+    void shouldReturnUserTaskWithProcessName() {
+      final var entity =
+          Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::processName), null).create();
+      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+          .thenReturn(
+              ProcessCacheResult.of(
+                  entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
+
+      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q));
+
+      assertThat(searchQueryResult.items()).contains(entity.withProcessName("ProcessName"));
     }
 
     @Test

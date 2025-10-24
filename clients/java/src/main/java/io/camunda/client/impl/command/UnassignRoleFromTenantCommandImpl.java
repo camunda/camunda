@@ -19,15 +19,19 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1.UnassignRoleFromTenantCommandStep2;
+import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1.UnassignRoleFromTenantCommandStep3;
 import io.camunda.client.api.response.UnassignRoleFromTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UnassignRoleFromTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class UnassignRoleFromTenantCommandImpl
-    implements UnassignRoleFromTenantCommandStep1, UnassignRoleFromTenantCommandStep2 {
+    implements UnassignRoleFromTenantCommandStep1,
+        UnassignRoleFromTenantCommandStep2,
+        UnassignRoleFromTenantCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -46,7 +50,7 @@ public final class UnassignRoleFromTenantCommandImpl
   }
 
   @Override
-  public UnassignRoleFromTenantCommandStep2 tenantId(final String tenantId) {
+  public UnassignRoleFromTenantCommandStep3 tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -66,6 +70,7 @@ public final class UnassignRoleFromTenantCommandImpl
         String.format("/tenants/%s/roles/%s", tenantId, roleId),
         null,
         httpRequestConfig.build(),
+        UnassignRoleFromTenantResponseImpl::new,
         result);
     return result;
   }

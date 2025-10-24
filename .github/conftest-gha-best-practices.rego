@@ -54,6 +54,18 @@ deny[msg] {
         [concat(", ", get_jobs_with_selfhostedlabel(input.jobs))])
 }
 
+deny[msg] {
+    # This rule ensures that jobs using matrix strategy and submitting CI health
+    # entries specify the job_name parameter for observe-build-status to avoid
+    # duplicate CI health entries (the default job name of matrix jobs will
+    # be identical).
+
+    count(get_matrix_jobs_with_cihealthbutnojobname(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs using matrix strategy with observe-build-status steps but missing 'job_name' parameter! Affected job IDs: %s",
+        [concat(", ", get_matrix_jobs_with_cihealthbutnojobname(input.jobs))])
+}
+
 warn[msg] {
     # This rule warns in situations where no "secrets: inherit" is passed on
     # calling other workflows as this is usually an oversight that prevents
@@ -112,5 +124,23 @@ get_jobs_with_usesbutnosecrets(jobInput) = jobs_with_usesbutnosecrets {
         # check jobs that invoke other reusable workflows but don't specify "secrets: inherit"
         job.uses
         not job.secrets
+    }
+}
+
+get_matrix_jobs_with_cihealthbutnojobname(jobInput) = matrix_jobs_with_cihealthbutnojobname {
+    matrix_jobs_with_cihealthbutnojobname := { job_id |
+        job := jobInput[job_id]
+
+        # check if job uses matrix strategy
+        job.strategy.matrix
+
+        # check if any observe-build-status step is missing job_name parameter
+        missing_job_name_steps := { step |
+            step := job.steps[_]
+            step.name == "Observe build status"
+            step.uses == "./.github/actions/observe-build-status"
+            not step["with"].job_name
+        }
+        count(missing_job_name_steps) > 0
     }
 }

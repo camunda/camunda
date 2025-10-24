@@ -13,7 +13,7 @@ spec:
     - /data/tls.key
     - /metadata/annotations/replicator.v1.mittwald.de~1replicated-from-version
     kind: Secret
-    name: camunda-tls
+    name: camunda-wildcard-certificate-tls
   project: camunda-previews
   source:
     helm:

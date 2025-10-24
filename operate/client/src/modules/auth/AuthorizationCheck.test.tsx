@@ -46,11 +46,11 @@ const getWrapper = () => {
 
 describe('<AuthorizationCheck />', () => {
   beforeEach(() => {
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
 
   it('should show the provided content', async () => {
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
 
     render(
       <AuthorizationCheck>
@@ -63,7 +63,7 @@ describe('<AuthorizationCheck />', () => {
   });
 
   it('should redirect when user is not authorized', async () => {
-    mockMe().withSuccess(createUser({authorizedApplications: ['tasklist']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['tasklist']}));
 
     render(
       <AuthorizationCheck>

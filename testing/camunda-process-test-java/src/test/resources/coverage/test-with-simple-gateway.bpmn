@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0b68w8y" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
+  <bpmn:process id="test-with-simple-gateway" isExecutable="true">
+    <bpmn:startEvent id="StartEvent">
+      <bpmn:outgoing>FlowGateway</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="GatewayEvent" default="FlowGatewayDefault">
+      <bpmn:incoming>FlowGateway</bpmn:incoming>
+      <bpmn:outgoing>FlowGatewayYes</bpmn:outgoing>
+      <bpmn:outgoing>FlowGatewayDefault</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="FlowGateway" sourceRef="StartEvent" targetRef="GatewayEvent" />
+    <bpmn:task id="YesEvent" name="Yes">
+      <bpmn:incoming>FlowGatewayYes</bpmn:incoming>
+      <bpmn:outgoing>FlowYesEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="FlowGatewayYes" sourceRef="GatewayEvent" targetRef="YesEvent">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=gatewayAnswer = "yes"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:task id="NoEvent" name="Np">
+      <bpmn:incoming>FlowGatewayDefault</bpmn:incoming>
+      <bpmn:outgoing>FlowNoEnd</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="FlowGatewayDefault" sourceRef="GatewayEvent" targetRef="NoEvent" />
+    <bpmn:endEvent id="EndEvent">
+      <bpmn:incoming>FlowNoEnd</bpmn:incoming>
+      <bpmn:incoming>FlowYesEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="FlowNoEnd" sourceRef="NoEvent" targetRef="EndEvent" />
+    <bpmn:sequenceFlow id="FlowYesEnd" sourceRef="YesEvent" targetRef="EndEvent" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="test-with-simple-gateway">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent">
+        <dc:Bounds x="162" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0jkoacg_di" bpmnElement="GatewayEvent" isMarkerVisible="true">
+        <dc:Bounds x="265" y="92" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_013mmed_di" bpmnElement="YesEvent">
+        <dc:Bounds x="370" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0r4pt69_di" bpmnElement="NoEvent">
+        <dc:Bounds x="370" y="190" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0vzfi84_di" bpmnElement="EndEvent">
+        <dc:Bounds x="722" y="142" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0bsecl8_di" bpmnElement="FlowGateway">
+        <di:waypoint x="198" y="117" />
+        <di:waypoint x="265" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1par3a0_di" bpmnElement="FlowGatewayYes">
+        <di:waypoint x="315" y="117" />
+        <di:waypoint x="370" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18f6jw0_di" bpmnElement="FlowGatewayDefault">
+        <di:waypoint x="290" y="142" />
+        <di:waypoint x="290" y="230" />
+        <di:waypoint x="370" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0pxlrjh_di" bpmnElement="FlowNoEnd">
+        <di:waypoint x="470" y="230" />
+        <di:waypoint x="516" y="230" />
+        <di:waypoint x="516" y="160" />
+        <di:waypoint x="722" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jvq375_di" bpmnElement="FlowYesEnd">
+        <di:waypoint x="470" y="117" />
+        <di:waypoint x="520" y="117" />
+        <di:waypoint x="520" y="160" />
+        <di:waypoint x="722" y="160" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

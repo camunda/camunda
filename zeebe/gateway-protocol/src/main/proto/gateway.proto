@@ -57,6 +57,7 @@ message ActivatedJob {
     BPMN_ELEMENT = 0;
     EXECUTION_LISTENER = 1;
     TASK_LISTENER = 2;
+    AD_HOC_SUB_PROCESS = 3;
   }
 
   // Describes the listener event type of the job.
@@ -108,6 +109,8 @@ message ActivatedJob {
   JobKind kind = 16;
   // the listener event type of the job.
   ListenerEventType listenerEventType = 17;
+  // the list of tags
+  repeated string tags = 18;
 }
 
 message UserTaskProperties {
@@ -254,6 +257,9 @@ message CreateProcessInstanceRequest {
   // instance during its execution
   // if empty (default), the process instance will be executed normally
   repeated ProcessInstanceCreationRuntimeInstruction runtimeInstructions = 8;
+
+  // a list of tags that can be attached as meta-data to process instances
+  repeated string tags = 9;
 }
 
 message ProcessInstanceCreationStartInstruction {
@@ -294,6 +300,8 @@ message CreateProcessInstanceResponse {
   int64 processInstanceKey = 4;
   // the tenant identifier of the created process instance
   string tenantId = 5;
+  // tags attached to a process instance
+  repeated string tags = 6;
 }
 
 message CreateProcessInstanceWithResultRequest {
@@ -323,6 +331,8 @@ message CreateProcessInstanceWithResultResponse {
   string variables = 5;
   // the tenant identifier of the process definition
   string tenantId = 6;
+  // tags attached to a process instance
+  repeated string tags = 7;
 }
 
 message EvaluateDecisionRequest {
@@ -371,8 +381,10 @@ message EvaluateDecisionResponse {
   string failureMessage = 10;
   // the tenant identifier of the evaluated decision
   string tenantId = 11;
-  // the unique key identifying this decision evaluation
+  // deprecated, please refer to decisionEvaluationKey
   int64 decisionInstanceKey = 12;
+  // the unique key identifying this decision evaluation
+  int64 decisionEvaluationKey = 13;
 }
 
 message EvaluatedDecision {
@@ -397,6 +409,8 @@ message EvaluatedDecision {
   repeated EvaluatedDecisionInput evaluatedInputs = 8;
   // the tenant identifier of the evaluated decision
   string tenantId = 9;
+  // the key of the decision evaluation instance
+  string decisionEvaluationInstanceKey = 10;
 }
 
 message EvaluatedDecisionInput {
@@ -644,6 +658,8 @@ message TopologyResponse {
   int32 replicationFactor = 4;
   // gateway version
   string gatewayVersion = 5;
+  // the cluster's unique ID
+  string clusterId = 6;
 }
 
 message BrokerInfo {

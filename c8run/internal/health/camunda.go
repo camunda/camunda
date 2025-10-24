@@ -61,7 +61,9 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 			resp, err := client.Do(req)
 			if err == nil {
 				if resp.Body != nil {
-					resp.Body.Close()
+					if err := resp.Body.Close(); err != nil {
+						log.Error().Err(err).Msg("failed to close response body")
+					}
 				}
 
 				if resp.StatusCode >= 200 && resp.StatusCode < 400 {
@@ -90,9 +92,9 @@ func PrintStatus(settings types.C8RunSettings) error {
 
 	// Overwrite ports if Docker is enabled
 	if settings.Docker {
-		operatePort = 8081
-		tasklistPort = 8082
-		identityPort = 8084
+		operatePort = 8088
+		tasklistPort = 8088
+		identityPort = 8088
 		camundaPort = 8088
 	}
 

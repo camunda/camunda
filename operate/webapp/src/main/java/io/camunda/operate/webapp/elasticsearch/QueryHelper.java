@@ -104,20 +104,13 @@ public class QueryHelper {
         createVariablesInQuery(query),
         createBatchOperationIdQuery(query),
         createParentInstanceIdQuery(query),
-        // TODO Elasticsearch changes
         createTenantIdQuery(query),
         createReadPermissionQuery());
   }
 
   private QueryBuilder createReadPermissionQuery() {
-    if (!permissionsService.permissionsEnabled()) {
-      return null;
-    }
     final var allowed =
         permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
-    if (allowed == null) {
-      return null;
-    }
     return allowed.isAll()
         ? QueryBuilders.matchAllQuery()
         : termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
@@ -435,11 +428,16 @@ public class QueryHelper {
   private QueryBuilder createActivityIdIncidentQuery(final String activityId) {
     final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, FlowNodeState.ACTIVE.name());
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
-    final ExistsQueryBuilder incidentExists = existsQuery(ERROR_MSG);
+    final QueryBuilder activityHasIncident = termQuery(INCIDENT, true);
 
     return hasChildQuery(
         ACTIVITIES_JOIN_RELATION,
-        joinWithAnd(activitiesQuery, activityIdQuery, incidentExists),
+        joinWithAnd(activitiesQuery, activityIdQuery, activityHasIncident),
         None);
+  }
+
+  /** Setter for PermissionsService for testing purposes. */
+  void setPermissionsService(final PermissionsService permissionsService) {
+    this.permissionsService = permissionsService;
   }
 }

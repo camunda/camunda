@@ -15,12 +15,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.reader.VariableReader;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
@@ -51,7 +49,6 @@ public class ProcessInstanceRestServiceTest {
   @Mock private IncidentReader incidentReader;
   @Mock private VariableReader variableReader;
   @Mock private FlowNodeInstanceReader flowNodeInstanceReader;
-  @Mock private FlowNodeStatisticsReader flowNodeStatisticsReader;
   @Mock private SequenceFlowStore sequenceFlowStore;
 
   private ProcessInstanceRestService underTest;
@@ -70,10 +67,8 @@ public class ProcessInstanceRestServiceTest {
             incidentReader,
             variableReader,
             flowNodeInstanceReader,
-            flowNodeStatisticsReader,
             sequenceFlowStore);
 
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
         .thenReturn(true);
   }
@@ -155,27 +150,6 @@ public class ProcessInstanceRestServiceTest {
   }
 
   @Test
-  public void testProcessInstanceVariablesFailsWhenNoPermissions() {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(false);
-
-    final NotAuthorizedException exception =
-        assertThatExceptionOfType(NotAuthorizedException.class)
-            .isThrownBy(() -> underTest.getVariables(processInstanceId, new VariableRequestDto()))
-            .actual();
-
-    assertThat(exception.getMessage())
-        .contains("No READ_PROCESS_INSTANCE permission for process instance");
-  }
-
-  @Test
   public void testProcessInstanceFlowNodeStatesFailsWhenNoPermissions() {
     // given
     final String processInstanceId = "123";
@@ -190,27 +164,6 @@ public class ProcessInstanceRestServiceTest {
     final NotAuthorizedException exception =
         assertThatExceptionOfType(NotAuthorizedException.class)
             .isThrownBy(() -> underTest.getFlowNodeStates(processInstanceId))
-            .actual();
-
-    assertThat(exception.getMessage())
-        .contains("No READ_PROCESS_INSTANCE permission for process instance");
-  }
-
-  @Test
-  public void testProcessInstanceStatisticsFailsWhenNoPermissions() {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(false);
-
-    final NotAuthorizedException exception =
-        assertThatExceptionOfType(NotAuthorizedException.class)
-            .isThrownBy(() -> underTest.getStatistics(processInstanceId))
             .actual();
 
     assertThat(exception.getMessage())
@@ -276,7 +229,7 @@ public class ProcessInstanceRestServiceTest {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.UPDATE_PROCESS_INSTANCE))
+            bpmnProcessId, PermissionType.CANCEL_PROCESS_INSTANCE))
         .thenReturn(false);
 
     final NotAuthorizedException exception =
@@ -290,7 +243,7 @@ public class ProcessInstanceRestServiceTest {
             .actual();
 
     assertThat(exception.getMessage())
-        .contains("No UPDATE_PROCESS_INSTANCE permission for process instance");
+        .contains("No CANCEL_PROCESS_INSTANCE permission for process instance");
   }
 
   @Test

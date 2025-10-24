@@ -11,6 +11,10 @@ import static io.camunda.zeebe.protocol.impl.record.RecordMetadata.CURRENT_BROKE
 
 import io.camunda.application.initializers.StandaloneSchemaManagerInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
@@ -36,12 +40,12 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
  * <pre>
  * camunda.database.type=elasticsearch
  * camunda.database.url=
- * camunda.database.security.selfSigned=
+ * camunda.database.security.self-signed=
  * camunda.database.security.enabled=
- * camunda.database.security.certificatePath=
+ * camunda.database.security.certificate-path=
  * camunda.database.username=
  * camunda.database.password=
- * camunda.database.indexPrefix=
+ * camunda.database.index-prefix=
  * </pre>
  *
  * All of those porperties can also be handed over via environment variables, e.g.
@@ -76,7 +80,14 @@ public class StandaloneSchemaManager implements CommandLineRunner {
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
-        .sources(StandaloneSchemaManagerConfiguration.class)
+        .sources(
+            // Unified Configuration classes
+            UnifiedConfigurationHelper.class,
+            UnifiedConfiguration.class,
+            SearchEngineConnectPropertiesOverride.class,
+            SearchEngineIndexPropertiesOverride.class,
+            // ---
+            StandaloneSchemaManagerConfiguration.class)
         .initializers(new StandaloneSchemaManagerInitializer())
         .addCommandLineProperties(true)
         .listeners(new ApplicationErrorListener())
@@ -104,7 +115,7 @@ public class StandaloneSchemaManager implements CommandLineRunner {
   // TODO: Use unified configuration when it is available
   @EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
   @ComponentScan(
-      basePackages = "io.camunda.application.commons.search",
+      basePackages = {"io.camunda.application.commons.search", "io.camunda.configuration"},
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
   public static class StandaloneSchemaManagerConfiguration {}
 }

@@ -32,6 +32,10 @@ public final class BackupApiRequestReader implements RequestReader {
     return messageDecoder.backupId();
   }
 
+  public String pattern() {
+    return messageDecoder.pattern();
+  }
+
   public int partitionId() {
     return messageDecoder.partitionId();
   }

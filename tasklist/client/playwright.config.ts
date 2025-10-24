@@ -25,7 +25,6 @@ const config: PlaywrightTestConfig = {
   fullyParallel: !IS_E2E,
   forbidOnly: IS_CI,
   retries: IS_CI ? 2 : 0,
-  workers: IS_CI || IS_E2E ? 1 : undefined,
   reporter: IS_CI
     ? [
         ['github'],

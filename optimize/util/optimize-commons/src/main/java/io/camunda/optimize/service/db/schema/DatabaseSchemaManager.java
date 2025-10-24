@@ -63,9 +63,6 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
   public abstract void deleteOptimizeIndex(
       final CLIENT dbClient, final IndexMappingCreator<BUILDER> mapping);
 
-  public abstract void createOrUpdateTemplateWithoutAliases(
-      final CLIENT dbClient, final IndexMappingCreator<BUILDER> mappingCreator);
-
   public abstract void updateDynamicSettingsAndMappings(
       CLIENT dbClient, IndexMappingCreator<BUILDER> indexMapping);
 

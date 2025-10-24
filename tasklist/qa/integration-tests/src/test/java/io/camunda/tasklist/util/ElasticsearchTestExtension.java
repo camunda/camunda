@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.store.elasticsearch.VariableStoreElasticSearch.MAX_TERMS_COUNT_SETTING;
-import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -20,18 +18,21 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -47,7 +48,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(SCOPE_PROTOTYPE)
 @ConditionalOnProperty(
-    name = "camunda.tasklist.database",
+    name = "camunda.data.secondary-storage.type",
     havingValue = "elasticsearch",
     matchIfMissing = true)
 public class ElasticsearchTestExtension
@@ -69,16 +70,13 @@ public class ElasticsearchTestExtension
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  @Autowired
-  @Qualifier("tasklistZeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
-
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   private boolean failed = false;
   @Autowired private TestSchemaManager schemaManager;
   @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
+  @Autowired private ObjectMapper objectMapper;
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
@@ -87,7 +85,6 @@ public class ElasticsearchTestExtension
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-      tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
       searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     schemaManager.createSchema();
@@ -116,53 +113,10 @@ public class ElasticsearchTestExtension
   }
 
   @Override
-  public void setIndexMaxTermsCount(final String indexName, final int maxTermsCount)
-      throws IOException {
-    esClient
-        .indices()
-        .putSettings(
-            new UpdateSettingsRequest()
-                .indices(indexName)
-                .settings(Settings.builder().put(MAX_TERMS_COUNT_SETTING, maxTermsCount).build()),
-            RequestOptions.DEFAULT);
-  }
-
-  @Override
-  public int getIndexMaxTermsCount(final String indexName) throws IOException {
-    return Integer.parseInt(
-        esClient
-            .indices()
-            .getSettings(
-                new GetSettingsRequest()
-                    .indices(indexName)
-                    .includeDefaults(true)
-                    .names(MAX_TERMS_COUNT_SETTING),
-                RequestOptions.DEFAULT)
-            .getSetting(indexName, MAX_TERMS_COUNT_SETTING));
-  }
-
-  @Override
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
         .describedAs("There are too many open scroll contexts left.")
         .isLessThanOrEqualTo(maxOpenScrollContexts);
-  }
-
-  @Override
-  public void refreshIndexesInElasticsearch() {
-    refreshZeebeIndices();
-    refreshTasklistIndices();
-  }
-
-  @Override
-  public void refreshZeebeIndices() {
-    try {
-      final RefreshRequest refreshRequest =
-          new RefreshRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
-      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (final Exception t) {
-      LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
-    }
   }
 
   @Override
@@ -180,52 +134,26 @@ public class ElasticsearchTestExtension
   }
 
   @Override
-  public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(testCheck, null, arguments);
-  }
-
-  @Override
-  public void processRecordsAndWaitFor(
-      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
-    int waitingRound = 0;
-    final int maxRounds = 50;
-    boolean found = testCheck.test(arguments);
-    final long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      try {
-        if (supplier != null) {
-          supplier.get();
-        }
-        refreshIndexesInElasticsearch();
-      } catch (final Exception e) {
-        LOGGER.error(e.getMessage(), e);
-      }
-      found = testCheck.test(arguments);
-      if (!found) {
-        sleepFor(500);
-        waitingRound++;
-      }
-    }
-    final long finishedTime = System.currentTimeMillis() - start;
-
-    if (found) {
-      LOGGER.debug(
-          "Condition {} was met in round {} ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    } else {
-      LOGGER.error(
-          "Condition {} was not met after {} rounds ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    }
-  }
-
-  @Override
   public int getOpenScrollcontextSize() {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
+  }
+
+  @Override
+  public <T extends ExporterEntity> void bulkIndex(
+      final IndexDescriptor index,
+      final List<T> documents,
+      final Function<T, String> routingFunction)
+      throws IOException {
+    final var bulkRequest = new BulkRequest().setRefreshPolicy(RefreshPolicy.IMMEDIATE);
+    for (final var document : documents) {
+      bulkRequest.add(
+          new IndexRequest()
+              .index(index.getFullQualifiedName())
+              .id(document.getId())
+              .routing(routingFunction.apply(document))
+              .source(objectMapper.writeValueAsString(document), XContentType.JSON));
+    }
+    esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
   }
 
   private int getIntValueForJSON(

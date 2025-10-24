@@ -13,10 +13,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.BulkIndexRequest.BulkOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceResultRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,11 +33,13 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.provider.Arguments;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
@@ -49,7 +58,11 @@ final class BulkIndexRequestTest {
   @Test
   void shouldReturnMemoryUsageAsLengthOfAllSerializedRecords() throws IOException {
     // given
-    final var records = recordFactory.generateRecords().limit(2).toList();
+    final var records =
+        recordFactory
+            .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+            .limit(2)
+            .toList();
     final var actions =
         List.of(
             new BulkIndexAction("index", "id", "routing"),
@@ -84,7 +97,11 @@ final class BulkIndexRequestTest {
   @Test
   void shouldClear() {
     // given
-    final var records = recordFactory.generateRecords().limit(2).toList();
+    final var records =
+        recordFactory
+            .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+            .limit(2)
+            .toList();
     final var actions =
         List.of(
             new BulkIndexAction("index", "id", "routing"),
@@ -108,7 +125,11 @@ final class BulkIndexRequestTest {
     @Test
     void shouldNotIndexWithIdenticalMetadata() {
       // given
-      final var records = recordFactory.generateRecords().limit(2).toList();
+      final var records =
+          recordFactory
+              .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+              .limit(2)
+              .toList();
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when - doesn't matter what the records are, if the metadata is the same we skip it
@@ -126,7 +147,11 @@ final class BulkIndexRequestTest {
     @Test
     void shouldIndexWithDifferentMetadata() {
       // given
-      final var records = recordFactory.generateRecords().limit(2).toList();
+      final var records =
+          recordFactory
+              .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+              .limit(2)
+              .toList();
       final var actions =
           List.of(
               new BulkIndexAction("index", "id", "routing"),
@@ -150,7 +175,9 @@ final class BulkIndexRequestTest {
     @Test
     void shouldIndexRecordSerialized() {
       // given - use an empty authorization for comparison, since the bulk request will remove it
-      final var record = recordFactory.generateRecord(b -> b.withAuthorizations(Map.of()));
+      final var record =
+          recordFactory.generateRecord(
+              b -> b.withAuthorizations(Map.of()).withBrokerVersion(VersionUtil.getVersion()));
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when
@@ -168,7 +195,11 @@ final class BulkIndexRequestTest {
     void shouldWriteOperationsAsNDJson() throws IOException {
       // given - use an empty authorization for comparison, since the bulk request will remove it
       final var records =
-          recordFactory.generateRecords(b -> b.withAuthorizations(Map.of())).limit(2).toList();
+          recordFactory
+              .generateRecords(
+                  b -> b.withAuthorizations(Map.of()).withBrokerVersion(VersionUtil.getVersion()))
+              .limit(2)
+              .toList();
       final var actions =
           List.of(
               new BulkIndexAction("index", "id", "routing"),
@@ -202,7 +233,11 @@ final class BulkIndexRequestTest {
     @Test
     void shouldIndexRecordWithSequence() {
       // given
-      final var records = recordFactory.generateRecords().limit(2).toList();
+      final var records =
+          recordFactory
+              .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+              .limit(2)
+              .toList();
 
       final var actions =
           List.of(
@@ -228,7 +263,11 @@ final class BulkIndexRequestTest {
     @Test
     void shouldIndexRecordWithoutAuthorizations() {
       // given
-      final var records = recordFactory.generateRecords().limit(1).toList();
+      final var records =
+          recordFactory
+              .generateRecords(r -> r.withBrokerVersion(VersionUtil.getVersion()))
+              .limit(1)
+              .toList();
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -241,6 +280,60 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("authorizations"))
           .describedAs("Expect that the records are NOT serialized with authorizations")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexCommandDistributionRecordWithoutAuthInfoOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new CommandDistributionRecord()
+                              .setPartitionId(1)
+                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
+          .describedAs("Expect that the records are NOT serialized with authInfo")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexCommandDistributionRecordWithoutAuthInfo() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new CommandDistributionRecord()
+                              .setPartitionId(1)
+                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
+          .describedAs("Expect that the records are NOT serialized with authInfo")
           .containsExactly(new Object[] {null});
     }
 
@@ -261,6 +354,51 @@ final class BulkIndexRequestTest {
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
+    }
+
+    static Stream<Arguments> recordsSupportingTagsPreviousVersion() {
+      final var version = VersionUtil.getPreviousVersion();
+      return tagRecordArguments(version);
+    }
+
+    static Stream<Arguments> recordsSupportingTags() {
+      final var version = VersionUtil.getVersion();
+      return tagRecordArguments(version);
+    }
+
+    static Stream<Arguments> tagRecordArguments(final String version) {
+      final ProtocolFactory recordFactory = new ProtocolFactory();
+      final var tags = List.of("t1", "t2");
+      return Stream.of(
+          Arguments.of(
+              recordFactory.generateRecord(
+                  r ->
+                      r.withBrokerVersion(version)
+                          .withValue(
+                              ImmutableProcessInstanceCreationRecordValue.builder()
+                                  .withTags(tags)
+                                  .build()))),
+          Arguments.of(
+              recordFactory.generateRecord(
+                  r ->
+                      r.withBrokerVersion(version)
+                          .withValue(
+                              ImmutableProcessInstanceRecordValue.builder()
+                                  .withTags(tags)
+                                  .build()))),
+          Arguments.of(
+              recordFactory.generateRecord(
+                  r ->
+                      r.withBrokerVersion(version)
+                          .withValue(
+                              ImmutableProcessInstanceResultRecordValue.builder()
+                                  .withTags(tags)
+                                  .build()))),
+          Arguments.of(
+              recordFactory.generateRecord(
+                  r ->
+                      r.withBrokerVersion(version)
+                          .withValue(ImmutableJobRecordValue.builder().withTags(tags).build()))));
     }
   }
 }

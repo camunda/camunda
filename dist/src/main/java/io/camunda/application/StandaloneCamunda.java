@@ -19,8 +19,11 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
@@ -63,6 +66,9 @@ public class StandaloneCamunda {
                 BrokerBasedPropertiesOverride.class,
                 ActorClockControlledPropertiesOverride.class,
                 IdleStrategyPropertiesOverride.class,
+                GatewayRestPropertiesOverride.class,
+                SearchEngineConnectPropertiesOverride.class,
+                SearchEngineIndexPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
@@ -87,11 +93,6 @@ public class StandaloneCamunda {
   public static Map<String, Object> getDefaultProperties() {
     final var defaultProperties = new HashMap<String, Object>();
     defaultProperties.put(SPRING_PROFILES_ACTIVE_PROPERTY, DEFAULT_CAMUNDA_PROFILES);
-    // Per default, we target a green field installation with the StandaloneCamunda application.
-    // Meaning, we will disable the importers per default
-    // Importers can still be enabled by configuration
-    defaultProperties.put("camunda.operate.importerEnabled", "false");
-    defaultProperties.put("camunda.tasklist.importerEnabled", "false");
     return defaultProperties;
   }
 }

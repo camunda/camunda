@@ -31,7 +31,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.lang.reflect.Method;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -357,7 +356,7 @@ public class ProcessDefinitionStatisticsTest {
         f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
         2);
     final var pi = getProcessInstance(piKey);
-    final var startDate = OffsetDateTime.parse(pi.getStartDate());
+    final var startDate = pi.getStartDate();
 
     // when
     final var actual =
@@ -391,7 +390,7 @@ public class ProcessDefinitionStatisticsTest {
         f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
         2);
     final var pi = getProcessInstance(piKey);
-    final var startDate = OffsetDateTime.parse(pi.getStartDate());
+    final var startDate = pi.getStartDate();
 
     // when
     final var actual =
@@ -419,7 +418,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
-    camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
     waitForProcessInstances(
         camundaClient,
         f ->
@@ -454,7 +453,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
-    camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
     waitForProcessInstances(
         camundaClient,
         f ->
@@ -490,7 +489,7 @@ public class ProcessDefinitionStatisticsTest {
     // waitForUserTasks(3, processDefinitionKey);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 3);
     final var userTask = getUserTask(processDefinitionKey);
-    camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
     waitForProcessInstances(
         camundaClient,
         f ->
@@ -567,7 +566,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
-    camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
     waitForProcessInstances(
         camundaClient,
         f ->
@@ -711,7 +710,8 @@ public class ProcessDefinitionStatisticsTest {
             .getProcesses()
             .getFirst()
             .getProcessDefinitionKey();
-    TestHelper.startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}");
+    final Map<String, Object> variables = Map.of("path", 222);
+    TestHelper.startProcessInstance(camundaClient, "service_tasks_v2", variables);
 
     try (final JobWorker ignored =
         camundaClient
@@ -720,7 +720,7 @@ public class ProcessDefinitionStatisticsTest {
             .handler((client, job) -> client.newFailCommand(job).retries(1).send().join())
             .open()) {
 
-      waitUntilJobWorkerHasFailedJob(camundaClient, 1);
+      waitUntilJobWorkerHasFailedJob(camundaClient, variables, 1);
 
       // when
       final var actual =
@@ -750,7 +750,7 @@ public class ProcessDefinitionStatisticsTest {
     waitForScopedProcessInstancesToStart(camundaClient, testScopeId, 2);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
-    camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
     waitForProcessInstances(
         camundaClient,
         f ->
@@ -783,7 +783,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
-    camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
     waitForProcessInstances(
         camundaClient,
         f ->

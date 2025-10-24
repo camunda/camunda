@@ -70,6 +70,7 @@ public class SchemaManagerITInvocationProvider
     }
     config.connect().setClusterName(connectionType.name());
     config.connect().setType(connectionType.toString());
+    config.schemaManager().getRetry().setMaxRetries(3); // cap the retries to avoid long test runs
     return config;
   }
 

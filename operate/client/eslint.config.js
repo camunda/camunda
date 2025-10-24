@@ -191,6 +191,7 @@ const config = defineConfig([
   {
     rules: {
       'no-duplicate-imports': 'error',
+      curly: 'error',
     },
   },
 

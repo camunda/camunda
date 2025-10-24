@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.immutable;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Optional;
 import java.util.Set;
@@ -17,7 +18,7 @@ import java.util.Set;
 public interface AuthorizationState {
   Optional<PersistedAuthorization> get(final long authorizationKey);
 
-  Set<String> getResourceIdentifiers(
+  Set<AuthorizationScope> getAuthorizationScopes(
       final AuthorizationOwnerType ownerType,
       final String ownerId,
       AuthorizationResourceType resourceType,

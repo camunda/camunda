@@ -29,8 +29,10 @@ import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -39,8 +41,19 @@ public class SearchIncidentTest extends ClientRestTest {
 
   @Test
   void shouldGetIncident() {
-    // when
+    // given
     final long incidentKey = 0xC00L;
+    gatewayService.onIncidentRequest(
+        incidentKey,
+        Instancio.create(IncidentResult.class)
+            .incidentKey("1")
+            .elementInstanceKey("2")
+            .processInstanceKey("3")
+            .processDefinitionKey("4")
+            .jobKey("5")
+            .creationTime(OffsetDateTime.now().toString()));
+
+    // when
     client.newIncidentGetRequest(incidentKey).send().join();
 
     // then
@@ -74,7 +87,7 @@ public class SearchIncidentTest extends ClientRestTest {
                     .errorMessage("Can't decide")
                     .elementId("element")
                     .elementInstanceKey(4L)
-                    .creationTime("2024-05-23T23:05:00.000+000")
+                    .creationTime(OffsetDateTime.parse("2024-05-23T23:05:00.001Z"))
                     .state(IncidentState.ACTIVE)
                     .jobKey(5L)
                     .tenantId("tenant"))
@@ -91,7 +104,7 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
     assertThat(filter.getElementId()).isEqualTo("element");
     assertThat(filter.getElementInstanceKey()).isEqualTo("4");
-    assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.000+000");
+    assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.001Z");
     assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
     assertThat(filter.getJobKey()).isEqualTo("5");
     assertThat(filter.getTenantId()).isEqualTo("tenant");
@@ -143,24 +156,6 @@ public class SearchIncidentTest extends ClientRestTest {
     assertSort(sorts.get(7), "state", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "jobKey", SortOrderEnum.ASC);
     assertSort(sorts.get(9), "creationTime", SortOrderEnum.DESC);
-  }
-
-  @Test
-  void shouldSearchWithFullPagination() {
-    // when
-    client
-        .newIncidentSearchRequest()
-        .page(p -> p.from(23).limit(5).before("b").after("a"))
-        .send()
-        .join();
-
-    // then
-    final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest.getFrom()).isEqualTo(23);
-    assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getBefore()).isEqualTo("b");
-    assertThat(pageRequest.getAfter()).isEqualTo("a");
   }
 
   /*

@@ -18,16 +18,20 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1.AssignRoleToGroupCommandStep2;
+import io.camunda.client.api.command.AssignRoleToGroupCommandStep1.AssignRoleToGroupCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignRoleToGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class AssignRoleToGroupCommandImpl
-    implements AssignRoleToGroupCommandStep1, AssignRoleToGroupCommandStep2 {
+    implements AssignRoleToGroupCommandStep1,
+        AssignRoleToGroupCommandStep2,
+        AssignRoleToGroupCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -46,7 +50,7 @@ public class AssignRoleToGroupCommandImpl
   }
 
   @Override
-  public AssignRoleToGroupCommandStep2 groupId(final String groupId) {
+  public AssignRoleToGroupCommandStep3 groupId(final String groupId) {
     this.groupId = groupId;
     return this;
   }
@@ -66,6 +70,7 @@ public class AssignRoleToGroupCommandImpl
         "/roles/" + roleId + "/groups/" + groupId,
         null, // No request body needed
         httpRequestConfig.build(),
+        AssignRoleToGroupResponseImpl::new,
         result);
     return result;
   }

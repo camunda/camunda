@@ -20,7 +20,10 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public final class CreateProcessInstanceWithResultResponseImpl implements ProcessInstanceResult {
 
@@ -33,6 +36,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   private final String variables;
 
   private Map<String, Object> variablesAsMap;
+  private final Set<String> tags;
 
   public CreateProcessInstanceWithResultResponseImpl(
       final JsonMapper jsonMapper, final CreateProcessInstanceResult response) {
@@ -43,6 +47,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
     processInstanceKey = Long.parseLong(response.getProcessInstanceKey());
     tenantId = response.getTenantId();
     variables = jsonMapper.toJson(response.getVariables());
+    tags = response.getTags();
   }
 
   public CreateProcessInstanceWithResultResponseImpl(
@@ -54,6 +59,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
     processInstanceKey = response.getProcessInstanceKey();
     variables = response.getVariables();
     tenantId = response.getTenantId();
+    tags = Collections.unmodifiableSet(new HashSet<>(response.getTagsList()));
   }
 
   @Override
@@ -109,6 +115,11 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   }
 
   @Override
+  public Set<String> getTags() {
+    return tags;
+  }
+
+  @Override
   public String toString() {
     return "CreateProcessInstanceWithResultResponseImpl{"
         + "processDefinitionKey="
@@ -122,6 +133,9 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
         + processInstanceKey
         + ", variables='"
         + variables
+        + '\''
+        + ", tags='"
+        + tags
         + '\''
         + ", tenantId='"
         + tenantId

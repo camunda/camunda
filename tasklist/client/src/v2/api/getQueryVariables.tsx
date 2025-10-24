@@ -6,12 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {getStateLocally} from 'common/local-storage';
-import {
-  numberFiltersSchema,
-  type TaskFilters,
-} from 'v2/features/tasks/filters/useTaskFilters';
+import {type TaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 
 const SORT_BY_FIELD: Record<
   TaskFilters['sortBy'],
@@ -118,24 +115,15 @@ function convertFiltersToQueryVariables(
     filter,
     candidateGroup,
     candidateUser,
-    processInstanceKey,
-    processDefinitionKey,
-    userTaskKey,
     dueDateFrom,
     dueDateTo,
     followUpDateFrom,
     followUpDateTo,
+    assigned,
     ...restFilters
   } = filters;
-  const numberFilters =
-    numberFiltersSchema.safeParse({
-      processInstanceKey,
-      processDefinitionKey,
-      userTaskKey,
-    }).data ?? {};
   const updatedFilters: QueryUserTasksRequestBody['filter'] = {
     ...restFilters,
-    ...numberFilters,
   };
   const customFilters = getStateLocally('customFilters')?.[filter];
 
@@ -167,6 +155,12 @@ function convertFiltersToQueryVariables(
     updatedFilters.followUpDate = {
       $gte: followUpDateFrom.toISOString(),
       $lte: followUpDateTo.toISOString(),
+    };
+  }
+
+  if (assigned !== undefined && !assigned) {
+    updatedFilters.assignee = {
+      $exists: false,
     };
   }
 

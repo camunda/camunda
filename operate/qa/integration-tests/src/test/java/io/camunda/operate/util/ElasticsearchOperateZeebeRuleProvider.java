@@ -53,8 +53,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Autowired public OperateProperties operateProperties;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
+  @Qualifier("esClient")
+  protected RestHighLevelClient esClient;
 
   protected ZeebeContainer zeebeContainer;
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -69,7 +69,6 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   public void starting(final Description description) {
     prefix = indexPrefixHolder.createNewIndexPrefix();
     LOGGER.info("Starting Camunda Exporter with prefix: " + prefix);
-    operateProperties.getZeebeElasticsearch().setPrefix(prefix);
     operateProperties.getElasticsearch().setIndexPrefix(prefix);
 
     startZeebe();
@@ -78,25 +77,36 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Override
   public void updateRefreshInterval(final String value) {
     try {
-      final GetComponentTemplatesRequest getRequest = new GetComponentTemplatesRequest(prefix);
+      final GetComponentTemplatesRequest getRequest =
+          new GetComponentTemplatesRequest(prefix + "*");
       final GetComponentTemplatesResponse response =
-          zeebeEsClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
-      final ComponentTemplate componentTemplate = response.getComponentTemplates().get(prefix);
-      final Settings settings = componentTemplate.template().settings();
-
-      final PutComponentTemplateRequest request = new PutComponentTemplateRequest().name(prefix);
-      final Settings newSettings =
-          Settings.builder().put(settings).put("index.refresh_interval", value).build();
-      final Template newTemplate =
-          new Template(newSettings, componentTemplate.template().mappings(), null);
-      final ComponentTemplate newComponentTemplate = new ComponentTemplate(newTemplate, null, null);
-      request.componentTemplate(newComponentTemplate);
-      assertThat(
-              zeebeEsClient
-                  .cluster()
-                  .putComponentTemplate(request, RequestOptions.DEFAULT)
-                  .isAcknowledged())
-          .isTrue();
+          esClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
+      response
+          .getComponentTemplates()
+          .entrySet()
+          .forEach(
+              componentTemplate -> {
+                final Template template = componentTemplate.getValue().template();
+                final Settings settings = template.settings();
+                final PutComponentTemplateRequest request =
+                    new PutComponentTemplateRequest().name(prefix);
+                final Settings newSettings =
+                    Settings.builder().put(settings).put("index.refresh_interval", value).build();
+                final Template newTemplate = new Template(newSettings, template.mappings(), null);
+                final ComponentTemplate newComponentTemplate =
+                    new ComponentTemplate(newTemplate, null, null);
+                request.componentTemplate(newComponentTemplate);
+                try {
+                  assertThat(
+                          esClient
+                              .cluster()
+                              .putComponentTemplate(request, RequestOptions.DEFAULT)
+                              .isAcknowledged())
+                      .isTrue();
+                } catch (final IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
     } catch (final IOException ex) {
       throw new RuntimeException(ex);
     }
@@ -108,7 +118,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       final String date =
           DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
       final RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
-      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (final IOException ex) {
       throw new RuntimeException(ex);
     }
@@ -122,7 +132,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       client = null;
     }
     if (!failed) {
-      TestUtil.removeAllIndices(zeebeEsClient, prefix);
+      TestUtil.removeAllIndices(esClient, prefix);
     }
   }
 
@@ -152,8 +162,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
     client =
         CamundaClient.newClientBuilder()
-            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-            .usePlaintext()
+            .preferRestOverGrpc(false)
+            .grpcAddress(zeebeContainer.getGrpcAddress())
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
 

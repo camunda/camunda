@@ -29,12 +29,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
+import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.services.ArchiveService;
 import io.camunda.services.WiredLegacyException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -81,21 +82,18 @@ public class InvoiceApprovalTest {
 
     // Let's define a mock in case there is no service interface in between - this is close to what
     // you do with Connectors
-    final AtomicBoolean addInvoiceJobWorkerCalled = new AtomicBoolean(false);
-    processTestContext
-        .mockJobWorker("add-invoice-to-accounting")
-        .withHandler(
-            (jobClient, job) -> {
-              addInvoiceJobWorkerCalled.set(true);
-              // check input mapping
-              org.assertj.core.api.Assertions.assertThat(job.getVariablesAsMap().get("invoiceId"))
-                  .isEqualTo("INV-1001");
-              jobClient
-                  .newCompleteCommand(job)
-                  // .variables(null) //  We could now also simulate setting some response values
-                  .send()
-                  .join();
-            });
+    final JobWorkerMock addInvoiceJobWorkerMock =
+        processTestContext
+            .mockJobWorker("add-invoice-to-accounting")
+            .withHandler(
+                (jobClient, job) -> {
+                  jobClient
+                      .newCompleteCommand(job)
+                      // .variables(null) //  We could now also simulate setting some response
+                      // values
+                      .send()
+                      .join();
+                });
 
     // and now kick off the process instance
     final var processInstance =
@@ -125,9 +123,13 @@ public class InvoiceApprovalTest {
 
     // verify that side effects have happened
     Mockito.verify(archiveService).archiveInvoice("INV-1001", objectMapper.readTree(invoiceJson));
-    org.assertj.core.api.Assertions.assertThat(addInvoiceJobWorkerCalled.get())
+
+    Assertions.assertThat(addInvoiceJobWorkerMock.getInvocations())
         .as("add-invoice-to-accounting job worker called")
-        .isTrue();
+        .isEqualTo(1);
+
+    Assertions.assertThat(addInvoiceJobWorkerMock.getActivatedJobs().get(0).getVariablesAsMap())
+        .containsEntry("invoiceId", "INV-1001");
   }
 
   @DisplayName("Path when invoice was rejected")

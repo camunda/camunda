@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.rest.pagination;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Objects;
 
 public class PaginationScrollableDto extends PaginationDto {
 
@@ -72,13 +73,21 @@ public class PaginationScrollableDto extends PaginationDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final PaginationScrollableDto that = (PaginationScrollableDto) o;
+    return Objects.equals(scrollId, that.scrollId)
+        && Objects.equals(scrollTimeout, that.scrollTimeout);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), scrollId, scrollTimeout);
   }
 
   @Override

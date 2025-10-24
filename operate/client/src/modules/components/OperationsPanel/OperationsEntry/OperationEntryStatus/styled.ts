@@ -7,10 +7,18 @@
  */
 
 import styled from 'styled-components';
-import {styles, supportError, supportSuccess} from '@carbon/elements';
+import {
+  styles,
+  supportError,
+  supportSuccess,
+  supportWarning,
+} from '@carbon/elements';
+import {Tooltip as BaseTooltip} from '@carbon/react';
 import {
   WarningFilled as BaseWarningFilled,
+  WarningAltFilled as BaseWarningAltFilled,
   CheckmarkFilled as BaseCheckmark,
+  ErrorFilled as BaseErrorFilled,
 } from '@carbon/react/icons';
 
 const StatusContainer = styled.div`
@@ -27,9 +35,29 @@ const CheckmarkFilled = styled(BaseCheckmark)`
   fill: ${supportSuccess};
 `;
 
+const WarningAltFilled = styled(BaseWarningAltFilled)`
+  fill: ${supportWarning};
+`;
+
+const ErrorFilled = styled(BaseErrorFilled)`
+  fill: ${supportError};
+`;
+
 const Text = styled.p`
   margin: 0;
   ${styles.bodyShort01};
 `;
 
-export {StatusContainer, WarningFilled, CheckmarkFilled, Text};
+const Tooltip = styled(BaseTooltip)`
+  height: 16px;
+`;
+
+export {
+  StatusContainer,
+  WarningFilled,
+  CheckmarkFilled,
+  WarningAltFilled,
+  ErrorFilled,
+  Text,
+  Tooltip,
+};

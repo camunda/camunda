@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
@@ -57,16 +58,23 @@ public class JobWriter {
 
   public void scheduleForHistoryCleanup(
       final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.JOB,
-            WriteStatementType.UPDATE,
-            processInstanceKey,
-            "io.camunda.db.rdbms.sql.JobMapper.updateHistoryCleanupDate",
-            new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
-                .processInstanceKey(processInstanceKey)
-                .historyCleanupDate(historyCleanupDate)
-                .build()));
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new UpdateHistoryCleanupDateMerger(
+                ContextType.JOB, processInstanceKey, historyCleanupDate));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.JOB,
+              WriteStatementType.UPDATE,
+              processInstanceKey,
+              "io.camunda.db.rdbms.sql.JobMapper.updateHistoryCleanupDate",
+              new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+                  .processInstanceKey(processInstanceKey)
+                  .historyCleanupDate(historyCleanupDate)
+                  .build()));
+    }
   }
 
   public int cleanupHistory(

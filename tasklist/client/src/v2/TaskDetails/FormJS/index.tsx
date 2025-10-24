@@ -7,7 +7,7 @@
  */
 
 import {Layer, type InlineLoadingProps} from '@carbon/react';
-import type {CurrentUser, UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.8';
 import {FormJSRenderer} from 'common/form-js/FormJSRenderer';
 import type {FormManager} from 'common/form-js/formManager';
 import {notificationsStore} from 'common/notifications/notifications.store';
@@ -21,11 +21,13 @@ import {
   TaskDetailsContainer,
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
-import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';
-import {useSelectedVariables} from 'v2/api/useSelectedVariables.query';
+import {
+  useSelectedVariables,
+  TruncatedVariableError,
+} from 'v2/api/useSelectedVariables.query';
 import {useRemoveFormReference} from 'v2/api/useTask.query';
 import {useUserTaskForm} from 'v2/api/useUserTaskForm.query';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
@@ -50,9 +52,13 @@ const FormJS: React.FC<Props> = ({
   const {t} = useTranslation();
   const formManagerRef = useRef<FormManager | null>(null);
   const {userTaskKey, state, assignee} = task;
-  const [submissionState, setSubmissionState] = useState<
+  const [localSubmissionState, setLocalSubmissionState] = useState<
     NonNullable<InlineLoadingProps['status']>
   >(() => (state === 'COMPLETING' ? 'active' : 'inactive'));
+
+  const submissionState =
+    state === 'COMPLETING' ? 'active' : localSubmissionState;
+
   const {data, isLoading} = useUserTaskForm(
     {userTaskKey},
     {
@@ -62,7 +68,11 @@ const FormJS: React.FC<Props> = ({
   );
   const {schema} = data ?? {};
   const extractedVariables = extractVariablesFromFormSchema(schema);
-  const {data: variablesData, status} = useSelectedVariables(
+  const {
+    data: variablesData,
+    status,
+    error,
+  } = useSelectedVariables(
     {
       userTaskKey,
       variableNames: extractedVariables,
@@ -84,16 +94,9 @@ const FormJS: React.FC<Props> = ({
   const canCompleteTask =
     user.username === assignee && state === 'CREATED' && hasFetchedVariables;
 
-  const shouldHideBottomPanel =
-    state === 'ASSIGNING' ||
-    (state === 'UPDATING' && assignee === null) ||
-    (state === 'CANCELING' && assignee === null);
-
-  useEffect(() => {
-    if (state === 'COMPLETING') {
-      setSubmissionState('active');
-    }
-  }, [state]);
+  if (error instanceof TruncatedVariableError) {
+    throw error;
+  }
 
   const {removeFormReference} = useRemoveFormReference(task);
   return (
@@ -147,50 +150,47 @@ const FormJS: React.FC<Props> = ({
                     });
                   }}
                   onSubmitStart={() => {
-                    setSubmissionState('active');
+                    setLocalSubmissionState('active');
                   }}
                   onSubmitSuccess={() => {
-                    setSubmissionState('finished');
+                    setLocalSubmissionState('finished');
                   }}
                   onSubmitError={(error) => {
                     onSubmitFailure(error as Error);
-                    setSubmissionState('error');
+                    setLocalSubmissionState('error');
                   }}
                   onValidationError={() => {
-                    setSubmissionState('inactive');
+                    if (state !== 'COMPLETING') {
+                      setLocalSubmissionState('inactive');
+                    }
                   }}
                 />
               ),
             )
             .otherwise(() => null)}
         </Layer>
-        {!shouldHideBottomPanel && (
-          <DetailsFooter>
-            <CompleteTaskButton
-              submissionState={submissionState}
-              onClick={() => {
-                setSubmissionState('active');
-                formManagerRef.current?.submit();
-              }}
-              onSuccess={() => {
-                onSubmitSuccess();
-                setSubmissionState('inactive');
-              }}
-              onError={() => {
-                if (state === 'COMPLETING') {
-                  setSubmissionState('active');
-                } else {
-                  setSubmissionState('inactive');
-                }
-              }}
-              isHidden={['COMPLETED', 'CANCELING', 'UPDATING'].includes(state)}
-              isDisabled={!canCompleteTask}
-            />
-            {['UPDATING', 'CANCELING'].includes(state) && (
-              <TaskStateLoadingText taskState={state} />
-            )}
-          </DetailsFooter>
-        )}
+        <DetailsFooter>
+          <CompleteTaskButton
+            submissionState={submissionState}
+            onClick={() => {
+              setLocalSubmissionState('active');
+              formManagerRef.current?.submit();
+            }}
+            onSuccess={() => {
+              onSubmitSuccess();
+              setLocalSubmissionState('inactive');
+            }}
+            onError={() => {
+              if (state === 'COMPLETING') {
+                setLocalSubmissionState('active');
+              } else {
+                setLocalSubmissionState('inactive');
+              }
+            }}
+            isHidden={state === 'COMPLETED'}
+            isDisabled={!canCompleteTask}
+          />
+        </DetailsFooter>
       </TaskDetailsContainer>
     </ScrollableContent>
   );

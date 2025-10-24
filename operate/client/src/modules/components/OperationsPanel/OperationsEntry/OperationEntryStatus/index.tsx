@@ -6,66 +6,80 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {
+  BatchOperationState,
+  BatchOperationType,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {CheckmarkFilled, StatusContainer, Text, WarningFilled} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {type OperationLabelType} from '../';
+import {Stack} from '@carbon/react';
+import {PartiallyCompleted} from './PartiallyCompleted';
+import {Failed} from './Failed';
 
-interface Props {
-  isTypeDeleteProcessOrDecision: boolean;
-  label: OperationLabelType;
-  failedOperationsCount?: number;
-  completedOperationsCount?: number;
-}
+type Props = {
+  type: BatchOperationType;
+  failedCount?: number;
+  completedCount?: number;
+  state: BatchOperationState;
+};
 
-const OperationEntryStatus: React.FC<Props> = ({
-  label,
-  isTypeDeleteProcessOrDecision,
-  failedOperationsCount = 0,
-  completedOperationsCount = 0,
-}) => {
-  const instanceDeletedText = `${pluralSuffix(
-    completedOperationsCount,
-    'instance',
-  )} deleted`;
-
-  const successText = `${completedOperationsCount} success`;
-
-  if (label === 'Delete' && !isTypeDeleteProcessOrDecision) {
-    if (failedOperationsCount) {
-      return (
-        <StatusContainer>
-          {failedOperationsCount ? (
-            <>
-              <WarningFilled />
-              <Text>{`${failedOperationsCount} fail`}</Text>
-            </>
-          ) : null}
-        </StatusContainer>
-      );
-    }
-
-    return null;
+const getSuccessMessage = (
+  type: BatchOperationType,
+  completedCount: number,
+): string => {
+  if (type === 'RESOLVE_INCIDENT') {
+    return `${completedCount} ${completedCount === 1 ? 'retry' : 'retries'} succeeded`;
   }
 
+  return `${pluralSuffix(completedCount, 'operation')} succeeded`;
+};
+
+const getFailureMessage = (
+  type: BatchOperationType,
+  failedCount: number,
+  completedCount: number,
+): string => {
+  if (type === 'RESOLVE_INCIDENT') {
+    if (completedCount > 0) {
+      return `${failedCount} rejected`;
+    }
+    return `${failedCount} ${failedCount === 1 ? 'retry' : 'retries'} rejected`;
+  }
+
+  if (completedCount > 0) {
+    return `${failedCount} failed`;
+  }
+
+  return `${pluralSuffix(failedCount, 'operation')} failed`;
+};
+
+const OperationEntryStatus: React.FC<Props> = ({
+  type,
+  failedCount = 0,
+  completedCount = 0,
+  state,
+}) => {
   return (
-    <StatusContainer>
-      {completedOperationsCount ? (
-        <>
-          <CheckmarkFilled />
-          <Text>
-            {isTypeDeleteProcessOrDecision ? instanceDeletedText : successText}
-          </Text>
-        </>
-      ) : null}
-      {completedOperationsCount && failedOperationsCount ? ' / ' : null}
-      {failedOperationsCount ? (
-        <>
-          <WarningFilled />
-          <Text>{`${failedOperationsCount} fail`}</Text>
-        </>
-      ) : null}
-    </StatusContainer>
+    <Stack gap={3}>
+      {state === 'PARTIALLY_COMPLETED' && <PartiallyCompleted />}
+      {state === 'FAILED' && <Failed />}
+      <StatusContainer>
+        {completedCount > 0 ? (
+          <>
+            <CheckmarkFilled />
+            <Text>{getSuccessMessage(type, completedCount)}</Text>
+          </>
+        ) : null}
+        {completedCount > 0 && failedCount > 0 ? ' / ' : null}
+        {failedCount ? (
+          <>
+            <WarningFilled />
+            <Text>{getFailureMessage(type, failedCount, completedCount)}</Text>
+          </>
+        ) : null}
+      </StatusContainer>
+    </Stack>
   );
 };
 
-export default OperationEntryStatus;
+export {OperationEntryStatus};

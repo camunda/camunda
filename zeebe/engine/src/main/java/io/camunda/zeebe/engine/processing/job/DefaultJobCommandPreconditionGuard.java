@@ -81,6 +81,6 @@ public final class DefaultJobCommandPreconditionGuard {
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 job.getTenantId())
             .addResourceId(job.getBpmnProcessId());
-    return authCheckBehavior.isAuthorized(request).map(unused -> job);
+    return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(unused -> job);
   }
 }

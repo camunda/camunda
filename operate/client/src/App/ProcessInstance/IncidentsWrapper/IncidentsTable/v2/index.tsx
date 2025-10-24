@@ -9,11 +9,9 @@
 import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
-import {sortIncidents} from '../service';
+import {sortIncidents} from './service';
 import {observer} from 'mobx-react';
-import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {FlexContainer, ErrorMessageCell} from '../styled';
-import {type Incident} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router-dom';
@@ -24,214 +22,200 @@ import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {useHasPermissions} from 'modules/queries/permissions/useHasPermissions';
 import {
-  getFilteredIncidents,
-  isSingleIncidentSelected,
+  getIncidentErrorName,
+  isSingleIncidentSelectedV2,
 } from 'modules/utils/incidents';
-import {useIncidents} from 'modules/hooks/incidents';
 import {clearSelection, selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
+import type {EnhancedIncident} from 'modules/hooks/incidents';
 
-const IncidentsTable: React.FC = observer(function IncidentsTable() {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalContent, setModalContent] = useState<string>('');
-  const [modalTitle, setModalTitle] = useState<string>('');
-  const rootNode = useRootNode();
+type IncidentsTableProps = {
+  processInstanceKey: string;
+  incidents: EnhancedIncident[];
+};
 
-  const {processInstanceId = ''} = useProcessInstancePageParams();
-  const {data: hasPermissionForRetryOperation} = useHasPermissions([
-    'UPDATE_PROCESS_INSTANCE',
-  ]);
-  const incidents = useIncidents();
-  const location = useLocation();
-  const {sortBy, sortOrder} = getSortParams(location.search) || {
-    sortBy: 'creationTime',
-    sortOrder: 'desc',
-  };
+const IncidentsTable: React.FC<IncidentsTableProps> = observer(
+  function IncidentsTable({incidents, processInstanceKey}) {
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [modalContent, setModalContent] = useState<string>('');
+    const [modalTitle, setModalTitle] = useState<string>('');
+    const rootNode = useRootNode();
 
-  const filteredIncidents = getFilteredIncidents(incidents);
+    const {data: hasPermissionForRetryOperation} = useHasPermissions([
+      'UPDATE_PROCESS_INSTANCE',
+    ]);
+    const location = useLocation();
+    const {sortBy, sortOrder} = getSortParams(location.search) || {
+      sortBy: 'creationTime',
+      sortOrder: 'desc',
+    };
 
-  const handleModalClose = () => {
-    setIsModalVisible(false);
-    setModalContent('');
-    setModalTitle('');
-  };
+    const handleModalClose = () => {
+      setIsModalVisible(false);
+      setModalContent('');
+      setModalTitle('');
+    };
 
-  const handleMoreButtonClick = (
-    errorMessage: string,
-    flowNodeName: string,
-  ) => {
-    setIsModalVisible(true);
-    setModalContent(errorMessage);
-    setModalTitle(`Flow Node "${flowNodeName}" Error`);
-  };
+    const handleMoreButtonClick = (
+      errorMessage: string,
+      elementName: string,
+    ) => {
+      setIsModalVisible(true);
+      setModalContent(errorMessage);
+      setModalTitle(`Element "${elementName}" Error`);
+    };
 
-  const sortedIncidents: Incident[] = sortIncidents(
-    filteredIncidents,
-    sortBy,
-    sortOrder,
-  );
+    const sortedIncidents = sortIncidents(incidents, sortBy, sortOrder);
 
-  const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
+    const isJobKeyPresent = sortedIncidents.some(({jobKey}) => !!jobKey);
 
-  const hasIncidentInCalledInstance = sortedIncidents.some(
-    ({rootCauseInstance}) =>
-      rootCauseInstance?.instanceId !== processInstanceId,
-  );
+    return (
+      <>
+        <SortableTable
+          state="content"
+          selectionType="row"
+          columnsWithNoContentPadding={['operations', 'errorMessage']}
+          onSelect={(rowId) => {
+            const incident = sortedIncidents.find(
+              ({incidentKey}) => incidentKey === rowId,
+            );
+            if (incident === undefined) {
+              return;
+            }
 
-  return (
-    <>
-      <SortableTable
-        state="content"
-        selectionType="row"
-        columnsWithNoContentPadding={['operations', 'errorMessage']}
-        onSelect={(rowId) => {
-          const incident = sortedIncidents.find(({id}) => id === rowId);
-          if (incident === undefined) {
-            return;
-          }
-
-          if (
-            isSingleIncidentSelected(incidents, incident.flowNodeInstanceId)
-          ) {
-            clearSelection(rootNode);
-          } else {
-            selectFlowNode(rootNode, {
-              flowNodeId: incident.flowNodeId,
-              flowNodeInstanceId: incident.flowNodeInstanceId,
-              isMultiInstance: false,
+            if (
+              isSingleIncidentSelectedV2(incidents, incident.elementInstanceKey)
+            ) {
+              clearSelection(rootNode);
+            } else {
+              selectFlowNode(rootNode, {
+                flowNodeId: incident.elementId,
+                flowNodeInstanceId: incident.elementInstanceKey,
+                isMultiInstance: false,
+              });
+            }
+          }}
+          checkIsRowSelected={(rowId) => {
+            const incident = sortedIncidents.find(
+              ({incidentKey}) => incidentKey === rowId,
+            );
+            if (incident === undefined) {
+              return false;
+            }
+            return incident.isSelected;
+          }}
+          onSort={(sortKey: string) => {
+            tracking.track({
+              eventName: 'incidents-sorted',
+              column: sortKey,
             });
-          }
-        }}
-        checkIsRowSelected={(rowId) => {
-          const incident = sortedIncidents.find(({id}) => id === rowId);
-          if (incident === undefined) {
-            return false;
-          }
-          return incident.isSelected;
-        }}
-        onSort={(sortKey: string) => {
-          tracking.track({
-            eventName: 'incidents-sorted',
-            column: sortKey,
-          });
-        }}
-        headerColumns={[
-          {
-            header: 'Incident Type',
-            key: 'errorType',
-          },
-          {
-            header: 'Failing Flow Node',
-            key: 'flowNodeName',
-          },
-          {
-            header: 'Job Id',
-            key: 'jobId',
-            isDisabled: !isJobIdPresent,
-          },
-          {
-            header: 'Creation Date',
-            key: 'creationTime',
-            isDefault: true,
-          },
-          {
-            header: 'Error Message',
-            key: 'errorMessage',
-            isDisabled: true,
-          },
-          ...(hasIncidentInCalledInstance
-            ? [
-                {
-                  header: 'Root Cause Instance',
-                  key: 'rootCauseInstance',
-                },
-              ]
-            : []),
-          ...(hasPermissionForRetryOperation
-            ? [
-                {
-                  header: 'Operations',
-                  key: 'operations',
-                  isDisabled: true,
-                },
-              ]
-            : []),
-        ]}
-        rows={sortedIncidents.map((incident) => {
-          const {rootCauseInstance} = incident;
-          const areOperationsVisible =
-            rootCauseInstance === null ||
-            rootCauseInstance.instanceId === processInstanceId;
+          }}
+          headerColumns={[
+            {
+              header: 'Incident Type',
+              key: 'errorType',
+            },
+            {
+              header: 'Failing Element',
+              key: 'elementName',
+            },
+            {
+              header: 'Job Id',
+              key: 'jobId',
+              isDisabled: !isJobKeyPresent,
+            },
+            {
+              header: 'Creation Date',
+              key: 'creationTime',
+              isDefault: true,
+            },
+            {
+              header: 'Error Message',
+              key: 'errorMessage',
+              isDisabled: true,
+            },
+            ...(hasPermissionForRetryOperation
+              ? [
+                  {
+                    header: 'Operations',
+                    key: 'operations',
+                    isDisabled: true,
+                  },
+                ]
+              : []),
+          ]}
+          rows={sortedIncidents.map((incident) => {
+            const areOperationsVisible =
+              processInstanceKey === incident.processInstanceKey;
 
-          return {
-            id: incident.id,
-            errorType: incident.errorType.name,
-            flowNodeName: incident.flowNodeName,
-            jobId: incident.jobId || '--',
-            creationTime: formatDate(incident.creationTime),
-            errorMessage: (
-              <FlexContainer>
-                <ErrorMessageCell>{incident.errorMessage}</ErrorMessageCell>
-                {incident.errorMessage.length >= 58 && (
-                  <Button
-                    size="sm"
-                    kind="ghost"
-                    onClick={(event) => {
-                      event.stopPropagation();
-
-                      tracking.track({
-                        eventName: 'incidents-panel-full-error-message-opened',
-                      });
-
-                      handleMoreButtonClick(
-                        incident.errorMessage,
-                        incident.flowNodeName,
-                      );
-                    }}
-                  >
-                    More
-                  </Button>
-                )}
-              </FlexContainer>
-            ),
-            rootCauseInstance:
-              rootCauseInstance !== null ? (
-                rootCauseInstance.instanceId === processInstanceId ? (
-                  '--'
+            return {
+              id: incident.incidentKey,
+              errorType: getIncidentErrorName(incident.errorType),
+              elementName:
+                processInstanceKey === incident.processInstanceKey ? (
+                  incident.elementName
                 ) : (
                   <Link
                     to={{
                       pathname: Paths.processInstance(
-                        rootCauseInstance.instanceId,
+                        incident.processInstanceKey,
                       ),
+                      search: `?elementId=${incident.elementId}`,
                     }}
-                    title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                    title={`View root cause instance ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
                   >
-                    {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                    {`${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
                   </Link>
-                )
-              ) : undefined,
+                ),
+              jobId: incident.jobKey || '--',
+              creationTime: formatDate(incident.creationTime),
+              errorMessage: (
+                <FlexContainer>
+                  <ErrorMessageCell>{incident.errorMessage}</ErrorMessageCell>
+                  {incident.errorMessage.length >= 58 && (
+                    <Button
+                      size="sm"
+                      kind="ghost"
+                      onClick={(event) => {
+                        event.stopPropagation();
 
-            operations:
-              hasPermissionForRetryOperation && areOperationsVisible ? (
-                <IncidentOperation
-                  instanceId={processInstanceId}
-                  incident={incident}
-                  showSpinner={incident.hasActiveOperation}
-                />
-              ) : undefined,
-          };
-        })}
-      />
-      <JSONEditorModal
-        isVisible={isModalVisible}
-        title={modalTitle}
-        value={modalContent}
-        onClose={handleModalClose}
-        readOnly
-      />
-    </>
-  );
-});
+                        tracking.track({
+                          eventName:
+                            'incidents-panel-full-error-message-opened',
+                        });
+
+                        handleMoreButtonClick(
+                          incident.errorMessage,
+                          incident.elementName,
+                        );
+                      }}
+                    >
+                      More
+                    </Button>
+                  )}
+                </FlexContainer>
+              ),
+              operations:
+                hasPermissionForRetryOperation && areOperationsVisible ? (
+                  <IncidentOperation
+                    instanceId={incident.processInstanceKey}
+                    incidentKey={incident.incidentKey}
+                    showSpinner={true} // TODO: What to do here?
+                  />
+                ) : undefined,
+            };
+          })}
+        />
+        <JSONEditorModal
+          isVisible={isModalVisible}
+          title={modalTitle}
+          value={modalContent}
+          onClose={handleModalClose}
+          readOnly
+        />
+      </>
+    );
+  },
+);
 
 export {IncidentsTable};

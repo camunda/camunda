@@ -18,16 +18,20 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1.AssignRoleToTenantCommandStep2;
+import io.camunda.client.api.command.AssignRoleToTenantCommandStep1.AssignRoleToTenantCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignRoleToTenantResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class AssignRoleToTenantCommandImpl
-    implements AssignRoleToTenantCommandStep1, AssignRoleToTenantCommandStep2 {
+    implements AssignRoleToTenantCommandStep1,
+        AssignRoleToTenantCommandStep2,
+        AssignRoleToTenantCommandStep3 {
 
   private String tenantId;
   private String roleId;
@@ -46,7 +50,7 @@ public final class AssignRoleToTenantCommandImpl
   }
 
   @Override
-  public AssignRoleToTenantCommandStep2 tenantId(final String tenantId) {
+  public AssignRoleToTenantCommandStep3 tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -64,7 +68,8 @@ public final class AssignRoleToTenantCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     final HttpCamundaFuture<AssignRoleToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/roles/%s", tenantId, roleId);
-    httpClient.put(endpoint, null, httpRequestConfig.build(), result);
+    httpClient.put(
+        endpoint, null, httpRequestConfig.build(), AssignRoleToTenantResponseImpl::new, result);
     return result;
   }
 }

@@ -9,137 +9,114 @@
 import {formatDate} from 'modules/utils/date';
 import {useLoadingProgress} from './useLoadingProgress';
 import {Container, Details, Title, Header, ProgressBar} from './styled';
-import OperationEntryStatus from './OperationEntryStatus';
+import {OperationEntryStatus} from './OperationEntryStatus';
 import {
-  TrashCan,
   Error,
   Tools,
   RetryFailed,
-  Edit,
   MigrateAlt,
-  Move,
+  TrashCan,
 } from '@carbon/react/icons';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import type {OperationEntity, OperationEntityType} from 'modules/types/operate';
+import type {
+  BatchOperation,
+  BatchOperationType,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
-type OperationLabelType =
-  | 'Edit'
-  | 'Retry'
-  | 'Cancel'
-  | 'Modify'
-  | 'Delete'
-  | 'Migrate'
-  | 'Batch Modification';
+type OperationLabelType = 'Retry' | 'Cancel' | 'Modify' | 'Migrate' | 'Delete';
 
-const TYPE_LABELS: Readonly<Record<OperationEntityType, OperationLabelType>> = {
-  ADD_VARIABLE: 'Edit',
-  UPDATE_VARIABLE: 'Edit',
+const TYPE_LABELS: Readonly<Record<BatchOperationType, OperationLabelType>> = {
   RESOLVE_INCIDENT: 'Retry',
   CANCEL_PROCESS_INSTANCE: 'Cancel',
-  DELETE_PROCESS_INSTANCE: 'Delete',
   MODIFY_PROCESS_INSTANCE: 'Modify',
+  MIGRATE_PROCESS_INSTANCE: 'Migrate',
+  DELETE_PROCESS_INSTANCE: 'Delete',
   DELETE_PROCESS_DEFINITION: 'Delete',
   DELETE_DECISION_DEFINITION: 'Delete',
-  MIGRATE_PROCESS_INSTANCE: 'Migrate',
-  MOVE_TOKEN: 'Batch Modification',
 };
 
 type Props = {
-  operation: OperationEntity;
+  operation: BatchOperation;
 };
 
 const OperationsEntry: React.FC<Props> = ({operation}) => {
   const {
-    id,
-    type,
-    name,
+    batchOperationKey,
+    batchOperationType,
     endDate,
     operationsTotalCount,
-    operationsFinishedCount,
-    failedOperationsCount,
-    completedOperationsCount,
+    operationsCompletedCount,
+    operationsFailedCount,
+    state,
   } = operation;
 
   const {fakeProgressPercentage, isComplete} = useLoadingProgress({
     totalCount: operationsTotalCount,
-    finishedCount: operationsFinishedCount,
-    isFinished: endDate !== null,
+    processedCount: operationsCompletedCount + operationsFailedCount,
+    isFinished: endDate !== undefined,
   });
 
-  const label = TYPE_LABELS[type];
-
-  const isTypeDeleteProcessOrDecision = [
-    'DELETE_PROCESS_DEFINITION',
-    'DELETE_DECISION_DEFINITION',
-  ].includes(type);
-
-  const shouldHaveIdLink =
-    label !== 'Delete' ||
-    (isTypeDeleteProcessOrDecision && failedOperationsCount) ||
-    (label === 'Delete' &&
-      !isTypeDeleteProcessOrDecision &&
-      failedOperationsCount);
+  const label = TYPE_LABELS[batchOperationType] || 'Unknown Operation';
 
   return (
     <Container data-testid="operations-entry">
-      <Header>
-        <Title>
-          {label}
-          {isTypeDeleteProcessOrDecision ? ` ${name}` : ''}
-        </Title>
-        {label === 'Delete' && (
-          <TrashCan size={16} data-testid="operation-delete-icon" />
+      <div>
+        <Header>
+          <Title>{label}</Title>
+          {batchOperationType === 'CANCEL_PROCESS_INSTANCE' && (
+            <Error size={16} data-testid="operation-cancel-icon" />
+          )}
+          {batchOperationType === 'RESOLVE_INCIDENT' && (
+            <RetryFailed size={16} data-testid="operation-retry-icon" />
+          )}
+          {batchOperationType === 'MODIFY_PROCESS_INSTANCE' && (
+            <Tools size={16} data-testid="operation-modify-icon" />
+          )}
+          {batchOperationType === 'MIGRATE_PROCESS_INSTANCE' && (
+            <MigrateAlt size={16} data-testid="operation-migrate-icon" />
+          )}
+          {[
+            'DELETE_PROCESS_INSTANCE',
+            'DELETE_PROCESS_DEFINITION',
+            'DELETE_DECISION_DEFINITION',
+          ].includes(batchOperationType) && (
+            <TrashCan size={16} data-testid="operation-delete-icon" />
+          )}
+        </Header>
+        {!batchOperationType.startsWith('DELETE') ? (
+          <Link
+            data-testid="operation-id"
+            to={{
+              pathname: Paths.processes(),
+              search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${batchOperationKey}`,
+            }}
+            state={{hideOptionalFilters: true}}
+            onClick={panelStatesStore.expandFiltersPanel}
+          >
+            {batchOperationKey}
+          </Link>
+        ) : (
+          <span data-testid="operation-id">{batchOperationKey}</span>
         )}
-        {label === 'Cancel' && (
-          <Error size={16} data-testid="operation-cancel-icon" />
-        )}
-        {label === 'Retry' && (
-          <RetryFailed size={16} data-testid="operation-retry-icon" />
-        )}
-        {label === 'Modify' && (
-          <Tools size={16} data-testid="operation-modify-icon" />
-        )}
-        {label === 'Edit' && (
-          <Edit size={16} data-testid="operation-edit-icon" />
-        )}
-        {label === 'Migrate' && (
-          <MigrateAlt size={16} data-testid="operation-migrate-icon" />
-        )}
-        {label === 'Batch Modification' && (
-          <Move size={16} data-testid="operation-move-icon" />
-        )}
-      </Header>
-      {shouldHaveIdLink ? (
-        <Link
-          data-testid="operation-id"
-          to={{
-            pathname: Paths.processes(),
-            search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${id}`,
-          }}
-          state={{hideOptionalFilters: true}}
-          onClick={panelStatesStore.expandFiltersPanel}
-        >
-          {id}
-        </Link>
-      ) : (
-        <div data-testid="operation-id">{id}</div>
+      </div>
+      {isComplete ? null : (
+        <ProgressBar label="" value={fakeProgressPercentage} />
       )}
-      {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
         <OperationEntryStatus
-          isTypeDeleteProcessOrDecision={isTypeDeleteProcessOrDecision}
-          label={label}
-          failedOperationsCount={failedOperationsCount}
-          completedOperationsCount={completedOperationsCount}
+          type={batchOperationType}
+          failedCount={operationsFailedCount}
+          completedCount={operationsCompletedCount}
+          state={state}
         />
-
-        {endDate !== null && isComplete && <div>{formatDate(endDate)}</div>}
+        {endDate !== undefined && isComplete && (
+          <div>{formatDate(endDate)}</div>
+        )}
       </Details>
     </Container>
   );
 };
 
-export default OperationsEntry;
-export type {OperationLabelType};
+export {OperationsEntry};

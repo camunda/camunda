@@ -12,7 +12,14 @@ import {request} from 'common/api/request';
 import type {
   QueryVariablesByUserTaskResponseBody,
   UserTask,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
+
+class TruncatedVariableError extends Error {
+  constructor(message = 'Variables are truncated') {
+    super(message);
+    this.name = 'TruncatedVariableError';
+  }
+}
 
 type Params = {
   userTaskKey: UserTask['userTaskKey'];
@@ -46,16 +53,22 @@ function useSelectedVariables(params: Params, options: Options = {}) {
         }),
       );
 
-      if (response !== null) {
-        const responseBody =
-          (await response.json()) as QueryVariablesByUserTaskResponseBody;
-
-        return responseBody.items;
+      if (error !== null) {
+        throw error;
       }
 
-      throw error;
+      const responsePayload =
+        (await response.json()) as QueryVariablesByUserTaskResponseBody;
+      const variables = responsePayload.items;
+
+      if (variables.some((variable) => variable.isTruncated)) {
+        throw new TruncatedVariableError();
+      }
+
+      return responsePayload.items;
     },
+    retry: false,
   });
 }
 
-export {useSelectedVariables};
+export {useSelectedVariables, TruncatedVariableError};

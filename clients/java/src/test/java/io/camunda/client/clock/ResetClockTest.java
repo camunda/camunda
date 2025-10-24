@@ -28,7 +28,7 @@ public final class ResetClockTest extends ClientRestTest {
   @Test
   void shouldResetClock() {
     // when
-    client.newClockResetCommand().send().join();
+    client.newResetClockCommand().send().join();
 
     // then
     assertThat(RestGatewayService.getLastRequest())

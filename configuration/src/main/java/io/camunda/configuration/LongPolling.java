@@ -9,18 +9,27 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults;
+import java.util.Map;
 import java.util.Set;
 
-public class LongPolling {
-  private static final String PREFIX = "camunda.api.long-polling.";
-  private static final Set<String> LEGACY_ENABLED_PROPERTIES =
-      Set.of("zeebe.gateway.longPolling.enabled");
-  private static final Set<String> LEGACY_TIMEOUT_PROPERTIES =
-      Set.of("zeebe.gateway.longPolling.timeout");
-  private static final Set<String> LEGACY_PROBE_TIMEOUT_PROPERTIES =
-      Set.of("zeebe.gateway.longPolling.probeTimeout");
-  private static final Set<String> LEGACY_MIN_EMPTY_RESPONSES_PROPERTIES =
-      Set.of("zeebe.gateway.longPolling.minEmptyResponses");
+public class LongPolling implements Cloneable {
+  private static final String PREFIX = "camunda.api.long-polling";
+
+  private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
+      Map.of(
+          "enabled", "zeebe.gateway.longPolling.enabled",
+          "timeout", "zeebe.gateway.longPolling.timeout",
+          "probeTimeout", "zeebe.gateway.longPolling.probeTimeout",
+          "minEmptyResponses", "zeebe.gateway.longPolling.minEmptyResponses");
+
+  private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
+      Map.of(
+          "enabled", "zeebe.broker.gateway.longPolling.enabled",
+          "timeout", "zeebe.broker.gateway.longPolling.timeout",
+          "probeTimeout", "zeebe.broker.gateway.longPolling.probeTimeout",
+          "minEmptyResponses", "zeebe.broker.gateway.longPolling.minEmptyResponses");
+
+  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
   /** Enables long polling for available jobs */
   private boolean enabled = ConfigurationDefaults.DEFAULT_LONG_POLLING_ENABLED;
@@ -40,11 +49,11 @@ public class LongPolling {
 
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "enabled",
+        PREFIX + ".enabled",
         enabled,
         Boolean.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENABLED_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("enabled")));
   }
 
   public void setEnabled(final boolean enabled) {
@@ -53,11 +62,11 @@ public class LongPolling {
 
   public long getTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "timeout",
+        PREFIX + ".timeout",
         timeout,
         Long.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_TIMEOUT_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("timeout")));
   }
 
   public void setTimeout(final long timeout) {
@@ -66,11 +75,11 @@ public class LongPolling {
 
   public long getProbeTimeout() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "probe-timeout",
+        PREFIX + ".probe-timeout",
         probeTimeout,
         Long.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_PROBE_TIMEOUT_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("probeTimeout")));
   }
 
   public void setProbeTimeout(final long probeTimeout) {
@@ -79,14 +88,35 @@ public class LongPolling {
 
   public int getMinEmptyResponses() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "min-empty-responses",
+        PREFIX + ".min-empty-responses",
         minEmptyResponses,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MIN_EMPTY_RESPONSES_PROPERTIES);
+        Set.of(legacyPropertiesMap.get("minEmptyResponses")));
   }
 
   public void setMinEmptyResponses(final int minEmptyResponses) {
     this.minEmptyResponses = minEmptyResponses;
+  }
+
+  @Override
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
+  }
+
+  public LongPolling withBrokerLongPollingProperties() {
+    final var copy = (LongPolling) clone();
+    copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
+    return copy;
+  }
+
+  public LongPolling withGatewayLongPollingProperties() {
+    final var copy = (LongPolling) clone();
+    copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
+    return copy;
   }
 }

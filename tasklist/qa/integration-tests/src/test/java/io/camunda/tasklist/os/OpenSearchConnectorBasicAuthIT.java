@@ -44,7 +44,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
-      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {OpenSearchConnectorBasicAuthIT.OpenSearchStarter.class})
@@ -73,10 +73,6 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
   @Qualifier("tasklistOsClient")
   OpenSearchClient openSearchClient;
 
-  @Autowired
-  @Qualifier("tasklistZeebeOsClient")
-  OpenSearchClient zeebeOsClient;
-
   @BeforeAll
   public static void beforeClass() {
     assumeTrue(TestUtil.isOpenSearch());
@@ -85,7 +81,6 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
   @Test
   public void canConnect() {
     assertThat(openSearchClient).isNotNull();
-    assertThat(zeebeOsClient).isNotNull();
   }
 
   static class OpenSearchStarter
@@ -98,15 +93,25 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
       final String osUrl =
           String.format("http://%s:%s", opensearch.getHost(), opensearch.getMappedPort(9200));
       TestPropertyValues.of(
-              "camunda.tasklist.opensearch.username=opensearch",
-              "camunda.tasklist.opensearch.password=changeme",
+              // Unified Configuration
+              "camunda.data.secondary-storage.type=opensearch",
+              "camunda.data.secondary-storage.opensearch.url=" + osUrl,
+              "camunda.data.secondary-storage.opensearch.cluster-name=docker-cluster",
+
+              // TODO: The following legacy values are set somewhere equal to http://localhost:9200.
+              //  We should find them and unset them, so that they don't cause conflicts. In the
+              //  meantime, this test can run in double configuration mode.
+              "camunda.database.url=" + osUrl,
               "camunda.tasklist.opensearch.url=" + osUrl,
-              "camunda.tasklist.opensearch.clusterName=docker-cluster",
-              "camunda.tasklist.zeebeOpensearch.url=" + osUrl,
-              "camunda.tasklist.zeebeOpensearch.username=opensearch",
-              "camunda.tasklist.zeebeOpensearch.password=changeme",
-              "camunda.tasklist.zeebeOpensearch.clusterName=docker-cluster",
-              "camunda.tasklist.zeebeOpensearch.prefix=zeebe-record")
+              "camunda.operate.opensearch.url=" + osUrl,
+              // Unified config
+              "camunda.data.secondary-storage.opensearch.username=opensearch",
+              "camunda.data.secondary-storage.opensearch.password=changeme",
+
+              // ---
+
+              "camunda.tasklist.opensearch.username=opensearch",
+              "camunda.tasklist.opensearch.password=changeme")
           .applyTo(applicationContext.getEnvironment());
     }
   }

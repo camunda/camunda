@@ -11,6 +11,8 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
+import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
+import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
@@ -21,6 +23,7 @@ import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
+import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
@@ -180,6 +183,17 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.USAGE_METRIC,
         new UsageMetricExportHandler(
             rdbmsWriter.getUsageMetricWriter(), rdbmsWriter.getUsageMetricTUWriter()));
+    builder.withHandler(
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        new MessageSubscriptionExportHandler(rdbmsWriter.getMessageSubscriptionWriter()));
+    builder.withHandler(
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler(
+            rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
+    builder.withHandler(
+        ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+        new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
+            rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
   }
 
   private void createBatchOperationHandlers(

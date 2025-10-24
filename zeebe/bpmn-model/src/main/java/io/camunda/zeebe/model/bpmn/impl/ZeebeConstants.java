@@ -121,6 +121,9 @@ public class ZeebeConstants {
   public static final String ELEMENT_LINKED_RESOURCE = "linkedResource";
   public static final String ELEMENT_LINKED_RESOURCES = "linkedResources";
 
+  /** The property used for the example output JSON data. */
+  public static final String PROPERTY_EXAMPLE_DATA = "camundaModeler:exampleOutputJson";
+
   /**
    * The postfix of an ID of an ad-hoc sub-process inner instance (pattern:
    * AD_HOC_SUB_PROCESS_ID#innerInstance)

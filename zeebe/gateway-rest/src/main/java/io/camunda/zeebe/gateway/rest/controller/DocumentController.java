@@ -13,12 +13,12 @@ import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.Part;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -62,9 +62,11 @@ public class DocumentController {
   @CamundaPostMapping(path = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createDocuments(
       @RequestPart(value = "files") final List<Part> files,
+      @RequestPart(value = "metadataList", required = false)
+          final List<DocumentMetadata> metadataList,
       @RequestParam(required = false) final String storeId) {
-
-    return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper)
+    // Pass metadataList to let mapper prefer it over legacy headers when provided
+    return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper, metadataList)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocumentBatch);
   }
 

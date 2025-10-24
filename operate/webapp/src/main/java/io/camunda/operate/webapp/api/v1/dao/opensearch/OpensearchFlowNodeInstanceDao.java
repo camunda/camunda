@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -41,8 +40,7 @@ public class OpensearchFlowNodeInstanceDao
       final OpensearchQueryDSLWrapper queryDSLWrapper,
       final OpensearchRequestDSLWrapper requestDSLWrapper,
       final RichOpenSearchClient richOpenSearchClient,
-      final @Qualifier("operateFlowNodeInstanceTemplate") FlowNodeInstanceTemplate
-              flowNodeInstanceIndex,
+      final FlowNodeInstanceTemplate flowNodeInstanceIndex,
       final ProcessCache processCache,
       final OperateDateTimeFormatter dateTimeFormatter) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);

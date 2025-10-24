@@ -18,16 +18,20 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1.AssignUserToGroupCommandStep2;
+import io.camunda.client.api.command.AssignUserToGroupCommandStep1.AssignUserToGroupCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.AssignUserToGroupResponseImpl;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class AssignUserToGroupCommandImpl
-    implements AssignUserToGroupCommandStep1, AssignUserToGroupCommandStep2 {
+    implements AssignUserToGroupCommandStep1,
+        AssignUserToGroupCommandStep2,
+        AssignUserToGroupCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -46,7 +50,7 @@ public class AssignUserToGroupCommandImpl
   }
 
   @Override
-  public AssignUserToGroupCommandStep2 groupId(final String groupId) {
+  public AssignUserToGroupCommandStep3 groupId(final String groupId) {
     this.groupId = groupId;
     return this;
   }
@@ -63,7 +67,11 @@ public class AssignUserToGroupCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
     final HttpCamundaFuture<AssignUserToGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
-        "/groups/" + groupId + "/users/" + username, null, httpRequestConfig.build(), result);
+        "/groups/" + groupId + "/users/" + username,
+        null,
+        httpRequestConfig.build(),
+        AssignUserToGroupResponseImpl::new,
+        result);
     return result;
   }
 }

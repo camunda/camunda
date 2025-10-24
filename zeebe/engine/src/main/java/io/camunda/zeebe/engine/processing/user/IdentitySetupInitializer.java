@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -32,7 +31,6 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import io.camunda.zeebe.util.FeatureFlags;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -44,13 +42,13 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final SecurityConfiguration securityConfig;
-  private final FeatureFlags featureFlags;
+  private final boolean enableIdentitySetup;
   private final PasswordEncoder passwordEncoder;
 
   public IdentitySetupInitializer(
-      final SecurityConfiguration securityConfig, final FeatureFlags featureFlags) {
+      final SecurityConfiguration securityConfig, final boolean enableIdentitySetup) {
     this.securityConfig = securityConfig;
-    this.featureFlags = featureFlags;
+    this.enableIdentitySetup = enableIdentitySetup;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
@@ -58,7 +56,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     // We can disable identity setup by disabling the feature flag. This is useful to prevent
     // interference in our engine tests, as this setup will write "unexpected" commands/events
-    if (!featureFlags.enableIdentitySetup()) {
+    if (!enableIdentitySetup) {
       return;
     }
 
@@ -85,6 +83,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     setupAdminRole(setupRecord);
     setupRpaRole(setupRecord);
     setupConnectorsRole(setupRecord);
+    setupAppIntegrationsRole(setupRecord);
 
     initialization
         .getUsers()
@@ -162,8 +161,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
               .setOwnerType(AuthorizationOwnerType.ROLE)
               .setOwnerId(readOnlyAdminRoleId)
               .setResourceType(resourceType)
-              .setResourceMatcher(AuthorizationResourceMatcher.ANY)
-              .setResourceId(WILDCARD_PERMISSION)
+              .setResourceMatcher(WILDCARD.getMatcher())
+              .setResourceId(WILDCARD.getResourceId())
               .setPermissionTypes(readBasedPermissions));
     }
   }
@@ -182,8 +181,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
               .setOwnerType(AuthorizationOwnerType.ROLE)
               .setOwnerId(adminRoleId)
               .setResourceType(resourceType)
-              .setResourceMatcher(AuthorizationResourceMatcher.ANY)
-              .setResourceId(WILDCARD_PERMISSION)
+              .setResourceMatcher(WILDCARD.getMatcher())
+              .setResourceId(WILDCARD.getResourceId())
               .setPermissionTypes(resourceType.getSupportedPermissionTypes()));
     }
     setupRecord.addTenantMember(
@@ -201,25 +200,69 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             .setOwnerType(AuthorizationOwnerType.ROLE)
             .setOwnerId(connectorsRoleId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .setResourceMatcher(AuthorizationResourceMatcher.ANY)
-            .setResourceId(WILDCARD_PERMISSION)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
             .setPermissionTypes(
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE)));
     setupRecord.addAuthorization(
         new AuthorizationRecord()
             .setOwnerType(AuthorizationOwnerType.ROLE)
             .setOwnerId(connectorsRoleId)
             .setResourceType(AuthorizationResourceType.MESSAGE)
-            .setResourceMatcher(AuthorizationResourceMatcher.ANY)
-            .setResourceId(WILDCARD_PERMISSION)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
             .setPermissionTypes(Set.of(PermissionType.CREATE)));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(connectorsRoleId)
+            .setResourceType(AuthorizationResourceType.DOCUMENT)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)));
     setupRecord.addTenantMember(
         new TenantRecord()
             .setTenantId(DEFAULT_TENANT_ID)
             .setEntityType(EntityType.ROLE)
             .setEntityId(connectorsRoleId));
+  }
+
+  private static void setupAppIntegrationsRole(final IdentitySetupRecord setupRecord) {
+    final var appIntegrationsRoleId = DefaultRole.APP_INTEGRATIONS.getId();
+    setupRecord.addRole(
+        new RoleRecord().setRoleId(appIntegrationsRoleId).setName("App Integrations"));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(appIntegrationsRoleId)
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.READ_USER_TASK,
+                    PermissionType.UPDATE_USER_TASK)));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(appIntegrationsRoleId)
+            .setResourceType(AuthorizationResourceType.DOCUMENT)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(Set.of(PermissionType.CREATE)));
+    setupRecord.addTenantMember(
+        new TenantRecord()
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setEntityType(EntityType.ROLE)
+            .setEntityId(appIntegrationsRoleId));
   }
 
   private static void setupRpaRole(final IdentitySetupRecord setupRecord) {
@@ -231,16 +274,16 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                 .setOwnerId(rpaRoleId)
                 .setOwnerType(AuthorizationOwnerType.ROLE)
                 .setResourceType(AuthorizationResourceType.RESOURCE)
-                .setResourceMatcher(AuthorizationResourceMatcher.ANY)
-                .setResourceId(WILDCARD_PERMISSION)
+                .setResourceMatcher(WILDCARD.getMatcher())
+                .setResourceId(WILDCARD.getResourceId())
                 .setPermissionTypes(Set.of(PermissionType.READ)))
         .addAuthorization(
             new AuthorizationRecord()
                 .setOwnerId(rpaRoleId)
                 .setOwnerType(AuthorizationOwnerType.ROLE)
                 .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                .setResourceMatcher(AuthorizationResourceMatcher.ANY)
-                .setResourceId(WILDCARD_PERMISSION)
+                .setResourceMatcher(WILDCARD.getMatcher())
+                .setResourceId(WILDCARD.getResourceId())
                 .setPermissionTypes(Set.of(PermissionType.UPDATE_PROCESS_INSTANCE)))
         .addTenantMember(
             new TenantRecord()
@@ -257,7 +300,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
           READ_USER_TASK,
           READ_DECISION_INSTANCE,
           READ_PROCESS_DEFINITION,
-          READ_DECISION_DEFINITION ->
+          READ_DECISION_DEFINITION,
+          READ_USAGE_METRIC ->
           true;
       default -> false;
     };

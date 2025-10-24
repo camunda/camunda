@@ -41,6 +41,17 @@ public class ProcessInstanceSelectors {
     return new ProcessDefinitionIdSelector(processDefinitionId);
   }
 
+  /**
+   * Select the process instance by its parent process instance key
+   *
+   * @param parentProcessInstanceKey the key of the parent instance
+   * @return the selector
+   */
+  public static ProcessInstanceSelector byParentProcessInstanceKey(
+      final long parentProcessInstanceKey) {
+    return new ParentProcessInstanceKeySelector(parentProcessInstanceKey);
+  }
+
   private static final class ProcessInstanceKeySelector implements ProcessInstanceSelector {
 
     private final long processInstanceKey;
@@ -62,6 +73,30 @@ public class ProcessInstanceSelectors {
     @Override
     public void applyFilter(final ProcessInstanceFilter filter) {
       filter.processInstanceKey(processInstanceKey);
+    }
+  }
+
+  private static final class ParentProcessInstanceKeySelector implements ProcessInstanceSelector {
+
+    private final long parentProcessInstanceKey;
+
+    private ParentProcessInstanceKeySelector(final long parentProcessInstanceKey) {
+      this.parentProcessInstanceKey = parentProcessInstanceKey;
+    }
+
+    @Override
+    public boolean test(final ProcessInstance processInstance) {
+      return processInstance.getParentProcessInstanceKey().equals(parentProcessInstanceKey);
+    }
+
+    @Override
+    public String describe() {
+      return String.format("parent process instance key: %s", parentProcessInstanceKey);
+    }
+
+    @Override
+    public void applyFilter(final ProcessInstanceFilter filter) {
+      filter.parentProcessInstanceKey(parentProcessInstanceKey);
     }
   }
 

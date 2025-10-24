@@ -22,7 +22,7 @@ import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.HashMap;
 import java.util.List;
@@ -40,8 +40,6 @@ public final class StaticConfigurationGenerator {
   public static StaticConfiguration getStaticConfiguration(
       final BrokerCfg brokerCfg, final MemberId localMemberId) {
     final var clusterCfg = brokerCfg.getCluster();
-    final var enablePartitionScaling =
-        brokerCfg.getExperimental().getFeatures().isEnablePartitionScaling();
     final var partitioningCfg = brokerCfg.getExperimental().getPartitioning();
     final var partitionCount = clusterCfg.getPartitionsCount();
     final var replicationFactor = clusterCfg.getReplicationFactor();
@@ -50,15 +48,16 @@ public final class StaticConfigurationGenerator {
     final var clusterMembers = getRaftGroupMembers(clusterCfg);
     final var partitionIds = getSortedPartitionIds(partitionCount);
     final var partitionConfig = generatePartitionConfig(brokerCfg);
+    final var clusterId = clusterCfg.getClusterId();
 
     return new StaticConfiguration(
-        enablePartitionScaling,
         partitionDistributor,
         clusterMembers,
         localMemberId,
         partitionIds,
         replicationFactor,
-        partitionConfig);
+        partitionConfig,
+        clusterId);
   }
 
   private static PartitionDistributor getPartitionDistributor(final PartitioningCfg partitionCfg) {
@@ -109,6 +108,6 @@ public final class StaticConfigurationGenerator {
         .forEach(
             (exporterId, ignore) ->
                 exporters.put(exporterId, new ExporterState(0, State.ENABLED, Optional.empty())));
-    return new DynamicPartitionConfig(new ExportersConfig(Map.copyOf(exporters)));
+    return new DynamicPartitionConfig(new ExportingConfig(Map.copyOf(exporters)));
   }
 }

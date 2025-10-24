@@ -31,7 +31,7 @@ public final class DecisionDefinitionFixtures extends CommonFixtures {
             .version(version)
             .decisionRequirementsKey(decisionRequirementsKey)
             .decisionRequirementsId("decision-requirements-" + decisionRequirementsKey)
-            .tenantId("tenant-" + RANDOM.nextInt(1000));
+            .tenantId("tenant-" + decisionDefinitionKey);
 
     return builderFunction.apply(builder).build();
   }

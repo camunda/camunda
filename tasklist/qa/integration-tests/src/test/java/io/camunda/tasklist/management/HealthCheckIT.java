@@ -27,11 +27,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @AutoConfigureObservability(tracing = false)
@@ -52,8 +52,7 @@ public class HealthCheckIT {
 
   @Autowired private TestRestTemplate testRestTemplate;
 
-  @MockBean private SearchEngineHealthIndicator probes;
-
+  @MockitoBean private SearchEngineHealthIndicator probes;
   @LocalManagementPort private int managementPort;
 
   @Test

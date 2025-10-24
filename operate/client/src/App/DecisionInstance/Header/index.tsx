@@ -6,18 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {observer} from 'mobx-react';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {drdStore} from 'modules/stores/drd';
 import {Button} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
-import {useParams} from 'react-router-dom';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
 import {formatDate} from 'modules/utils/date';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
+import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
+import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
 
 const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   return [
@@ -52,25 +50,32 @@ const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   ];
 };
 
-const Header: React.FC = observer(() => {
-  const {
-    state: {status, decisionInstance},
-  } = decisionInstanceDetailsStore;
-  const {decisionInstanceId} = useParams<{decisionInstanceId: string}>();
+type HeaderProps = {
+  decisionEvaluationInstanceKey: string;
+  onChangeDrdPanelState(state: DrdPanelState): void;
+};
+
+const Header: React.FC<HeaderProps> = ({
+  decisionEvaluationInstanceKey,
+  onChangeDrdPanelState,
+}) => {
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
   const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
   const tenantsById = useAvailableTenants();
+  const {data: decisionInstance, status} = useDecisionInstance(
+    decisionEvaluationInstanceKey,
+  );
 
-  if (status === 'initial') {
+  if (status === 'pending') {
     return <Skeleton headerColumns={headerColumns} />;
   }
 
-  if (status === 'fetched' && decisionInstance !== null) {
+  if (status === 'success' && decisionInstance !== null) {
     const tenantId = decisionInstance.tenantId;
     const tenantName = tenantsById[tenantId] ?? tenantId;
     const versionColumnTitle = `View decision "${
-      decisionInstance.decisionName
-    } version ${decisionInstance.decisionVersion}" instances${
+      decisionInstance.decisionDefinitionName
+    } version ${decisionInstance.decisionDefinitionVersion}" instances${
       isMultiTenancyEnabled ? ` - ${tenantName}` : ''
     }`;
 
@@ -80,20 +85,21 @@ const Header: React.FC = observer(() => {
         headerColumns={headerColumns.map(({name}) => name)}
         bodyColumns={[
           {
-            title: decisionInstance.decisionName,
-            content: decisionInstance.decisionName,
+            title: decisionInstance.decisionDefinitionName,
+            content: decisionInstance.decisionDefinitionName,
           },
           {
-            title: decisionInstanceId,
-            content: decisionInstanceId,
+            title: decisionInstance.decisionEvaluationInstanceKey,
+            content: decisionInstance.decisionEvaluationInstanceKey,
           },
           {
             hideOverflowingContent: false,
             content: (
               <Link
                 to={Locations.decisions({
-                  version: decisionInstance.decisionVersion.toString(),
-                  name: decisionInstance.decisionId,
+                  version:
+                    decisionInstance.decisionDefinitionVersion.toString(),
+                  name: decisionInstance.decisionDefinitionId,
                   evaluated: true,
                   failed: true,
                   ...(isMultiTenancyEnabled
@@ -111,7 +117,7 @@ const Header: React.FC = observer(() => {
                   });
                 }}
               >
-                {decisionInstance.decisionVersion}
+                {decisionInstance.decisionDefinitionVersion}
               </Link>
             ),
           },
@@ -128,17 +134,17 @@ const Header: React.FC = observer(() => {
             content: formatDate(decisionInstance.evaluationDate),
           },
           {
-            title: decisionInstance.processInstanceId ?? 'None',
+            title: decisionInstance.processInstanceKey ?? 'None',
             hideOverflowingContent: false,
             content: (
               <>
-                {decisionInstance.processInstanceId ? (
+                {decisionInstance.processInstanceKey ? (
                   <Link
                     to={Paths.processInstance(
-                      decisionInstance.processInstanceId,
+                      decisionInstance.processInstanceKey,
                     )}
-                    title={`View process instance ${decisionInstance.processInstanceId}`}
-                    aria-label={`View process instance ${decisionInstance.processInstanceId}`}
+                    title={`View process instance ${decisionInstance.processInstanceKey}`}
+                    aria-label={`View process instance ${decisionInstance.processInstanceKey}`}
                     onClick={() => {
                       tracking.track({
                         eventName: 'navigation',
@@ -146,7 +152,7 @@ const Header: React.FC = observer(() => {
                       });
                     }}
                   >
-                    {decisionInstance.processInstanceId}
+                    {decisionInstance.processInstanceKey}
                   </Link>
                 ) : (
                   'None'
@@ -162,7 +168,7 @@ const Header: React.FC = observer(() => {
             title="Open Decision Requirements Diagram"
             aria-label="Open Decision Requirements Diagram"
             onClick={() => {
-              drdStore.setPanelState('minimized');
+              onChangeDrdPanelState('minimized');
               tracking.track({
                 eventName: 'drd-panel-interaction',
                 action: 'open',
@@ -176,6 +182,6 @@ const Header: React.FC = observer(() => {
     );
   }
   return null;
-});
+};
 
 export {Header};

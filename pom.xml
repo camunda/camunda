@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
@@ -35,12 +35,14 @@
     <module>spring-utils</module>
     <module>clients/java</module>
     <module>clients/java-deprecated</module>
-    <module>clients/spring-boot-starter-camunda-sdk</module>
+    <module>clients/camunda-spring-boot-starter</module>
+    <module>clients/spring-boot-starter-camunda-sdk-deprecated</module>
     <module>testing</module>
     <module>document</module>
     <module>security</module>
-    <module>migration</module>
     <module>configuration</module>
+    <module>load-tests/load-tester</module>
+    <module>debug-cli</module>
   </modules>
 
   <scm>
@@ -67,10 +69,12 @@
             <excludes>
               <exclude>**/target/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
-              <exclude>tasklist/client/**/*.md</exclude>
+              <exclude>tasklist/client/**/*</exclude>
+              <exclude>operate/client/**/*</exclude>
               <exclude>optimize/client/**/*.md</exclude>
+              <exclude>client-components/**/*</exclude>
             </excludes>
-            <flexmark></flexmark>
+            <flexmark/>
           </markdown>
         </configuration>
       </plugin>

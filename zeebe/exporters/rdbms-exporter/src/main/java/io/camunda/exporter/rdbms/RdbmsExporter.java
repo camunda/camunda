@@ -45,6 +45,7 @@ public final class RdbmsExporter {
   private long lastPosition = -1;
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
+  private ScheduledTask currentUsageMetricsCleanupTask = null;
 
   private RdbmsExporter(
       final int partitionId,
@@ -90,6 +91,8 @@ public final class RdbmsExporter {
     // itself
     currentCleanupTask =
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
+    currentUsageMetricsCleanupTask =
+        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupUsageMetricsHistory);
 
     LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
   }
@@ -101,6 +104,9 @@ public final class RdbmsExporter {
       }
       if (currentCleanupTask != null) {
         currentCleanupTask.cancel();
+      }
+      if (currentUsageMetricsCleanupTask != null) {
+        currentUsageMetricsCleanupTask.cancel();
       }
 
       rdbmsWriter.flush();
@@ -161,6 +167,9 @@ public final class RdbmsExporter {
     }
     if (currentCleanupTask != null) {
       currentCleanupTask.cancel();
+    }
+    if (currentUsageMetricsCleanupTask != null) {
+      currentUsageMetricsCleanupTask.cancel();
     }
 
     rdbmsWriter.getRdbmsPurger().purgeRdbms();
@@ -224,6 +233,15 @@ public final class RdbmsExporter {
     final var newDuration =
         rdbmsWriter.getHistoryCleanupService().cleanupHistory(partitionId, OffsetDateTime.now());
     currentCleanupTask = controller.scheduleCancellableTask(newDuration, this::cleanupHistory);
+  }
+
+  private void cleanupUsageMetricsHistory() {
+    final var newDuration =
+        rdbmsWriter
+            .getHistoryCleanupService()
+            .cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now());
+    currentUsageMetricsCleanupTask =
+        controller.scheduleCancellableTask(newDuration, this::cleanupUsageMetricsHistory);
   }
 
   @VisibleForTesting(

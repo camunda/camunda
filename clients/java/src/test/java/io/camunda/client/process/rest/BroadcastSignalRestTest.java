@@ -22,18 +22,26 @@ import static org.assertj.core.api.Assertions.entry;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.SignalBroadcastRequest;
+import io.camunda.client.protocol.rest.SignalBroadcastResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class BroadcastSignalRestTest extends ClientRestTest {
 
+  private static final SignalBroadcastResult DUMMY_RESPONSE =
+      Instancio.create(SignalBroadcastResult.class).signalKey("1");
+
   @Test
   public void shouldBroadcastSignalWithStringVariables() {
+    // given
+    gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newBroadcastSignalCommand()
@@ -54,6 +62,7 @@ public class BroadcastSignalRestTest extends ClientRestTest {
     final String variables = "{\"foo\":\"bar\"}";
     final ByteArrayInputStream byteArrayInputStream =
         new ByteArrayInputStream(variables.getBytes());
+    gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);
 
     // when
     client
@@ -74,6 +83,7 @@ public class BroadcastSignalRestTest extends ClientRestTest {
     // given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
+    gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);
 
     // when
     client.newBroadcastSignalCommand().signalName("name").variables(variables).send().join();
@@ -86,6 +96,9 @@ public class BroadcastSignalRestTest extends ClientRestTest {
 
   @Test
   public void shouldBroadcastSignalWithObjectVariables() {
+    // given
+    gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);
+
     // when
     client
         .newBroadcastSignalCommand()
@@ -102,6 +115,9 @@ public class BroadcastSignalRestTest extends ClientRestTest {
 
   @Test
   public void shouldBroadcastSignalWithSingleVariable() {
+    // given
+    gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);
+
     // when
     final String key = "key";
     final String value = "value";
@@ -128,7 +144,10 @@ public class BroadcastSignalRestTest extends ClientRestTest {
 
   @Test
   public void shouldAllowSpecifyingTenantIdBy() {
-    // given/when
+    // given
+    gatewayService.onBroadcastSignalRequest(DUMMY_RESPONSE);
+
+    // when
     client.newBroadcastSignalCommand().signalName("").tenantId("custom-tenant").send().join();
 
     // then

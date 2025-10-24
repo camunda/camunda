@@ -13,7 +13,6 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
@@ -63,18 +62,14 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   private static final String MAX_VERSION_DOCUMENTS_AGG_NAME = "max_version_docs";
   private static final String STARTED_BY_FORM_FILTERED_DOCS = "started_by_form_docs";
 
-  @Autowired
-  @Qualifier("tasklistProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
+  @Autowired private SecurityConfiguration securityConfiguration;
+
+  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
-
-  @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private SecurityConfiguration securityConfiguration;
-
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Override
   public ProcessEntity getProcessByProcessDefinitionKey(final String processDefinitionKey) {

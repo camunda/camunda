@@ -19,14 +19,18 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.query.ProcessInstanceQuery;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -38,7 +42,12 @@ import org.springframework.test.context.TestPropertySource;
 @DataJdbcTest
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(
+    properties = {
+      "spring.liquibase.enabled=false",
+      "camunda.data.secondary-storage.type=rdbms",
+      "logging.level.io.camunda.db.rdbms.sql=DEBUG"
+    })
 public class ProcessInstanceSpecificFilterIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
@@ -56,7 +65,11 @@ public class ProcessInstanceSpecificFilterIT {
 
   @ParameterizedTest
   @MethodSource("shouldFindProcessInstanceWithSpecificFilterParameters")
-  public void shouldFindProcessInstanceWithSpecificFilter(final ProcessInstanceFilter filter) {
+  public void shouldFindProcessInstanceWithSpecificFilter(
+      final ProcessInstanceFilter filter,
+      final int expectedTotal,
+      final int expectedItemsSize,
+      final List<Long> expectedKeys) {
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
@@ -84,22 +97,77 @@ public class ProcessInstanceSpecificFilterIT {
             ProcessInstanceQuery.of(
                 b -> b.filter(filter).sort(s -> s).page(p -> p.from(0).size(5))));
 
-    assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().processInstanceKey()).isEqualTo(42L);
+    assertThat(searchResult.total()).isEqualTo(expectedTotal);
+    assertThat(searchResult.items()).hasSize(expectedItemsSize);
+    assertThat(
+            searchResult.items().stream().map(ProcessInstanceEntity::processInstanceKey).toList())
+        .contains(expectedKeys.toArray(new Long[0]));
   }
 
-  static List<ProcessInstanceFilter> shouldFindProcessInstanceWithSpecificFilterParameters() {
-    return List.of(
-        new ProcessInstanceFilter.Builder().processInstanceKeys(42L).build(),
-        new ProcessInstanceFilter.Builder().processDefinitionIds("test-process-987654321").build(),
-        new ProcessInstanceFilter.Builder().processDefinitionKeys(987654321L).build(),
-        new ProcessInstanceFilter.Builder().states(ProcessInstanceState.ACTIVE.name()).build(),
-        new ProcessInstanceFilter.Builder().parentProcessInstanceKeys(-1L).build(),
-        new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeys(-1L).build(),
-        new ProcessInstanceFilter.Builder()
-            .processDefinitionNames("Test Process 987654321")
-            .build(),
-        new ProcessInstanceFilter.Builder().processDefinitionVersionTags("Version 1").build());
+  static Stream<Arguments> shouldFindProcessInstanceWithSpecificFilterParameters() {
+    return Stream.of(
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(42L).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder()
+                .processDefinitionIds("test-process-987654321")
+                .build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().processDefinitionKeys(987654321L).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().states(ProcessInstanceState.ACTIVE.name()).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().parentProcessInstanceKeys(-1L).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeys(-1L).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder()
+                .processDefinitionNames("Test Process 987654321")
+                .build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().processDefinitionVersionTags("Version 1").build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder()
+                .processInstanceKeys(42L)
+                .orFilters(
+                    List.of(new Builder().states(ProcessInstanceState.ACTIVE.name()).build()))
+                .build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder()
+                .orFilters(
+                    List.of(
+                        new Builder().states(ProcessInstanceState.ACTIVE.name()).build(),
+                        new Builder().states(ProcessInstanceState.COMPLETED.name()).build()))
+                .build(),
+            21,
+            5,
+            List.of(42L)));
   }
 }

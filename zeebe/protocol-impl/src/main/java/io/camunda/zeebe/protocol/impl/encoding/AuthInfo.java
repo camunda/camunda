@@ -24,8 +24,8 @@ public class AuthInfo extends UnpackedObject {
   private final EnumProperty<AuthDataFormat> formatProp =
       new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
 
-  private final StringProperty authDataProp = new StringProperty("authData", "");
-  private final DocumentProperty claimsProp = new DocumentProperty("claims");
+  private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
+  private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
 
   public AuthInfo() {
     super(3);
@@ -39,10 +39,6 @@ public class AuthInfo extends UnpackedObject {
   public AuthInfo setFormat(final AuthDataFormat format) {
     formatProp.setValue(format);
     return this;
-  }
-
-  public DirectBuffer getAuthDataBuffer() {
-    return authDataProp.getValue();
   }
 
   public String getAuthData() {
@@ -68,16 +64,29 @@ public class AuthInfo extends UnpackedObject {
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getClaimsBuffer() {
-    return claimsProp.getValue();
-  }
-
   @Override
   public void reset() {
     formatProp.setValue(AuthDataFormat.UNKNOWN);
     authDataProp.setValue("");
     claimsProp.reset();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getEncodedLength() {
+    return super.getEncodedLength();
+  }
+
+  @Override
+  @JsonIgnore
+  public boolean isEmpty() {
+    return super.isEmpty();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getLength() {
+    return super.getLength();
   }
 
   public DirectBuffer toDirectBuffer() {
@@ -96,23 +105,10 @@ public class AuthInfo extends UnpackedObject {
     return getClaims();
   }
 
-  @Override
-  public String toString() {
-    return "AuthInfo{"
-        + "format="
-        + getFormat()
-        + ", "
-        + "authData="
-        + getAuthData()
-        + ", "
-        + "claims="
-        + getClaims()
-        + '}';
-  }
-
   public enum AuthDataFormat {
     UNKNOWN((short) 0),
-    JWT((short) 1);
+    JWT((short) 1),
+    PRE_AUTHORIZED((short) 2);
 
     public final short id;
 

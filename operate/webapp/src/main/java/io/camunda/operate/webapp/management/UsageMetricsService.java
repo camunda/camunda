@@ -16,7 +16,12 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 
+/**
+ * @deprecated please use {@link
+ *     io.camunda.zeebe.gateway.rest.controller.system.UsageMetricsController}
+ */
 @Component
+@Deprecated(forRemoval = true, since = "8.8")
 @RestControllerEndpoint(id = "usage-metrics")
 public class UsageMetricsService {
 
@@ -33,7 +38,8 @@ public class UsageMetricsService {
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveProcessInstanceCount(UsageMetricQueryDTO query) {
     final Long total =
-        metricsStore.retrieveProcessInstanceCount(query.getStartTime(), query.getEndTime());
+        metricsStore.retrieveProcessInstanceCount(
+            query.getStartTime(), query.getEndTime(), query.getTenantId());
     return new UsageMetricDTO().setTotal(total);
   }
 
@@ -48,7 +54,8 @@ public class UsageMetricsService {
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveDecisionInstancesCount(UsageMetricQueryDTO query) {
     final Long total =
-        metricsStore.retrieveDecisionInstanceCount(query.getStartTime(), query.getEndTime());
+        metricsStore.retrieveDecisionInstanceCount(
+            query.getStartTime(), query.getEndTime(), query.getTenantId());
     return new UsageMetricDTO().setTotal(total);
   }
 }

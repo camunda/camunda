@@ -20,19 +20,21 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 abstract class RestApiConfigurationTest extends RestControllerTest {
 
   static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
   static final String TOPOLOGY_URL = "/v2/topology";
 
-  @MockBean ProcessInstanceServices processInstanceServices;
-  @MockBean MultiTenancyConfiguration multiTenancyConfiguration;
-  @MockBean BrokerClient brokerClient;
-  @MockBean BrokerTopologyManager topologyManager;
+  @MockitoBean ProcessInstanceServices processInstanceServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyConfiguration;
+  @MockitoBean BrokerClient brokerClient;
+  @MockitoBean BrokerTopologyManager topologyManager;
+  @MockitoBean ClusterConfiguration clusterConfiguration;
 
   @BeforeEach
   void setupServices() {
@@ -42,5 +44,7 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
     when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
         .thenReturn(new Builder<ProcessInstanceEntity>().build());
     when(topologyManager.getTopology()).thenReturn(mock(BrokerClusterState.class));
+    when(topologyManager.getClusterConfiguration()).thenReturn(clusterConfiguration);
+    when(clusterConfiguration.clusterId()).thenReturn(java.util.Optional.of("cluster-id"));
   }
 }

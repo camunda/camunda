@@ -17,4 +17,6 @@ package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.DeleteGroupResponse;
 
-public class DeleteGroupResponseImpl implements DeleteGroupResponse {}
+public class DeleteGroupResponseImpl implements DeleteGroupResponse {
+  public DeleteGroupResponseImpl(final Void nothing) {}
+}

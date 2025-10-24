@@ -31,12 +31,11 @@ on:
 
 jobs:
   e2e-cloud-test:
-    if: false # This deactivates the pipeline
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: Import secrets
         id: secrets
         uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
@@ -59,14 +58,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Setup Chrome
-        shell: bash
-        run: |
-          # remove existing chrome
-          sudo apt-get remove -y google-chrome-stable
-          # install chrome 126
-          wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_126.0.6478.182-1_amd64.deb
-          sudo apt-get update && sudo apt-get install -y ./google-chrome-stable_126.0.6478.182-1_amd64.deb
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
@@ -85,6 +76,10 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./optimize/client
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
       - name: 'build backend & frontend'
         run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
       - name: 'start backend'

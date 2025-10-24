@@ -7,109 +7,45 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '@/fixtures/test';
+import {test, MOCK_TENANTS} from '@/fixtures/v2-visual';
+import {unassignedTask} from '@/mocks/v2/task';
 import schema from './resources/bigForm.json' assert {type: 'json'};
 
-const MOCK_TENANT = {
-  tenantId: 'tenantA',
-  name: 'Tenant A',
-};
-
-const MOCK_TASK = {
-  id: 'task123',
-  formKey: 'camunda-forms:bpmn:userTaskForm_1',
-  formId: null,
-  formVersion: null,
-  isFormEmbedded: true,
-  processDefinitionKey: '2251799813685255',
-  assignee: 'demo',
-  name: 'Big form task',
-  taskState: 'CREATED',
-  processName: 'Big form process',
-  creationDate: '2023-03-03T14:16:18.441+0100',
-  completionDate: null,
-  priority: 50,
-  taskDefinitionId: 'Activity_0aecztp',
-  processInstanceKey: '4503599627371425',
-  dueDate: null,
-  followUpDate: null,
-  candidateGroups: null,
-  candidateUsers: null,
-  tenantId: MOCK_TENANT.tenantId,
-  context: null,
-};
-
 test.describe('a11y', () => {
-  test('have no violations', async ({page, makeAxeBuilder}) => {
-    await page.route(/^.*\/(v1|v2).*$/i, (route) => {
-      if (route.request().url().includes('v1/tasks/task123/variables/search')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify([]),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
+  test('have no violations', async ({
+    page,
+    makeAxeBuilder,
+    mockQueryUserTasksRequest,
+    mockGetUserTaskRequest,
+    mockQueryVariablesByUserTaskRequest,
+    mockGetUserTaskFormRequest,
+  }) => {
+    const MOCK_FORM_TASK = unassignedTask({
+      formKey: 'bigForm',
+      assignee: 'demo',
+      name: 'Big form task',
+      processName: 'Big form process',
+      processDefinitionKey: '2251799813685255',
+      elementId: 'Activity_0aecztp',
+      processInstanceKey: '4503599627371425',
+      tenantId: MOCK_TENANTS[0].tenantId,
+    });
 
-      if (route.request().url().includes('v1/tasks/search')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify([
-            {
-              ...MOCK_TASK,
-              isFirst: true,
-              sortValues: ['1684878523864', '4503599627371430'],
-            },
-          ]),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
-      if (route.request().url().includes('v1/tasks/task123')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify(MOCK_TASK),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
-      if (route.request().url().includes('v1/forms/userTaskForm_1')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            id: 'userTaskForm_3j0n396',
-            processDefinitionKey: '2251799813685255',
-            schema: JSON.stringify(schema),
-          }),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
-      if (route.request().url().includes('v2/authentication/me')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify({
-            username: 'demo',
-            displayName: 'demo',
-            salesPlanType: null,
-            roles: null,
-            c8Links: [],
-            tenants: [MOCK_TENANT],
-          }),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
-      return route.continue();
+    mockQueryUserTasksRequest([MOCK_FORM_TASK]);
+    mockGetUserTaskRequest(MOCK_FORM_TASK);
+    mockQueryVariablesByUserTaskRequest({
+      userTaskKey: MOCK_FORM_TASK.userTaskKey,
+      variables: [],
+    });
+    mockGetUserTaskFormRequest({
+      userTaskKey: MOCK_FORM_TASK.userTaskKey,
+      form: {
+        schema: JSON.stringify(schema),
+        formKey: 'bigForm',
+        bpmnId: 'userTaskForm_1',
+        version: 1,
+        tenantId: MOCK_TENANTS[0].tenantId,
+      },
     });
 
     await page.goto('/');

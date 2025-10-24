@@ -11,6 +11,7 @@ import {useProcessDefinitionXml} from './useProcessDefinitionXml';
 import type {DiagramModel} from 'bpmn-moddle';
 import {isMigratableFlowNode} from 'modules/bpmn-js/utils/isMigratableFlowNode';
 import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
+import {getMappableSequenceFlows} from 'modules/utils/sequenceFlows';
 
 const getMigrationSourceXmlParser =
   (sourceBpmnProcessId?: string) =>
@@ -23,6 +24,10 @@ const getMigrationSourceXmlParser =
     diagramModel: DiagramModel;
     selectableFlowNodes: BusinessObject[];
   }) => {
+    const selectableSequenceFlows = getMappableSequenceFlows(
+      diagramModel?.elementsById,
+    );
+
     return {
       xml,
       diagramModel,
@@ -40,6 +45,7 @@ const getMigrationSourceXmlParser =
         .map((flowNode) => {
           return {...flowNode, name: flowNode.name ?? flowNode.id};
         }),
+      selectableSequenceFlows,
     };
   };
 

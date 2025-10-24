@@ -50,6 +50,7 @@ class RdbmsExporterTest {
 
   private ScheduledTask flushTask;
   private ScheduledTask cleanupTask;
+  private ScheduledTask usageMetricsCleanupTask;
   private RdbmsPurger rdbmsPurger;
 
   @Test
@@ -174,11 +175,11 @@ class RdbmsExporterTest {
   @Test
   void shouldNotRegisterFlushIntervalTimerWhenQueueSizeIsZero() {
     // given
-    createExporter(b -> b.flushInterval(Duration.ZERO));
+    createExporter(b -> b.queueSize(0));
 
     // then
     // only cleanup task
-    verify(controller, times(1)).scheduleCancellableTask(any(), any());
+    verify(controller, times(2)).scheduleCancellableTask(any(), any());
   }
 
   @Test
@@ -188,7 +189,7 @@ class RdbmsExporterTest {
 
     // then
     // only cleanup task
-    verify(controller, times(1)).scheduleCancellableTask(any(), any());
+    verify(controller, times(2)).scheduleCancellableTask(any(), any());
   }
 
   @Test
@@ -196,7 +197,7 @@ class RdbmsExporterTest {
     // given
     createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
     final var runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
-    verify(controller, times(2))
+    verify(controller, times(3))
         .scheduleCancellableTask(any(Duration.class), runnableCaptor.capture());
     final var runnable = runnableCaptor.getAllValues().getFirst();
 
@@ -206,7 +207,7 @@ class RdbmsExporterTest {
 
     // then
     // captures the initial and the rescheduled call
-    verify(controller, times(3)).scheduleCancellableTask(any(Duration.class), any());
+    verify(controller, times(4)).scheduleCancellableTask(any(Duration.class), any());
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
   }
 
@@ -251,12 +252,14 @@ class RdbmsExporterTest {
       final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction) {
     flushTask = mock(ScheduledTask.class);
     cleanupTask = mock(ScheduledTask.class);
+    usageMetricsCleanupTask = mock(ScheduledTask.class);
 
     controller = mock(Controller.class);
     when(controller.getLastExportedRecordPosition()).thenReturn(-1L);
     when(controller.scheduleCancellableTask(any(), any()))
         .thenReturn(flushTask)
-        .thenReturn(cleanupTask);
+        .thenReturn(cleanupTask)
+        .thenReturn(usageMetricsCleanupTask);
 
     rdbmsWriter = mock(RdbmsWriter.class);
     executionQueue = new StubExecutionQueue();
@@ -266,10 +269,11 @@ class RdbmsExporterTest {
 
     historyCleanupService = mock(HistoryCleanupService.class);
     when(historyCleanupService.cleanupHistory(anyInt(), any())).thenReturn(Duration.ofSeconds(1));
+    when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
+        .thenReturn(Duration.ofSeconds(1));
 
     when(rdbmsWriter.getHistoryCleanupService()).thenReturn(historyCleanupService);
 
-    when(rdbmsWriter.getExporterPositionService()).thenReturn(positionService);
     when(rdbmsWriter.getExporterPositionService()).thenReturn(positionService);
     when(rdbmsWriter.getExecutionQueue()).thenReturn(executionQueue);
     when(rdbmsWriter.getRdbmsPurger()).thenReturn(rdbmsPurger);

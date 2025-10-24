@@ -8,11 +8,14 @@
 package io.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
@@ -24,18 +27,21 @@ import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.listener.ListenerEventType;
 import io.camunda.webapps.schema.entities.listener.ListenerState;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Autowired MockMvcManager mockMvcManager;
   @Autowired JobTemplate jobTemplate;
+  @MockitoBean ProcessInstanceReader mockProcessInstanceReader;
   @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
   private String jobIndexName;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -50,6 +56,8 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderFlowNodeId() throws Exception {
+    when(mockProcessInstanceReader.getProcessInstanceByKey(any()))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("genericid"));
     final ListenerRequestDto request =
         new ListenerRequestDto().setPageSize(20).setFlowNodeId("test_task");
     final ListenerResponseDto response = postListenerRequest("111", request);
@@ -97,6 +105,8 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderFlowNodeInstanceId() throws Exception {
+    when(mockProcessInstanceReader.getProcessInstanceByKey(any()))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("genericid"));
     final ListenerRequestDto request =
         new ListenerRequestDto().setPageSize(20).setFlowNodeInstanceId(1L);
     final ListenerResponseDto response = postListenerRequest("111", request);
@@ -130,6 +140,8 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderPaging() throws Exception {
+    when(mockProcessInstanceReader.getProcessInstanceByKey(any()))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("genericid"));
     final ListenerRequestDto request1 =
         new ListenerRequestDto().setPageSize(3).setFlowNodeId("test_task");
     final ListenerResponseDto response1 = postListenerRequest("111", request1);
@@ -178,6 +190,8 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderWithTypeFilters() throws Exception {
+    when(mockProcessInstanceReader.getProcessInstanceByKey(any()))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("genericid"));
     // request only Execution Listeners
     final ListenerRequestDto elRequest =
         new ListenerRequestDto()

@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.io.UnsupportedEncodingException;
@@ -26,6 +27,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 public class UsageMetricsStatisticsTest extends ClientRestTest {
@@ -41,6 +43,9 @@ public class UsageMetricsStatisticsTest extends ClientRestTest {
 
   @Test
   void shouldGetUsageMetricStatistics() {
+    // given
+    gatewayService.onUsageMetricsRequest(Instancio.create(UsageMetricsResponse.class));
+
     // when
     final OffsetDateTime startTime = OffsetDateTime.now().minusDays(1);
     final OffsetDateTime endTime = OffsetDateTime.now();
@@ -58,6 +63,9 @@ public class UsageMetricsStatisticsTest extends ClientRestTest {
 
   @Test
   void shouldGetUsageMetricStatisticsWithTenants() {
+    // given
+    gatewayService.onUsageMetricsRequest(Instancio.create(UsageMetricsResponse.class));
+
     // when
     final OffsetDateTime startTime = OffsetDateTime.now().minusDays(1);
     final OffsetDateTime endTime = OffsetDateTime.now();

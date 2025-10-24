@@ -31,7 +31,7 @@ public final class UnassignUserTaskTest extends ClientRestTest {
   @Test
   void shouldUnassignUserTask() {
     // when
-    client.newUserTaskUnassignCommand(123L).send().join();
+    client.newUnassignUserTaskCommand(123L).send().join();
 
     // then
     assertThat(RestGatewayService.getLastRequest())
@@ -47,7 +47,7 @@ public final class UnassignUserTaskTest extends ClientRestTest {
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskUnassignCommand(123L).send().join())
+    assertThatThrownBy(() -> client.newUnassignUserTaskCommand(123L).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }

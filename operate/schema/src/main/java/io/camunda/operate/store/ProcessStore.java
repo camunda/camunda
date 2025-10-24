@@ -59,6 +59,8 @@ public interface ProcessStore {
 
   long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys);
 
+  long count() throws IOException;
+
   class ProcessKey {
     private String bpmnProcessId;
     private String tenantId;

@@ -30,7 +30,7 @@ public final class AssignUserTaskTest extends ClientRestTest {
   @Test
   void shouldAssignUserTask() {
     // when
-    client.newUserTaskAssignCommand(123L).assignee("foo").send().join();
+    client.newAssignUserTaskCommand(123L).assignee("foo").send().join();
 
     // then
     final UserTaskAssignmentRequest request =
@@ -43,7 +43,7 @@ public final class AssignUserTaskTest extends ClientRestTest {
   @Test
   void shouldAssignUserTaskWithAction() {
     // when
-    client.newUserTaskAssignCommand(123L).action("foo").send().join();
+    client.newAssignUserTaskCommand(123L).action("foo").send().join();
 
     // then
     final UserTaskAssignmentRequest request =
@@ -57,7 +57,7 @@ public final class AssignUserTaskTest extends ClientRestTest {
   void shouldAssignUserTaskWithAllowOverride() {
     // when
 
-    client.newUserTaskAssignCommand(123L).allowOverride(true).send().join();
+    client.newAssignUserTaskCommand(123L).allowOverride(true).send().join();
 
     // then
     final UserTaskAssignmentRequest request =
@@ -71,7 +71,7 @@ public final class AssignUserTaskTest extends ClientRestTest {
   void shouldAssignUserTaskWithAllowOverrideDisabled() {
     // when
 
-    client.newUserTaskAssignCommand(123L).allowOverride(false).send().join();
+    client.newAssignUserTaskCommand(123L).allowOverride(false).send().join();
 
     // then
     final UserTaskAssignmentRequest request =
@@ -84,7 +84,7 @@ public final class AssignUserTaskTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullAssignee() {
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskAssignCommand(123L).assignee(null).send().join())
+    assertThatThrownBy(() -> client.newAssignUserTaskCommand(123L).assignee(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("assignee must not be null");
   }
@@ -97,7 +97,7 @@ public final class AssignUserTaskTest extends ClientRestTest {
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newUserTaskAssignCommand(123L).send().join())
+    assertThatThrownBy(() -> client.newAssignUserTaskCommand(123L).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }

@@ -51,6 +51,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
              "failureMessage":"",
              "tenantId":"tenantId",
              "decisionInstanceKey":"123",
+             "decisionEvaluationKey":"123",
              "evaluatedDecisions":[]
           }""";
 
@@ -78,7 +79,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "decisionDefinitionKey": 123456,
+              "decisionDefinitionKey": "123456",
               "variables": {
                 "key": "value"
               },
@@ -112,7 +113,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "decisionDefinitionKey": 123456,
+              "decisionDefinitionKey": "123456",
               "variables": {
                 "key": "value"
               },
@@ -177,7 +178,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         """
             {
               "decisionDefinitionId": "decisionId",
-              "decisionDefinitionKey": 123456,
+              "decisionDefinitionKey": "123456",
               "variables": {
                 "key": "value"
               }
@@ -187,9 +188,9 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
-                "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed.",
+                "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed",
                 "instance":"/v2/decision-definitions/evaluation"
              }""";
 
@@ -222,9 +223,9 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
-                "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required.",
+                "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required",
                 "instance":"/v2/decision-definitions/evaluation"
              }""";
 

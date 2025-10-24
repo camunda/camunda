@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-record MockProcessingResult(List<Event> records) implements ProcessingResult {
+record MockProcessingResult(List<Event> records, Response response) implements ProcessingResult {
 
   @Override
   public ImmutableRecordBatch getRecordBatch() {
@@ -55,13 +55,17 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
       long key,
       RecordValue value) {}
 
+  record Response(
+      RecordType recordType, Intent intent, RejectionType rejectionType, String rejectionReason) {}
+
   static class MockProcessingResultBuilder implements ProcessingResultBuilder {
 
     final List<Event> followupRecords = new ArrayList<>();
+    Response response;
 
-    @Override
-    public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
-        final long key, final RecordValue value, final RecordMetadata metadata) {
+    final @Override public Either<RuntimeException, ProcessingResultBuilder>
+        appendRecordReturnEither(
+            final long key, final RecordValue value, final RecordMetadata metadata) {
 
       final var record =
           new Event(
@@ -86,7 +90,9 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
         final String rejectionReason,
         final long requestId,
         final int requestStreamId) {
-      return null;
+
+      response = new Response(type, intent, rejectionType, rejectionReason);
+      return this;
     }
 
     @Override
@@ -101,7 +107,7 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
 
     @Override
     public ProcessingResult build() {
-      return new MockProcessingResult(followupRecords);
+      return new MockProcessingResult(followupRecords, response);
     }
 
     @Override

@@ -12,9 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.test.UpdateTestCase.TestCaseBuilder;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -208,6 +211,31 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
                   handleCompensation(state, "Undo-A", "Undo-A");
                   assertProcessIsCompleted(state);
                 })
+            .done(),
+        scenario()
+            .name("ad-hoc sub-process")
+            .deployProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .adHocSubProcess(
+                        "ahsp",
+                        ahsp ->
+                            ahsp.zeebeActiveElementsCollectionExpression("activateElements")
+                                .serviceTask(TASK, t -> t.zeebeJobType(TASK)))
+                    .endEvent()
+                    .done())
+            .createInstance(Map.of("activateElements", List.of(TASK)))
+            .beforeUpgrade(this::activateJob)
+            .afterUpgrade(this::completeJob)
+            .done(),
+        scenario()
+            .name("resource distribution")
+            .beforeUpgrade(
+                state -> {
+                  publishMessage(state, -1L, -1L);
+                  return -1;
+                })
+            .afterUpgrade(this::awaitUntilInstancesCreatedOnAllPartitions)
             .done());
   }
 
@@ -437,5 +465,39 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
 
   private TestCaseBuilder scenario() {
     return UpdateTestCase.builder();
+  }
+
+  private void deployProcess(final ContainerState state) {
+    state
+        .client()
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(), "process.bpmn")
+        .send()
+        .join();
+  }
+
+  private void awaitUntilInstancesCreatedOnAllPartitions(final ContainerState containerState) {
+    deployProcess(containerState);
+    final var partitionIdsActivated = new HashSet<>();
+    Awaitility.await("Await all partitions to be activated")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () -> {
+              final var processInstanceKey =
+                  containerState
+                      .client()
+                      .newCreateInstanceCommand()
+                      .bpmnProcessId(PROCESS_ID)
+                      .latestVersion()
+                      .send()
+                      .join()
+                      .getProcessInstanceKey();
+              partitionIdsActivated.add(Protocol.decodePartitionId(processInstanceKey));
+              return partitionIdsActivated;
+            },
+            (partitionsActivated) -> partitionsActivated.size() == ContainerState.PARTITION_COUNT);
   }
 }

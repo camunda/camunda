@@ -11,24 +11,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterMode;
+import io.camunda.zeebe.engine.util.EngineRule.ResetRecordingExporterTestWatcherMode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
 
 public class ProcessInstanceModificationModifyAuthorizationTest {
 
@@ -45,7 +46,9 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withIdentitySetup()
+          .withResetRecordingExporterTestWatcherMode(
+              ResetRecordingExporterTestWatcherMode.BEFORE_ALL_TESTS_AND_AFTER_EACH_TEST)
+          .withIdentitySetup(ResetRecordingExporterMode.NO_RESET_AFTER_IDENTITY_SETUP)
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
           .withSecurityConfig(
@@ -53,8 +56,6 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
                   cfg.getInitialization()
                       .getDefaultRoles()
                       .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
-
-  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Before
   public void before() {
@@ -103,7 +104,8 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
     addPermissionsToUser(
         user,
         AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.UPDATE_PROCESS_INSTANCE,
+        PermissionType.MODIFY_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
         PROCESS_ID);
 
     // when
@@ -146,7 +148,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
                 .getFirst())
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+            "Insufficient permissions to perform operation 'MODIFY_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
   }
 
@@ -165,6 +167,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
       final UserRecordValue user,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
+      final AuthorizationResourceMatcher matcher,
       final String resourceId) {
     engine
         .authorization()
@@ -173,6 +176,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)
+        .withResourceMatcher(matcher)
         .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }

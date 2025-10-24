@@ -12,7 +12,7 @@ import java.util.Set;
 import org.springframework.util.unit.DataSize;
 
 public class FreeSpace {
-  private static final String PREFIX = "camunda.data.primary-storage.disk.free-space.";
+  private static final String PREFIX = "camunda.data.primary-storage.disk.free-space";
 
   private static final Set<String> LEGACY_PROCESSING_PROPERTIES =
       Set.of("zeebe.broker.data.disk.freeSpace.processing");
@@ -36,7 +36,7 @@ public class FreeSpace {
 
   public DataSize getProcessing() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "processing",
+        PREFIX + ".processing",
         processing,
         DataSize.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -49,7 +49,7 @@ public class FreeSpace {
 
   public DataSize getReplication() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + "replication",
+        PREFIX + ".replication",
         replication,
         DataSize.class,
         BackwardsCompatibilityMode.SUPPORTED,

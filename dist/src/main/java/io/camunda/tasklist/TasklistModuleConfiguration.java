@@ -9,7 +9,6 @@ package io.camunda.tasklist;
 
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
-import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,13 +30,7 @@ import org.springframework.context.annotation.Profile;
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.tasklist\\.zeebeimport\\..*"),
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
           pattern = "io\\.camunda\\.tasklist\\.webapp\\..*"),
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.tasklist\\.archiver\\..*"),
       @ComponentScan.Filter(
           type = FilterType.REGEX,
           pattern = "io\\.camunda\\.tasklist\\.data\\..*"),
@@ -62,11 +55,6 @@ public class TasklistModuleConfiguration {
     this.broker = broker;
     this.gateway = gateway;
   }
-
-  @Configuration(proxyBeanMethods = false)
-  @Import({ImporterSecurityModuleConfiguration.class})
-  @Profile("!operate")
-  public static class TasklistSecurityModulesConfiguration {}
 
   @Configuration(proxyBeanMethods = false)
   @Import(WebappManagementModuleConfiguration.class)

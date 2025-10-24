@@ -27,6 +27,7 @@ import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequest
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public interface ProcessInstanceFilterBase extends SearchRequestFilter {
@@ -148,4 +149,10 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
 
   /** Filter by incidentErrorHashCode using {@link IntegerProperty} */
   ProcessInstanceFilterBase incidentErrorHashCode(final Consumer<IntegerProperty> fn);
+
+  /** Filter by tags */
+  ProcessInstanceFilterBase tags(final Set<String> tags);
+
+  /** Filter by tags */
+  ProcessInstanceFilterBase tags(final String... tags);
 }
