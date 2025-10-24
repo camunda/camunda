@@ -83,7 +83,7 @@ public class Backup implements Cloneable {
         PREFIX + ".repository-name",
         repositoryName,
         String.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        BackwardsCompatibilityMode.SUPPORTED,
         LEGACY_REPOSITORY_NAME_PROPERTIES);
   }
 
