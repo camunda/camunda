@@ -145,11 +145,12 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     {
       select: (result) => {
         const elementInstanceKey = elementInstanceMetadata?.elementInstanceKey;
+        const incidents = result.pages.flatMap((page) => page.items);
         return shouldFilterByElementInstance && elementInstanceKey
-          ? result.items.filter(
+          ? incidents.filter(
               (incident) => incident.elementInstanceKey === elementInstanceKey,
             )
-          : result.items;
+          : incidents;
       },
     },
   );
