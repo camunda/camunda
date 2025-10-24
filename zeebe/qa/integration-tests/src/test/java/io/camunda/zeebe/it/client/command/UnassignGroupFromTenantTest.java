@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class UnassignGroupFromTenantTest {
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
@@ -37,7 +37,7 @@ class UnassignGroupFromTenantTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     tenantId =
         client
             .newCreateTenantCommand()

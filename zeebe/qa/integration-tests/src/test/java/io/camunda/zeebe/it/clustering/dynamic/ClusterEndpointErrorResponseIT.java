@@ -35,7 +35,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 final class ClusterEndpointErrorResponseIT {
   @Nested
   class InvalidRequests {
-    @TestZeebe(awaitCompleteTopology = false, awaitReady = false)
+    @TestZeebe(awaitCompleteTopology = false, awaitReady = false, purgeAfterEach = false)
     static TestCluster cluster =
         TestCluster.builder()
             .withEmbeddedGateway(true)
@@ -128,7 +128,7 @@ final class ClusterEndpointErrorResponseIT {
 
   @Nested
   class CoordinatorNotKnown {
-    @TestZeebe(awaitCompleteTopology = false, awaitReady = false)
+    @TestZeebe(awaitCompleteTopology = false, awaitReady = false, purgeAfterEach = false)
     static TestCluster cluster =
         TestCluster.builder()
             .withGatewaysCount(1)
