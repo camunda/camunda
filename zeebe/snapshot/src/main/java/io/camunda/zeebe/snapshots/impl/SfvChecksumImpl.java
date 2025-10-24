@@ -35,7 +35,7 @@ import org.agrona.IoUtil;
 public final class SfvChecksumImpl implements MutableChecksumsSFV {
 
   private static final String SFV_HEADER =
-      """
+"""
 ; This is an SFC checksum file for all files in the given directory.
 ; You might use cksfv or another tool to validate these files manually.
 ; This is an automatically created file - please do NOT modify.
