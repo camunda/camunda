@@ -81,7 +81,6 @@ function useProcessInstanceIncidentsCount(
   processInstanceKey: string,
   options?: CountQueryOptions,
 ): number {
-  // TODO: Refetch interval needed?
   const {data} = useQuery({
     queryKey:
       queryKeys.incidents.processInstanceIncidentsCount(processInstanceKey),
