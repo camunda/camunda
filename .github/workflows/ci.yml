@@ -788,16 +788,6 @@ jobs:
             docker-file: camunda.Dockerfile
             owner: "Data Layer"
             module: "Schema Manager"
-          - group: zeebe-engine-integration-legacy
-            name: "Zeebe Legacy QA (just testing)"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Core Features"
-            module: "Zeebe"
           - group: zeebe-engine-integration
             name: "Zeebe Engine QA"
             maven-modules: "zeebe/qa/integration-tests"
