@@ -73,11 +73,20 @@ const useGetIncidentsByProcessInstance = <
   });
 };
 
-function useProcessInstanceIncidentsCount(processInstanceKey: string): number {
+type CountQueryOptions = {
+  enabled?: boolean;
+};
+
+function useProcessInstanceIncidentsCount(
+  processInstanceKey: string,
+  options?: CountQueryOptions,
+): number {
   // TODO: Refetch interval needed?
   const {data} = useQuery({
     queryKey:
       queryKeys.incidents.processInstanceIncidentsCount(processInstanceKey),
+    enabled: options?.enabled ?? !!processInstanceKey,
+    refetchInterval: 5000,
     staleTime: 5000,
     queryFn: async () => {
       const {response, error} = await searchIncidentsByProcessInstance(
