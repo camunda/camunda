@@ -21,12 +21,12 @@ import {
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {createFilter} from '../../../../utils/requestHelper/element-instance-requestHelper';
-import {filterCases} from '../../../../utils/beans/element-instance-requestBens';
+import {createFilter} from '@requestHelpers';
+import {filterCases} from '../../../../utils/beans/element-instance-requestBeans';
 
 /*
  * Test Suite for Element Instance Search API
- * This test cases are not executed in parallel to avoid interference between tests
+ * These test cases are not executed in parallel to avoid interference between tests
  */
 test.describe('Element Instance Search API', () => {
   const resourceId = 'element_instance_api_tests';

@@ -21,7 +21,7 @@ import {
   EVALUATED_DECISION_EXPECTED_BODY,
   evaluateDecisionRequiredFields,
 } from '../../../../utils/beans/requestBeans';
-import {deployDecisionAndStoreResponse} from '../../../../utils/requestHelpers';
+import {deployDecisionAndStoreResponse} from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
 test.describe.parallel('Evaluate Decision Definitions API Tests', () => {

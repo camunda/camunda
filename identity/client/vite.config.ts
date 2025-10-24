@@ -33,42 +33,42 @@ const plugins: PluginOption[] = [
 
 // https://vitejs.dev/config/
 export default defineConfig(
-  ({ mode }): UserConfig => ({
-    base: "",
-    plugins: mode === "sbom" ? [...plugins, sbom()] : plugins,
-    resolve: {
-      alias: {
-        src: "/src",
+    ({ mode }): UserConfig => ({
+      base: "",
+      plugins: mode === "sbom" ? [...plugins, sbom()] : plugins,
+      resolve: {
+        alias: {
+          src: "/src",
+        },
       },
-    },
-    build: {
-      outDir,
-      rollupOptions: {
-        plugins: license({
-          thirdParty: {
-            output: path.resolve(
-              __dirname,
-              `./${outDir}/assets/vendor.LICENSE.txt`,
-            ),
+      build: {
+        outDir,
+        rollupOptions: {
+          plugins: license({
+            thirdParty: {
+              output: path.resolve(
+                  __dirname,
+                  `./${outDir}/assets/vendor.LICENSE.txt`,
+              ),
+            },
+          }) as PluginOption,
+        },
+      },
+      esbuild: {
+        banner: "/*! licenses: /assets/vendor.LICENSE.txt */",
+        legalComments: "none",
+      },
+      server: {
+        proxy: {
+          [proxyPath]: {
+            target: "http://localhost:8080",
+            changeOrigin: true,
           },
-        }) as PluginOption,
-      },
-    },
-    esbuild: {
-      banner: "/*! licenses: /assets/vendor.LICENSE.txt */",
-      legalComments: "none",
-    },
-    server: {
-      proxy: {
-        [proxyPath]: {
-          target: "http://localhost:8080",
-          changeOrigin: true,
-        },
-        [configPath]: {
-          target: "http://localhost:8080/identity",
-          changeOrigin: true,
+          [configPath]: {
+            target: "http://localhost:8080/identity",
+            changeOrigin: true,
+          },
         },
       },
-    },
-  }),
+    }),
 );

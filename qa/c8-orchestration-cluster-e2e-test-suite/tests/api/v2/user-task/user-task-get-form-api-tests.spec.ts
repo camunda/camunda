@@ -12,7 +12,6 @@ import {
   createInstances,
   deploy,
 } from '../../../../utils/zeebeClient';
-import {findUserTask} from '../../../../utils/requestHelpers';
 import {
   assertBadRequest,
   assertRequiredFields,
@@ -23,6 +22,7 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponseShape} from '../../../../json-body-assertions';
+import {findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Get User Task Form Tests', () => {

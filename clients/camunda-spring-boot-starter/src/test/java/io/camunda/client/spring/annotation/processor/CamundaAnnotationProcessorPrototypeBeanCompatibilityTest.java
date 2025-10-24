@@ -20,7 +20,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.BeanInfo;
-import io.camunda.client.spring.annotation.processor.AbstractCamundaAnnotationProcessorTest.PrototypeBeanConfig;
+import io.camunda.client.spring.annotation.processor.CamundaAnnotationProcessorPrototypeBeanCompatibilityTest.PrototypeBeanConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
 @SpringBootTest(classes = PrototypeBeanConfig.class)
-public class AbstractCamundaAnnotationProcessorTest {
+public class CamundaAnnotationProcessorPrototypeBeanCompatibilityTest {
 
   @Autowired TestCamundaAnnotationProcessor processor;
 

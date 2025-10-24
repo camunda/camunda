@@ -8,6 +8,7 @@
 package io.camunda.exporter.config;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -133,6 +134,14 @@ public final class ConfigValidator {
     if (formCacheMaxCacheSize < 1) {
       throw new ExporterException(
           "CamundaExporter maxCacheSize must be >= 1. Current value: " + formCacheMaxCacheSize);
+    }
+
+    final Duration applyPolicyJobInterval =
+        configuration.getHistory().getRetention().getApplyPolicyJobInterval();
+    if (!applyPolicyJobInterval.isPositive()) {
+      throw new ExporterException(
+          "CamundaExporter retention.applyPolicyJobInterval must be strictly positive. Current value: "
+              + applyPolicyJobInterval);
     }
   }
 }

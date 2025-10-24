@@ -14,8 +14,8 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
 } from '../../../../utils/http';
-import {deployResourceAndGetMetadata} from '../../../../utils/requestHelpers';
 import {getExpectedContent} from '../../../../utils/beans/requestBeans';
+import {deployResourceAndGetMetadata} from '@requestHelpers';
 
 test.describe.parallel('Resource Get Content API', () => {
   test('Get Resource Content - RPA Success 200', async ({request}) => {
