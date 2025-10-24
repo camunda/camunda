@@ -44,6 +44,7 @@ import io.camunda.search.clients.reader.JobReader;
 import io.camunda.search.clients.reader.MappingRuleDocumentReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.clients.reader.MessageSubscriptionDocumentReader;
+import io.camunda.search.clients.reader.MessageSubscriptionProcessDefinitionStatisticsReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsDocumentReader;
@@ -247,6 +248,15 @@ public class SearchClientReaderConfiguration {
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new MessageSubscriptionDocumentReader(
         executor, descriptors.get(MessageSubscriptionTemplate.class));
+  }
+
+  @Bean
+  public MessageSubscriptionProcessDefinitionStatisticsReader
+      messageSubscriptionProcessDefinitionStatisticsReader(
+          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new io.camunda.search.clients.reader
+        .MessageSubscriptionProcessDefinitionStatisticsDocumentReader(
+        executor, descriptors.get(EventTemplate.class));
   }
 
   @Bean

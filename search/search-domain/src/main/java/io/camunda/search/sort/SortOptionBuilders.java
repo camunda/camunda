@@ -105,6 +105,20 @@ public final class SortOptionBuilders {
     return new AuthorizationSort.Builder();
   }
 
+  public static MessageSubscriptionProcessDefinitionStatisticsSort.Builder
+      messageSubscriptionProcessDefinitionStatistics() {
+    return new MessageSubscriptionProcessDefinitionStatisticsSort.Builder();
+  }
+
+  public static MessageSubscriptionProcessDefinitionStatisticsSort
+      messageSubscriptionProcessDefinitionStatistics(
+          final Function<
+                  MessageSubscriptionProcessDefinitionStatisticsSort.Builder,
+                  ObjectBuilder<MessageSubscriptionProcessDefinitionStatisticsSort>>
+              fn) {
+    return fn.apply(messageSubscriptionProcessDefinitionStatistics()).build();
+  }
+
   public static ProcessInstanceSort processInstance(
       final Function<ProcessInstanceSort.Builder, ObjectBuilder<ProcessInstanceSort>> fn) {
     return fn.apply(processInstance()).build();

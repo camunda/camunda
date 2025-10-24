@@ -13,7 +13,9 @@ import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_R
 import io.camunda.search.clients.MessageSubscriptionSearchClient;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.entities.MessageSubscriptionProcessDefinitionStatisticsEntity;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
+import io.camunda.search.query.MessageSubscriptionProcessDefinitionStatisticsQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -64,6 +66,18 @@ public class MessageSubscriptionServices
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .searchCorrelatedMessageSubscriptions(query));
+  }
+
+  public SearchQueryResult<MessageSubscriptionProcessDefinitionStatisticsEntity>
+      getMessageSubscriptionProcessDefinitionStatistics(
+          final MessageSubscriptionProcessDefinitionStatisticsQuery query) {
+    return executeSearchRequest(
+        () ->
+            searchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
+                .getMessageSubscriptionProcessDefinitionStatistics(query));
   }
 
   @Override

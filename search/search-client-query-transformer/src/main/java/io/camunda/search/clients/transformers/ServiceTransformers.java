@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers;
 
 import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation;
@@ -16,6 +17,7 @@ import io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregatio
 import io.camunda.search.aggregation.UsageMetricsAggregation;
 import io.camunda.search.aggregation.UsageMetricsTUAggregation;
 import io.camunda.search.aggregation.result.AggregationResultBase;
+import io.camunda.search.aggregation.result.MessageSubscriptionProcessDefinitionStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionInstanceVersionStatisticsAggregationResult;
@@ -28,6 +30,7 @@ import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.aggregation.AggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionInstanceStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregationTransformer;
@@ -36,6 +39,7 @@ import io.camunda.search.clients.transformers.aggregation.ProcessInstanceFlowNod
 import io.camunda.search.clients.transformers.aggregation.UsageMetricsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.UsageMetricsTUAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.MessageSubscriptionProcessDefinitionStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionInstanceVersionStatisticsAggregationResultTransformer;
@@ -84,11 +88,11 @@ import io.camunda.search.clients.transformers.filter.FilterTransformer;
 import io.camunda.search.clients.transformers.filter.FlownodeInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.FormFilterTransformer;
 import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
-import io.camunda.search.clients.transformers.filter.GroupMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingRuleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MessageSubscriptionFilterTransformer;
+import io.camunda.search.clients.transformers.filter.MessageSubscriptionProcessDefinitionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionInstanceVersionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatisticsFilterTransformer;
@@ -122,11 +126,11 @@ import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FlowNodeInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FormFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.GroupFieldSortingTransformer;
-import io.camunda.search.clients.transformers.sort.GroupMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.IncidentFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.JobFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.MappingRuleFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.MessageSubscriptionFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.MessageSubscriptionProcessDefinitionStatisticsFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
@@ -151,11 +155,11 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.FormFilter;
 import io.camunda.search.filter.GroupFilter;
-import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
+import io.camunda.search.filter.MessageSubscriptionProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -188,6 +192,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.query.MessageSubscriptionProcessDefinitionStatisticsQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
@@ -220,11 +225,11 @@ import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.FormSort;
-import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
+import io.camunda.search.sort.MessageSubscriptionProcessDefinitionStatisticsSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -372,6 +377,7 @@ public final class ServiceTransformers {
             JobQuery.class,
             MappingRuleQuery.class,
             MessageSubscriptionQuery.class,
+            MessageSubscriptionProcessDefinitionStatisticsQuery.class,
             ProcessDefinitionQuery.class,
             ProcessDefinitionFlowNodeStatisticsQuery.class,
             ProcessDefinitionInstanceStatisticsQuery.class,
@@ -423,7 +429,7 @@ public final class ServiceTransformers {
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(AuditLogEntity.class, new AuditLogEntityTransformer());
 
-    // domain field sorting -> database field sorting
+    // domain fields sorting -> database fields sorting
     mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
     mappers.put(BatchOperationSort.class, new BatchOperationFieldSortingTransformer());
     mappers.put(BatchOperationItemSort.class, new BatchOperationItemFieldSortingTransformer());
@@ -436,11 +442,13 @@ public final class ServiceTransformers {
     mappers.put(FlowNodeInstanceSort.class, new FlowNodeInstanceFieldSortingTransformer());
     mappers.put(FormSort.class, new FormFieldSortingTransformer());
     mappers.put(GroupSort.class, new GroupFieldSortingTransformer());
-    mappers.put(GroupMemberSort.class, new GroupMemberFieldSortingTransformer());
     mappers.put(IncidentSort.class, new IncidentFieldSortingTransformer());
     mappers.put(JobSort.class, new JobFieldSortingTransformer());
     mappers.put(MappingRuleSort.class, new MappingRuleFieldSortingTransformer());
     mappers.put(MessageSubscriptionSort.class, new MessageSubscriptionFieldSortingTransformer());
+    mappers.put(
+        MessageSubscriptionProcessDefinitionStatisticsSort.class,
+        new MessageSubscriptionProcessDefinitionStatisticsFieldSortingTransformer());
     mappers.put(ProcessDefinitionSort.class, new ProcessDefinitionFieldSortingTransformer());
     mappers.put(ProcessInstanceSort.class, new ProcessInstanceFieldSortingTransformer());
     mappers.put(RoleSort.class, new RoleFieldSortingTransformer());
@@ -503,9 +511,6 @@ public final class ServiceTransformers {
     mappers.put(
         GroupFilter.class, new GroupFilterTransformer(indexDescriptors.get(GroupIndex.class)));
     mappers.put(
-        GroupMemberFilter.class,
-        new GroupMemberFilterTransformer(indexDescriptors.get(GroupIndex.class)));
-    mappers.put(
         IncidentFilter.class,
         new IncidentFilterTransformer(indexDescriptors.get(IncidentTemplate.class)));
     mappers.put(FormFilter.class, new FormFilterTransformer(indexDescriptors.get(FormIndex.class)));
@@ -547,6 +552,10 @@ public final class ServiceTransformers {
         new MessageSubscriptionFilterTransformer(
             indexDescriptors.get(MessageSubscriptionTemplate.class)));
     mappers.put(
+        MessageSubscriptionProcessDefinitionStatisticsFilter.class,
+        new MessageSubscriptionProcessDefinitionStatisticsFilterTransformer(
+            indexDescriptors.get(EventTemplate.class)));
+    mappers.put(
         CorrelatedMessageSubscriptionFilter.class,
         new CorrelatedMessageSubscriptionFilterTransformer(
             indexDescriptors.get(CorrelatedMessageSubscriptionTemplate.class)));
@@ -564,6 +573,9 @@ public final class ServiceTransformers {
         ProcessInstanceQueryResultConfig.class, new ProcessInstanceResultConfigTransformer());
 
     // aggregation
+    mappers.put(
+        MessageSubscriptionProcessDefinitionStatisticsAggregation.class,
+        new MessageSubscriptionProcessDefinitionStatisticsAggregationTransformer());
     mappers.put(
         ProcessDefinitionFlowNodeStatisticsAggregation.class,
         new ProcessDefinitionFlowNodeStatisticsAggregationTransformer());
@@ -583,6 +595,9 @@ public final class ServiceTransformers {
         new ProcessDefinitionInstanceVersionStatisticsAggregationTransformer());
 
     // aggregation result
+    mappers.put(
+        MessageSubscriptionProcessDefinitionStatisticsAggregationResult.class,
+        new MessageSubscriptionProcessDefinitionStatisticsAggregationResultTransformer());
     mappers.put(
         ProcessDefinitionFlowNodeStatisticsAggregationResult.class,
         new ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer());
