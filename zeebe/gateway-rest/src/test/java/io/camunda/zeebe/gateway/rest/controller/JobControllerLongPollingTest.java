@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -440,8 +441,10 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               .setBrokerClient(brokerClient)
               .setMaxMessageSize(DataSize.ofMegabytes(4L).toBytes())
               .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-              .setNoJobsReceivedExceptionProvider(RuntimeException::new)
-              .setRequestCanceledExceptionProvider(reason -> new RuntimeException(reason))
+              .setResourceExhaustedExceptionProvider(
+                  RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+              .setRequestCanceledExceptionProvider(
+                  RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
               .setMetrics(LongPollingMetrics.noop())
               .build();
       final var future = new CompletableFuture<>();
