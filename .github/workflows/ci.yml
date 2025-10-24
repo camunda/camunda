@@ -801,7 +801,7 @@ jobs:
             docker-file: Dockerfile
             owner: "Core Features"
             module: "Zeebe"
-            test-filter: "io.camunda.zeebe.it.engine.**"
+            test-filter: "io.camunda.zeebe.it.engine.**,!**/*$*.java"
           - group: zeebe-ds-integration
             name: "Zeebe Cluster QA"
             maven-modules: "zeebe/qa/integration-tests"
@@ -812,7 +812,7 @@ jobs:
             docker-file: Dockerfile
             owner: "Distributed Systems"
             module: "Zeebe"
-            test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
+            test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*$*.java"
           - group: zeebe-ds-integration-scaleup
             name: "Zeebe Cluster ScaleUp QA"
             maven-modules: "zeebe/qa/integration-tests"
