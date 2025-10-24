@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -109,7 +110,10 @@ public class ResourceDeletionDeleteProcessor
     tryDeleteResources(command);
 
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
-    commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
+    commandDistributionBehavior
+        .withKey(eventKey)
+        .inQueue(DistributionQueue.DEPLOYMENT)
+        .distribute(command);
     responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETING, value, command);
   }
 
