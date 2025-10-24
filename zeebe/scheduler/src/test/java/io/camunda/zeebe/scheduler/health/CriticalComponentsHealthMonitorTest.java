@@ -175,7 +175,9 @@ public class CriticalComponentsHealthMonitorTest {
     waitUntilAllDone();
 
     // then
-    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
+    final var report = monitor.getHealthReport();
+    assertThat(report.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(report.children()).isEmpty();
   }
 
   @Test
