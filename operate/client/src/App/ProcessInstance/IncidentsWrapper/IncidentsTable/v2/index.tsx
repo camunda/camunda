@@ -30,10 +30,10 @@ type IncidentsTableProps = {
   processInstanceKey: string;
   incidents: EnhancedIncident[];
   state: React.ComponentProps<typeof SortableTable>['state'];
-  onVerticalScrollStartReach: React.ComponentProps<
+  onVerticalScrollStartReach?: React.ComponentProps<
     typeof SortableTable
   >['onVerticalScrollStartReach'];
-  onVerticalScrollEndReach: React.ComponentProps<
+  onVerticalScrollEndReach?: React.ComponentProps<
     typeof SortableTable
   >['onVerticalScrollEndReach'];
 };

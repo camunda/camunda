@@ -43,7 +43,11 @@ describe('Selection', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     );
 
     const {user} = render(
-      <IncidentsTable processInstanceKey="1" incidents={[firstIncident]} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[firstIncident]}
+      />,
       {wrapper: Wrapper},
     );
     expect(screen.getByRole('row', {selected: true})).toBeInTheDocument();
@@ -73,7 +77,11 @@ describe('Selection', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     );
 
     const {user} = render(
-      <IncidentsTable processInstanceKey="1" incidents={incidents} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidents}
+      />,
       {wrapper: Wrapper},
     );
     expect(screen.getAllByRole('row', {selected: true})).toHaveLength(2);

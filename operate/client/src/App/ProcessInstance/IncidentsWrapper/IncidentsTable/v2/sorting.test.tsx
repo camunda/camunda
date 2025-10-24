@@ -29,7 +29,11 @@ describe('Sorting', () => {
 
   it('should enable sorting for all', async () => {
     render(
-      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
       {wrapper: Wrapper},
     );
 
@@ -45,9 +49,14 @@ describe('Sorting', () => {
   it('should disable sorting for jobKey and elementName', () => {
     const incidents = [{...firstIncident, jobKey: ''}];
 
-    render(<IncidentsTable processInstanceKey="1" incidents={incidents} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidents}
+      />,
+      {wrapper: Wrapper},
+    );
     expect(
       screen.getByRole('button', {name: 'Sort by Creation Date'}),
     ).toBeInTheDocument();
