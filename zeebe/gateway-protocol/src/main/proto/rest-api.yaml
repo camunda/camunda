@@ -4512,6 +4512,37 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
       x-eventually-consistent: true
+
+  /message-subscriptions/statistics/process-definitions:
+    post:
+      tags:
+        - Message subscription statistics
+      operationId: getMessageSubscriptionProcessDefinitionStatistics
+      summary: Get message subscription statistics for process definitions
+      description: |
+        Get message subscription statistics for process definitions based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsQuery"
+      responses:
+        "200":
+          description: The message subscription statistics for process definitions result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /documents:
     post:
       tags:
@@ -8089,6 +8120,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IncidentResult"
+    MessageSubscriptionProcessDefinitionStatisticsFilter:
+      description: Process definition search filter.
+      type: object
+      properties:
+        processDefinitionId:
+          description: Process definition ID of this process definition.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     CorrelatedMessageSubscriptionSearchQueryResult:
       type: object
       allOf:
@@ -8421,6 +8460,61 @@ components:
             $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $like:
           $ref: "#/components/schemas/LikeFilter"
+    MessageSubscriptionProcessDefinitionStatisticsSortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - processDefinitionKey
+            - processDefinitionId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+    MessageSubscriptionProcessDefinitionStatisticsQuery:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsSortRequest"
+        filter:
+          description: The message subscription process definition statistics filters.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsFilter"
+    MessageSubscriptionProcessDefinitionStatisticsQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching message subscription process definition statistics.
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsResult"
+    MessageSubscriptionProcessDefinitionStatisticsResult:
+      type: object
+      properties:
+        processDefinitionId:
+          description: The process definition ID associated with this message subscription.
+          type: string
+        processDefinitionKey:
+          description: The process definition key associated with this message subscription.
+          type: integer
+          format: int64
+        processInstancesWithActiveSubscriptions:
+          description: The number of process instances with active message subscriptions.
+          type: integer
+          format: int64
+        activeSubscriptions:
+          description: The total number of active message subscriptions for this process definition key.
+          type: integer
+          format: int64
     IncidentResult:
       type: object
       properties:

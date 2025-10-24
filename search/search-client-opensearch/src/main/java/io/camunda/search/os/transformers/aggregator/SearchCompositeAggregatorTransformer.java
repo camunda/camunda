@@ -83,7 +83,7 @@ public class SearchCompositeAggregatorTransformer
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "No sorting found for Terms aggregation field: "
+                        "No sorting found for Terms aggregation fields: "
                             + termsField
                             + ". "
                             + "Available sortings: "
