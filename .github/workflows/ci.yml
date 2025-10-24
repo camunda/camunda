@@ -815,7 +815,7 @@ jobs:
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 1
-            runs-on: gcp-perf-core-16-default
+            runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
             owner: "Distributed Systems"
