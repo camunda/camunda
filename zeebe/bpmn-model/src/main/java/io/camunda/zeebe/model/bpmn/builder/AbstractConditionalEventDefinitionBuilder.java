@@ -38,8 +38,9 @@ public class AbstractConditionalEventDefinitionBuilder<
    * @return the builder object
    */
   public B condition(final String conditionText) {
+    final String conditionExpression = asZeebeExpression(conditionText);
     final Condition condition = createInstance(Condition.class);
-    condition.setTextContent(conditionText);
+    condition.setTextContent(conditionExpression);
     element.setCondition(condition);
     return myself;
   }
