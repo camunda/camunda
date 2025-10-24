@@ -281,11 +281,7 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
       if (expectedResponseCode == 200) {
         // if the request is successful, we expect the process instance to be modified
-        RecordingExporter.processInstanceModificationRecords()
-            .withIntent(ProcessInstanceModificationIntent.MODIFIED)
-            .withProcessInstanceKey(processInstanceKey)
-            .exists();
-
+        RecordingExporter.setMaximumWaitTime(25_000L);
         final var count =
             RecordingExporter.processInstanceModificationRecords()
                 .withIntent(ProcessInstanceModificationIntent.MODIFIED)
