@@ -132,7 +132,7 @@ runs:
       if: ${{ inputs.source-build == 'true' }}
       working-directory: ./identity/client
       shell: bash
-      run: yarn
+      run: npm ci
 
     - uses: ./.github/actions/build-zeebe
       if: ${{ inputs.source-build == 'true' }}
