@@ -152,6 +152,7 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda

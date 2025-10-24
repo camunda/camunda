@@ -358,7 +358,7 @@ jobs:
   run-backup-restore-tests:
     if: inputs.runBeTests
     name: "Integration / Backup Restore ITs"
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
