@@ -299,12 +299,12 @@ public class SchemaStartupIT extends AbstractSchemaIT {
 
   private static Stream<Arguments> provideSchemaVersions() {
     return Stream.of(
-        Arguments.of("8.7.0", true),
-        Arguments.of("8.7.0-SNAPSHOT", true),
+        Arguments.of("8.6.0", true),
+        Arguments.of("8.6.0-SNAPSHOT", true),
         Arguments.of("UNKNOWN", true),
         Arguments.of(VersionUtil.getVersion(), false),
-        Arguments.of("8.8.0", false),
-        Arguments.of("8.7.99", false));
+        Arguments.of("8.7.0", false),
+        Arguments.of("8.6.99", false));
   }
 
   private void setNumberOfReplicas(final int numberOfReplicas) {
