@@ -19,6 +19,11 @@ import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+>>>>>>> b6a41ba3 (fix: return 503 on job activation resource exhaustion)
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -89,8 +94,9 @@ public class JobHandlerConfiguration {
         .setProbeTimeoutMillis(config.longPolling().getProbeTimeout())
         .setMinEmptyResponses(config.longPolling().getMinEmptyResponses())
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-        .setNoJobsReceivedExceptionProvider(RuntimeException::new)
-        .setRequestCanceledExceptionProvider(RuntimeException::new)
+        .setResourceExhaustedExceptionProvider(
+            RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+        .setRequestCanceledExceptionProvider(RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .setMetrics(
             new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.REST))
         .build();
