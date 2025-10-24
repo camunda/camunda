@@ -2,4 +2,4 @@ camunda:
   data:
     secondaryStorage:
       elasticsearch:
-        indexPrefix: "extra-prefix-zeebe-record"
+#        indexPrefix: "extra-prefix-zeebe-record"
