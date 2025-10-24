@@ -77,7 +77,7 @@ public class DecisionInstanceEntityTransformer
     return switch (source) {
       case DECISION_TABLE -> DecisionDefinitionType.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionType.LITERAL_EXPRESSION;
-      case UNKNOWN -> DecisionDefinitionType.UNKNOWN;
+      default -> DecisionDefinitionType.UNKNOWN;
     };
   }
 
