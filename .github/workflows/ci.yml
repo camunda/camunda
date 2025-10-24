@@ -279,7 +279,7 @@ jobs:
       - name: Setup General UT Modules
         run: |
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-unit-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-unit-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
-      - name: Maven Test Build
+      - name: Maven Test Build Unit
         shell: bash
         # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
         #
@@ -374,9 +374,9 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test (Zeebe)
-        shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=7
@@ -709,7 +709,7 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
-      - name: Maven Test Build
+      - name: Maven Test Build DataLayer
         shell: bash
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
@@ -788,8 +788,41 @@ jobs:
             docker-file: camunda.Dockerfile
             owner: "Data Layer"
             module: "Schema Manager"
-          - group: qa-integration
-            name: "Zeebe QA"
+          - group: zeebe-engine-integration
+            name: "Zeebe Engine QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Core Features"
+            module: "Zeebe"
+            test-filter: "io.camunda.zeebe.it.engine.**,!**/*$*.java"
+          - group: zeebe-ds-integration
+            name: "Zeebe Cluster QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Distributed Systems"
+            module: "Zeebe"
+            test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*$*.java"
+          - group: zeebe-ds-integration-scaleup
+            name: "Zeebe Cluster ScaleUp QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 1
+            runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Distributed Systems"
+            module: "Zeebe"
+            test-filter: "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
+          - group: zeebe-shared-integration
+            name: "Zeebe General QA"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
@@ -798,6 +831,7 @@ jobs:
             docker-file: Dockerfile
             owner: "General"
             module: "Zeebe"
+            test-filter: "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*$*.java"
           - group: qa-update
             name: "Zeebe QA - Update"
             maven-modules: "zeebe/qa/update-tests"
@@ -874,7 +908,10 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      - name: Maven Test Build
+      - name: Maven Test Build Integration
+        env:
+          # Propagate matrix test filters (may be empty for other matrix entries)
+          TEST_FILTER: ${{ matrix.test-filter }}
         shell: bash
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
@@ -887,6 +924,7 @@ jobs:
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
+          ${TEST_FILTER:+-Dit.test="${TEST_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
