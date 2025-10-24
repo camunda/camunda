@@ -188,6 +188,7 @@ public class ExporterConfiguration {
     private boolean processInstanceEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
+    private String usageMetricsRolloverInterval = "1M";
     private int rolloverBatchSize = 100;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
@@ -217,6 +218,14 @@ public class ExporterConfiguration {
 
     public void setRolloverInterval(final String rolloverInterval) {
       this.rolloverInterval = rolloverInterval;
+    }
+
+    public String getUsageMetricsRolloverInterval() {
+      return usageMetricsRolloverInterval;
+    }
+
+    public void setUsageMetricsRolloverInterval(final String usageMetricsRolloverInterval) {
+      this.usageMetricsRolloverInterval = usageMetricsRolloverInterval;
     }
 
     public String getArchivingTimePoint() {
