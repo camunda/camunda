@@ -70,7 +70,7 @@ jobs:
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
-    name: "Lint / Actionlint"
+    name: "Camunda / Tool / Actionlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -104,7 +104,7 @@ jobs:
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
-    name: "Lint / Commitlint"
+    name: "Camunda / Tool / Commitlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -137,7 +137,7 @@ jobs:
 
   maven-spotless-linter:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
-    name: "Lint / Maven Spotless"
+    name: "Camunda / Tool / Maven Spotless"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -163,7 +163,7 @@ jobs:
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "Java Checks"
+    name: "Camunda / Tool / Java Checks"
     needs: [ detect-changes ]
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -747,7 +747,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs"
+    name: "${{ matrix.module }} / Integration / ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -767,7 +767,7 @@ jobs:
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
             owner: "QA"
-            module: "QA"
+            module: "Camunda"
           - group: modules
             name: "Zeebe Module"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
@@ -1030,7 +1030,7 @@ jobs:
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
-    name: "Docker / Tool / Checks"
+    name: "Camunda / Tool / Docker - Checks"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     outputs:
@@ -1296,7 +1296,7 @@ jobs:
     permissions: { }
 
   protobuf-checks:
-    name: "Protobuf Backwards Compatibility"
+    name: "General / Tool / Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1349,7 +1349,7 @@ jobs:
           user_description: "General"
 
   openapi-lint:
-    name: "Lint / C8 REST OpenAPI"
+    name: "Camunda / Tool / C8 REST OpenAPI Linter"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
@@ -1386,7 +1386,7 @@ jobs:
 
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
-    name: "Lint / Renovate Config Validator"
+    name: "Camunda / Tool / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
