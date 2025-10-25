@@ -277,6 +277,15 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-resolver-dns-native-macos</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-resolver-dns-classes-macos</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -327,6 +336,8 @@
             <dependency>net.jqwik:jqwik</dependency>
             <dependency>io.netty:netty-tcnative-boringssl-static</dependency>
             <dependency>io.netty:netty-transport-native-epoll</dependency>
+            <dependency>io.netty:netty-resolver-dns-native-macos</dependency>
+            <dependency>io.netty:netty-resolver-dns-classes-macos</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
