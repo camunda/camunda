@@ -166,7 +166,7 @@ public final class StubbedGateway {
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(config.getNetwork().getMaxMessageSize().toBytes())
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-        .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
+        .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .setMetrics(LongPollingMetrics.noop())
         .build();
