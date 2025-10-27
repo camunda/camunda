@@ -7,12 +7,12 @@
  */
 package io.camunda.search.clients.transformers.query;
 
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_COMPOSITE_SIZE;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
@@ -51,7 +51,7 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
     final var termsAgg = (SearchTermsAggregator) subAggregations.getFirst();
     assertThat(termsAgg.name()).isEqualTo(AGGREGATION_GROUP_FLOW_NODE_ID);
     assertThat(termsAgg.field()).isEqualTo(ListViewTemplate.ACTIVITY_ID);
-    assertThat(termsAgg.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
+    assertThat(termsAgg.size()).isEqualTo(AGGREGATION_COMPOSITE_SIZE);
     assertThat(termsAgg.minDocCount()).isEqualTo(1);
     assertThat(termsAgg.aggregations()).hasSize(1);
 
