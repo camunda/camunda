@@ -53,7 +53,7 @@ public final class TenantRequestValidator {
 
   private static void validateTenantId(final String id, final List<String> violations) {
     IdentifierValidator.validateTenantId(
-        id, violations, tenantId -> !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(id));
+        id, violations, TenantOwned.DEFAULT_TENANT_IDENTIFIER::equals);
   }
 
   private static void validateId(

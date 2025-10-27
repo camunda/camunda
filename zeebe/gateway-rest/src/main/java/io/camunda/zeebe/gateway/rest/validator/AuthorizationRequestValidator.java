@@ -34,7 +34,7 @@ public final class AuthorizationRequestValidator {
               "resourceId",
               violations,
               idPattern,
-              (id) -> !AuthorizationScope.WILDCARD_CHAR.equals(id));
+              AuthorizationScope.WILDCARD_CHAR::equals);
           if (request.getResourceType() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
           }
