@@ -281,7 +281,8 @@ public class ProcessModelReaderTest {
   }
 
   private String formOneJson() {
-    return """
+    return
+"""
 {
   "components": [
     {
@@ -309,7 +310,8 @@ public class ProcessModelReaderTest {
   }
 
   private String formTwoJson() {
-    return """
+    return
+"""
 {
   "components": [
     {
