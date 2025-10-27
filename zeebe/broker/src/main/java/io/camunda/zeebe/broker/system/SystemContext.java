@@ -458,7 +458,9 @@ public final class SystemContext {
     for (int i = 0; i < taskListeners.size(); i++) {
       final ListenerCfg listener = taskListeners.get(i);
       final String propertyPrefix = String.format("%s.%d", propertyLocation, i);
-      if (StringUtils.isBlank(listener.getType())) {
+
+      // Check if type is present
+      if (listener.getType() == null || StringUtils.isBlank(listener.getType())) {
         LOG.warn(
             String.format(
                 "Missing job type for global listener; listener will be ignored [%s.type]",
@@ -466,22 +468,17 @@ public final class SystemContext {
         continue;
       }
 
-      final boolean allEvents =
-          listener.getEventTypes().contains(ListenerConfiguration.ALL_EVENT_TYPES);
-      final List<String> eventTypes =
-          listener.getEventTypes().stream()
-              .filter(
-                  eventType -> { // validate event types and ignore invalid ones
-                    if (ListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)) {
-                      return true;
-                    } else if (supportedEventTypes.contains(eventType)) {
-                      if (allEvents) {
-                        LOG.warn(
-                            String.format(
-                                "Extra event type defined alongside '%s' will be ignored: '%s' [%s.eventTypes]",
-                                ListenerConfiguration.ALL_EVENT_TYPES, eventType, propertyPrefix));
-                        return false;
-                      }
+      // Validate event types
+      final var eventTypes = // consider event types in lowercase for validation
+          listener.getEventTypes().stream().map(String::toLowerCase).toList();
+      final boolean containsAllEventsKeyword =
+          eventTypes.contains(ListenerConfiguration.ALL_EVENT_TYPES);
+      final List<String> validEventTypes =
+          eventTypes.stream()
+              .filter( // check if provided event types have valid values
+                  eventType -> {
+                    if (ListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
+                        || supportedEventTypes.contains(eventType)) {
                       return true;
                     } else {
                       LOG.warn(
@@ -491,9 +488,21 @@ public final class SystemContext {
                       return false;
                     }
                   })
+              .filter(
+                  eventType -> { // check if "all" is used alongside other event types
+                    if (!ListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
+                        && containsAllEventsKeyword) {
+                      LOG.warn(
+                          String.format(
+                              "Extra event type defined alongside '%s' will be ignored: '%s' [%s.eventTypes]",
+                              ListenerConfiguration.ALL_EVENT_TYPES, eventType, propertyPrefix));
+                      return false;
+                    }
+                    return true;
+                  })
               .toList();
-
-      if (eventTypes.isEmpty()) {
+      // Check if valid event types have been provided
+      if (validEventTypes.isEmpty()) {
         LOG.warn(
             String.format(
                 "Missing event types for global listener; listener will be ignored [%s.eventTypes]",

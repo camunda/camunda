@@ -373,13 +373,13 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     final var jobType = globalTaskListener.type();
     final var jobRetries = globalTaskListener.retries();
 
-    // Extract the list of supported listener event types
-    final var evenTypeStrings =
-        globalTaskListener.eventTypes().stream().map(String::toLowerCase).toList();
+    // Extract the list of supported listener event typese
     var eventTypes =
-        evenTypeStrings.contains(ListenerConfiguration.ALL_EVENT_TYPES)
+        globalTaskListener.eventTypes().contains(ListenerConfiguration.ALL_EVENT_TYPES)
             ? List.of(ZeebeTaskListenerEventType.values())
-            : evenTypeStrings.stream().map(ZeebeTaskListenerEventType::valueOf).toList();
+            : globalTaskListener.eventTypes().stream()
+                .map(ZeebeTaskListenerEventType::valueOf)
+                .toList();
     // Remove duplicates (considering deprecated event types as equivalent to their non-deprecated
     // counterparts)
     eventTypes =
