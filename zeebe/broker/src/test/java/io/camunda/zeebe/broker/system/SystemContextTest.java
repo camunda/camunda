@@ -734,10 +734,30 @@ final class SystemContextTest {
 
     // then
     assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(2);
-    final var listenersConfig =
-        brokerCfg.getExperimental().getEngine().getListeners().getTask();
+    final var listenersConfig = brokerCfg.getExperimental().getEngine().getListeners().getTask();
     assertThat(listenersConfig.get(0).getType()).isEqualTo("test1");
     assertThat(listenersConfig.get(1).getType()).isEqualTo("test4");
+  }
+
+  @Test
+  void shouldIgnoreDuplicatedEventTypesWhenConfiguringGenericGlobalTaskListener() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getListeners()
+        .setTask(List.of(createListenerCfg("test", List.of("creating", "creating", "updating"))));
+
+    // when
+    initSystemContext(brokerCfg);
+
+    // then
+    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    final var listenerConfig =
+        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+    assertThat(listenerConfig.getType()).isEqualTo("test");
+    assertThat(listenerConfig.getEventTypes()).containsExactly("creating", "updating");
   }
 
   private ListenerCfg createListenerCfg(final String type, final List<String> eventTypes) {

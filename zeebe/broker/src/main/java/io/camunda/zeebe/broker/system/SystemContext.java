@@ -501,14 +501,31 @@ public final class SystemContext {
                     return true;
                   })
               .toList();
+
+      // Remove duplicates
+      final List<String> uniqueEventTypes = new ArrayList<>();
+      validEventTypes.forEach(
+          eventType -> {
+            if (uniqueEventTypes.contains(eventType)) {
+              LOG.warn(
+                  String.format(
+                      "Duplicated event type will be considered only once: '%s' [%s.eventTypes]",
+                      eventType, propertyPrefix));
+            } else {
+              uniqueEventTypes.add(eventType);
+            }
+          });
+
       // Check if valid event types have been provided
-      if (validEventTypes.isEmpty()) {
+      if (uniqueEventTypes.isEmpty()) {
         LOG.warn(
             String.format(
                 "Missing event types for global listener; listener will be ignored [%s.eventTypes]",
                 propertyPrefix));
         continue;
       }
+
+      listener.setEventTypes(uniqueEventTypes);
 
       // Check if retries actually contains a number
       try {
@@ -522,8 +539,6 @@ public final class SystemContext {
                 listener.getRetries(), propertyPrefix));
         continue;
       }
-
-      listener.setEventTypes(validEventTypes);
       validListeners.add(listener);
     }
 
