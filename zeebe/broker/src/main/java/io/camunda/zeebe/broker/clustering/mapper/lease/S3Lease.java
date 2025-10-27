@@ -253,8 +253,7 @@ public class S3Lease extends AbstractLeaseClient {
     final var response =
         client
             .getObject(
-                h -> h.bucket(bucketName).key(String.valueOf(id)),
-                AsyncResponseTransformer.toBytes())
+                h -> h.bucket(bucketName).key(objectKey(id)), AsyncResponseTransformer.toBytes())
             .join();
     return Lease.fromJsonBytes(OBJECT_MAPPER, response.asByteArray());
   }
