@@ -703,7 +703,7 @@ public class SearchQueryFilterMapper {
   }
 
   static IncidentFilter toIncidentFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceIncidentFilter filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.IncidentFilter filter) {
     final var builder = FilterBuilders.incident();
 
     if (filter != null) {
@@ -716,6 +716,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessDefinitionId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getErrorType())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorTypeOperations);
@@ -740,34 +743,6 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-    }
-    return builder.build();
-  }
-
-  static IncidentFilter toIncidentFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.IncidentFilter filter) {
-    final var builder = FilterBuilders.incident();
-
-    if (filter != null) {
-      ofNullable(filter.getIncidentKey()).map(KeyUtil::keyToLong).ifPresent(builder::incidentKeys);
-      ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
-      ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::processInstanceKeys);
-      ofNullable(filter.getErrorType()).ifPresent(t -> builder.errorTypes(t.getValue()));
-      ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessages);
-      ofNullable(filter.getElementId()).ifPresent(builder::flowNodeIds);
-      ofNullable(filter.getElementInstanceKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::flowNodeInstanceKeys);
-      ofNullable(filter.getCreationTime())
-          .ifPresent(t -> builder.creationTime(toOffsetDateTime(t)));
-      ofNullable(filter.getState()).ifPresent(s -> builder.states(s.getValue()));
-      ofNullable(filter.getJobKey()).map(KeyUtil::keyToLong).ifPresent(builder::jobKeys);
-      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
   }

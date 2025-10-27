@@ -25,8 +25,6 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
-import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
-import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.time.OffsetDateTime;
@@ -100,12 +98,12 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
-    assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.CALLED_DECISION_ERROR);
+    assertThat(filter.getErrorType()).isEqualTo(IncidentErrorTypeEnum.CALLED_DECISION_ERROR);
     assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
     assertThat(filter.getElementId()).isEqualTo("element");
     assertThat(filter.getElementInstanceKey()).isEqualTo("4");
     assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.001Z");
-    assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
+    assertThat(filter.getState()).isEqualTo(IncidentStateEnum.ACTIVE);
     assertThat(filter.getJobKey()).isEqualTo("5");
     assertThat(filter.getTenantId()).isEqualTo("tenant");
   }
@@ -179,7 +177,7 @@ public class SearchIncidentTest extends ClientRestTest {
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
     final IncidentFilter filter = request.getFilter();
     assertThat(filter.getIncidentKey()).isEqualTo("1");
-    assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.valueOf(errorType.name()));
+    assertThat(filter.getErrorType()).isEqualTo(IncidentStateEnum.valueOf(errorType.name()));
   }
 
   @Test
@@ -203,9 +201,8 @@ public class SearchIncidentTest extends ClientRestTest {
         .send()
         .join();
     // then
-    final ProcessInstanceIncidentSearchQuery request =
-        gatewayService.getLastRequest(ProcessInstanceIncidentSearchQuery.class);
-    final ProcessInstanceIncidentFilter filter = request.getFilter();
+    final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
+    final IncidentFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getIncidentKey().get$Eq()).isEqualTo("1");
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("2");

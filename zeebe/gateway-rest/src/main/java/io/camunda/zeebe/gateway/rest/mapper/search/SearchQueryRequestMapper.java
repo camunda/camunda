@@ -478,15 +478,7 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final IncidentSearchQuery request) {
-    return toIncidentQuery(
-        request,
-        IncidentSearchQuery::getFilter,
-        IncidentSearchQuery::getPage,
-        IncidentSearchQuery::getSort);
-  }
 
-  public static Either<ProblemDetail, IncidentQuery> toProcessInstanceIncidentQuery(
-      final ProcessInstanceIncidentSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
     }

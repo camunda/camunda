@@ -965,6 +965,11 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         ops -> new IncidentFilter.Builder().flowNodeInstanceKeyOperations(ops).build());
 
     keyOperationTestCases(
+        streamBuilder,
+        "processInstanceKey",
+        ops -> new IncidentFilter.Builder().processInstanceKeyOperations(ops).build());
+
+    keyOperationTestCases(
         streamBuilder, "jobKey", ops -> new IncidentFilter.Builder().jobKeyOperations(ops).build());
 
     return streamBuilder.build();
