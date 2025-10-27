@@ -429,7 +429,7 @@ public final class ServiceTransformers {
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(AuditLogEntity.class, new AuditLogEntityTransformer());
 
-    // domain fields sorting -> database fields sorting
+    // domain field sorting -> database field sorting
     mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
     mappers.put(BatchOperationSort.class, new BatchOperationFieldSortingTransformer());
     mappers.put(BatchOperationItemSort.class, new BatchOperationItemFieldSortingTransformer());

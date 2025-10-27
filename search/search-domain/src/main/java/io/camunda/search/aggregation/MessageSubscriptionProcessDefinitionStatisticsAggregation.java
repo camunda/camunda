@@ -17,7 +17,7 @@ public record MessageSubscriptionProcessDefinitionStatisticsAggregation(
     SearchQueryPage page)
     implements AggregationBase, AggregationPaginated {
 
-  public static final int AGGREGATION_TERMS_SIZE = 10000;
+  public static final int AGGREGATION_COMPOSITE_SIZE = 10000;
 
   // Aggregation names
   public static final String AGGREGATION_NAME_BY_PROCESS_DEF_KEY_AND_TENANT_ID =
