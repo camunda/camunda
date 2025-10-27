@@ -714,10 +714,43 @@ final class SystemContextTest {
     assertThat(listenerConfig.getEventTypes()).containsExactly("all");
   }
 
+  @Test
+  void shouldIgnoreGlobalTaskListenerWithNonNumericalOrNegativeRetries() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getListeners()
+        .setTask(
+            List.of(
+                createListenerCfg("test1", List.of("creating")), // missing retries
+                createListenerCfg("test2", List.of("creating"), "not-a-number"), // invalid retries
+                createListenerCfg("test3", List.of("creating"), "-1"), // negative retries
+                createListenerCfg("test4", List.of("creating"), "4"))); // valid number of retries
+
+    // when
+    initSystemContext(brokerCfg);
+
+    // then
+    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(2);
+    final var listenersConfig =
+        brokerCfg.getExperimental().getEngine().getListeners().getTask();
+    assertThat(listenersConfig.get(0).getType()).isEqualTo("test1");
+    assertThat(listenersConfig.get(1).getType()).isEqualTo("test4");
+  }
+
   private ListenerCfg createListenerCfg(final String type, final List<String> eventTypes) {
     final ListenerCfg listenerCfg = new ListenerCfg();
     listenerCfg.setType(type);
     listenerCfg.setEventTypes(eventTypes);
+    return listenerCfg;
+  }
+
+  private ListenerCfg createListenerCfg(
+      final String type, final List<String> eventTypes, final String retries) {
+    final ListenerCfg listenerCfg = createListenerCfg(type, eventTypes);
+    listenerCfg.setRetries(retries);
     return listenerCfg;
   }
 }

@@ -510,7 +510,20 @@ public final class SystemContext {
         continue;
       }
 
-      listener.setEventTypes(eventTypes);
+      // Check if retries actually contains a number
+      try {
+        if (Integer.parseInt(listener.getRetries()) <= 0) {
+          throw new NumberFormatException();
+        }
+      } catch (final NumberFormatException e) {
+        LOG.warn(
+            String.format(
+                "Invalid retries for global listener: '%s'; listener will be ignored [%s.retries]",
+                listener.getRetries(), propertyPrefix));
+        continue;
+      }
+
+      listener.setEventTypes(validEventTypes);
       validListeners.add(listener);
     }
 
