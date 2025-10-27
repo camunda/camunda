@@ -40,8 +40,8 @@ public class S3LeaseComponentIT {
 
   // TODO: Provide you AWS S3 credentials
   // Neither LocalStack S3 nor MinIO have strong consistence guarantees on atomic file operations
-  public static final String ACCESS_KEY = System.getenv("AWS_ACCESS_KEY");
-  public static final String SECRET_KEY = System.getenv("AWS_SECRET_KEY");
+  public static final String ACCESS_KEY = System.getenv("AWS_ACCESS_KEY_ID");
+  public static final String SECRET_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
   public static final Region REGION = Region.EU_NORTH_1;
   public static S3AsyncClient s3Client;
   private static final String BUCKET_NAME = System.getenv("AWS_BUCKET_NAME");
@@ -184,6 +184,23 @@ public class S3LeaseComponentIT {
               for (int i = 0; i < CLUSTER_SIZE; i++) {
                 assertThat(newTimestamps.get(i)).isGreaterThan(timestamps.get(i));
               }
+            });
+  }
+
+  @Test
+  void shouldEventuallyBecomeReady() {
+
+    // given
+    startMappers();
+    // nodeMappers setup
+
+    // when
+    Awaitility.await("Until all leases are acquired")
+        .untilAsserted(
+            () -> {
+              assertThat(nodeIdMappers)
+                  .allSatisfy(
+                      m -> assertThat(m.waitUntilReady()).succeedsWithin(Duration.ofSeconds(30)));
             });
   }
 
