@@ -167,6 +167,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         () -> {
           metrics.setExporterPaused();
           exporterPhase = ExporterPhase.PAUSED;
+          LOG.info("Exporter state is PAUSED");
         });
   }
 
@@ -190,6 +191,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           containers.stream().forEach(ExporterContainer::softPauseExporter);
           exporterPhase = ExporterPhase.SOFT_PAUSED;
           metrics.setExporterSoftPaused();
+          LOG.info("Exporter state is SOFT PAUSED");
         });
   }
 
@@ -213,6 +215,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           }
           exporterPhase = ExporterPhase.EXPORTING;
           metrics.setExporterActive();
+          LOG.info("Exporter phase is {}, mode is {}", exporterPhase, exporterMode);
           if (exporterMode == ExporterMode.ACTIVE) {
             actor.submit(this::readNextEvent);
           }
@@ -252,7 +255,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     // After removing this exporter, the exporter index has changed. Reset it so that we don't
     // miss to export the record to any of the exporters whose index has changed.
     recordExporter.resetExporterIndex();
-    LOG.debug("Exporter '{}' is removed.", exporterId);
+    LOG.info("Exporter '{}' is removed.", exporterId);
 
     if (containers.isEmpty()) {
       becomeIdle();
@@ -517,7 +520,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private void becomeIdle() {
     idle = true;
-    LOG.debug("No exporters are configured. Going idle.");
+    LOG.info("No exporters are configured. Going idle.");
     logStream.removeRecordAvailableListener(this);
     exporterDistributionService.close();
     if (exporterDistributionTimer != null) {
@@ -533,7 +536,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void becomeLive() {
-    LOG.debug("New exporters are configured. Restart exporting.");
+    LOG.info("New exporters are configured. Restart exporting.");
     if (exporterMode == ExporterMode.ACTIVE) {
       restartActiveExportingMode();
     } else {
@@ -700,8 +703,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void clearExporterState() {
-    final List<String> exporterIds =
-        containers.stream().map(ExporterContainer::getId).collect(Collectors.toList());
+    final Set<String> exporterIds =
+        containers.stream().map(ExporterContainer::getId).collect(Collectors.toSet());
 
     state.visitExporterState(
         (exporterId, exporterStateEntry) -> {
