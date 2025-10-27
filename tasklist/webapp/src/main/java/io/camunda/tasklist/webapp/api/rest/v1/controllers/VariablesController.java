@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.Error;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Variables", description = "API to query variables.")
 @RestController
 @RequestMapping(value = TasklistURIs.VARIABLES_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnRdbmsDisabled
 public class VariablesController extends ApiErrorController {
 
   @Autowired private VariableService variableService;

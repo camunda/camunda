@@ -83,6 +83,11 @@
       <artifactId>camunda-search-domain</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
+    </dependency>
+
     <!-- ZEEBE -->
     <dependency>
       <groupId>io.camunda</groupId>

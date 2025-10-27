@@ -11,6 +11,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.DraftVariableStore;
@@ -56,6 +57,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnRdbmsDisabled
 public class VariableService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableService.class);

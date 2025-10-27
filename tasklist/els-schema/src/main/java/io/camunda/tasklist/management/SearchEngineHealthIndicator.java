@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.management;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 @Component("searchEngineCheck")
+@ConditionalOnRdbmsDisabled
 public class SearchEngineHealthIndicator implements HealthIndicator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
