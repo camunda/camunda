@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.aggregation;
 
+import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_COMPOSITE_SIZE;
 import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_FIELD_BPMN_PROCESS_ID;
 import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_FIELD_FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_KEY;
@@ -18,7 +19,6 @@ import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinition
 import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_TOP_HIT;
 import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_SOURCE_NAME_PROCESS_DEFINITION_KEY;
 import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_SOURCE_NAME_TENANT_ID;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.composite;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
@@ -88,7 +88,9 @@ public class MessageSubscriptionProcessDefinitionStatisticsAggregationTransforme
         composite()
             .name(AGGREGATION_NAME_BY_PROCESS_DEF_KEY_AND_TENANT_ID)
             .size(
-                Optional.ofNullable(page).map(SearchQueryPage::size).orElse(AGGREGATION_TERMS_SIZE))
+                Optional.ofNullable(page)
+                    .map(SearchQueryPage::size)
+                    .orElse(AGGREGATION_COMPOSITE_SIZE))
             .after(Optional.ofNullable(page).map(SearchQueryPage::after).orElse(null))
             .sources(
                 List.of(

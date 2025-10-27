@@ -7,12 +7,12 @@
  */
 package io.camunda.search.clients.transformers.aggregation;
 
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_COMPOSITE_SIZE;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.parent;
@@ -46,7 +46,7 @@ public class ProcessDefinitionFlowNodeStatisticsAggregationTransformer
         terms()
             .name(AGGREGATION_GROUP_FLOW_NODE_ID)
             .field(ACTIVITY_ID)
-            .size(AGGREGATION_TERMS_SIZE)
+            .size(AGGREGATION_COMPOSITE_SIZE)
             .aggregations(filtersAgg)
             .build();
 
