@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.ListenerConfiguration;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -69,10 +70,23 @@ final class EngineCfgTest {
     assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(Duration.ofMinutes(20));
-    assertThat(configuration.getListeners().task()).hasSize(1);
-    final var listener = configuration.getListeners().task().getFirst();
-    assertThat(listener.type()).isEqualTo("test");
-    assertThat(listener.eventTypes()).containsExactly("creating", "canceling");
-    assertThat(listener.retries()).isEqualTo("5");
+    assertThat(configuration.getListeners().task()).hasSize(2);
+    final var taskListeners = configuration.getListeners().task();
+    assertListenerCfg(
+        taskListeners.get(0), "test1", new String[] {"creating", "canceling"}, "5", false);
+    assertListenerCfg(
+        taskListeners.get(1), "test2", new String[] {"assigning", "canceling"}, "2", true);
+  }
+
+  void assertListenerCfg(
+      final ListenerConfiguration config,
+      final String type,
+      final String[] eventTypes,
+      final String retries,
+      final boolean afterLocal) {
+    assertThat(config.type()).isEqualTo(type);
+    assertThat(config.eventTypes()).containsExactly(eventTypes);
+    assertThat(config.retries()).isEqualTo(retries);
+    assertThat(config.afterLocal()).isEqualTo(afterLocal);
   }
 }
