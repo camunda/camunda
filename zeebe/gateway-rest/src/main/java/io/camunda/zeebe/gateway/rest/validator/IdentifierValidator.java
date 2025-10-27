@@ -31,7 +31,7 @@ public class IdentifierValidator {
       final String propertyName,
       final List<String> violations,
       final Pattern idPattern) {
-    validateId(id, propertyName, violations, idPattern, s -> true);
+    validateId(id, propertyName, violations, idPattern, s -> false);
   }
 
   public static void validateId(
@@ -39,16 +39,16 @@ public class IdentifierValidator {
       final String propertyName,
       final List<String> violations,
       final Pattern idPattern,
-      final Function<String, Boolean> additionalCheck) {
-    validateIdInternal(id, propertyName, violations, idPattern, additionalCheck, MAX_LENGTH);
+      final Function<String, Boolean> alternativeCheck) {
+    validateIdInternal(id, propertyName, violations, idPattern, alternativeCheck, MAX_LENGTH);
   }
 
   public static void validateTenantId(
       final String id,
       final List<String> violations,
-      final Function<String, Boolean> additionalCheck) {
+      final Function<String, Boolean> alternativeCheck) {
     validateIdInternal(
-        id, "tenantId", violations, TENANT_ID_MASK, additionalCheck, TENANT_ID_MAX_LENGTH);
+        id, "tenantId", violations, TENANT_ID_MASK, alternativeCheck, TENANT_ID_MAX_LENGTH);
   }
 
   private static void validateIdInternal(
@@ -56,13 +56,13 @@ public class IdentifierValidator {
       final String propertyName,
       final List<String> violations,
       final Pattern idPattern,
-      final Function<String, Boolean> additionalCheck,
+      final Function<String, Boolean> alternativeCheck,
       final int maxLength) {
     if (id == null || id.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(propertyName));
     } else if (id.length() > maxLength) {
       violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(propertyName, maxLength));
-    } else if (!idPattern.matcher(id).matches() && additionalCheck.apply(id)) {
+    } else if (!(idPattern.matcher(id).matches() || alternativeCheck.apply(id))) {
       violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(propertyName, idPattern));
     }
   }
