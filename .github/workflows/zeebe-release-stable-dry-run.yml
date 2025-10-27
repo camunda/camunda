@@ -20,7 +20,9 @@ jobs:
       fail-fast: false
     with:
       releaseBranch: stable/8.8
-      releaseVersion: 0.8.8
+      # Uses existing Camunda release tags for dry run testing without creating new ones
+      # Release version format: 1.x+1.0 chosen to reflect that each stable/x.y represents a minor release
+      releaseVersion: 1.3.0 #https://github.com/camunda/camunda/releases/tag/1.3.0 
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
@@ -32,7 +34,9 @@ jobs:
       fail-fast: false
     with:
       releaseBranch: stable/8.7
-      releaseVersion: 0.8.7
+      # Uses existing Camunda release tags for dry run testing without creating new ones
+      # Release version format: 1.x+1.0 chosen to reflect that each stable/x.y represents a minor release
+      releaseVersion: 1.2.0 #https://github.com/camunda/camunda/releases/tag/1.2.0
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
@@ -44,7 +48,9 @@ jobs:
       fail-fast: false
     with:
       releaseBranch: stable/8.6
-      releaseVersion: 0.8.6
+      # Uses existing Camunda release tags for dry run testing without creating new ones
+      # Release version format: 1.x+1.0 chosen to reflect that each stable/x.y represents a minor release
+      releaseVersion: 1.1.0 #https://github.com/camunda/camunda/releases/tag/1.1.0
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
