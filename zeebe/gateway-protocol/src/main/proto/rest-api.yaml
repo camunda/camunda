@@ -8593,6 +8593,8 @@ components:
         - UPDATE_USER_TASK
         - CANCEL_PROCESS_INSTANCE
         - MODIFY_PROCESS_INSTANCE
+        - CLAIM
+        - COMPLETE
         - DELETE
         - DELETE_PROCESS
         - DELETE_DRD
