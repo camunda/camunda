@@ -18,10 +18,10 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
-import io.camunda.client.api.response.BatchOperationCreatedResponse;
+import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.response.BatchOperationCreatedResponseImpl;
+import io.camunda.client.impl.response.CreateBatchOperationResponseImpl;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -43,21 +43,21 @@ public final class ResolveProcessInstanceIncidentsCommandImpl
   }
 
   @Override
-  public FinalCommandStep<BatchOperationCreatedResponse> requestTimeout(
+  public FinalCommandStep<CreateBatchOperationResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<BatchOperationCreatedResponse> send() {
-    final HttpCamundaFuture<BatchOperationCreatedResponse> result = new HttpCamundaFuture<>();
+  public CamundaFuture<CreateBatchOperationResponse> send() {
+    final HttpCamundaFuture<CreateBatchOperationResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances/" + processInstanceKey + "/incident-resolution",
         "", // sends an empty JSON request, so content type is correctly set
         httpRequestConfig.build(),
         BatchOperationCreatedResult.class,
-        BatchOperationCreatedResponseImpl::new,
+        CreateBatchOperationResponseImpl::new,
         result);
     return result;
   }

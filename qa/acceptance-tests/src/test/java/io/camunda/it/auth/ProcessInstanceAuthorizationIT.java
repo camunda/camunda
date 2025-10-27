@@ -15,6 +15,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -292,7 +293,8 @@ class ProcessInstanceAuthorizationIT {
         camundaClient.newResolveProcessInstanceIncidentsCommand(processInstanceKey).send().join();
 
     // then
-    assertThat(result.getBatchOperationKey()).isGreaterThan(0L);
+    assertThat(result.getBatchOperationKey()).isNotEmpty();
+    assertThat(result.getBatchOperationType()).isEqualTo(BatchOperationType.RESOLVE_INCIDENT);
   }
 
   @Test

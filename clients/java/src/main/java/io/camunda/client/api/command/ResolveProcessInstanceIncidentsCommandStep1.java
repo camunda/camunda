@@ -15,9 +15,9 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.response.BatchOperationCreatedResponse;
+import io.camunda.client.api.response.CreateBatchOperationResponse;
 
 public interface ResolveProcessInstanceIncidentsCommandStep1
-    extends FinalCommandStep<BatchOperationCreatedResponse> {
+    extends FinalCommandStep<CreateBatchOperationResponse> {
   // the place for new optional parameters
 }
