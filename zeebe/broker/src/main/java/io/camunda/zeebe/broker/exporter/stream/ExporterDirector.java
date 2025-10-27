@@ -592,6 +592,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void restartActiveExportingMode() {
+    if (logStreamReader != null) {
+      logStreamReader.close();
+    }
     logStreamReader = logStream.newLogStreamReader();
     startActiveExportingFrom(-1);
   }
