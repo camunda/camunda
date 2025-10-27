@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
@@ -185,6 +186,13 @@ public class CamundaClientCloudBuilderImpl
   public CamundaClientBuilder jobWorkerExecutor(
       final ScheduledExecutorService executor, final boolean takeOwnership) {
     innerBuilder.jobWorkerExecutor(executor, takeOwnership);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder jobHandlingExecutor(
+      final ExecutorService executor, final boolean takeOwnership) {
+    innerBuilder.jobHandlingExecutor(executor, takeOwnership);
     return this;
   }
 

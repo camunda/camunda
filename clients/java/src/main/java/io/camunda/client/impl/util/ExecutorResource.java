@@ -16,6 +16,7 @@
 package io.camunda.client.impl.util;
 
 import io.camunda.client.api.command.ClientException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -24,20 +25,54 @@ import java.util.concurrent.TimeUnit;
  * is owned, then close will shut down the service. Otherwise it's a no-op.
  */
 public final class ExecutorResource implements AutoCloseable {
-  private final ScheduledExecutorService executor;
-  private final boolean ownsResource;
+  private final ScheduledExecutorService scheduledExecutor;
+  private final boolean ownsScheduledExecutorResource;
+
+  private final ExecutorService jobHandlingExecutor;
+  private final boolean ownsJobHandlingExecutor;
 
   public ExecutorResource(final ScheduledExecutorService executor, final boolean ownsResource) {
-    this.executor = executor;
-    this.ownsResource = ownsResource;
+    scheduledExecutor = executor;
+    ownsScheduledExecutorResource = ownsResource;
+    jobHandlingExecutor = executor;
+    ownsJobHandlingExecutor = ownsResource;
   }
 
-  public ScheduledExecutorService executor() {
-    return executor;
+  public ExecutorResource(
+      final ScheduledExecutorService executor,
+      final boolean ownsResource,
+      final ExecutorService jobHandlingExecutor,
+      final boolean ownsJobHandlingExecutor) {
+    scheduledExecutor = executor;
+    ownsScheduledExecutorResource = ownsResource;
+
+    if (jobHandlingExecutor == null) {
+      this.jobHandlingExecutor = scheduledExecutor;
+    } else {
+      this.jobHandlingExecutor = jobHandlingExecutor;
+    }
+
+    this.ownsJobHandlingExecutor = ownsJobHandlingExecutor;
+  }
+
+  public ScheduledExecutorService scheduledExecutor() {
+    return scheduledExecutor;
+  }
+
+  public ExecutorService jobHandlingExecutor() {
+    return jobHandlingExecutor;
   }
 
   @Override
   public void close() {
+    closeExecutor(scheduledExecutor, ownsScheduledExecutorResource);
+
+    if (jobHandlingExecutor != scheduledExecutor) {
+      closeExecutor(jobHandlingExecutor, ownsJobHandlingExecutor);
+    }
+  }
+
+  private void closeExecutor(final ExecutorService executor, final boolean ownsResource) {
     if (!ownsResource) {
       return;
     }
@@ -46,8 +81,7 @@ public final class ExecutorResource implements AutoCloseable {
 
     try {
       if (!executor.awaitTermination(15, TimeUnit.SECONDS)) {
-        throw new ClientException(
-            "Timed out awaiting termination of job worker executor after 15 seconds");
+        throw new ClientException("Timed out awaiting termination of job worker executor");
       }
     } catch (final InterruptedException e) {
       throw new ClientException(

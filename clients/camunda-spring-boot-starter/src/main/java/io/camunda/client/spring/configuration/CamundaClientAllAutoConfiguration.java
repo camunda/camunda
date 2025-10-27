@@ -71,7 +71,7 @@ public class CamundaClientAllAutoConfiguration {
       final BackoffSupplier backoffSupplier,
       final CamundaClientExecutorService scheduledExecutorService) {
     return new DefaultCommandExceptionHandlingStrategy(
-        backoffSupplier, scheduledExecutorService.get());
+        backoffSupplier, scheduledExecutorService.getScheduledExecutor());
   }
 
   @Bean

@@ -74,6 +74,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
@@ -130,6 +131,8 @@ public final class CamundaClientBuilderImpl
   private boolean streamEnabled = DEFAULT_STREAM_ENABLED;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
+  private ExecutorService jobHandlingExecutor;
+  private boolean ownsJobHandlingExecutor;
   private boolean useDefaultRetryPolicy;
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
   private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
@@ -247,6 +250,16 @@ public final class CamundaClientBuilderImpl
   @Override
   public boolean ownsJobWorkerExecutor() {
     return ownsJobWorkerExecutor;
+  }
+
+  @Override
+  public ExecutorService jobHandlingExecutor() {
+    return jobHandlingExecutor;
+  }
+
+  @Override
+  public boolean ownsJobHandlingExecutor() {
+    return ownsJobHandlingExecutor;
   }
 
   @Override
@@ -484,6 +497,14 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder jobHandlingExecutor(
+      final ExecutorService executor, final boolean takeOwnership) {
+    jobHandlingExecutor = executor;
+    ownsJobHandlingExecutor = takeOwnership;
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder defaultJobWorkerName(final String workerName) {
     if (workerName != null) {
       defaultJobWorkerName = workerName;
@@ -699,6 +720,8 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "maxMetadataSize", maxMetadataSize);
     BuilderUtils.appendProperty(sb, "jobWorkerExecutor", jobWorkerExecutor);
     BuilderUtils.appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
+    BuilderUtils.appendProperty(sb, "jobHandlingExecutor", jobHandlingExecutor);
+    BuilderUtils.appendProperty(sb, "ownsJobHandlingExecutor", ownsJobHandlingExecutor);
     BuilderUtils.appendProperty(sb, "streamEnabled", streamEnabled);
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
 

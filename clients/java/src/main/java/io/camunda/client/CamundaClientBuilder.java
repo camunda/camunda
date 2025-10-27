@@ -25,6 +25,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
@@ -115,6 +116,13 @@ public interface CamundaClientBuilder {
    */
   CamundaClientBuilder jobWorkerExecutor(
       final ScheduledExecutorService executor, final boolean takeOwnership);
+
+  default CamundaClientBuilder jobHandlingExecutor(final ExecutorService executor) {
+    return jobHandlingExecutor(executor, true);
+  }
+
+  CamundaClientBuilder jobHandlingExecutor(
+      final ExecutorService executor, final boolean takeOwnership);
 
   /**
    * The name of the worker which is used when none is set for a job worker. Default is 'default'.

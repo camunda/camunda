@@ -170,7 +170,7 @@ public class SpringCamundaClientConfigurationSaasTest {
   @Test
   void shouldHaveJobWorkerExecutor() {
     assertThat(camundaClientConfiguration.jobWorkerExecutor())
-        .isEqualTo(zeebeClientExecutorService.get());
+        .isEqualTo(zeebeClientExecutorService.getScheduledExecutor());
   }
 
   @Test
