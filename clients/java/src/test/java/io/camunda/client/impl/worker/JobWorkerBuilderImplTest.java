@@ -66,7 +66,8 @@ class JobWorkerBuilderImplTest {
     final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     closeables = new ArrayList<>();
     jobWorkerBuilder =
-        new JobWorkerBuilderImpl(zeebeClientConfig, jobClient, executorService, closeables);
+        new JobWorkerBuilderImpl(
+            zeebeClientConfig, jobClient, executorService, executorService, closeables);
   }
 
   @AfterEach

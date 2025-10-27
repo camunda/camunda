@@ -69,7 +69,7 @@ public class CamundaClientAllAutoConfiguration {
   public CommandExceptionHandlingStrategy commandExceptionHandlingStrategy(
       final CamundaClientExecutorService scheduledExecutorService) {
     return new DefaultCommandExceptionHandlingStrategy(
-        backoffSupplier(), scheduledExecutorService.get());
+        backoffSupplier(), scheduledExecutorService.getScheduledExecutor());
   }
 
   @Bean
