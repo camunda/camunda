@@ -55,7 +55,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -460,7 +459,7 @@ public final class SystemContext {
       final String propertyPrefix = String.format("%s.%d", propertyLocation, i);
 
       // Check if type is present
-      if (listener.getType() == null || StringUtils.isBlank(listener.getType())) {
+      if (listener.getType() == null || listener.getType().isBlank()) {
         LOG.warn(
             String.format(
                 "Missing job type for global listener; listener will be ignored [%s.type]",
