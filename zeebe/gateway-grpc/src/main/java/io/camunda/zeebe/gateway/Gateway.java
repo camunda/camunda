@@ -77,7 +77,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class Gateway implements CloseableSilently {
 
-  public static final Function<String, Exception> NO_JOBS_RECEIVED_EXCEPTION_PROVIDER =
+  public static final Function<String, Exception> RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER =
       msg -> grpcStatusException(Code.RESOURCE_EXHAUSTED_VALUE, msg);
   public static final Function<String, Throwable> REQUEST_CANCELED_EXCEPTION_PROVIDER =
       msg -> grpcStatusException(Code.CANCELLED_VALUE, msg);
@@ -391,7 +391,7 @@ public final class Gateway implements CloseableSilently {
         .setProbeTimeoutMillis(gatewayCfg.getLongPolling().getProbeTimeout())
         .setMinEmptyResponses(gatewayCfg.getLongPolling().getMinEmptyResponses())
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-        .setNoJobsReceivedExceptionProvider(NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
+        .setResourceExhaustedExceptionProvider(RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .setMetrics(
             new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.GRPC))
