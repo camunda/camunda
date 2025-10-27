@@ -79,7 +79,6 @@ public final class FilesystemBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    LOG.debug("Saving {}", backup.id());
     return CompletableFuture.runAsync(
         () -> {
           final var manifest = manifestManager.createInitialManifest(backup);
