@@ -8,15 +8,11 @@
 package io.camunda.application.commons.metrics;
 
 import io.camunda.application.commons.metrics.jfr.NativeMemoryMetrics;
-import io.camunda.configuration.conditions.ConditionalOnJfr;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import jdk.jfr.consumer.RecordingStream;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
-import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
 
 /**
  * Allows registering and tracking metrics based on JFR events. Although there should be no overhead
@@ -27,9 +23,6 @@ import org.springframework.stereotype.Component;
  * application is closed. Since it's using a daemon thread, this will not prevent the application
  * from stopping.
  */
-@Component
-@ConditionalOnJfr()
-@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 public final class JfrMetricRecorder {
   private final RecordingStream jfrStream;
   private final MeterRegistry registry;
