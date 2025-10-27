@@ -56,40 +56,40 @@ public class DataBackupOperatePropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.tasklist.backup.repositoryName=repositoryNameLegacyTasklist",
+        "camunda.tasklist.backup.repositoryName=repositoryNameTasklist",
       })
-  class WithTasklistLegacySet {
+  class WithOnlyTasklistLegacySet {
     final OperateProperties operateProperties;
 
-    WithTasklistLegacySet(@Autowired final OperateProperties operateProperties) {
+    WithOnlyTasklistLegacySet(@Autowired final OperateProperties operateProperties) {
       this.operateProperties = operateProperties;
     }
 
     @Test
-    void shouldSetRepositoryNameIfNewAndTasklistMatch() {
+    void shouldSetRepositoryNameFromTasklist() {
       assertThat(operateProperties.getBackup().getRepositoryName())
-          .isEqualTo("repositoryNameLegacyTasklist");
+          .isEqualTo("repositoryNameTasklist");
     }
   }
 
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.operate.backup.repositoryName=repositoryNameLegacyOperate",
+        "camunda.operate.backup.repositoryName=repositoryNameOperate",
         "camunda.operate.backup.snapshotTimeout=5",
         "camunda.operate.backup.incompleteCheckTimeoutInSeconds=180",
       })
-  class WithOperateLegacySet {
+  class WithOnlyOperateLegacySet {
     final OperateProperties operateProperties;
 
-    WithOperateLegacySet(@Autowired final OperateProperties operateProperties) {
+    WithOnlyOperateLegacySet(@Autowired final OperateProperties operateProperties) {
       this.operateProperties = operateProperties;
     }
 
     @Test
-    void shouldSetRepositoryNameIfNewAndOperateMatch() {
+    void shouldSetRepositoryNameFromLegacyOperate() {
       assertThat(operateProperties.getBackup().getRepositoryName())
-          .isEqualTo("repositoryNameLegacyOperate");
+          .isEqualTo("repositoryNameOperate");
     }
 
     @Test
@@ -100,6 +100,25 @@ public class DataBackupOperatePropertiesTest {
     @Test
     void shouldSetIncompleteCheckTimeoutFromLegacyOperate() {
       assertThat(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds()).isEqualTo(180);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.operate.backup.repositoryName=repositoryName",
+        "camunda.tasklist.backup.repositoryName=repositoryName",
+      })
+  class WithOperateAndTasklistLegacySet {
+    final OperateProperties operateProperties;
+
+    WithOperateAndTasklistLegacySet(@Autowired final OperateProperties operateProperties) {
+      this.operateProperties = operateProperties;
+    }
+
+    @Test
+    void shouldSetRepositoryNameIfLegacyMatch() {
+      assertThat(operateProperties.getBackup().getRepositoryName()).isEqualTo("repositoryName");
     }
   }
 

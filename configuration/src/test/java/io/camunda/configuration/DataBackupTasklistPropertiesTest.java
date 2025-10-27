@@ -44,38 +44,57 @@ public class DataBackupTasklistPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.operate.backup.repositoryName=repositoryNameLegacyOperate",
+        "camunda.operate.backup.repositoryName=repositoryNameOperate",
       })
-  class WithOperateLegacySet {
+  class WithOnlyOperateLegacySet {
     final TasklistProperties tasklistProperties;
 
-    WithOperateLegacySet(@Autowired final TasklistProperties tasklistProperties) {
+    WithOnlyOperateLegacySet(@Autowired final TasklistProperties tasklistProperties) {
       this.tasklistProperties = tasklistProperties;
     }
 
     @Test
-    void shouldSetRepositoryNameIfNewAndOperateMatch() {
+    void shouldSetRepositoryNameFromOperate() {
       assertThat(tasklistProperties.getBackup().getRepositoryName())
-          .isEqualTo("repositoryNameLegacyOperate");
+          .isEqualTo("repositoryNameOperate");
     }
   }
 
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.tasklist.backup.repositoryName=repositoryNameLegacyTasklist",
+        "camunda.tasklist.backup.repositoryName=repositoryNameTasklist",
       })
-  class WithTasklistLegacySet {
+  class WithOnlyTasklistLegacySet {
     final TasklistProperties tasklistProperties;
 
-    WithTasklistLegacySet(@Autowired final TasklistProperties tasklistProperties) {
+    WithOnlyTasklistLegacySet(@Autowired final TasklistProperties tasklistProperties) {
       this.tasklistProperties = tasklistProperties;
     }
 
     @Test
-    void shouldSetRepositoryNameIfNewAndTasklistMatch() {
+    void shouldSetRepositoryFromTasklist() {
       assertThat(tasklistProperties.getBackup().getRepositoryName())
-          .isEqualTo("repositoryNameLegacyTasklist");
+          .isEqualTo("repositoryNameTasklist");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.operate.backup.repositoryName=repositoryName",
+        "camunda.tasklist.backup.repositoryName=repositoryName",
+      })
+  class WithOperateAndTasklistLegacySet {
+    final TasklistProperties tasklistProperties;
+
+    WithOperateAndTasklistLegacySet(@Autowired final TasklistProperties tasklistProperties) {
+      this.tasklistProperties = tasklistProperties;
+    }
+
+    @Test
+    void shouldSetRepositoryNameIfLegacyMatch() {
+      assertThat(tasklistProperties.getBackup().getRepositoryName()).isEqualTo("repositoryName");
     }
   }
 
