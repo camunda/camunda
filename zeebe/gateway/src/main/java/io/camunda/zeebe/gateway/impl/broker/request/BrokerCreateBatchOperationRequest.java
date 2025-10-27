@@ -73,7 +73,7 @@ public class BrokerCreateBatchOperationRequest
   }
 
   public BrokerCreateBatchOperationRequest setAuthorizationCheck(
-      final Authorization<BatchOperationCreationRecord> authorization) {
+      final Authorization<?> authorization) {
     requestDto.setAuthorizationCheck(
         new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authorization)));
     return this;

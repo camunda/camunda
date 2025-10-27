@@ -316,9 +316,7 @@ class ProcessInstanceAuthorizationIT {
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
     assertThat(problemException.code()).isEqualTo(403);
-    assertThat(problemException.details().getDetail())
-        .isEqualTo(
-            "Unauthorized to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+    assertThat(problemException.details().getDetail()).contains("'UPDATE_PROCESS_INSTANCE'");
   }
 
   private long getProcessInstanceKey(final CamundaClient camundaClient, final String processId) {

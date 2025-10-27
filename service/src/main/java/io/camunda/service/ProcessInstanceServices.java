@@ -29,6 +29,7 @@ import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.service.util.TreePathParser;
@@ -184,19 +185,20 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
-    return getByKey(processInstanceKey, PROCESS_INSTANCE_READ_AUTHORIZATION);
+    return getByKey(
+        processInstanceKey,
+        securityContextProvider.provideSecurityContext(
+            authentication,
+            withAuthorization(
+                PROCESS_INSTANCE_READ_AUTHORIZATION, ProcessInstanceEntity::processDefinitionId)));
   }
 
   public ProcessInstanceEntity getByKey(
-      final Long processInstanceKey, final Authorization<ProcessInstanceEntity> authorization) {
+      final Long processInstanceKey, final SecurityContext securityContext) {
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication,
-                        withAuthorization(
-                            authorization, ProcessInstanceEntity::processDefinitionId)))
+                .withSecurityContext(securityContext)
                 .getProcessInstance(processInstanceKey));
   }
 
@@ -266,9 +268,11 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord> resolveProcessInstanceIncidents(
       final long processInstanceKey) {
-    // this is a workaround, the user only needs update permissions but we need to read here
-    // disabling authorization would also be appropriate but we cannot easily do this yet
-    final var processInstance = getByKey(processInstanceKey, PROCESS_INSTANCE_UPDATE_AUTHORIZATION);
+    // internal read, no user permissions needed
+    final var processInstance =
+        getByKey(
+            processInstanceKey,
+            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
 
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
@@ -279,8 +283,7 @@ public final class ProcessInstanceServices
             // the user only needs single instance update permission, not batch creation
             .setAuthorizationCheck(
                 Authorization.withAuthorization(
-                    Authorization.of(a -> a.processDefinition().updateProcessInstance()),
-                    processInstance.processDefinitionId()));
+                    PROCESS_INSTANCE_UPDATE_AUTHORIZATION, processInstance.processDefinitionId()));
 
     return sendBrokerRequest(brokerRequest);
   }
