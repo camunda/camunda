@@ -94,18 +94,19 @@ public class SearchIncidentTest extends ClientRestTest {
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
     final IncidentFilter filter = request.getFilter();
-    assertThat(filter.getIncidentKey()).isEqualTo("1");
-    assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
-    assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
-    assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
-    assertThat(filter.getErrorType()).isEqualTo(IncidentErrorTypeEnum.CALLED_DECISION_ERROR);
-    assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
-    assertThat(filter.getElementId()).isEqualTo("element");
-    assertThat(filter.getElementInstanceKey()).isEqualTo("4");
-    assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.001Z");
-    assertThat(filter.getState()).isEqualTo(IncidentStateEnum.ACTIVE);
-    assertThat(filter.getJobKey()).isEqualTo("5");
-    assertThat(filter.getTenantId()).isEqualTo("tenant");
+    assertThat(filter.getIncidentKey().get$Eq()).isEqualTo("1");
+    assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("2");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("complexProcess");
+    assertThat(filter.getProcessInstanceKey().get$Eq()).isEqualTo("3");
+    assertThat(filter.getErrorType().get$Eq())
+        .isEqualTo(IncidentErrorTypeEnum.CALLED_DECISION_ERROR);
+    assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Can't decide");
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("element");
+    assertThat(filter.getElementInstanceKey().get$Eq()).isEqualTo("4");
+    assertThat(filter.getCreationTime().get$Eq()).isEqualTo("2024-05-23T23:05:00.001Z");
+    assertThat(filter.getState().get$Eq()).isEqualTo(IncidentStateEnum.ACTIVE);
+    assertThat(filter.getJobKey().get$Eq()).isEqualTo("5");
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
   }
 
   @Test
@@ -176,8 +177,9 @@ public class SearchIncidentTest extends ClientRestTest {
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
     final IncidentFilter filter = request.getFilter();
-    assertThat(filter.getIncidentKey()).isEqualTo("1");
-    assertThat(filter.getErrorType()).isEqualTo(IncidentStateEnum.valueOf(errorType.name()));
+    assertThat(filter.getIncidentKey().get$Eq()).isEqualTo("1");
+    assertThat(filter.getErrorType().get$Eq())
+        .isEqualTo(IncidentErrorTypeEnum.valueOf(errorType.name()));
   }
 
   @Test
