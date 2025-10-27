@@ -23,6 +23,7 @@ test.beforeEach(async ({page, loginPage}) => {
 test.describe.serial('users CRUD', () => {
   let NEW_USER: NonNullable<ReturnType<typeof createTestData>['user']>;
   let EDITED_USER: typeof NEW_USER;
+  let EDITED_MINIMUM_USER: typeof NEW_USER;
 
   test.beforeAll(() => {
     const testData = createTestData({
@@ -34,6 +35,11 @@ test.describe.serial('users CRUD', () => {
       name: `Edited ${NEW_USER.name}`,
       email: `edited.${NEW_USER.email}`,
       password: `edited${NEW_USER.password}`,
+    };
+    EDITED_MINIMUM_USER = {
+      ...EDITED_USER,
+      name: '',
+      email: '',
     };
   });
 
@@ -54,6 +60,18 @@ test.describe.serial('users CRUD', () => {
   test('edit a user', async ({identityUsersPage, page}) => {
     await identityUsersPage.editUser(NEW_USER, EDITED_USER);
     const item = identityUsersPage.userCell(EDITED_USER.email);
+    await waitForItemInList(page, item, {
+      clickNext: true,
+      timeout: 30000,
+    });
+  });
+
+  test('edit a user with minimum properties', async ({
+    identityUsersPage,
+    page,
+  }) => {
+    await identityUsersPage.editUser(EDITED_USER, EDITED_MINIMUM_USER);
+    const item = identityUsersPage.userCell(EDITED_MINIMUM_USER.username);
     await waitForItemInList(page, item, {
       clickNext: true,
       timeout: 30000,

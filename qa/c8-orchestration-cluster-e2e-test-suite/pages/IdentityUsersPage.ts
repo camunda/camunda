@@ -189,14 +189,14 @@ export class IdentityUsersPage {
   }
 
   async editUser(
-    currentUser: {email: string},
+    currentUser: {username: string, email: string},
     updatedUser: {name: string; email: string},
   ) {
-    await waitForItemInList(this.page, this.userCell(currentUser.email), {
+    await waitForItemInList(this.page, this.userCell(currentUser.username), {
       clickNext: true,
       timeout: 30000,
     });
-    await this.editUserButton(currentUser.email).click();
+    await this.editUserButton(currentUser.username).click();
     await expect(this.editUserModal).toBeVisible();
     await this.editNameField.fill(updatedUser.name);
     await this.editEmailField.fill(updatedUser.email);
@@ -205,7 +205,7 @@ export class IdentityUsersPage {
   }
 
   async deleteUser(user: {username: string; email: string}) {
-    await waitForItemInList(this.page, this.userCell(user.email), {
+    await waitForItemInList(this.page, this.userCell(user.username), {
       clickNext: true,
       timeout: 30000,
     });
@@ -221,7 +221,7 @@ export class IdentityUsersPage {
     await expect(this.deleteUserModal).toBeHidden();
 
     const item = this.usersList.getByRole('cell', {
-      name: user.email,
+      name: user.username,
     });
     await waitForItemInList(this.page, item, {
       shouldBeVisible: false,
