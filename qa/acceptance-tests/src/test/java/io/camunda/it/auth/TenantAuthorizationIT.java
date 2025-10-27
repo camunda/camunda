@@ -35,14 +35,12 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -88,8 +86,6 @@ class TenantAuthorizationIT {
 
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {

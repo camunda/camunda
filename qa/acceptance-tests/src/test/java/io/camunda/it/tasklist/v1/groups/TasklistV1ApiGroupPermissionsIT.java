@@ -59,8 +59,6 @@ public class TasklistV1ApiGroupPermissionsIT {
   private static final String ADMIN_USERNAME = "admin";
   private static final String AUTHORIZED_USERNAME = "authorized";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-
   @UserDefinition
   private static final TestUser ADMIN =
       new TestUser(
@@ -73,17 +71,15 @@ public class TasklistV1ApiGroupPermissionsIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
-
   @UserDefinition
   private static final TestUser AUTHORIZED_USER =
       new TestUser(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME, List.of());
-
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER =
       new TestUser(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME, List.of());
-
   private static long processDefinitionKey;
   private static long taskKey;
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @BeforeAll
   public static void beforeAll(
@@ -227,7 +223,7 @@ public class TasklistV1ApiGroupPermissionsIT {
             .build();
 
     // Send the request and get the response
-    return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
+    return httpClient.send(request, BodyHandlers.ofString()).statusCode();
   }
 
   private int assignTask(final CamundaClient client, final String username, final long taskId)
@@ -255,6 +251,6 @@ public class TasklistV1ApiGroupPermissionsIT {
             .build();
 
     // Send the request and get the response
-    return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
+    return httpClient.send(request, BodyHandlers.ofString()).statusCode();
   }
 }
