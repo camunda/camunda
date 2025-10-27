@@ -19,7 +19,8 @@ public class Monitoring {
   /** Configure metrics */
   @NestedConfigurationProperty Metrics metrics = new Metrics();
 
-  private boolean isJfr;
+  /** Allows registering and tracking metrics based on JFR events */
+  private boolean isJfr = false;
 
   public Metrics getMetrics() {
     return metrics;

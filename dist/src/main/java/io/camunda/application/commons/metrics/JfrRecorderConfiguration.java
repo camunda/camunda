@@ -21,9 +21,7 @@ public class JfrRecorderConfiguration {
   public JfrMetricRecorder jfrMetricRecorder(
       final MeterRegistry registry, final UnifiedConfiguration unifiedConfiguration) {
 
-    final boolean isJfrMetricsEnabled = unifiedConfiguration.getCamunda().getMonitoring().isJfr();
-
-    if (isJfrMetricsEnabled) {
+    if (unifiedConfiguration.getCamunda().getMonitoring().isJfr()) {
       return new JfrMetricRecorder(registry);
     } else {
       return null;

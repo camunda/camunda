@@ -19,20 +19,14 @@ import org.springframework.context.event.EventListener;
  * according to the JVM, we still allow disabling this via an experimental flag {@code
  * camunda.flags.jfr.metrics = false}.
  *
- * <p>Defaults to being enabled.
- *
  * <p>NOTE: the stream is not closed, as this is a singleton component; it will live until the
  * application is closed. Since it's using a daemon thread, this will not prevent the application
  * from stopping.
  */
-// @Component
-// @ConditionalOnProperty(prefix = "camunda.flags.jfr", name = "metrics", havingValue = "true")
-// @Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 public final class JfrMetricRecorder {
   private final RecordingStream jfrStream;
   private final MeterRegistry registry;
 
-  // @Autowired
   public JfrMetricRecorder(final MeterRegistry registry) {
     this.registry = Objects.requireNonNull(registry, "must specify a meter registry");
     jfrStream = new RecordingStream();
