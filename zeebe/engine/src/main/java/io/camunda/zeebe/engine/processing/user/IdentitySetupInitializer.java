@@ -204,6 +204,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             .setResourceId(WILDCARD.getResourceId())
             .setPermissionTypes(
                 Set.of(
+                    PermissionType.READ_PROCESS_INSTANCE,
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE)));
