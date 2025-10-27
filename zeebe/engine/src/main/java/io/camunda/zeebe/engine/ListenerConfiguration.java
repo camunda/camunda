@@ -10,4 +10,6 @@ package io.camunda.zeebe.engine;
 import java.util.List;
 
 public record ListenerConfiguration(
-    List<String> eventTypes, String type, String retries, boolean afterLocal) {}
+    List<String> eventTypes, String type, String retries, boolean afterLocal) {
+  public static final String ALL_EVENT_TYPES = "all";
+}
