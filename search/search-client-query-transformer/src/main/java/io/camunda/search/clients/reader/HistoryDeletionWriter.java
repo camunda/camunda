@@ -11,29 +11,34 @@ import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.HistoryDeletionWriteClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class HistoryDeletionWriter implements HistoryDeletionWriteClient {
 
   private final DocumentBasedWriteClient documentBasedWriteClient;
-  private final IndexDescriptors indexDescriptors;
+  private final List<ProcessInstanceDependant> processInstanceDependants;
+  private final ListViewTemplate listViewTemplate;
 
   public HistoryDeletionWriter(
       final DocumentBasedWriteClient documentBasedWriteClient,
       final IndexDescriptors indexDescriptors) {
     this.documentBasedWriteClient = documentBasedWriteClient;
-    this.indexDescriptors = indexDescriptors;
-  }
 
-  @Override
-  public void deleteHistoricData(final long processInstanceKey) {
-    final List<ProcessInstanceDependant> processInstanceDependants =
+    // TODO consider if we need to delete in a specific order. Doesn't matter for POC
+    processInstanceDependants =
         indexDescriptors.templates().stream()
             .filter(ProcessInstanceDependant.class::isInstance)
             .map(ProcessInstanceDependant.class::cast)
             .toList();
+    listViewTemplate = indexDescriptors.get(ListViewTemplate.class);
+  }
 
+  @Override
+  public void deleteHistoricData(final long processInstanceKey) {
     final var deletionResults =
         processInstanceDependants.stream()
             .filter(t -> !(t instanceof OperationTemplate))
@@ -44,7 +49,13 @@ public class HistoryDeletionWriter implements HistoryDeletionWriteClient {
                   return documentBasedWriteClient.deleteByFieldValue(
                       dependentSourceIdx, dependentIdFieldName, processInstanceKey);
                 })
-            .toList();
+            .collect(Collectors.toCollection(ArrayList::new));
+
+    deletionResults.add(
+        documentBasedWriteClient.deleteByFieldValue(
+            listViewTemplate.getFullQualifiedName(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            processInstanceKey));
 
     if (deletionResults.contains(false)) {
       throw new IllegalStateException("Not all deletions succeeeded!");
