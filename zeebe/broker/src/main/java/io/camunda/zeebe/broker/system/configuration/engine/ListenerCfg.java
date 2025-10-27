@@ -19,6 +19,7 @@ public class ListenerCfg implements ConfigurationEntry {
   private List<String> eventTypes = new ArrayList<>();
   private String type;
   private String retries = DEFAULT_RETRIES;
+  private boolean afterLocal = false;
 
   public List<String> getEventTypes() {
     return eventTypes;
@@ -44,7 +45,15 @@ public class ListenerCfg implements ConfigurationEntry {
     this.retries = retries;
   }
 
+  public boolean isAfterLocal() {
+    return afterLocal;
+  }
+
+  public void setAfterLocal(final boolean afterLocal) {
+    this.afterLocal = afterLocal;
+  }
+
   public ListenerConfiguration createListenerConfiguration() {
-    return new ListenerConfiguration(eventTypes, type, retries);
+    return new ListenerConfiguration(eventTypes, type, retries, afterLocal);
   }
 }
