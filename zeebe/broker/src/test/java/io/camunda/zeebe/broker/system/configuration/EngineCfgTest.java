@@ -46,6 +46,7 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
+    assertThat(configuration.getListeners().task()).isEmpty();
   }
 
   @Test
@@ -68,5 +69,10 @@ final class EngineCfgTest {
     assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(Duration.ofMinutes(20));
+    assertThat(configuration.getListeners().task()).hasSize(1);
+    final var listener = configuration.getListeners().task().getFirst();
+    assertThat(listener.type()).isEqualTo("test");
+    assertThat(listener.eventTypes()).containsExactly("creating", "canceling");
+    assertThat(listener.retries()).isEqualTo("5");
   }
 }
