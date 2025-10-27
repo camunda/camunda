@@ -291,6 +291,7 @@ public class IdentitySetupInitializeDefaultsTest {
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                     .hasOnlyPermissionTypes(
+                        PermissionType.READ_PROCESS_INSTANCE,
                         PermissionType.READ_PROCESS_DEFINITION,
                         PermissionType.CREATE_PROCESS_INSTANCE,
                         PermissionType.UPDATE_PROCESS_INSTANCE),
