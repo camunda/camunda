@@ -134,15 +134,13 @@ public final class BatchOperationCreateProcessor
       final TypedRecord<BatchOperationCreationRecord> command) {
 
     if (!DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getAuthorizationCheckBuffer())) {
-      final var authorization =
+      final Authorization<?> authorization =
           MsgPackConverter.convertToObject(
               command.getValue().getAuthorizationCheckBuffer(), Authorization.class);
       final AuthorizationRequest authorizationRequest =
           new AuthorizationRequest(
               command, authorization.resourceType(), authorization.permissionType());
-      for (final Object id : authorization.resourceIds()) {
-        authorizationRequest.addResourceId(id.toString());
-      }
+      authorization.resourceIds().forEach(authorizationRequest::addResourceId);
       return authCheckBehavior.isAuthorized(authorizationRequest.build());
     }
     // first check for general CREATE_BATCH_OPERATION permission
