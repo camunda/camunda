@@ -27,9 +27,6 @@ camunda:
       unprotected-api: true
     authorizations:
       enabled: false
-  database:
-    index:
-      numberOfReplicas: 0
 
 zeebe:
   broker:
