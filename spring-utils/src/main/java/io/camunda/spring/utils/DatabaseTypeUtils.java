@@ -19,18 +19,24 @@ public final class DatabaseTypeUtils {
   private DatabaseTypeUtils() {}
 
   public static boolean isSecondaryStorageEnabled(final Environment env) {
-    final String dbType =
-        Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
-            .orElse("elasticsearch");
+    final String dbType = getDatabaseTypeOrDefault(env);
 
     return !"none".equalsIgnoreCase(dbType);
   }
 
   public static boolean isRdbmsDisabled(final Environment env) {
-    final String dbType =
-        Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
-            .or(() -> Optional.ofNullable(env.getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE)))
-            .orElse("elasticsearch");
+    final String dbType = getDatabaseTypeOrDefault(env);
     return !"rdbms".equalsIgnoreCase(dbType);
+  }
+
+  /**
+   * Get the database type from the unified configuration property, or default to "elasticsearch"
+   *
+   * @param env the Spring environment
+   * @return the database type or "elasticsearch" if not set
+   */
+  private static String getDatabaseTypeOrDefault(final Environment env) {
+    return Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
+        .orElse("elasticsearch");
   }
 }
