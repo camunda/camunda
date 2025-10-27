@@ -27,11 +27,14 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class MetricsTest {
 
   private static final boolean EXPECTED_ACTOR = true;
+  private static final boolean EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS = true;
 
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.monitoring.metrics.actor=" + EXPECTED_ACTOR,
+        "camunda.monitoring.metrics.enable-exporter-execution-metrics="
+            + EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS,
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -44,6 +47,8 @@ public class MetricsTest {
     void shouldSetMetrics() {
       assertThat(brokerCfg.getExperimental().getFeatures().isEnableActorMetrics())
           .isEqualTo(EXPECTED_ACTOR);
+      assertThat(brokerCfg.isExecutionMetricsExporterEnabled())
+          .isEqualTo(EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS);
     }
   }
 
@@ -51,6 +56,8 @@ public class MetricsTest {
   @TestPropertySource(
       properties = {
         "zeebe.broker.experimental.features.enableActorMetrics=" + EXPECTED_ACTOR,
+        "zeebe.broker.executionMetricsExporterEnabled="
+            + EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS,
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -63,6 +70,8 @@ public class MetricsTest {
     void shouldSetMetricsFromLegacy() {
       assertThat(brokerCfg.getExperimental().getFeatures().isEnableActorMetrics())
           .isEqualTo(EXPECTED_ACTOR);
+      assertThat(brokerCfg.isExecutionMetricsExporterEnabled())
+          .isEqualTo(EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS);
     }
   }
 
@@ -71,8 +80,11 @@ public class MetricsTest {
       properties = {
         // new
         "camunda.monitoring.metrics.actor=" + EXPECTED_ACTOR,
+        "camunda.monitoring.metrics.enable-exporter-execution-metrics="
+            + EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS,
         // legacy
-        "zeebe.broker.experimental.features.enableActorMetrics=false"
+        "zeebe.broker.experimental.features.enableActorMetrics=false",
+        "zeebe.broker.executionMetricsExporterEnabled=false"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -85,6 +97,8 @@ public class MetricsTest {
     void shouldSetMetrics() {
       assertThat(brokerCfg.getExperimental().getFeatures().isEnableActorMetrics())
           .isEqualTo(EXPECTED_ACTOR);
+      assertThat(brokerCfg.isExecutionMetricsExporterEnabled())
+          .isEqualTo(EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS);
     }
   }
 }

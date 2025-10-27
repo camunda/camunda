@@ -814,6 +814,7 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromMetrics(final BrokerBasedProperties override) {
     final Metrics metrics = unifiedConfiguration.getCamunda().getMonitoring().getMetrics();
     override.getExperimental().getFeatures().setEnableActorMetrics(metrics.isActor());
+    override.setExecutionMetricsExporterEnabled(metrics.isEnableExporterExecutionMetrics());
   }
 
   private void setArgIfNotNull(

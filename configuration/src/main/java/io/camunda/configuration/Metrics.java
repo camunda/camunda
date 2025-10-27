@@ -16,8 +16,14 @@ public class Metrics {
   private static final Set<String> LEGACY_ENABLE_ACTOR_METRICS_PPROPERTIES =
       Set.of("zeebe.broker.experimental.features.enableActorMetrics");
 
+  private static final Set<String> LEGACY_ENABLE_EXPORTER_EXECUTION_METRICS_PPROPERTIES =
+      Set.of("zeebe.broker.executionMetricsExporterEnabled");
+
   /** Controls whether to collect metrics about actor usage such as actor job execution latencies */
   private boolean actor = true;
+
+  /** Enable exporter execution metrics */
+  private boolean enableExporterExecutionMetrics;
 
   public boolean isActor() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -30,5 +36,18 @@ public class Metrics {
 
   public void setActor(final boolean actor) {
     this.actor = actor;
+  }
+
+  public boolean isEnableExporterExecutionMetrics() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".enable-exporter-execution-metrics",
+        enableExporterExecutionMetrics,
+        Boolean.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_ENABLE_EXPORTER_EXECUTION_METRICS_PPROPERTIES);
+  }
+
+  public void setEnableExporterExecutionMetrics(final boolean enableExporterExecutionMetrics) {
+    this.enableExporterExecutionMetrics = enableExporterExecutionMetrics;
   }
 }
