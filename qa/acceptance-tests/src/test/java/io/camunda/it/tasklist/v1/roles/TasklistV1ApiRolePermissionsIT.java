@@ -59,6 +59,7 @@ public class TasklistV1ApiRolePermissionsIT {
   private static final String ADMIN_USERNAME = "admin";
   private static final String AUTHORIZED_USERNAME = "authorized";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
+
   @UserDefinition
   private static final TestUser ADMIN =
       new TestUser(
@@ -71,12 +72,15 @@ public class TasklistV1ApiRolePermissionsIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
+
   @UserDefinition
   private static final TestUser AUTHORIZED_USER =
       new TestUser(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME, List.of());
+
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER =
       new TestUser(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME, List.of());
+
   private static long processDefinitionKey;
   private static long taskKey;
   @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -98,7 +102,12 @@ public class TasklistV1ApiRolePermissionsIT {
         .permissionTypes(PermissionType.READ_PROCESS_DEFINITION, PermissionType.UPDATE_USER_TASK)
         .send()
         .join();
-    adminClient.newAssignRoleToUserCommand().roleId(roleId).username(AUTHORIZED_USERNAME).send().join();
+    adminClient
+        .newAssignRoleToUserCommand()
+        .roleId(roleId)
+        .username(AUTHORIZED_USERNAME)
+        .send()
+        .join();
 
     adminClient
         .newDeployResourceCommand()

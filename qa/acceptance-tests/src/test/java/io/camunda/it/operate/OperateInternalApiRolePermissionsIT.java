@@ -67,6 +67,7 @@ public class OperateInternalApiRolePermissionsIT {
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
   @UserDefinition
   private static final TestUser ADMIN =
       new TestUser(
@@ -79,12 +80,15 @@ public class OperateInternalApiRolePermissionsIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
+
   @UserDefinition
   private static final TestUser AUTHORIZED_USER =
       new TestUser(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME, List.of());
+
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER =
       new TestUser(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME, List.of());
+
   private static long processInstanceKey;
   @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -106,7 +110,12 @@ public class OperateInternalApiRolePermissionsIT {
             PermissionType.READ_PROCESS_INSTANCE, PermissionType.UPDATE_PROCESS_INSTANCE)
         .send()
         .join();
-    adminClient.newAssignRoleToUserCommand().roleId(roleId).username(AUTHORIZED_USERNAME).send().join();
+    adminClient
+        .newAssignRoleToUserCommand()
+        .roleId(roleId)
+        .username(AUTHORIZED_USERNAME)
+        .send()
+        .join();
 
     adminClient
         .newDeployResourceCommand()
