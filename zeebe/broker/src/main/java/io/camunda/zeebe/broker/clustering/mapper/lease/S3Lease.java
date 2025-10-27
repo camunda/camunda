@@ -172,7 +172,7 @@ public class S3Lease extends AbstractLeaseClient {
         final var lease = getLease(i);
         leases.add(lease);
       } catch (final Exception e) {
-        LOG.debug("Failed to get lease for nodeId {}: {}", i, e.getMessage());
+        LOG.warn("Failed to get lease for nodeId {}", i, e);
       }
     }
     return leases;
