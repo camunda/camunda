@@ -92,6 +92,7 @@ public class InMemory {
               currentLease.renew(
                   clock.millis(), leaseExpirationDuration.toMillis(), nodeIdMappings));
     }
+
     @Override
     public void releaseLease() {
       if (currentLease != null) {

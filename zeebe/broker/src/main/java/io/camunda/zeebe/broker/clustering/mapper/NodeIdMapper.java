@@ -146,11 +146,7 @@ public class NodeIdMapper implements Closeable {
         "Wait for all nodes to update version",
         () -> {
           final var allLeases = lease.getAllLeases();
-          final var allNodesUpdated =
-              allMappingsAreUpdated(
-                  allLeases.stream().map(Lease::nodeIdMappings).toList(),
-                  nodeInstance,
-                  clusterSize);
+          final var allNodesUpdated = allMappingsAreUpdated(allLeases, nodeInstance, clusterSize);
           if (allNodesUpdated) {
             LOG.info(
                 "All nodes have updated to version {} for nodeId {}",
@@ -169,16 +165,16 @@ public class NodeIdMapper implements Closeable {
 
   @VisibleForTesting
   public static boolean allMappingsAreUpdated(
-      final Collection<NodeIdMappings> mappings,
-      final NodeInstance nodeInstance,
-      final int clusterSize) {
+      final Collection<Lease> mappings, final NodeInstance nodeInstance, final int clusterSize) {
     if (mappings.size() != clusterSize) {
       LOG.warn("Mappings do not contain all nodes: {} of {}", mappings.size(), clusterSize);
       return false;
     }
     return mappings.stream()
+        .filter(l -> l.nodeInstance().id() != nodeInstance.id())
         .allMatch(
-            m -> {
+            lease -> {
+              final var m = lease.nodeIdMappings();
               final var versionInMapping = m.mappings().get(String.valueOf(nodeInstance.id()));
 
               // If this node is not in the mapping, it means the node hasn't seen this
@@ -189,14 +185,14 @@ public class NodeIdMapper implements Closeable {
               }
 
               // Check if the version in the mapping matches this node's version
-              final var isDifferent = versionInMapping == nodeInstance.version();
-              if (isDifferent) {
+              final var areEqual = versionInMapping == nodeInstance.version();
+              if (!areEqual) {
                 LOG.debug(
-                    "Node contains mapping {} which is different than expected {}",
+                    "Node contains mapping version {} which is different than expected {}",
                     versionInMapping,
                     nodeInstance.version());
               }
-              return isDifferent;
+              return areEqual;
             });
   }
 

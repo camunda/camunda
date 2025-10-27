@@ -48,7 +48,7 @@ public class S3LeaseComponentIT {
   private static final Duration LEASE_EXPIRY_DURATION = Duration.ofSeconds(20);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final int CLUSTER_SIZE = 30;
-  private static final List<Integer> ids = IntStream.range(0, CLUSTER_SIZE).boxed().toList();
+  private static final List<Integer> IDS = IntStream.range(0, CLUSTER_SIZE).boxed().toList();
   ExecutorService executor = Executors.newFixedThreadPool(CLUSTER_SIZE);
   NodeIdMapper[] nodeIdMappers;
 
@@ -86,7 +86,7 @@ public class S3LeaseComponentIT {
       }
     }
     final var futures =
-        ids.stream()
+        IDS.stream()
             .map(i -> CompletableFuture.supplyAsync(() -> createNodeIdMapper(i)))
             .toArray(CompletableFuture[]::new);
     CompletableFuture.allOf(futures).join();
@@ -119,7 +119,7 @@ public class S3LeaseComponentIT {
 
     // when
 
-    ids.forEach(
+    IDS.forEach(
         brokerId -> {
           Awaitility.await("until the lease has been held for node " + brokerId)
               .atMost(Duration.ofSeconds(30))
