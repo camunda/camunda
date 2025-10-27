@@ -117,13 +117,12 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   @Override
   public CamundaFuture<CreateBatchOperationResponse> send() {
     final HttpCamundaFuture<CreateBatchOperationResponse> result = new HttpCamundaFuture<>();
-    final CreateBatchOperationResponseImpl response = new CreateBatchOperationResponseImpl();
     httpClient.post(
         getUrl(),
         jsonMapper.toJson(getBody()),
         httpRequestConfig.build(),
         BatchOperationCreatedResult.class,
-        response::setResponse,
+        CreateBatchOperationResponseImpl::new,
         result);
     return result;
   }

@@ -13,19 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.response;
+package io.camunda.client.api.command;
 
-import io.camunda.client.api.search.enums.BatchOperationType;
+import io.camunda.client.api.response.CreateBatchOperationResponse;
 
-public interface CreateBatchOperationResponse {
-
-  /**
-   * @return the unique key of the batch operation that was created.
-   */
-  String getBatchOperationKey();
-
-  /**
-   * @return the type of the batch operation that was created.
-   */
-  BatchOperationType getBatchOperationType();
+public interface ResolveProcessInstanceIncidentsCommandStep1
+    extends FinalCommandStep<CreateBatchOperationResponse> {
+  // the place for new optional parameters
 }

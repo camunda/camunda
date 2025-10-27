@@ -95,6 +95,18 @@ public class ProcessInstanceController {
   }
 
   @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{processInstanceKey}/incident-resolution")
+  public CompletableFuture<ResponseEntity<Object>> resolveProcessInstanceIncidents(
+      @PathVariable final long processInstanceKey) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            processInstanceServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .resolveProcessInstanceIncidents(processInstanceKey),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+  }
+
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ProcessInstanceSearchQueryResult> searchProcessInstances(
       @RequestBody(required = false) final ProcessInstanceSearchQuery query) {

@@ -72,6 +72,7 @@ import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
@@ -214,6 +215,7 @@ import io.camunda.client.impl.command.PinClockCommandImpl;
 import io.camunda.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
+import io.camunda.client.impl.command.ResolveProcessInstanceIncidentsCommandImpl;
 import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StatusRequestImpl;
@@ -673,6 +675,13 @@ public final class CamundaClientImpl implements CamundaClient {
         httpClient,
         config.preferRestOverGrpc(),
         jsonMapper);
+  }
+
+  @Override
+  public ResolveProcessInstanceIncidentsCommandStep1 newResolveProcessInstanceIncidentsCommand(
+      final long processInstanceKey) {
+    return new ResolveProcessInstanceIncidentsCommandImpl(
+        processInstanceKey, config.getDefaultRequestTimeout(), httpClient);
   }
 
   @Override

@@ -1993,6 +1993,44 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
       x-eventually-consistent: true
+
+  /process-instances/{processInstanceKey}/incident-resolution:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Process instance
+      operationId: resolveProcessInstanceIncidents
+      summary: Resolve process instance incidents
+      description: Creates a batch operation to resolve multiple incidents of a process instance.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to resolve incidents for.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The batch operation request for incident resolution was created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
   /process-instances/{processInstanceKey}/cancellation:
     post:
       tags:

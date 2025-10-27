@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.security.auth.Authorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -130,6 +133,16 @@ public final class BatchOperationCreateProcessor
   private Either<Rejection, Void> isAuthorized(
       final TypedRecord<BatchOperationCreationRecord> command) {
 
+    if (!DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getAuthorizationCheckBuffer())) {
+      final Authorization<?> authorization =
+          MsgPackConverter.convertToObject(
+              command.getValue().getAuthorizationCheckBuffer(), Authorization.class);
+      final AuthorizationRequest authorizationRequest =
+          new AuthorizationRequest(
+              command, authorization.resourceType(), authorization.permissionType());
+      authorization.resourceIds().forEach(authorizationRequest::addResourceId);
+      return authCheckBehavior.isAuthorized(authorizationRequest.build());
+    }
     // first check for general CREATE_BATCH_OPERATION permission
     final var request =
         new AuthorizationRequest(command, AuthorizationResourceType.BATCH, PermissionType.CREATE);
@@ -147,7 +160,7 @@ public final class BatchOperationCreateProcessor
             case RESOLVE_INCIDENT -> PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
           };
       return authCheckBehavior.isAuthorized(
-          new AuthorizationRequest(command, AuthorizationResourceType.BATCH, permission));
+          new AuthorizationRequest(command, AuthorizationResourceType.BATCH, permission).build());
     }
 
     return isAuthorized;
