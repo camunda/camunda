@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.engine.ListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
@@ -617,5 +618,159 @@ final class SystemContextTest {
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
             "experimental.engine.batchOperation.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperation.queryRetryInitialDelay");
+  }
+
+  @Test
+  void shouldIgnoreInvalidEventTypesForGlobalTaskListeners() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getListeners()
+        .setTask(
+            List.of(
+                createListenerCfg("test", List.of("creating", "non-existing-type", "assigning"))));
+
+    // when
+    initSystemContext(brokerCfg);
+
+    // then
+    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    final var listenerConfig =
+        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+    assertThat(listenerConfig.getEventTypes()).containsExactly("creating", "assigning");
+  }
+
+  @Test
+  void shouldIgnoreGlobalTaskListenerWithoutJobType() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getListeners()
+        .setTask(
+            List.of(
+                createListenerCfg("test", List.of("creating")),
+                createListenerCfg(null, List.of("assigning"))));
+
+    // when
+    initSystemContext(brokerCfg);
+
+    // then
+    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    final var listenerConfig =
+        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+    assertThat(listenerConfig.getType()).isEqualTo("test");
+    assertThat(listenerConfig.getEventTypes()).containsExactly("creating");
+  }
+
+  @Test
+  void shouldIgnoreGlobalTaskListenerWithoutEventTypes() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getListeners()
+        .setTask(
+            List.of(
+                createListenerCfg("test1", List.of("creating")),
+                createListenerCfg(
+                    "test2",
+                    List.of("non-existing-type")), // only invalid event type, should be ignored
+                createListenerCfg("test3", List.of())));
+
+    // when
+    initSystemContext(brokerCfg);
+
+    // then
+    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    final var listenerConfig =
+        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+    assertThat(listenerConfig.getType()).isEqualTo("test1");
+    assertThat(listenerConfig.getEventTypes()).containsExactly("creating");
+  }
+
+  @Test
+  void shouldIgnoreExtraEventTypesWhenConfiguringGenericGlobalTaskListener() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getListeners()
+        .setTask(List.of(createListenerCfg("test", List.of("creating", "all", "updating"))));
+
+    // when
+    initSystemContext(brokerCfg);
+
+    // then
+    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    final var listenerConfig =
+        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+    assertThat(listenerConfig.getType()).isEqualTo("test");
+    assertThat(listenerConfig.getEventTypes()).containsExactly("all");
+  }
+
+  @Test
+  void shouldIgnoreGlobalTaskListenerWithNonNumericalOrNegativeRetries() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getListeners()
+        .setTask(
+            List.of(
+                createListenerCfg("test1", List.of("creating")), // missing retries
+                createListenerCfg("test2", List.of("creating"), "not-a-number"), // invalid retries
+                createListenerCfg("test3", List.of("creating"), "-1"), // negative retries
+                createListenerCfg("test4", List.of("creating"), "4"))); // valid number of retries
+
+    // when
+    initSystemContext(brokerCfg);
+
+    // then
+    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(2);
+    final var listenersConfig = brokerCfg.getExperimental().getEngine().getListeners().getTask();
+    assertThat(listenersConfig.get(0).getType()).isEqualTo("test1");
+    assertThat(listenersConfig.get(1).getType()).isEqualTo("test4");
+  }
+
+  @Test
+  void shouldIgnoreDuplicatedEventTypesWhenConfiguringGenericGlobalTaskListener() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getListeners()
+        .setTask(List.of(createListenerCfg("test", List.of("creating", "creating", "updating"))));
+
+    // when
+    initSystemContext(brokerCfg);
+
+    // then
+    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    final var listenerConfig =
+        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+    assertThat(listenerConfig.getType()).isEqualTo("test");
+    assertThat(listenerConfig.getEventTypes()).containsExactly("creating", "updating");
+  }
+
+  private ListenerCfg createListenerCfg(final String type, final List<String> eventTypes) {
+    final ListenerCfg listenerCfg = new ListenerCfg();
+    listenerCfg.setType(type);
+    listenerCfg.setEventTypes(eventTypes);
+    return listenerCfg;
+  }
+
+  private ListenerCfg createListenerCfg(
+      final String type, final List<String> eventTypes, final String retries) {
+    final ListenerCfg listenerCfg = createListenerCfg(type, eventTypes);
+    listenerCfg.setRetries(retries);
+    return listenerCfg;
   }
 }

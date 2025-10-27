@@ -7,9 +7,17 @@
  */
 package io.camunda.zeebe.engine;
 
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import java.util.List;
+import java.util.stream.Stream;
 
 public record ListenerConfiguration(
     List<String> eventTypes, String type, String retries, boolean afterLocal) {
+
   public static final String ALL_EVENT_TYPES = "all";
+
+  // List of all possible task listener event types as strings, to be used while validating
+  // the configuration (ZeebeTaskListenerEventType is not accessible from the broker module)
+  public static final List<String> TASK_LISTENER_EVENT_TYPES =
+      Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).toList();
 }
