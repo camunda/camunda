@@ -9,7 +9,9 @@ package io.camunda.search.es.clients;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.WriteResponseBase;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
@@ -198,6 +200,42 @@ public class ElasticsearchSearchClient
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_DELETE_REQUEST, e, searchExceptionToReason(e));
     }
+  }
+
+  @Override
+  public boolean deleteByFieldValue(
+      final String dependentSourceIdx,
+      final String dependentIdFieldName,
+      final long processInstanceKey) {
+    final var deleteRequest =
+        createDeleteRequest(dependentSourceIdx, dependentIdFieldName, processInstanceKey);
+    try {
+      client.deleteByQuery(deleteRequest);
+      System.out.printf(
+          "DELETION SUCCESS FOR: %s, %s, %d%n",
+          dependentSourceIdx, dependentIdFieldName, processInstanceKey);
+      return true;
+    } catch (final IOException | ElasticsearchException e) {
+      System.out.printf(
+          "DELETION FAILED FOR: %s, %s, %d%n",
+          dependentSourceIdx, dependentIdFieldName, processInstanceKey);
+      throw new RuntimeException(e);
+    }
+  }
+
+  private DeleteByQueryRequest createDeleteRequest(
+      final String indexName, final String idFieldName, final long processInstanceKey) {
+    return new DeleteByQueryRequest.Builder()
+        .index(indexName)
+        .allowNoIndices(true)
+        .ignoreUnavailable(true)
+        .query(
+            q ->
+                q.term(
+                    t ->
+                        t.field(idFieldName)
+                            .value(FieldValue.of(String.valueOf(processInstanceKey)))))
+        .build();
   }
 
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)

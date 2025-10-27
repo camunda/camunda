@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
+import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.zeebe.engine.state.immutable.HistoryDeletionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -27,9 +28,13 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
   private final AtomicBoolean executing = new AtomicBoolean(false);
   private final Duration interval = Duration.ofSeconds(1);
   private final HistoryDeletionState historyDeletionState;
+  private final WriteClientsProxy writeClientsProxy;
 
-  public HistoryDeletionScheduler(final Supplier<ScheduledTaskState> scheduledTaskStateFactory) {
+  public HistoryDeletionScheduler(
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final WriteClientsProxy writeClientsProxy) {
     historyDeletionState = scheduledTaskStateFactory.get().getHistoryDeletionState();
+    this.writeClientsProxy = writeClientsProxy;
   }
 
   @Override
@@ -62,13 +67,13 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
       historyDeletionState.forEachProcessInstanceToDelete(
           processInstanceKey -> {
             LOG.debug("Deleting process instance with key {}", processInstanceKey.getValue());
-            return false;
+            writeClientsProxy.deleteHistoricData(processInstanceKey.getValue());
+            return true;
           });
-
-      // Delete from ES
 
       // If delete = success
       //  Write command to delete process instance key from primary deletion CF
+
     } finally {
       executing.set(false);
       scheduleExecution(interval);

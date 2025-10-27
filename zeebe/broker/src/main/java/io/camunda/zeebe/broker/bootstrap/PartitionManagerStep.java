@@ -51,7 +51,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getBrokerClient(),
             brokerStartupContext.getSecurityConfiguration(),
             brokerStartupContext.getSearchClientsProxy(),
-            brokerStartupContext.getBrokerRequestAuthorizationConverter());
+            brokerStartupContext.getBrokerRequestAuthorizationConverter(),
+            brokerStartupContext.getWriteClientsProxy());
     concurrencyControl.run(
         () -> {
           try {

@@ -198,6 +198,14 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
     }
   }
 
+  @Override
+  public boolean deleteByFieldValue(
+      final String dependentSourceIdx,
+      final String dependentIdFieldName,
+      final long processInstanceKey) {
+    throw new UnsupportedOperationException("Not relevent for POC");
+  }
+
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
     return client.scroll(

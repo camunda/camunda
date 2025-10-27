@@ -12,6 +12,7 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
@@ -82,6 +83,7 @@ public final class SystemContext {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final WriteClientsProxy writeClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   public SystemContext(
@@ -97,6 +99,7 @@ public final class SystemContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
+      final WriteClientsProxy writeClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
@@ -110,6 +113,7 @@ public final class SystemContext {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.writeClientsProxy = writeClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     initSystemContext();
   }
@@ -139,6 +143,7 @@ public final class SystemContext {
         passwordEncoder,
         jwtDecoder,
         searchClientsProxy,
+        null,
         brokerRequestAuthorizationConverter);
   }
 
@@ -594,6 +599,10 @@ public final class SystemContext {
 
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  public WriteClientsProxy getWriteClientsProxy() {
+    return writeClientsProxy;
   }
 
   public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {

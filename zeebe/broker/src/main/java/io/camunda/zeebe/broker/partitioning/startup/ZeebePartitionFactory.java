@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -121,6 +122,7 @@ public final class ZeebePartitionFactory {
   private final List<PartitionRaftListener> partitionRaftListeners;
   private final SecurityConfiguration securityConfig;
   private final SearchClientsProxy searchClientsProxy;
+  private final WriteClientsProxy writeClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   public ZeebePartitionFactory(
@@ -140,6 +142,7 @@ public final class ZeebePartitionFactory {
       final FeatureFlags featureFlags,
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
+      final WriteClientsProxy writeClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
@@ -157,6 +160,7 @@ public final class ZeebePartitionFactory {
     this.featureFlags = featureFlags;
     this.securityConfig = securityConfig;
     this.searchClientsProxy = searchClientsProxy;
+    this.writeClientsProxy = writeClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
@@ -273,7 +277,8 @@ public final class ZeebePartitionFactory {
           featureFlags,
           jobStreamer,
           searchClientsProxy,
-          brokerRequestAuthorizationConverter);
+          brokerRequestAuthorizationConverter,
+          writeClientsProxy);
     };
   }
 }

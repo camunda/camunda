@@ -89,7 +89,8 @@ public final class TestEngine {
                             featureFlags,
                             JobStreamer.noop(),
                             SearchClientsProxy.noop(),
-                            new BrokerRequestAuthorizationConverter(new SecurityConfiguration()))
+                            new BrokerRequestAuthorizationConverter(new SecurityConfiguration()),
+                            null)
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(
