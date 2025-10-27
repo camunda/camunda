@@ -89,12 +89,18 @@ public class OperateV1TenancyIT {
 
   @Test
   public void shouldNotReturnProcessesFromDeletedTenants(
-      @Authenticated(ADMIN) final CamundaClient camundaClient) throws Exception {
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
 
     try (final var operateClient = STANDALONE_CAMUNDA.newOperateClient(ADMIN, ADMIN)) {
       // given
-      final var result = searchProcessInstancesV1(operateClient);
-      assertSearchResultsTenants(result, TENANT_A, TENANT_TO_BE_DELETED);
+
+      Awaitility.await()
+          .atMost(TIMEOUT_DATA_AVAILABILITY)
+          .untilAsserted(
+              () -> {
+                final var result = searchProcessInstancesV1(operateClient);
+                assertSearchResultsTenants(result, TENANT_A, TENANT_TO_BE_DELETED);
+              });
 
       // when
       deleteTenant(camundaClient, TENANT_TO_BE_DELETED);
