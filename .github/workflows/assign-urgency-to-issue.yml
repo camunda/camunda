@@ -72,9 +72,11 @@ jobs:
       - name: Dump issue JSON
         if: always()
         run: |
-          ISSUE_JSON='${{ toJSON(github.event.issue) }}'
-          echo 'Github Issue Context JSON:'
-          printf '%s\n' "$ISSUE_JSON"
+          set +e +u +o pipefail
+          cat << 'EOF'
+          ${{ toJSON(github.event.issue) }}
+          EOF
+          exit 0
       - name: Check issue
         id: check_issue
         run: |
