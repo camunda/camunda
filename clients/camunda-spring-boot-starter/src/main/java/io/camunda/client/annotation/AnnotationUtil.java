@@ -127,7 +127,8 @@ public class AnnotationUtil {
               annotation.fetchAllVariables(),
               annotation.streamEnabled(),
               Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
-              annotation.maxRetries()));
+              annotation.maxRetries(),
+              Duration.of(annotation.retryBackoff(), ChronoUnit.MILLIS)));
     }
     return Optional.empty();
   }
@@ -154,7 +155,8 @@ public class AnnotationUtil {
               annotation.fetchAllVariables(),
               annotation.streamEnabled(),
               Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
-              annotation.maxRetries()));
+              annotation.maxRetries(),
+              Duration.ZERO));
     }
     return Optional.empty();
   }
