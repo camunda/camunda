@@ -41,7 +41,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 class IncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-  private static final int AMOUNT_OF_INCIDENTS = 3;
   private static final String JOB_TYPE = "taskAExecutionListener";
 
   private static CamundaClient camundaClient;
@@ -74,8 +73,8 @@ class IncidentSearchTest {
     startProcessInstance(camundaClient, "job_search_test_process");
 
     waitForProcessInstancesToStart(camundaClient, 6);
-    waitUntilProcessInstanceHasIncidents(camundaClient, AMOUNT_OF_INCIDENTS);
-    waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
+    waitUntilProcessInstanceHasIncidents(camundaClient, 3);
+    waitUntilIncidentsAreActive(camundaClient, 3);
 
     incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
     jobKey =
@@ -88,6 +87,7 @@ class IncidentSearchTest {
             .getJobKey();
     camundaClient.newFailCommand(jobKey).retries(0).errorMessage("fail job").send().join();
     waitUntilFailedJobIncident(camundaClient, 1);
+    waitUntilIncidentsAreActive(camundaClient, 4);
   }
 
   @AfterAll
@@ -189,7 +189,7 @@ class IncidentSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(4);
     assertThat(result.items().getFirst().getState()).isEqualTo(state);
   }
 
