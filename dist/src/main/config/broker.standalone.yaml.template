@@ -1066,6 +1066,9 @@
         #   processCache:
         #     maxCacheSize: 10000
         #
+        #   decisionRequirementsCache:
+        #     maxCacheSize: 10000
+        #
         #   formCache:
         #     maxCacheSize: 10000
         #

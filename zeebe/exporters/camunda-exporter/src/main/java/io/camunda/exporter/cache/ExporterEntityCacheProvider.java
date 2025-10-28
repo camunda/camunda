@@ -10,6 +10,7 @@ package io.camunda.exporter.cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 
 public interface ExporterEntityCacheProvider {
@@ -18,6 +19,9 @@ public interface ExporterEntityCacheProvider {
       String batchOperationIndexName);
 
   CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(String processIndexName);
+
+  CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
+      String decisionIndexName);
 
   CacheLoader<String, CachedFormEntity> getFormCacheLoader(String formIndexName);
 }
