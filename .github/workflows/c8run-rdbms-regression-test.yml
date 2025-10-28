@@ -126,6 +126,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs-${{ matrix.config }}
+          name: logs-${{ join(split(matrix.config, '/'), '-') }}
           path: ./c8run/log/*.log
           retention-days: 10
