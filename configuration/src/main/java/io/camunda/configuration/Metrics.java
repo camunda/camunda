@@ -13,7 +13,7 @@ public class Metrics {
 
   private static final String PREFIX = "camunda.monitoring.metrics";
 
-  private static final Set<String> LEGACY_ENABLE_ACTOR_METRICS_PPROPERTIES =
+  private static final Set<String> LEGACY_ENABLE_ACTOR_METRICS_PROPERTIES =
       Set.of("zeebe.broker.experimental.features.enableActorMetrics");
 
   private static final Set<String> LEGACY_ENABLE_EXPORTER_EXECUTION_METRICS_PPROPERTIES =
@@ -31,7 +31,7 @@ public class Metrics {
         actor,
         Boolean.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENABLE_ACTOR_METRICS_PPROPERTIES);
+        LEGACY_ENABLE_ACTOR_METRICS_PROPERTIES);
   }
 
   public void setActor(final boolean actor) {
