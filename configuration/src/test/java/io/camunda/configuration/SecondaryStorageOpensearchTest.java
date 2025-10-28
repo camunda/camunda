@@ -80,6 +80,7 @@ public class SecondaryStorageOpensearchTest {
 
   private static final int EXPECTED_BATCH_OPERATION_CACHE_MAX_SIZE = 5_000;
   private static final int EXPECTED_PROCESS_CACHE_MAX_SIZE = 15_000;
+  private static final int EXPECTED_DECISIONREQUIREMENTS_CACHE_MAX_SIZE = 8_000;
   private static final int EXPECTED_FORM_CACHE_MAX_SIZE = 20_000;
 
   private static final int EXPECTED_POST_EXPORT_BATCH_SIZE = 200;
@@ -628,6 +629,8 @@ public class SecondaryStorageOpensearchTest {
             + EXPECTED_BATCH_OPERATION_CACHE_MAX_SIZE,
         "camunda.data.secondary-storage.opensearch.process-cache.max-size="
             + EXPECTED_PROCESS_CACHE_MAX_SIZE,
+        "camunda.data.secondary-storage.opensearch.decision-requirements-cache.max-size="
+            + EXPECTED_DECISIONREQUIREMENTS_CACHE_MAX_SIZE,
         "camunda.data.secondary-storage.opensearch.form-cache.max-size="
             + EXPECTED_FORM_CACHE_MAX_SIZE,
       })
@@ -651,6 +654,8 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_BATCH_OPERATION_CACHE_MAX_SIZE);
       assertThat(exporterConfiguration.getProcessCache().getMaxCacheSize())
           .isEqualTo(EXPECTED_PROCESS_CACHE_MAX_SIZE);
+      assertThat(exporterConfiguration.getDecisionRequirementsCache().getMaxCacheSize())
+          .isEqualTo(EXPECTED_DECISIONREQUIREMENTS_CACHE_MAX_SIZE);
       assertThat(exporterConfiguration.getFormCache().getMaxCacheSize())
           .isEqualTo(EXPECTED_FORM_CACHE_MAX_SIZE);
     }

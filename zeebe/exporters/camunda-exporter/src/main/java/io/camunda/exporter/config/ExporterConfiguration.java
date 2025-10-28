@@ -19,6 +19,7 @@ public class ExporterConfiguration {
   private HistoryConfiguration history = new HistoryConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
+  private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
   private PostExportConfiguration postExport = new PostExportConfiguration();
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
@@ -63,6 +64,14 @@ public class ExporterConfiguration {
 
   public void setProcessCache(final CacheConfiguration processCache) {
     this.processCache = processCache;
+  }
+
+  public CacheConfiguration getDecisionRequirementsCache() {
+    return decisionRequirementsCache;
+  }
+
+  public void setDecisionRequirementsCache(final CacheConfiguration decisionRequirementsCache) {
+    this.decisionRequirementsCache = decisionRequirementsCache;
   }
 
   public CacheConfiguration getFormCache() {
@@ -130,6 +139,8 @@ public class ExporterConfiguration {
         + batchOperationCache
         + ", processCache="
         + processCache
+        + ", decisionRequirementsCache="
+        + decisionRequirementsCache
         + ", formCache="
         + formCache
         + ", postExport="
