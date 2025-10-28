@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import java.time.Duration;
 
 public final class EngineCfg implements ConfigurationEntry {
 
@@ -22,6 +23,10 @@ public final class EngineCfg implements ConfigurationEntry {
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private ListenersCfg listeners = new ListenersCfg();
+
+  // TODO put this in a dedicated section
+  private Duration historyDeletionInterval = EngineConfiguration.DEFAULT_HISTORY_DELETION_INTERVAL;
+  private int historyDeletionBatchSize = EngineConfiguration.DEFAULT_HISTORY_DELETION_BATCH_SIZE;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -154,7 +159,25 @@ public final class EngineCfg implements ConfigurationEntry {
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
+        .setHistoryDeletionInterval(historyDeletionInterval)
+        .setHistoryDeletionBatchSize(historyDeletionBatchSize)
         .setMaxProcessDepth(getMaxProcessDepth())
         .setListeners(listeners.createListenersConfiguration());
+  }
+
+  public Duration getHistoryDeletionInterval() {
+    return historyDeletionInterval;
+  }
+
+  public void setHistoryDeletionInterval(final Duration historyDeletionInterval) {
+    this.historyDeletionInterval = historyDeletionInterval;
+  }
+
+  public int getHistoryDeletionBatchSize() {
+    return historyDeletionBatchSize;
+  }
+
+  public void setHistoryDeletionBatchSize(final int historyDeletionBatchSize) {
+    this.historyDeletionBatchSize = historyDeletionBatchSize;
   }
 }

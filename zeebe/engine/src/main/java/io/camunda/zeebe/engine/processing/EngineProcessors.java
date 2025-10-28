@@ -370,7 +370,7 @@ public final class EngineProcessors {
         new ProcessInstanceDeleteCompleteProcessor(writers.state(), keyGenerator));
     typedRecordProcessors.withListener(
         new HistoryDeletionScheduler(
-            scheduledTaskStateFactory, writeClientsProxy, writers.command(), keyGenerator));
+            scheduledTaskStateFactory, writeClientsProxy, writers.command(), keyGenerator, config));
 
     return typedRecordProcessors;
   }

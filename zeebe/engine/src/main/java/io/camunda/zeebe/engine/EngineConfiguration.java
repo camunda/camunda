@@ -13,37 +13,25 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final Duration DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL = Duration.ofMinutes(1);
-
-  public static final int DEFAULT_MAX_ERROR_MESSAGE_SIZE = 10000;
-
   // This size (in bytes) is used as a buffer when filling an event/command up to the maximum
   // message size.
   public static final int BATCH_SIZE_CALCULATION_BUFFER = 1024 * 8;
-
   public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
-  public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
   public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
-
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
-
-  public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // reasonable size of a chunk record to avoid too many or too large records
   public static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 100;
   // key has 8 bytes, stay below 32KB block size
   public static final int DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE = 3500;
-  // ES/OS have max 10000 entities per query
-  public static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
   // Oracle can only have 1000 elements in `IN` clause
   public static final int DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE = 1000;
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX = 0;
-  public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY =
-      Duration.ofSeconds(1);
   public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY =
       Duration.ofSeconds(60);
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
@@ -52,7 +40,18 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
       Duration.ofMinutes(5);
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
-
+  public static final Duration DEFAULT_HISTORY_DELETION_INTERVAL = Duration.ofSeconds(1);
+  public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL =
+      DEFAULT_HISTORY_DELETION_INTERVAL;
+  public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL =
+      DEFAULT_HISTORY_DELETION_INTERVAL;
+  public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY =
+      DEFAULT_HISTORY_DELETION_INTERVAL;
+  public static final int DEFAULT_HISTORY_DELETION_BATCH_SIZE = 100;
+  public static final int DEFAULT_MAX_ERROR_MESSAGE_SIZE = DEFAULT_HISTORY_DELETION_BATCH_SIZE;
+  // ES/OS have max 10000 entities per query
+  public static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE =
+      DEFAULT_HISTORY_DELETION_BATCH_SIZE;
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
@@ -91,6 +90,9 @@ public final class EngineConfiguration {
 
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
   private ListenersConfiguration listeners = ListenersConfiguration.empty();
+
+  private Duration historyDeletionInterval = DEFAULT_HISTORY_DELETION_INTERVAL;
+  private int historyDeletionBatchSize = DEFAULT_HISTORY_DELETION_BATCH_SIZE;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -344,6 +346,24 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setListeners(final ListenersConfiguration listeners) {
     this.listeners = listeners;
+    return this;
+  }
+
+  public Duration getHistoryDeletionInterval() {
+    return historyDeletionInterval;
+  }
+
+  public EngineConfiguration setHistoryDeletionInterval(final Duration historyDeletionInterval) {
+    this.historyDeletionInterval = historyDeletionInterval;
+    return this;
+  }
+
+  public int getHistoryDeletionBatchSize() {
+    return historyDeletionBatchSize;
+  }
+
+  public EngineConfiguration setHistoryDeletionBatchSize(final int historyDeletionBatchSize) {
+    this.historyDeletionBatchSize = historyDeletionBatchSize;
     return this;
   }
 }

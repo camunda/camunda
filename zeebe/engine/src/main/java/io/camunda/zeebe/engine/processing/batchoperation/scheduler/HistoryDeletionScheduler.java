@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import io.camunda.search.clients.WriteClientsProxy;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.HistoryDeletionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +33,8 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(HistoryDeletionScheduler.class);
   private ReadonlyStreamProcessorContext processingContext;
   private final AtomicBoolean executing = new AtomicBoolean(false);
-  private final Duration interval = Duration.ofSeconds(5);
+  private final Duration interval;
+  private final int batchSize;
   private final HistoryDeletionState historyDeletionState;
   private final WriteClientsProxy writeClientsProxy;
   private final TypedCommandWriter commandWriter;
@@ -41,11 +44,14 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final WriteClientsProxy writeClientsProxy,
       final TypedCommandWriter commandWriter,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final EngineConfiguration config) {
     historyDeletionState = scheduledTaskStateFactory.get().getHistoryDeletionState();
     this.writeClientsProxy = writeClientsProxy;
     this.commandWriter = commandWriter;
     this.keyGenerator = keyGenerator;
+    interval = config.getHistoryDeletionInterval();
+    batchSize = config.getHistoryDeletionBatchSize();
   }
 
   @Override
@@ -73,6 +79,7 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
     try {
       LOG.debug("Looking for the next instance to delete.");
       executing.set(true);
+      final var currentBatchSize = new AtomicInteger(0);
 
       // Find next process instance to delete (return true to break out of loop)
       historyDeletionState.forEachProcessInstanceToDelete(
@@ -81,14 +88,14 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
             writeClientsProxy.deleteHistoricData(processInstanceKey);
 
             // TODO only delete if delete = success
-            // TODO we need a sensible limit here and not spam all these delete commands.
             taskResultBuilder.appendCommandRecord(
                 keyGenerator.nextKey(),
                 ProcessInstanceIntent.DELETE_COMPLETE,
                 new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
                 FollowUpCommandMetadata.of(
                     metadata -> metadata.batchOperationReference(batchOperationReference)));
-            return true;
+
+            return currentBatchSize.incrementAndGet() < batchSize;
           });
 
     } finally {
