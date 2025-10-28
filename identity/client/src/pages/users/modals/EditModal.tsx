@@ -79,7 +79,6 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
       <Controller
         name="name"
         control={control}
-        rules={{ required: t("nameRequired") }}
         render={({ field, fieldState }) => (
           <TextField
             {...field}
@@ -94,9 +93,8 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
         name="email"
         control={control}
         rules={{
-          required: t("emailRequired"),
           validate: (value) =>
-            isValidEmail(value) || t("pleaseEnterValidEmail"),
+            !value || isValidEmail(value) || t("pleaseEnterValidEmail"),
         }}
         render={({ field, fieldState }) => (
           <TextField

@@ -22,18 +22,31 @@ test.beforeEach(async ({page, loginPage}) => {
 
 test.describe.serial('users CRUD', () => {
   let NEW_USER: NonNullable<ReturnType<typeof createTestData>['user']>;
+  let NEW_MINIMUM_USER: typeof NEW_USER;
   let EDITED_USER: typeof NEW_USER;
+  let EDITED_MINIMUM_USER: typeof NEW_USER;
 
   test.beforeAll(() => {
     const testData = createTestData({
       user: true,
     });
     NEW_USER = testData.user!;
+    NEW_MINIMUM_USER = {
+      ...NEW_USER,
+      username: `minimum${NEW_USER.username}`,
+      name: '',
+      email: '',
+    };
     EDITED_USER = {
       ...NEW_USER,
       name: `Edited ${NEW_USER.name}`,
       email: `edited.${NEW_USER.email}`,
       password: `edited${NEW_USER.password}`,
+    };
+    EDITED_MINIMUM_USER = {
+      ...EDITED_USER,
+      name: '',
+      email: '',
     };
   });
 
@@ -60,6 +73,18 @@ test.describe.serial('users CRUD', () => {
     });
   });
 
+  test('edit a user with minimum properties', async ({
+    identityUsersPage,
+    page,
+  }) => {
+    await identityUsersPage.editUser(EDITED_USER, EDITED_MINIMUM_USER);
+    const item = identityUsersPage.userCell(EDITED_MINIMUM_USER.username);
+    await waitForItemInList(page, item, {
+      clickNext: true,
+      timeout: 30000,
+    });
+  });
+
   test('delete a user', async ({identityUsersPage, page}) => {
     const item = identityUsersPage.userCell(EDITED_USER.email);
     await identityUsersPage.deleteUser(EDITED_USER);
@@ -69,5 +94,21 @@ test.describe.serial('users CRUD', () => {
       clickNext: true,
       timeout: 30000,
     });
+  });
+
+  test('create a user with minimum properties', async ({
+    identityUsersPage,
+    page,
+  }) => {
+    await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
+    await identityUsersPage.createUser(NEW_MINIMUM_USER);
+    await waitForItemInList(
+      page,
+      identityUsersPage.userCell(NEW_MINIMUM_USER.username),
+      {
+        clickNext: true,
+        timeout: 30000,
+      },
+    );
   });
 });
