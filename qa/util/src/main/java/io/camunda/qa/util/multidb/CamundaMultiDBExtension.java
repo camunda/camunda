@@ -45,6 +45,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
+import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.ModifierSupport;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -223,10 +224,10 @@ public class CamundaMultiDBExtension
   public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   public static final String KEYCLOAK_REALM = "camunda";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
-  private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final TestStandaloneApplication<?> defaultTestApplication;
 
+  private DatabaseType databaseType;
   private ApplicationUnderTest applicationUnderTest;
   private String testPrefix;
   private MultiDbConfigurator multiDbConfigurator;
@@ -241,14 +242,26 @@ public class CamundaMultiDBExtension
 
   public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
     defaultTestApplication = testApplication;
-    // resolve active database and exporter type
-    databaseType = currentMultiDbDatabaseType();
   }
 
-  public static DatabaseType currentMultiDbDatabaseType() {
+  private DatabaseType getDatabaseType(final ExtensionContext extensionContext) {
+    if (databaseType == null) {
+      databaseType = currentMultiDbDatabaseType(extensionContext);
+    }
+
+    return databaseType;
+  }
+
+  private DatabaseType currentMultiDbDatabaseType(final ExtensionContext context) {
     final String property =
         System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
-    return property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
+    if (property != null) {
+      return DatabaseType.valueOf(property.toUpperCase());
+    }
+
+    return AnnotationSupport.findAnnotation(context.getRequiredTestClass(), MultiDbTest.class)
+        .map(MultiDbTest::value)
+        .orElse(DatabaseType.LOCAL);
   }
 
   private void setupTestApplication(final Class<?> testClass) {
@@ -265,13 +278,13 @@ public class CamundaMultiDBExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
-    LOGGER.info("Starting up Camunda instance, with {}", databaseType);
+    LOGGER.info("Starting up Camunda instance, with {}", getDatabaseType(context));
     final Class<?> testClass = context.getRequiredTestClass();
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
 
     setupTestApplication(testClass);
-    switch (databaseType) {
+    switch (getDatabaseType(context)) {
       case LOCAL -> {
         final ElasticsearchContainer elasticsearchContainer = setupElasticsearch();
         final String elasticSearchUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
