@@ -345,7 +345,9 @@ public class IntermediateThrowEventProcessor
       }
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-          escalation.getEscalationCodeExpression(), context.getElementInstanceKey());
+          escalation.getEscalationCodeExpression(),
+          context.getElementInstanceKey(),
+          context.getTenantId());
     }
   }
 

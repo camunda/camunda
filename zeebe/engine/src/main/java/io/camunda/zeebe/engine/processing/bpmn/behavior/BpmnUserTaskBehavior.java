@@ -91,21 +91,29 @@ public final class BpmnUserTaskBehavior {
       final ExecutableUserTask element, final BpmnElementContext context) {
     final var userTaskProps = element.getUserTaskProperties();
     final var scopeKey = context.getElementInstanceKey();
+    final var tenantId = context.getTenantId();
     return Either.<Failure, UserTaskProperties>right(new UserTaskProperties())
         .flatMap(
-            p -> evaluateAssigneeExpression(userTaskProps.getAssignee(), scopeKey).map(p::assignee))
+            p ->
+                evaluateAssigneeExpression(userTaskProps.getAssignee(), scopeKey, tenantId)
+                    .map(p::assignee))
         .flatMap(
             p ->
-                evaluateCandidateGroupsExpression(userTaskProps.getCandidateGroups(), scopeKey)
+                evaluateCandidateGroupsExpression(
+                        userTaskProps.getCandidateGroups(), scopeKey, tenantId)
                     .map(p::candidateGroups))
         .flatMap(
             p ->
-                evaluateCandidateUsersExpression(userTaskProps.getCandidateUsers(), scopeKey)
+                evaluateCandidateUsersExpression(
+                        userTaskProps.getCandidateUsers(), scopeKey, tenantId)
                     .map(p::candidateUsers))
-        .flatMap(p -> evaluateDateExpression(userTaskProps.getDueDate(), scopeKey).map(p::dueDate))
         .flatMap(
             p ->
-                evaluateDateExpression(userTaskProps.getFollowUpDate(), scopeKey)
+                evaluateDateExpression(userTaskProps.getDueDate(), scopeKey, tenantId)
+                    .map(p::dueDate))
+        .flatMap(
+            p ->
+                evaluateDateExpression(userTaskProps.getFollowUpDate(), scopeKey, tenantId)
                     .map(p::followUpDate))
         .flatMap(
             p ->
@@ -114,16 +122,18 @@ public final class BpmnUserTaskBehavior {
                         userTaskProps.getFormBindingType(),
                         userTaskProps.getFormVersionTag(),
                         context,
-                        scopeKey)
+                        scopeKey,
+                        tenantId)
                     .map(p::formKey))
         .flatMap(
             p ->
                 evaluateExternalFormReferenceExpression(
-                        userTaskProps.getExternalFormReference(), scopeKey)
+                        userTaskProps.getExternalFormReference(), scopeKey, tenantId)
                     .map(p::externalFormReference))
         .flatMap(
             p ->
-                evaluatePriorityExpression(userTaskProps.getPriority(), scopeKey).map(p::priority));
+                evaluatePriorityExpression(userTaskProps.getPriority(), scopeKey, tenantId)
+                    .map(p::priority));
   }
 
   public UserTaskRecord createNewUserTask(
@@ -162,36 +172,36 @@ public final class BpmnUserTaskBehavior {
   }
 
   public Either<Failure, String> evaluateAssigneeExpression(
-      final Expression assignee, final long scopeKey) {
+      final Expression assignee, final long scopeKey, final String tenantId) {
     if (assignee == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateStringExpression(assignee, scopeKey);
+    return expressionBehavior.evaluateStringExpression(assignee, scopeKey, tenantId);
   }
 
   public Either<Failure, List<String>> evaluateCandidateGroupsExpression(
-      final Expression candidateGroups, final long scopeKey) {
+      final Expression candidateGroups, final long scopeKey, final String tenantId) {
     if (candidateGroups == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey);
+    return expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId);
   }
 
   public Either<Failure, List<String>> evaluateCandidateUsersExpression(
-      final Expression candidateUsers, final long scopeKey) {
+      final Expression candidateUsers, final long scopeKey, final String tenantId) {
     if (candidateUsers == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateArrayOfStringsExpression(candidateUsers, scopeKey);
+    return expressionBehavior.evaluateArrayOfStringsExpression(candidateUsers, scopeKey, tenantId);
   }
 
   public Either<Failure, String> evaluateDateExpression(
-      final Expression date, final long scopeKey) {
+      final Expression date, final long scopeKey, final String tenantId) {
     if (date == null) {
       return Either.right(null);
     }
     return expressionBehavior
-        .evaluateDateTimeExpression(date, scopeKey, true)
+        .evaluateDateTimeExpression(date, scopeKey, tenantId, true)
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
   }
 
@@ -200,12 +210,13 @@ public final class BpmnUserTaskBehavior {
       final ZeebeBindingType bindingType,
       final String versionTag,
       final BpmnElementContext context,
-      final long scopeKey) {
+      final long scopeKey,
+      final String tenantId) {
     if (formIdExpression == null) {
       return Either.right(null);
     }
     return expressionBehavior
-        .evaluateStringExpression(formIdExpression, scopeKey)
+        .evaluateStringExpression(formIdExpression, scopeKey, tenantId)
         .flatMap(
             formId -> {
               final var form = findLinkedForm(formId, bindingType, versionTag, context, scopeKey);
@@ -291,20 +302,20 @@ public final class BpmnUserTaskBehavior {
   }
 
   public Either<Failure, String> evaluateExternalFormReferenceExpression(
-      final Expression externalFormReference, final long scopeKey) {
+      final Expression externalFormReference, final long scopeKey, final String tenantId) {
     if (externalFormReference == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateStringExpression(externalFormReference, scopeKey);
+    return expressionBehavior.evaluateStringExpression(externalFormReference, scopeKey, tenantId);
   }
 
   public Either<Failure, Integer> evaluatePriorityExpression(
-      final Expression priorityExpression, final long scopeKey) {
+      final Expression priorityExpression, final long scopeKey, final String tenantId) {
     if (priorityExpression == null) {
       return Either.right(ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY);
     }
     return expressionBehavior
-        .evaluateIntegerExpression(priorityExpression, scopeKey)
+        .evaluateIntegerExpression(priorityExpression, scopeKey, tenantId)
         .flatMap(
             priority -> {
               if (priority < PRIORITY_LOWER_BOUND || priority > PRIORITY_UPPER_BOUND) {

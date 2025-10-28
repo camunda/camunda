@@ -58,6 +58,7 @@ public final class BpmnVariableMappingBehavior {
   public Either<Failure, Void> applyInputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
     final long scopeKey = context.getElementInstanceKey();
+    final String tenantId = context.getTenantId();
     final long processDefinitionKey = context.getProcessDefinitionKey();
     final long processInstanceKey = context.getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
@@ -65,7 +66,7 @@ public final class BpmnVariableMappingBehavior {
 
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor
-          .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey)
+          .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey, tenantId)
           .map(
               result -> {
                 variableBehavior.mergeLocalDocument(
@@ -96,6 +97,7 @@ public final class BpmnVariableMappingBehavior {
     final long processInstanceKey = record.getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = context.getBpmnProcessId();
     final long scopeKey = getVariableScopeKey(context);
+    final String tenantId = context.getTenantId();
     final Optional<Expression> outputMappingExpression = element.getOutputMappings();
 
     final EventTrigger eventTrigger = eventScopeInstanceState.peekEventTrigger(elementInstanceKey);
@@ -129,7 +131,8 @@ public final class BpmnVariableMappingBehavior {
 
       // apply the output mappings
       return expressionProcessor
-          .evaluateVariableMappingExpression(outputMappingExpression.get(), elementInstanceKey)
+          .evaluateVariableMappingExpression(
+              outputMappingExpression.get(), elementInstanceKey, tenantId)
           .map(
               result -> {
                 variableBehavior.mergeDocument(

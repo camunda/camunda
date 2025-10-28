@@ -199,7 +199,7 @@ public class AdHocSubProcessProcessor
     } else {
       return expressionProcessor
           .evaluateArrayOfStringsExpression(
-              activeElementsCollection, context.getElementInstanceKey())
+              activeElementsCollection, context.getElementInstanceKey(), context.getTenantId())
           .mapLeft(
               failure ->
                   new Failure(
@@ -295,7 +295,10 @@ public class AdHocSubProcessProcessor
 
     final Expression outputElementExpression = outputElementOptional.get();
     return expressionProcessor
-        .evaluateAnyExpression(outputElementExpression, childContext.getElementInstanceKey())
+        .evaluateAnyExpression(
+            outputElementExpression,
+            childContext.getElementInstanceKey(),
+            childContext.getTenantId())
         .flatMap(
             outputElementValue -> {
               final DirectBuffer outputCollectionValue =
@@ -360,7 +363,9 @@ public class AdHocSubProcessProcessor
 
       return expressionProcessor
           .evaluateBooleanExpression(
-              completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
+              completionConditionExpression,
+              adHocSubProcessContext.getElementInstanceKey(),
+              adHocSubProcessContext.getTenantId())
           .mapLeft(
               failure ->
                   new Failure(

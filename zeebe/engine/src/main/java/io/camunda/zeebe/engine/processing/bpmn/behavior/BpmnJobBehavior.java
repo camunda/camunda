@@ -121,38 +121,41 @@ public final class BpmnJobBehavior {
   public Either<Failure, JobProperties> evaluateJobExpressions(
       final JobWorkerProperties jobWorkerProps, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
+    final var tenantId = context.getTenantId();
     return Either.<Failure, JobProperties>right(new JobProperties())
-        .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
-        .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
+        .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey, tenantId).map(p::type))
+        .flatMap(
+            p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
         .flatMap(
             p -> evalLinkedResourceProps(jobWorkerProps, context, scopeKey).map(p::linkedResources))
         .flatMap(
             p ->
                 userTaskBehavior
-                    .evaluateAssigneeExpression(jobWorkerProps.getAssignee(), scopeKey)
+                    .evaluateAssigneeExpression(jobWorkerProps.getAssignee(), scopeKey, tenantId)
                     .map(p::assignee))
         .flatMap(
             p ->
                 userTaskBehavior
                     .evaluateCandidateGroupsExpression(
-                        jobWorkerProps.getCandidateGroups(), scopeKey)
+                        jobWorkerProps.getCandidateGroups(), scopeKey, tenantId)
                     .map(BpmnJobBehavior::asListLiteralOrNull)
                     .map(p::candidateGroups))
         .flatMap(
             p ->
                 userTaskBehavior
-                    .evaluateCandidateUsersExpression(jobWorkerProps.getCandidateUsers(), scopeKey)
+                    .evaluateCandidateUsersExpression(
+                        jobWorkerProps.getCandidateUsers(), scopeKey, tenantId)
                     .map(BpmnJobBehavior::asListLiteralOrNull)
                     .map(p::candidateUsers))
         .flatMap(
             p ->
                 userTaskBehavior
-                    .evaluateDateExpression(jobWorkerProps.getDueDate(), scopeKey)
+                    .evaluateDateExpression(jobWorkerProps.getDueDate(), scopeKey, tenantId)
                     .map(p::dueDate))
         .flatMap(
             p ->
                 userTaskBehavior
-                    .evaluateDateExpression(jobWorkerProps.getFollowUpDate(), scopeKey)
+                    .evaluateDateExpression(jobWorkerProps.getFollowUpDate(), scopeKey, tenantId)
                     .map(p::followUpDate))
         .flatMap(
             p ->
@@ -162,7 +165,8 @@ public final class BpmnJobBehavior {
                         jobWorkerProps.getFormBindingType(),
                         jobWorkerProps.getFormVersionTag(),
                         context,
-                        scopeKey)
+                        scopeKey,
+                        tenantId)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
   }
@@ -335,10 +339,12 @@ public final class BpmnJobBehavior {
       final BpmnElementContext context,
       final UserTaskRecord taskRecordValue) {
     final var scopeKey = context.getElementInstanceKey();
+    final var tenantId = context.getTenantId();
     return Either.<Failure, JobProperties>right(new JobProperties())
         // Evaluate and set basic job properties
-        .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
-        .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
+        .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey, tenantId).map(p::type))
+        .flatMap(
+            p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey, tenantId).map(p::retries))
         // Handle user task-related properties
         .map(
             p ->
@@ -400,9 +406,10 @@ public final class BpmnJobBehavior {
     };
   }
 
-  private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
+  private Either<Failure, String> evalTypeExp(
+      final Expression type, final long scopeKey, final String tenantId) {
     return expressionBehavior
-        .evaluateStringExpression(type, scopeKey)
+        .evaluateStringExpression(type, scopeKey, tenantId)
         .flatMap(
             result ->
                 Strings.isNullOrEmpty(result)
@@ -416,8 +423,9 @@ public final class BpmnJobBehavior {
                     : Either.right(result));
   }
 
-  private Either<Failure, Long> evalRetriesExp(final Expression retries, final long scopeKey) {
-    return expressionBehavior.evaluateLongExpression(retries, scopeKey);
+  private Either<Failure, Long> evalRetriesExp(
+      final Expression retries, final long scopeKey, final String tenantId) {
+    return expressionBehavior.evaluateLongExpression(retries, scopeKey, tenantId);
   }
 
   private void writeJobCreatedEvent(

@@ -182,7 +182,7 @@ public final class ScriptTaskProcessor
       final ExecutableScriptTask element, final BpmnElementContext context) {
     final var resultOrFailure =
         expressionProcessor.evaluateAnyExpression(
-            element.getExpression(), context.getElementInstanceKey());
+            element.getExpression(), context.getElementInstanceKey(), context.getTenantId());
 
     resultOrFailure.ifRight(
         result ->

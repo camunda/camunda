@@ -127,7 +127,7 @@ public final class InclusiveGatewayProcessor
         final Expression condition = sequenceFlow.getCondition();
         final Either<Failure, Boolean> isFulfilledOrFailure =
             expressionBehavior.evaluateBooleanExpression(
-                condition, context.getElementInstanceKey());
+                condition, context.getElementInstanceKey(), context.getTenantId());
         if (isFulfilledOrFailure.isLeft()) {
           return Either.left(isFulfilledOrFailure.getLeft());
         } else if (isFulfilledOrFailure.get()) {
