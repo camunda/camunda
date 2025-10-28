@@ -129,7 +129,7 @@ Accept: application/json
 ###
 < {%
   import {wait} from "../js/wait"
-  wait(2)
+  wait(4)
 %}
 # @name get-process-definition-authorized
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}
@@ -530,7 +530,7 @@ Accept: application/json
 # @name get-process-instance-with-incident
 < {%
   import {wait} from "../js/wait"
-  wait(2)
+  wait(4)
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_INCIDENT}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
