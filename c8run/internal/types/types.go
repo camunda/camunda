@@ -11,7 +11,7 @@ type C8Run interface {
 	ProcessTree(commandPid int) []*os.Process
 	VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd
 	ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd
-	ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string) *exec.Cmd
+	ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string, camundaPort int) *exec.Cmd
 	CamundaCmd(ctx context.Context, camundaVersion string, parentDir string, extraArgs string, javaOpts string) *exec.Cmd
 }
 

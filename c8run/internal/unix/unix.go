@@ -50,12 +50,17 @@ func (w *UnixC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersion s
 	return elasticsearchCmd
 }
 
-func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string) *exec.Cmd {
+func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string, camundaPort int) *exec.Cmd {
 	classPath := parentDir + "/*:" + parentDir + "/custom_connectors/*"
 	mainClass := "io.camunda.connector.runtime.app.ConnectorRuntimeApplication"
 	springConfigLocation := "--spring.config.additional-location=" + parentDir + "/connectors-application.properties"
 	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-cp", classPath, mainClass, springConfigLocation)
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	// Set the CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS environment variable with the custom port
+	zeebeRestAddress := fmt.Sprintf("http://localhost:%d", camundaPort)
+	connectorsCmd.Env = append(os.Environ(), fmt.Sprintf("CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS=%s", zeebeRestAddress))
+
 	return connectorsCmd
 }
 
