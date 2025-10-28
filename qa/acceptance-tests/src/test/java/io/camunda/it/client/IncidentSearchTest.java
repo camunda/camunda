@@ -12,6 +12,7 @@ import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilFailedJobIncident;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,35 +42,52 @@ class IncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   private static final int AMOUNT_OF_INCIDENTS = 3;
+  private static final String JOB_TYPE = "taskAExecutionListener";
 
   private static CamundaClient camundaClient;
 
   private static Incident incident;
+  private static long jobKey;
 
   @BeforeAll
   static void beforeAll() {
 
     final var processes =
-        List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
+        List.of(
+            "service_tasks_v1.bpmn",
+            "service_tasks_v2.bpmn",
+            "incident_process_v1.bpmn",
+            "job_search_process.bpmn");
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
                 deployResource(camundaClient, String.format("process/%s", process))
                     .getProcesses()));
 
-    waitForProcessesToBeDeployed(camundaClient, 3);
+    waitForProcessesToBeDeployed(camundaClient, 4);
 
     startProcessInstance(camundaClient, "service_tasks_v1");
     startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}");
     startProcessInstance(camundaClient, "incident_process_v1");
     startProcessInstance(camundaClient, "incident_process_v1");
     startProcessInstance(camundaClient, "incident_process_v1");
+    startProcessInstance(camundaClient, "job_search_test_process");
 
-    waitForProcessInstancesToStart(camundaClient, 5);
+    waitForProcessInstancesToStart(camundaClient, 6);
     waitUntilProcessInstanceHasIncidents(camundaClient, AMOUNT_OF_INCIDENTS);
     waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
 
     incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
+    jobKey =
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.type(JOB_TYPE))
+            .send()
+            .join()
+            .singleItem()
+            .getJobKey();
+    camundaClient.newFailCommand(jobKey).retries(0).errorMessage("fail job").send().join();
+    waitUntilFailedJobIncident(camundaClient, 1);
   }
 
   @AfterAll
@@ -80,7 +98,7 @@ class IncidentSearchTest {
   @Test
   void testIncidentsAreActive() {
     // given
-    waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
+    waitUntilIncidentsAreActive(camundaClient, 4);
 
     // when
     final List<Incident> incidents = camundaClient.newIncidentSearchRequest().send().join().items();
@@ -284,15 +302,13 @@ class IncidentSearchTest {
 
   @Test
   void shouldFilterByJobKey() {
-    // given
-    final var jobKey = incident.getJobKey();
 
     // when
     final var result =
         camundaClient.newIncidentSearchRequest().filter(f -> f.jobKey(jobKey)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getJobKey()).isEqualTo(jobKey);
   }
 
@@ -306,7 +322,7 @@ class IncidentSearchTest {
         camundaClient.newIncidentSearchRequest().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(4);
     assertThat(result.items().getFirst().getTenantId()).isEqualTo(tenantId);
   }
 
