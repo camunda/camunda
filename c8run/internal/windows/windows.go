@@ -52,9 +52,11 @@ func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, par
 		// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
 	}
 
-	// Set the CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS environment variable with the custom port
-	zeebeRestAddress := fmt.Sprintf("http://localhost:%d", camundaPort)
-	connectorsCmd.Env = append(os.Environ(), fmt.Sprintf("CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS=%s", zeebeRestAddress))
+	// Set default Zeebe REST address if the user has not provided one already.
+	if _, exists := os.LookupEnv("CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS"); !exists {
+		zeebeRestAddress := fmt.Sprintf("http://localhost:%d", camundaPort)
+		connectorsCmd.Env = append(os.Environ(), fmt.Sprintf("CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS=%s", zeebeRestAddress))
+	}
 
 	return connectorsCmd
 }

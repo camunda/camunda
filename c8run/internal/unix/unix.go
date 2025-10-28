@@ -57,9 +57,11 @@ func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parent
 	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-cp", classPath, mainClass, springConfigLocation)
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
-	// Set the CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS environment variable with the custom port
-	zeebeRestAddress := fmt.Sprintf("http://localhost:%d", camundaPort)
-	connectorsCmd.Env = append(os.Environ(), fmt.Sprintf("CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS=%s", zeebeRestAddress))
+	// Set default Zeebe REST address if the user has not provided one already.
+	if _, exists := os.LookupEnv("CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS"); !exists {
+		zeebeRestAddress := fmt.Sprintf("http://localhost:%d", camundaPort)
+		connectorsCmd.Env = append(os.Environ(), fmt.Sprintf("CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS=%s", zeebeRestAddress))
+	}
 
 	return connectorsCmd
 }

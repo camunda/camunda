@@ -103,3 +103,27 @@ func TestConnectorsCmdPortNotInArgs(t *testing.T) {
 		t.Errorf("Port should not be in command arguments, only in environment variable. Args: %s", args)
 	}
 }
+
+func TestConnectorsCmdRespectsExistingZeebeRestEnv(t *testing.T) {
+	ctx := context.Background()
+	unixC8Run := &UnixC8Run{}
+
+	customAddress := "https://external-host:9443"
+	t.Setenv("CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS", customAddress)
+
+	cmd := unixC8Run.ConnectorsCmd(
+		ctx,
+		"java",
+		"/test/parent/dir",
+		"8.8.1",
+		9000,
+	)
+
+	if cmd.Env != nil {
+		for _, env := range cmd.Env {
+			if strings.Contains(env, "CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS=") {
+				t.Fatalf("expected existing CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS to be preserved, but command overrides it: %s", env)
+			}
+		}
+	}
+}
