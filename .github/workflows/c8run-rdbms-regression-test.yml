@@ -123,21 +123,21 @@ jobs:
         working-directory: ./c8run
         run: ./shutdown.sh
 
-      - name: Set artifact name
+      - name: Prepare artifact name
         id: set-artifact-name
-        shell: bash
         run: |
           MATRIX_NAME="${{ matrix.config }}"
           if [ -z "$MATRIX_NAME" ]; then
             MATRIX_NAME="default"
           fi
           SANITIZED_NAME="logs-${MATRIX_NAME//\//-}"
-          echo "ARTIFACT_NAME=$SANITIZED_NAME" >> "$GITHUB_ENV"
           echo "Artifact name set to: $SANITIZED_NAME"
+          echo "ARTIFACT_NAME=$SANITIZED_NAME" >> $GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: ${{ steps.set-artifact-name.outputs.ARTIFACT_NAME }}
           path: ./c8run/log/*.log
           retention-days: 10
+      
