@@ -40,4 +40,14 @@ public class MappingRuleWriter {
             "io.camunda.db.rdbms.sql.MappingRuleMapper.delete",
             mappingRuleId));
   }
+
+  public void update(final MappingRuleDbModel mappingRule) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.MAPPING_RULE,
+            WriteStatementType.UPDATE,
+            mappingRule.mappingRuleId(),
+            "io.camunda.db.rdbms.sql.MappingRuleMapper.update",
+            mappingRule));
+  }
 }
