@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.Closeable;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -139,12 +140,17 @@ public class NodeIdMapper implements Closeable {
     retryConfig.setRetryDelayMultiplier(1.5);
     final RetryDecorator retryDecorator =
         new RetryDecorator(retryConfig, Exception.class::isInstance);
+    final var startedAt = Instant.now();
 
     // TODO: Do not block the thread. Resubmit each retry.
     // TODO: Set max retry timeout
     retryDecorator.decorate(
         "Wait for all nodes to update version",
         () -> {
+          if (Instant.now().isAfter(startedAt.plusSeconds(120))) {
+            LOG.info("Timed out waiting for all nodes to update version: continuing anyway");
+            return null;
+          }
           final var allLeases = lease.getAllLeases();
           final var allNodesUpdated = allMappingsAreUpdated(allLeases, nodeInstance, clusterSize);
           if (allNodesUpdated) {
@@ -180,7 +186,10 @@ public class NodeIdMapper implements Closeable {
               // If this node is not in the mapping, it means the node hasn't seen this
               // version yet
               if (versionInMapping == null) {
-                LOG.debug("No mapping found for nodeId {}", nodeInstance.id());
+                LOG.debug(
+                    "No mapping found for nodeId {} found in node {}",
+                    nodeInstance.id(),
+                    lease.nodeInstance());
                 return false;
               }
 

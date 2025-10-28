@@ -8,6 +8,8 @@
 package io.camunda.zeebe.broker.health;
 
 import io.camunda.zeebe.broker.clustering.mapper.NodeIdMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.availability.LivenessStateHealthIndicator;
 import org.springframework.boot.availability.ApplicationAvailability;
 import org.springframework.boot.availability.AvailabilityState;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class BrokerLivenessHealthIndicator extends LivenessStateHealthIndicator {
 
+  private static final Logger LOG = LoggerFactory.getLogger(BrokerLivenessHealthIndicator.class);
   private final NodeIdMapper nodeIdMapper;
 
   public BrokerLivenessHealthIndicator(
@@ -30,6 +33,7 @@ public class BrokerLivenessHealthIndicator extends LivenessStateHealthIndicator 
     if (nodeIdMapper.isHealthy()) {
       return LivenessState.CORRECT;
     } else {
+      LOG.info("Health status of NodeIdMapper is BROKEN");
       return LivenessState.BROKEN;
     }
   }
