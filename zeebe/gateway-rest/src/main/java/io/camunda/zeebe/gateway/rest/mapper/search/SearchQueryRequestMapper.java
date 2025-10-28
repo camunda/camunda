@@ -492,41 +492,6 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
-  public static Either<ProblemDetail, IncidentQuery> toProcessInstanceIncidentQuery(
-      final ProcessInstanceIncidentSearchQuery request) {
-
-    if (request == null) {
-      return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
-    }
-
-    final var page = toSearchQueryPage(request.getPage());
-    final var sort =
-        SearchQuerySortRequestMapper.toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::incident,
-            SearchQuerySortRequestMapper::applyIncidentSortField);
-    final var filter = toIncidentFilter(request.getFilter());
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
-  }
-
-  public static Either<ProblemDetail, IncidentQuery> toElementInstanceIncidentQuery(
-      final ElementInstanceIncidentSearchQuery request) {
-
-    if (request == null) {
-      return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
-    }
-
-    final var page = toSearchQueryPage(request.getPage());
-    final var sort =
-        SearchQuerySortRequestMapper.toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::incident,
-            SearchQuerySortRequestMapper::applyIncidentSortField);
-    final var filter = toIncidentFilter(request.getFilter());
-
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
-  }
-
   public static Either<ProblemDetail, BatchOperationQuery> toBatchOperationQuery(
       final BatchOperationSearchQuery request) {
     if (request == null) {

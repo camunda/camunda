@@ -5328,19 +5328,25 @@ paths:
       summary: Search for incidents of a specific element instance
       description: |
         Search for incidents caused by the specified element instance, including incidents of any child instances created from this element instance.
+
+        Although the `elementInstanceKey` is provided as a path parameter to indicate the root element instance,
+        you may also include an `elementInstanceKey` within the filter object to narrow results to specific
+        child element instances. This is useful, for example, if you want to isolate incidents associated with
+        nested or subordinate elements within the given element instance while excluding incidents directly tied
+        to the root element itself.
       parameters:
         - name: elementInstanceKey
           in: path
           required: true
           description: The unique key of the element instance to search incidents for.
           schema:
-            type: string
+            $ref: "#/components/schemas/ElementInstanceKey"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ElementInstanceIncidentSearchQuery"
+              $ref: "#/components/schemas/IncidentSearchQuery"
       responses:
         "200":
           description: The element instance incident search result.
@@ -7797,20 +7803,6 @@ components:
           allOf:
             - $ref: "#/components/schemas/IncidentKey"
           description: Incident key associated with this element instance.
-    ElementInstanceIncidentSearchQuery:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
-      properties:
-        sort:
-          description: Sort field criteria.
-          type: array
-          items:
-            $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
-        filter:
-          description: The incident search filters.
-          allOf:
-            - $ref: "#/components/schemas/ElementInstanceIncidentFilter"
     AdHocSubProcessActivateActivitiesInstruction:
       type: object
       properties:
