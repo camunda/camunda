@@ -123,8 +123,12 @@ jobs:
         working-directory: ./c8run
         run: ./shutdown.sh
 
-      - name: Sanitize matrix name
-        run: echo "ARTIFACT_NAME=logs-${MATRIX_CONFIG//\//-}" >> $GITHUB_ENV
+      - name: Sanitize matrix name for artifact
+        shell: bash
+        run: |
+          SANITIZED_NAME="logs-${MATRIX_CONFIG//\//-}"
+          echo "ARTIFACT_NAME=$SANITIZED_NAME" >> $GITHUB_ENV
+          echo "Artifact name will be: $SANITIZED_NAME"
         env:
           MATRIX_CONFIG: ${{ matrix.config }}
 
