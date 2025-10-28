@@ -211,6 +211,7 @@ public class NodeIdMapper implements Closeable {
 
   @Override
   public void close() {
+    LOG.debug("Closing nodeIdMapper");
     try {
       renewealTimer.cancel(true);
       executor.submit(lease::releaseLease).get(15, TimeUnit.SECONDS);
