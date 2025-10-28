@@ -626,14 +626,17 @@ public class BrokerBasedPropertiesOverride {
     }
 
     final DocumentBasedSecondaryStorageDatabase database;
-    if (SecondaryStorageType.elasticsearch == secondaryStorage.getType()) {
-      database =
-          unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
-    } else if (SecondaryStorageType.opensearch == secondaryStorage.getType()) {
-      database = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
-    } else {
-      // RDBMS and NONE are not supported.
-      return;
+    switch (secondaryStorage.getType()) {
+      case elasticsearch ->
+          database =
+              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
+      case opensearch ->
+          database =
+              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
+      default -> {
+        // RDBMS and NONE are not supported.
+        return;
+      }
     }
 
     /* Load exporter config map */
@@ -655,6 +658,9 @@ public class BrokerBasedPropertiesOverride {
       args = new LinkedHashMap<>();
       exporter.setArgs(args);
     }
+
+    setArg(args, "history.retention.enabled", secondaryStorage.getRetention().isEnabled());
+    setArg(args, "history.retention.minimumAge", secondaryStorage.getRetention().getMinimumAge());
 
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());

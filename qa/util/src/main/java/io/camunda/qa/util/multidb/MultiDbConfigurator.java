@@ -96,6 +96,11 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put("camunda.database.retention.minimumAge", "0s");
     elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
 
+    /* Unified Config */
+    elasticsearchProperties.put(
+        "camunda.data.secondary-storage.retention.enabled", Boolean.toString(retentionEnabled));
+    elasticsearchProperties.put("camunda.data.secondary-storage.retention.minimum-age", "0s");
+
     testApplication.withAdditionalProperties(elasticsearchProperties);
 
     testApplication.withExporter(
@@ -217,6 +222,9 @@ public class MultiDbConfigurator {
     /* Unified Config */
     opensearchProperties.put("camunda.data.secondary-storage.opensearch.username", userName);
     opensearchProperties.put("camunda.data.secondary-storage.opensearch.password", userPassword);
+    opensearchProperties.put(
+        "camunda.data.secondary-storage.retention.enabled", Boolean.toString(retentionEnabled));
+    opensearchProperties.put("camunda.data.secondary-storage.retention.minimum-age", "0s");
 
     testApplication.withAdditionalProperties(opensearchProperties);
 

@@ -24,6 +24,7 @@ import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOve
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
+import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -348,6 +349,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "searchEngineIndexProperties",
         searchEngineIndexProperties,
         SearchEngineIndexProperties.class);
+    final var searchEngineRetentionProperties = new SearchEngineRetentionProperties();
+    withBean(
+        "searchEngineRetentionProperties",
+        searchEngineRetentionProperties,
+        SearchEngineRetentionProperties.class);
     // enable schema creation as ES is used in the current tests
     withCreateSchema(true);
     return this;
