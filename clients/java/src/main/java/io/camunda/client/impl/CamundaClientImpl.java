@@ -114,6 +114,7 @@ import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
+import io.camunda.client.api.fetch.MappingRuleGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
@@ -253,6 +254,7 @@ import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.GroupGetRequestImpl;
 import io.camunda.client.impl.fetch.IncidentGetRequestImpl;
+import io.camunda.client.impl.fetch.MappingRuleGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetFormRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
@@ -1024,6 +1026,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public DeleteMappingRuleCommandStep1 newDeleteMappingRuleCommand(final String mappingRuleId) {
     return new DeleteMappingRuleCommandImpl(mappingRuleId, httpClient);
+  }
+
+  @Override
+  public MappingRuleGetRequest newMappingRuleGetRequest(final String mappingRuleId) {
+    return new MappingRuleGetRequestImpl(httpClient, mappingRuleId);
   }
 
   @Override

@@ -103,6 +103,7 @@ import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
+import io.camunda.client.api.fetch.MappingRuleGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
@@ -1627,6 +1628,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   DeleteMappingRuleCommandStep1 newDeleteMappingRuleCommand(String mappingRuleId);
+
+  /**
+   * Request to get a mapping rule by mapping rule ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newMappingRuleGetRequest("mappingRuleId")
+   *  .send();
+   * </pre>
+   *
+   * @param mappingRuleId the ID of the mapping rule
+   * @return a builder for the request to get a mapping rule
+   */
+  MappingRuleGetRequest newMappingRuleGetRequest(String mappingRuleId);
 
   /**
    * Command to assign a user to a group.
