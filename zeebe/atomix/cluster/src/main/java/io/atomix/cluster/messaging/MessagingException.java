@@ -30,6 +30,12 @@ public class MessagingException extends IOException {
     super(message, cause);
   }
 
+  @Override
+  public Throwable fillInStackTrace() {
+    // Stack traces aren't useful here, all the information is in the message.
+    return this;
+  }
+
   /** Exception indicating no remote registered remote handler. */
   public static class NoRemoteHandler extends MessagingException {
     public NoRemoteHandler(final String subject) {
