@@ -7,20 +7,25 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.zeebe.protocol.record.intent.MappingRuleIntent.CREATED;
+import static io.camunda.zeebe.protocol.record.intent.MappingRuleIntent.DELETED;
+import static io.camunda.zeebe.protocol.record.intent.MappingRuleIntent.UPDATED;
+
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingRuleDbModelBuilder;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MappingRuleExportHandler implements RdbmsExportHandler<MappingRuleRecordValue> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MappingRuleExportHandler.class);
 
-  private static final Set<Intent> MAPPING_INTENT =
-      Set.of(MappingRuleIntent.CREATED, MappingRuleIntent.DELETED);
+  private static final Set<Intent> MAPPING_INTENT = Set.of(CREATED, DELETED, UPDATED);
 
   private final MappingRuleWriter mappingRuleWriter;
 
@@ -35,10 +40,14 @@ public class MappingRuleExportHandler implements RdbmsExportHandler<MappingRuleR
 
   @Override
   public void export(final Record<MappingRuleRecordValue> record) {
-    if (record.getIntent().equals(MappingRuleIntent.CREATED)) {
-      mappingRuleWriter.create(map(record));
-    } else if (record.getIntent().equals(MappingRuleIntent.DELETED)) {
-      mappingRuleWriter.delete(record.getValue().getMappingRuleId());
+    final var intent = record.getIntent();
+    switch (intent) {
+      case CREATED -> mappingRuleWriter.create(map(record));
+      case DELETED -> mappingRuleWriter.delete(record.getValue().getMappingRuleId());
+      case UPDATED -> mappingRuleWriter.update(map(record));
+      default ->
+          LOGGER.trace(
+              "Skip exporting {} for mapping rule, no known writing operation for it", intent);
     }
   }
 
