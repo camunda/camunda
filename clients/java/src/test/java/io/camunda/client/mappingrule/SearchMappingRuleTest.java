@@ -19,7 +19,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.MappingRuleFilter;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.client.protocol.rest.MappingRuleSearchQuerySortRequest;
+import io.camunda.client.protocol.rest.MappingRuleSearchQuerySortRequest.FieldEnum;
+import io.camunda.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class SearchMappingRuleTest extends ClientRestTest {
@@ -33,6 +40,10 @@ public class SearchMappingRuleTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/mapping-rules/search");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+    assertThat(requestBody.getFilter()).isNull();
   }
 
   @Test
@@ -41,8 +52,12 @@ public class SearchMappingRuleTest extends ClientRestTest {
     client.newMappingRulesSearchRequest().filter(f -> f.claimName("demo")).send().join();
 
     // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getBodyAsString()).contains("\"claimName\":\"demo\"");
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final MappingRuleFilter filter = requestBody.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getClaimName()).isEqualTo("demo");
   }
 
   @Test
@@ -51,8 +66,12 @@ public class SearchMappingRuleTest extends ClientRestTest {
     client.newMappingRulesSearchRequest().filter(f -> f.claimValue("test-value")).send().join();
 
     // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getBodyAsString()).contains("\"claimValue\":\"test-value\"");
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final MappingRuleFilter filter = requestBody.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getClaimValue()).isEqualTo("test-value");
   }
 
   @Test
@@ -61,8 +80,12 @@ public class SearchMappingRuleTest extends ClientRestTest {
     client.newMappingRulesSearchRequest().filter(f -> f.mappingRuleId("rule123")).send().join();
 
     // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getBodyAsString()).contains("\"mappingRuleId\":\"rule123\"");
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final MappingRuleFilter filter = requestBody.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getMappingRuleId()).isEqualTo("rule123");
   }
 
   @Test
@@ -71,28 +94,96 @@ public class SearchMappingRuleTest extends ClientRestTest {
     client.newMappingRulesSearchRequest().filter(f -> f.name("ruleName")).send().join();
 
     // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getBodyAsString()).contains("\"name\":\"ruleName\"");
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final MappingRuleFilter filter = requestBody.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getName()).isEqualTo("ruleName");
   }
 
   @Test
-  void shouldSearchMappingRulesWithSorting() {
+  void shouldIncludeSortAndFilterInMappingRulesSearchRequestBody() {
     // when
-    client.newMappingRulesSearchRequest().sort(s -> s.claimName().asc()).send().join();
+    client
+        .newMappingRulesSearchRequest()
+        .filter(fn -> fn.claimName("department").claimValue("engineering"))
+        .sort(s -> s.claimName().asc())
+        .page(fn -> fn.limit(5).from(10))
+        .send()
+        .join();
 
     // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getBodyAsString())
-        .contains("{\"sort\":[{\"field\":\"claimName\",\"order\":\"ASC\"}]}");
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final MappingRuleFilter filter = requestBody.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getClaimName()).isEqualTo("department");
+    assertThat(filter.getClaimValue()).isEqualTo("engineering");
+
+    final List<MappingRuleSearchQuerySortRequest> sort = requestBody.getSort();
+    assertThat(sort).isNotNull();
+    assertThat(sort).hasSize(1);
+    assertThat(sort.get(0).getField()).isEqualTo(FieldEnum.CLAIM_NAME);
+    assertThat(sort.get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
+
+    final SearchQueryPageRequest page = requestBody.getPage();
+    assertThat(page).isNotNull();
+    assertThat(page.getFrom()).isEqualTo(10);
+    assertThat(page.getLimit()).isEqualTo(5);
   }
 
   @Test
-  void shouldSearchMappingRulesWithPaging() {
+  void shouldSearchMappingRulesWithFilterOnly() {
     // when
-    client.newMappingRulesSearchRequest().page(p -> p.limit(10).from(5)).send().join();
+    client.newMappingRulesSearchRequest().filter(fn -> fn.mappingRuleId("rule123")).send().join();
 
     // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getBodyAsString()).contains("\"page\":{\"from\":5,\"limit\":10}");
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+    final MappingRuleFilter filter = requestBody.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getMappingRuleId()).isEqualTo("rule123");
+
+    assertThat(requestBody.getSort()).isEmpty();
+    assertThat(requestBody.getPage()).isNull();
+  }
+
+  @Test
+  void shouldSearchMappingRulesWithSortOnly() {
+    // when
+    client.newMappingRulesSearchRequest().sort(s -> s.claimValue().desc()).send().join();
+
+    // then
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final List<MappingRuleSearchQuerySortRequest> sort = requestBody.getSort();
+    assertThat(sort).isNotNull();
+    assertThat(sort).hasSize(1);
+    assertThat(sort.get(0).getField()).isEqualTo(FieldEnum.CLAIM_VALUE);
+    assertThat(sort.get(0).getOrder()).isEqualTo(SortOrderEnum.DESC);
+
+    assertThat(requestBody.getFilter()).isNull();
+    assertThat(requestBody.getPage()).isNull();
+  }
+
+  @Test
+  void shouldSearchMappingRulesWithPageOnly() {
+    // when
+    client.newMappingRulesSearchRequest().page(fn -> fn.limit(20).from(10)).send().join();
+
+    // then
+    final MappingRuleSearchQueryRequest requestBody =
+        gatewayService.getLastRequest(MappingRuleSearchQueryRequest.class);
+
+    final SearchQueryPageRequest page = requestBody.getPage();
+    assertThat(page).isNotNull();
+    assertThat(page.getFrom()).isEqualTo(10);
+    assertThat(page.getLimit()).isEqualTo(20);
+
+    assertThat(requestBody.getFilter()).isNull();
+    assertThat(requestBody.getSort()).isEmpty();
   }
 }
