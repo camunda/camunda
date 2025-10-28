@@ -69,7 +69,7 @@ class UnassignUserFromTenantTest {
   @Test
   void shouldRejectUnassignIfTenantDoesNotExist() {
     // Given
-    final var invalidTenantId = Strings.newRandomValidIdentityId();
+    final var invalidTenantId = Strings.newRandomValidTenantId();
 
     // When / Then
     assertThatThrownBy(

@@ -17,14 +17,21 @@ import java.util.regex.Pattern;
 
 public class IdentifierValidator {
 
-  public static final int MAX_LENGTH = 256;
+  /**
+   * Stricter validation for tenant IDs, matching {@link
+   * io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator}.
+   */
+  public static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
+
+  private static final int MAX_LENGTH = 256;
+  private static final int TENANT_ID_MAX_LENGTH = 31;
 
   public static void validateId(
       final String id,
       final String propertyName,
       final List<String> violations,
       final Pattern idPattern) {
-    validateId(id, propertyName, violations, idPattern, s -> true);
+    validateId(id, propertyName, violations, idPattern, s -> false);
   }
 
   public static void validateId(
@@ -32,12 +39,30 @@ public class IdentifierValidator {
       final String propertyName,
       final List<String> violations,
       final Pattern idPattern,
-      final Function<String, Boolean> additionalCheck) {
+      final Function<String, Boolean> alternativeCheck) {
+    validateIdInternal(id, propertyName, violations, idPattern, alternativeCheck, MAX_LENGTH);
+  }
+
+  public static void validateTenantId(
+      final String id,
+      final List<String> violations,
+      final Function<String, Boolean> alternativeCheck) {
+    validateIdInternal(
+        id, "tenantId", violations, TENANT_ID_MASK, alternativeCheck, TENANT_ID_MAX_LENGTH);
+  }
+
+  private static void validateIdInternal(
+      final String id,
+      final String propertyName,
+      final List<String> violations,
+      final Pattern idPattern,
+      final Function<String, Boolean> alternativeCheck,
+      final int maxLength) {
     if (id == null || id.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(propertyName));
-    } else if (id.length() > MAX_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(propertyName, MAX_LENGTH));
-    } else if (!idPattern.matcher(id).matches() && additionalCheck.apply(id)) {
+    } else if (id.length() > maxLength) {
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(propertyName, maxLength));
+    } else if (!(idPattern.matcher(id).matches() || alternativeCheck.apply(id))) {
       violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(propertyName, idPattern));
     }
   }

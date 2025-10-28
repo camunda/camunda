@@ -23,11 +23,10 @@ public final class TenantRequestValidator {
 
   private TenantRequestValidator() {}
 
-  public static Optional<ProblemDetail> validateCreateRequest(
-      final TenantCreateRequest request, final Pattern identifierPattern) {
+  public static Optional<ProblemDetail> validateCreateRequest(final TenantCreateRequest request) {
     return validate(
         violations -> {
-          validateTenantId(request.getTenantId(), violations, identifierPattern);
+          validateTenantId(request.getTenantId(), violations);
           validateTenantName(request.getName(), violations);
         });
   }
@@ -47,19 +46,14 @@ public final class TenantRequestValidator {
       final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateTenantId(tenantId, violations, identifierPattern);
+          validateTenantId(tenantId, violations);
           validateMemberId(memberId, memberType, violations, identifierPattern);
         });
   }
 
-  private static void validateTenantId(
-      final String id, final List<String> violations, final Pattern identifierPattern) {
-    IdentifierValidator.validateId(
-        id,
-        "tenantId",
-        violations,
-        identifierPattern,
-        tenantId -> !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(id));
+  private static void validateTenantId(final String id, final List<String> violations) {
+    IdentifierValidator.validateTenantId(
+        id, violations, TenantOwned.DEFAULT_TENANT_IDENTIFIER::equals);
   }
 
   private static void validateId(

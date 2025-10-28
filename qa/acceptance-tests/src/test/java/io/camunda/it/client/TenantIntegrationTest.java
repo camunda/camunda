@@ -26,7 +26,7 @@ public class TenantIntegrationTest {
   @Test
   void shouldCreateAndGetTenantById() {
     // given
-    final var tenantId = Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     final var name = UUID.randomUUID().toString();
     final var description = UUID.randomUUID().toString();
 

@@ -41,7 +41,7 @@ class UnassignGroupFromTenantTest {
     tenantId =
         client
             .newCreateTenantCommand()
-            .tenantId(Strings.newRandomValidIdentityId())
+            .tenantId(Strings.newRandomValidTenantId())
             .name("Tenant Name")
             .send()
             .join()
@@ -84,7 +84,7 @@ class UnassignGroupFromTenantTest {
   @Test
   void shouldRejectIfTenantDoesNotExist() {
     // given
-    final var nonExistentTenantId = Strings.newRandomValidIdentityId();
+    final var nonExistentTenantId = Strings.newRandomValidTenantId();
 
     // when / then
     assertThatThrownBy(

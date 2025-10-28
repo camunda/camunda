@@ -73,6 +73,28 @@ test.describe.serial('component authorizations CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
+  test('tries to create an authorization with invalid id', async ({
+    identityAuthorizationsPage,
+  }) => {
+    await identityAuthorizationsPage.createAuthorizationButton.click();
+    await identityAuthorizationsPage.selectAuthorizationOwnerType({
+      ownerType: NEW_COMPONENT_AUTHORIZATION.ownerType,
+    });
+    await identityAuthorizationsPage.selectAuthorizationOwner({
+      ownerId: NEW_COMPONENT_AUTHORIZATION.ownerId,
+    });
+    await identityAuthorizationsPage.selectResourceType(
+      NEW_COMPONENT_AUTHORIZATION.resourceType,
+    );
+    await identityAuthorizationsPage.fillResourceId('invalid!!%');
+    await expect(
+      identityAuthorizationsPage.createAuthorizationModal,
+    ).toContainText('Please enter a valid Resource ID');
+    await expect(
+      identityAuthorizationsPage.createAuthorizationResourceIdField,
+    ).toHaveAttribute('data-invalid', 'true');
+  });
+
   test('create user authorization', async ({
     page,
     identityUsersPage,

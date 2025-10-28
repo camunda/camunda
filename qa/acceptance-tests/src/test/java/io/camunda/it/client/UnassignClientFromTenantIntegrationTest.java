@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 public class UnassignClientFromTenantIntegrationTest {
 
   private static CamundaClient camundaClient;
-  private static final String TENANT_ID = Strings.newRandomValidIdentityId();
+  private static final String TENANT_ID = Strings.newRandomValidTenantId();
 
   @BeforeAll
   static void setup() {
@@ -81,7 +81,7 @@ public class UnassignClientFromTenantIntegrationTest {
                 camundaClient
                     .newUnassignClientFromTenantCommand()
                     .clientId(Strings.newRandomValidIdentityId())
-                    .tenantId(Strings.newRandomValidIdentityId())
+                    .tenantId(Strings.newRandomValidTenantId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

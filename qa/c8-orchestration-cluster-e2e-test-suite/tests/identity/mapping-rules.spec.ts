@@ -50,6 +50,19 @@ test.describe.serial('mapping rules CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
+  test('tries to create a mapping rule with invalid id', async ({
+    identityMappingRulesPage,
+  }) => {
+    await identityMappingRulesPage.createMappingRuleButton.click();
+    await identityMappingRulesPage.createMappingRuleIdField.fill('invalid!!%');
+    await expect(identityMappingRulesPage.createMappingRuleModal).toContainText(
+      'Please enter a valid mapping rule ID',
+    );
+    await expect(
+      identityMappingRulesPage.createMappingRuleIdField,
+    ).toHaveAttribute('data-invalid', 'true');
+  });
+
   test('creates a mapping rule', async ({page, identityMappingRulesPage}) => {
     await identityMappingRulesPage.createMappingRule(
       NEW_MAPPING_RULE.id,

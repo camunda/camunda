@@ -389,7 +389,7 @@ class RoleAuthorizationIT {
   @Test
   void shouldUnassignRoleFromTenantIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
-    final String tenantId = Strings.newRandomValidIdentityId();
+    final String tenantId = Strings.newRandomValidTenantId();
 
     adminClient
         .newCreateTenantCommand()
@@ -424,7 +424,7 @@ class RoleAuthorizationIT {
                 camundaClient
                     .newUnassignRoleFromTenantCommand()
                     .roleId(Strings.newRandomValidIdentityId())
-                    .tenantId(Strings.newRandomValidIdentityId())
+                    .tenantId(Strings.newRandomValidTenantId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -467,7 +467,7 @@ class RoleAuthorizationIT {
 
   @Test
   void shouldAssignRoleToTenantIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    final String tenantId = Strings.newRandomValidIdentityId();
+    final String tenantId = Strings.newRandomValidTenantId();
 
     adminClient
         .newCreateTenantCommand()
@@ -495,7 +495,7 @@ class RoleAuthorizationIT {
                 camundaClient
                     .newAssignRoleToTenantCommand()
                     .roleId(Strings.newRandomValidIdentityId())
-                    .tenantId(Strings.newRandomValidIdentityId())
+                    .tenantId(Strings.newRandomValidTenantId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
