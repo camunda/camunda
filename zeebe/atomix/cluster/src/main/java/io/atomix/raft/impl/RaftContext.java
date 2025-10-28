@@ -1236,7 +1236,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Get the latest snapshot from snapshot store because it might have been updated already before
     // this listener is executed
     currentSnapshot = persistedSnapshotStore.getLatestSnapshot().orElse(null);
-    LOGGER.trace("Set currentSnapshot to {}", currentSnapshot);
+    LOGGER.info("Set currentSnapshot to {}", currentSnapshot);
     logCompactor.compactFromSnapshots(persistedSnapshotStore);
   }
 

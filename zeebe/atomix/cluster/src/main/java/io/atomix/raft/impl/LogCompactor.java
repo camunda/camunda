@@ -115,7 +115,7 @@ public final class LogCompactor {
       return;
     }
 
-    LOGGER.debug("Scheduling log compaction up to index {}", index);
+    LOGGER.info("Scheduling log compaction up to index {}", index);
     setCompactableIndex(index);
     compact();
   }
