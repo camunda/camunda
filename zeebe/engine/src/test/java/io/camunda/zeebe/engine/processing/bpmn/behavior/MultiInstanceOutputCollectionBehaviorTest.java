@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -62,7 +63,8 @@ public class MultiInstanceOutputCollectionBehaviorTest {
         .thenReturn(collectionWithSize1);
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
-    when(mockExpressionProcessor.evaluateAnyExpression(eq(outputElementExpression), anyLong()))
+    when(mockExpressionProcessor.evaluateAnyExpression(
+            eq(outputElementExpression), anyLong(), anyString()))
         .thenReturn(Either.right(elementToAdd));
 
     final var mockElement = mock(ExecutableMultiInstanceBody.class);
@@ -110,7 +112,8 @@ public class MultiInstanceOutputCollectionBehaviorTest {
         .thenReturn(unexpectedValueType);
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
-    when(mockExpressionProcessor.evaluateAnyExpression(eq(outputElementExpression), anyLong()))
+    when(mockExpressionProcessor.evaluateAnyExpression(
+            eq(outputElementExpression), anyLong(), anyString()))
         .thenReturn(Either.right(elementToAdd));
 
     final var mockElement = mock(ExecutableMultiInstanceBody.class);
