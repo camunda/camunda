@@ -93,17 +93,10 @@ public interface TypedApiEntityConsumer<T> {
 
     @Override
     public ApiEntity<T> generateContent() throws IOException {
-      try {
-        if (isResponse) {
-          return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
-        }
-        return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
-      } catch (final IOException ioe) {
-        // write the original JSON response into an error response
-        final String jsonString = getJsonString();
-        return ApiEntity.of(
-            new ProblemDetail().title("Unexpected server response").status(500).detail(jsonString));
+      if (isResponse) {
+        return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
       }
+      return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
     }
 
     @Override
