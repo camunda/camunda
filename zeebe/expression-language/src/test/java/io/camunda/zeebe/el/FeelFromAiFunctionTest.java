@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
+import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -34,7 +35,8 @@ public class FeelFromAiFunctionTest {
   @MethodSource("valueTestCases")
   <T> void returnsInjectedValue(final FromAiExpressionTestCase<T> testCase) {
     final var evaluationResult =
-        evaluateSuccessfulExpression(testCase.expression(), CONTEXT_VALUES::get);
+        evaluateSuccessfulExpression(
+            testCase.expression(), name -> Either.left(CONTEXT_VALUES.get(name)));
     assertThat(evaluationResult.getType()).isEqualTo(testCase.expectedResultType);
     assertThat(testCase.resultExtractor.apply(evaluationResult)).isEqualTo(testCase.expectedResult);
   }
@@ -119,7 +121,8 @@ public class FeelFromAiFunctionTest {
   @MethodSource("invalidParameterLists")
   void createsWarningWhenParameterListDoesNotMatch(
       final String expression, final int parameterCount) {
-    final var evaluationResult = evaluateSuccessfulExpression(expression, CONTEXT_VALUES::get);
+    final var evaluationResult =
+        evaluateSuccessfulExpression(expression, name -> Either.left(CONTEXT_VALUES.get(name)));
 
     assertThat(evaluationResult.isFailure()).isFalse();
     assertThat(evaluationResult.getWarnings())
@@ -142,7 +145,8 @@ public class FeelFromAiFunctionTest {
   @Test
   void returnsNullWhenInputValueIsNull() {
     final var evaluationResult =
-        evaluateSuccessfulExpression("fromAi(toolCall.c)", CONTEXT_VALUES::get);
+        evaluateSuccessfulExpression(
+            "fromAi(toolCall.c)", name -> Either.left(CONTEXT_VALUES.get(name)));
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.NULL);
   }
 
