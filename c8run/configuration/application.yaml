@@ -44,9 +44,6 @@ zeebe:
           retention:
             enabled: false
         className: io.camunda.exporter.CamundaExporter
-    network:
-      host: localhost
-      advertisedHost: localhost
   gateway:
     cluster:
       initialContactPoints: zeebe:26502
