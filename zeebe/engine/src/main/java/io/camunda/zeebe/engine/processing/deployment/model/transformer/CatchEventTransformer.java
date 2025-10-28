@@ -116,19 +116,19 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       final String duration = timerEventDefinition.getTimeDuration().getTextContent();
       expression = expressionLanguage.parseExpression(duration);
       executableElement.setTimerFactory(
-          (expressionProcessor, scopeKey) ->
+          (expressionProcessor, scopeKey, tenantId) ->
               expressionProcessor
-                  .evaluateIntervalExpression(expression, scopeKey)
+                  .evaluateIntervalExpression(expression, scopeKey, tenantId)
                   .map(interval -> new RepeatingInterval(1, interval)));
 
     } else if (timerEventDefinition.getTimeCycle() != null) {
       final String cycle = timerEventDefinition.getTimeCycle().getTextContent();
       expression = expressionLanguage.parseExpression(cycle);
       executableElement.setTimerFactory(
-          (expressionProcessor, scopeKey) -> {
+          (expressionProcessor, scopeKey, tenantId) -> {
             try {
               return expressionProcessor
-                  .evaluateStringExpression(expression, scopeKey)
+                  .evaluateStringExpression(expression, scopeKey, tenantId)
                   .map(
                       text -> {
                         if (text.startsWith("R")) {
@@ -147,9 +147,9 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       final String timeDate = timerEventDefinition.getTimeDate().getTextContent();
       expression = expressionLanguage.parseExpression(timeDate);
       executableElement.setTimerFactory(
-          (expressionProcessor, scopeKey) ->
+          (expressionProcessor, scopeKey, tenantId) ->
               expressionProcessor
-                  .evaluateDateTimeExpression(expression, scopeKey)
+                  .evaluateDateTimeExpression(expression, scopeKey, tenantId)
                   .map(TimeDateTimer::new));
     }
   }

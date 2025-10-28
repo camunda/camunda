@@ -223,7 +223,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
       }
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-          error.getErrorCodeExpression(), context.getElementInstanceKey());
+          error.getErrorCodeExpression(), context.getElementInstanceKey(), context.getTenantId());
     }
   }
 
@@ -366,7 +366,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
       }
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-          escalation.getEscalationCodeExpression(), context.getElementInstanceKey());
+          escalation.getEscalationCodeExpression(),
+          context.getElementInstanceKey(),
+          context.getTenantId());
     }
   }
 

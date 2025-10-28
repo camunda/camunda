@@ -11,10 +11,10 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.function.TriFunction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
 
 public class ExecutableCatchEventElement extends ExecutableFlowNode
@@ -27,7 +27,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private ExecutableSignal signal;
   private ExecutableCompensation compensation;
   private boolean interrupting;
-  private BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory;
+  private TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> timerFactory;
 
   private boolean isConnectedToEventBasedGateway;
 
@@ -84,12 +84,12 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   }
 
   @Override
-  public BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> getTimerFactory() {
+  public TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> getTimerFactory() {
     return timerFactory;
   }
 
   public void setTimerFactory(
-      final BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory) {
+      final TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> timerFactory) {
     this.timerFactory = timerFactory;
   }
 

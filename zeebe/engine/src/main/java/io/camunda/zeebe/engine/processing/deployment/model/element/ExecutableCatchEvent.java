@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.util.Either;
-import java.util.function.BiFunction;
+import io.camunda.zeebe.util.function.TriFunction;
 
 public interface ExecutableCatchEvent extends ExecutableFlowElement {
 
@@ -45,7 +45,7 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
     return true;
   }
 
-  BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> getTimerFactory();
+  TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> getTimerFactory();
 
   ExecutableError getError();
 

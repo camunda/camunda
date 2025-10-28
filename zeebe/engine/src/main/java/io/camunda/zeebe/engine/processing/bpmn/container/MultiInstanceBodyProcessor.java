@@ -408,11 +408,11 @@ public final class MultiInstanceBodyProcessor
         element.getLoopCharacteristics().getCompletionCondition();
 
     final ExpressionProcessor primaryContextExpressionProcessor =
-        expressionBehavior.withPrimaryContext(
-            (variableName -> getVariable(context.getFlowScopeKey(), variableName)));
+        expressionBehavior.withContext(
+            (variableName -> Either.left(getVariable(context.getFlowScopeKey(), variableName))));
     if (completionCondition.isPresent()) {
       return primaryContextExpressionProcessor.evaluateBooleanExpression(
-          completionCondition.get(), context.getElementInstanceKey());
+          completionCondition.get(), context.getElementInstanceKey(), context.getTenantId());
     }
     return Either.right(false);
   }
