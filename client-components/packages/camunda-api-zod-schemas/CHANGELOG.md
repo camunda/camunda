@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.12
+
+### 🩹 Fixes
+
+- fix search element instances endpoint filters schema ([#40132](https://github.com/camunda/camunda/pull/40132))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.11
 
 ### 🚀 Enhancements
