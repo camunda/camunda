@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.immutable.HistoryDeletionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
@@ -75,7 +76,7 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
 
       // Find next process instance to delete (return true to break out of loop)
       historyDeletionState.forEachProcessInstanceToDelete(
-          processInstanceKey -> {
+          (processInstanceKey, batchOperationReference) -> {
             LOG.debug("Deleting process instance with key {}", processInstanceKey);
             writeClientsProxy.deleteHistoricData(processInstanceKey);
 
@@ -84,7 +85,9 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
             taskResultBuilder.appendCommandRecord(
                 keyGenerator.nextKey(),
                 ProcessInstanceIntent.DELETE_COMPLETE,
-                new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey));
+                new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+                FollowUpCommandMetadata.of(
+                    metadata -> metadata.batchOperationReference(batchOperationReference)));
             return true;
           });
 

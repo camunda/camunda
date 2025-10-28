@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 public interface HistoryDeletionState {
 
-  void forEachProcessInstanceToDelete(Function<Long, Boolean> visitor);
+  void forEachProcessInstanceToDelete(BiFunction<Long, Long, Boolean> visitor);
 }

@@ -29,7 +29,9 @@ public class ProcessInstanceDeleteProcessor implements TypedRecordProcessor<Proc
 
   @Override
   public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
+    // TODO I'm using the batch operation reference as key here. That's dirty, but there is no easy
+    //  way to access it in the applier. For a POC this is good enough.
     stateWriter.appendFollowUpEvent(
-        keyGenerator.nextKey(), ProcessInstanceIntent.DELETING, record.getValue());
+        record.getBatchOperationReference(), ProcessInstanceIntent.DELETING, record.getValue());
   }
 }

@@ -22,7 +22,8 @@ public class ProcessInstanceDeletingApplier
   }
 
   @Override
-  public void applyState(final long key, final ProcessInstanceRecord value) {
-    historyDeletionState.insertProcessInstanceToDelete(value.getProcessInstanceKey());
+  public void applyState(final long batchOperationReference, final ProcessInstanceRecord value) {
+    historyDeletionState.insertProcessInstanceToDelete(
+        value.getProcessInstanceKey(), batchOperationReference);
   }
 }
