@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 import org.springframework.util.unit.DataSize;
 
 public class FailOverReplicationTest {
@@ -44,7 +45,13 @@ public class FailOverReplicationTest {
   private final ClusteringRule clusteringRule =
       new ClusteringRule(PARTITION_COUNT, 3, 3, FailOverReplicationTest::configureBroker);
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
+
+  private final Timeout testTimeout = Timeout.seconds(120);
+
+  @Rule
+  public RuleChain ruleChain =
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
+
   private ZeebeClient client;
 
   @Before
