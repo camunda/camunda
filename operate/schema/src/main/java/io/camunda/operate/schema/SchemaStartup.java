@@ -14,9 +14,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.migration.Migrator;
-import io.camunda.operate.store.MetadataStore;
-import io.camunda.zeebe.util.SemanticVersion;
-import io.camunda.zeebe.util.VersionUtil;
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
 import java.util.Set;
@@ -43,8 +40,6 @@ public class SchemaStartup {
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private MigrationProperties migrationProperties;
-
-  @Autowired private MetadataStore metadataStore;
 
   @PostConstruct
   public void initializeSchema() throws MigrationException {
@@ -80,9 +75,6 @@ public class SchemaStartup {
               "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
         }
       }
-      if (createSchema) {
-        storeSchemaVersion();
-      }
       if (createSchema && updateSchemaSettings) {
         schemaManager.updateIndexSettings();
       }
@@ -94,17 +86,6 @@ public class SchemaStartup {
     } catch (final Exception ex) {
       LOGGER.error("Schema startup failed: " + ex.getMessage(), ex);
       throw ex;
-    }
-  }
-
-  private void storeSchemaVersion() {
-    if (VersionUtil.getSemanticVersion()
-        .flatMap(
-            appVersion ->
-                SemanticVersion.parse(metadataStore.getSchemaVersion())
-                    .map(schemaVersion -> schemaVersion.compareTo(appVersion) < 0))
-        .orElse(true)) {
-      metadataStore.storeSchemaVersion(VersionUtil.getVersion());
     }
   }
 }
