@@ -123,9 +123,14 @@ jobs:
         working-directory: ./c8run
         run: ./shutdown.sh
 
+      - name: Sanitize matrix name
+        run: echo "ARTIFACT_NAME=logs-${MATRIX_CONFIG//\//-}" >> $GITHUB_ENV
+        env:
+          MATRIX_CONFIG: ${{ matrix.config }}
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs-${{ join(split(matrix.config, '/'), '-') }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: ./c8run/log/*.log
           retention-days: 10
