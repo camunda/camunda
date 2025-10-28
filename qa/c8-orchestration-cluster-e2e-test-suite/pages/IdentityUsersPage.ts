@@ -179,7 +179,7 @@ export class IdentityUsersPage {
     await expect(this.createUserModal).toBeHidden();
 
     const item = this.usersList.getByRole('cell', {
-      name: user.email,
+      name: user.username,
     });
 
     await waitForItemInList(this.page, item, {
