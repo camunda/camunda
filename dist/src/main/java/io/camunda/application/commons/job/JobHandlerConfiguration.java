@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.scheduler.Actor;
@@ -89,8 +90,9 @@ public class JobHandlerConfiguration {
         .setProbeTimeoutMillis(config.longPolling().getProbeTimeout())
         .setMinEmptyResponses(config.longPolling().getMinEmptyResponses())
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-        .setNoJobsReceivedExceptionProvider(RuntimeException::new)
-        .setRequestCanceledExceptionProvider(RuntimeException::new)
+        .setResourceExhaustedExceptionProvider(
+            RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+        .setRequestCanceledExceptionProvider(RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .setMetrics(
             new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.REST))
         .build();
