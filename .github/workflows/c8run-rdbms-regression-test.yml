@@ -125,8 +125,10 @@ jobs:
 
       - name: Prepare artifact name
         id: set-artifact-name
+        env:
+          MATRIX_CONFIG: ${{ matrix.config }}
         run: |
-          MATRIX_NAME="${{ matrix.config }}"
+          MATRIX_NAME="$MATRIX_CONFIG"
           if [ -z "$MATRIX_NAME" ]; then
             MATRIX_NAME="default"
           fi
@@ -140,4 +142,3 @@ jobs:
           name: ${{ steps.set-artifact-name.outputs.ARTIFACT_NAME }}
           path: ./c8run/log/*.log
           retention-days: 10
-      
