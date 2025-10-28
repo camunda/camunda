@@ -495,6 +495,7 @@ public final class FileBasedSnapshotStoreImpl {
       if (!isBootstrap) {
         deleteOlderSnapshots(newPersistedSnapshot);
 
+        LOGGER.debug("Listeners are {}", listeners);
         listeners.forEach(listener -> listener.onNewSnapshot(newPersistedSnapshot));
       }
 
@@ -521,7 +522,7 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   private void deleteOlderSnapshots(final FileBasedSnapshot newPersistedSnapshot) {
-    LOGGER.trace(
+    LOGGER.info(
         "Purging snapshots older than {}",
         newPersistedSnapshot.getSnapshotId().getSnapshotIdAsString());
     final var snapshotsToDelete =
