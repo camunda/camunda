@@ -28,8 +28,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Create fake tag locally
         run: |
-          git fetch origin tag 0.0.0-dryrun --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun -m "Dummy tag for dry run"
-          echo "Created fake tag 0.0.0-dryrun locally (not pushed)"
+          git fetch origin tag 0.0.0-dryrun-86 --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun-86 -m "Dummy tag for dry run 8.6"
+          git fetch origin tag 0.0.0-dryrun-87 --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun-87 -m "Dummy tag for dry run 8.7"  
+          git fetch origin tag 0.0.0-dryrun-88 --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun-88 -m "Dummy tag for dry run 8.8"
+          echo "Created fake tags for all dry runs locally (not pushed)"
       - uses: actions/upload-artifact@v4
         with:
           name: create-fake-tag
@@ -45,7 +47,7 @@ jobs:
     with:
       releaseBranch: stable/8.8
       # Uses fake tag for dry run testing without affecting real releases
-      releaseVersion: 0.0.0-dryrun
+      releaseVersion: 0.0.0-dryrun-88
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
@@ -59,7 +61,7 @@ jobs:
     with:
       releaseBranch: stable/8.7
       # Uses fake tag for dry run testing without affecting real releases
-      releaseVersion: 0.0.0-dryrun
+      releaseVersion: 0.0.0-dryrun-87
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
@@ -73,7 +75,7 @@ jobs:
     with:
       releaseBranch: stable/8.6
       # Uses fake tag for dry run testing without affecting real releases
-      releaseVersion: 0.0.0-dryrun
+      releaseVersion: 0.0.0-dryrun-86
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
