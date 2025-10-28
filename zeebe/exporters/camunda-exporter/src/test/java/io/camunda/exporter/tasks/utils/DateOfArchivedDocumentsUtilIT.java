@@ -21,6 +21,14 @@ public class DateOfArchivedDocumentsUtilIT {
             DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
                 "2023-09-01", "", "1d", "yyyy-MM-dd"))
         .isEqualTo("2023-09-01");
+    assertThat(
+            DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
+                "2023-09-05", "2023-08-01", "1M", "yyyy-MM-dd"))
+        .isEqualTo("2023-09-05");
+    assertThat(
+            DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
+                "2023-09-05", "2023-08-28", "1M", "yyyy-MM-dd"))
+        .isEqualTo("2023-08-28");
   }
 
   @Test
