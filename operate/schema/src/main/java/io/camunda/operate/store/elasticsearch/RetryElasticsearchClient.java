@@ -862,10 +862,4 @@ public class RetryElasticsearchClient {
                 .getSettings(new GetSettingsRequest().indices(indexPattern), requestOptions)
                 .getIndexToSettings());
   }
-
-  public boolean indexExists(final String indexName) {
-    return executeWithRetries(
-        "IndexExists " + indexName,
-        () -> esClient.indices().exists(new GetIndexRequest(indexName), requestOptions));
-  }
 }
