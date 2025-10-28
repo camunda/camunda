@@ -367,12 +367,16 @@ public final class ProcessInstanceServices
       final long processInstanceKey, final IncidentQuery query) {
     final var processInstance = getByKey(processInstanceKey);
     final var treePath = processInstance.treePath();
+
     return incidentServices
         .withAuthentication(authentication)
         .search(
             IncidentQuery.of(
                 b ->
-                    b.filter(f -> f.treePathOperations(Operation.like("*" + treePath + "*")))
+                    b.filter(
+                            query.filter().toBuilder()
+                                .treePathOperations(Operation.like("*" + treePath + "*"))
+                                .build())
                         .page(query.page())
                         .sort(query.sort())));
   }

@@ -8,16 +8,22 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.ErrorType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -27,6 +33,8 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
@@ -55,6 +63,8 @@ import org.springframework.test.json.JsonCompareMode;
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
+  private static final String PROCESS_INSTANCE_INCIDENTS_SEARCH_URL =
+      "/v2/process-instances/{processInstanceKey}/incidents/search";
   private static final String PROCESS_INSTANCES_BY_KEY_URL =
       "/v2/process-instances/{processInstanceKey}";
   private static final String PROCESS_INSTANCE_CALL_HIERARCHY_BY_KEY_URL =
@@ -144,6 +154,34 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       }
       """;
 
+  private static final String EXPECTED_PROCESS_INSTANCE_INCIDENTS_SEARCH_RESPONSE =
+      """
+          {
+              "items": [
+                {
+                  "incidentKey": "456",
+                  "processDefinitionKey": "123",
+                  "processDefinitionId": "Test_Process",
+                  "errorMessage": "Process crashed",
+                  "processInstanceKey": "789",
+                  "errorType": "CALLED_DECISION_ERROR",
+                  "elementId": "elementId",
+                  "elementInstanceKey": "234",
+                  "creationTime": "2024-01-02T00:00:00.000Z",
+                  "state": "ACTIVE",
+                  "jobKey": "567",
+                  "tenantId": "tenantId"
+                }
+              ],
+              "page": {
+                  "totalItems": 1,
+                  "startCursor": "f",
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
+              }
+          }
+          """;
+
   private static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessInstanceEntity>()
           .total(1L)
@@ -151,10 +189,32 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .startCursor("f")
           .endCursor("v")
           .build();
+  private static final SearchQueryResult<IncidentEntity> SEARCH_INCIDENT_QUERY_RESULT =
+      new io.camunda.search.query.SearchQueryResult.Builder<IncidentEntity>()
+          .total(1L)
+          .items(
+              List.of(
+                  new IncidentEntity(
+                      456L,
+                      123L,
+                      "Test_Process",
+                      789L,
+                      ErrorType.CALLED_DECISION_ERROR,
+                      "Process crashed",
+                      "elementId",
+                      234L,
+                      OffsetDateTime.parse("2024-01-02T00:00:00Z"),
+                      IncidentState.ACTIVE,
+                      567L,
+                      "tenantId")))
+          .startCursor("f")
+          .endCursor("v")
+          .build();
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
+  @Captor ArgumentCaptor<IncidentQuery> incidentQueryCaptor;
 
   @BeforeEach
   void setupServices() {
@@ -821,5 +881,133 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .consumeWith(
             result ->
                 assertJsonNonExtensible(EXPECTED_INVALID_TAGS_RESPONSE, result.getResponseBody()));
+  }
+
+  private static Stream<Arguments> provideAdvancedIncidentSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionId",
+        ops -> new IncidentFilter.Builder().processDefinitionIdOperations(ops).build());
+
+    customOperationTestCases(
+        streamBuilder,
+        "errorType",
+        ops -> new IncidentFilter.Builder().errorTypeOperations(ops).build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR))),
+            List.of(Operation.neq(String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND))),
+            List.of(
+                Operation.in(
+                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                Operation.like("ERROR")),
+            List.of(
+                Operation.notIn(
+                    String.valueOf(IncidentErrorTypeEnum.CALLED_DECISION_ERROR),
+                    String.valueOf(IncidentErrorTypeEnum.FORM_NOT_FOUND)),
+                Operation.like("ERROR"))),
+        true);
+
+    stringOperationTestCases(
+        streamBuilder,
+        "errorMessage",
+        ops -> new IncidentFilter.Builder().errorMessageOperations(ops).build());
+
+    stringOperationTestCases(
+        streamBuilder,
+        "elementId",
+        ops -> new IncidentFilter.Builder().flowNodeIdOperations(ops).build());
+
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "creationTime",
+        ops -> new IncidentFilter.Builder().creationTimeOperations(ops).build());
+
+    customOperationTestCases(
+        streamBuilder,
+        "state",
+        ops -> new IncidentFilter.Builder().stateOperations(ops).build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(IncidentStateEnum.PENDING))),
+            List.of(Operation.neq(String.valueOf(IncidentStateEnum.RESOLVED))),
+            List.of(
+                Operation.in(
+                    String.valueOf(IncidentStateEnum.PENDING),
+                    String.valueOf(IncidentStateEnum.RESOLVED)),
+                Operation.like("com")),
+            List.of(
+                Operation.notIn(
+                    String.valueOf(IncidentStateEnum.PENDING),
+                    String.valueOf(IncidentStateEnum.RESOLVED)),
+                Operation.like("com"))),
+        true);
+
+    stringOperationTestCases(
+        streamBuilder,
+        "tenantId",
+        ops -> new IncidentFilter.Builder().tenantIdOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder,
+        "incidentKey",
+        ops -> new IncidentFilter.Builder().incidentKeyOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder,
+        "processDefinitionKey",
+        ops -> new IncidentFilter.Builder().processDefinitionKeyOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder,
+        "elementInstanceKey",
+        ops -> new IncidentFilter.Builder().flowNodeInstanceKeyOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder,
+        "processInstanceKey",
+        ops -> new IncidentFilter.Builder().processInstanceKeyOperations(ops).build());
+
+    keyOperationTestCases(
+        streamBuilder, "jobKey", ops -> new IncidentFilter.Builder().jobKeyOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedIncidentSearchParameters")
+  void shouldSearchIncidentsForProcessInstance(
+      final String filterString, final IncidentFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    when(processInstanceServices.searchIncidents(anyLong(), incidentQueryCaptor.capture()))
+        .thenReturn(SEARCH_INCIDENT_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCE_INCIDENTS_SEARCH_URL, 123L)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .consumeWith(
+            result ->
+                assertJsonNonExtensible(
+                    EXPECTED_PROCESS_INSTANCE_INCIDENTS_SEARCH_RESPONSE, result.getResponseBody()));
+
+    verify(processInstanceServices)
+        .searchIncidents(123L, new IncidentQuery.Builder().filter(filter).build());
   }
 }

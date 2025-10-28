@@ -707,25 +707,42 @@ public class SearchQueryFilterMapper {
     final var builder = FilterBuilders.incident();
 
     if (filter != null) {
-      ofNullable(filter.getIncidentKey()).map(KeyUtil::keyToLong).ifPresent(builder::incidentKeys);
+      ofNullable(filter.getIncidentKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::incidentKeyOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::processInstanceKeys);
-      ofNullable(filter.getErrorType()).ifPresent(t -> builder.errorTypes(t.getValue()));
-      ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessages);
-      ofNullable(filter.getElementId()).ifPresent(builder::flowNodeIds);
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getErrorType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorTypeOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
       ofNullable(filter.getElementInstanceKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::flowNodeInstanceKeys);
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.getCreationTime())
-          .ifPresent(t -> builder.creationTime(toOffsetDateTime(t)));
-      ofNullable(filter.getState()).ifPresent(s -> builder.states(s.getValue()));
-      ofNullable(filter.getJobKey()).map(KeyUtil::keyToLong).ifPresent(builder::jobKeys);
-      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::creationTimeOperations);
+      ofNullable(filter.getState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
+      ofNullable(filter.getJobKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::jobKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
     }
     return builder.build();
   }

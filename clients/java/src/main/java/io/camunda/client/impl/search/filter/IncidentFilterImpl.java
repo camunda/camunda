@@ -18,12 +18,19 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IncidentErrorTypeProperty;
+import io.camunda.client.api.search.filter.builder.IncidentStateProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.IncidentErrorTypePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.IncidentStatePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
-import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public class IncidentFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.IncidentFilter>
@@ -37,73 +44,161 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter incidentKey(final Long value) {
-    filter.setIncidentKey(ParseUtil.keyToString(value));
+    incidentKey(b -> b.eq(value));
+    return this;
+  }
+
+  @Override
+  public IncidentFilter incidentKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setIncidentKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter processDefinitionKey(final Long value) {
-    filter.setProcessDefinitionKey(ParseUtil.keyToString(value));
+    processDefinitionKey(b -> b.eq(value));
+    return this;
+  }
+
+  @Override
+  public IncidentFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter processDefinitionId(final String value) {
-    filter.setProcessDefinitionId(value);
+    processDefinitionId(b -> b.eq(value));
+    return this;
+  }
+
+  @Override
+  public IncidentFilter processDefinitionId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.processDefinitionId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter processInstanceKey(final Long value) {
-    filter.setProcessInstanceKey(ParseUtil.keyToString(value));
+    processInstanceKey(b -> b.eq(value));
+    return this;
+  }
+
+  @Override
+  public IncidentFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter errorType(final IncidentErrorType errorType) {
-    filter.errorType(EnumUtil.convert(errorType, ErrorTypeEnum.class));
+    return errorType(b -> b.eq(errorType));
+  }
+
+  @Override
+  public IncidentFilter errorType(final Consumer<IncidentErrorTypeProperty> fn) {
+    final IncidentErrorTypeProperty property = new IncidentErrorTypePropertyImpl();
+    fn.accept(property);
+    filter.setErrorType(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter errorMessage(final String errorMessage) {
-    filter.errorMessage(errorMessage);
+    return errorMessage(b -> b.eq(errorMessage));
+  }
+
+  @Override
+  public IncidentFilter errorMessage(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setErrorMessage(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter elementId(final String value) {
-    filter.setElementId(value);
+    return elementId(b -> b.eq(value));
+  }
+
+  @Override
+  public IncidentFilter elementId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setElementId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter elementInstanceKey(final Long value) {
-    filter.setElementInstanceKey(ParseUtil.keyToString(value));
+    return elementInstanceKey(b -> b.eq(value));
+  }
+
+  @Override
+  public IncidentFilter elementInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setElementInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter creationTime(final OffsetDateTime creationTime) {
-    filter.setCreationTime(creationTime == null ? null : creationTime.toString());
+    return creationTime(b -> b.eq(creationTime));
+  }
+
+  @Override
+  public IncidentFilter creationTime(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setCreationTime(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter state(final IncidentState value) {
-    filter.setState(EnumUtil.convert(value, StateEnum.class));
+    return state(b -> b.eq(value));
+  }
+
+  @Override
+  public IncidentFilter state(final Consumer<IncidentStateProperty> fn) {
+    final IncidentStateProperty property = new IncidentStatePropertyImpl();
+    fn.accept(property);
+    filter.setState(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter jobKey(final Long value) {
-    filter.setJobKey(ParseUtil.keyToString(value));
+    return jobKey(b -> b.eq(value));
+  }
+
+  @Override
+  public IncidentFilter jobKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setJobKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public IncidentFilter tenantId(final String value) {
-    filter.setTenantId(value);
+    return tenantId(b -> b.eq(value));
+  }
+
+  @Override
+  public IncidentFilter tenantId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTenantId(provideSearchRequestProperty(property));
     return this;
   }
 

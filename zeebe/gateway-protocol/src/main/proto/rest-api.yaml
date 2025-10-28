@@ -1958,6 +1958,11 @@ paths:
       summary: Search for incidents associated with a process instance
       description: |
         Search for incidents caused by the process instance or any of its called process or decision instances.
+
+        Although the `processInstanceKey` is provided as a path parameter to indicate the root process instance,
+        you may also include a `processInstanceKey` within the filter object to narrow results to specific
+        child process instances. This is useful, for example, if you want to isolate incidents associated with
+        subprocesses or called processes under the root instance while excluding incidents directly tied to the root.
       parameters:
         - name: processInstanceKey
           in: path
@@ -1970,7 +1975,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceIncidentSearchQuery"
+              $ref: "#/components/schemas/IncidentSearchQuery"
       responses:
         "200":
           description: The process instance search result.
@@ -6586,17 +6591,6 @@ components:
           description: The process instance search filters.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilter"
-    ProcessInstanceIncidentSearchQuery:
-      type: object
-      additionalProperties: false
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
-      properties:
-        sort:
-          description: Sort field criteria.
-          type: array
-          items:
-            $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
     AdvancedIntegerFilter:
       title: Advanced filter
       description: Advanced integer (int32) filter.
@@ -7947,71 +7941,154 @@ components:
       properties:
         processDefinitionId:
           allOf:
-            - $ref: "#/components/schemas/ProcessDefinitionId"
+            - $ref: "#/components/schemas/StringFilterProperty"
           description: The process definition ID associated to this incident.
         errorType:
-          type: string
           description: Incident error type with a defined set of values.
-          enum:
-            - UNSPECIFIED
-            - UNKNOWN
-            - IO_MAPPING_ERROR
-            - JOB_NO_RETRIES
-            - EXECUTION_LISTENER_NO_RETRIES
-            - TASK_LISTENER_NO_RETRIES
-            - AD_HOC_SUB_PROCESS_NO_RETRIES
-            - CONDITION_ERROR
-            - EXTRACT_VALUE_ERROR
-            - CALLED_ELEMENT_ERROR
-            - UNHANDLED_ERROR_EVENT
-            - MESSAGE_SIZE_EXCEEDED
-            - CALLED_DECISION_ERROR
-            - DECISION_EVALUATION_ERROR
-            - FORM_NOT_FOUND
-            - RESOURCE_NOT_FOUND
+          allOf:
+            - $ref: "#/components/schemas/IncidentErrorTypeFilterProperty"
         errorMessage:
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
           description: Error message which describes the error in more detail.
         elementId:
-          description: The element ID associated to this incident.
           allOf:
-            - $ref: "#/components/schemas/ElementId"
+            - $ref: "#/components/schemas/StringFilterProperty"
+          description: The element ID associated to this incident.
         creationTime:
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
           description: Date of incident creation.
-          format: date-time
         state:
-          type: string
           description: State of this incident with a defined set of values.
-          enum:
-            - ACTIVE
-            - MIGRATED
-            - RESOLVED
-            - PENDING
+          allOf:
+            - $ref: "#/components/schemas/IncidentStateFilterProperty"
         tenantId:
           description: The tenant ID of the incident.
           allOf:
-            - $ref: "#/components/schemas/TenantId"
+            - $ref: "#/components/schemas/StringFilterProperty"
         incidentKey:
-          allOf:
-            - $ref: "#/components/schemas/IncidentKey"
           description: The assigned key, which acts as a unique identifier for this incident.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         processDefinitionKey:
           allOf:
-            - $ref: "#/components/schemas/ProcessDefinitionKey"
+            - $ref: "#/components/schemas/ProcessDefinitionKeyFilterProperty"
           description: The process definition key associated to this incident.
         processInstanceKey:
           allOf:
-            - $ref: "#/components/schemas/ProcessInstanceKey"
+            - $ref: "#/components/schemas/ProcessInstanceKeyFilterProperty"
           description: The process instance key associated to this incident.
         elementInstanceKey:
           allOf:
-            - $ref: "#/components/schemas/ElementInstanceKey"
+            - $ref: "#/components/schemas/ElementInstanceKeyFilterProperty"
           description: The element instance key associated to this incident.
         jobKey:
           allOf:
-            - $ref: "#/components/schemas/JobKey"
+            - $ref: "#/components/schemas/JobKeyFilterProperty"
           description: The job key, if exists, associated with this incident.
+    IncidentErrorTypeEnum:
+      description: Incident error type with a defined set of values.
+      enum:
+        - AD_HOC_SUB_PROCESS_NO_RETRIES
+        - CALLED_DECISION_ERROR
+        - CALLED_ELEMENT_ERROR
+        - CONDITION_ERROR
+        - DECISION_EVALUATION_ERROR
+        - EXECUTION_LISTENER_NO_RETRIES
+        - EXTRACT_VALUE_ERROR
+        - FORM_NOT_FOUND
+        - IO_MAPPING_ERROR
+        - JOB_NO_RETRIES
+        - MESSAGE_SIZE_EXCEEDED
+        - RESOURCE_NOT_FOUND
+        - TASK_LISTENER_NO_RETRIES
+        - UNHANDLED_ERROR_EVENT
+        - UNKNOWN
+        - UNSPECIFIED
+    AdvancedIncidentErrorTypeFilter:
+      title: Advanced filter
+      description: Advanced IncidentErrorTypeEnum filter
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentErrorTypeEnum"
+        $notIn:
+          description: Checks if the property does not match any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentErrorTypeEnum"
+        $like:
+          $ref: "#/components/schemas/LikeFilter"
+    IncidentErrorTypeFilterProperty:
+      description: IncidentErrorTypeEnum with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
+        - $ref: "#/components/schemas/AdvancedIncidentErrorTypeFilter"
+    IncidentStateEnum:
+      description: Incident states with a defined set of values.
+      enum:
+        - ACTIVE
+        - MIGRATED
+        - PENDING
+        - RESOLVED
+    AdvancedIncidentStateFilter:
+      title: Advanced filter
+      description: Advanced IncidentStateEnum filter
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/IncidentStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/IncidentStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentStateEnum"
+        $notIn:
+          description: Checks if the property does not match any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentStateEnum"
+        $like:
+          $ref: "#/components/schemas/LikeFilter"
+    IncidentStateFilterProperty:
+      description: IncidentStateEnum with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/IncidentStateEnum"
+        - $ref: "#/components/schemas/AdvancedIncidentStateFilter"
     IncidentSearchQueryResult:
       type: object
       allOf:

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RequestMapper.getResult;
+import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toIncidentFilter;
 import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toProcessInstanceFilter;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
@@ -477,32 +478,31 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final IncidentSearchQuery request) {
-    return toIncidentQueryWithNullFilter(
-        request,
-        IncidentSearchQuery::getFilter,
-        IncidentSearchQuery::getPage,
-        IncidentSearchQuery::getSort);
-  }
 
-  public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
-      final ProcessInstanceIncidentSearchQuery request) {
-    return toIncidentQueryWithNullFilter(
-        request,
-        f -> null,
-        ProcessInstanceIncidentSearchQuery::getPage,
-        ProcessInstanceIncidentSearchQuery::getSort);
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::incident,
+            SearchQuerySortRequestMapper::applyIncidentSortField);
+    final var filter = toIncidentFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final ElementInstanceIncidentSearchQuery request) {
-    return toIncidentQueryWithNullFilter(
+    return toIncidentQuery(
         request,
         f -> null,
         ElementInstanceIncidentSearchQuery::getPage,
         ElementInstanceIncidentSearchQuery::getSort);
   }
 
-  private static <T> Either<ProblemDetail, IncidentQuery> toIncidentQueryWithNullFilter(
+  private static <T> Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final T request,
       final Function<T, IncidentFilter> filterExtractor,
       final Function<T, SearchQueryPageRequest> pageExtractor,
@@ -518,7 +518,7 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::incident,
             SearchQuerySortRequestMapper::applyIncidentSortField);
     return buildSearchQuery(
-        SearchQueryFilterMapper.toIncidentFilter(filterExtractor.apply(request)),
+        toIncidentFilter(filterExtractor.apply(request)),
         sort,
         page,
         SearchQueryBuilders::incidentSearchQuery);

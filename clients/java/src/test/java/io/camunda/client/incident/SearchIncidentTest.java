@@ -25,8 +25,6 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
-import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
-import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.time.OffsetDateTime;
@@ -96,18 +94,19 @@ public class SearchIncidentTest extends ClientRestTest {
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
     final IncidentFilter filter = request.getFilter();
-    assertThat(filter.getIncidentKey()).isEqualTo("1");
-    assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
-    assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
-    assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
-    assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.CALLED_DECISION_ERROR);
-    assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
-    assertThat(filter.getElementId()).isEqualTo("element");
-    assertThat(filter.getElementInstanceKey()).isEqualTo("4");
-    assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.001Z");
-    assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
-    assertThat(filter.getJobKey()).isEqualTo("5");
-    assertThat(filter.getTenantId()).isEqualTo("tenant");
+    assertThat(filter.getIncidentKey().get$Eq()).isEqualTo("1");
+    assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("2");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("complexProcess");
+    assertThat(filter.getProcessInstanceKey().get$Eq()).isEqualTo("3");
+    assertThat(filter.getErrorType().get$Eq())
+        .isEqualTo(IncidentErrorTypeEnum.CALLED_DECISION_ERROR);
+    assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Can't decide");
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("element");
+    assertThat(filter.getElementInstanceKey().get$Eq()).isEqualTo("4");
+    assertThat(filter.getCreationTime().get$Eq()).isEqualTo("2024-05-23T23:05:00.001Z");
+    assertThat(filter.getState().get$Eq()).isEqualTo(IncidentStateEnum.ACTIVE);
+    assertThat(filter.getJobKey().get$Eq()).isEqualTo("5");
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
   }
 
   @Test
@@ -178,7 +177,46 @@ public class SearchIncidentTest extends ClientRestTest {
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
     final IncidentFilter filter = request.getFilter();
-    assertThat(filter.getIncidentKey()).isEqualTo("1");
-    assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.valueOf(errorType.name()));
+    assertThat(filter.getIncidentKey().get$Eq()).isEqualTo("1");
+    assertThat(filter.getErrorType().get$Eq())
+        .isEqualTo(IncidentErrorTypeEnum.valueOf(errorType.name()));
+  }
+
+  @Test
+  void shouldSearchIncidentByProcessInstanceKeyWithFullFilters() {
+    // when
+    client
+        .newIncidentsByProcessInstanceSearchRequest(123L)
+        .filter(
+            f ->
+                f.incidentKey(1L)
+                    .processDefinitionKey(2L)
+                    .processDefinitionId("complexProcess")
+                    .errorType(IncidentErrorType.CALLED_DECISION_ERROR)
+                    .errorMessage("Can't decide")
+                    .elementId("element")
+                    .elementInstanceKey(4L)
+                    .creationTime(OffsetDateTime.parse("2024-05-23T23:05:00.001Z"))
+                    .state(IncidentState.ACTIVE)
+                    .jobKey(5L)
+                    .tenantId("tenant"))
+        .send()
+        .join();
+    // then
+    final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
+    final IncidentFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getIncidentKey().get$Eq()).isEqualTo("1");
+    assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("2");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("complexProcess");
+    assertThat(filter.getErrorType().get$Eq())
+        .isEqualTo(IncidentErrorTypeEnum.CALLED_DECISION_ERROR);
+    assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Can't decide");
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("element");
+    assertThat(filter.getElementInstanceKey().get$Eq()).isEqualTo("4");
+    assertThat(filter.getCreationTime().get$Eq()).isEqualTo("2024-05-23T23:05:00.001Z");
+    assertThat(filter.getState().get$Eq()).isEqualTo(IncidentStateEnum.ACTIVE);
+    assertThat(filter.getJobKey().get$Eq()).isEqualTo("5");
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
   }
 }
