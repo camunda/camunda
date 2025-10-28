@@ -51,6 +51,10 @@ public final class ClusterVariableClient {
     return withValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)));
   }
 
+  public ClusterVariableClient withValue(final Object value) {
+    return withValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)));
+  }
+
   public ClusterVariableClient withValue(final DirectBuffer value) {
     clusterVariableRecord.setValue(value);
     return this;
