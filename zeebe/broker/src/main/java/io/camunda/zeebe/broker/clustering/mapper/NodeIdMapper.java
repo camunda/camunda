@@ -212,7 +212,8 @@ public class NodeIdMapper implements Closeable {
   @Override
   public void close() {
     try {
-      executor.submit(lease::releaseLease).get();
+      renewealTimer.cancel(true);
+      executor.submit(lease::releaseLease).get(15, TimeUnit.SECONDS);
     } catch (final Exception e) {
       //
       LOG.warn("Failed to release the lease gracefully");

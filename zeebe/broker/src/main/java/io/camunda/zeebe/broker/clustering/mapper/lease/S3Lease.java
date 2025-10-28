@@ -124,6 +124,7 @@ public class S3Lease extends AbstractLeaseClient {
   @Override
   public void releaseLease() {
     if (currentLease == null) {
+      LOG.debug("No lease present, nothing to release");
       return;
     }
     final var objectKey = objectKey(currentLease.nodeInstance().id());
