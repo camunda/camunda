@@ -12,17 +12,17 @@ import io.camunda.zeebe.engine.state.mutable.MutableHistoryDeletionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
-final class ProcessInstanceDeletedApplier
+public class ProcessInstanceDeletingApplier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableHistoryDeletionState historyDeletionState;
 
-  public ProcessInstanceDeletedApplier(final MutableHistoryDeletionState historyDeletionState) {
+  public ProcessInstanceDeletingApplier(final MutableHistoryDeletionState historyDeletionState) {
     this.historyDeletionState = historyDeletionState;
   }
 
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
-    historyDeletionState.deleteProcessInstanceToDelete(value.getProcessInstanceKey());
+    historyDeletionState.insertProcessInstanceToDelete(value.getProcessInstanceKey());
   }
 }

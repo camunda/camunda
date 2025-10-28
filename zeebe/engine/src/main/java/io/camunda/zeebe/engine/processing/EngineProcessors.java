@@ -37,6 +37,8 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.historydeletion.ProcessInstanceDeleteCompleteProcessor;
+import io.camunda.zeebe.engine.processing.historydeletion.ProcessInstanceDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
@@ -73,6 +75,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -357,8 +360,17 @@ public final class EngineProcessors {
     UsageMetricsProcessors.addUsageMetricsProcessors(
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
 
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.DELETE,
+        new ProcessInstanceDeleteProcessor(writers.state(), keyGenerator));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.DELETE_COMPLETE,
+        new ProcessInstanceDeleteCompleteProcessor(writers.state(), keyGenerator));
     typedRecordProcessors.withListener(
-        new HistoryDeletionScheduler(scheduledTaskStateFactory, writeClientsProxy));
+        new HistoryDeletionScheduler(
+            scheduledTaskStateFactory, writeClientsProxy, writers.command(), keyGenerator));
 
     return typedRecordProcessors;
   }

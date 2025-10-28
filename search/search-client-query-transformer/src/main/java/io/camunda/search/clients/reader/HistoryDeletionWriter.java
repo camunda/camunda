@@ -51,11 +51,13 @@ public class HistoryDeletionWriter implements HistoryDeletionWriteClient {
                 })
             .collect(Collectors.toCollection(ArrayList::new));
 
-    deletionResults.add(
-        documentBasedWriteClient.deleteByFieldValue(
-            listViewTemplate.getFullQualifiedName(),
-            ListViewTemplate.PROCESS_INSTANCE_KEY,
-            processInstanceKey));
+    // TODO keep list view out of scope for the POC. The batch operation tries to update this but
+    // this is not possible after it's deleted
+    //    deletionResults.add(
+    //        documentBasedWriteClient.deleteByFieldValue(
+    //            listViewTemplate.getFullQualifiedName(),
+    //            ListViewTemplate.PROCESS_INSTANCE_KEY,
+    //            processInstanceKey));
 
     if (deletionResults.contains(false)) {
       throw new IllegalStateException("Not all deletions succeeeded!");

@@ -60,7 +60,10 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    */
   CONTINUE_TERMINATING_ELEMENT((short) 14),
 
-  DELETED((short) 16);
+  DELETE((short) 16),
+  DELETING((short) 17),
+  DELETE_COMPLETE((short) 18),
+  DELETED((short) 19);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
@@ -122,6 +125,12 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case 15:
         return SEQUENCE_FLOW_DELETED;
       case 16:
+        return DELETE;
+      case 17:
+        return DELETING;
+      case 18:
+        return DELETE_COMPLETE;
+      case 19:
         return DELETED;
       default:
         return Intent.UNKNOWN;
@@ -146,6 +155,7 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case ELEMENT_MIGRATED:
       case ANCESTOR_MIGRATED:
       case SEQUENCE_FLOW_DELETED:
+      case DELETING:
       case DELETED:
         return true;
       default:

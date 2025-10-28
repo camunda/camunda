@@ -12,4 +12,6 @@ import io.camunda.zeebe.engine.state.immutable.HistoryDeletionState;
 public interface MutableHistoryDeletionState extends HistoryDeletionState {
 
   void insertProcessInstanceToDelete(final long processInstanceKey);
+
+  void deleteProcessInstanceToDelete(final long processInstanceKey);
 }

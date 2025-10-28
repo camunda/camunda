@@ -39,8 +39,14 @@ public class DbHistoryDeletionState implements MutableHistoryDeletionState {
   }
 
   @Override
-  public void forEachProcessInstanceToDelete(final Function<DbLong, Boolean> visitor) {
+  public void deleteProcessInstanceToDelete(final long processInstanceKey) {
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    processInstancesToDeleteColumnFamily.deleteExisting(this.processInstanceKey);
+  }
+
+  @Override
+  public void forEachProcessInstanceToDelete(final Function<Long, Boolean> visitor) {
     processInstancesToDeleteColumnFamily.whileTrue(
-        (processInstanceKey, nil) -> visitor.apply(processInstanceKey));
+        (processInstanceKey, nil) -> visitor.apply(processInstanceKey.getValue()));
   }
 }

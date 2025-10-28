@@ -7,10 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.db.impl.DbLong;
 import java.util.function.Function;
 
 public interface HistoryDeletionState {
 
-  void forEachProcessInstanceToDelete(Function<DbLong, Boolean> visitor);
+  void forEachProcessInstanceToDelete(Function<Long, Boolean> visitor);
 }

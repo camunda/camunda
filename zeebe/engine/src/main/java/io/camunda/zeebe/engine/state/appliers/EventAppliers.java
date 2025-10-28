@@ -287,6 +287,9 @@ public final class EventAppliers implements EventApplier {
         RuntimeInstructionIntent.INTERRUPTED,
         new RuntimeInstructionInterruptedApplier(elementInstanceState));
     register(
+        ProcessInstanceIntent.DELETING,
+        new ProcessInstanceDeletingApplier(state.getHistoryDeletionState()));
+    register(
         ProcessInstanceIntent.DELETED,
         new ProcessInstanceDeletedApplier(state.getHistoryDeletionState()));
   }

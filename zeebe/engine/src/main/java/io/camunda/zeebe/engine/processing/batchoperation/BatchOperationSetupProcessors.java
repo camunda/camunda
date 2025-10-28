@@ -75,7 +75,8 @@ public final class BatchOperationSetupProcessors {
                 processingState.getElementInstanceState(),
                 brokerRequestAuthorizationConverter),
             BatchOperationType.DELETE_PROCESS_INSTANCE,
-            new DeleteHistoryProcessInstanceBatchOperationExecutor(writers.state()));
+            new DeleteHistoryProcessInstanceBatchOperationExecutor(
+                writers.command(), writers.state(), brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =
         new BatchOperationInitializer(
