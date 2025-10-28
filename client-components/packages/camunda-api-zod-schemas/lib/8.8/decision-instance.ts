@@ -39,6 +39,7 @@ const decisionInstanceSchema = z.object({
 	processInstanceKey: z.string(),
 	decisionDefinitionKey: z.string(),
 	elementInstanceKey: z.string(),
+	rootDecisionDefinitionKey: z.string(),
 });
 type DecisionInstance = z.infer<typeof decisionInstanceSchema>;
 
@@ -59,6 +60,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 		'decisionDefinitionType',
 		'tenantId',
 		'elementInstanceKey',
+		'rootDecisionDefinitionKey',
 	] as const,
 	filter: z
 		.object({
@@ -77,6 +79,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 				processDefinitionKey: true,
 				processInstanceKey: true,
 				elementInstanceKey: true,
+				rootDecisionDefinitionKey: true,
 			}).shape,
 		})
 		.partial(),

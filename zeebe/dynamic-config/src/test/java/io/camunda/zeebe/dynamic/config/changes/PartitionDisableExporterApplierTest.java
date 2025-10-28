@@ -16,7 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -97,7 +97,7 @@ final class PartitionDisableExporterApplierTest {
     // given
     final var configWithExporter =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var clusterConfiguration =
         ClusterConfiguration.init()
@@ -136,7 +136,7 @@ final class PartitionDisableExporterApplierTest {
   void shouldCompleteFutureAndUpdateStateIfApplySucceeds() {
     // given
     final var exporterState = new ExporterState(1, State.ENABLED, Optional.empty());
-    final var exporterConfig = new ExportersConfig(Map.of(exporterId, exporterState));
+    final var exporterConfig = new ExportingConfig(Map.of(exporterId, exporterState));
     final var partitionConfig = new DynamicPartitionConfig(exporterConfig);
     final var memberState =
         MemberState.initializeAsActive(

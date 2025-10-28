@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateOperationReference;
@@ -18,6 +17,8 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateO
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
@@ -40,22 +41,36 @@ public class ProcessInstanceRequestValidator {
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {
+    if (request instanceof final ProcessInstanceCreationInstructionById byId) {
+      return validateById(byId);
+    }
+    return validateByKey((ProcessInstanceCreationInstructionByKey) request);
+  }
+
+  private static Optional<ProblemDetail> validateByKey(
+      final ProcessInstanceCreationInstructionByKey request) {
     return validate(
         violations -> {
-          if (request.getProcessDefinitionId() == null
-              && request.getProcessDefinitionKey() == null) {
+          if (request.getProcessDefinitionKey() == null) {
             violations.add(
                 ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
                     List.of("processDefinitionId", "processDefinitionKey")));
           }
-          if (request.getProcessDefinitionId() != null
-              && request.getProcessDefinitionKey() != null) {
+          validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
+          validateOperationReference(request.getOperationReference(), violations);
+          validateTags(request.getTags(), violations);
+        });
+  }
+
+  private static Optional<ProblemDetail> validateById(
+      final ProcessInstanceCreationInstructionById request) {
+    return validate(
+        violations -> {
+          if (request.getProcessDefinitionId() == null) {
             violations.add(
-                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
                     List.of("processDefinitionId", "processDefinitionKey")));
           }
-          // Validate processDefinitionKey format if provided
-          validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
           validateOperationReference(request.getOperationReference(), violations);
           validateTags(request.getTags(), violations);
         });

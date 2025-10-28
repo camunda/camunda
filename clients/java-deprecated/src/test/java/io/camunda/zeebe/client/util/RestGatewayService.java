@@ -48,6 +48,20 @@ public class RestGatewayService {
   /**
    * Register the given response for job activation requests.
    *
+   * @param jobActivationResponseJsonString the response to provide upon a job activation request as
+   *     json string
+   */
+  public void onActivateJobsRequest(final String jobActivationResponseJsonString) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(RestGatewayPaths.getJobActivationUrl())
+                .willReturn(WireMock.okJson(jobActivationResponseJsonString)));
+  }
+
+  /**
+   * Register the given response for job activation requests.
+   *
    * @param jobActivationResponse the response to provide upon a job activation request
    */
   public void onActivateJobsRequest(final JobActivationResult jobActivationResponse) {

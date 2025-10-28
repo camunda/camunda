@@ -9,8 +9,8 @@
 import {expect, test} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
-import {getProcessDefinitionKey} from '../../../../utils/requestHelpers';
 import {validateResponseShape} from '../../../../json-body-assertions';
+import {getProcessDefinitionKey} from '@requestHelpers';
 
 const PROCESS_INSTANCE_ENDPOINT = '/process-instances';
 test.describe.parallel('Process instance Tests', () => {
@@ -205,7 +205,8 @@ test.describe.parallel('Process instance Tests', () => {
     await cancelProcessInstance(json.processInstanceKey);
   });
 
-  test('Create Process Instance - Failure - Missing process definition id and key', async ({
+  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
+  test.skip('Create Process Instance - Failure - Missing process definition id and key', async ({
     request,
   }) => {
     const res = await request.post(buildUrl(PROCESS_INSTANCE_ENDPOINT), {

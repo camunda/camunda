@@ -331,14 +331,18 @@ public class ProcessInstanceMigrationMigrateProcessor
             sourceElementIdToTargetElementId,
             elementInstance);
 
+    // we chose to loop through the sequence flows again despite its redundancy to keep preventive
+    // validation structure and write events after all validations passed
+    requireNoMultipleActiveSequenceFlowsMappedToSameTarget(
+        sequenceFlows, sourceElementIdToTargetElementId, processInstanceKey);
+
     sequenceFlows.forEach(
         sequenceFlow -> {
           // use the original element instance record to fill existing sequence flow data
           deleteTakenSequenceFlow(elementInstanceRecord, sequenceFlow, elementInstance.getKey());
 
           final var targetSequenceFlowId =
-              getTargetSequenceFlowId(
-                  sourceElementIdToTargetElementId, sequenceFlow, processInstanceKey);
+              getTargetSequenceFlowId(sourceElementIdToTargetElementId, sequenceFlow);
           // use updated element instance record to fill new sequence flow data
           takeNewSequenceFlow(
               updatedElementInstanceRecord,
@@ -443,15 +447,10 @@ public class ProcessInstanceMigrationMigrateProcessor
 
   private static DirectBuffer getTargetSequenceFlowId(
       final Map<String, String> sourceElementIdToTargetElementId,
-      final ExecutableSequenceFlow sequenceFlow,
-      final long processInstanceKey) {
+      final ExecutableSequenceFlow sequenceFlow) {
     final String sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
     final String targetSequenceFlowId = sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
 
-    final String sourceGatewayElementId =
-        BufferUtil.bufferAsString(sequenceFlow.getTarget().getId());
-    requireNonNullTargetSequenceFlowId(
-        targetSequenceFlowId, sourceSequenceFlowId, sourceGatewayElementId, processInstanceKey);
     return BufferUtil.wrapString(targetSequenceFlowId);
   }
 
@@ -624,6 +623,8 @@ public class ProcessInstanceMigrationMigrateProcessor
                       .getProcess()
                       .getElementById(targetGatewayId, ExecutableFlowNode.class);
               requireValidTargetIncomingFlowCount(sourceGateway, targetGateway, processInstanceKey);
+              requireNonNullTargetSequenceFlowId(
+                  activeFlow, sourceElementIdToTargetElementId, processInstanceKey);
 
               return activeFlow;
             })

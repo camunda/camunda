@@ -103,7 +103,9 @@ public class HealthConfigurationInitializer
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
     }
 
-    if (secondaryStorageEnabled && activeProfiles.contains(Profile.TASKLIST.getId())) {
+    if (secondaryStorageEnabled
+        && activeProfiles.contains(Profile.TASKLIST.getId())
+        && DatabaseTypeUtils.isRdbmsDisabled(env)) {
       healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
     }
 

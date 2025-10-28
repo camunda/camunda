@@ -76,6 +76,7 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./identity/client
+          package-manager: "npm"
       - name: Install QA Test Suite Dependencies
         run: npm install
         working-directory: ./qa/c8-orchestration-cluster-e2e-test-suite

@@ -262,9 +262,10 @@ final class ElasticsearchExporterTest {
       verify(client, never()).putIndexTemplate(valueType);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-    void shouldCreateAllTemplatesOnPreviousVersion(final ValueType valueType) {
+    @ParameterizedTest(name = "{0} - version: {1}")
+    @MethodSource(
+        "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
+    void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
       // given
       config.index.createTemplate = true;
       config.setIncludeEnabledRecords(false);
@@ -275,11 +276,21 @@ final class ElasticsearchExporterTest {
       // when
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(valueType);
-      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getPreviousVersion());
+      when(recordMock.getBrokerVersion()).thenReturn(version);
       exporter.export(recordMock);
 
       // then
-      verify(client, times(1)).putIndexTemplate(valueType, VersionUtil.getPreviousVersion());
+      if (valueType == ValueType.PROCESS_INSTANCE
+          || valueType == ValueType.PROCESS
+          || valueType == ValueType.VARIABLE
+          || valueType == ValueType.INCIDENT
+          || valueType == ValueType.USER_TASK
+          || valueType == ValueType.DEPLOYMENT
+          || valueType == ValueType.JOB) {
+        verify(client, times(1)).putIndexTemplate(valueType, version);
+      } else {
+        verify(client, never()).putIndexTemplate(any(), any());
+      }
     }
   }
 

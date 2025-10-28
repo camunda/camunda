@@ -15,12 +15,14 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider.provideSearchRequestProperty;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
@@ -30,8 +32,8 @@ import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
+import io.camunda.client.protocol.rest.IncidentSearchQuery;
 import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
-import io.camunda.client.protocol.rest.ProcessInstanceIncidentSearchQuery;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -40,7 +42,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 public class IncidentsByProcessInstanceSearchRequestImpl
     implements IncidentsByProcessInstanceSearchRequest {
 
-  private final ProcessInstanceIncidentSearchQuery request;
+  private final IncidentSearchQuery request;
   private final long processInstanceKey;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -52,7 +54,7 @@ public class IncidentsByProcessInstanceSearchRequestImpl
     this.jsonMapper = jsonMapper;
     this.processInstanceKey = processInstanceKey;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new ProcessInstanceIncidentSearchQuery();
+    request = new IncidentSearchQuery();
   }
 
   @Override
@@ -75,6 +77,28 @@ public class IncidentsByProcessInstanceSearchRequestImpl
   }
 
   @Override
+  public IncidentsByProcessInstanceSearchRequest page(final SearchRequestPage value) {
+    request.setPage(provideSearchRequestProperty(value));
+    return this;
+  }
+
+  @Override
+  public IncidentsByProcessInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
+    return page(searchRequestPage(fn));
+  }
+
+  @Override
+  public IncidentsByProcessInstanceSearchRequest filter(final IncidentFilter value) {
+    request.setFilter(provideSearchRequestProperty(value));
+    return this;
+  }
+
+  @Override
+  public IncidentsByProcessInstanceSearchRequest filter(final Consumer<IncidentFilter> fn) {
+    return filter(incidentFilter(fn));
+  }
+
+  @Override
   public IncidentsByProcessInstanceSearchRequest sort(final IncidentSort value) {
     request.setSort(
         SearchRequestSortMapper.toIncidentSearchQuerySortRequest(
@@ -85,16 +109,5 @@ public class IncidentsByProcessInstanceSearchRequestImpl
   @Override
   public IncidentsByProcessInstanceSearchRequest sort(final Consumer<IncidentSort> fn) {
     return sort(incidentSort(fn));
-  }
-
-  @Override
-  public IncidentsByProcessInstanceSearchRequest page(final SearchRequestPage value) {
-    request.setPage(provideSearchRequestProperty(value));
-    return this;
-  }
-
-  @Override
-  public IncidentsByProcessInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
   }
 }

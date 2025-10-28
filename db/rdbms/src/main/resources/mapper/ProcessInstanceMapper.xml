@@ -28,10 +28,11 @@
            pi.TREE_PATH,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
            pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
-           NULL AS TAGS
+           pit.TAG_VALUE AS TAG_VALUE
     FROM ${prefix}PROCESS_INSTANCE pi
            LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
-    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+           LEFT JOIN ${prefix}PROCESS_INSTANCE_TAG pit ON (pit.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY)
+    WHERE pi.PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </select>
 
   <select id="count" resultType="java.lang.Long">
@@ -46,6 +47,24 @@
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery"
     resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT * FROM (
+    SELECT
+    pif.PROCESS_INSTANCE_KEY,
+    pif.PROCESS_DEFINITION_ID,
+    pif.PROCESS_DEFINITION_KEY,
+    pif.STATE,
+    pif.START_DATE,
+    pif.END_DATE,
+    pif.TENANT_ID,
+    pif.HAS_INCIDENT,
+    pif.PARENT_PROCESS_INSTANCE_KEY,
+    pif.PARENT_ELEMENT_INSTANCE_KEY,
+    pif.PROCESS_DEFINITION_VERSION,
+    pif.TREE_PATH,
+    pif.PROCESS_DEFINITION_NAME,
+    pif.PROCESS_DEFINITION_VERSION_TAG,
+    pit.TAG_VALUE AS TAG_VALUE
+    FROM (
+    SELECT *  FROM (
     SELECT
     pi.PROCESS_INSTANCE_KEY,
     pi.PROCESS_DEFINITION_ID,
@@ -63,15 +82,23 @@
     pi.VERSION PROCESS_DEFINITION_VERSION,
     pi.TREE_PATH,
     pd.NAME AS PROCESS_DEFINITION_NAME,
-    pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
-    NULL AS TAGS
+    pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
     FROM ${prefix}PROCESS_INSTANCE pi
     LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchAndAuthFilter"/>
-    ) t
+    ) filtered
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) pif
+    LEFT JOIN ${prefix}PROCESS_INSTANCE_TAG pit ON (pit.PROCESS_INSTANCE_KEY = pif.PROCESS_INSTANCE_KEY)
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <if test="_databaseId == 'mssql'">
+      <!-- MSSQL needs an OFFSET when sorting in subselects -->
+      OFFSET 0 ROWS
+    </if>
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <sql id="searchAndAuthFilter">
@@ -302,6 +329,17 @@
       </foreach>
       )
     </if>
+    <!-- Tag filters -->
+    <if test="filter.tags != null and !filter.tags.isEmpty()">
+      <foreach collection="filter.tags" item="tag" open="AND (" separator=" AND " close=")">
+        EXISTS (
+          SELECT 1
+          FROM ${prefix}PROCESS_INSTANCE_TAG pit
+          WHERE pit.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+            AND pit.TAG_VALUE = #{tag}
+        )
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
@@ -320,10 +358,10 @@
       <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
-      <arg column="TAGS" javaType="java.util.Set"
-           typeHandler="io.camunda.db.rdbms.typehandler.EmptyStringSetTypeHandler"/>
     </constructor>
-
+    <collection property="tags" ofType="java.lang.String" javaType="java.util.Set">
+      <id column="TAG_VALUE"/>
+    </collection>
   </resultMap>
 
   <select id="flowNodeStatistics"
@@ -400,6 +438,14 @@
     SET NUM_INCIDENTS = NUM_INCIDENTS - 1
     WHERE PROCESS_INSTANCE_KEY = #{id}
   </update>
+
+  <insert id="insertTags" parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$ProcessInstanceTagsDto">
+    INSERT INTO ${prefix}PROCESS_INSTANCE_TAG (PROCESS_INSTANCE_KEY, TAG_VALUE)
+    VALUES
+      <foreach collection="tags" item="item" separator=",">
+        (#{processInstanceKey}, #{item.tagValue})
+      </foreach>
+  </insert>
 
   <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}PROCESS_INSTANCE

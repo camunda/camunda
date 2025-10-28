@@ -70,8 +70,8 @@ public class DecisionInstanceSpecificFilterIT {
     createAndSaveRandomDecisionInstances(
         rdbmsWriter,
         b ->
-            b.state(DecisionInstanceState.UNSPECIFIED)
-                .decisionType(DecisionDefinitionType.UNSPECIFIED)
+            b.state(DecisionInstanceState.FAILED)
+                .decisionType(DecisionDefinitionType.LITERAL_EXPRESSION)
                 .decisionDefinitionKey(decisionDefinition.decisionDefinitionKey())
                 .decisionDefinitionId(decisionDefinition.decisionDefinitionId()));
   }
@@ -80,6 +80,7 @@ public class DecisionInstanceSpecificFilterIT {
   @MethodSource("shouldFindDecisionInstanceWithSpecificFilterParameters")
   public void shouldFindDecisionInstanceWithSpecificFilter(final DecisionInstanceFilter filter) {
     final var decisionDefinitionKey = 100L;
+    final var rootDecisionDefinitionKey = 200L;
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveDecisionDefinition(
@@ -104,6 +105,7 @@ public class DecisionInstanceSpecificFilterIT {
                     .evaluationDate(THEN)
                     .decisionDefinitionKey(decisionDefinition.decisionDefinitionKey())
                     .decisionDefinitionId(decisionDefinition.decisionDefinitionId())
+                    .rootDecisionDefinitionKey(rootDecisionDefinitionKey)
                     .evaluationFailure("failure-42")
                     .tenantId("unique-tenant-42")
                     .result("result-42")));
@@ -137,6 +139,8 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.decisionDefinitionKeyOperations(Operation.eq(100L))),
         DecisionInstanceFilter.of(b -> b.flowNodeInstanceKeyOperations(Operation.eq(126L))),
         DecisionInstanceFilter.of(b -> b.evaluationDateOperations(Operation.lte(THEN))),
+        DecisionInstanceFilter.of(b -> b.rootDecisionDefinitionKeys(200L)),
+        DecisionInstanceFilter.of(b -> b.rootDecisionDefinitionKeyOperations(Operation.eq(200L))),
         DecisionInstanceFilter.of(b -> b.tenantIds("unique-tenant-42", "foo")));
   }
 }

@@ -152,9 +152,13 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
-    register(ClusterVariableIntent.CREATED, NOOP_EVENT_APPLIER);
+    register(
+        ClusterVariableIntent.CREATED,
+        new ClusterVariableCreatedApplier(state.getClusterVariableState()));
     register(ClusterVariableIntent.UPDATED, NOOP_EVENT_APPLIER);
-    register(ClusterVariableIntent.DELETED, NOOP_EVENT_APPLIER);
+    register(
+        ClusterVariableIntent.DELETED,
+        new ClusterVariableDeletedApplier(state.getClusterVariableState()));
   }
 
   private void registerMultiInstanceAppliers(final MutableProcessingState state) {
@@ -396,6 +400,11 @@ public final class EventAppliers implements EventApplier {
         IncidentIntent.RESOLVED,
         2,
         new IncidentResolvedV2Applier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
+    register(
+        IncidentIntent.RESOLVED,
+        3,
+        new IncidentResolvedV3Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }

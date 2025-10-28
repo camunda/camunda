@@ -19,7 +19,7 @@ import java.util.List;
 
 public interface BasicStringProperty extends PropertyBase<String, BasicStringProperty> {
 
-  BasicStringProperty notIn(final List<String> values);
+  BasicStringProperty notIn(List<String> values);
 
-  BasicStringProperty notIn(final String... values);
+  BasicStringProperty notIn(String... values);
 }

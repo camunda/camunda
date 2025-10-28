@@ -37,6 +37,7 @@
     di.EVALUATION_FAILURE,
     di.EVALUATION_FAILURE_MESSAGE,
     di.TENANT_ID,
+    di.ROOT_DECISION_DEFINITION_KEY,
     NULL AS EVALUATED_INPUTS,
     NULL AS EVALUATED_OUTPUTS,
     dd.NAME AS DECISION_DEFINITION_NAME,
@@ -167,6 +168,13 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if
+        test="filter.rootDecisionDefinitionKeyOperations != null and !filter.rootDecisionDefinitionKeyOperations.isEmpty()">
+        <foreach collection="filter.rootDecisionDefinitionKeyOperations" item="operation">
+          AND di.ROOT_DECISION_DEFINITION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
     </where>
   </sql>
 
@@ -189,6 +197,7 @@
       <arg column="DECISION_DEFINITION_VERSION" javaType="java.lang.Integer"/>
       <arg column="TYPE"
         javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionDefinitionType"/>
+      <arg column="ROOT_DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="RESULT" javaType="java.lang.String"/>
       <!-- The list is loaded separately (optional). But we still need a value (NULL) here.
        we use the ObjectTypeHandler because no other typeHandler can map NULL to List -->

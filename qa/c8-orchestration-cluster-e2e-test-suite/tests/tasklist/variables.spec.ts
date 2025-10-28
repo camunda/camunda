@@ -15,10 +15,14 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 test.beforeAll(async () => {
   await deploy([
     './resources/usertask_with_variables.bpmn',
+    './resources/usertask_with_variables2.bpmn',
     './resources/usertask_without_variables.bpmn',
   ]);
   await createInstances('usertask_without_variables', 1, 1);
-  await createInstances('usertask_with_variables', 1, 4, {
+  await createInstances('usertask_with_variables', 1, 3, {
+    testData: 'something',
+  });
+  await createInstances('usertask_with_variables2', 1, 1, {
     testData: 'something',
   });
 });
@@ -40,7 +44,9 @@ test.describe('variables page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.openTask('usertask_without_variables');
-    await expect(taskDetailsPage.emptyTaskMessage).toBeVisible({timeout: 30000});
+    await expect(taskDetailsPage.emptyTaskMessage).toBeVisible({
+      timeout: 30000,
+    });
   });
 
   test('display variables when task has variables', async ({
@@ -168,10 +174,12 @@ test.describe('variables page', () => {
   }) => {
     test.slow();
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('usertask_with_variables');
+    await taskPanelPage.openTask('usertask_with_variables2');
 
     await expect(taskDetailsPage.addVariableButton).toBeHidden();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible({timeout: 60000});
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+      timeout: 60000,
+    });
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await taskDetailsPage.clickAssignToMeButton();
 
@@ -191,9 +199,11 @@ test.describe('variables page', () => {
     await page.reload();
 
     await taskPanelPage.filterBy('Completed');
-    await taskPanelPage.openTask('usertask_with_variables');
+    await taskPanelPage.openTask('usertask_with_variables2');
 
-    await expect(page.getByText('newVariableName')).toBeVisible({timeout: 60000});
+    await expect(page.getByText('newVariableName')).toBeVisible({
+      timeout: 60000,
+    });
     await expect(page.getByText('newVariableValue')).toBeVisible();
   });
 });

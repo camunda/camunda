@@ -23,6 +23,8 @@ public class Camunda {
   @NestedConfigurationProperty private System system = new System();
   @NestedConfigurationProperty private Data data = new Data();
   @NestedConfigurationProperty private Api api = new Api();
+  @NestedConfigurationProperty private Processing processing = new Processing();
+  @NestedConfigurationProperty private Monitoring monitoring = new Monitoring();
 
   public Cluster getCluster() {
     return cluster;
@@ -54,5 +56,21 @@ public class Camunda {
 
   public void setApi(final Api api) {
     this.api = api;
+  }
+
+  public Processing getProcessing() {
+    return processing;
+  }
+
+  public void setProcessing(final Processing processing) {
+    this.processing = processing;
+  }
+
+  public Monitoring getMonitoring() {
+    return monitoring;
+  }
+
+  public void setMonitoring(final Monitoring monitoring) {
+    this.monitoring = monitoring;
   }
 }

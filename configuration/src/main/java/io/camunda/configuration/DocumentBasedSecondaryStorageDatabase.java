@@ -33,6 +33,26 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
 
+  /** Whether to create the schema automatically */
+  private boolean createSchema = true;
+
+  @NestedConfigurationProperty
+  private IncidentNotifier incidentNotifier = new IncidentNotifier(databaseName());
+
+  @NestedConfigurationProperty
+  private Cache batchOperationCache = new Cache(databaseName(), "batchOperation");
+
+  @NestedConfigurationProperty private Cache processCache = new Cache(databaseName(), "process");
+
+  @NestedConfigurationProperty private Cache formCache = new Cache(databaseName(), "form");
+
+  @NestedConfigurationProperty private PostExport postExport = new PostExport(databaseName());
+
+  @NestedConfigurationProperty
+  private BatchOperation batchOperations = new BatchOperation(databaseName());
+
+  @NestedConfigurationProperty private Bulk bulk = new Bulk(databaseName());
+
   @Override
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -71,6 +91,67 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
+  }
+
+  public boolean isCreateSchema() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".create-schema",
+        createSchema,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of("zeebe.broker.exporters.camundaexporter.args.createSchema"));
+  }
+
+  public void setCreateSchema(final boolean createSchema) {
+    this.createSchema = createSchema;
+  }
+
+  public Cache getBatchOperationCache() {
+    return batchOperationCache;
+  }
+
+  public void setBatchOperationCache(final Cache batchOperationCache) {
+    this.batchOperationCache = batchOperationCache;
+  }
+
+  public Cache getProcessCache() {
+    return processCache;
+  }
+
+  public void setProcessCache(final Cache processCache) {
+    this.processCache = processCache;
+  }
+
+  public Cache getFormCache() {
+    return formCache;
+  }
+
+  public void setFormCache(final Cache formCache) {
+    this.formCache = formCache;
+  }
+
+  public PostExport getPostExport() {
+    return postExport;
+  }
+
+  public void setPostExport(final PostExport postExport) {
+    this.postExport = postExport;
+  }
+
+  public BatchOperation getBatchOperations() {
+    return batchOperations;
+  }
+
+  public void setBatchOperations(final BatchOperation batchOperations) {
+    this.batchOperations = batchOperations;
+  }
+
+  public Bulk getBulk() {
+    return bulk;
+  }
+
+  public void setBulk(final Bulk bulk) {
+    this.bulk = bulk;
   }
 
   public Security getSecurity() {
@@ -126,6 +207,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setInterceptorPlugins(final List<InterceptorPlugin> interceptorPlugins) {
     this.interceptorPlugins = interceptorPlugins;
+  }
+
+  public IncidentNotifier getIncidentNotifier() {
+    return incidentNotifier;
+  }
+
+  public void setIncidentNotifier(final IncidentNotifier incidentNotifier) {
+    this.incidentNotifier = incidentNotifier;
   }
 
   private String prefix() {

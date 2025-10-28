@@ -32,6 +32,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_MIGRATION_PLAN = "migrationPlan";
   public static final String PROP_MODIFICATION_PLAN = "modificationPlan";
   public static final String PROP_AUTHENTICATION = "authentication";
+  public static final String PROP_AUTHORIZATION_CHECK = "authorizationCheck";
   public static final String PROP_PARTITION_IDS = "partitionIds";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
@@ -46,17 +47,21 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
           PROP_MODIFICATION_PLAN, new BatchOperationProcessInstanceModificationPlan());
   // Authentication, needed for query in scheduler + command auth
   private final DocumentProperty authenticationProp = new DocumentProperty(PROP_AUTHENTICATION);
+  // Authorization check, needed for single operations that skip batch permission checks
+  private final DocumentProperty authorizationCheckProp =
+      new DocumentProperty(PROP_AUTHORIZATION_CHECK);
   private final ArrayProperty<IntegerValue> partitionIdsProp =
       new ArrayProperty<>(PROP_PARTITION_IDS, IntegerValue::new);
 
   public BatchOperationCreationRecord() {
-    super(7);
+    super(8);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
         .declareProperty(authenticationProp)
+        .declareProperty(authorizationCheckProp)
         .declareProperty(partitionIdsProp);
   }
 
@@ -136,6 +141,15 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
 
   public BatchOperationCreationRecord setAuthentication(final DirectBuffer authentication) {
     authenticationProp.setValue(authentication);
+    return this;
+  }
+
+  public DirectBuffer getAuthorizationCheckBuffer() {
+    return authorizationCheckProp.getValue();
+  }
+
+  public BatchOperationCreationRecord setAuthorizationCheck(final DirectBuffer authorizationCheck) {
+    authorizationCheckProp.setValue(authorizationCheck);
     return this;
   }
 

@@ -206,7 +206,8 @@ jobs:
             -DskipQaBuild=true \
             -P-autoFormat \
             -P\!include-optimize \
-            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"' \
+            ${{ inputs.dryRun && '-Djapicmp.skip=true' || '' }}
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -221,6 +222,7 @@ jobs:
           ARTIFACT_DIR=$(mktemp -d)
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
+          cp target/checkout/db/rdbms-schema/target/camunda-db-rdbms-schema-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
@@ -673,11 +675,18 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
+            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Logs on to Minimus
+        uses: docker/login-action@v3
+        with:
+          registry: reg.mini.dev
+          username: minimus
+          password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -751,6 +760,63 @@ jobs:
       dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
+  # This job waits for the existing FOSSA scan (triggered by check-licenses.yml on tag push)
+  # then creates releases and generates attribution/SBOM reports for single-app only
+  # Flags impact:
+  # - With dryRun=true or releaseProcessDryRun=true: Runs in dry-run mode (no actual release creation)
+  fossa-release:
+    name: Create FOSSA releases and generate attribution/SBOM reports
+    runs-on: ubuntu-latest
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
+      - name: Get FOSSA context
+        id: fossa-context
+        uses: camunda/infra-global-github-actions/fossa/info@3be9c0625ab9879b87b483d48d1bddfde496c70b
+      - name: Wait for FOSSA scan completion
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@3be9c0625ab9879b87b483d48d1bddfde496c70b
+        with:
+          fossa-api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+          branch: ${{ steps.fossa-context.outputs.head-ref }}
+          project-id: "custom+50756/camunda/camunda@single-app"
+          revision-id: ${{ steps.fossa-context.outputs.head-revision }}
+          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+      - name: Create FOSSA releases and generate reports
+        uses: camunda/infra-global-github-actions/fossa/release@3be9c0625ab9879b87b483d48d1bddfde496c70b
+        with:
+          fossa-api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+          branch: ${{ steps.fossa-context.outputs.head-ref }}
+          project-id: "custom+50756/camunda/camunda@single-app"
+          attribution-release-group-id: "4904" # https://app.fossa.com/projects/group/4904
+          sbom-release-group-id: "4905"        # https://app.fossa.com/projects/group/4905
+          release-number: ${{ env.RELEASE_VERSION }}
+          revision-id: ${{ steps.fossa-context.outputs.head-revision }}
+          attribution-format: "TXT"
+          sbom-format: "CYCLONEDX_JSON"
+          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   # Slack notification jobs send release status updates to the team's Slack channel.
   # Both jobs are conditional and only run for actual releases (not dry runs or E2E testing).
   # Flags impact:
@@ -761,7 +827,7 @@ jobs:
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk, fossa-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release succeeded
     if: ${{ always() && (
@@ -771,7 +837,8 @@ jobs:
       needs.operate-docker.result == 'success' &&
       needs.tasklist-docker.result == 'success' &&
       needs.camunda-docker.result == 'success' &&
-      (needs.snyk.result == 'success' || needs.snyk.result == 'skipped')
+      (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
+      (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
       ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -810,7 +877,7 @@ jobs:
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk, fossa-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release failed
     if: ${{ always() && (
@@ -820,7 +887,8 @@ jobs:
         needs.operate-docker.result == 'failure' ||
         needs.tasklist-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
-        needs.snyk.result == 'failure'
+        needs.snyk.result == 'failure' ||
+        needs.fossa-release.result == 'failure'
         ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job

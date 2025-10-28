@@ -57,7 +57,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -229,8 +229,8 @@ public class ProtoBufSerializer
     return new DynamicPartitionConfig(decodeExportingConfig(config.getExporting()));
   }
 
-  private ExportersConfig decodeExportingConfig(final Topology.ExportersConfig exporting) {
-    return new ExportersConfig(
+  private ExportingConfig decodeExportingConfig(final Topology.ExportingConfig exporting) {
+    return new ExportingConfig(
         exporting.getExportersMap().entrySet().stream()
             .map(e -> Map.entry(e.getKey(), decodeExporterState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
@@ -292,8 +292,8 @@ public class ProtoBufSerializer
         .build();
   }
 
-  private Topology.ExportersConfig encodeExportingConfig(final ExportersConfig exporting) {
-    return Topology.ExportersConfig.newBuilder()
+  private Topology.ExportingConfig encodeExportingConfig(final ExportingConfig exporting) {
+    return Topology.ExportingConfig.newBuilder()
         .putAllExporters(
             exporting.exporters().entrySet().stream()
                 .map(e -> Map.entry(e.getKey(), encodeExporterState(e.getValue())))

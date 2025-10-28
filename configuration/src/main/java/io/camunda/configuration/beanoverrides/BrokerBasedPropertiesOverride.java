@@ -7,12 +7,14 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.Azure;
 import io.camunda.configuration.Backup;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Export;
+import io.camunda.configuration.Exporter;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
@@ -21,14 +23,18 @@ import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Membership;
+import io.camunda.configuration.Metrics;
 import io.camunda.configuration.PrimaryStorage;
+import io.camunda.configuration.Processing;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Ssl;
+import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.Write;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
@@ -40,6 +46,8 @@ import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.RateLimitCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.ThrottleCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -122,10 +130,94 @@ public class BrokerBasedPropertiesOverride {
       populateCamundaExporter(override);
     }
 
+    populateFromExporters(override);
+
+    populateFromMonitoring(override);
+
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
+    populateFromProcessing(override);
+
+    populateFromFlowControl(override);
 
     return override;
+  }
+
+  private void populateFromProcessing(final BrokerBasedProperties override) {
+    final Processing processing = unifiedConfiguration.getCamunda().getProcessing();
+
+    // processing
+    override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
+    override.getProcessing().setEnableAsyncScheduledTasks(processing.isEnableAsyncScheduledTasks());
+    override
+        .getProcessing()
+        .setScheduledTaskCheckInterval(processing.getScheduledTasksCheckInterval());
+    override.getProcessing().setSkipPositions(processing.getSkipPositions());
+
+    // consistency checks
+    override
+        .getExperimental()
+        .getConsistencyChecks()
+        .setEnablePreconditions(processing.isEnablePreconditionsCheck());
+    override
+        .getExperimental()
+        .getConsistencyChecks()
+        .setEnableForeignKeyChecks(processing.isEnableForeignKeyChecks());
+    // features
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableYieldingDueDateChecker(processing.isEnableYieldingDueDateChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableMessageTtlCheckerAsync(processing.isEnableAsyncMessageTtlChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableTimerDueDateCheckerAsync(processing.isEnableAsyncTimerDuedateChecker());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableStraightThroughProcessingLoopDetector(
+            processing.isEnableStraightthroughProcessingLoopDetector());
+    override
+        .getExperimental()
+        .getFeatures()
+        .setEnableMessageBodyOnExpired(processing.isEnableMessageBodyOnExpired());
+  }
+
+  private void populateFromFlowControl(final BrokerBasedProperties override) {
+    populateFromWrite(override);
+  }
+
+  private void populateFromWrite(final BrokerBasedProperties override) {
+    final Write write =
+        unifiedConfiguration.getCamunda().getProcessing().getFlowControl().getWrite();
+
+    if (write == null) {
+      return;
+    }
+
+    final RateLimitCfg rateLimitCfg =
+        Optional.ofNullable(override.getFlowControl().getWrite()).orElse(new RateLimitCfg());
+    rateLimitCfg.setEnabled(write.isEnabled());
+    rateLimitCfg.setLimit(write.getLimit());
+    rateLimitCfg.setRampUp(write.getRampUp());
+    override.getFlowControl().setWrite(rateLimitCfg);
+
+    populateFromThrottle(override);
+  }
+
+  private void populateFromThrottle(final BrokerBasedProperties override) {
+    final Throttle throttle =
+        unifiedConfiguration.getCamunda().getProcessing().getFlowControl().getWrite().getThrottle();
+
+    final ThrottleCfg throttleCfg = override.getFlowControl().getWrite().getThrottling();
+    throttleCfg.setEnabled(throttle.isEnabled());
+    throttleCfg.setAcceptableBacklog(throttle.getAcceptableBacklog());
+    throttleCfg.setMinimumLimit(throttle.getMinimumLimit());
+    throttleCfg.setResolution(throttle.getResolution());
   }
 
   private void populateFromGrpc(final BrokerBasedProperties override) {
@@ -191,18 +283,24 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromCluster(final BrokerBasedProperties override) {
-    final var cluster = unifiedConfiguration.getCamunda().getCluster();
+    final var cluster = unifiedConfiguration.getCamunda().getCluster().withBrokerProperties();
 
+    override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
     override.getCluster().setNodeId(cluster.getNodeId());
     override.getCluster().setPartitionsCount(cluster.getPartitionCount());
     override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
     override.getCluster().setClusterSize(cluster.getSize());
+    override.getCluster().setClusterName(cluster.getName());
 
     populateFromMembership(override);
     populateFromRaftProperties(override);
     populateFromClusterMetadata(override);
     populateFromClusterNetwork(override);
-    // Rest of camunda.cluster.* sections
+
+    override
+        .getCluster()
+        .setMessageCompression(
+            CompressionAlgorithm.valueOf(cluster.getCompressionAlgorithm().name()));
   }
 
   private void populateFromLongPolling(final BrokerBasedProperties override) {
@@ -387,8 +485,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromBackup(final BrokerBasedProperties override) {
-    final Backup backup =
-        unifiedConfiguration.getCamunda().getData().getBackup().withBrokerBackupProperties();
+    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupStoreCfg backupStoreCfg = override.getData().getBackup();
     backupStoreCfg.setStore(BackupStoreType.valueOf(backup.getStore().name()));
 
@@ -581,6 +678,55 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+    setArg(args, "history.elsRolloverDateFormat", database.getHistory().getElsRolloverDateFormat());
+    setArg(args, "history.rolloverInterval", database.getHistory().getRolloverInterval());
+    setArg(args, "history.rolloverBatchSize", database.getHistory().getRolloverBatchSize());
+    setArg(
+        args,
+        "history.waitPeriodBeforeArchiving",
+        database.getHistory().getWaitPeriodBeforeArchiving());
+    setArg(
+        args, "history.delayBetweenRuns", database.getHistory().getDelayBetweenRuns().toMillis());
+    setArg(
+        args,
+        "history.maxDelayBetweenRuns",
+        database.getHistory().getMaxDelayBetweenRuns().toMillis());
+
+    setArg(args, "createSchema", database.isCreateSchema());
+
+    if (database.getIncidentNotifier() != null) {
+      setArg(args, "notifier.webhook", database.getIncidentNotifier().getWebhook());
+      setArg(args, "notifier.auth0Domain", database.getIncidentNotifier().getAuth0Domain());
+      setArg(args, "notifier.auth0Protocol", database.getIncidentNotifier().getAuth0Protocol());
+      setArg(args, "notifier.m2mClientId", database.getIncidentNotifier().getM2mClientId());
+      setArg(args, "notifier.m2mClientSecret", database.getIncidentNotifier().getM2mClientSecret());
+      setArg(args, "notifier.m2mAudience", database.getIncidentNotifier().getM2mAudience());
+    }
+
+    setArg(
+        args, "batchOperationCache.maxCacheSize", database.getBatchOperationCache().getMaxSize());
+    setArg(args, "processCache.maxCacheSize", database.getProcessCache().getMaxSize());
+    setArg(args, "formCache.maxCacheSize", database.getFormCache().getMaxSize());
+
+    setArg(args, "postExport.batchSize", database.getPostExport().getBatchSize());
+    // Duration supports only seconds and nanos; other units need to be converted
+    setArg(
+        args,
+        "postExport.delayBetweenRuns",
+        database.getPostExport().getDelayBetweenRuns().getSeconds() * 1000);
+    setArg(
+        args,
+        "postExport.maxDelayBetweenRuns",
+        database.getPostExport().getMaxDelayBetweenRuns().getSeconds() * 1000);
+    setArg(args, "postExport.ignoreMissingData", database.getPostExport().isIgnoreMissingData());
+    setArg(
+        args,
+        "batchOperation.exportItemsOnCreation",
+        database.getBatchOperations().isExportItemsOnCreation());
+
+    setArg(args, "bulk.delay", database.getBulk().getDelay().getSeconds());
+    setArg(args, "bulk.size", database.getBulk().getSize());
+    setArg(args, "bulk.memoryLimit", database.getBulk().getMemoryLimit().toMegabytes());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
@@ -661,6 +807,16 @@ public class BrokerBasedPropertiesOverride {
     exporter.setArgs(args);
   }
 
+  private void populateFromMonitoring(final BrokerBasedProperties override) {
+    populateFromMetrics(override);
+  }
+
+  private void populateFromMetrics(final BrokerBasedProperties override) {
+    final Metrics metrics = unifiedConfiguration.getCamunda().getMonitoring().getMetrics();
+    override.getExperimental().getFeatures().setEnableActorMetrics(metrics.isActor());
+    override.setExecutionMetricsExporterEnabled(metrics.isEnableExporterExecutionMetrics());
+  }
+
   private void setArgIfNotNull(
       final Map<String, Object> args, final String breadcrumb, final Object value) {
     if (value != null) {
@@ -706,5 +862,22 @@ public class BrokerBasedPropertiesOverride {
       cursor = (Map<String, Object>) cursor.computeIfAbsent(keys[i], k -> new LinkedHashMap<>());
     }
     cursor.put(keys[keys.length - 1], value);
+  }
+
+  private void populateFromExporters(final BrokerBasedProperties override) {
+    final Map<String, Exporter> exporters =
+        unifiedConfiguration.getCamunda().getData().getExporters();
+
+    // Log common legacy exporters warning instead of using UnifiedConfigurationHelper logging.
+    if (!override.getExporters().isEmpty()) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.data.exporters", "zeebe.broker.exporters");
+      LOGGER.warn(warningMessage);
+    }
+
+    exporters.forEach(
+        (name, exporter) -> override.getExporters().put(name, exporter.toExporterCfg()));
   }
 }

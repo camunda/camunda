@@ -19,7 +19,7 @@ import java.util.List;
 
 public interface BasicLongProperty extends PropertyBase<Long, BasicLongProperty> {
 
-  BasicLongProperty notIn(final List<Long> values);
+  BasicLongProperty notIn(List<Long> values);
 
-  BasicLongProperty notIn(final Long... values);
+  BasicLongProperty notIn(Long... values);
 }

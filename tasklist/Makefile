@@ -11,6 +11,22 @@ WITH_MULTI_TENANCY:=false
 # Bash script to write or replace a variable in a file with the format VAR=value, args: variable name, variable value, target file
 WRITE_OR_REPLACE_SCRIPT:=./config/write_or_replace_var.sh
 
+.PHONY: env-h2-up
+env-h2-up:
+	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
+	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo \
+	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
+	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
+	CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
+	CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
+	CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
+	CAMUNDA_BACKUP_WEBAPPS_ENABLED=false \
+	CAMUNDA_DATABASE_URL=jdbc:h2:mem:camunda \
+	CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms \
+	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
+	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring.profiles.active=tasklist,broker,dev,dev-data,identity,consolidated-auth
 
 .PHONY: env-up
 env-up: $(DATABASE) setup-maven-context

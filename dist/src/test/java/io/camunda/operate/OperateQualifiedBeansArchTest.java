@@ -70,7 +70,7 @@ public class OperateQualifiedBeansArchTest {
                 }
               });
 
-  private static final String OPEN_SEARCH_CLIENT_QUALIFIER = "openSearchClient";
+  private static final String OPEN_SEARCH_CLIENT_QUALIFIER = "operateOpenSearchClient";
 
   @ArchTest
   public static final ArchRule AUTOWIRED_OS_CLIENT_FIELDS_SHOULD_HAVE_QUALIFIER =

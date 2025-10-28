@@ -41,6 +41,7 @@ public class DecisionInstanceEntityTransformer
         source.getDecisionName(),
         source.getDecisionVersion(),
         toDecisionType(source.getDecisionType()),
+        ofNullable(source.getRootDecisionDefinitionId()).map(Long::valueOf).orElse(null),
         source.getResult(),
         toEvaluatedInputs(source.getEvaluatedInputs()),
         toEvaluatedOutputs(source.getEvaluatedOutputs()));
@@ -76,7 +77,6 @@ public class DecisionInstanceEntityTransformer
     return switch (source) {
       case DECISION_TABLE -> DecisionDefinitionType.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionType.LITERAL_EXPRESSION;
-      case UNSPECIFIED -> DecisionDefinitionType.UNSPECIFIED;
       default -> DecisionDefinitionType.UNKNOWN;
     };
   }
@@ -89,7 +89,6 @@ public class DecisionInstanceEntityTransformer
     return switch (source) {
       case EVALUATED -> DecisionInstanceState.EVALUATED;
       case FAILED -> DecisionInstanceState.FAILED;
-      default -> DecisionInstanceState.UNKNOWN;
     };
   }
 }

@@ -21,13 +21,18 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemStateFilterPrope
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskStateFilterProperty;
 import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeserializer;
@@ -35,13 +40,18 @@ import io.camunda.zeebe.gateway.rest.deserializer.BatchOperatioItemStateFilterPr
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.DecisionEvaluationInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ElementInstanceStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.IncidentErrorTypePropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.IncidentStatePropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobKindFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobListenerEventTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionStatePropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceCreationInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.SearchQueryPageRequestDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
 import java.util.function.Consumer;
@@ -84,6 +94,16 @@ public class JacksonConfig {
         new MessageSubscriptionStatePropertyDeserializer());
     module.addDeserializer(
         UserTaskStateFilterProperty.class, new UserTaskStateFilterPropertyDeserializer());
+    module.addDeserializer(SearchQueryPageRequest.class, new SearchQueryPageRequestDeserializer());
+    module.addDeserializer(
+        ProcessInstanceCreationInstruction.class,
+        new ProcessInstanceCreationInstructionDeserializer());
+    module.addDeserializer(
+        DecisionEvaluationInstruction.class, new DecisionEvaluationInstructionDeserializer());
+    module.addDeserializer(
+        IncidentErrorTypeFilterProperty.class, new IncidentErrorTypePropertyDeserializer());
+    module.addDeserializer(
+        IncidentStateFilterProperty.class, new IncidentStatePropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 

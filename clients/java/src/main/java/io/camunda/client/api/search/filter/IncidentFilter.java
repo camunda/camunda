@@ -17,8 +17,14 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IncidentErrorTypeProperty;
+import io.camunda.client.api.search.filter.builder.IncidentStateProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public interface IncidentFilter extends SearchRequestFilter {
 
@@ -31,12 +37,28 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter incidentKey(final Long value);
 
   /**
+   * Filters incidents by the specified keys using {@link BasicLongProperty} consumer.
+   *
+   * @param fn the incident keys {@link BasicLongProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter incidentKey(final Consumer<BasicLongProperty> fn);
+
+  /**
    * Filters incidents by the process definition key.
    *
    * @param value the key of the process definition
    * @return the updated filter
    */
   IncidentFilter processDefinitionKey(final Long value);
+
+  /**
+   * Filters incidents by the process definition keys using {@link BasicLongProperty} consumer.
+   *
+   * @param fn the process definition keys {@link BasicLongProperty} consumer
+   * @return the updated filter
+   */
+  IncidentFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
 
   /**
    * Filters incidents by the process definition id.
@@ -47,12 +69,28 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter processDefinitionId(final String value);
 
   /**
+   * Filters incidents by the process definition ids using {@link StringProperty} consumer.
+   *
+   * @param fn the process definition ids {@link StringProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter processDefinitionId(final Consumer<StringProperty> fn);
+
+  /**
    * Filters incidents by the process instance key.
    *
    * @param value the key of the process instance
    * @return the updated filter
    */
   IncidentFilter processInstanceKey(final Long value);
+
+  /**
+   * Filters incidents by the process instance keys using {@link BasicLongProperty} consumer.
+   *
+   * @param fn the process instance keys {@link BasicLongProperty} consumer
+   * @return the updated filter
+   */
+  IncidentFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /**
    * Filters incidents by error type.
@@ -63,12 +101,28 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter errorType(final IncidentErrorType errorType);
 
   /**
+   * Filters incidents by error type using {@link IncidentErrorTypeProperty} consumer.
+   *
+   * @param fn the error types {@link IncidentErrorTypeProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter errorType(final Consumer<IncidentErrorTypeProperty> fn);
+
+  /**
    * Filters incidents by error message.
    *
    * @param errorMessage the message of incident
    * @return the updated filter
    */
   IncidentFilter errorMessage(final String errorMessage);
+
+  /**
+   * Filters incidents by error message using {@link StringProperty} consumer.
+   *
+   * @param fn the error messages {@link StringProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter errorMessage(final Consumer<StringProperty> fn);
 
   /**
    * Filters incidents by the element id.
@@ -79,12 +133,28 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter elementId(final String value);
 
   /**
+   * Filters incidents by the element ids using {@link StringProperty} consumer.
+   *
+   * @param fn the element ids {@link StringProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter elementId(final Consumer<StringProperty> fn);
+
+  /**
    * Filters incidents by the element instance key.
    *
    * @param value the key of element instance.
    * @return the updated filter
    */
   IncidentFilter elementInstanceKey(final Long value);
+
+  /**
+   * Filters incidents by the element instance keys using {@link BasicLongProperty} consumer.
+   *
+   * @param fn the element instance keys {@link BasicLongProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter elementInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /**
    * Filters incidents by creation time of incident.
@@ -95,12 +165,28 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter creationTime(final OffsetDateTime creationTime);
 
   /**
+   * Filters incidents by creation times using {@link DateTimeProperty} consumer.
+   *
+   * @param fn the creation times {@link DateTimeProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter creationTime(final Consumer<DateTimeProperty> fn);
+
+  /**
    * Filters incidents by the state of incident.
    *
    * @param value the state of incident
    * @return the updated filter
    */
   IncidentFilter state(final IncidentState value);
+
+  /**
+   * Filters incidents by state using {@link IncidentStateProperty} consumer.
+   *
+   * @param fn the states {@link IncidentStateProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter state(final Consumer<IncidentStateProperty> fn);
 
   /**
    * Filters incidents by job key.
@@ -111,10 +197,26 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter jobKey(final Long value);
 
   /**
+   * Filters incidents by job keys using {@link BasicLongProperty} consumer.
+   *
+   * @param fn the job keys {@link BasicLongProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter jobKey(final Consumer<BasicLongProperty> fn);
+
+  /**
    * Filters incidents by tenant id.
    *
    * @param value the id of tenant
    * @return the updated filter
    */
   IncidentFilter tenantId(final String value);
+
+  /**
+   * Filters incidents by tenant ids using {@link StringProperty} consumer.
+   *
+   * @param fn the tenant ids {@link StringProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter tenantId(final Consumer<StringProperty> fn);
 }

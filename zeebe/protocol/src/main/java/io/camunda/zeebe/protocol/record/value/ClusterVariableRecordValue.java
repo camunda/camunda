@@ -30,7 +30,7 @@ import org.immutables.value.Value;
  * <ul>
  *   <li>{@link #getName()} – the unique name of the cluster variable.
  *   <li>{@link #getValue()} – the current value of the cluster variable, as a deserialized object.
- *   <li>{@link #getKey()} – the unique key identifying the cluster variable
+ *   <li>{@link #getScope()} – the current scope of the cluster variable.
  * </ul>
  *
  * @see RecordValue;
@@ -59,9 +59,12 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
   Object getValue();
 
   /**
-   * Returns the unique key of this cluster variable record.
+   * Returns the scope in which this variable is defined.
    *
-   * @return the record key
+   * <p>The scope determines the visibility and lifecycle of the variable, for example, whether it
+   * is global across all tenants or specific to a single tenant.
+   *
+   * @return the variable scope (never {@code null})
    */
-  long getKey();
+  ClusterVariableScope getScope();
 }

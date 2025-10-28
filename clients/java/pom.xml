@@ -327,20 +327,21 @@
           <generatorName>java</generatorName>
           <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
           <modelPackage>io.camunda.client.protocol.rest</modelPackage>
-          <typeMappings>OffsetDateTime=String</typeMappings>
+          <typeMappings>OffsetDateTime=String,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty,ElementInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,ScopeKeyFilterProperty=BasicStringFilterProperty,VariableKeyFilterProperty=BasicStringFilterProperty,ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty,JobKeyFilterProperty=BasicStringFilterProperty,MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMappings>
           <generateApis>false</generateApis>
           <generateApiTests>false</generateApiTests>
           <generateSupportingFiles>false</generateSupportingFiles>
           <generateModels>true</generateModels>
           <generateModelDocumentation>false</generateModelDocumentation>
           <generateModelTests>false</generateModelTests>
+          <templateDirectory>${project.basedir}/src/main/resources/templates</templateDirectory>
           <!-- validate the spec on every generation -->
           <skipValidateSpec>false</skipValidateSpec>
           <configOptions>
             <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
             <documentationProvider>none</documentationProvider>
             <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
-            <library>apache-httpclient</library>
+            <library>google-api-client</library>
             <java8>true</java8>
             <openApiNullable>false</openApiNullable>
             <serializationLibrary>jackson</serializationLibrary>
@@ -353,6 +354,29 @@
             <goals>
               <goal>generate</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cleanupModels</id>
+            <goals>
+              <goal>apply</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <applySkip>false</applySkip>
+              <java>
+                <includes>
+                  <include>**/io/camunda/client/protocol/rest/*.java</include>
+                </includes>
+                <removeUnusedImports/>
+              </java>
+            </configuration>
           </execution>
         </executions>
       </plugin>

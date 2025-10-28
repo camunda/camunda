@@ -165,12 +165,25 @@ dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.tar.gz
 dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.zip
 ```
 
-This distribution can be containerized with Docker (i.e. build a Docker image) by running:
+This distribution can be containerized with Docker (i.e. build a Docker image) with access to Minimus hardened base images](https://minimus.io/) by running:
 
 ```
 docker build \
   --tag camunda/zeebe:local \
   --build-arg DISTBALL='dist/target/camunda-zeebe*.tar.gz' \
+  --target app \
+  --file ./camunda.Dockerfile
+  .
+```
+
+If you don't have access to [Minimus hardened base images](https://minimus.io/), you can use public base images instead at your own risk by running:
+
+```
+docker build \
+  --tag camunda/zeebe:local \
+  --build-arg DISTBALL='dist/target/camunda-zeebe*.tar.gz' \
+  --build-arg BASE_IMAGE='eclipse-temurin:21-jre-noble' \
+  --build-arg BASE_DIGEST='sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd' \
   --target app \
   --file ./camunda.Dockerfile
   .

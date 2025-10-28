@@ -35,8 +35,11 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.engine.BatchOperationCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.ListenerCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.ListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.engine.ListenerConfiguration;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -47,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -225,6 +229,11 @@ public final class SystemContext {
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getBatchOperations)
         .ifPresent(c -> validateBatchOperationsConfig(c));
+
+    Optional.of(experimental)
+        .map(ExperimentalCfg::getEngine)
+        .map(EngineCfg::getListeners)
+        .ifPresent(c -> validateListenersConfig(c));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {
@@ -436,6 +445,103 @@ public final class SystemContext {
         security.getCertificateChainPath(),
         security.getPrivateKeyPath(),
         security.getKeyStore().getFilePath());
+  }
+
+  private void validateListenersConfig(final ListenersCfg listeners) {
+    final String propertyLocation = "experimental.engine.listeners.task";
+    final List<String> supportedEventTypes = ListenerConfiguration.TASK_LISTENER_EVENT_TYPES;
+    final List<ListenerCfg> taskListeners = listeners.getTask();
+
+    // Validate listeners and ignore invalid ones
+    final List<ListenerCfg> validListeners = new ArrayList<>();
+    for (int i = 0; i < taskListeners.size(); i++) {
+      final ListenerCfg listener = taskListeners.get(i);
+      final String propertyPrefix = String.format("%s.%d", propertyLocation, i);
+
+      // Check if type is present
+      if (listener.getType() == null || listener.getType().isBlank()) {
+        LOG.warn(
+            String.format(
+                "Missing job type for global listener; listener will be ignored [%s.type]",
+                propertyPrefix));
+        continue;
+      }
+
+      // Validate event types
+      final var eventTypes = // consider event types in lowercase for validation
+          listener.getEventTypes().stream().map(String::toLowerCase).toList();
+      final boolean containsAllEventsKeyword =
+          eventTypes.contains(ListenerConfiguration.ALL_EVENT_TYPES);
+      final List<String> validEventTypes =
+          eventTypes.stream()
+              .filter( // check if provided event types have valid values
+                  eventType -> {
+                    if (ListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
+                        || supportedEventTypes.contains(eventType)) {
+                      return true;
+                    } else {
+                      LOG.warn(
+                          String.format(
+                              "Invalid event type will be ignored: '%s' [%s.eventTypes]",
+                              eventType, propertyPrefix));
+                      return false;
+                    }
+                  })
+              .filter(
+                  eventType -> { // check if "all" is used alongside other event types
+                    if (!ListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
+                        && containsAllEventsKeyword) {
+                      LOG.warn(
+                          String.format(
+                              "Extra event type defined alongside '%s' will be ignored: '%s' [%s.eventTypes]",
+                              ListenerConfiguration.ALL_EVENT_TYPES, eventType, propertyPrefix));
+                      return false;
+                    }
+                    return true;
+                  })
+              .toList();
+
+      // Remove duplicates
+      final List<String> uniqueEventTypes = new ArrayList<>();
+      validEventTypes.forEach(
+          eventType -> {
+            if (uniqueEventTypes.contains(eventType)) {
+              LOG.warn(
+                  String.format(
+                      "Duplicated event type will be considered only once: '%s' [%s.eventTypes]",
+                      eventType, propertyPrefix));
+            } else {
+              uniqueEventTypes.add(eventType);
+            }
+          });
+
+      // Check if valid event types have been provided
+      if (uniqueEventTypes.isEmpty()) {
+        LOG.warn(
+            String.format(
+                "Missing event types for global listener; listener will be ignored [%s.eventTypes]",
+                propertyPrefix));
+        continue;
+      }
+
+      listener.setEventTypes(uniqueEventTypes);
+
+      // Check if retries actually contains a number
+      try {
+        if (Integer.parseInt(listener.getRetries()) <= 0) {
+          throw new NumberFormatException();
+        }
+      } catch (final NumberFormatException e) {
+        LOG.warn(
+            String.format(
+                "Invalid retries for global listener: '%s'; listener will be ignored [%s.retries]",
+                listener.getRetries(), propertyPrefix));
+        continue;
+      }
+      validListeners.add(listener);
+    }
+
+    listeners.setTask(validListeners);
   }
 
   public ActorScheduler getScheduler() {

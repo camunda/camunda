@@ -3,6 +3,6 @@
 To start in development mode run
 
 ```shell
-yarn dev
+npm run dev
 ```
 

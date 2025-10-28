@@ -14,7 +14,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -111,11 +111,11 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
         .updateConfig(c -> c.updateExporting(e -> e.addExporters(newlyAddedExporters)));
   }
 
-  private ExportersConfig reEnableExporters(
-      final ExportersConfig exportersConfig,
+  private ExportingConfig reEnableExporters(
+      final ExportingConfig exportingConfig,
       final List<Entry<String, ExporterState>> configReaddedExporters) {
 
-    ExportersConfig updating = exportersConfig;
+    ExportingConfig updating = exportingConfig;
     for (final var entry : configReaddedExporters) {
       final var exporterName = entry.getKey();
       final var exporterState = entry.getValue();

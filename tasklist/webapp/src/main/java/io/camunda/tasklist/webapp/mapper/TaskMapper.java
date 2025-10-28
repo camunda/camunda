@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.mapper;
 
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnRdbmsDisabled
 public class TaskMapper {
 
   public static final String TASK_DESCRIPTION = "taskContextDisplayName";

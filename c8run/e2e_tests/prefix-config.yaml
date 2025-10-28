@@ -1,7 +1,5 @@
 camunda:
-  operate:
-    zeebeElasticsearch:
-      prefix: "extra-prefix-zeebe-record"
-  tasklist:
-    zeebeElasticsearch:
-      prefix: "extra-prefix-zeebe-record"
+  data:
+    secondaryStorage:
+      elasticsearch:
+#        indexPrefix: "extra-prefix-zeebe-record"

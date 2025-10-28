@@ -288,11 +288,6 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public boolean ilmPolicyExists(final String policyName) {
-    return !richOpenSearchClient.ism().getPolicy(policyName).isEmpty();
-  }
-
-  @Override
   public List<BatchOperationEntity> getBatchOperationEntities(
       final String indexName, final List<String> ids) throws IOException {
     final var searchRequestBuilder =

@@ -143,6 +143,10 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, error) {
 		if err != nil {
 			return settings, fmt.Errorf("error parsing start argument: %w", err)
 		}
+		// If the user did not explicitly set --startup-url, regenerate it using the (possibly overridden) port.
+		if !flagPassed(startFlagSet, "startup-url") {
+			settings.StartupUrl = createOperateUrl(&settings)
+		}
 	case "stop":
 		err := stopFlagSet.Parse(os.Args[2:])
 		if err != nil {
@@ -151,6 +155,17 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, error) {
 	}
 
 	return settings, nil
+}
+
+// flagPassed determines if a flag was explicitly set by the user.
+func flagPassed(fs *flag.FlagSet, name string) bool {
+	found := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }
 
 func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
@@ -165,7 +180,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
-	startFlagSet.StringVar(&settings.StartupUrl, "startup-url", createOperateUrl(settings), "The URL to open after startup.")
+	startFlagSet.StringVar(&settings.StartupUrl, "startup-url", "", "The URL to open after startup.")
 	return startFlagSet
 }
 

@@ -7,29 +7,39 @@
  */
 package io.camunda.application.commons.backup;
 
-import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
+import io.camunda.webapps.profiles.ProfileWebApp;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
-/*
- * Note that the condition used refers to operate OpensearchCondition
- */
 @ConditionalOnBackupWebappsEnabled
-@Conditional(OpensearchCondition.class)
+@ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
 @Configuration
-@Profile("operate")
-public class OpensearchBackupRepository
-    extends io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository {
+@ProfileWebApp
+public class OpensearchBackupRepository {
+
+  private final OpenSearchClient openSearchClient;
+  private final OpenSearchAsyncClient openSearchAsyncClient;
+  private final BackupRepositoryProps backupProps;
 
   public OpensearchBackupRepository(
       final OpenSearchClient openSearchClient,
       final OpenSearchAsyncClient openSearchAsyncClient,
       final BackupRepositoryProps backupProps) {
-    super(openSearchClient, openSearchAsyncClient, backupProps, new WebappsSnapshotNameProvider());
+    this.openSearchClient = openSearchClient;
+    this.openSearchAsyncClient = openSearchAsyncClient;
+    this.backupProps = backupProps;
+  }
+
+  @Bean
+  public BackupRepository backupRepository() {
+    return new io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository(
+        openSearchClient, openSearchAsyncClient, backupProps, new WebappsSnapshotNameProvider());
   }
 }

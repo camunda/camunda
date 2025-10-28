@@ -65,7 +65,6 @@ public class OperateInternalApiGroupPermissionsIT {
   private static final String ADMIN_USERNAME = "admin";
   private static final String AUTHORIZED_USERNAME = "authorized";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -91,6 +90,7 @@ public class OperateInternalApiGroupPermissionsIT {
       new TestUser(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME, List.of());
 
   private static long processInstanceKey;
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @BeforeAll
   public static void beforeAll(
@@ -227,7 +227,7 @@ public class OperateInternalApiGroupPermissionsIT {
             .build();
 
     // Send the request and get the response
-    final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+    final var response = httpClient.send(request, BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), ResponseCount.class);
   }
 
@@ -247,7 +247,7 @@ public class OperateInternalApiGroupPermissionsIT {
             .build();
 
     // Send the request and get the response
-    return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
+    return httpClient.send(request, BodyHandlers.ofString()).statusCode();
   }
 
   private int addVariableToProcessInstance(
@@ -280,7 +280,7 @@ public class OperateInternalApiGroupPermissionsIT {
             .header("Content-Type", "application/json")
             .build();
     // Send the request and get the response
-    return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
+    return httpClient.send(request, BodyHandlers.ofString()).statusCode();
   }
 
   private record ResponseCount(int totalCount) {}

@@ -296,26 +296,6 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchWithFullPagination() {
-    // when
-    client
-        .newProcessInstanceSearchRequest()
-        .page(p -> p.from(23).limit(5).before("b").after("a"))
-        .send()
-        .join();
-
-    // then
-    final ProcessInstanceSearchQuery request =
-        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest.getFrom()).isEqualTo(23);
-    assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getBefore()).isEqualTo("b");
-    assertThat(pageRequest.getAfter()).isEqualTo("a");
-  }
-
-  @Test
   void shouldSearchProcessInstanceWithOrOperatorFilters() {
     // when
     final OffsetDateTime now = OffsetDateTime.now();

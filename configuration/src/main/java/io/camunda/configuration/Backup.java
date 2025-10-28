@@ -9,29 +9,19 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Backup {
+public class Backup implements Cloneable {
   private static final String PREFIX = "camunda.data.backup";
 
-  private static final Map<String, String> LEGACY_OPERATE_BACKUP_PROPERTIES =
-      Map.of(
-          "repositoryName",
-          "camunda.operate.backup.repositoryName",
-          "snapshotTimeout",
-          "camunda.operate.backup.snapshotTimeout",
-          "incompleteCheckTimeoutInSeconds",
-          "camunda.operate.backup.incompleteCheckTimeoutInSeconds");
-
-  private static final Map<String, String> LEGACY_TASKLIST_BACKUP_PROPERTIES =
-      Map.of("repositoryName", "camunda.tasklist.backup.repositoryName");
-
-  private static final Map<String, String> LEGACY_BROKER_BACKUP_PROPERTIES =
-      Map.of("store", "zeebe.broker.data.backup.store");
-
-  private Map<String, String> legacyPropertyMap = LEGACY_OPERATE_BACKUP_PROPERTIES;
+  private static final String LEGACY_OPERATE_SNAPSHOT_TIMEOUT =
+      "camunda.operate.backup.snapshotTimeout";
+  private static final String LEGACY_OPERATE_INCOMPLETE_CHECK_TIMEOUT_IN_SECONDS =
+      "camunda.operate.backup.incompleteCheckTimeoutInSeconds";
+  private static final Set<String> LEGACY_REPOSITORY_NAME_PROPERTIES =
+      Set.of("camunda.tasklist.backup.repositoryName", "camunda.operate.backup.repositoryName");
+  private static final String LEGACY_BROKER_STORE = "zeebe.broker.data.backup.store";
 
   /**
    * Set the ES / OS snapshot repository name.
@@ -94,7 +84,7 @@ public class Backup {
         repositoryName,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertyMap.get("repositoryName")));
+        LEGACY_REPOSITORY_NAME_PROPERTIES);
   }
 
   public void setRepositoryName(final String repositoryName) {
@@ -107,7 +97,7 @@ public class Backup {
         snapshotTimeout,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertyMap.get("snapshotTimeout")));
+        Set.of(LEGACY_OPERATE_SNAPSHOT_TIMEOUT));
   }
 
   public void setSnapshotTimeout(final int snapshotTimeout) {
@@ -121,7 +111,7 @@ public class Backup {
             incompleteCheckTimeout.getSeconds(),
             Long.class,
             BackwardsCompatibilityMode.SUPPORTED,
-            Set.of(legacyPropertyMap.get("incompleteCheckTimeoutInSeconds")));
+            Set.of(LEGACY_OPERATE_INCOMPLETE_CHECK_TIMEOUT_IN_SECONDS));
 
     return Duration.ofSeconds(incompleteCheckTimeoutInSeconds);
   }
@@ -168,44 +158,11 @@ public class Backup {
         store,
         BackupStoreType.class,
         BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertyMap.get("store")));
+        Set.of(LEGACY_BROKER_STORE));
   }
 
   public void setStore(final BackupStoreType store) {
     this.store = store;
-  }
-
-  @Override
-  public Backup clone() {
-    final Backup copy = new Backup();
-    copy.repositoryName = repositoryName;
-    copy.snapshotTimeout = snapshotTimeout;
-    copy.incompleteCheckTimeout = incompleteCheckTimeout;
-    copy.store = store;
-    copy.s3 = s3;
-    copy.gcs = gcs;
-    copy.filesystem = filesystem;
-    copy.azure = azure;
-
-    return copy;
-  }
-
-  public Backup withOperateBackupProperties() {
-    final Backup copy = clone();
-    copy.legacyPropertyMap = LEGACY_OPERATE_BACKUP_PROPERTIES;
-    return copy;
-  }
-
-  public Backup withTasklistBackupProperties() {
-    final Backup copy = clone();
-    copy.legacyPropertyMap = LEGACY_TASKLIST_BACKUP_PROPERTIES;
-    return copy;
-  }
-
-  public Backup withBrokerBackupProperties() {
-    final Backup copy = clone();
-    copy.legacyPropertyMap = LEGACY_BROKER_BACKUP_PROPERTIES;
-    return copy;
   }
 
   public enum BackupStoreType {

@@ -26,7 +26,6 @@ import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilter;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import java.util.List;
@@ -163,25 +162,5 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertSort(sorts.get(4), "versionTag", SortOrderEnum.DESC);
     assertSort(sorts.get(5), "processDefinitionId", SortOrderEnum.DESC);
     assertSort(sorts.get(6), "tenantId", SortOrderEnum.ASC);
-  }
-
-  @Test
-  void shouldSearchWithFullPagination() {
-    // when
-    client
-        .newProcessDefinitionSearchRequest()
-        .page(p -> p.from(23).limit(5).before("b").after("a"))
-        .send()
-        .join();
-
-    // then
-    final ProcessDefinitionSearchQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest.getFrom()).isEqualTo(23);
-    assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getBefore()).isEqualTo("b");
-    assertThat(pageRequest.getAfter()).isEqualTo("a");
   }
 }

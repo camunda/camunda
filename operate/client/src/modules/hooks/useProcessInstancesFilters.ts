@@ -12,14 +12,7 @@ import {
   type GetProcessDefinitionStatisticsRequestBody,
   type ProcessInstanceState,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-
-const formatToISO = (dateString: string | undefined): string | undefined => {
-  if (!dateString) {
-    return undefined;
-  }
-  const date = new Date(dateString);
-  return date.toISOString();
-};
+import {formatToISO} from 'modules/utils/date/formatDate';
 
 function mapFiltersToRequest(
   filters: ProcessInstanceFilters,

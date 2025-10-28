@@ -28,6 +28,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.TENANT_ID;
 import static java.util.Optional.ofNullable;
@@ -70,6 +71,8 @@ public final class DecisionInstanceFilterTransformer
     ofNullable(getDecisionDefinitionVersionsQuery(filter.decisionDefinitionVersions()))
         .ifPresent(queries::add);
     ofNullable(getDecisionDefinitionTypesQuery(filter.decisionTypes())).ifPresent(queries::add);
+    queries.addAll(
+        getRootDecisionDefinitionKeysQuery(filter.rootDecisionDefinitionKeyOperations()));
     ofNullable(getTenantIdsQuery(filter.tenantIds())).ifPresent(queries::add);
     return and(queries);
   }
@@ -146,6 +149,19 @@ public final class DecisionInstanceFilterTransformer
     return stringTerms(
         DECISION_TYPE,
         decisionTypes != null ? decisionTypes.stream().map(Enum::name).toList() : null);
+  }
+
+  private List<SearchQuery> getRootDecisionDefinitionKeysQuery(
+      final List<Operation<Long>> rootDecisionDefinitionKeyOperations) {
+    final var stringOperations =
+        rootDecisionDefinitionKeyOperations.stream()
+            .map(
+                op -> {
+                  final var values = op.values().stream().map(String::valueOf).toList();
+                  return new Operation<>(op.operator(), values);
+                })
+            .toList();
+    return stringOperations(ROOT_DECISION_DEFINITION_ID, stringOperations);
   }
 
   private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {

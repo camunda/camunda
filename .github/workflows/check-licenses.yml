@@ -84,11 +84,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@0cefec60b9a847594d0e33cddef4857772e3b09a
+      uses: camunda/infra-global-github-actions/fossa/setup@631423f4de7c6886352df8e4796bb5df19f4346f
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@0cefec60b9a847594d0e33cddef4857772e3b09a
+      uses: camunda/infra-global-github-actions/fossa/info@631423f4de7c6886352df8e4796bb5df19f4346f
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -111,7 +111,7 @@ jobs:
           optimize/pom.xml
 
     - name: Analyze project
-      uses: camunda/infra-global-github-actions/fossa/analyze@0cefec60b9a847594d0e33cddef4857772e3b09a
+      uses: camunda/infra-global-github-actions/fossa/analyze@631423f4de7c6886352df8e4796bb5df19f4346f
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -123,7 +123,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@0cefec60b9a847594d0e33cddef4857772e3b09a
+      uses: camunda/infra-global-github-actions/fossa/pr-check@631423f4de7c6886352df8e4796bb5df19f4346f
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}
@@ -149,3 +149,21 @@ jobs:
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  observe-aborted-jobs:
+    needs:
+    - analyze
+    if: failure()
+    permissions:
+      checks: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for aborted jobs
+        continue-on-error: true
+        uses: ./.github/actions/observe-aborted-jobs
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

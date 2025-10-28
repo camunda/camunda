@@ -21,7 +21,7 @@ import {
   EVALUATED_DECISION_EXPECTED_BODY,
   evaluateDecisionRequiredFields,
 } from '../../../../utils/beans/requestBeans';
-import {deployDecisionAndStoreResponse} from '../../../../utils/requestHelpers';
+import {deployDecisionAndStoreResponse} from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
 test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
@@ -449,7 +449,8 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Evaluate Decision Definition Invalid Data', async ({request}) => {
+  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
+  test.skip('Evaluate Decision Definition Invalid Data', async ({request}) => {
     await expect(async () => {
       const res = await request.post(
         buildUrl('/decision-definitions/evaluation'),

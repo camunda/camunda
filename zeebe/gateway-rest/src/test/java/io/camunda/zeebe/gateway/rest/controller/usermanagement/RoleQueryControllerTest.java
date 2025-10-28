@@ -18,6 +18,7 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.RoleSort;
@@ -233,10 +234,49 @@ public class RoleQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSortAndPaginateByLimitOnlySearchResult() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new RoleEntity(100L, "role1", "Role 1", "description 1"),
+                        new RoleEntity(300L, "role12", "Role 12", "description 12"),
+                        new RoleEntity(200L, "role2", "Role 2", "description 2")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(ROLE_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "name", "order":  "ASC"}],
+              "page":  {"limit":  10}
+            }
+             """)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(roleServices)
+        .search(
+            new RoleQuery.Builder()
+                .sort(RoleSort.of(builder -> builder.name().asc()))
+                .page(SearchQueryPage.of(builder -> builder.size(10)))
+                .build());
+  }
+
+  @Test
   void shouldSearchUsersByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
@@ -283,8 +323,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
-                .filter(f -> f.memberType(EntityType.USER).joinParentId(roleId))
+            new RoleMemberQuery.Builder()
+                .filter(f -> f.memberType(EntityType.USER).roleId(roleId))
                 .build());
   }
 
@@ -357,7 +397,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   public void shouldSearchClientsByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
@@ -404,8 +444,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
-                .filter(f -> f.joinParentId(roleId).memberType(EntityType.CLIENT))
+            new RoleMemberQuery.Builder()
+                .filter(f -> f.roleId(roleId).memberType(EntityType.CLIENT))
                 .build());
   }
 
@@ -413,7 +453,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchGroupsByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(2)
@@ -455,8 +495,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
-                .filter(f -> f.joinParentId(roleId).memberType(EntityType.GROUP))
+            new RoleMemberQuery.Builder()
+                .filter(f -> f.roleId(roleId).memberType(EntityType.GROUP))
                 .build());
   }
 }
