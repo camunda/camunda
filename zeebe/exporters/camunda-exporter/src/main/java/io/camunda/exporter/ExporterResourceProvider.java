@@ -16,6 +16,7 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
@@ -75,6 +76,13 @@ public interface ExporterResourceProvider {
    * @return {@link ExporterEntityCacheImpl} of {@link CachedProcessEntity}
    */
   ExporterEntityCacheImpl<Long, CachedProcessEntity> getProcessCache();
+
+  /**
+   * Returns the reference to the Decision Cache
+   *
+   * @return {@link ExporterEntityCacheImpl} of {@link CachedDecisionRequirementsEntity}
+   */
+  ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCache();
 
   /**
    * Returns the reference to the Form Cache
