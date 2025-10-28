@@ -233,19 +233,12 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
-	// Check if Elasticsearch should be started (only if secondary-storage.type is elasticsearch)
 	shouldStartElasticsearch := !settings.DisableElasticsearch
-	if shouldStartElasticsearch {
-		// Check if the config specifies RDBMS instead of Elasticsearch
-		configPath := filepath.Join(parentDir, "configuration", "application.yaml")
-		if configData, err := os.ReadFile(configPath); err == nil {
-			configStr := string(configData)
-			// Simple check: if config contains "type: rdbms" in secondary-storage section, don't start ES
-			if strings.Contains(configStr, "type: rdbms") {
-				shouldStartElasticsearch = false
-				log.Info().Msg("Detected RDBMS configuration, skipping Elasticsearch startup")
-			}
-		}
+	if shouldStartElasticsearch && settings.SecondaryStorageType != "" && !strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+		shouldStartElasticsearch = false
+		log.Info().
+			Str("secondaryStorage.type", settings.SecondaryStorageType).
+			Msg("Skipping Elasticsearch startup because configuration selects a different secondary storage backend")
 	}
 
 	printSystemInformation(javaVersion, javaHome, javaOpts, shouldStartElasticsearch)
