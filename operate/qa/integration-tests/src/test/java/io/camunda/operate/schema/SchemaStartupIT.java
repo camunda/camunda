@@ -7,14 +7,9 @@
  */
 package io.camunda.operate.schema;
 
-import static io.camunda.operate.store.MetadataStore.SCHEMA_VERSION_METADATA_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -25,7 +20,6 @@ import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
-import io.camunda.operate.schema.indices.MetadataIndex;
 import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import io.camunda.operate.schema.migration.Migrator;
 import io.camunda.operate.schema.migration.elasticsearch.ElasticsearchMigrationPlanFactory;
@@ -43,25 +37,17 @@ import io.camunda.operate.schema.util.elasticsearch.ElasticsearchSchemaTestHelpe
 import io.camunda.operate.schema.util.elasticsearch.TestElasticsearchConnector;
 import io.camunda.operate.schema.util.opensearch.OpenSearchSchemaTestHelper;
 import io.camunda.operate.schema.util.opensearch.TestOpenSearchConnector;
-import io.camunda.operate.store.MetadataStore;
-import io.camunda.operate.store.elasticsearch.ElasticsearchMetadataStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.opensearch.OpensearchMetadataStore;
 import io.camunda.operate.store.opensearch.OpensearchTaskStore;
-import io.camunda.zeebe.util.VersionUtil;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 @ContextConfiguration(
     classes = {
@@ -83,9 +69,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
       ListViewTemplate.class,
       IncidentTemplate.class,
       PostImporterQueueTemplate.class,
-      MetadataIndex.class,
-      ElasticsearchMetadataStore.class,
-      OpensearchMetadataStore.class,
       TestTemplate.class,
       TestIndex.class,
       MigrationProperties.class,
@@ -105,9 +88,6 @@ public class SchemaStartupIT extends AbstractSchemaIT {
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private MigrationProperties migrationProperties;
-
-  @MockitoSpyBean private MetadataStore metadataStore;
-  @Autowired private MetadataIndex metadataIndex;
 
   @Test
   public void shouldAddMissingFieldToExistingIndex() throws MigrationException {
@@ -240,71 +220,6 @@ public class SchemaStartupIT extends AbstractSchemaIT {
         schemaManager.getIndexSettingsFor(indexName, SchemaManager.NUMBERS_OF_REPLICA);
     assertThat(unchangedSettings.get(SchemaManager.NUMBERS_OF_REPLICA))
         .isEqualTo(String.valueOf(initialReplicas));
-  }
-
-  @Test
-  void shouldStoreSchemaVersionWhenMetadataIsMissing() throws MigrationException {
-    // given
-    assertThat(metadataStore.getSchemaVersion()).isNull();
-
-    // when
-    schemaStartup.initializeSchemaOnDemand();
-
-    // then
-    final var metadata = metadataStore.getSchemaVersion();
-    assertThat(metadata).isEqualTo(VersionUtil.getVersion());
-  }
-
-  @Test
-  void shouldStoreSchemaVersionWhenSchemaVersionMetadataIsMissing() throws MigrationException {
-    // given
-    schemaHelper.createIndex(
-        metadataIndex, metadataIndex.getIndexName(), metadataIndex.getSchemaClasspathFilename());
-    assertThat(metadataStore.getSchemaVersion()).isNull();
-
-    // when
-    schemaStartup.initializeSchemaOnDemand();
-
-    // then
-    final var metadata = metadataStore.getSchemaVersion();
-    assertThat(metadata).isEqualTo(VersionUtil.getVersion());
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideSchemaVersions")
-  void shouldStoreSchemaVersionOnlyWhenSchemaVersionIsOutdated(
-      final String schemaVersion, final boolean shouldUpdate) throws MigrationException {
-    // given
-    schemaHelper.createIndex(
-        metadataIndex, metadataIndex.getIndexName(), metadataIndex.getSchemaClasspathFilename());
-    clientTestHelper.createDocument(
-        metadataIndex.getFullQualifiedName(),
-        SCHEMA_VERSION_METADATA_ID,
-        Map.of(
-            MetadataIndex.ID, SCHEMA_VERSION_METADATA_ID,
-            MetadataIndex.VALUE, schemaVersion));
-
-    // when
-    schemaStartup.initializeSchemaOnDemand();
-
-    // then
-    final var updatedVersion = metadataStore.getSchemaVersion();
-    assertThat(updatedVersion).isEqualTo(shouldUpdate ? VersionUtil.getVersion() : schemaVersion);
-    if (shouldUpdate) {
-      verify(metadataStore, times(1)).storeSchemaVersion(VersionUtil.getVersion());
-    } else {
-      verify(metadataStore, never()).storeSchemaVersion(any());
-    }
-  }
-
-  private static Stream<Arguments> provideSchemaVersions() {
-    return Stream.of(
-        Arguments.of("8.6.0", true),
-        Arguments.of("8.6.0-SNAPSHOT", true),
-        Arguments.of("UNKNOWN", true),
-        Arguments.of(VersionUtil.getVersion(), false),
-        Arguments.of("8.7.0", false),
-        Arguments.of("8.6.99", false));
   }
 
   private void setNumberOfReplicas(final int numberOfReplicas) {
