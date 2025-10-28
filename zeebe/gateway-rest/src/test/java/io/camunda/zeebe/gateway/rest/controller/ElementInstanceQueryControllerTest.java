@@ -12,8 +12,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.protocol.rest.IncidentErrorTypeEnum;
-import io.camunda.client.protocol.rest.IncidentStateEnum;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -34,6 +32,8 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
