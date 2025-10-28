@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.DELETE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.MAPPING_RULE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.UpdateMappingRuleResponse;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Permissions;
@@ -35,6 +37,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Future;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
@@ -53,6 +57,7 @@ class MappingRuleAuthorizationIT {
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String UNAUTHORIZED = "unauthorizedUser";
+  private static final String UPDATER = "updateUser";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String MAPPING_RULE_SEARCH_ENDPOINT = "v2/mapping-rules/search";
 
@@ -64,6 +69,7 @@ class MappingRuleAuthorizationIT {
           List.of(
               new Permissions(MAPPING_RULE, CREATE, List.of("*")),
               new Permissions(MAPPING_RULE, READ, List.of("*")),
+              new Permissions(MAPPING_RULE, UPDATE, List.of("*")),
               new Permissions(MAPPING_RULE, DELETE, List.of("*"))));
 
   @UserDefinition
@@ -74,6 +80,11 @@ class MappingRuleAuthorizationIT {
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER =
       new TestUser(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
+
+  @UserDefinition
+  private static final TestUser UPDATE_USER =
+      new TestUser(
+          UPDATER, DEFAULT_PASSWORD, List.of(new Permissions(MAPPING_RULE, UPDATE, List.of("*"))));
 
   @MappingRuleDefinition
   private static final TestMappingRule MAPPING_RULE_1 =
@@ -179,9 +190,49 @@ class MappingRuleAuthorizationIT {
                       camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
               assertThat(searchResponseAfter.items())
                   .map(MappingRuleResponse::name)
-                  .doesNotContain("testMappingRule");
-              assertThat(searchResponseAfter.items()).hasSize(initialCount - 1);
+                  .doesNotContain("testMappingRule")
+                  .hasSize(initialCount - 1);
             });
+  }
+
+  @Test
+  void updateMappingRuleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    // when / then
+    // the actual values don't really matter at the moment because we don't support fine grained
+    // permissions on mapping rules, just coarse (e.g. UPDATE on all mapping rules)
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUpdateMappingRule(MAPPING_RULE_1.id())
+                    .name("name")
+                    .claimName("claim")
+                    .claimValue("value")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void shouldUpdateMappingRuleIfAuthorized(
+      @Authenticated(UPDATER) final CamundaClient camundaClient) {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+
+    // when
+    final Future<UpdateMappingRuleResponse> result =
+        camundaClient
+            .newUpdateMappingRule(MAPPING_RULE_1.id())
+            .name(name)
+            .claimName(claimName)
+            .claimValue(claimValue)
+            .send();
+
+    // then - only check if it's successful, correctness tests are found in MappingRuleIT
+    assertThat(result).succeedsWithin(5, java.util.concurrent.TimeUnit.SECONDS);
   }
 
   // TODO once available, this test should use the client to make the request
