@@ -66,5 +66,8 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+<<<<<<< HEAD
 
+=======
+>>>>>>> fe2935a4 (fix: remove japicmp as its breaking builds)
 </project>
