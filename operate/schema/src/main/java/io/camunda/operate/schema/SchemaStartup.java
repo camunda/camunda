@@ -98,17 +98,12 @@ public class SchemaStartup {
   }
 
   private void storeSchemaVersion() {
-    // Check if the current schema version in the metadata store is older than the application
-    // version. Returns true if the schema version should be updated, or if either version cannot be
-    // parsed into a SemanticVersion.
-    final boolean shouldUpdateSchemaVersion =
-        VersionUtil.getSemanticVersion()
-            .flatMap(
-                appVersion ->
-                    SemanticVersion.parse(metadataStore.getSchemaVersion())
-                        .map(schemaVersion -> schemaVersion.compareTo(appVersion) < 0))
-            .orElse(true);
-    if (shouldUpdateSchemaVersion) {
+    if (VersionUtil.getSemanticVersion()
+        .flatMap(
+            appVersion ->
+                SemanticVersion.parse(metadataStore.getSchemaVersion())
+                    .map(schemaVersion -> schemaVersion.compareTo(appVersion) < 0))
+        .orElse(true)) {
       metadataStore.storeSchemaVersion(VersionUtil.getVersion());
     }
   }
