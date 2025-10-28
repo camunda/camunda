@@ -96,7 +96,7 @@ public class MappingRuleIT {
       final String name,
       final String claimName,
       final String claimValue) {
-    Awaitility.await("Mapping rule exists in both storage systems")
+    Awaitility.await("Mapping rule exists in the secondary storage system")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
