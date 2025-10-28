@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0wiyz0r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="element_instance_api_tests" name="Element Instance API Tests" isExecutable="true">
+    <bpmn:startEvent id="ElementInstance_StartEvent">
+      <bpmn:outgoing>Flow_0k3grcd</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="is_human_Needed_gateway" name="Decision If Human Needed" default="Flow_1c7cewr">
+      <bpmn:incoming>Flow_0k3grcd</bpmn:incoming>
+      <bpmn:outgoing>Flow_1c7cewr</bpmn:outgoing>
+      <bpmn:outgoing>Flow_12ixc4s</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0k3grcd" sourceRef="ElementInstance_StartEvent" targetRef="is_human_Needed_gateway" />
+    <bpmn:sequenceFlow id="Flow_1c7cewr" sourceRef="is_human_Needed_gateway" targetRef="do_manual_task" />
+    <bpmn:userTask id="do_manual_task" name="do manual">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1c7cewr</bpmn:incoming>
+      <bpmn:outgoing>Flow_15wckku</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_15wckku" sourceRef="do_manual_task" targetRef="terminate_end" />
+    <bpmn:sequenceFlow id="Flow_12ixc4s" sourceRef="is_human_Needed_gateway" targetRef="do_automatic_task">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=not(humanNeeded)</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="do_automatic_task" name="do automatic">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="automatic_task" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_12ixc4s</bpmn:incoming>
+      <bpmn:outgoing>Flow_0jeuocb</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="end_task_one">
+      <bpmn:incoming>Flow_0o0n08m</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0jeuocb" sourceRef="do_automatic_task" targetRef="Gateway_parallel_do_automatic" />
+    <bpmn:endEvent id="terminate_end">
+      <bpmn:incoming>Flow_15wckku</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateEventDefinition_01v6ge1" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_19ci533" sourceRef="Gateway_parallel_do_automatic" targetRef="verify_change_one_task" />
+    <bpmn:parallelGateway id="Gateway_parallel_do_automatic">
+      <bpmn:incoming>Flow_0jeuocb</bpmn:incoming>
+      <bpmn:outgoing>Flow_19ci533</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1pda8sb</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="end_task_two">
+      <bpmn:incoming>Flow_1iaqquy</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1pda8sb" sourceRef="Gateway_parallel_do_automatic" targetRef="verify_change_two_task" />
+    <bpmn:sequenceFlow id="Flow_0o0n08m" sourceRef="verify_change_one_task" targetRef="end_task_one" />
+    <bpmn:sequenceFlow id="Flow_1iaqquy" sourceRef="verify_change_two_task" targetRef="end_task_two" />
+    <bpmn:serviceTask id="verify_change_one_task" name="verify change one">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="verify_change_one" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_19ci533</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o0n08m</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="verify_change_two_task" name="verify change two">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="verify_change_two" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1pda8sb</bpmn:incoming>
+      <bpmn:outgoing>Flow_1iaqquy</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="element_instance_api_tests">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="ElementInstance_StartEvent">
+        <dc:Bounds x="182" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1pil1uq_di" bpmnElement="is_human_Needed_gateway" isMarkerVisible="true">
+        <dc:Bounds x="275" y="95" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="263" y="65" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1a0g31b_di" bpmnElement="do_manual_task">
+        <dc:Bounds x="390" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1cee3wh_di" bpmnElement="do_automatic_task">
+        <dc:Bounds x="390" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1j52htl_di" bpmnElement="end_task_one">
+        <dc:Bounds x="842" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0dibenz_di" bpmnElement="terminate_end">
+        <dc:Bounds x="732" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1ksl1tt_di" bpmnElement="Gateway_parallel_do_automatic">
+        <dc:Bounds x="585" y="205" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1s04cak_di" bpmnElement="end_task_two">
+        <dc:Bounds x="842" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0j68psa_di" bpmnElement="verify_change_one_task">
+        <dc:Bounds x="660" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_10dhkk9_di" bpmnElement="verify_change_two_task">
+        <dc:Bounds x="660" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0k3grcd_di" bpmnElement="Flow_0k3grcd">
+        <di:waypoint x="218" y="120" />
+        <di:waypoint x="275" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1c7cewr_di" bpmnElement="Flow_1c7cewr">
+        <di:waypoint x="325" y="120" />
+        <di:waypoint x="390" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15wckku_di" bpmnElement="Flow_15wckku">
+        <di:waypoint x="490" y="120" />
+        <di:waypoint x="732" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12ixc4s_di" bpmnElement="Flow_12ixc4s">
+        <di:waypoint x="300" y="145" />
+        <di:waypoint x="300" y="230" />
+        <di:waypoint x="390" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jeuocb_di" bpmnElement="Flow_0jeuocb">
+        <di:waypoint x="490" y="230" />
+        <di:waypoint x="585" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19ci533_di" bpmnElement="Flow_19ci533">
+        <di:waypoint x="635" y="230" />
+        <di:waypoint x="660" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pda8sb_di" bpmnElement="Flow_1pda8sb">
+        <di:waypoint x="610" y="255" />
+        <di:waypoint x="610" y="340" />
+        <di:waypoint x="660" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o0n08m_di" bpmnElement="Flow_0o0n08m">
+        <di:waypoint x="760" y="230" />
+        <di:waypoint x="842" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1iaqquy_di" bpmnElement="Flow_1iaqquy">
+        <di:waypoint x="760" y="340" />
+        <di:waypoint x="842" y="340" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

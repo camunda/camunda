@@ -125,6 +125,31 @@ class DecisionInstanceSearchTest {
   }
 
   @Test
+  void shouldSearchByLimit() {
+    // when
+    final var resultAll = camundaClient.newDecisionInstanceSearchRequest().send().join();
+
+    final var resultWithLimit =
+        camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+
+    final var firstTwoKeys =
+        resultAll.items().subList(0, 2).stream()
+            .map(DecisionInstance::getDecisionInstanceKey)
+            .toList();
+
+    final var resultSearchFrom =
+        camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+
+    // then
+    assertThat(
+            resultSearchFrom.items().stream()
+                .map(DecisionInstance::getDecisionInstanceKey)
+                .toList())
+        .isEqualTo(firstTwoKeys);
+  }
+
+  @Test
   public void shouldRetrieveDecisionInstanceByDecisionDefinitionKey(
       final CamundaClient camundaClient) {
     // when
@@ -162,6 +187,7 @@ class DecisionInstanceSearchTest {
         .isEqualTo(DecisionDefinitionType.DECISION_TABLE);
     assertThat(decisionInstance.getTenantId()).isEqualTo("<default>");
     assertThat(decisionInstance.getDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(decisionInstance.getRootDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
     assertThat(decisionInstance.getResult()).isEqualTo("\"Eligible\"");
     assertThat(decisionInstance.getEvaluationDate()).isNotNull();
     // evaluated inputs and matched rules are not included in search results, only in get by id
@@ -187,7 +213,7 @@ class DecisionInstanceSearchTest {
     assertThat(result.items().getFirst().getDecisionDefinitionKey())
         .isEqualTo(decisionDefinitionKey);
     assertThat(result.items().getFirst().getDecisionInstanceKey())
-        .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
+        .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey());
   }
 
   @Test
@@ -216,11 +242,110 @@ class DecisionInstanceSearchTest {
   }
 
   @Test
+  public void shouldRetrieveDecisionInstanceByRootDecisionDefinitionKey(
+      final CamundaClient camundaClient) {
+    // given
+    final long rootDecisionDefinitionKey =
+        EVALUATED_DECISIONS
+            .get(DECISION_DEFINITION_ID_1)
+            .getEvaluatedDecisions()
+            .getFirst()
+            .getDecisionKey();
+    final long decisionInstanceKey =
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey();
+    final String decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.rootDecisionDefinitionKey(rootDecisionDefinitionKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    final var decisionInstance = result.singleItem();
+
+    assertThat(decisionInstance.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+    assertThat(decisionInstance.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
+    assertThat(decisionInstance.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
+    assertThat(decisionInstance.getEvaluationFailure()).isNull();
+    assertThat(decisionInstance.getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getDecisionDefinitionId()).isEqualTo("decision_1");
+    assertThat(decisionInstance.getDecisionDefinitionName()).isEqualTo("Loan Eligibility");
+    assertThat(decisionInstance.getDecisionDefinitionVersion()).isEqualTo(1);
+    assertThat(decisionInstance.getDecisionDefinitionType())
+        .isEqualTo(DecisionDefinitionType.DECISION_TABLE);
+    assertThat(decisionInstance.getTenantId()).isEqualTo("<default>");
+    assertThat(decisionInstance.getDecisionDefinitionKey()).isEqualTo(rootDecisionDefinitionKey);
+    assertThat(decisionInstance.getRootDecisionDefinitionKey())
+        .isEqualTo(rootDecisionDefinitionKey);
+    assertThat(decisionInstance.getResult()).isEqualTo("\"Eligible\"");
+    assertThat(decisionInstance.getEvaluationDate()).isNotNull();
+    // evaluated inputs and matched rules are not included in search results, only in get by id
+    assertThat(decisionInstance.getEvaluatedInputs()).isNull();
+    assertThat(decisionInstance.getMatchedRules()).isNull();
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByRootDecisionDefinitionKeyFilterIn(
+      final CamundaClient camundaClient) {
+    // when
+    final long rootDecisionDefinitionKey =
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionKey();
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.rootDecisionDefinitionKey(
+                        b -> b.in(Long.MAX_VALUE, rootDecisionDefinitionKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getRootDecisionDefinitionKey())
+        .isEqualTo(rootDecisionDefinitionKey);
+    assertThat(result.items().getFirst().getDecisionInstanceKey())
+        .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey());
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByRootDecisionDefinitionKeyFilterNotIn(
+      final CamundaClient camundaClient) {
+    // when
+    final long rootDecisionDefinitionKey =
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionKey();
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.rootDecisionDefinitionKey(
+                        b -> b.notIn(Long.MAX_VALUE, rootDecisionDefinitionKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items())
+        .extracting(DecisionInstance::getDecisionDefinitionId)
+        .containsExactlyInAnyOrder(
+            DECISION_DEFINITION_ID_2,
+            DECISION_DEFINITION_ID_2,
+            DECISION_DEFINITION_ID_3,
+            DECISION_DEFINITION_ID_3);
+  }
+
+  @Test
   public void shouldRetrieveDecisionInstanceByDecisionInstanceKey(
       final CamundaClient camundaClient) {
     // when
     final long decisionInstanceKey =
-        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionEvaluationKey();
     final var result =
         camundaClient
             .newDecisionInstanceSearchRequest()
@@ -404,14 +529,14 @@ class DecisionInstanceSearchTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.singleItem().getDecisionInstanceKey())
-        .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
+        .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey());
   }
 
   @Test
   void shouldGetDecisionInstance() {
     // when
     final long decisionInstanceKey =
-        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionEvaluationKey();
     final var decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
     final long decisionDefinitionKey =
         EVALUATED_DECISIONS
@@ -441,23 +566,24 @@ class DecisionInstanceSearchTest {
 
     // Assert evaluated inputs
     assertThat(result.getEvaluatedInputs()).hasSize(2);
-    assertThat(result.getEvaluatedInputs().get(0).getInputId()).isEqualTo("clause1");
-    assertThat(result.getEvaluatedInputs().get(0).getInputName()).isEqualTo("Invoice Amount");
-    assertThat(result.getEvaluatedInputs().get(0).getInputValue()).isEqualTo("100");
+    assertThat(result.getEvaluatedInputs().getFirst().getInputId()).isEqualTo("clause1");
+    assertThat(result.getEvaluatedInputs().getFirst().getInputName()).isEqualTo("Invoice Amount");
+    assertThat(result.getEvaluatedInputs().getFirst().getInputValue()).isEqualTo("100");
     assertThat(result.getEvaluatedInputs().get(1).getInputId()).isEqualTo("InputClause_15qmk0v");
     assertThat(result.getEvaluatedInputs().get(1).getInputName()).isEqualTo("Invoice Category");
     assertThat(result.getEvaluatedInputs().get(1).getInputValue()).isEqualTo("\"Misc\"");
 
     // Assert matched rules
     assertThat(result.getMatchedRules()).hasSize(1);
-    assertThat(result.getMatchedRules().get(0).getRuleId()).isEqualTo("DecisionRule_1of5a87");
-    assertThat(result.getMatchedRules().get(0).getRuleIndex()).isEqualTo(1);
-    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs()).hasSize(1);
-    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputId())
+    assertThat(result.getMatchedRules().getFirst().getRuleId()).isEqualTo("DecisionRule_1of5a87");
+    assertThat(result.getMatchedRules().getFirst().getRuleIndex()).isEqualTo(1);
+    assertThat(result.getMatchedRules().getFirst().getEvaluatedOutputs()).hasSize(1);
+    assertThat(result.getMatchedRules().getFirst().getEvaluatedOutputs().getFirst().getOutputId())
         .isEqualTo("clause3");
-    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputName())
+    assertThat(result.getMatchedRules().getFirst().getEvaluatedOutputs().getFirst().getOutputName())
         .isEqualTo("Classification");
-    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputValue())
+    assertThat(
+            result.getMatchedRules().getFirst().getEvaluatedOutputs().getFirst().getOutputValue())
         .isEqualTo("\"day-to-day expense\"");
   }
 

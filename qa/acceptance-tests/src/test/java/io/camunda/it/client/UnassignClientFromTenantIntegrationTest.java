@@ -16,9 +16,7 @@ import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import java.net.http.HttpClient;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -27,8 +25,6 @@ public class UnassignClientFromTenantIntegrationTest {
 
   private static CamundaClient camundaClient;
   private static final String TENANT_ID = Strings.newRandomValidIdentityId();
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @BeforeAll
   static void setup() {

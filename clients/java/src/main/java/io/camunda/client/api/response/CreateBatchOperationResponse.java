@@ -15,7 +15,17 @@
  */
 package io.camunda.client.api.response;
 
+import io.camunda.client.api.search.enums.BatchOperationType;
+
 public interface CreateBatchOperationResponse {
 
+  /**
+   * @return the unique key of the batch operation that was created.
+   */
   String getBatchOperationKey();
+
+  /**
+   * @return the type of the batch operation that was created.
+   */
+  BatchOperationType getBatchOperationType();
 }

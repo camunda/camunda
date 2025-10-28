@@ -23,6 +23,7 @@ import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -256,6 +257,7 @@ public class CamundaMultiDBExtension
     final var application = applicationUnderTest.application();
     multiDbConfigurator = new MultiDbConfigurator(application);
     application
+        .withBrokerConfig(cfg -> cfg.getData().setDirectory(DataCfg.DEFAULT_DIRECTORY))
         .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
         .withExporter(
             "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));

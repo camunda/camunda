@@ -38,6 +38,7 @@ import io.camunda.client.protocol.rest.GroupUpdateResult;
 import io.camunda.client.protocol.rest.IncidentResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.MappingRuleCreateResult;
+import io.camunda.client.protocol.rest.MappingRuleResult;
 import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.client.protocol.rest.MessagePublicationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
@@ -237,6 +238,10 @@ public class RestGatewayService {
 
   public void onCreateMappingRuleRequest(final MappingRuleCreateResult response) {
     registerPost(RestGatewayPaths.getMappingRulesUrl(), response);
+  }
+
+  public void onMappingRuleRequest(final String mappingRuleId, final MappingRuleResult response) {
+    registerGet(RestGatewayPaths.getMappingRuleUrl(mappingRuleId), response);
   }
 
   public void onCreateGroupRequest(final GroupCreateResult response) {

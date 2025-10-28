@@ -56,7 +56,7 @@ public class SearchGroupsByTenantTest extends ClientRestTest {
     final String requestBody = lastRequest.getBodyAsString();
 
     assertThat(requestBody).contains("\"sort\":[{\"field\":\"groupId\",\"order\":\"DESC\"}]");
-    assertThat(requestBody).contains("\"page\":{\"limit\":2}");
+    assertThat(requestBody).contains("\"page\":{\"limit\":2,\"after\":null,\"before\":null}}");
   }
 
   @Test

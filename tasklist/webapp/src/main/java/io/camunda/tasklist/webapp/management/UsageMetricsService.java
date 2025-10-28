@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.management;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricQueryDTO;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Component
 @Deprecated(forRemoval = true, since = "8.8")
 @RestControllerEndpoint(id = "usage-metrics")
+@ConditionalOnRdbmsDisabled
 public class UsageMetricsService extends InternalAPIErrorController {
 
   @Autowired private TaskMetricsStore taskMetricsStore;

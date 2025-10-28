@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.search;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
@@ -53,6 +54,8 @@ import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import java.util.List;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -62,18 +65,35 @@ public class SearchClientDatabaseConfiguration {
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.elasticsearch)
   public ElasticsearchSearchClient elasticsearchSearchClient(
-      final ConnectConfiguration configuration) {
+      final ElasticsearchClient elasticsearchClient) {
+    return new ElasticsearchSearchClient(elasticsearchClient);
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.elasticsearch)
+  public ElasticsearchClient elasticsearchClient(final ConnectConfiguration configuration) {
     final var connector = new ElasticsearchConnector(configuration);
-    final var elasticsearch = connector.createClient();
-    return new ElasticsearchSearchClient(elasticsearch);
+    return connector.createClient();
   }
 
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
-  public OpensearchSearchClient opensearchSearchClient(final ConnectConfiguration configuration) {
+  public OpensearchSearchClient opensearchSearchClient(final OpenSearchClient openSearchClient) {
+    return new OpensearchSearchClient(openSearchClient);
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
+  public OpenSearchClient openSearchClient(final ConnectConfiguration configuration) {
     final var connector = new OpensearchConnector(configuration);
-    final var opensearch = connector.createClient();
-    return new OpensearchSearchClient(opensearch);
+    return connector.createClient();
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.opensearch)
+  public OpenSearchAsyncClient openSearchAsyncClient(final ConnectConfiguration configuration) {
+    final var connector = new OpensearchConnector(configuration);
+    return connector.createAsyncClient();
   }
 
   @Bean

@@ -8,6 +8,7 @@
 package io.camunda.tasklist.webapp.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
@@ -31,6 +32,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnRdbmsDisabled
 public class ProcessService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessService.class);
 

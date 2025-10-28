@@ -12,7 +12,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 
-public class Membership {
+public class Membership implements Cloneable {
   private static final String PREFIX = "camunda.cluster.membership";
 
   private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
@@ -214,30 +214,22 @@ public class Membership {
   }
 
   @Override
-  public Membership clone() {
-    final Membership copy = new Membership();
-    copy.broadcastUpdates = broadcastUpdates;
-    copy.broadcastDisputes = broadcastDisputes;
-    copy.notifySuspect = notifySuspect;
-    copy.gossipInterval = gossipInterval;
-    copy.gossipFanout = gossipFanout;
-    copy.probeInterval = probeInterval;
-    copy.probeTimeout = probeTimeout;
-    copy.suspectProbes = suspectProbes;
-    copy.failureTimeout = failureTimeout;
-    copy.syncInterval = syncInterval;
-
-    return copy;
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
   }
 
   public Membership withBrokerMembershipProperties() {
-    final var copy = clone();
+    final var copy = (Membership) clone();
     copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
     return copy;
   }
 
   public Membership withGatewayMembershipProperties() {
-    final var copy = clone();
+    final var copy = (Membership) clone();
     copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
     return copy;
   }

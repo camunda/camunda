@@ -34,6 +34,24 @@ public record IncidentFilter(
     List<Operation<String>> tenantIdOperations)
     implements FilterBase {
 
+  public Builder toBuilder() {
+    return new Builder()
+        .incidentKeyOperations(incidentKeyOperations)
+        .processDefinitionKeyOperations(processDefinitionKeyOperations)
+        .processDefinitionIdOperations(processDefinitionIdOperations)
+        .processInstanceKeyOperations(processInstanceKeyOperations)
+        .errorTypeOperations(errorTypeOperations)
+        .errorMessageOperations(errorMessageOperations)
+        .errorMessageHashOperations(errorMessageHashOperations)
+        .flowNodeIdOperations(flowNodeIdOperations)
+        .flowNodeInstanceKeyOperations(flowNodeInstanceKeyOperations)
+        .creationTimeOperations(creationTimeOperations)
+        .stateOperations(stateOperations)
+        .treePathOperations(treePathOperations)
+        .jobKeyOperations(jobKeyOperations)
+        .tenantIdOperations(tenantIdOperations);
+  }
+
   public static final class Builder implements ObjectBuilder<IncidentFilter> {
 
     private List<Operation<Long>> incidentKeyOperations;

@@ -44,7 +44,7 @@ public class DataBackupTasklistPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.operate.backup.repositoryName=repositoryNameLegacyOperate",
+        "camunda.operate.backup.repositoryName=repositoryNameOperate",
       })
   class WithOnlyOperateLegacySet {
     final TasklistProperties tasklistProperties;
@@ -54,15 +54,16 @@ public class DataBackupTasklistPropertiesTest {
     }
 
     @Test
-    void shouldNotSetRepositoryNameFromLegacyOperate() {
-      assertThat(tasklistProperties.getBackup().getRepositoryName()).isNull();
+    void shouldSetRepositoryNameFromOperate() {
+      assertThat(tasklistProperties.getBackup().getRepositoryName())
+          .isEqualTo("repositoryNameOperate");
     }
   }
 
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.tasklist.backup.repositoryName=repositoryNameLegacyTasklist",
+        "camunda.tasklist.backup.repositoryName=repositoryNameTasklist",
       })
   class WithOnlyTasklistLegacySet {
     final TasklistProperties tasklistProperties;
@@ -72,9 +73,28 @@ public class DataBackupTasklistPropertiesTest {
     }
 
     @Test
-    void shouldSetRepositoryNameFromLegacyTasklist() {
+    void shouldSetRepositoryFromTasklist() {
       assertThat(tasklistProperties.getBackup().getRepositoryName())
-          .isEqualTo("repositoryNameLegacyTasklist");
+          .isEqualTo("repositoryNameTasklist");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.operate.backup.repositoryName=repositoryName",
+        "camunda.tasklist.backup.repositoryName=repositoryName",
+      })
+  class WithOperateAndTasklistLegacySet {
+    final TasklistProperties tasklistProperties;
+
+    WithOperateAndTasklistLegacySet(@Autowired final TasklistProperties tasklistProperties) {
+      this.tasklistProperties = tasklistProperties;
+    }
+
+    @Test
+    void shouldSetRepositoryNameIfLegacyMatch() {
+      assertThat(tasklistProperties.getBackup().getRepositoryName()).isEqualTo("repositoryName");
     }
   }
 
@@ -82,11 +102,11 @@ public class DataBackupTasklistPropertiesTest {
   @TestPropertySource(
       properties = {
         // new
-        "camunda.data.backup.repository-name=repositoryNameNew",
+        "camunda.data.backup.repository-name=repositoryName",
         // legacy configuration operate
-        "camunda.operate.backup.repositoryName=repositoryNameLegacyOperate",
+        "camunda.operate.backup.repositoryName=repositoryName",
         // legacy configuration tasklist
-        "camunda.tasklist.backup.repositoryName=repositoryNameLegacyTasklist",
+        "camunda.tasklist.backup.repositoryName=repositoryName",
       })
   class WithNewAndLegacySet {
     final TasklistProperties tasklistProperties;
@@ -96,8 +116,8 @@ public class DataBackupTasklistPropertiesTest {
     }
 
     @Test
-    void shouldSetRepositoryNameFromNew() {
-      assertThat(tasklistProperties.getBackup().getRepositoryName()).isEqualTo("repositoryNameNew");
+    void shouldSetRepositoryNameIfNewAndLegacyMatch() {
+      assertThat(tasklistProperties.getBackup().getRepositoryName()).isEqualTo("repositoryName");
     }
   }
 }

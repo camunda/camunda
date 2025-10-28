@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RequestMapper.getResult;
+import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toIncidentFilter;
 import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toProcessInstanceFilter;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
@@ -35,6 +36,7 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.TenantMemberQuery;
@@ -179,49 +181,49 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
-  public static Either<ProblemDetail, RoleQuery> toRoleQuery(
+  public static Either<ProblemDetail, RoleMemberQuery> toRoleMemberQuery(
       final RoleUserSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.roleSearchQuery().build());
+      return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromRoleUserSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::role,
+            SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleUserSortField);
-    final var filter = FilterBuilders.role().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
+    final var filter = FilterBuilders.roleMember().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, RoleQuery> toRoleQuery(
+  public static Either<ProblemDetail, RoleMemberQuery> toRoleMemberQuery(
       final RoleGroupSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.roleSearchQuery().build());
+      return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromRoleGroupSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::role,
+            SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleGroupSortField);
-    final var filter = FilterBuilders.role().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
+    final var filter = FilterBuilders.roleMember().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, RoleQuery> toRoleQuery(
+  public static Either<ProblemDetail, RoleMemberQuery> toRoleMemberQuery(
       final RoleClientSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.roleSearchQuery().build());
+      return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromRoleClientSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::role,
+            SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleClientSortField);
-    final var filter = FilterBuilders.role().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
+    final var filter = FilterBuilders.roleMember().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
   public static Either<ProblemDetail, GroupQuery> toGroupQuery(
@@ -476,32 +478,31 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final IncidentSearchQuery request) {
-    return toIncidentQueryWithNullFilter(
-        request,
-        IncidentSearchQuery::getFilter,
-        IncidentSearchQuery::getPage,
-        IncidentSearchQuery::getSort);
-  }
 
-  public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
-      final ProcessInstanceIncidentSearchQuery request) {
-    return toIncidentQueryWithNullFilter(
-        request,
-        f -> null,
-        ProcessInstanceIncidentSearchQuery::getPage,
-        ProcessInstanceIncidentSearchQuery::getSort);
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::incident,
+            SearchQuerySortRequestMapper::applyIncidentSortField);
+    final var filter = toIncidentFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final ElementInstanceIncidentSearchQuery request) {
-    return toIncidentQueryWithNullFilter(
+    return toIncidentQuery(
         request,
         f -> null,
         ElementInstanceIncidentSearchQuery::getPage,
         ElementInstanceIncidentSearchQuery::getSort);
   }
 
-  private static <T> Either<ProblemDetail, IncidentQuery> toIncidentQueryWithNullFilter(
+  private static <T> Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final T request,
       final Function<T, IncidentFilter> filterExtractor,
       final Function<T, SearchQueryPageRequest> pageExtractor,
@@ -517,7 +518,7 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::incident,
             SearchQuerySortRequestMapper::applyIncidentSortField);
     return buildSearchQuery(
-        SearchQueryFilterMapper.toIncidentFilter(filterExtractor.apply(request)),
+        toIncidentFilter(filterExtractor.apply(request)),
         sort,
         page,
         SearchQueryBuilders::incidentSearchQuery);
@@ -632,21 +633,32 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
-    if (requestedPage.getAfter() != null && requestedPage.getBefore() != null) {
-      return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER));
-    }
-    if (requestedPage.getFrom() != null
-        && (requestedPage.getAfter() != null || requestedPage.getBefore() != null)) {
-      return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER_AND_FROM));
-    }
+    return switch (requestedPage) {
+      case final CursorBackwardPagination req -> Either.right(toSearchQueryPage(req));
+      case final CursorForwardPagination req -> Either.right(toSearchQueryPage(req));
+      case final OffsetPagination req -> Either.right(toSearchQueryPage(req));
+      case final LimitPagination req -> Either.right(toSearchQueryPage(req));
+      default -> Either.left(List.of(ERROR_SEARCH_UNKNOWN_PAGE_TYPE));
+    };
+  }
 
-    return Either.right(
-        SearchQueryPage.of(
-            (p) ->
-                p.size(requestedPage.getLimit())
-                    .from(requestedPage.getFrom())
-                    .after(requestedPage.getAfter())
-                    .before(requestedPage.getBefore())));
+  private static SearchQueryPage toSearchQueryPage(final CursorBackwardPagination requestedPage) {
+    return SearchQueryPage.of(
+        (p) -> p.size(requestedPage.getLimit()).before(requestedPage.getBefore()));
+  }
+
+  private static SearchQueryPage toSearchQueryPage(final CursorForwardPagination requestedPage) {
+    return SearchQueryPage.of(
+        (p) -> p.size(requestedPage.getLimit()).after(requestedPage.getAfter()));
+  }
+
+  private static SearchQueryPage toSearchQueryPage(final OffsetPagination requestedPage) {
+    return SearchQueryPage.of(
+        (p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom()));
+  }
+
+  private static SearchQueryPage toSearchQueryPage(final LimitPagination requestedPage) {
+    return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

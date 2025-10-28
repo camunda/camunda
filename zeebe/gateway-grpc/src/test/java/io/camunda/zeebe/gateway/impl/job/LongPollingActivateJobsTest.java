@@ -96,7 +96,7 @@ public final class LongPollingActivateJobsTest {
             .setProbeTimeoutMillis(PROBE_TIMEOUT)
             .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-            .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
+            .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
@@ -263,7 +263,7 @@ public final class LongPollingActivateJobsTest {
             .setLongPollingTimeout(20000)
             .setProbeTimeoutMillis(probeTimeout)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-            .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
+            .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
@@ -293,7 +293,7 @@ public final class LongPollingActivateJobsTest {
             .setLongPollingTimeout(longPollingTimeout)
             .setProbeTimeoutMillis(probeTimeout)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-            .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
+            .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();

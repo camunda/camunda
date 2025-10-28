@@ -19,7 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.Map;
@@ -123,13 +123,13 @@ final class ClusterPurgeRequestTransformerTest {
   void shouldCreateBootstrapOperationWithExporterConfig() {
     // given
     final var transformer = new PurgeRequestTransformer();
-    final ExportersConfig exportersConfig =
-        new ExportersConfig(
+    final ExportingConfig exportingConfig =
+        new ExportingConfig(
             Map.of(
                 "exporter",
                 new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config"))));
     final var partitionConfigWithExporter =
-        DynamicPartitionConfig.init().updateExporting(exportersConfig);
+        DynamicPartitionConfig.init().updateExporting(exportingConfig);
 
     final ClusterConfiguration currentTopology =
         ClusterConfiguration.init()
@@ -160,14 +160,14 @@ final class ClusterPurgeRequestTransformerTest {
     final DynamicPartitionConfig config0 =
         DynamicPartitionConfig.init()
             .updateExporting(
-                new ExportersConfig(
+                new ExportingConfig(
                     Map.of(
                         "exporter",
                         new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config")))));
     final DynamicPartitionConfig config1 =
         DynamicPartitionConfig.init()
             .updateExporting(
-                new ExportersConfig(
+                new ExportingConfig(
                     Map.of(
                         "exporter", new ExporterState(1, State.DISABLED, Optional.of("config")))));
 

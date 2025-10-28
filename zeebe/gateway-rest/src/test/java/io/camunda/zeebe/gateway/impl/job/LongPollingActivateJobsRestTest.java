@@ -21,6 +21,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
@@ -40,6 +42,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -64,10 +67,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.unit.DataSize;
-import org.springframework.web.server.ResponseStatusException;
 
 public class LongPollingActivateJobsRestTest {
 
@@ -108,10 +110,10 @@ public class LongPollingActivateJobsRestTest {
             .setProbeTimeoutMillis(PROBE_TIMEOUT)
             .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-            .setNoJobsReceivedExceptionProvider(
-                msg -> new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, msg))
+            .setResourceExhaustedExceptionProvider(
+                RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(
-                msg -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, msg))
+                RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
@@ -302,8 +304,10 @@ public class LongPollingActivateJobsRestTest {
             .setLongPollingTimeout(20000)
             .setProbeTimeoutMillis(probeTimeout)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-            .setNoJobsReceivedExceptionProvider(RuntimeException::new)
-            .setRequestCanceledExceptionProvider(RuntimeException::new)
+            .setResourceExhaustedExceptionProvider(
+                RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+            .setRequestCanceledExceptionProvider(
+                RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
@@ -332,8 +336,10 @@ public class LongPollingActivateJobsRestTest {
             .setLongPollingTimeout(longPollingTimeout)
             .setProbeTimeoutMillis(probeTimeout)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
-            .setNoJobsReceivedExceptionProvider(RuntimeException::new)
-            .setRequestCanceledExceptionProvider(RuntimeException::new)
+            .setResourceExhaustedExceptionProvider(
+                RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+            .setRequestCanceledExceptionProvider(
+                RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
@@ -543,9 +549,24 @@ public class LongPollingActivateJobsRestTest {
     verify(request.getResponseObserver(), never()).onNext(any());
     verify(request.getResponseObserver(), never()).onCompleted();
 
-    assertThat(throwableCaptor.getValue()).isInstanceOf(ResponseStatusException.class);
-    final ResponseStatusException exception = (ResponseStatusException) throwableCaptor.getValue();
-    assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    assertThat(throwableCaptor.getValue()).isInstanceOf(ServiceException.class);
+    final ServiceException exception = (ServiceException) throwableCaptor.getValue();
+    assertThat(exception.getStatus()).isEqualTo(Status.RESOURCE_EXHAUSTED);
+
+    final CompletableFuture<ResponseEntity<Object>> result =
+        ((InspectableJobActivationRequestResponseObserver) request.getResponseObserver())
+            .getResult();
+    assertThat(result.join().getBody())
+        .isInstanceOf(ProblemDetail.class)
+        .satisfies(
+            obj -> {
+              final var problemDetail = (ProblemDetail) obj;
+              assertThat(problemDetail.getStatus()).isEqualTo(503);
+              assertThat(problemDetail.getTitle()).isEqualTo("RESOURCE_EXHAUSTED");
+              assertThat(problemDetail.getDetail())
+                  .isEqualTo(
+                      "Expected to activate jobs of type 'test', but no jobs available and at least one broker returned 'RESOURCE_EXHAUSTED'. Please try again later.");
+            });
   }
 
   @Test
@@ -679,7 +700,9 @@ public class LongPollingActivateJobsRestTest {
     // then
     final ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
     verify(request.getResponseObserver(), times(1)).onError(throwableCaptor.capture());
-    assertThat(throwableCaptor.getValue()).isInstanceOf(ResponseStatusException.class);
+    assertThat(throwableCaptor.getValue()).isInstanceOf(ServiceException.class);
+    final ServiceException exception = (ServiceException) throwableCaptor.getValue();
+    assertThat(exception.getStatus()).isEqualTo(Status.RESOURCE_EXHAUSTED);
 
     assertThat(request.hasScheduledTimer()).isFalse();
   }
@@ -1087,6 +1110,10 @@ public class LongPollingActivateJobsRestTest {
 
     public JobActivationResult getResponse() {
       return response;
+    }
+
+    public CompletableFuture<ResponseEntity<Object>> getResult() {
+      return result;
     }
   }
 }

@@ -71,6 +71,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.apache.http.client.methods.HttpPost;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -103,6 +104,11 @@ public abstract class AbstractUpgradeIT {
 
   public static boolean isElasticSearchUpgrade() {
     return databaseIntegrationTestExtension.getDatabaseVendor().equals(DatabaseType.ELASTICSEARCH);
+  }
+
+  @BeforeAll
+  public static void beforeAll() {
+    instantiateProperIndices();
   }
 
   public static DatabaseType getDatabaseTypeFromEnvVar() {
@@ -156,7 +162,6 @@ public abstract class AbstractUpgradeIT {
     dbConfig.setHttpPort(IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
 
     setUpUpgradeDependenciesWithConfiguration(configurationService);
-    instantiateProperIndices(databaseIntegrationTestExtension.getDatabaseVendor());
     // To speed up testing
     getPrefixAwareClient().setSnapshotInProgressRetryDelaySeconds(2);
     cleanAllDataFromDatabase();
@@ -165,7 +170,7 @@ public abstract class AbstractUpgradeIT {
     setMetadataVersion(FROM_VERSION);
   }
 
-  private void instantiateProperIndices(final DatabaseType databaseVendor) {
+  private static void instantiateProperIndices() {
     if (!isElasticSearchUpgrade()) {
       metadataIndex = new MetadataIndexOS();
       testIndexV1 = new UserTestIndexOS(1);

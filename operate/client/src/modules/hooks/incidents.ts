@@ -11,9 +11,14 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {getFlowNodeName} from '../utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 
-type EnhancedIncident = Incident & {elementName: string; isSelected: boolean};
+type EnhancedIncident = Incident & {
+  processDefinitionName: string;
+  elementName: string;
+  isSelected: boolean;
+};
 
 const useIncidents = () => {
   const {data: businessObjects} = useBusinessObjects();
@@ -42,10 +47,33 @@ const useIncidentsV2 = (
   const {data: businessObjects} = useBusinessObjects();
   const {data: incidents} = useGetIncidentsByProcessInstance(
     processInstanceKey,
+    {enablePeriodicRefetch, select: (res) => res.items},
+  );
+
+  const instancesWithIncident = incidents
+    ? Array.from(
+        new Set(incidents.map((incident) => incident.processInstanceKey)),
+      )
+    : [];
+
+  const {data: processDefinitionNames} = useProcessInstancesSearch(
     {
-      enablePeriodicRefetch,
-      select: (incidents) =>
-        incidents.items.map((incident) => ({
+      filter: {processInstanceKey: {$in: instancesWithIncident}},
+      page: {limit: instancesWithIncident.length},
+    },
+    {
+      enabled: instancesWithIncident.length > 0,
+      select: (res) =>
+        res.items.reduce<Record<string, string>>((acc, item) => {
+          acc[item.processInstanceKey] = item.processDefinitionName;
+          return acc;
+        }, {}),
+    },
+  );
+
+  return incidents
+    ? incidents.map((incident) => {
+        return {
           ...incident,
           elementName: getFlowNodeName({
             businessObjects,
@@ -56,11 +84,11 @@ const useIncidentsV2 = (
             flowNodeInstanceId: incident.elementInstanceKey,
             isMultiInstance: false,
           }),
-        })),
-    },
-  );
-
-  return incidents ?? [];
+          processDefinitionName:
+            processDefinitionNames?.[incident.processInstanceKey] ?? '',
+        };
+      })
+    : [];
 };
 
 const useIncidentsElements = () => {

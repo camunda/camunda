@@ -10,6 +10,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 import static io.camunda.tasklist.webapp.permission.TasklistPermissionServices.WILDCARD_RESOURCE;
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
@@ -51,6 +52,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Process", description = "API to manage processes.")
 @RestController
 @RequestMapping(value = TasklistURIs.PROCESSES_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnRdbmsDisabled
 public class ProcessInternalController extends ApiErrorController {
 
   @Autowired private ProcessStore processStore;

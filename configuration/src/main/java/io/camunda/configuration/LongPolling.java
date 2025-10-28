@@ -12,7 +12,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults;
 import java.util.Map;
 import java.util.Set;
 
-public class LongPolling {
+public class LongPolling implements Cloneable {
   private static final String PREFIX = "camunda.api.long-polling";
 
   private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
@@ -100,24 +100,22 @@ public class LongPolling {
   }
 
   @Override
-  public LongPolling clone() {
-    final LongPolling copy = new LongPolling();
-    copy.enabled = enabled;
-    copy.timeout = timeout;
-    copy.probeTimeout = probeTimeout;
-    copy.minEmptyResponses = minEmptyResponses;
-
-    return copy;
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
   }
 
   public LongPolling withBrokerLongPollingProperties() {
-    final var copy = clone();
+    final var copy = (LongPolling) clone();
     copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
     return copy;
   }
 
   public LongPolling withGatewayLongPollingProperties() {
-    final var copy = clone();
+    final var copy = (LongPolling) clone();
     copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
     return copy;
   }

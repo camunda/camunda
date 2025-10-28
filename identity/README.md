@@ -42,7 +42,7 @@ ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExpo
 4. Run the frontend in another terminal tab by navigating to the `identity/client` folder and running:
 
 ```shell
-yarn dev
+npm run dev
 ```
 
 ### Variations

@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Ssl {
+public class Ssl implements Cloneable {
   private static final String PREFIX = "camunda.api.grpc.ssl";
   private static final Map<String, String> LEGACY_GATEWAY_SSL_PROPERTIES =
       Map.of(
@@ -93,24 +93,22 @@ public class Ssl {
   }
 
   @Override
-  public Ssl clone() {
-    final Ssl copy = new Ssl();
-    copy.enabled = enabled;
-    copy.certificate = certificate;
-    copy.certificatePrivateKey = certificatePrivateKey;
-    copy.keyStore = keyStore.clone();
-
-    return copy;
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
   }
 
   public Ssl withBrokerSslProperties() {
-    final var copy = clone();
+    final var copy = (Ssl) clone();
     copy.legacyPropertiesMap = LEGACY_BROKER_SSL_PROPERTIES;
     return copy;
   }
 
   public Ssl withGatewaySslProperties() {
-    final var copy = clone();
+    final var copy = (Ssl) clone();
     copy.legacyPropertiesMap = LEGACY_GATEWAY_SSL_PROPERTIES;
     return copy;
   }

@@ -57,6 +57,15 @@ public record Operation<T>(Operator operator, List<T> values) {
     return new Operation<>(Operator.IN, values);
   }
 
+  @SafeVarargs
+  public static <T> Operation<T> notIn(final T... values) {
+    return new Operation<>(Operator.NOT_IN, List.of(values));
+  }
+
+  public static <T> Operation<T> notIn(final List<T> values) {
+    return new Operation<>(Operator.NOT_IN, values);
+  }
+
   public static <T> Operation<T> like(final T value) {
     return new Operation<>(Operator.LIKE, value);
   }

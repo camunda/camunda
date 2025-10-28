@@ -64,7 +64,7 @@ jobs:
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
             generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.second-last-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.third-last-version) }}
+            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.third-last-version) }}
     runs-on: ubuntu-latest
     name: Weekly E2E
     steps:

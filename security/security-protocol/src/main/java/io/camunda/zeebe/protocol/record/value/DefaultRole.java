@@ -10,7 +10,8 @@ package io.camunda.zeebe.protocol.record.value;
 public enum DefaultRole {
   ADMIN("admin"),
   RPA("rpa"),
-  CONNECTORS("connectors");
+  CONNECTORS("connectors"),
+  APP_INTEGRATIONS("app-integrations");
 
   private final String id;
 

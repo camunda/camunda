@@ -70,8 +70,7 @@ public class OperatePropertiesOverride {
   }
 
   private void pouplateFromBackup(final OperateProperties override) {
-    final Backup operateBackup =
-        unifiedConfiguration.getCamunda().getData().getBackup().withOperateBackupProperties();
+    final Backup operateBackup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupProperties backupProperties = override.getBackup();
     backupProperties.setRepositoryName(operateBackup.getRepositoryName());
     backupProperties.setSnapshotTimeout(operateBackup.getSnapshotTimeout());

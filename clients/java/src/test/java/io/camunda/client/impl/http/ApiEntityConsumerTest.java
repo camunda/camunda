@@ -16,9 +16,11 @@
 package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.camunda.client.impl.http.ApiEntity.Error;
 import io.camunda.client.impl.http.ApiEntity.Response;
 import io.camunda.client.impl.http.ApiEntity.Unknown;
@@ -57,6 +59,42 @@ class ApiEntityConsumerTest {
     assertThat(response).isNotNull();
     assertThat(response.getName()).isEqualTo("test");
     assertThat(response.getValue()).isEqualTo(123);
+  }
+
+  @Test
+  void testJsonApiEntityConsumerWithValidJsonOtherTypeResponse() throws IOException {
+    // given
+    final String jsonResponse = "{\"foo\":\"test\",\"bar\":123}";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
+    final ApiEntityConsumer<TestEntity> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+
+    // when
+    // Start the stream with the correct content type
+    consumer.streamStart(ContentType.APPLICATION_JSON);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+
+    // when-then Generate the content
+    assertThatThrownBy(consumer::generateContent).isInstanceOf(UnrecognizedPropertyException.class);
+  }
+
+  @Test
+  void testJsonApiEntityConsumerWithValidJsonOtherTypeErrorResponse() throws IOException {
+    // given
+    final String jsonResponse = "{\"foo\":\"test\",\"bar\":123}";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
+    final ApiEntityConsumer<TestEntity> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+
+    // when
+    // Start the stream with the correct content type
+    consumer.streamStart(ContentType.APPLICATION_PROBLEM_JSON);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+
+    // when-then Generate the content
+    assertThatThrownBy(consumer::generateContent).isInstanceOf(UnrecognizedPropertyException.class);
   }
 
   @Test

@@ -166,6 +166,24 @@ public class DecisionInstanceSortIT {
         Comparator.comparing(DecisionInstanceEntity::state));
   }
 
+  @TestTemplate
+  public void shouldSortByRootDecisionDefinitionKeyAsc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.rootDecisionDefinitionKey().asc(),
+        Comparator.comparing(DecisionInstanceEntity::rootDecisionDefinitionKey));
+  }
+
+  @TestTemplate
+  public void shouldSortByRootDecisionDefinitionKeyDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.rootDecisionDefinitionKey().desc(),
+        Comparator.comparing(DecisionInstanceEntity::rootDecisionDefinitionKey).reversed());
+  }
+
   private void testSorting(
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<DecisionInstanceSort>> sortBuilder,

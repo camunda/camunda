@@ -15,7 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -30,7 +30,7 @@ final class ExporterDeleteRequestTransformerTest {
   private final MemberId id1 = MemberId.from("1");
   private final DynamicPartitionConfig config =
       new DynamicPartitionConfig(
-          new ExportersConfig(
+          new ExportingConfig(
               Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
 
   @Test

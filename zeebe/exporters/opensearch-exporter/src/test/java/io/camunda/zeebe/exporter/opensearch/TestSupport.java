@@ -10,8 +10,10 @@ package io.camunda.zeebe.exporter.opensearch;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.EnumSet;
 import java.util.stream.Stream;
+import org.junit.jupiter.params.provider.Arguments;
 
 /** Collection of utilities for unit and integration tests. */
 final class TestSupport {
@@ -131,5 +133,14 @@ final class TestSupport {
             ValueType.USAGE_METRIC,
             ValueType.MULTI_INSTANCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
+  }
+
+  static Stream<Arguments> provideValueTypesWithCurrentAndPreviousVersions() {
+    return TestSupport.provideValueTypes()
+        .flatMap(
+            valueType ->
+                Stream.of(
+                    Arguments.of(valueType, VersionUtil.getVersionLowerCase()),
+                    Arguments.of(valueType, VersionUtil.getPreviousVersion().toLowerCase())));
   }
 }

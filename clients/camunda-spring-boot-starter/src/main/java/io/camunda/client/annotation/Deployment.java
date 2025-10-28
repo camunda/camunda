@@ -22,6 +22,7 @@ import java.lang.annotation.*;
 @Documented
 @Inherited // has to be inherited to work on spring aop beans
 public @interface Deployment {
-
   String[] resources() default {};
+
+  String tenantId() default "";
 }

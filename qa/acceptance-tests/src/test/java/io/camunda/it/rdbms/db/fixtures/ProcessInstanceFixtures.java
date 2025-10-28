@@ -7,9 +7,12 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceTagDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceTagDbModel.ProcessInstanceTagDbModelBuilder;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -80,6 +83,27 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
     for (final ProcessInstanceDbModel processInstance : processInstanceList) {
       rdbmsWriter.getProcessInstanceWriter().create(processInstance);
     }
+    rdbmsWriter.flush();
+  }
+
+  public static ProcessInstanceTagDbModel createRandomizedTag(
+      final Function<ProcessInstanceTagDbModelBuilder, ProcessInstanceTagDbModelBuilder>
+          builderFunction) {
+    final var builder =
+        new ProcessInstanceTagDbModelBuilder()
+            .processInstanceKey(nextKey())
+            .tagValue("tag-" + RANDOM.nextInt(10000));
+
+    return builderFunction.apply(builder).build();
+  }
+
+  public static void addProcessInstanceTags(
+      final RdbmsWriter rdbmsWriter,
+      final Long processInstanceKey,
+      final List<ProcessInstanceTagDbModel> processInstanceTags) {
+    rdbmsWriter
+        .getProcessInstanceWriter()
+        .createTags(new ProcessInstanceTagsDto(processInstanceKey, processInstanceTags));
     rdbmsWriter.flush();
   }
 }

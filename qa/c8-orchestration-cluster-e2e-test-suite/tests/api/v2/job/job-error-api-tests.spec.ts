@@ -16,12 +16,12 @@ import {
 } from '../../../../utils/http';
 import {
   activateJobToObtainAValidJobKey,
-  setupProcessInstanceTests,
-} from '../../../../utils/requestHelpers';
+  setupProcessInstanceForTests,
+} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Error API Tests', () => {
-  const {beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
+  const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
     'job_api_process',
     'jobApiProcess',
   );

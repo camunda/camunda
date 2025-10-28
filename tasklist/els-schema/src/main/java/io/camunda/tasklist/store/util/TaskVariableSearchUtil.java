@@ -10,6 +10,7 @@ package io.camunda.tasklist.store.util;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.webapps.schema.entities.VariableEntity;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnRdbmsDisabled
 public class TaskVariableSearchUtil {
   private static final String ABSENT_PARENT_ID = "-1";
 

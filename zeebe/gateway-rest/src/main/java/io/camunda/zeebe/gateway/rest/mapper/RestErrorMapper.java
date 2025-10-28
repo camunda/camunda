@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,10 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 public class RestErrorMapper {
+  public static final Function<String, Exception> RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER =
+      msg -> new ServiceException(msg, ServiceException.Status.RESOURCE_EXHAUSTED);
+  public static final Function<String, Throwable> REQUEST_CANCELED_EXCEPTION_PROVIDER =
+      RuntimeException::new;
 
   public static final Logger LOG = LoggerFactory.getLogger(RestErrorMapper.class);
 

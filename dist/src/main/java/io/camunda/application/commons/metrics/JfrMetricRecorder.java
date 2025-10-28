@@ -8,12 +8,12 @@
 package io.camunda.application.commons.metrics;
 
 import io.camunda.application.commons.metrics.jfr.NativeMemoryMetrics;
+import io.camunda.configuration.conditions.ConditionalOnJfr;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import jdk.jfr.consumer.RecordingStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
  * from stopping.
  */
 @Component
-@ConditionalOnProperty(prefix = "camunda.flags.jfr", name = "metrics", havingValue = "true")
+@ConditionalOnJfr
 @Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 public final class JfrMetricRecorder {
   private final RecordingStream jfrStream;

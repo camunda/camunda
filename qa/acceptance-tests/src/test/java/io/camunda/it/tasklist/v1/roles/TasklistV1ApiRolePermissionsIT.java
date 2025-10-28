@@ -59,7 +59,6 @@ public class TasklistV1ApiRolePermissionsIT {
   private static final String ADMIN_USERNAME = "admin";
   private static final String AUTHORIZED_USERNAME = "authorized";
   private static final String UNAUTHORIZED_USERNAME = "unauthorized";
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @UserDefinition
   private static final TestUser ADMIN =
@@ -84,6 +83,7 @@ public class TasklistV1ApiRolePermissionsIT {
 
   private static long processDefinitionKey;
   private static long taskKey;
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @BeforeAll
   public static void beforeAll(
@@ -102,7 +102,12 @@ public class TasklistV1ApiRolePermissionsIT {
         .permissionTypes(PermissionType.READ_PROCESS_DEFINITION, PermissionType.UPDATE_USER_TASK)
         .send()
         .join();
-    addUserToRole(adminClient.getConfiguration().getRestAddress(), roleId, AUTHORIZED_USERNAME);
+    adminClient
+        .newAssignRoleToUserCommand()
+        .roleId(roleId)
+        .username(AUTHORIZED_USERNAME)
+        .send()
+        .join();
 
     adminClient
         .newDeployResourceCommand()
@@ -204,22 +209,6 @@ public class TasklistV1ApiRolePermissionsIT {
             });
   }
 
-  private static void addUserToRole(final URI url, final String roleId, final String username)
-      throws Exception {
-    final var uri = URI.create(url + "v2/roles/%s/users/%s".formatted(roleId, username));
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(ADMIN_USERNAME, ADMIN_USERNAME).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(uri)
-            .PUT(BodyPublishers.noBody())
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .header("Content-Type", "application/json")
-            .build();
-    HTTP_CLIENT.send(request, BodyHandlers.ofString());
-  }
-
   private int getRunningProcessInstance(
       final CamundaClient client, final String username, final long processDefinitionKey)
       throws URISyntaxException, IOException, InterruptedException {
@@ -238,7 +227,7 @@ public class TasklistV1ApiRolePermissionsIT {
             .build();
 
     // Send the request and get the response
-    return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
+    return httpClient.send(request, BodyHandlers.ofString()).statusCode();
   }
 
   private int assignTask(final CamundaClient client, final String username, final long taskId)
@@ -266,6 +255,6 @@ public class TasklistV1ApiRolePermissionsIT {
             .build();
 
     // Send the request and get the response
-    return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
+    return httpClient.send(request, BodyHandlers.ofString()).statusCode();
   }
 }

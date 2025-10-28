@@ -20,6 +20,7 @@ public enum DecisionInstanceSearchColumn implements SearchColumn<DecisionInstanc
   DECISION_DEFINITION_KEY("decisionDefinitionKey"),
   DECISION_DEFINITION_VERSION("decisionDefinitionVersion"),
   DECISION_DEFINITION_TYPE("decisionDefinitionType"),
+  ROOT_DECISION_DEFINITION_KEY("rootDecisionDefinitionKey"),
   TENANT_ID("tenantId"),
   EVALUATION_DATE("evaluationDate"),
   STATE("state"),

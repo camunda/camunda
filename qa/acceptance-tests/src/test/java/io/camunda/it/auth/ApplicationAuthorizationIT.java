@@ -74,7 +74,7 @@ class ApplicationAuthorizationIT {
           List.of(new Permissions(COMPONENT, ACCESS, List.of("tasklist"))));
 
   @AutoClose
-  private static final HttpClient HTTP_CLIENT =
+  private final HttpClient httpClient =
       HttpClient.newBuilder().followRedirects(Redirect.NEVER).build();
 
   @ParameterizedTest
@@ -109,7 +109,7 @@ class ApplicationAuthorizationIT {
             .uri(createUri(client, componentName + PATH_OPERATE_WEBAPP_USER))
             .build();
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
     assertAccessAllowed(response);
@@ -126,7 +126,7 @@ class ApplicationAuthorizationIT {
             .header("Authorization", basicAuthentication(RESTRICTED))
             .build();
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
     assertAccessAllowed(response);
@@ -203,7 +203,7 @@ class ApplicationAuthorizationIT {
             .header("Authorization", basicAuthentication(RESTRICTED))
             .build();
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
     final MeResponse meResponse = OBJECT_MAPPER.readValue(response.body(), MeResponse.class);

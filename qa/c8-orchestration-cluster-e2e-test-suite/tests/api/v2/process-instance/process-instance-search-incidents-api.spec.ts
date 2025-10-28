@@ -13,11 +13,6 @@ import {
   deploy,
 } from '../../../../utils/zeebeClient';
 import {
-  failJob,
-  searchJobKeysForProcessInstance,
-  throwErrorForJob,
-} from '../../../../utils/requestHelpers';
-import {
   assertNotFoundRequest,
   assertUnauthorizedRequest,
   buildUrl,
@@ -25,6 +20,11 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
+import {
+  failJob,
+  searchJobKeysForProcessInstance,
+  throwErrorForJob,
+} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Process Instance Search Incidents Tests', () => {

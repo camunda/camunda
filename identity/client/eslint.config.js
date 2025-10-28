@@ -22,8 +22,7 @@ export default [
   {
     ignores: [
       "node_modules/",
-      "yarn.lock",
-      ".yarn/",
+      "package-lock.json",
       ".eslintcache",
       ".env",
       "target/",

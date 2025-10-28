@@ -64,6 +64,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "decisionDefinitionName": "ddn",
                        "decisionDefinitionVersion": 0,
                        "decisionDefinitionType": "DECISION_TABLE",
+                       "rootDecisionDefinitionKey": "123457",
                        "result": "result",
                        "tenantId": "tenantId"
                    }
@@ -97,6 +98,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       "ddn",
                       0,
                       DecisionDefinitionType.DECISION_TABLE,
+                      123457L,
                       "result",
                       null,
                       null)))
@@ -149,6 +151,14 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         new TestArguments(
             """
       {
+          "filter": {
+              "rootDecisionDefinitionKey": "123457"
+          }
+      }""",
+            q -> q.filter(f -> f.rootDecisionDefinitionKeys(123457L))),
+        new TestArguments(
+            """
+      {
           "sort": [
                 {
                     "field": "decisionDefinitionName",
@@ -166,7 +176,17 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 }
           ]
       }""",
-            q -> q.sort(s -> s.decisionDefinitionName().asc())));
+            q -> q.sort(s -> s.decisionDefinitionName().asc())),
+        new TestArguments(
+            """
+      {
+          "sort": [
+                {
+                    "field": "rootDecisionDefinitionKey"
+                }
+          ]
+      }""",
+            q -> q.sort(s -> s.rootDecisionDefinitionKey().asc())));
   }
 
   @ParameterizedTest
@@ -230,6 +250,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             "ddn",
             0,
             DecisionDefinitionType.DECISION_TABLE,
+            123457L,
             "result",
             List.of(new DecisionInstanceInputEntity("1", "name", "value")),
             List.of(
@@ -260,6 +281,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                      "decisionDefinitionName": "ddn",
                      "decisionDefinitionVersion": 0,
                      "decisionDefinitionType": "DECISION_TABLE",
+                     "rootDecisionDefinitionKey": "123457",
                      "result": "result",
                      "tenantId": "tenantId",
                      "evaluatedInputs": [
@@ -403,6 +425,11 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "elementInstanceKey",
         ops -> new DecisionInstanceFilter.Builder().flowNodeInstanceKeyOperations(ops).build());
+    keyOperationTestCases(
+        streamBuilder,
+        "rootDecisionDefinitionKey",
+        ops ->
+            new DecisionInstanceFilter.Builder().rootDecisionDefinitionKeyOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
         "evaluationDate",

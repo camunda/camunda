@@ -26,6 +26,7 @@ import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionInstanceStatisticsSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.sort.RoleMemberSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.TenantMemberSort;
@@ -239,6 +240,7 @@ public class SearchQuerySortRequestMapper {
         case DECISION_DEFINITION_NAME -> builder.decisionDefinitionName();
         case DECISION_DEFINITION_VERSION -> builder.decisionDefinitionVersion();
         case DECISION_DEFINITION_TYPE -> builder.decisionDefinitionType();
+        case ROOT_DECISION_DEFINITION_KEY -> builder.rootDecisionDefinitionKey();
         case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
@@ -379,33 +381,34 @@ public class SearchQuerySortRequestMapper {
   }
 
   static List<String> applyRoleGroupSortField(
-      final RoleGroupSearchQuerySortRequest.FieldEnum field, final RoleSort.Builder builder) {
+      final RoleGroupSearchQuerySortRequest.FieldEnum field, final RoleMemberSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case GROUP_ID -> {
-        builder.memberId();
+        builder.id();
         yield List.of();
       }
     };
   }
 
   static List<String> applyRoleUserSortField(
-      final RoleUserSearchQuerySortRequest.FieldEnum field, final RoleSort.Builder builder) {
+      final RoleUserSearchQuerySortRequest.FieldEnum field, final RoleMemberSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case USERNAME -> {
-        builder.memberId();
+        builder.id();
         yield List.of();
       }
     };
   }
 
   static List<String> applyRoleClientSortField(
-      final RoleClientSearchQuerySortRequest.FieldEnum field, final RoleSort.Builder builder) {
+      final RoleClientSearchQuerySortRequest.FieldEnum field,
+      final RoleMemberSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case CLIENT_ID -> {
-        builder.memberId();
+        builder.id();
         yield List.of();
       }
     };

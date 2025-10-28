@@ -123,6 +123,7 @@ public class TopologyControllerTest extends RestControllerTest {
     final var expectedResponse =
         """
         {
+          "brokers":[],
           "gatewayVersion": "%s"
         }
         """

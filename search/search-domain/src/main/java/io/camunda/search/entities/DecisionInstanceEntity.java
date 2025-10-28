@@ -27,6 +27,7 @@ public record DecisionInstanceEntity(
     String decisionDefinitionName,
     Integer decisionDefinitionVersion,
     DecisionDefinitionType decisionDefinitionType,
+    Long rootDecisionDefinitionKey,
     String result,
     List<DecisionInstanceInputEntity> evaluatedInputs,
     List<DecisionInstanceOutputEntity> evaluatedOutputs)
@@ -48,6 +49,7 @@ public record DecisionInstanceEntity(
         .decisionDefinitionName(decisionDefinitionName)
         .decisionDefinitionVersion(decisionDefinitionVersion)
         .decisionDefinitionType(decisionDefinitionType)
+        .rootDecisionDefinitionKey(rootDecisionDefinitionKey)
         .tenantId(tenantId)
         .result(result)
         .evaluatedInputs(evaluatedInputs)
@@ -71,6 +73,7 @@ public record DecisionInstanceEntity(
     private String decisionDefinitionName;
     private Integer decisionDefinitionVersion;
     private DecisionDefinitionType decisionDefinitionType;
+    private Long rootDecisionDefinitionKey;
     private String result;
     private List<DecisionInstanceInputEntity> evaluatedInputs;
     private List<DecisionInstanceOutputEntity> evaluatedOutputs;
@@ -150,6 +153,11 @@ public record DecisionInstanceEntity(
       return this;
     }
 
+    public Builder rootDecisionDefinitionKey(final Long rootDecisionDefinitionKey) {
+      this.rootDecisionDefinitionKey = rootDecisionDefinitionKey;
+      return this;
+    }
+
     public Builder result(final String result) {
       this.result = result;
       return this;
@@ -183,6 +191,7 @@ public record DecisionInstanceEntity(
           decisionDefinitionName,
           decisionDefinitionVersion,
           decisionDefinitionType,
+          rootDecisionDefinitionKey,
           result,
           evaluatedInputs,
           evaluatedOutputs);
@@ -197,7 +206,6 @@ public record DecisionInstanceEntity(
   public enum DecisionDefinitionType {
     DECISION_TABLE,
     LITERAL_EXPRESSION,
-    UNSPECIFIED,
     UNKNOWN;
 
     public static DecisionDefinitionType fromValue(final String value) {
@@ -212,9 +220,7 @@ public record DecisionInstanceEntity(
 
   public enum DecisionInstanceState {
     EVALUATED,
-    FAILED,
-    UNKNOWN,
-    UNSPECIFIED;
+    FAILED;
 
     public static DecisionInstanceState fromValue(final String value) {
       for (final DecisionInstanceState b : DecisionInstanceState.values()) {

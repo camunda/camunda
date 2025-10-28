@@ -24,9 +24,10 @@ import {
   assignClientsToRole,
   clientFromState,
   createRole,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Role Clients API Tests', () => {
   const state: Record<string, unknown> = {};
   const createdRoleIds: string[] = [];

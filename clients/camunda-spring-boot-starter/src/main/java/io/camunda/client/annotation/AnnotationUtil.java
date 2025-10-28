@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -195,30 +196,47 @@ public class AnnotationUtil {
                         + parameterInfo.getParameter().getParameterizedType().getTypeName()));
   }
 
-  public static Optional<DeploymentValue> getDeploymentValue(final BeanInfo beanInfo) {
+  public static List<DeploymentValue> getDeploymentValues(final BeanInfo beanInfo) {
     if (isDeployment(beanInfo)) {
-      final List<String> resources = new ArrayList<>();
-      resources.addAll(getDeploymentResources(beanInfo));
-      resources.addAll(getDeploymentResourcesLegacy(beanInfo));
-      return Optional.of(DeploymentValue.builder().beanInfo(beanInfo).resources(resources).build());
+      final List<DeploymentValue> values = new ArrayList<>();
+      values.addAll(getDeploymentValuesInternal(beanInfo));
+      values.addAll(getDeploymentResourcesLegacy(beanInfo));
+      return values;
     }
-    return Optional.empty();
+    return Collections.emptyList();
   }
 
-  private static List<String> getDeploymentResources(final BeanInfo beanInfo) {
+  private static List<DeploymentValue> getDeploymentValuesInternal(final BeanInfo beanInfo) {
     return beanInfo
         .getAnnotation(Deployment.class)
-        .map(Deployment::resources)
+        .map(AnnotationUtil::fromAnnotation)
         .map(Arrays::asList)
         .orElseGet(List::of);
   }
 
-  private static List<String> getDeploymentResourcesLegacy(final BeanInfo beanInfo) {
+  private static DeploymentValue fromAnnotation(final Deployment deploymentAnnotation) {
+    return new DeploymentValue(
+        Arrays.asList(deploymentAnnotation.resources()),
+        StringUtils.isEmpty(deploymentAnnotation.tenantId())
+            ? null
+            : deploymentAnnotation.tenantId());
+  }
+
+  private static List<DeploymentValue> getDeploymentResourcesLegacy(final BeanInfo beanInfo) {
     return beanInfo
         .getAnnotation(io.camunda.zeebe.spring.client.annotation.Deployment.class)
-        .map(io.camunda.zeebe.spring.client.annotation.Deployment::resources)
+        .map(AnnotationUtil::fromAnnotation)
         .map(Arrays::asList)
         .orElseGet(List::of);
+  }
+
+  private static DeploymentValue fromAnnotation(
+      final io.camunda.zeebe.spring.client.annotation.Deployment deploymentAnnotation) {
+    return new DeploymentValue(
+        Arrays.asList(deploymentAnnotation.resources()),
+        StringUtils.isEmpty(deploymentAnnotation.tenantId())
+            ? null
+            : deploymentAnnotation.tenantId());
   }
 
   private static boolean isVariableLegacy(final ParameterInfo parameterInfo) {

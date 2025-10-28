@@ -7,10 +7,7 @@
  */
 
 import test, {expect} from '@playwright/test';
-import {
-  findUserTask,
-  setupProcessInstanceTests,
-} from '../../../../utils/requestHelpers';
+import {setupProcessInstanceForTests} from '@requestHelpers';
 import {
   assertBadRequest,
   assertUnauthorizedRequest,
@@ -19,14 +16,16 @@ import {
 } from 'utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponseShape} from 'assert-json-body';
+import {findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search User Task Variables Tests', () => {
-  const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'user_task_api_test_process',
-    'user_task_api_test_process',
-    {testset1: 'something', testset2: 'something else', zip: 123},
-  );
+  const {state, beforeAll, beforeEach, afterEach} =
+    setupProcessInstanceForTests(
+      'user_task_api_test_process',
+      'user_task_api_test_process',
+      {testset1: 'something', testset2: 'something else', zip: 123},
+    );
 
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
@@ -93,12 +92,13 @@ test.describe.parallel('Search User Task Variables Tests', () => {
       expect(json.items[1].name).toEqual('testset2');
       expect(json.items[2].name).toEqual('testset1');
       expect(json.items[0].value).toEqual('123');
-      expect(json.items[1].value).toEqual('\"something else\"');
-      expect(json.items[2].value).toEqual('\"something\"');
+      expect(json.items[1].value).toEqual('"something else"');
+      expect(json.items[2].value).toEqual('"something"');
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search user task variables - unauthorized', async ({request}) => {
+  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
+  test.skip('Search user task variables - unauthorized', async ({request}) => {
     const userTaskKey = await findUserTask(
       request,
       state['processInstanceKey'] as string,
@@ -186,7 +186,7 @@ test.describe.parallel('Search User Task Variables Tests', () => {
       expect(json.page.totalItems).toBe(1);
       expect(json.items.length).toBe(1);
       expect(json.items[0].name).toBe('testset1');
-      expect(json.items[0].value).toBe('\"something\"');
+      expect(json.items[0].value).toBe('"something"');
     }).toPass(defaultAssertionOptions);
   });
 
@@ -224,9 +224,9 @@ test.describe.parallel('Search User Task Variables Tests', () => {
       expect(json.page.totalItems).toBe(2);
       expect(json.items.length).toBe(2);
       expect(json.items[0].name).toBe('testset1');
-      expect(json.items[0].value).toBe('\"something\"');
+      expect(json.items[0].value).toBe('"something"');
       expect(json.items[1].name).toBe('testset2');
-      expect(json.items[1].value).toBe('\"something else\"');
+      expect(json.items[1].value).toBe('"something else"');
     }).toPass(defaultAssertionOptions);
   });
 });

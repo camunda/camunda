@@ -86,6 +86,7 @@ import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatistics
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
+import io.camunda.search.clients.transformers.filter.RoleMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.SequenceFlowFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantMemberFilterTransformer;
@@ -118,6 +119,7 @@ import io.camunda.search.clients.transformers.sort.MessageSubscriptionFieldSorti
 import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.RoleMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTransformer;
@@ -146,6 +148,7 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.RoleMemberFilter;
 import io.camunda.search.filter.SequenceFlowFilter;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.TenantMemberFilter;
@@ -175,6 +178,7 @@ import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantMemberQuery;
@@ -205,6 +209,7 @@ import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.sort.RoleMemberSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.TenantMemberSort;
@@ -350,6 +355,7 @@ public final class ServiceTransformers {
             ProcessInstanceQuery.class,
             ProcessInstanceFlowNodeStatisticsQuery.class,
             RoleQuery.class,
+            RoleMemberQuery.class,
             SequenceFlowQuery.class,
             TenantQuery.class,
             TenantMemberQuery.class,
@@ -410,6 +416,7 @@ public final class ServiceTransformers {
     mappers.put(ProcessDefinitionSort.class, new ProcessDefinitionFieldSortingTransformer());
     mappers.put(ProcessInstanceSort.class, new ProcessInstanceFieldSortingTransformer());
     mappers.put(RoleSort.class, new RoleFieldSortingTransformer());
+    mappers.put(RoleMemberSort.class, new RoleMemberFieldSortingTransformer());
     mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
     mappers.put(TenantMemberSort.class, new TenantMemberFieldSortingTransformer());
     mappers.put(UserTaskSort.class, new UserTaskFieldSortingTransformer());
@@ -454,6 +461,9 @@ public final class ServiceTransformers {
         new FlownodeInstanceFilterTransformer(
             indexDescriptors.get(FlowNodeInstanceTemplate.class)));
     mappers.put(RoleFilter.class, new RoleFilterTransformer(indexDescriptors.get(RoleIndex.class)));
+    mappers.put(
+        RoleMemberFilter.class,
+        new RoleMemberFilterTransformer(indexDescriptors.get(RoleIndex.class)));
     mappers.put(
         GroupFilter.class, new GroupFilterTransformer(indexDescriptors.get(GroupIndex.class)));
     mappers.put(

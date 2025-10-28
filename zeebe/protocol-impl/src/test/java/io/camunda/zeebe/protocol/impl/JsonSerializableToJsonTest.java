@@ -3358,7 +3358,8 @@ final class JsonSerializableToJsonTest {
     "partitionIds": [1, 2, 3],
     "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
     "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
-    "authenticationBuffer": {"expandable":false}
+    "authenticationBuffer": {"expandable":false},
+    "authorizationCheckBuffer": {"expandable":false}
     }
   }
   """
@@ -3404,6 +3405,15 @@ final class JsonSerializableToJsonTest {
                       'department': 'engineering'
                     }
                   }
+                  """))
+                    .setAuthorizationCheck(
+                        toMessagePack(
+                            """
+                  {
+                    'resource_type': 'PROCESS_DEFINITION',
+                    'permission_type': 'UPDATE_PROCESS_INSTANCE',
+                    'resource_ids': 'foobar_process'
+                  }
                   """)),
         """
   {
@@ -3438,6 +3448,9 @@ final class JsonSerializableToJsonTest {
        "encodedLength": 74
      },
      "authenticationBuffer": {
+       "expandable": false
+     },
+     "authorizationCheckBuffer": {
        "expandable": false
      }
    }

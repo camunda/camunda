@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  findUserTask,
-  setupProcessInstanceTests,
-} from '../../../../utils/requestHelpers';
+import {setupProcessInstanceForTests} from '@requestHelpers';
 import {test} from '@playwright/test';
 import {
   assertBadRequest,
@@ -19,12 +16,12 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Assign User Task Tests', () => {
-  const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'user_task_api_test_process',
-  );
+  const {state, beforeAll, beforeEach, afterEach} =
+    setupProcessInstanceForTests('user_task_api_test_process');
 
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);

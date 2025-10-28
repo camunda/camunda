@@ -39,11 +39,9 @@ public class RoleIntegrationTest {
 
   private static final String EXISTING_ROLE_ID = Strings.newRandomValidIdentityId();
   private static final String EXISTING_ROLE_NAME = "ARoleName";
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @BeforeAll
   static void setup() {
@@ -331,7 +329,7 @@ public class RoleIntegrationTest {
   }
 
   // TODO once available, this test should use the client to make the request
-  private static AuthorizationSearchResponse searchAuthorizations(final String restAddress)
+  private AuthorizationSearchResponse searchAuthorizations(final String restAddress)
       throws URISyntaxException, IOException, InterruptedException {
     final HttpRequest request =
         HttpRequest.newBuilder()
@@ -340,7 +338,7 @@ public class RoleIntegrationTest {
             .build();
 
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
   }
 

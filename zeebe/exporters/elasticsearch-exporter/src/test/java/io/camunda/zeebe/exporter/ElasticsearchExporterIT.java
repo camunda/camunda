@@ -27,8 +27,6 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -233,15 +231,16 @@ final class ElasticsearchExporterIT {
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldExportOnlyRequiredRecords(final ValueType valueType) {
+  @ParameterizedTest(name = "{0} - version={1}")
+  @MethodSource(
+      "io.camunda.zeebe.exporter.TestSupport#provideValueTypesWithCurrentAndPreviousVersions")
+  void shouldExportOnlyRequiredRecords(final ValueType valueType, final String version) {
     // given
     config.setIncludeEnabledRecords(false);
     exporter.configure(exporterTestContext);
     exporter.open(controller);
 
-    final var record = generateRecord(valueType);
+    final var record = generateRecord(valueType, version);
 
     // when
     export(record);
@@ -270,91 +269,18 @@ final class ElasticsearchExporterIT {
     }
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
-    // given
-    config.setIncludeEnabledRecords(false);
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-
-    final var record =
-        factory.generateRecord(
-            valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
-
-    // when
-    export(record);
-
-    // then
-    final var response = testClient.getExportedDocumentFor(record);
-    assertThat(response)
-        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
-        .containsExactly(
-            indexRouter.indexFor(record),
-            indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
-            modifyExpectedRecordForPreviousVersion(valueType, record));
-  }
-
-  private Record modifyExpectedRecordForPreviousVersion(
-      final ValueType valueType, final Record record) {
-    final var copyFactory = new ProtocolFactory(factory.getSeed());
-    final RecordValue recordValue =
-        switch (valueType) {
-          case JOB ->
-              ImmutableJobRecordValue.builder()
-                  .from(((ImmutableJobRecordValue) record.getValue()))
-                  .withTags(List.of())
-                  .resultBuilder(null)
-                  .build();
-          case PROCESS_INSTANCE ->
-              ImmutableProcessInstanceRecordValue.builder()
-                  .from(((ImmutableProcessInstanceRecordValue) record.getValue()))
-                  .withCallingElementPath(List.of())
-                  .withProcessDefinitionPath(List.of())
-                  .withTags(List.of())
-                  .withElementInstancePath(List.of())
-                  .build();
-          case JOB_BATCH ->
-              ImmutableJobBatchRecordValue.builder()
-                  .from(((ImmutableJobBatchRecordValue) record.getValue()))
-                  .withJobs(
-                      ((ImmutableJobBatchRecordValue) record.getValue())
-                          .getJobs().stream()
-                              .map(
-                                  job ->
-                                      ImmutableJobRecordValue.builder()
-                                          .from(job)
-                                          .withTags(List.of())
-                                          .resultBuilder(null)
-                                          .build())
-                              .toList())
-                  .build();
-          case PROCESS_INSTANCE_CREATION ->
-              ImmutableProcessInstanceCreationRecordValue.builder()
-                  .from(((ImmutableProcessInstanceCreationRecordValue) record.getValue()))
-                  .withTags(List.of())
-                  .withRuntimeInstructions(List.of())
-                  .build();
-          default -> record.getValue();
-        };
-    return copyFactory.generateRecord(
-        valueType,
-        r ->
-            r.withValue(recordValue)
-                .withAuthorizations(record.getAuthorizations())
-                .withBrokerVersion(record.getBrokerVersion())
-                .withBatchOperationReference(-1L));
-  }
-
   private boolean export(final Record<?> record) {
     exporter.export(record);
     return true;
   }
 
+  private <T extends RecordValue> Record<T> generateRecord(
+      final ValueType valueType, final String version) {
+    return factory.generateRecord(valueType, r -> r.withBrokerVersion(version));
+  }
+
   private <T extends RecordValue> Record<T> generateRecord(final ValueType valueType) {
-    return factory.generateRecord(
-        valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+    return generateRecord(valueType, VersionUtil.getVersionLowerCase());
   }
 
   private <T extends RecordValue> Record<T> generateSupportedRecord(

@@ -23,7 +23,6 @@ import {tracking} from 'modules/tracking';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {buildMutationRequestBody} from './buildMutationRequestBody';
 
 type Props = {
@@ -41,8 +40,6 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   const [modalMode, setModalMode] = useState<
     'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
   >(null);
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-
   const closeModal = () => {
     setModalMode(null);
   };
@@ -112,7 +109,6 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       baseFilter,
       includeIds,
       excludeIds: excludedProcessInstanceIds,
-      processDefinitionKey,
     });
 
     if (selectedProcessInstanceIds.length > 0) {

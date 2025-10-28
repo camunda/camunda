@@ -53,6 +53,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           "ddn",
           0,
           DecisionDefinitionType.DECISION_TABLE,
+          123457L,
           "result",
           null,
           null);
@@ -73,6 +74,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           .setDecisionName("ddn")
           .setDecisionVersion(0)
           .setDecisionType(DecisionType.DECISION_TABLE)
+          .setRootDecisionDefinitionId("123457")
           .setResult("result")
           .setEvaluatedOutputs(null)
           .setEvaluatedInputs(null);

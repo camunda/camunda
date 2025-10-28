@@ -21,7 +21,7 @@ import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
@@ -223,7 +223,7 @@ final class PartitionJoinApplierTest {
     // given
     final var config =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(
                     "expA",
                     new ExporterState(1, ExporterState.State.ENABLED, Optional.of("expB")))));

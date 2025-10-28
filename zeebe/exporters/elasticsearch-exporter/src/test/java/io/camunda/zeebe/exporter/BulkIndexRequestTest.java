@@ -13,15 +13,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.BulkIndexRequest.BulkOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRuntimeInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceResultRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -41,9 +39,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
@@ -288,144 +284,16 @@ final class BulkIndexRequestTest {
     }
 
     @Test
-    void shouldIndexRecordWithoutBatchOperationReference() {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
-                      .withBatchOperationReference(10L));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("batchOperationReference"))
-          .describedAs("Expect that the records are NOT serialized with batchOperationReference")
-          .containsExactly(new Object[] {null});
-    }
-
-    @Test
-    void shouldIndexRecordWithBatchOperationReference() {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              r -> r.withBrokerVersion(VersionUtil.getVersion()).withBatchOperationReference(10L));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("batchOperationReference"))
-          .describedAs("Expect that the records are serialized with batchOperationReference")
-          .containsExactly(10);
-    }
-
-    @Test
-    void shouldIndexRecordWithoutDeniedReason() {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
-                      .withValue(new UserTaskRecord().setDeniedReason("denied")));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("deniedReason"))
-          .describedAs("Expect that the records are NOT serialized with deniedReason")
-          .containsExactly(new Object[] {null});
-    }
-
-    @Test
-    void shouldIndexRecordWithDeniedReason() {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              r ->
-                  r.withBrokerVersion(VersionUtil.getVersion())
-                      .withValue(new UserTaskRecord().setDeniedReason("denied")));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("deniedReason"))
-          .describedAs("Expect that the records are serialized with deniedReason")
-          .containsExactly("denied");
-    }
-
-    @ParameterizedTest
-    @MethodSource("recordsSupportingTags")
-    void shouldIndexRecordWithTags(final Record record) {
-      // given
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("tags"))
-          .describedAs("Expect that the records are serialized with tags")
-          .containsExactly(List.of("t1", "t2"));
-    }
-
-    @ParameterizedTest
-    @MethodSource("recordsSupportingTagsPreviousVersion")
-    void shouldIndexRecordWithoutTags(final Record record) {
-      // given
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("tags"))
-          .describedAs("Expect that the records are NOT serialized with tags")
-          .containsExactly(new Object[] {null});
-    }
-
-    @Test
-    void shouldIndexRecordWithoutResult() {
+    void shouldIndexCommandDistributionRecordWithoutAuthInfoOnPreviousVersion() {
       // given
       final var record =
           recordFactory.generateRecord(
               r ->
                   r.withBrokerVersion(VersionUtil.getPreviousVersion())
                       .withValue(
-                          new JobRecord().setResult(new JobResult().setDeniedReason("denied"))));
+                          new CommandDistributionRecord()
+                              .setPartitionId(1)
+                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -437,20 +305,22 @@ final class BulkIndexRequestTest {
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("result"))
-          .describedAs("Expect that the records are NOT serialized with deniedReason")
+          .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
+          .describedAs("Expect that the records are NOT serialized with authInfo")
           .containsExactly(new Object[] {null});
     }
 
     @Test
-    void shouldIndexRecordWithResult() {
+    void shouldIndexCommandDistributionRecordWithoutAuthInfo() {
       // given
       final var record =
           recordFactory.generateRecord(
               r ->
                   r.withBrokerVersion(VersionUtil.getVersion())
                       .withValue(
-                          new JobRecord().setResult(new JobResult().setDeniedReason("denied"))));
+                          new CommandDistributionRecord()
+                              .setPartitionId(1)
+                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -462,166 +332,9 @@ final class BulkIndexRequestTest {
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("result"))
-          .extracting(source -> ((Map<String, Object>) source).get("deniedReason"))
-          .describedAs("Expect that the records are NOT serialized with deniedReason")
-          .containsExactly("denied");
-    }
-
-    @Test
-    void shouldIndexProcessInstanceCreationRecordWithoutRuntimeInstructions() {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
-                      .withValue(
-                          ImmutableProcessInstanceCreationRecordValue.builder()
-                              .withRuntimeInstructions(
-                                  List.of(
-                                      ImmutableProcessInstanceCreationRuntimeInstructionValue
-                                          .builder()
-                                          .withAfterElementId("afterElementId")
-                                          .build()))
-                              .build()));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("runtimeInstructions"))
-          .describedAs("Expect that the records are NOT serialized with runtimeInstructions")
+          .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
+          .describedAs("Expect that the records are NOT serialized with authInfo")
           .containsExactly(new Object[] {null});
-    }
-
-    @Test
-    void shouldIndexProcessInstanceCreationRecordWithRuntimeInstructions() {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              r ->
-                  r.withBrokerVersion(VersionUtil.getVersion())
-                      .withValue(
-                          ImmutableProcessInstanceCreationRecordValue.builder()
-                              .withRuntimeInstructions(
-                                  List.of(
-                                      ImmutableProcessInstanceCreationRuntimeInstructionValue
-                                          .builder()
-                                          .withAfterElementId("afterElementId")
-                                          .build()))
-                              .build()));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("runtimeInstructions"))
-          .extracting(source -> ((List) source).getFirst())
-          .extracting(source -> ((Map<String, Object>) source).get("afterElementId"))
-          .describedAs("Expect that the records are serialized with runtimeInstructions")
-          .containsExactly("afterElementId");
-    }
-
-    @Test
-    void shouldIndexProcessInstanceRecordWithoutNewFields() {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
-                      .withValue(
-                          ImmutableProcessInstanceRecordValue.builder()
-                              .withElementInstancePath(List.of(List.of(1L, 2L, 3L)))
-                              .withProcessDefinitionPath(List.of(1L, 2L, 3L))
-                              .withCallingElementPath(List.of(3, 4, 5))
-                              .build()));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("elementInstancePath"))
-          .describedAs("Expect that the records are NOT serialized with elementInstancePath")
-          .containsExactly(new Object[] {null});
-
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionPath"))
-          .describedAs("Expect that the records are NOT serialized with processDefinitionPath")
-          .containsExactly(new Object[] {null});
-
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("callingElementPath"))
-          .describedAs("Expect that the records are NOT serialized with callingElementPath")
-          .containsExactly(new Object[] {null});
-    }
-
-    @Test
-    void shouldIndexProcessInstanceRecordWithNewFields() {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              r ->
-                  r.withBrokerVersion(VersionUtil.getVersion())
-                      .withValue(
-                          ImmutableProcessInstanceRecordValue.builder()
-                              .withElementInstancePath(List.of(List.of(1L, 2L, 3L)))
-                              .withProcessDefinitionPath(List.of(1L, 2L, 3L))
-                              .withCallingElementPath(List.of(3, 4, 5))
-                              .build()));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("elementInstancePath"))
-          .describedAs("Expect that the records are serialized with elementInstancePath")
-          .containsExactly(List.of(List.of(1, 2, 3)));
-
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionPath"))
-          .describedAs("Expect that the records are serialized with processDefinitionPath")
-          .containsExactly(List.of(1, 2, 3));
-
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("callingElementPath"))
-          .describedAs("Expect that the records are serialized with callingElementPath")
-          .containsExactly(List.of(3, 4, 5));
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {

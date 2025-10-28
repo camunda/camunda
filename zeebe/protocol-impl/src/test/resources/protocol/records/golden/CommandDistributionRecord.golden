@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.distribution;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -32,7 +34,6 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -178,10 +179,6 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     return concreteCommandValue;
   }
 
-  public AuthInfo getAuthInfo() {
-    return authInfoProperty.getValue();
-  }
-
   public CommandDistributionRecord setCommandValue(final UnifiedRecordValue commandValue) {
     if (commandValue == null) {
       commandValueProperty.reset();
@@ -220,6 +217,11 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
     return this;
+  }
+
+  @JsonIgnoreProperties
+  public AuthInfo getAuthInfo() {
+    return authInfoProperty.getValue();
   }
 
   public CommandDistributionRecord setAuthInfo(final AuthInfo authInfo) {

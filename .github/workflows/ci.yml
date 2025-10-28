@@ -210,6 +210,7 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         id: build-optimize-fe
         with:
@@ -278,7 +279,7 @@ jobs:
       - name: Setup General UT Modules
         run: |
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-unit-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-unit-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
-      - name: Maven Test Build
+      - name: Maven Test Build Unit
         shell: bash
         # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
         #
@@ -327,8 +328,8 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     env:
-        TEST_TYPE: "Unit"
-        TEST_PRODUCT: "Zeebe"
+      TEST_TYPE: "Unit"
+      TEST_PRODUCT: "Zeebe"
     strategy:
       fail-fast: false
       matrix:
@@ -356,8 +357,10 @@ jobs:
             maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ matrix.suite}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_owner: "${{ matrix.suite }}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-zeebe
@@ -371,9 +374,9 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test (Zeebe)
-        shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=7
@@ -706,7 +709,7 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
-      - name: Maven Test Build
+      - name: Maven Test Build DataLayer
         shell: bash
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
@@ -785,8 +788,41 @@ jobs:
             docker-file: camunda.Dockerfile
             owner: "Data Layer"
             module: "Schema Manager"
-          - group: qa-integration
-            name: "Zeebe QA"
+          - group: zeebe-engine-integration
+            name: "Zeebe Engine QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Core Features"
+            module: "Zeebe"
+            test-filter: "io.camunda.zeebe.it.engine.**,!**/*$*.java"
+          - group: zeebe-ds-integration
+            name: "Zeebe Cluster QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Distributed Systems"
+            module: "Zeebe"
+            test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*$*.java"
+          - group: zeebe-ds-integration-scaleup
+            name: "Zeebe Cluster ScaleUp QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 1
+            runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Distributed Systems"
+            module: "Zeebe"
+            test-filter: "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
+          - group: zeebe-shared-integration
+            name: "Zeebe General QA"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
@@ -795,6 +831,7 @@ jobs:
             docker-file: Dockerfile
             owner: "General"
             module: "Zeebe"
+            test-filter: "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*$*.java"
           - group: qa-update
             name: "Zeebe QA - Update"
             maven-modules: "zeebe/qa/update-tests"
@@ -822,6 +859,7 @@ jobs:
       CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
       CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
       DOCKER_IMAGE_TAG: current-test
+      TEST_TYPE: Integration
     services:
       registry:
         image: registry:3
@@ -829,14 +867,18 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a Integration test for ${{ matrix.name }} owned by ${{ matrix.owner}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_product: "${{ matrix.name }}"
+          test_owner: "${{ matrix.owner }}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -867,7 +909,10 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      - name: Maven Test Build
+      - name: Maven Test Build Integration
+        env:
+          # Propagate matrix test filters (may be empty for other matrix entries)
+          TEST_FILTER: ${{ matrix.test-filter }}
         shell: bash
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
@@ -880,6 +925,7 @@ jobs:
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
+          ${TEST_FILTER:+-Dit.test="${TEST_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -931,8 +977,8 @@ jobs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: archunit-tests
@@ -1002,6 +1048,7 @@ jobs:
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
+      DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
       - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0
@@ -1023,6 +1070,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
@@ -1175,21 +1223,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: identity/client
+          cache: 'npm'
+          cache-dependency-path: 'identity/client/package-lock.json'
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
       - name: Check formatting
-        run: yarn test:format
+        run: npm run test:format
       - name: Lint code
-        run: yarn test:lint
+        run: npm run test:lint
       - name: Unit & Integration tests
-        run: yarn test:unit
+        run: npm run test:unit
       - name: Check licenses
-        run: yarn test:licenses
+        run: npm run test:licenses
       - name: Build frontend
-        run: yarn build
+        run: npm run build
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1460,6 +1507,7 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+          package-manager: "npm"
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
@@ -1504,6 +1552,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -1518,6 +1567,7 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:

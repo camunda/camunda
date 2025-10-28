@@ -13,7 +13,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults;
 import java.util.Map;
 import java.util.Set;
 
-public class InternalApi {
+public class InternalApi implements Cloneable {
   private static final String PREFIX = "camunda.cluster.network.internal-api";
 
   private static final Map<String, String> LEGACY_GATEWAY_NETWORK_INTERNAL_API_PROPERTIES =
@@ -112,25 +112,23 @@ public class InternalApi {
   }
 
   @Override
-  public InternalApi clone() {
-    final InternalApi copy = new InternalApi();
-    copy.host = host;
-    copy.port = port;
-    copy.advertisedHost = advertisedHost;
-    copy.advertisedPort = advertisedPort;
-
-    return copy;
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
   }
 
   public InternalApi withBrokerInternalApiProperties() {
-    final var copy = clone();
+    final var copy = (InternalApi) clone();
     copy.legacyPropertiesMap = LEGACY_BROKER_NETWORK_INTERNAL_API_PROPERTIES;
     copy.port = copy.port == null ? NetworkCfg.DEFAULT_INTERNAL_API_PORT : copy.port;
     return copy;
   }
 
   public InternalApi withGatewayInternalApiProperties() {
-    final var copy = clone();
+    final var copy = (InternalApi) clone();
     copy.legacyPropertiesMap = LEGACY_GATEWAY_NETWORK_INTERNAL_API_PROPERTIES;
     copy.port = copy.port == null ? ConfigurationDefaults.DEFAULT_CLUSTER_PORT : copy.port;
     return copy;

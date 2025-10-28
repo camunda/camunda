@@ -92,6 +92,11 @@ public class DecisionInstanceSortImpl extends SearchRequestSortBase<DecisionInst
   }
 
   @Override
+  public DecisionInstanceSort rootDecisionDefinitionKey() {
+    return field("rootDecisionDefinitionKey");
+  }
+
+  @Override
   public DecisionInstanceSort tenantId() {
     return field("tenantId");
   }

@@ -75,8 +75,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
@@ -129,9 +129,9 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: ${{ matrix.dockerfile }}

@@ -1,4 +1,0 @@
-zeebe:
-  gateway:
-    cluster:
-      contactPoint: broker:789

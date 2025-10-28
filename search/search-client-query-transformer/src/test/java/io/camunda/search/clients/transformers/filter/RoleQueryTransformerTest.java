@@ -79,29 +79,6 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  void shouldQueryMembersByRoleId() {
-    // given
-    final var filter =
-        FilterBuilders.role((f) -> f.joinParentId("test-parent-id").memberType(USER));
-
-    // when
-    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
-
-    // then
-    final var expectedMemberTypeQuery =
-        SearchQuery.of(q1 -> q1.term(t -> t.field("memberType").value(USER.name())));
-    final var roleIdQuery =
-        SearchQuery.of(q1 -> q1.term(t -> t.field("roleId").value("test-parent-id")));
-    final var expectedParentQuery =
-        SearchQuery.of(q -> q.hasParent(hp -> hp.parentType("role").query(roleIdQuery)));
-
-    assertThat(query.filter()).isEmpty();
-    assertThat(query.should()).isEmpty();
-    assertThat(query.must())
-        .containsExactlyInAnyOrder(expectedMemberTypeQuery, expectedParentQuery);
-  }
-
-  @Test
   void shouldQueryRolesByMemberId() {
     // given
     final var filter =

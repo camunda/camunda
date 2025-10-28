@@ -68,9 +68,25 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return key;
   }
 
+  /**
+   * Sets the key for this command request.
+   *
+   * <p>Note: This method also extracts and sets the partitionId from the key if valid. The
+   * partitionId should only be updated when it falls within the valid range, otherwise it remains
+   * unchanged keeping the default value from {@link
+   * ExecuteCommandRequestEncoder#partitionIdNullValue()} and will be handled by {@link
+   * io.camunda.zeebe.broker.client.impl.BrokerRequestManager}.
+   *
+   * @param key the key to set
+   * @return this request instance for method chaining
+   */
   public ExecuteCommandRequest setKey(final long key) {
     this.key = key;
-    partitionId = Protocol.decodePartitionId(key);
+    final int decodedPartitionId = Protocol.decodePartitionId(key);
+    if (decodedPartitionId >= Protocol.START_PARTITION_ID
+        && decodedPartitionId <= Protocol.MAXIMUM_PARTITIONS) {
+      this.partitionId = decodedPartitionId;
+    }
 
     return this;
   }

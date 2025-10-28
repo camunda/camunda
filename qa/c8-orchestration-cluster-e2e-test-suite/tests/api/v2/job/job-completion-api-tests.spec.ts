@@ -19,9 +19,10 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {activateJobToObtainAValidJobKey} from '../../../../utils/requestHelpers';
+import {activateJobToObtainAValidJobKey} from '@requestHelpers';
 
 // Running the job tests on the same process instance leads to conflicts
+/* eslint-disable playwright/expect-expect */
 test.describe('Job Completion API Tests', () => {
   const state: Record<string, unknown> = {};
 

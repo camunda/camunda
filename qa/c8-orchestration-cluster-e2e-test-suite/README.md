@@ -132,10 +132,30 @@ Reports and artifacts:
 
 This test suite follows the **Page Object Model (POM)** pattern for reusability and maintainability.
 
-- Page objects: `qa/c8-orchestration-cluster-e2e-test-suite/pages`
-- Test specs: `qa/c8-orchestration-cluster-e2e-test-suite/tests`
-- Utilities/fixtures: `qa/c8-orchestration-cluster-e2e-test-suite/utils`
-- Test data: `qa/c8-orchestration-cluster-e2e-test-suite/resources`
+### Directory Structure
+
+- **Page objects**: `qa/c8-orchestration-cluster-e2e-test-suite/pages`
+  - `pages/`: V2 page objects (default)
+  - `pages/v1/`: Tasklist V1-specific page objects
+- **Test specs**: `qa/c8-orchestration-cluster-e2e-test-suite/tests`
+  - `tests/tasklist/`: V2 Tasklist tests
+  - `tests/tasklist/v1/`: V1 Tasklist tests
+  - `tests/common-flows/`: V2 common flow tests
+  - `tests/common-flows/v1/`: V1 common flow tests
+  - `tests/operate/`: Operate tests
+  - `tests/identity/`: Identity tests
+  - `tests/api/`: API tests
+- **Utilities/fixtures**: `qa/c8-orchestration-cluster-e2e-test-suite/utils`
+- **Test data**: `qa/c8-orchestration-cluster-e2e-test-suite/resources`
+
+### Test Mode Separation
+
+Starting with Camunda 8.8, Tasklist V2 is the default mode. The test suite reflects this:
+
+- **V2 Mode (Default)**: All tests run against Tasklist V2 unless specified otherwise
+- **V1 Mode (Explicit)**: V1 tests require explicit project specification
+- Tests are organized into mode-specific directories for clear separation
+- Page objects are separated by mode to eliminate compatibility overhead
 
 ---
 

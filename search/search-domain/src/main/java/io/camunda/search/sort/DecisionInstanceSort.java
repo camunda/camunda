@@ -91,6 +91,11 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
+    public Builder rootDecisionDefinitionKey() {
+      currentOrdering = new FieldSorting("rootDecisionDefinitionKey", null);
+      return this;
+    }
+
     public Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
       return this;

@@ -27,8 +27,9 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertTenantInResponse,
   createTenantAndStoreResponseFields,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Tenants API Tests', () => {
   const state: Record<string, unknown> = {};
 

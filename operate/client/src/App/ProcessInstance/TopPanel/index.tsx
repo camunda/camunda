@@ -342,9 +342,11 @@ const TopPanel: React.FC = observer(() => {
                     : selectableFlowNodes
                 }
                 selectedFlowNodeIds={
-                  flowNodeSelection?.flowNodeId
-                    ? [flowNodeSelection.flowNodeId]
-                    : undefined
+                  flowNodeSelection?.anchorFlowNodeId
+                    ? [flowNodeSelection.anchorFlowNodeId]
+                    : flowNodeSelection?.flowNodeId
+                      ? [flowNodeSelection.flowNodeId]
+                      : undefined
                 }
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {

@@ -906,6 +906,23 @@ public final class TestHelper {
             });
   }
 
+  public static void waitUntilFailedJobIncident(
+      final CamundaClient camundaClient, final int expectedIncidents) {
+    Awaitility.await("should wait until failed job incidents are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newIncidentSearchRequest()
+                      .filter(f -> f.jobKey(b -> b.exists(true)))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
   public static void waitUntilJobWorkerHasFailedJob(
       final CamundaClient camundaClient,
       final Map<String, Object> variables,

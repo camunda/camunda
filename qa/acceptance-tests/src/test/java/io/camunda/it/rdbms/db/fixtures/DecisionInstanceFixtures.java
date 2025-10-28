@@ -39,6 +39,7 @@ public final class DecisionInstanceFixtures extends CommonFixtures {
             .decisionRequirementsId("requirements-" + decisionInstanceKey)
             .decisionDefinitionKey(nextKey())
             .decisionDefinitionId("decision-" + decisionInstanceKey)
+            .rootDecisionDefinitionKey(nextKey())
             .evaluationDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .result("result-" + RANDOM.nextInt(10000))
             .evaluationFailure("failure-" + RANDOM.nextInt(10000))

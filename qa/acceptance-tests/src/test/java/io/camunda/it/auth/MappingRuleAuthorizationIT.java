@@ -83,7 +83,7 @@ class MappingRuleAuthorizationIT {
   private static final TestMappingRule MAPPING_RULE_2 =
       new TestMappingRule("mappingRule2", "test-name2", "test-value2");
 
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Test
   void searchShouldReturnAuthorizedMappingRules(
@@ -113,6 +113,26 @@ class MappingRuleAuthorizationIT {
             () -> camundaClient.newDeleteMappingRuleCommand("mappingRule1").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void getMappingRuleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
+    assertThatThrownBy(() -> camundaClient.newMappingRuleGetRequest("mappingRule1").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void getMappingRuleShouldReturnMappingRuleIfAuthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    // when - get the mapping rule (this should not throw an exception)
+    final var mappingRule = camundaClient.newMappingRuleGetRequest("mappingRule1").send().join();
+
+    // then
+    assertThat(mappingRule.getMappingRuleId()).isEqualTo("mappingRule1");
+    assertThat(mappingRule.getClaimName()).isEqualTo("test-name");
+    assertThat(mappingRule.getClaimValue()).isEqualTo("test-value");
   }
 
   @Test
@@ -165,7 +185,7 @@ class MappingRuleAuthorizationIT {
   }
 
   // TODO once available, this test should use the client to make the request
-  private static MappingRuleSearchResponse searchMappingRules(
+  private MappingRuleSearchResponse searchMappingRules(
       final String restAddress, final String username)
       throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
@@ -179,7 +199,7 @@ class MappingRuleAuthorizationIT {
             .build();
 
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), MappingRuleSearchResponse.class);
   }
 

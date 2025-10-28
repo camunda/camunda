@@ -26,10 +26,11 @@ import {
   createGroupAndStoreResponseFields,
   createMappingRule,
   mappingRuleIdFromState,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Group Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};
   state['createdIds'] = [];

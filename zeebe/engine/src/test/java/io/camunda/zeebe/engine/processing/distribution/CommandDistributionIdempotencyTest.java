@@ -23,6 +23,8 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadParti
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationDeleteProcessor;
@@ -65,6 +67,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -673,6 +676,36 @@ public class CommandDistributionIdempotencyTest {
                       .update();
                 }),
             UserUpdateProcessor.class
+          },
+          {
+            "ClusterVariable.CREATE is idempotent",
+            new Scenario(
+                ValueType.CLUSTER_VARIABLE,
+                ClusterVariableIntent.CREATE,
+                () ->
+                    ENGINE
+                        .clusterVariables()
+                        .withName("KEY_1")
+                        .setGlobalScope()
+                        .withValue("\"VALUE\"")
+                        .create()),
+            ClusterVariableCreateProcessor.class
+          },
+          {
+            "ClusterVariable.DELETE is idempotent",
+            new Scenario(
+                ValueType.CLUSTER_VARIABLE,
+                ClusterVariableIntent.DELETE,
+                () -> {
+                  ENGINE
+                      .clusterVariables()
+                      .withName("KEY_2")
+                      .setGlobalScope()
+                      .withValue("\"VALUE\"")
+                      .create();
+                  return ENGINE.clusterVariables().setGlobalScope().withName("KEY_2").delete();
+                }),
+            ClusterVariableDeleteProcessor.class
           },
           {
             "MessageSubscription.MIGRATE is idempotent",

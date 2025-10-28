@@ -18,7 +18,7 @@ public class FileBasedSnapshotMetadataTest {
   @Test
   public void shouldDeserializeMetadataFromPreviousVersion() throws IOException {
     final var previousMetadata =
-        """
+"""
 {"version":1,"processedPosition":71662471,"exportedPosition":74709149,"lastFollowupEventPosition":74708149}
 """;
     final var deserialized = FileBasedSnapshotMetadata.decode(previousMetadata.getBytes());

@@ -23,11 +23,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ 1.0.2, 1.0.0-alpha1 ]
+        # These versions were selected to ensure compatibility with the japicmp plugin (introduced Oct 10, 2025),
+        # which requires webapps-schema artifact (introduced Sep 13, 2024).
+        # Earlier versions from 2021 predate this dependency and cause build failures.
+        # See discussion at: https://camunda.slack.com/archives/C06UWQNCU7M/p1760468857576009?thread_ts=1760406101.424439&cid=C06UWQNCU7M
+        version: [ 8.6.1, 8.8.0-alpha8 ]
         include:
-          - version: 1.0.2
+          - version: 8.6.1
             latest: true
-          - version: 1.0.0-alpha1
+          - version: 8.8.0-alpha8
             latest: false
     with:
       releaseBranch: ${{ inputs.branch || 'main' }}

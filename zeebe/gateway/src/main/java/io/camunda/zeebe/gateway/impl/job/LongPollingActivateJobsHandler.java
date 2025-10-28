@@ -52,7 +52,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
 
   private ActorControl actor;
 
-  private final Function<String, Exception> noJobsReceivedExceptionProvider;
+  private final Function<String, Exception> resourceExhaustedExceptionProvider;
 
   private LongPollingActivateJobsHandler(
       final BrokerClient brokerClient,
@@ -61,14 +61,14 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       final long probeTimeoutMillis,
       final int failedAttemptThreshold,
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
-      final Function<String, Exception> noJobsReceivedExceptionProvider,
+      final Function<String, Exception> resourceExhaustedExceptionProvider,
       final Function<String, Throwable> requestCanceledExceptionProvider,
       final LongPollingMetrics metrics) {
     this.brokerClient = brokerClient;
     activateJobsHandler =
         new RoundRobinActivateJobsHandler<>(
             brokerClient, maxMessageSize, activationResultMapper, requestCanceledExceptionProvider);
-    this.noJobsReceivedExceptionProvider = noJobsReceivedExceptionProvider;
+    this.resourceExhaustedExceptionProvider = resourceExhaustedExceptionProvider;
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
@@ -223,7 +223,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
             state.removeActiveRequest(request);
             final var type = request.getType();
             final var errorMsg = String.format(ERROR_MSG_ACTIVATED_EXHAUSTED, type);
-            request.onError(noJobsReceivedExceptionProvider.apply(errorMsg));
+            request.onError(resourceExhaustedExceptionProvider.apply(errorMsg));
           });
     } else {
       actor.submit(
@@ -382,7 +382,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     // Minimum number of responses with jobCount 0 to infer that no jobs are available
     private int minEmptyResponses = DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
     private Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper;
-    private Function<String, Exception> noJobsReceivedExceptionProvider;
+    private Function<String, Exception> resourceExhaustedExceptionProvider;
     private Function<String, Throwable> requestCanceledExceptionProvider;
     private LongPollingMetrics metrics;
 
@@ -417,9 +417,9 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       return this;
     }
 
-    public Builder<T> setNoJobsReceivedExceptionProvider(
-        final Function<String, Exception> noJobsReceivedExceptionProvider) {
-      this.noJobsReceivedExceptionProvider = noJobsReceivedExceptionProvider;
+    public Builder<T> setResourceExhaustedExceptionProvider(
+        final Function<String, Exception> resourceExhaustedExceptionProvider) {
+      this.resourceExhaustedExceptionProvider = resourceExhaustedExceptionProvider;
       return this;
     }
 
@@ -443,7 +443,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           probeTimeoutMillis,
           minEmptyResponses,
           activationResultMapper,
-          noJobsReceivedExceptionProvider,
+          resourceExhaustedExceptionProvider,
           requestCanceledExceptionProvider,
           metrics);
     }

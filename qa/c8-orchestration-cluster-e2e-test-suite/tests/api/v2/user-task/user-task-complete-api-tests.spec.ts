@@ -6,11 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  completeUserTask,
-  findUserTask,
-  setupProcessInstanceTests,
-} from '../../../../utils/requestHelpers';
+import {setupProcessInstanceForTests} from '@requestHelpers';
 import {expect, test} from '@playwright/test';
 import {
   assertNotFoundRequest,
@@ -21,12 +17,12 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponseShape} from '../../../../json-body-assertions';
+import {completeUserTask, findUserTask} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Complete User Task Tests', () => {
-  const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'user_task_api_test_process',
-  );
+  const {state, beforeAll, beforeEach, afterEach} =
+    setupProcessInstanceForTests('user_task_api_test_process');
 
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);

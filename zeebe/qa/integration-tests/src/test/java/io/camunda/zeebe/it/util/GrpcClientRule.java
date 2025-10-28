@@ -12,7 +12,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.clustering.ClusteringRule;
+import io.camunda.zeebe.it.cluster.clustering.ClusteringRule;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import java.time.Duration;
@@ -59,7 +59,7 @@ public final class GrpcClientRule extends ExternalResource {
 
   /**
    * This is a hacky way to allow us to use this class in {@link
-   * io.camunda.zeebe.it.clustering.ClusteringRuleExtension}
+   * io.camunda.zeebe.it.cluster.clustering.ClusteringRuleExtension}
    */
   public GrpcClientRule(final CamundaClient client) {
     this.client = client;

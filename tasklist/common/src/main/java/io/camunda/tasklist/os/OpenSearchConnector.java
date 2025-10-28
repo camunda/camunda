@@ -8,7 +8,6 @@
 package io.camunda.tasklist.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -16,7 +15,6 @@ import io.camunda.tasklist.property.OpenSearchProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,7 +28,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.SSLContext;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
@@ -45,15 +42,11 @@ import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.util.Timeout;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.cluster.HealthRequest;
@@ -70,10 +63,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpClient;
-import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
@@ -121,102 +112,6 @@ public class OpenSearchConnector {
           e);
     }
     return openSearchClient;
-  }
-
-  @Bean
-  public RestClient tasklistOsRestClient() {
-    osClientRepository.load(tasklistProperties.getOpenSearch().getInterceptorPlugins());
-    final var httpHost = getHttpHost(tasklistProperties.getOpenSearch());
-    return RestClient.builder(httpHost)
-        .setHttpClientConfigCallback(
-            b ->
-                configureApacheHttpClient(
-                    b,
-                    tasklistProperties.getOpenSearch(),
-                    osClientRepository.asRequestInterceptor()))
-        .build();
-  }
-
-  @Bean
-  public OpenSearchAsyncClient tasklistOsAsyncClient() {
-    osClientRepository.load(tasklistProperties.getOpenSearch().getInterceptorPlugins());
-    final OpenSearchAsyncClient openSearchClient =
-        createAsyncOsClient(tasklistProperties.getOpenSearch(), osClientRepository);
-    final CompletableFuture<HealthResponse> healthResponse;
-    try {
-      healthResponse = openSearchClient.cluster().health();
-      healthResponse.whenComplete(
-          (response, e) -> {
-            if (e != null) {
-              LOGGER.error(
-                  "Error in getting health status from localhost:"
-                      + tasklistProperties.getOpenSearch().getPort(),
-                  e);
-            } else {
-              LOGGER.info("OpenSearch cluster health: {}", response.status());
-            }
-          });
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-    return openSearchClient;
-  }
-
-  private OpenSearchAsyncClient createAsyncOsClient(
-      final OpenSearchProperties osConfig, final PluginRepository pluginRepository) {
-    LOGGER.debug("Creating Async OpenSearch connection...");
-    LOGGER.debug("Creating OpenSearch connection...");
-    if (hasAwsCredentials()) {
-      return getAwsAsyncClient(osConfig);
-    }
-    final HttpHost host = getHttpHostForClient5(osConfig);
-    final ApacheHttpClient5TransportBuilder builder =
-        ApacheHttpClient5TransportBuilder.builder(host);
-
-    builder.setHttpClientConfigCallback(
-        httpClientBuilder -> {
-          configureApacheHttpClient5(
-              httpClientBuilder, osConfig, pluginRepository.asRequestInterceptor());
-          return httpClientBuilder;
-        });
-
-    builder.setRequestConfigCallback(
-        requestConfigBuilder -> {
-          setTimeouts(requestConfigBuilder, osConfig);
-          return requestConfigBuilder;
-        });
-
-    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper();
-    jsonpMapper.objectMapper().registerModule(new JavaTimeModule());
-    builder.setMapper(jsonpMapper);
-
-    final OpenSearchTransport transport = builder.build();
-    final OpenSearchAsyncClient openSearchAsyncClient = new OpenSearchAsyncClient(transport);
-
-    final CompletableFuture<HealthResponse> healthResponse;
-    try {
-      healthResponse = openSearchAsyncClient.cluster().health();
-      healthResponse.whenComplete(
-          (response, e) -> {
-            if (e != null) {
-              LOGGER.error(
-                  "Error in getting health status from localhost:"
-                      + tasklistProperties.getOpenSearch().getPort(),
-                  e);
-            } else {
-              LOGGER.info("OpenSearch cluster health: {}", response.status());
-            }
-          });
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
-    }
-
-    if (!checkHealth(openSearchAsyncClient)) {
-      LOGGER.warn("OpenSearch cluster is not accessible");
-    } else {
-      LOGGER.debug("OpenSearch connection was successfully created.");
-    }
-    return openSearchAsyncClient;
   }
 
   protected OpenSearchClient createOsClient(
@@ -268,11 +163,6 @@ public class OpenSearchConnector {
   private HttpHost getHttpHostForClient5(final OpenSearchProperties osConfig) {
     final URI uri = getOsUri(osConfig);
     return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
-  }
-
-  private org.apache.http.HttpHost getHttpHost(final OpenSearchProperties osConfig) {
-    final URI uri = getOsUri(osConfig);
-    return new org.apache.http.HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
   }
 
   private URI getOsUri(final OpenSearchProperties osConfig) {
@@ -426,30 +316,6 @@ public class OpenSearchConnector {
             });
   }
 
-  public boolean checkHealth(final OpenSearchAsyncClient osAsyncClient) {
-    final OpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
-    if (!osConfig.isHealthCheckEnabled()) {
-      LOGGER.debug("Opensearch health check is disabled");
-      return true;
-    }
-    final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
-    return Failsafe.with(retryPolicy)
-        .get(
-            () -> {
-              final CompletableFuture<HealthResponse> clusterHealthResponse =
-                  osAsyncClient.cluster().health(new HealthRequest.Builder().build());
-              clusterHealthResponse.whenComplete(
-                  (response, e) -> {
-                    if (e != null) {
-                      LOGGER.error(String.format("Error checking async health %", e.getMessage()));
-                    } else {
-                      LOGGER.debug("Succesfully returned checkHealth");
-                    }
-                  });
-              return clusterHealthResponse.get().clusterName().equals(osConfig.getClusterName());
-            });
-  }
-
   private RetryPolicy<Boolean> getConnectionRetryPolicy(final OpenSearchProperties osConfig) {
     final String logMessage = String.format("connect to OpenSearch at %s", osConfig.getUrl());
     return new RetryPolicy<Boolean>()
@@ -482,20 +348,6 @@ public class OpenSearchConnector {
     }
   }
 
-  private OpenSearchAsyncClient getAwsAsyncClient(final OpenSearchProperties osConfig) {
-    final var region = new DefaultAwsRegionProviderChain().getRegion();
-    final SdkHttpClient httpClient = AwsCrtHttpClient.builder().build();
-    final AwsSdk2Transport transport =
-        new AwsSdk2Transport(
-            httpClient,
-            osConfig.getHost(),
-            region,
-            AwsSdk2TransportOptions.builder()
-                .setMapper(new JacksonJsonpMapper(tasklistObjectMapper))
-                .build());
-    return new OpenSearchAsyncClient(transport);
-  }
-
   private OpenSearchClient getAwsClient(final OpenSearchProperties osConfig) {
     final var region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkHttpClient httpClient = AwsCrtHttpClient.builder().build();
@@ -508,51 +360,6 @@ public class OpenSearchConnector {
                 .setMapper(new JacksonJsonpMapper(tasklistObjectMapper))
                 .build());
     return new OpenSearchClient(transport);
-  }
-
-  private org.apache.http.impl.nio.client.HttpAsyncClientBuilder configureApacheHttpClient(
-      final org.apache.http.impl.nio.client.HttpAsyncClientBuilder builder,
-      final OpenSearchProperties osConfig,
-      final org.apache.http.HttpRequestInterceptor... httpRequestInterceptors) {
-
-    for (final HttpRequestInterceptor httpRequestInterceptor : httpRequestInterceptors) {
-      builder.addInterceptorLast(httpRequestInterceptor);
-    }
-
-    if (hasAwsCredentials()) {
-      configureAwsSigningForApacheHttpClient(builder);
-    } else if (useBasicAuthentication(osConfig)) {
-      configureBasicAuthenticationForApacheHttpClient(osConfig, builder);
-    }
-
-    return builder;
-  }
-
-  private void configureAwsSigningForApacheHttpClient(
-      final org.apache.http.impl.nio.client.HttpAsyncClientBuilder builder) {
-    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.builder().build();
-    credentialsProvider.resolveCredentials();
-    final AwsV4HttpSigner signer = AwsV4HttpSigner.create();
-    final HttpRequestInterceptor signInterceptor =
-        new AwsRequestSigningApacheInterceptor(
-            AWS_OPENSEARCH_SERVICE_NAME,
-            signer,
-            credentialsProvider,
-            new DefaultAwsRegionProviderChain().getRegion());
-    builder.addInterceptorLast(signInterceptor);
-  }
-
-  private void configureBasicAuthenticationForApacheHttpClient(
-      final OpenSearchProperties osConfig,
-      final org.apache.http.impl.nio.client.HttpAsyncClientBuilder builder) {
-    final CredentialsProvider credentialsProvider =
-        new org.apache.http.impl.client.BasicCredentialsProvider();
-    credentialsProvider.setCredentials(
-        new org.apache.http.auth.AuthScope(getHttpHost(osConfig)),
-        new org.apache.http.auth.UsernamePasswordCredentials(
-            osConfig.getUsername(), osConfig.getPassword()));
-
-    builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
   private boolean useBasicAuthentication(final OpenSearchProperties osConfig) {

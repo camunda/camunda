@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Grpc {
+public class Grpc implements Cloneable {
   private static final String PREFIX = "camunda.api.grpc";
   private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
       Map.of(
@@ -126,26 +126,22 @@ public class Grpc {
   }
 
   @Override
-  public Grpc clone() {
-    final Grpc copy = new Grpc();
-    copy.address = address;
-    copy.port = port;
-    copy.minKeepAliveInterval = minKeepAliveInterval;
-    copy.ssl = ssl;
-    copy.interceptors = interceptors;
-    copy.managementThreads = managementThreads;
-
-    return copy;
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
   }
 
   public Grpc withBrokerNetworkProperties() {
-    final var copy = clone();
+    final var copy = (Grpc) clone();
     copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
     return copy;
   }
 
   public Grpc withGatewayNetworkProperties() {
-    final var copy = clone();
+    final var copy = (Grpc) clone();
     copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
     return copy;
   }

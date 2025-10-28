@@ -13,15 +13,13 @@ import org.slf4j.LoggerFactory;
 public enum DecisionType {
   DECISION_TABLE,
   LITERAL_EXPRESSION,
-
-  UNSPECIFIED,
   UNKNOWN;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionType.class);
 
   public static DecisionType fromString(final String decisionType) {
     if (decisionType == null) {
-      return UNSPECIFIED;
+      return UNKNOWN;
     }
     try {
       return DecisionType.valueOf(decisionType);

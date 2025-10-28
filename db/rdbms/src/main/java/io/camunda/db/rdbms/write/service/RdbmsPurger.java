@@ -39,6 +39,7 @@ public class RdbmsPurger {
           "MESSAGE_SUBSCRIPTION",
           "PROCESS_DEFINITION",
           "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_TAG",
           "ROLE_MEMBER",
           "ROLES",
           "SEQUENCE_FLOW",

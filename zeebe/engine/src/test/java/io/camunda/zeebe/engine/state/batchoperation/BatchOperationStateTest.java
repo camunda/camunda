@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
@@ -59,12 +60,17 @@ public class BatchOperationStateTest {
             .build();
     final String username = "bud spencer";
     final var authentication = CamundaAuthentication.of(b -> b.user(username));
+    final var authorizationCheck =
+        Authorization.withAuthorization(
+            Authorization.of(a -> a.processDefinition().updateProcessInstance()), "myProcess");
     final var record =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(type)
             .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
-            .setAuthentication(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authentication)));
+            .setAuthentication(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authentication)))
+            .setAuthorizationCheck(
+                new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authorizationCheck)));
 
     // when
     state.create(batchOperationKey, record);

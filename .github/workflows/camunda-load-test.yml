@@ -135,6 +135,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-frontend
         name: Build Operate Frontend
         id: build-operate-fe
@@ -152,11 +153,12 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize -Dmaven.test.skip=true
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
       - uses: google-github-actions/auth@v2
         id: auth
         with:
@@ -268,7 +270,7 @@ jobs:
           --set orchestration.image.registry=gcr.io
           --set orchestration.image.repository=zeebe-io/zeebe
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          -f https://raw.githubusercontent.com/camunda/camunda/refs/heads/${{ inputs.ref }}/load-tests/camunda-platform-values.yaml
+          -f https://raw.githubusercontent.com/camunda/camunda/${{ inputs.ref }}/load-tests/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f load-tests/setup/default/values-stable.yaml' || '' }}
       - name: Label namespace

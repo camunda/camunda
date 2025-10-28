@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.es.cache;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.webapps.schema.entities.ProcessEntity;
@@ -20,14 +21,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnRdbmsDisabled
 public class ProcessCache {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
   private static final int CACHE_MAX_SIZE = 100;
-  private Map<String, ProcessCacheEntity> cache = new ConcurrentHashMap<>();
+  private final Map<String, ProcessCacheEntity> cache = new ConcurrentHashMap<>();
   @Autowired private ProcessStore processStore;
 
-  private ProcessCacheEntity getProcessCacheEntity(String processId) {
+  private ProcessCacheEntity getProcessCacheEntity(final String processId) {
     if (cache.get(processId) == null) {
       final Optional<ProcessEntity> processMaybe = readProcessByKey(processId);
       if (processMaybe.isPresent()) {
@@ -38,7 +40,7 @@ public class ProcessCache {
     return cache.get(processId);
   }
 
-  public String getProcessName(String processId) {
+  public String getProcessName(final String processId) {
     final ProcessCacheEntity cachedProcessData = getProcessCacheEntity(processId);
     if (cachedProcessData != null) {
       return cachedProcessData.getName();
@@ -47,7 +49,7 @@ public class ProcessCache {
     }
   }
 
-  public String getTaskName(String processId, String flowNodeBpmnId) {
+  public String getTaskName(final String processId, final String flowNodeBpmnId) {
     final ProcessCacheEntity cachedProcessData = getProcessCacheEntity(processId);
     if (cachedProcessData != null) {
       return cachedProcessData.getFlowNodeNames().get(flowNodeBpmnId);
@@ -56,15 +58,15 @@ public class ProcessCache {
     }
   }
 
-  private Optional<ProcessEntity> readProcessByKey(String processId) {
+  private Optional<ProcessEntity> readProcessByKey(final String processId) {
     try {
       return Optional.of(processStore.getProcess(processId));
-    } catch (TasklistRuntimeException ex) {
+    } catch (final TasklistRuntimeException ex) {
       return Optional.empty();
     }
   }
 
-  public void putToCache(String processId, ProcessEntity process) {
+  public void putToCache(final String processId, final ProcessEntity process) {
     if (cache.size() >= CACHE_MAX_SIZE) {
       // remove 1st element
       final Iterator<String> iterator = cache.keySet().iterator();

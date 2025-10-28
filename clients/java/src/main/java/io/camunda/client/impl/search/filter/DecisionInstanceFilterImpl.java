@@ -62,12 +62,6 @@ public class DecisionInstanceFilterImpl
       case FAILED:
         stateEnum = DecisionInstanceStateEnum.FAILED;
         break;
-      case UNSPECIFIED:
-        stateEnum = DecisionInstanceStateEnum.UNSPECIFIED;
-        break;
-      case UNKNOWN:
-        stateEnum = DecisionInstanceStateEnum.UNKNOWN;
-        break;
       default:
         throw new IllegalArgumentException("Unexpected DecisionInstanceState value: " + state);
     }
@@ -120,6 +114,19 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
+  public DecisionInstanceFilter rootDecisionDefinitionKey(final long rootDecisionDefinitionKey) {
+    return rootDecisionDefinitionKey(b -> b.eq(rootDecisionDefinitionKey));
+  }
+
+  @Override
+  public DecisionInstanceFilter rootDecisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setRootDecisionDefinitionKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
     return decisionDefinitionKey(b -> b.eq(decisionDefinitionKey));
   }
@@ -160,9 +167,6 @@ public class DecisionInstanceFilterImpl
         break;
       case LITERAL_EXPRESSION:
         decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
-        break;
-      case UNSPECIFIED:
-        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNSPECIFIED;
         break;
       case UNKNOWN:
         decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNKNOWN;

@@ -22,9 +22,10 @@ import {
   groupRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {createGroupAndStoreResponseFields} from '../../../../utils/requestHelpers';
+import {createGroupAndStoreResponseFields} from '@requestHelpers';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Groups API Tests', () => {
   const state: Record<string, unknown> = {};
   state['createdIds'] = [];

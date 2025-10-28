@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -24,6 +25,8 @@ import java.time.OffsetDateTime;
 import java.util.function.Function;
 
 public class ProcessInstanceWriter {
+
+  private static final int PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE = 10000;
 
   private final ProcessInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
@@ -95,6 +98,23 @@ public class ProcessInstanceWriter {
               key,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.decrementIncidentCount",
               key));
+    }
+  }
+
+  public void createTags(final ProcessInstanceTagsDto tagList) {
+    for (int i = 0; i < tagList.tags().size(); i += PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE) {
+      final var block =
+          tagList
+              .tags()
+              .subList(
+                  i, Math.min(i + PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE, tagList.tags().size()));
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              WriteStatementType.INSERT,
+              tagList.processInstanceKey(),
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insertTags",
+              new ProcessInstanceTagsDto(tagList.processInstanceKey(), block)));
     }
   }
 

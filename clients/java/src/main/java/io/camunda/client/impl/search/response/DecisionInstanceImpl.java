@@ -51,6 +51,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final String decisionDefinitionName;
   private final int decisionDefinitionVersion;
   private final DecisionDefinitionType decisionDefinitionType;
+  private final long rootDecisionDefinitionKey;
   private final String tenantId;
   private final List<EvaluatedDecisionInput> evaluatedInputs;
   private final List<MatchedDecisionRule> matchedRules;
@@ -72,6 +73,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getDecisionDefinitionName(),
         item.getDecisionDefinitionVersion(),
         toDecisionDefinitionType(item.getDecisionDefinitionType()),
+        Long.parseLong(item.getRootDecisionDefinitionKey()),
         item.getTenantId(),
         null,
         null,
@@ -95,6 +97,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getDecisionDefinitionName(),
         item.getDecisionDefinitionVersion(),
         toDecisionDefinitionType(item.getDecisionDefinitionType()),
+        Long.parseLong(item.getRootDecisionDefinitionKey()),
         item.getTenantId(),
         item.getEvaluatedInputs().stream()
             .map(input -> new EvaluatedDecisionInputImpl(input, jsonMapper))
@@ -120,6 +123,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final String decisionDefinitionName,
       final int decisionDefinitionVersion,
       final DecisionDefinitionType decisionDefinitionType,
+      final long rootDecisionDefinitionKey,
       final String tenantId,
       final List<EvaluatedDecisionInput> evaluatedInputs,
       final List<MatchedDecisionRule> matchedRules,
@@ -138,6 +142,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this.decisionDefinitionName = decisionDefinitionName;
     this.decisionDefinitionVersion = decisionDefinitionVersion;
     this.decisionDefinitionType = decisionDefinitionType;
+    this.rootDecisionDefinitionKey = rootDecisionDefinitionKey;
     this.tenantId = tenantId;
     this.evaluatedInputs = evaluatedInputs;
     this.matchedRules = matchedRules;
@@ -154,8 +159,6 @@ public class DecisionInstanceImpl implements DecisionInstance {
         return DecisionDefinitionType.DECISION_TABLE;
       case LITERAL_EXPRESSION:
         return DecisionDefinitionType.LITERAL_EXPRESSION;
-      case UNSPECIFIED:
-        return DecisionDefinitionType.UNSPECIFIED;
       case UNKNOWN:
         return DecisionDefinitionType.UNKNOWN;
       case UNKNOWN_DEFAULT_OPEN_API:
@@ -176,10 +179,6 @@ public class DecisionInstanceImpl implements DecisionInstance {
         return DecisionInstanceState.EVALUATED;
       case FAILED:
         return DecisionInstanceState.FAILED;
-      case UNSPECIFIED:
-        return DecisionInstanceState.UNSPECIFIED;
-      case UNKNOWN:
-        return DecisionInstanceState.UNKNOWN;
       case UNKNOWN_DEFAULT_OPEN_API:
       default:
         EnumUtil.logUnknownEnumValue(
@@ -251,6 +250,11 @@ public class DecisionInstanceImpl implements DecisionInstance {
   @Override
   public DecisionDefinitionType getDecisionDefinitionType() {
     return decisionDefinitionType;
+  }
+
+  @Override
+  public long getRootDecisionDefinitionKey() {
+    return rootDecisionDefinitionKey;
   }
 
   @Override

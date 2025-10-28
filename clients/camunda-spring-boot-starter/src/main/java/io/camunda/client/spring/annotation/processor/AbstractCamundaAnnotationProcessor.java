@@ -20,6 +20,7 @@ import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.util.ClassUtils;
 
 public abstract class AbstractCamundaAnnotationProcessor
     implements ApplicationContextAware, CamundaClientLifecycleAware {
@@ -46,7 +47,8 @@ public abstract class AbstractCamundaAnnotationProcessor
         final BeanInfo beanInfo =
             BeanInfo.builder()
                 .beanName(beanName)
-                .targetClass(beanType)
+                // use Spring's ClassUtils to get the user class in case of a proxy
+                .targetClass(ClassUtils.getUserClass(beanType))
                 .beanSupplier(() -> applicationContext.getBean(beanName))
                 .build();
         if (isApplicableFor(beanInfo)) {

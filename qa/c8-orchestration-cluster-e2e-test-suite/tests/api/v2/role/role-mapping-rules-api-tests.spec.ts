@@ -25,13 +25,14 @@ import {
   createRoleAndStoreResponseFields,
   mappingRuleIdFromState,
   mappingRuleNameFromState,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {
   MAPPING_RULE_EXPECTED_BODY_USING_STATE,
   mappingRuleRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Role Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};
   const createdRoleIds: string[] = [];

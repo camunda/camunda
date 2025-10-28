@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -92,6 +93,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.TIMER, TimerRecord.class);
     registry.put(ValueType.VARIABLE, VariableRecord.class);
     registry.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord.class);
+    registry.put(ValueType.CLUSTER_VARIABLE, ClusterVariableRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_MIGRATION, ProcessInstanceMigrationRecord.class);

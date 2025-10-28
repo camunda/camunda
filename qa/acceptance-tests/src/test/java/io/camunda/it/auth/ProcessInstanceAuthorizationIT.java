@@ -15,6 +15,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -43,6 +44,7 @@ class ProcessInstanceAuthorizationIT {
   private static final String ADMIN = "admin";
   private static final String USER1 = "user1";
   private static final String USER2 = "user2";
+  private static final String USER3 = "user3";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -70,6 +72,14 @@ class ProcessInstanceAuthorizationIT {
           "password",
           List.of(
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_ID_2))));
+
+  @UserDefinition
+  private static final TestUser USER3_USER =
+      new TestUser(
+          USER3,
+          "password",
+          List.of(
+              new Permissions(PROCESS_DEFINITION, UPDATE_PROCESS_INSTANCE, List.of(PROCESS_ID_1))));
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
@@ -270,6 +280,43 @@ class ProcessInstanceAuthorizationIT {
     assertThat(problemException.details().getDetail())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+  }
+
+  @Test
+  public void resolveIncidentsShouldReturnBatchOperation(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER3) final CamundaClient camundaClient) {
+    // given
+    final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
+    // when
+    final var result =
+        camundaClient.newResolveProcessInstanceIncidentsCommand(processInstanceKey).send().join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isNotEmpty();
+    assertThat(result.getBatchOperationType()).isEqualTo(BatchOperationType.RESOLVE_INCIDENT);
+  }
+
+  @Test
+  public void resolveIncidentsShouldReturnForbiddenForUnauthorizedUser(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+
+    // given
+    final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
+    // when
+    final ThrowingCallable executeGet =
+        () ->
+            camundaClient
+                .newResolveProcessInstanceIncidentsCommand(processInstanceKey)
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail()).contains("'UPDATE_PROCESS_INSTANCE'");
   }
 
   private long getProcessInstanceKey(final CamundaClient camundaClient, final String processId) {

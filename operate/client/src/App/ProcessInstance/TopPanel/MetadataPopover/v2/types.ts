@@ -13,6 +13,8 @@ import type {
   Job,
   UserTask,
   MessageSubscription,
+  DecisionDefinition,
+  DecisionInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
 // V2 Element Instance Metadata - extends the old structure but with v2 element instance fields will be removed after other components migration
@@ -80,6 +82,8 @@ function createV2InstanceMetadata(
   job?: Job,
   calledProcess?: ProcessInstance,
   messageSubscription?: MessageSubscription,
+  calledDecisionDefinition?: DecisionDefinition,
+  calledDecisionInstance?: DecisionInstance,
   userTask: Partial<UserTaskSubset> | null = {},
 ): V2InstanceMetadata {
   const {
@@ -103,9 +107,12 @@ function createV2InstanceMetadata(
   return {
     calledProcessInstanceId: calledProcess?.processInstanceKey ?? null,
     calledProcessDefinitionName: calledProcess?.processDefinitionName ?? null,
-    calledDecisionInstanceId: oldMetadata?.calledDecisionInstanceId ?? null,
+    calledDecisionInstanceId:
+      calledDecisionInstance?.decisionEvaluationInstanceKey ?? null,
     calledDecisionDefinitionName:
-      oldMetadata?.calledDecisionDefinitionName ?? null,
+      calledDecisionInstance?.decisionDefinitionName ||
+      calledDecisionDefinition?.name ||
+      null,
     jobRetries: job?.retries ?? null,
     jobDeadline: job?.deadline ?? null,
     jobKey: job?.jobKey ?? null,
@@ -148,6 +155,6 @@ function createV2InstanceMetadata(
   };
 }
 
-export type {V2MetaDataDto};
+export type {V2MetaDataDto, V2InstanceMetadata};
 
 export {createV2InstanceMetadata};

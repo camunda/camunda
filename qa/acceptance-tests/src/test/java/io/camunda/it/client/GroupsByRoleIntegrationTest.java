@@ -18,7 +18,6 @@ import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 public class GroupsByRoleIntegrationTest {
@@ -49,7 +48,6 @@ public class GroupsByRoleIntegrationTest {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldReturnGroupsByRoleSortedByGroupIdAsc() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var groupId1 = "b" + Strings.newRandomValidIdentityId();
@@ -80,7 +78,6 @@ public class GroupsByRoleIntegrationTest {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldReturnGroupsByRoleSortedByGroupIdDesc() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var groupId1 = "a" + Strings.newRandomValidIdentityId();

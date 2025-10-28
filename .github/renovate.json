@@ -37,6 +37,12 @@
   },
   "hostRules": [
     {
+      "hostType": "docker",
+      "matchHost": "https://reg.mini.dev",
+      "username": "minimus",
+      "password": "{{ secrets.INFRA_MINIMUS_REGISTRY_TOKEN }}"
+    },
+    {
       "timeout": 10000
     }
   ],
@@ -170,7 +176,7 @@
       "enabled": false
     },
     {
-      "description": "Digest updates cover all use cases since they are used as base, so we disable other types.",
+      "description": "Digest + patch updates cover all use cases since they are used as base, so we disable other types.",
       "matchManagers": [
         "dockerfile"
       ],
@@ -180,8 +186,7 @@
       ],
       "matchUpdateTypes": [
         "major",
-        "minor",
-        "patch"
+        "minor"
       ],
       "enabled": false
     },

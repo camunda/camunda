@@ -45,6 +45,11 @@
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
+    </dependency>
+
     <!-- SPRING -->
 
     <dependency>

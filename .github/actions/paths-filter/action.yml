@@ -245,6 +245,7 @@ runs:
           - '**/*.md'
 
         webapps-change:
+          - 'configuration/**'
           - 'webapps-backup/**'
           - 'webapps-common/**'
           - 'webapps-schema/**'

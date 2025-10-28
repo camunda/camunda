@@ -22,7 +22,7 @@ import io.camunda.zeebe.broker.exporter.util.TestExporterFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -50,7 +50,7 @@ final class PartitionConfigurationManagerTest {
     private final String exporterId = "exporterA";
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(exporterId, new ExporterState(0, State.ENABLED, Optional.empty()))));
 
     @BeforeEach
@@ -132,7 +132,7 @@ final class PartitionConfigurationManagerTest {
     private final String exporterId = "exporterA";
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(
                     exporterId, new ExporterState(0, State.CONFIG_NOT_FOUND, Optional.empty()))));
 
@@ -213,7 +213,7 @@ final class PartitionConfigurationManagerTest {
     private final String exporterWithSameCustomExporterFactory = "exporterWithFactoryB";
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
-            new ExportersConfig(
+            new ExportingConfig(
                 Map.of(
                     validExporterToInitialize,
                     new ExporterState(0, State.ENABLED, Optional.empty()))));

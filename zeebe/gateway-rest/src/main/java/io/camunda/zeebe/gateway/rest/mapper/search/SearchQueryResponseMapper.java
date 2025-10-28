@@ -1023,6 +1023,7 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
+        .rootDecisionDefinitionKey(KeyUtil.keyToString(entity.rootDecisionDefinitionKey()))
         .result(entity.result())
         .tenantId(entity.tenantId());
   }
@@ -1043,6 +1044,7 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
+        .rootDecisionDefinitionKey(KeyUtil.keyToString(entity.rootDecisionDefinitionKey()))
         .result(entity.result())
         .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
         .matchedRules(toMatchedRules(entity.evaluatedOutputs()))
@@ -1101,8 +1103,6 @@ public final class SearchQueryResponseMapper {
     return switch (state) {
       case EVALUATED -> DecisionInstanceStateEnum.EVALUATED;
       case FAILED -> DecisionInstanceStateEnum.FAILED;
-      case UNSPECIFIED -> DecisionInstanceStateEnum.UNSPECIFIED;
-      default -> DecisionInstanceStateEnum.UNKNOWN;
     };
   }
 
@@ -1114,7 +1114,6 @@ public final class SearchQueryResponseMapper {
     return switch (decisionDefinitionType) {
       case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
-      case UNSPECIFIED -> DecisionDefinitionTypeEnum.UNSPECIFIED;
       default -> DecisionDefinitionTypeEnum.UNKNOWN;
     };
   }

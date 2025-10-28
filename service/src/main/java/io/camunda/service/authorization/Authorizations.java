@@ -77,6 +77,9 @@ public abstract class Authorizations {
   public static final Authorization<ProcessInstanceEntity> PROCESS_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
 
+  public static final Authorization<ProcessInstanceEntity> PROCESS_INSTANCE_UPDATE_AUTHORIZATION =
+      Authorization.of(a -> a.processDefinition().updateProcessInstance());
+
   public static final Authorization<RoleEntity> ROLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.role().read());
 

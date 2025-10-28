@@ -46,6 +46,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableVariableState getVariableState();
 
   @Override
+  MutableClusterVariableState getClusterVariableState();
+
+  @Override
   MutableTimerInstanceState getTimerState();
 
   @Override

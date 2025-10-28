@@ -17,6 +17,7 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -398,5 +399,82 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
     final var queryVariant = searchQuery.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
+  }
+
+  @Test
+  public void shouldQueryByAdvancedProcessInstanceKeyFilter() {
+    final var filter =
+        FilterBuilders.incident(f -> f.processInstanceKeyOperations(Operation.eq(42L)));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("processInstanceKey");
+              assertThat(t.value().longValue()).isEqualTo(42L);
+            });
+  }
+
+  @Test
+  public void shouldQueryByAdvancedIncidentErrorTypeFilter() {
+    final var filter =
+        FilterBuilders.incident(
+            f ->
+                f.errorTypeOperations(
+                    Operation.in(
+                        List.of(
+                            ErrorType.JOB_NO_RETRIES.name(),
+                            ErrorType.RESOURCE_NOT_FOUND.name()))));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("errorType");
+              assertThat(t.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder("JOB_NO_RETRIES", "RESOURCE_NOT_FOUND");
+            });
+  }
+
+  @Test
+  public void shouldQueryByAdvancedIncidentStateFilter() {
+    final var filter =
+        FilterBuilders.incident(
+            f ->
+                f.stateOperations(
+                    Operation.notIn(
+                        List.of(IncidentState.ACTIVE.name(), IncidentState.RESOLVED.name()))));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            t -> {
+              assertThat(t.mustNot()).hasSize(1);
+              final var mustNotQuery = t.mustNot().getFirst();
+              assertThat(mustNotQuery.queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermsQuery.class,
+                      termsQuery -> {
+                        assertThat(termsQuery.field()).isEqualTo("state");
+                        assertThat(
+                                termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder("ACTIVE", "RESOLVED");
+                      });
+            });
   }
 }

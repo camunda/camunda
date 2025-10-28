@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Form", description = "API to query forms.")
 @RestController
 @RequestMapping(value = TasklistURIs.FORMS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnRdbmsDisabled
 public class FormController extends ApiErrorController {
 
   @Autowired private FormStore formStore;

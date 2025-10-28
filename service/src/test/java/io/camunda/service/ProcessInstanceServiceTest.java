@@ -64,6 +64,7 @@ public final class ProcessInstanceServiceTest {
   private IncidentServices incidentServices;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
+  private Authorization<BatchOperationCreationRecord> authorizationCheck;
   private BrokerClient brokerClient;
   private ApiServicesExecutorProvider executorProvider;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
@@ -73,6 +74,9 @@ public final class ProcessInstanceServiceTest {
     processInstanceSearchClient = mock(ProcessInstanceSearchClient.class);
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
     authentication = CamundaAuthentication.none();
+    authorizationCheck =
+        Authorization.withAuthorization(
+            Authorization.of(a -> a.processDefinition().updateProcessInstance()), "myProcess");
     incidentServices = mock(IncidentServices.class);
     when(processInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(processInstanceSearchClient);
@@ -201,6 +205,43 @@ public final class ProcessInstanceServiceTest {
             MsgPackConverter.convertToObject(
                 enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
         .isEqualTo(authentication);
+  }
+
+  @Test
+  void shouldResolveProcessInstanceIncidentsWithResult() {
+    // given
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    final var entity = mock(ProcessInstanceEntity.class);
+    when(entity.processDefinitionId()).thenReturn("myProcess");
+    when(processInstanceSearchClient.getProcessInstance(any(Long.class))).thenReturn(entity);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var result = services.resolveProcessInstanceIncidents(345L).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType()).isEqualTo(BatchOperationType.RESOLVE_INCIDENT);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+        .isEqualTo(authentication);
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthorizationCheckBuffer(), Authorization.class))
+        .isEqualTo(authorizationCheck);
   }
 
   @Test

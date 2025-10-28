@@ -15,13 +15,14 @@
  */
 package io.camunda.client.job;
 
+import static io.camunda.client.api.command.enums.JobResultType.AD_HOC_SUB_PROCESS;
+import static io.camunda.client.api.command.enums.JobResultType.USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
-import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
@@ -40,9 +41,9 @@ import org.mockito.Mockito;
 
 public final class CompleteJobTest extends ClientTest {
 
-  public static final String USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK.getValue();
+  public static final String USER_TASK_DISCRIMINATOR = USER_TASK.getProtocolValue();
   public static final String AD_HOC_SUB_PROCESS_DISCRIMINATOR =
-      TypeEnum.AD_HOC_SUB_PROCESS.getValue();
+      AD_HOC_SUB_PROCESS.getProtocolValue();
 
   @Test
   public void shouldCompleteJobByKey() {

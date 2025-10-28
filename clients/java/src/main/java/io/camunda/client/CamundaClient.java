@@ -63,6 +63,7 @@ import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
@@ -102,6 +103,7 @@ import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
+import io.camunda.client.api.fetch.MappingRuleGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
@@ -470,6 +472,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return the builder for the command
    */
   ResolveIncidentCommandStep1 newResolveIncidentCommand(long incidentKey);
+
+  /**
+   * Command to resolve multiple existing incidents for one process instance.
+   *
+   * <pre>
+   * camundaClient
+   *  .newResolveProcessInstanceIncidentsCommand(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key of the process instance to resolve incidents for
+   * @return the builder for the command
+   */
+  ResolveProcessInstanceIncidentsCommandStep1 newResolveProcessInstanceIncidentsCommand(
+      long processInstanceKey);
 
   /**
    * Command to update the retries of a job.
@@ -1611,6 +1628,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   DeleteMappingRuleCommandStep1 newDeleteMappingRuleCommand(String mappingRuleId);
+
+  /**
+   * Request to get a mapping rule by mapping rule ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newMappingRuleGetRequest("mappingRuleId")
+   *  .send();
+   * </pre>
+   *
+   * @param mappingRuleId the ID of the mapping rule
+   * @return a builder for the request to get a mapping rule
+   */
+  MappingRuleGetRequest newMappingRuleGetRequest(String mappingRuleId);
 
   /**
    * Command to assign a user to a group.

@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
@@ -18,14 +19,17 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.service.util.TreePathParser;
@@ -181,15 +185,20 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
+    return getByKey(
+        processInstanceKey,
+        securityContextProvider.provideSecurityContext(
+            authentication,
+            withAuthorization(
+                PROCESS_INSTANCE_READ_AUTHORIZATION, ProcessInstanceEntity::processDefinitionId)));
+  }
+
+  public ProcessInstanceEntity getByKey(
+      final Long processInstanceKey, final SecurityContext securityContext) {
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication,
-                        withAuthorization(
-                            PROCESS_INSTANCE_READ_AUTHORIZATION,
-                            ProcessInstanceEntity::processDefinitionId)))
+                .withSecurityContext(securityContext)
                 .getProcessInstance(processInstanceKey));
   }
 
@@ -253,6 +262,28 @@ public final class ProcessInstanceServices
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord> resolveProcessInstanceIncidents(
+      final long processInstanceKey) {
+    // internal read, no user permissions needed
+    final var processInstance =
+        getByKey(
+            processInstanceKey,
+            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(
+                FilterBuilders.processInstance(f -> f.processInstanceKeys(processInstanceKey)))
+            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT)
+            .setAuthentication(authentication)
+            // the user only needs single instance update permission, not batch creation
+            .setAuthorizationCheck(
+                Authorization.withAuthorization(
+                    PROCESS_INSTANCE_UPDATE_AUTHORIZATION, processInstance.processDefinitionId()));
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -336,12 +367,16 @@ public final class ProcessInstanceServices
       final long processInstanceKey, final IncidentQuery query) {
     final var processInstance = getByKey(processInstanceKey);
     final var treePath = processInstance.treePath();
+
     return incidentServices
         .withAuthentication(authentication)
         .search(
             IncidentQuery.of(
                 b ->
-                    b.filter(f -> f.treePathOperations(Operation.like("*" + treePath + "*")))
+                    b.filter(
+                            query.filter().toBuilder()
+                                .treePathOperations(Operation.like("*" + treePath + "*"))
+                                .build())
                         .page(query.page())
                         .sort(query.sort())));
   }

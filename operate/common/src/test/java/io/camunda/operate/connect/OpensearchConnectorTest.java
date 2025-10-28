@@ -10,11 +10,7 @@ package io.camunda.operate.connect;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -29,7 +25,6 @@ import java.util.List;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.assertj.core.api.Assertions;
@@ -39,7 +34,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
@@ -71,76 +65,6 @@ public class OpensearchConnectorTest {
   public void setup() {
     operateProperties.setOpensearch(opensearchProperties);
     opensearchConnector = new OpensearchConnector(operateProperties, objectMapper);
-  }
-
-  @Test
-  public void asyncHasAwsEnabledAndAwsCredentialsSetAndShouldUseAwsCredentials() {
-    System.setProperty("aws.accessKeyId", AWS_ACCESS_KEY_ID);
-    System.setProperty("aws.secretAccessKey", AWS_SECRET_ACCESS_KEY);
-    System.setProperty("aws.region", AWS_REGION);
-    opensearchProperties.setUsername("demo");
-    opensearchProperties.setPassword("demo");
-    opensearchProperties.setAwsEnabled(true);
-
-    final OpenSearchAsyncClient client =
-        opensearchConnector.createAsyncOsClient(opensearchProperties, new PluginRepository());
-
-    assertThat(client._transport().getClass()).isEqualTo(AwsSdk2Transport.class);
-  }
-
-  @Test
-  public void asyncHasAwsCredentialsButShouldUseBasicAuth() {
-    System.setProperty("aws.accessKeyId", AWS_ACCESS_KEY_ID);
-    System.setProperty("aws.secretAccessKey", AWS_SECRET_ACCESS_KEY);
-    System.setProperty("aws.region", AWS_REGION);
-    opensearchProperties.setUsername("demo");
-    opensearchProperties.setPassword("demo");
-    // awsEnabled not set -> should default to false
-    final OpensearchConnector spyConnector = spy(opensearchConnector);
-    doReturn(true).when(spyConnector).checkHealth(any(OpenSearchAsyncClient.class));
-
-    final OpenSearchAsyncClient client =
-        spyConnector.createAsyncOsClient(opensearchProperties, new PluginRepository());
-
-    assertThat(client._transport().getClass()).isEqualTo(ApacheHttpClient5Transport.class);
-  }
-
-  @Test
-  public void shouldNotDoClusterHealthCheckWhenDisabled() {
-    final OperateProperties operateProperties = new OperateProperties();
-    final OperateOpensearchProperties osProperties = new OperateOpensearchProperties();
-    osProperties.setHealthCheckEnabled(false);
-    operateProperties.setOpensearch(osProperties);
-    final OpensearchConnector connector = spy(new OpensearchConnector(operateProperties, mock()));
-    doReturn(mock(HttpAsyncClientBuilder.class))
-        .when(connector)
-        .configureHttpClient(any(), any(), any());
-
-    connector.createAsyncOsClient(osProperties, mock());
-    verify(connector, never()).checkHealth(any(OpenSearchAsyncClient.class));
-
-    connector.createOsClient(osProperties, mock());
-    verify(connector, never()).checkHealth(any(OpenSearchClient.class));
-  }
-
-  @Test
-  public void shouldDoClusterHealthCheckWhenDefaultPropertyValuesUsed() {
-    final OperateProperties operateProperties = new OperateProperties();
-    final OperateOpensearchProperties osProperties = new OperateOpensearchProperties();
-    operateProperties.setOpensearch(osProperties);
-    final OpensearchConnector connector =
-        spy(new OpensearchConnector(operateProperties, objectMapper));
-    doReturn(true).when(connector).checkHealth(any(OpenSearchClient.class));
-    doReturn(true).when(connector).checkHealth(any(OpenSearchAsyncClient.class));
-    doReturn(mock(HttpAsyncClientBuilder.class))
-        .when(connector)
-        .configureHttpClient(any(), any(), any());
-
-    connector.createAsyncOsClient(osProperties, mock());
-    verify(connector, times(1)).checkHealth(any(OpenSearchAsyncClient.class));
-
-    connector.createOsClient(osProperties, mock());
-    verify(connector, times(1)).checkHealth(any(OpenSearchClient.class));
   }
 
   @Test
@@ -188,44 +112,7 @@ public class OpensearchConnectorTest {
     connector.setOsClientRepository(pluginRepository);
 
     // Regular Operate client
-    final var client = connector.openSearchClient();
-
-    // when
-    final WireMockRuntimeInfo wmRuntimeInfo = osServer.getRuntimeInfo();
-    final var asyncResp =
-        getOpensearchApacheClient(((ApacheHttpClient5Transport) client._transport()))
-            .execute(
-                SimpleHttpRequest.create("GET", wmRuntimeInfo.getHttpBaseUrl()),
-                context,
-                NoopCallback.INSTANCE);
-
-    try {
-      asyncResp.get();
-    } catch (final Exception e) {
-      // ignore as we don't really care about the outcome
-    }
-
-    // then
-    final var reqWrapper = context.getRequest();
-
-    Assertions.assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
-  }
-
-  @Test
-  void shouldApplyRequestInterceptorsForOSAsyncOperateClient() throws Exception {
-    final var context = HttpClientContext.create();
-    final var operateProperties = new OperateProperties();
-    final PluginRepository pluginRepository = new PluginRepository();
-    pluginRepository.load(
-        List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
-
-    final var connector =
-        Mockito.spy(new OpensearchConnector(operateProperties, new ObjectMapper()));
-    Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(OpenSearchAsyncClient.class));
-    connector.setOsClientRepository(pluginRepository);
-
-    // Async Operate client
-    final var client = connector.openSearchAsyncClient();
+    final var client = connector.operateOpenSearchClient();
 
     // when
     final WireMockRuntimeInfo wmRuntimeInfo = osServer.getRuntimeInfo();

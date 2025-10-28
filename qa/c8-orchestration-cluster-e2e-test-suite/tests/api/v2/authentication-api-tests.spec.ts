@@ -22,7 +22,7 @@ import {
   createRole,
   createTenant,
   createUsersAndStoreResponseFields,
-} from '../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {
   authenticationRequiredFields,
   CREATE_COMPONENT_AUTHORIZATION,
@@ -79,6 +79,7 @@ test.describe.parallel('Authentication API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
+  // eslint-disable-next-line playwright/expect-expect
   test('Get Current User Unauthorized', async ({request}) => {
     const res = await request.get(buildUrl('/authentication/me'), {
       headers: {},

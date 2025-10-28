@@ -55,6 +55,12 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by elementInstanceKey using {@link BasicLongProperty} consumer */
   DecisionInstanceFilter elementInstanceKey(Consumer<BasicLongProperty> fn);
 
+  /** Filter by rootDecisionDefinitionKey */
+  DecisionInstanceFilter rootDecisionDefinitionKey(long rootDecisionDefinitionKey);
+
+  /** Filter by rootDecisionDefinitionKey using {@link BasicLongProperty} consumer */
+  DecisionInstanceFilter rootDecisionDefinitionKey(Consumer<BasicLongProperty> fn);
+
   /** Filter by decisionDefinitionKey */
   DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
 

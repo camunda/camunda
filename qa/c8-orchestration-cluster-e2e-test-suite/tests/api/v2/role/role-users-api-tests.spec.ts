@@ -24,10 +24,11 @@ import {
   assignRoleToUsers,
   createRole,
   userFromState,
-} from '../../../../utils/requestHelpers';
+} from '@requestHelpers';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
 
+/* eslint-disable playwright/expect-expect */
 test.describe.parallel('Role Users API Tests', () => {
   const state: Record<string, unknown> = {};
   const createdRoleIds: string[] = [];

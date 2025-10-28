@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
@@ -341,6 +342,14 @@ public final class EngineProcessors {
         routingInfo,
         batchOperationMetrics,
         brokerRequestAuthorizationConverter);
+
+    ClusterVariableProcessors.addClusterVariableProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        processingState.getClusterVariableState(),
+        writers,
+        commandDistributionBehavior,
+        authCheckBehavior);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);

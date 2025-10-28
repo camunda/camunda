@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;

@@ -19,13 +19,13 @@ import {
   createInstances,
   deploy,
 } from '../../../../utils/zeebeClient';
+import {validateResponseShape} from '../../../../json-body-assertions';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   failJob,
   searchJobKeysForProcessInstance,
   verifyIncidentsForProcessInstance,
-} from '../../../../utils/requestHelpers';
-import {validateResponseShape} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe

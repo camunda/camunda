@@ -8,18 +8,19 @@
 
 import {generateUniqueId} from '../constants';
 import * as fs from 'node:fs';
+import {readFileSync} from 'node:fs';
 import {
   createMappingRule,
-  roleDescriptionFromState,
-  roleNameFromState,
-  mappingRuleIdFromState,
-  mappingRuleNameFromState,
   mappingRuleClaimNameFromState,
   mappingRuleClaimValueFromState,
-  roleIdValueUsingKey,
-  userFromState,
   mappingRuleIdFromKey,
-} from '../requestHelpers';
+  mappingRuleIdFromState,
+  mappingRuleNameFromState,
+  roleDescriptionFromState,
+  roleIdValueUsingKey,
+  roleNameFromState,
+  userFromState,
+} from '@requestHelpers';
 import {APIRequestContext} from 'playwright-core';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
@@ -567,5 +568,24 @@ export async function mappingRuleBundle(
     mappingRuleKey: mappingRuleKey,
     mappingRuleId: mappingRuleIdFromKey(mappingRuleKey, state),
     responseBody: MAPPING_RULE_EXPECTED_BODY_USING_KEY(mappingRuleKey, state),
+  };
+}
+
+export function getExpectedContent(resourceName: string): string {
+  const resourcePath = `./resources/${resourceName}`;
+  return readFileSync(resourcePath, 'utf-8');
+}
+
+export function DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(
+  decision: DecisionDeployment,
+) {
+  return {
+    decisionDefinitionKey: decision.decisionDefinitionKey,
+    decisionRequirementsKey: decision.decisionRequirementsKey,
+    decisionRequirementsId: decision.decisionRequirementsId,
+    decisionDefinitionId: decision.decisionDefinitionId,
+    name: decision.name,
+    version: decision.version,
+    tenantId: decision.tenantId,
   };
 }
