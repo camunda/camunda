@@ -597,13 +597,13 @@ public class SearchQueryFilterMapper {
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::incidentKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              Optional.ofNullable(filter.getStartDate())
+              Optional.ofNullable(f.getStartDate())
                   .map(mapToOperations(OffsetDateTime.class))
                   .ifPresent(builder::startDateOperations);
-              Optional.ofNullable(filter.getEndDate())
+              Optional.ofNullable(f.getEndDate())
                   .map(mapToOperations(OffsetDateTime.class))
                   .ifPresent(builder::endDateOperations);
-              Optional.ofNullable(filter.getElementInstanceScopeKey())
+              Optional.ofNullable(f.getElementInstanceScopeKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::elementInstanceScopeKeys);
             });

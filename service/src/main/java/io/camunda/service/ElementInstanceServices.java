@@ -166,12 +166,13 @@ public final class ElementInstanceServices
         IncidentQuery.of(
             b ->
                 b.filter(
-                        f ->
-                            f.treePathOperations(
+                        query.filter().toBuilder()
+                            .treePathOperations(
                                 Operation.like(
                                     String.format(
                                         FNI_ELEMENT_INSTANCE_PATTERN,
-                                        elementInstance.flowNodeInstanceKey()))))
+                                        elementInstance.flowNodeInstanceKey())))
+                            .build())
                     .sort(query.sort())
                     .page(query.page())));
   }

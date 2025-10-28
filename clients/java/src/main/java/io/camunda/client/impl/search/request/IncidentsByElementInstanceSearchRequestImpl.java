@@ -15,12 +15,14 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider.provideSearchRequestProperty;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.IncidentsByElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
@@ -30,7 +32,7 @@ import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.ElementInstanceIncidentSearchQuery;
+import io.camunda.client.protocol.rest.IncidentSearchQuery;
 import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +42,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 public class IncidentsByElementInstanceSearchRequestImpl
     implements IncidentsByElementInstanceSearchRequest {
 
-  private final ElementInstanceIncidentSearchQuery request;
+  private final IncidentSearchQuery request;
   private final long elementInstanceKey;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -52,7 +54,7 @@ public class IncidentsByElementInstanceSearchRequestImpl
     this.jsonMapper = jsonMapper;
     this.elementInstanceKey = elementInstanceKey;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new ElementInstanceIncidentSearchQuery();
+    request = new IncidentSearchQuery();
   }
 
   @Override
@@ -83,6 +85,17 @@ public class IncidentsByElementInstanceSearchRequestImpl
   @Override
   public IncidentsByElementInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest filter(final IncidentFilter value) {
+    request.setFilter(provideSearchRequestProperty(value));
+    return this;
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest filter(final Consumer<IncidentFilter> fn) {
+    return filter(incidentFilter(fn));
   }
 
   @Override

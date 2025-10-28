@@ -15,10 +15,10 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceIncidentSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -97,7 +97,7 @@ public class ElementInstanceController {
   @CamundaPostMapping(path = "/{elementInstanceKey}/incidents/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidentsForElementInstance(
       @PathVariable("elementInstanceKey") final long elementInstanceKey,
-      @RequestBody(required = false) final ElementInstanceIncidentSearchQuery query) {
+      @RequestBody(required = false) final IncidentSearchQuery query) {
 
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(
