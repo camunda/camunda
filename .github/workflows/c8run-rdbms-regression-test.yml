@@ -127,5 +127,5 @@ jobs:
         if: always()
         with:
           name: logs-${{ matrix.config }}
-          path: ./camunda/c8run/log/*.log
+          path: ./c8run/log/*.log
           retention-days: 10
