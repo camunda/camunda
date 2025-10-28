@@ -21,6 +21,8 @@ public class DecisionDefinitionEntity
   private int version;
   private String decisionRequirementsId;
   private long decisionRequirementsKey;
+  private String decisionRequirementsName;
+  private int decisionRequirementsVersion;
   private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Override
@@ -88,6 +90,26 @@ public class DecisionDefinitionEntity
     return this;
   }
 
+  public String getDecisionRequirementsName() {
+    return decisionRequirementsName;
+  }
+
+  public DecisionDefinitionEntity setDecisionRequirementsName(
+      final String decisionRequirementsName) {
+    this.decisionRequirementsName = decisionRequirementsName;
+    return this;
+  }
+
+  public int getDecisionRequirementsVersion() {
+    return decisionRequirementsVersion;
+  }
+
+  public DecisionDefinitionEntity setDecisionRequirementsVersion(
+      final int decisionRequirementsVersion) {
+    this.decisionRequirementsVersion = decisionRequirementsVersion;
+    return this;
+  }
+
   @Override
   public String getTenantId() {
     return tenantId;
@@ -108,6 +130,8 @@ public class DecisionDefinitionEntity
         version,
         decisionRequirementsId,
         decisionRequirementsKey,
+        decisionRequirementsName,
+        decisionRequirementsVersion,
         tenantId);
   }
 
@@ -127,6 +151,8 @@ public class DecisionDefinitionEntity
         && Objects.equals(decisionId, that.decisionId)
         && Objects.equals(name, that.name)
         && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && Objects.equals(decisionRequirementsName, that.decisionRequirementsName)
+        && decisionRequirementsVersion == that.decisionRequirementsVersion
         && Objects.equals(tenantId, that.tenantId);
   }
 }
