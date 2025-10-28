@@ -222,8 +222,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         .orElse(bpmnProcessId);
   }
 
-  private String getVersionTag(final long processDefinitionJey) {
-    return processCache.get(processDefinitionJey).map(CachedProcessEntity::versionTag).orElse(null);
+  private String getVersionTag(final long processDefinitionKey) {
+    return processCache.get(processDefinitionKey).map(CachedProcessEntity::versionTag).orElse(null);
   }
 
   public TreePath createTreePath(final Record<ProcessInstanceRecordValue> record) {
