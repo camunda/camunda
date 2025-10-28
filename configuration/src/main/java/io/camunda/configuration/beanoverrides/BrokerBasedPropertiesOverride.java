@@ -681,6 +681,8 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+
+    setArg(args, "history.retention.policyName", database.getHistory().getPolicyName());
     setArg(args, "history.elsRolloverDateFormat", database.getHistory().getElsRolloverDateFormat());
     setArg(args, "history.rolloverInterval", database.getHistory().getRolloverInterval());
     setArg(args, "history.rolloverBatchSize", database.getHistory().getRolloverBatchSize());
