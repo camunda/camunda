@@ -54,6 +54,7 @@ import org.springframework.util.StringUtils;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.images.PullPolicy;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -371,6 +372,7 @@ public class PrefixMigrationIT {
   private GenericContainer<?> createCamundaContainer() {
     final var container =
         new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7-SNAPSHOT"))
+            .withImagePullPolicy(PullPolicy.alwaysPull())
             .waitingFor(
                 new HttpWaitStrategy()
                     .forPort(MONITORING.port())
