@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingRuleDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -252,5 +253,35 @@ public class MappingRuleIT {
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().mappingRuleId())
         .isEqualTo(randomizedMappingRule.mappingRuleId());
+  }
+
+  @TestTemplate
+  public void shouldUpdateMappingRule(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final MappingRuleDbModel randomizedMappingRule = MappingRuleFixtures.createRandomized();
+    final var mappingRuleId = randomizedMappingRule.mappingRuleId();
+    createAndSaveMappingRule(rdbmsWriter, randomizedMappingRule);
+
+    // when
+    final RdbmsWriter writer = rdbmsService.createWriter(1L);
+    final var updatedMappingRule =
+        new MappingRuleDbModelBuilder()
+            .mappingRuleId(randomizedMappingRule.mappingRuleId())
+            .name("Updated Name")
+            .claimName("Updated Claim Name")
+            .claimValue("Updated Claim Value")
+            .build();
+    writer.getMappingRuleWriter().update(updatedMappingRule);
+    writer.flush();
+
+    // then
+    final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId).orElse(null);
+    assertThat(mappingRule.mappingRuleKey()).isEqualTo(randomizedMappingRule.mappingRuleKey());
+    assertThat(mappingRule.mappingRuleId()).isEqualTo(randomizedMappingRule.mappingRuleId());
+    assertThat(mappingRule.name()).isEqualTo("Updated Name");
+    assertThat(mappingRule.claimName()).isEqualTo("Updated Claim Name");
+    assertThat(mappingRule.claimValue()).isEqualTo("Updated Claim Value");
   }
 }
