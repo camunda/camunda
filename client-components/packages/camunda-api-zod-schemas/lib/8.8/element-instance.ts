@@ -13,6 +13,7 @@ import {
 	getQueryResponseBodySchema,
 	getEnumFilterSchema,
 	type Endpoint,
+	advancedDateTimeFilterSchema,
 } from './common';
 import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
 
@@ -79,7 +80,9 @@ const elementInstanceFilterSchema = z
 		processInstanceKey: z.string(),
 		processDefinitionKey: z.string(),
 		incidentKey: z.string(),
-		scopeKey: z.string(),
+		startDate: advancedDateTimeFilterSchema,
+		endDate: advancedDateTimeFilterSchema,
+		elementInstanceScopeKey: z.string(),
 	})
 	.partial();
 
