@@ -29,12 +29,18 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
   private static final int EXPORTER_PROCESSOR_ID = 1003;
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ExporterDirectorPartitionTransitionStep.class);
 
   private final BiFunction<ExporterDirectorContext, ExporterPhase, ExporterDirector>
       exporterDirectorBuilder;
@@ -111,6 +117,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final BrokerCfg brokerCfg = context.getBrokerCfg();
     final ExportingCfg exportingCfg = brokerCfg.getExporting();
     final var exporterFilter = SkipPositionsFilter.of(exportingCfg.skipRecords());
+    LOG.info("Exporter Descriptors: {}", exporterDescriptors.entrySet());
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
@@ -183,7 +190,18 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
     final var exporterConfig = context.getDynamicPartitionConfig().exporting().exporters();
 
+    final boolean ignoreElasticsearchExporter;
+    if (exporterConfig.size() == 2
+        && exporterConfig.keySet().containsAll(Set.of("rdbms", "elasticsearch"))) {
+      LOG.warn(
+          "RDBMS and Elasticsearch exporters are both configured; ignoring Elasticsearch exporter");
+      ignoreElasticsearchExporter = true;
+    } else {
+      ignoreElasticsearchExporter = false;
+    }
+
     return exporterConfig.entrySet().stream()
+        .filter(entry -> !ignoreElasticsearchExporter || !entry.getKey().equals("elasticsearch"))
         .filter(
             entry ->
                 entry.getValue().state() == State.ENABLED

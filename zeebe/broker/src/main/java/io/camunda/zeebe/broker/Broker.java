@@ -165,6 +165,15 @@ public final class Broker implements AutoCloseable {
   private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
     final var exporterEntries = cfg.getExporters().entrySet();
 
+    LOG.debug("Exporter entries in config: {}", exporterEntries);
+    LOG.debug(
+        "Exporter entries in current exporter repository: {}",
+        exporterRepository.getExporters().entrySet());
+    if (!exporterRepository.getExporters().isEmpty()) {
+      LOG.warn("Exporter repository has been initialized. No need to load exporters.");
+      return exporterRepository;
+    }
+
     // load and validate exporters
     for (final var exporterEntry : exporterEntries) {
       final var id = exporterEntry.getKey();

@@ -113,6 +113,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     partitionId = logStream.getPartitionId();
     meterRegistry = context.getMeterRegistry();
     clock = context.getClock();
+    LOG.debug("Exporter descriptors: {}", context.getDescriptors().entrySet());
     containers =
         context.getDescriptors().entrySet().stream()
             .map(

@@ -30,7 +30,8 @@ class DefaultExporterFactory implements ExporterFactory {
 
   @Override
   public Exporter newInstance() throws ExporterInstantiationException {
-    LOG.info("Use default exporter factory to create instance of {}", exporterClass);
+    LOG.info("Use default exporter factory to create instance of {} [id={}]", exporterClass, id);
+    LOG.debug("Stacktrace: {}", java.util.Arrays.toString(Thread.currentThread().getStackTrace()));
     try {
       return ReflectUtil.newInstance(exporterClass);
     } catch (final Exception e) {
