@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize;
 
+import java.util.Objects;
+
 // supposed to be called from entity specific subclasses only
 public class AuthorizedEntityDto {
 
@@ -31,13 +33,17 @@ public class AuthorizedEntityDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AuthorizedEntityDto that = (AuthorizedEntityDto) o;
+    return currentUserRole == that.currentUserRole;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(currentUserRole);
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.optimize.test.util.client.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskDto {
@@ -48,13 +49,19 @@ public class TaskDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TaskDto taskDto = (TaskDto) o;
+    return Objects.equals(id, taskDto.id)
+        && Objects.equals(created, taskDto.created)
+        && Objects.equals(processInstanceId, taskDto.processInstanceId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(id, created, processInstanceId);
   }
 
   @Override

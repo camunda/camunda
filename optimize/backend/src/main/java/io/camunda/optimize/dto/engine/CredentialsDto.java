@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.engine;
 
+import java.util.Objects;
+
 public class CredentialsDto {
 
   protected String username;
@@ -36,12 +38,19 @@ public class CredentialsDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(username, password);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CredentialsDto that = (CredentialsDto) o;
+    return Objects.equals(username, that.username) && Objects.equals(password, that.password);
   }
 
   @Override

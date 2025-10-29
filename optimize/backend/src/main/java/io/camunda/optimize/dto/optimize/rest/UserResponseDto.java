@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.rest;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.camunda.optimize.dto.optimize.UserDto;
 import java.util.List;
+import java.util.Objects;
 
 public class UserResponseDto {
 
@@ -45,13 +46,18 @@ public class UserResponseDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UserResponseDto that = (UserResponseDto) o;
+    return Objects.equals(userDto, that.userDto)
+        && Objects.equals(authorizations, that.authorizations);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(userDto, authorizations);
   }
 
   @Override

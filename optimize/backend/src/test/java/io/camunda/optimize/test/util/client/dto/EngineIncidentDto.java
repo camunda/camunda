@@ -8,6 +8,7 @@
 package io.camunda.optimize.test.util.client.dto;
 
 import java.util.Date;
+import java.util.Objects;
 
 public class EngineIncidentDto {
 
@@ -145,13 +146,44 @@ public class EngineIncidentDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EngineIncidentDto that = (EngineIncidentDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(executionId, that.executionId)
+        && Objects.equals(incidentTimestamp, that.incidentTimestamp)
+        && Objects.equals(incidentType, that.incidentType)
+        && Objects.equals(activityId, that.activityId)
+        && Objects.equals(failedActivityId, that.failedActivityId)
+        && Objects.equals(causeIncidentId, that.causeIncidentId)
+        && Objects.equals(rootCauseIncidentId, that.rootCauseIncidentId)
+        && Objects.equals(configuration, that.configuration)
+        && Objects.equals(incidentMessage, that.incidentMessage)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(jobDefinitionId, that.jobDefinitionId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        processDefinitionId,
+        processInstanceId,
+        executionId,
+        incidentTimestamp,
+        incidentType,
+        activityId,
+        failedActivityId,
+        causeIncidentId,
+        rootCauseIncidentId,
+        configuration,
+        incidentMessage,
+        tenantId,
+        jobDefinitionId);
   }
 
   @Override

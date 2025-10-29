@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.util.configuration.engine;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class EventIngestionConfiguration {
 
@@ -42,13 +43,17 @@ public class EventIngestionConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EventIngestionConfiguration that = (EventIngestionConfiguration) o;
+    return maxBatchRequestBytes == that.maxBatchRequestBytes && maxRequests == that.maxRequests;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(maxBatchRequestBytes, maxRequests);
   }
 
   @Override

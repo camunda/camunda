@@ -13,6 +13,8 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 public class VariableAggregationContext {
@@ -104,16 +106,45 @@ public class VariableAggregationContext {
     this.variableRangeMinMaxStats = variableRangeMinMaxStats;
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final VariableAggregationContext that = (VariableAggregationContext) o;
+    return Objects.equals(variableName, that.variableName)
+        && variableType == that.variableType
+        && Objects.equals(variablePath, that.variablePath)
+        && Objects.equals(nestedVariableNameField, that.nestedVariableNameField)
+        && Objects.equals(nestedVariableValueFieldLabel, that.nestedVariableValueFieldLabel)
+        && Objects.equals(timezone, that.timezone)
+        && Objects.equals(customBucketDto, that.customBucketDto)
+        && dateUnit == that.dateUnit
+        && Objects.deepEquals(indexNames, that.indexNames)
+        && Objects.equals(variableRangeMinMaxStats, that.variableRangeMinMaxStats)
+        && Objects.equals(combinedRangeMinMaxStats, that.combinedRangeMinMaxStats)
+        && Objects.equals(filterContext, that.filterContext);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        variableName,
+        variableType,
+        variablePath,
+        nestedVariableNameField,
+        nestedVariableValueFieldLabel,
+        timezone,
+        customBucketDto,
+        dateUnit,
+        Arrays.hashCode(indexNames),
+        variableRangeMinMaxStats,
+        combinedRangeMinMaxStats,
+        filterContext);
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof VariableAggregationContext;
-  }
-
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

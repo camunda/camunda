@@ -9,6 +9,7 @@ package io.camunda.optimize.service.metrics;
 
 import io.micrometer.core.instrument.Statistic;
 import java.util.List;
+import java.util.Objects;
 
 public class MetricResponseDto {
 
@@ -65,13 +66,21 @@ public class MetricResponseDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MetricResponseDto that = (MetricResponseDto) o;
+    return Objects.equals(name, that.name)
+        && Objects.equals(description, that.description)
+        && Objects.equals(baseUnit, that.baseUnit)
+        && Objects.equals(measurements, that.measurements)
+        && Objects.equals(availableTags, that.availableTags);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(name, description, baseUnit, measurements, availableTags);
   }
 
   @Override
@@ -117,13 +126,17 @@ public class MetricResponseDto {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final StatisticDto that = (StatisticDto) o;
+      return statistic == that.statistic && Objects.equals(value, that.value);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(statistic, value);
     }
 
     @Override
@@ -164,13 +177,17 @@ public class MetricResponseDto {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final TagDto tagDto = (TagDto) o;
+      return Objects.equals(tag, tagDto.tag) && Objects.equals(values, tagDto.values);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(tag, values);
     }
 
     @Override

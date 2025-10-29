@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.datasource;
 
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
+import java.util.Objects;
 
 public class ZeebeDataSourceDto extends DataSourceDto {
 
@@ -33,12 +34,22 @@ public class ZeebeDataSourceDto extends DataSourceDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), partitionId);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ZeebeDataSourceDto that = (ZeebeDataSourceDto) o;
+    return partitionId == that.partitionId;
   }
 
   @Override

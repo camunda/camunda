@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
 
@@ -132,12 +133,25 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), bpmn20Xml, flowNodeData, userTaskNames, onboarded);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ProcessDefinitionOptimizeDto that = (ProcessDefinitionOptimizeDto) o;
+    return onboarded == that.onboarded
+        && Objects.equals(bpmn20Xml, that.bpmn20Xml)
+        && Objects.equals(flowNodeData, that.flowNodeData)
+        && Objects.equals(userTaskNames, that.userTaskNames);
   }
 
   @Override

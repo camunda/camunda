@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest.report;
 
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import java.util.Objects;
 
 public class AuthorizedCombinedReportEvaluationResponseDto<T>
     extends AuthorizedReportEvaluationResponseDto<CombinedReportDefinitionRequestDto> {
@@ -40,12 +41,23 @@ public class AuthorizedCombinedReportEvaluationResponseDto<T>
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), result);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AuthorizedCombinedReportEvaluationResponseDto<?> that =
+        (AuthorizedCombinedReportEvaluationResponseDto<?>) o;
+    return Objects.equals(result, that.result);
   }
 
   @Override

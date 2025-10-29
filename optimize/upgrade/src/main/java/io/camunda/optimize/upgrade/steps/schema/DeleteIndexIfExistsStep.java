@@ -11,6 +11,7 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
+import java.util.Objects;
 
 public class DeleteIndexIfExistsStep extends UpgradeStep {
 
@@ -45,18 +46,25 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DeleteIndexIfExistsStep;
   }
 
   @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DeleteIndexIfExistsStep that = (DeleteIndexIfExistsStep) o;
+    return indexVersion == that.indexVersion && Objects.equals(indexName, that.indexName);
+  }
+
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), indexName, indexVersion);
   }
 
   public String getIndexName() {

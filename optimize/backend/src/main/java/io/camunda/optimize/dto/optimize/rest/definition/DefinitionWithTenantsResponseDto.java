@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest.definition;
 
 import io.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import java.util.List;
+import java.util.Objects;
 
 public class DefinitionWithTenantsResponseDto {
 
@@ -55,12 +56,21 @@ public class DefinitionWithTenantsResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(key, versions, tenants);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DefinitionWithTenantsResponseDto that = (DefinitionWithTenantsResponseDto) o;
+    return Objects.equals(key, that.key)
+        && Objects.equals(versions, that.versions)
+        && Objects.equals(tenants, that.tenants);
   }
 
   @Override

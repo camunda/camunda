@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.service.db.report.context.VariableAggregationContext;
 import java.util.Map;
+import java.util.Objects;
 
 public class VariableAggregationContextES extends VariableAggregationContext {
 
@@ -32,16 +33,26 @@ public class VariableAggregationContextES extends VariableAggregationContext {
     return this.subAggregations;
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final VariableAggregationContextES that = (VariableAggregationContextES) o;
+    return Objects.equals(baseQueryForMinMaxStats, that.baseQueryForMinMaxStats)
+        && Objects.equals(subAggregations, that.subAggregations);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), baseQueryForMinMaxStats, subAggregations);
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof VariableAggregationContextES;
-  }
-
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

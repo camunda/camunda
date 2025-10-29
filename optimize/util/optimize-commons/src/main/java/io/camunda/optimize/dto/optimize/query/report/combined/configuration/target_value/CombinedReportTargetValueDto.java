@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
+import java.util.Objects;
+
 public class CombinedReportTargetValueDto {
 
   private CombinedReportCountChartDto countChart = new CombinedReportCountChartDto();
@@ -25,13 +27,19 @@ public class CombinedReportTargetValueDto {
   public CombinedReportTargetValueDto() {}
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CombinedReportTargetValueDto that = (CombinedReportTargetValueDto) o;
+    return Objects.equals(countChart, that.countChart)
+        && Objects.equals(active, that.active)
+        && Objects.equals(durationChart, that.durationChart);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(countChart, active, durationChart);
   }
 
   @Override

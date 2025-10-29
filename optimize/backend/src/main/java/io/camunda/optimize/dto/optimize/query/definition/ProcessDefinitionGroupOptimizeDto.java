@@ -12,6 +12,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessDefinitionGroupOptimizeDto {
 
@@ -54,13 +55,17 @@ public class ProcessDefinitionGroupOptimizeDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessDefinitionGroupOptimizeDto that = (ProcessDefinitionGroupOptimizeDto) o;
+    return Objects.equals(key, that.key) && Objects.equals(versions, that.versions);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(key, versions);
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.configuration.custo
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.Optional;
 
 public class CustomBucketDto {
@@ -144,13 +145,21 @@ public class CustomBucketDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CustomBucketDto that = (CustomBucketDto) o;
+    return active == that.active
+        && Objects.equals(bucketSize, that.bucketSize)
+        && bucketSizeUnit == that.bucketSizeUnit
+        && Objects.equals(baseline, that.baseline)
+        && baselineUnit == that.baselineUnit;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(active, bucketSize, bucketSizeUnit, baseline, baselineUnit);
   }
 
   @Override

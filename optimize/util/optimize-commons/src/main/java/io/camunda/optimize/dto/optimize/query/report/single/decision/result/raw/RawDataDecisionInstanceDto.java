@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Objects;
 
 public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
 
@@ -123,13 +124,34 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final RawDataDecisionInstanceDto that = (RawDataDecisionInstanceDto) o;
+    return Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey)
+        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
+        && Objects.equals(decisionInstanceId, that.decisionInstanceId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(evaluationDateTime, that.evaluationDateTime)
+        && Objects.equals(engineName, that.engineName)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(inputVariables, that.inputVariables)
+        && Objects.equals(outputVariables, that.outputVariables);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        decisionDefinitionKey,
+        decisionDefinitionId,
+        decisionInstanceId,
+        processInstanceId,
+        evaluationDateTime,
+        engineName,
+        tenantId,
+        inputVariables,
+        outputVariables);
   }
 
   @Override

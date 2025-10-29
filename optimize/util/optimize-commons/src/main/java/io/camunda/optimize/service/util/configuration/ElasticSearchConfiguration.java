@@ -20,6 +20,7 @@ import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class ElasticSearchConfiguration {
@@ -225,16 +226,27 @@ public class ElasticSearchConfiguration {
     this.interceptorPlugins = interceptorPlugins;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  protected boolean canEqual(final Object other) {
-    return other instanceof ElasticSearchConfiguration;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        connection, backup, security, scrollTimeoutInSeconds, settings, interceptorPlugins);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ElasticSearchConfiguration that = (ElasticSearchConfiguration) o;
+    return scrollTimeoutInSeconds == that.scrollTimeoutInSeconds
+        && Objects.equals(connection, that.connection)
+        && Objects.equals(backup, that.backup)
+        && Objects.equals(security, that.security)
+        && Objects.equals(settings, that.settings)
+        && Objects.equals(interceptorPlugins, that.interceptorPlugins);
   }
 
   public String toString() {

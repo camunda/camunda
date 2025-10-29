@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration.security;
 
+import java.util.Objects;
+
 public class CCSMAuthConfiguration {
 
   // the url to Identity
@@ -86,13 +88,24 @@ public class CCSMAuthConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CCSMAuthConfiguration that = (CCSMAuthConfiguration) o;
+    return Objects.equals(issuerUrl, that.issuerUrl)
+        && Objects.equals(issuerBackendUrl, that.issuerBackendUrl)
+        && Objects.equals(redirectRootUrl, that.redirectRootUrl)
+        && Objects.equals(clientId, that.clientId)
+        && Objects.equals(clientSecret, that.clientSecret)
+        && Objects.equals(audience, that.audience)
+        && Objects.equals(baseUrl, that.baseUrl);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        issuerUrl, issuerBackendUrl, redirectRootUrl, clientId, clientSecret, audience, baseUrl);
   }
 
   @Override

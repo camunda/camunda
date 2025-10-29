@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.datasource;
 
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.SchedulerConfig;
+import java.util.Objects;
 
 public class EngineDataSourceDto extends DataSourceDto implements SchedulerConfig {
 
@@ -27,12 +28,18 @@ public class EngineDataSourceDto extends DataSourceDto implements SchedulerConfi
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(getClass(), super.hashCode());
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return super.equals(o);
   }
 
   @Override

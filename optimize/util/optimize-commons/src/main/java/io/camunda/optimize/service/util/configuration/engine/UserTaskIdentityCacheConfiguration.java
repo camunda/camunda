@@ -9,6 +9,8 @@ package io.camunda.optimize.service.util.configuration.engine;
 
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 
+import java.util.Objects;
+
 public class UserTaskIdentityCacheConfiguration extends IdentityCacheConfiguration {
 
   public UserTaskIdentityCacheConfiguration() {}
@@ -25,12 +27,18 @@ public class UserTaskIdentityCacheConfiguration extends IdentityCacheConfigurati
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(getClass(), super.hashCode());
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return super.equals(o);
   }
 
   @Override
