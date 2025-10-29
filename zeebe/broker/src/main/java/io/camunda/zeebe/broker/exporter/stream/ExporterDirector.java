@@ -575,7 +575,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader) {
       throw new IllegalStateException(
-          String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, -1, getName()));
+          String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
     }
     logStream.registerRecordAvailableListener(this);
     if (!exporterPhase.equals(ExporterPhase.PAUSED)) {
