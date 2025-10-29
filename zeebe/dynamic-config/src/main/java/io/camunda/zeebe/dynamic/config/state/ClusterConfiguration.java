@@ -47,6 +47,19 @@ public record ClusterConfiguration(
     members = Map.copyOf(members);
   }
 
+  public ClusterConfiguration {
+    if (version < UNINITIALIZED_VERSION) {
+      throw new IllegalArgumentException(
+          String.format("Version must be >= %d", UNINITIALIZED_VERSION));
+    }
+
+    Objects.requireNonNull(members);
+    Objects.requireNonNull(lastChange);
+    Objects.requireNonNull(pendingChanges);
+    Objects.requireNonNull(routingState);
+    Objects.requireNonNull(clusterId);
+  }
+
   public static ClusterConfiguration uninitialized() {
     return new ClusterConfiguration(
         UNINITIALIZED_VERSION,
