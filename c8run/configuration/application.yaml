@@ -34,17 +34,6 @@ zeebe:
     network:
       host: localhost
       advertisedHost: localhost
-    exporters:
-      camundaExporter:
-        args:
-          connect:
-            type: elasticsearch
-            url: http://localhost:9200
-          index:
-            shouldWaitForImporters: false
-          retention:
-            enabled: false
-        className: io.camunda.exporter.CamundaExporter
   gateway:
     cluster:
       initialContactPoints: zeebe:26502
@@ -52,5 +41,5 @@ zeebe:
 
 spring:
   profiles:
-    active: "broker,consolidated-auth,identity"
+    active: "broker,consolidated-auth,identity,tasklist"
 
