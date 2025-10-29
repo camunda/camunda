@@ -590,7 +590,8 @@ public class SwimMembershipProtocol
     PROBE_LOGGER.trace(
         "{} - Received probe {} from {}", this.localMember.id(), localMember, remoteMember);
 
-    if (localMember.id().getIdVersion() > this.localMember.id().getIdVersion()) {
+    if (localMember.id() != null
+        && localMember.id().getIdVersion() > this.localMember.id().getIdVersion()) {
       // TODO: shutdown node as we detect a newer node with the same id
       return this.localMember.copy();
     }
