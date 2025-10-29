@@ -1,0 +1,21 @@
+{
+  "processId": "sample_process",
+  "version": "1.0",
+  "instances": [
+    {
+      "id": "instance-1",
+      "status": "running",
+      "startTime": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": "instance-2",
+      "status": "completed",
+      "startTime": "2024-01-14T08:15:00Z",
+      "endTime": "2024-01-14T12:45:00Z"
+    }
+  ],
+  "metadata": {
+    "createdBy": "system",
+    "lastModified": "2024-01-15T10:30:00Z"
+  }
+}

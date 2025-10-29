@@ -18,6 +18,8 @@ import {Listeners, type ListenerTypeFilter} from './Listeners';
 import {WarningFilled} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {Documents} from './Documents';
+import {AIAgent} from './AIAgent';
 
 type Props = {
   setListenerTabVisibility: React.Dispatch<React.SetStateAction<boolean>>;
@@ -57,6 +59,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   });
 
   const hasFailedListeners = jobs?.some(({state}) => state === 'FAILED');
+  const isAIAgentInstance = processInstanceId === '2251799813699169';
 
   return (
     <TabView
@@ -112,6 +115,32 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
             setListenerTabVisibility(true);
           },
         },
+        ...(isRootNodeSelected
+          ? [
+              {
+                id: 'documents',
+                label: 'Documents',
+                content: <Documents filterToMemory={isAIAgentInstance} />,
+                removePadding: true,
+                onClick: () => {
+                  setListenerTabVisibility(false);
+                },
+              },
+            ]
+          : []),
+        ...(isAIAgentInstance && !isRootNodeSelected
+          ? [
+              {
+                id: 'ai-agent',
+                label: 'AI Agent',
+                content: <AIAgent />,
+                removePadding: true,
+                onClick: () => {
+                  setListenerTabVisibility(false);
+                },
+              },
+            ]
+          : []),
       ]}
       key={`tabview-${flowNodeId}-${flowNodeInstanceId}`}
     />

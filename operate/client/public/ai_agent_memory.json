@@ -1,0 +1,75 @@
+{
+  "messages" : [ {
+    "role" : "system",
+    "content" : [ {
+      "type" : "text",
+      "text" : "You are **TaskAgent**, a helpful, generic chat agent that can handle a wide variety of customer requests using your own domain knowledge **and** any tools explicitly provided to you at runtime.\n\nIf tools are provided, you should prefer them instead of guessing an answer. You can call the same tool multiple times by providing different input values. Don't guess any tools which were not explicitly configured. If no tool matches the request, try to generate an answer. If you're not able to find a good answer, return with a message stating why you're not able to.\n\nWrap minimal, inspectable reasoning in *exactly* this XML template:\n\n<thinking>\n<context>…briefly state the customer’s need and current state…</context>\n<reflection>…list candidate tools, justify which you will call next and why…</reflection>\n</thinking>\n\nReveal **no** additional private reasoning outside these tags."
+    } ]
+  }, {
+    "role" : "user",
+    "content" : [ {
+      "type" : "text",
+      "text" : "Send a message via Slack congratulating people on successfully running a test process"
+    } ],
+    "metadata" : {
+      "timestamp" : "2025-10-16T16:03:07.76737+02:00"
+    }
+  }, {
+    "role" : "assistant",
+    "content" : [ {
+      "type" : "text",
+      "text" : "Certainly! I can help you send a congratulatory message via Slack. Let me use the available Slack tool to accomplish this task for you.\n\n<thinking>\n<context>The user wants to send a congratulatory message via Slack about successfully running a test process.</context>\n<reflection>The Slack tool is available and appropriate for this task. I will use it to send the requested message.</reflection>\n</thinking>\n\nI'll use the Slack tool to send the congratulatory message. Here's how I'll do that:"
+    } ],
+    "toolCalls" : [ {
+      "id" : "toolu_01MTuQBp7YvM75Aq6Hdb45Uc",
+      "name" : "slack",
+      "arguments" : {
+        "slackMessage" : "Great job, everyone! 🎉 Congratulations on successfully running the test process. Your hard work and attention to detail have paid off. Keep up the excellent work!"
+      }
+    } ],
+    "metadata" : {
+      "timestamp" : "2025-10-16T16:03:11.805553+02:00",
+      "framework" : {
+        "id" : "msg_01VfASwdPUkiKEP8LYBwheUE",
+        "finishReason" : "TOOL_EXECUTION",
+        "tokenUsage" : {
+          "inputTokenCount" : 601,
+          "outputTokenCount" : 207,
+          "totalTokenCount" : 808,
+          "cacheCreationInputTokens" : 0,
+          "cacheReadInputTokens" : 0
+        }
+      }
+    }
+  }, {
+    "role" : "tool_call_result",
+    "results" : [ {
+      "id" : "toolu_01MTuQBp7YvM75Aq6Hdb45Uc",
+      "name" : "slack",
+      "content" : ""
+    } ],
+    "metadata" : {
+      "timestamp" : "2025-10-16T16:03:12.538066+02:00"
+    }
+  }, {
+    "role" : "assistant",
+    "content" : [ {
+      "type" : "text",
+      "text" : "The congratulatory message has been sent successfully via Slack. The message reads:\n\n\"Great job, everyone! 🎉 Congratulations on successfully running the test process. Your hard work and attention to detail have paid off. Keep up the excellent work!\"\n\nIs there anything else you'd like me to do or any other messages you'd like to send?"
+    } ],
+    "metadata" : {
+      "framework" : {
+        "id" : "msg_01Dmmkd28sLJHH2JFkm8eTwQ",
+        "finishReason" : "STOP",
+        "tokenUsage" : {
+          "inputTokenCount" : 827,
+          "outputTokenCount" : 81,
+          "totalTokenCount" : 908,
+          "cacheCreationInputTokens" : 0,
+          "cacheReadInputTokens" : 0
+        }
+      },
+      "timestamp" : "2025-10-16T16:03:14.269705+02:00"
+    }
+  } ]
+}
