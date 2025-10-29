@@ -15,6 +15,8 @@
  */
 package io.camunda.client.jobhandling.parameter;
 
+import java.util.Arrays;
+
 public enum KeyTargetType {
   LONG(new Class<?>[] {Long.class, long.class}),
   STRING(new Class<?>[] {String.class});
@@ -45,6 +47,9 @@ public enum KeyTargetType {
       }
     }
     throw new IllegalArgumentException(
-        "Unsupported target type for @ProcessInstanceKey: " + parameterType);
+        "Unsupported target type: "
+            + parameterType
+            + ", supported types are: "
+            + Arrays.toString(values()));
   }
 }
