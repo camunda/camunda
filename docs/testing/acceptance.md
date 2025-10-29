@@ -196,9 +196,12 @@ will [spin up an Elasticsearch test container for local execution](https://githu
 
 Sometimes, we need to validate different secondary storages locally, for example, to reproduce a failure. For that, we can configure the test execution.
 
-In Intellij, you can edit the `Run/Debug configuration` (see this [guide](https://www.jetbrains.com/help/idea/run-debug-configuration-junit.html)) and pass in additional properties and environment variables.
+If you simply want to test with a specific database, you can just edit the annotation in your IDE, e.g. `@MultiDbTest(DatabaseType.OS)`. Then
+run the test as usual, e.g. from the IDE or via Maven.
 
-To specify the database type, use the following property: `test.integration.camunda.database.type`. We also provide specific Maven profiles to make this easier.
+Alternatively, you can specify the System property `test.integration.camunda.database.type`, which is what the CI jobs do.
+In Intellij, you can edit the `Run/Debug configuration` (see this [guide](https://www.jetbrains.com/help/idea/run-debug-configuration-junit.html)) and pass in additional properties and environment variables.
+We also provide specific Maven profiles to make this easier.
 
 * For available maven profiles, take a look at the `qa/integration-test/pom.xml`.
 * For available database types, look at `io.camunda.qa.util.multidb.CamundaMultiDBExtension#DatabaseType`
@@ -206,7 +209,14 @@ To specify the database type, use the following property: `test.integration.camu
 > [!Important]
 >
 > If you want to run against a different secondary storage, you need to spin it up manually, for example, via docker.
-> Ensure the container is available under `:9200` for ES or OS.
+> Ensure the container is available under `:9200` for ES or OS. RDBMS uses an embedded H2 database, so no setup is necessary.
+>
+> [!Note]
+> Setting an explicit database type in the `@MultiDbTest` annotation is for local testing only. There is an ArchUnit test which runs in the
+> acceptance test module that ensures no test class is annotated with an explicit database type.
+>
+> Note that setting the system property `test.integration.camunda.database.type` will override the
+> database type defined in the annotation.
 
 ### Example to run against OpenSearch
 
@@ -222,13 +232,22 @@ docker run -d -p 9200:9200 \
               opensearchproject/opensearch:latest
 ```
 
-Define the following property in your run configuration
+To run with OpenSearch from your IDE, you have two options:
 
-`-Dtest.integration.camunda.database.type=os`
+1. Edit the annotation directly in your IDE, e.g. `@MultiDbTest(DatabaseType.OS)`.
+2. Define the following property in your run configuration: `-Dtest.integration.camunda.database.type=os`
 
-Alternatively, you can also specify the respective maven profile `-Pe2e-opensearch-test`
+Alternatively, if you're running the test via Maven, you can also specify the respective maven
+profile `-Pe2e-opensearch-test`.
 
-Run the test.
+### Example to run against RDBMS
+
+Our RDBMS set up uses a local H2 database, so there is no database to set up.
+
+To run with RDBMS from your IDE, you have two options:
+
+1. Edit the annotation directly in your IDE, e.g. `@MultiDbTest(DatabaseType.RDBMS)`.
+2. Define the following property in your run configuration: `-Dtest.integration.camunda.database.type=rdbms`
 
 ## Update tests
 

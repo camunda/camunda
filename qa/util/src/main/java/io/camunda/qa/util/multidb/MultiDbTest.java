@@ -7,6 +7,7 @@
  */
 package io.camunda.qa.util.multidb;
 
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -84,4 +85,15 @@ public @interface MultiDbTest {
    *     require OIDC authentication.
    */
   boolean setupKeycloak() default false;
+
+  /**
+   * Setting this is only for local testing purposes; setting the property {@link
+   * CamundaMultiDBExtension#PROP_CAMUNDA_IT_DATABASE_TYPE} will override this. This is NOT a way to
+   * limit which DB a test or class should run with; for that, use JUnit's {@code @DisabledIf}
+   * matching on the property.
+   *
+   * @return the database type to run the test with. By default, the test will run with the local
+   *     database type as defined in the test configuration.
+   */
+  DatabaseType value() default DatabaseType.LOCAL;
 }
