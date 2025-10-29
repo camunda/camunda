@@ -9,6 +9,8 @@ package io.camunda.configuration;
 
 import io.camunda.exporter.config.ExporterConfiguration;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -16,6 +18,8 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.convert.ConversionService;
@@ -70,36 +74,37 @@ public class UnifiedConfigurationHelper {
 
     return switch (backwardsCompatibilityMode) {
       case NOT_SUPPORTED ->
-          backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue);
+          backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue, expectedType);
       case SUPPORTED_ONLY_IF_VALUES_MATCH -> {
         final T legacyValue = getLegacyValue(legacyProperties, expectedType);
         yield backwardsCompatibilitySupportedOnlyIfValuesMatch(
-            legacyProperties, legacyValue, newProperty, newValue);
+            legacyProperties, legacyValue, newProperty, newValue, expectedType);
       }
       case SUPPORTED -> {
         final T legacyValue = getLegacyValue(legacyProperties, expectedType);
-        yield backwardsCompatibilitySupported(legacyProperties, legacyValue, newProperty, newValue);
+        yield backwardsCompatibilitySupported(
+            legacyProperties, legacyValue, newProperty, newValue, expectedType);
       }
     };
   }
 
   private static <T> T getLegacyValue(
       final Set<String> legacyProperties, final ResolvableType expectedType) {
-    final Set<T> legacyValues = new HashSet<>();
+    final var legacyConfigurationValues = new HashMap<String, T>();
 
     for (final String legacyProperty : legacyProperties) {
-      final String strValue = environment.getProperty(legacyProperty);
-      final T legacyValue = parseLegacyValue(strValue, expectedType);
+      final T legacyValue = parseLegacyValue(legacyProperty, expectedType);
 
-      LOGGER.trace("Parsing legacy property '" + legacyProperty + "' -> '" + legacyValue + "'");
+      LOGGER.trace("Parsing legacy property '{}' -> '{}'", legacyProperty, legacyValue);
       if (legacyValue != null) {
-        legacyValues.add(legacyValue);
-        LOGGER.trace("Parsed actual value: '" + legacyValue + "'");
+        legacyConfigurationValues.put(legacyProperty, legacyValue);
+        LOGGER.trace("Parsed actual value: '{}'", legacyValue);
       } else {
         LOGGER.trace("Parsed null object");
       }
     }
 
+    final Set<T> legacyValues = new HashSet<>(legacyConfigurationValues.values());
     if (legacyValues.isEmpty()) {
       return null;
     }
@@ -107,17 +112,19 @@ public class UnifiedConfigurationHelper {
     if (legacyValues.size() > 1) {
       throw new UnifiedConfigurationException(
           String.format(
-              "Ambiguous legacy configuration. Legacy properties: %s; Legacy values: %s",
-              String.join(", ", legacyProperties), legacyValues));
+              "Ambiguous legacy configuration. Legacy properties: %s", legacyConfigurationValues));
     }
 
     return legacyValues.iterator().next();
   }
 
   private static <T> T backwardsCompatibilityNotSupported(
-      final Set<String> legacyProperties, final String newProperty, final T newValue) {
-    final boolean legacyPresent = legacyConfigPresent(legacyProperties);
-    final boolean newPresent = newConfigPresent(newProperty);
+      final Set<String> legacyProperties,
+      final String newProperty,
+      final T newValue,
+      final ResolvableType expectedType) {
+    final boolean legacyPresent = legacyConfigPresent(legacyProperties, expectedType);
+    final boolean newPresent = newConfigPresent(newProperty, expectedType);
 
     final String warningMessage =
         String.format(
@@ -150,8 +157,9 @@ public class UnifiedConfigurationHelper {
       final Set<String> legacyProperties,
       final T legacyValue,
       final String newProperty,
-      final T newValue) {
-    final boolean legacyPresent = legacyConfigPresent(legacyProperties);
+      final T newValue,
+      final ResolvableType expectedType) {
+    final boolean legacyPresent = legacyConfigPresent(legacyProperties, expectedType);
 
     final String warningMessage =
         String.format(
@@ -192,9 +200,10 @@ public class UnifiedConfigurationHelper {
       final Set<String> legacyProperties,
       final T legacyValue,
       final String newProperty,
-      final T newValue) {
-    final boolean legacyPresent = legacyConfigPresent(legacyProperties);
-    final boolean newPresent = newConfigPresent(newProperty);
+      final T newValue,
+      final ResolvableType expectedType) {
+    final boolean legacyPresent = legacyConfigPresent(legacyProperties, expectedType);
+    final boolean newPresent = newConfigPresent(newProperty, expectedType);
 
     final String warningMessage =
         String.format(
@@ -221,9 +230,11 @@ public class UnifiedConfigurationHelper {
     }
   }
 
-  private static boolean legacyConfigPresent(final Set<String> legacyProperties) {
+  private static boolean legacyConfigPresent(
+      final Set<String> legacyProperties, final ResolvableType expectedType) {
+
     for (final String legacyProperty : legacyProperties) {
-      if (environment.containsProperty(legacyProperty)) {
+      if (environmentContainsProperty(legacyProperty, expectedType)) {
         LOGGER.trace("Found legacy property '{}'", legacyProperty);
         return true;
       }
@@ -232,38 +243,70 @@ public class UnifiedConfigurationHelper {
     return false;
   }
 
-  private static boolean newConfigPresent(final String newProperty) {
-    return environment.containsProperty(newProperty);
+  private static boolean newConfigPresent(
+      final String newProperty, final ResolvableType expectedType) {
+    return environmentContainsProperty(newProperty, expectedType);
   }
 
   @SuppressWarnings("unchecked")
-  private static <T> T parseLegacyValue(final String strValue, final ResolvableType expectedType) {
-    if (strValue == null) {
-      return null;
-    }
+  private static <T> T parseLegacyValue(
+      final String legacyProperty, final ResolvableType expectedType) {
 
     final Class<?> rawClass = expectedType.resolve();
     final ResolvableType[] generics = expectedType.getGenerics();
 
     // simple types
     if (generics.length == 0) {
-      return (T) CONVERSION_SERVICE.convert(strValue, rawClass);
+      final String strValue = environment.getProperty(legacyProperty);
+      if (strValue != null) {
+        return (T) CONVERSION_SERVICE.convert(strValue, rawClass);
+      }
+      return null;
     }
 
     // generic types
-    if (Collection.class.isAssignableFrom(rawClass) && generics.length == 1) {
-      final TypeDescriptor targetType =
-          TypeDescriptor.collection(rawClass, TypeDescriptor.valueOf(generics[0].resolve()));
-      return (T)
-          CONVERSION_SERVICE.convert(strValue, TypeDescriptor.valueOf(String.class), targetType);
+    if (isPropertyCollection(expectedType) && generics.length == 1) {
+      final Collection collection = getCollectionFromEnvironment(legacyProperty);
+      if (collection != null) {
+        final TypeDescriptor targetType =
+            TypeDescriptor.collection(rawClass, TypeDescriptor.valueOf(generics[0].resolve()));
+        return (T)
+            CONVERSION_SERVICE.convert(
+                collection, TypeDescriptor.valueOf(Collection.class), targetType);
+      } else {
+        return null;
+      }
     }
 
     throw new IllegalArgumentException("Unsupported type: " + expectedType);
   }
 
+  private static boolean environmentContainsProperty(
+      final String property, final ResolvableType expectedType) {
+    if (isPropertyCollection(expectedType)) {
+      return !getCollectionFromEnvironment(property).isEmpty();
+    } else {
+      return environment.containsProperty(property);
+    }
+  }
+
+  private static boolean isPropertyCollection(final ResolvableType expectedType) {
+    return expectedType.resolve() != null
+        && Collection.class.isAssignableFrom(expectedType.resolve());
+  }
+
+  private static Collection getCollectionFromEnvironment(final String property) {
+    final ConfigurationPropertyName normalizedProperty =
+        ConfigurationPropertyName.adapt(property, '.');
+    return Binder.get(environment)
+        .bind(normalizedProperty.toString(), Collection.class)
+        .orElse(Collections.emptyList());
+  }
+
   /* Helper methods */
 
-  public static ExporterConfiguration argsToExporterConfiguration(final Map<String, Object> args) {
+  public static ExporterConfiguration argsToCamundaExporterConfiguration(
+      final Map<String, Object> args) {
     return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
             "camundaExporter", args)
         .instantiate(ExporterConfiguration.class);
