@@ -13,7 +13,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
+import io.camunda.zeebe.engine.processing.identity.initialize.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
