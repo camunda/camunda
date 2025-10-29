@@ -41,6 +41,8 @@ test.beforeAll(async () => {
     './resources/processWithDeployedForm.bpmn',
     './resources/create_invoice.form',
     './resources/zeebe_and_job_worker_process.bpmn',
+    './resources/bigVariableProcessWithForm.bpmn',
+    './resources/bigVariableForm.form',
   ]);
   await sleep(1000);
 
@@ -73,6 +75,7 @@ test.beforeAll(async () => {
     }),
     createInstances('processWithDeployedForm', 1, 1),
     createInstances('zeebe_and_job_worker_process', 1, 1),
+    createInstances('bigVariableProcessWithForm', 1, 1),
   ]);
 
   await sleep(1000);
@@ -608,5 +611,43 @@ test.describe('task details page', () => {
     await taskDetailsPageV1.processTab.click();
 
     await expect(taskDetailsPageV1.bpmnDiagram).toBeVisible();
+  });
+
+  test('task completion with large variable form', async ({
+    taskPanelPageV1,
+    taskDetailsPageV1,
+    page,
+  }) => {
+    await taskPanelPageV1.filterBy('Unassigned');
+    await taskPanelPageV1.openTask('Big Variable Usertask');
+    await taskDetailsPageV1.clickAssignToMeButton();
+
+    await taskDetailsPageV1.assertFieldValue(
+      'Process input variable',
+      'name:"Adeel Solangi"',
+      {contains: true},
+    );
+    await taskDetailsPageV1.assertFieldValue(
+      'Process input variable',
+      'Maecenas quis nisi nunc.", version:2.69',
+      {contains: true},
+    );
+    await taskDetailsPageV1.clickCompleteTaskButton();
+    await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible();
+
+    await taskPanelPageV1.filterBy('Completed');
+    await taskPanelPageV1.assertCompletedHeadingVisible();
+    await taskPanelPageV1.openTask('Big Variable Usertask');
+
+    await taskDetailsPageV1.assertFieldValue(
+      'Process input variable',
+      'name:"Adeel Solangi"',
+      {contains: true},
+    );
+    await taskDetailsPageV1.assertFieldValue(
+      'Process input variable',
+      'Maecenas quis nisi nunc.", version:2.69',
+      {contains: true},
+    );
   });
 });
