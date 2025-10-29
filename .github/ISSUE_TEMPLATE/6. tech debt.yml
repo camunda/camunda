@@ -1,6 +1,6 @@
 name: Tech Debt
 description: Template for raising technical debt issues.
-labels: ["tech-debt"]
+labels: ["kind/tech-debt"]
 type: Tech-debt
 body:
   - type: dropdown
