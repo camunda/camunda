@@ -66,6 +66,11 @@ func (s *StartupHandler) startApplication(cmd *exec.Cmd, pid string, logPath str
 		log.Err(err).Msg("Failed to open file: " + logPath)
 		return err
 	}
+	defer func() {
+		if cerr := logFile.Close(); cerr != nil {
+			log.Err(cerr).Msg("Failed to close file: " + logPath)
+		}
+	}()
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	err = cmd.Start()
