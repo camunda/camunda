@@ -83,9 +83,7 @@ test.describe.parallel('Document API Tests', () => {
       multipart: CREATE_TXT_DOCUMENT_REQUEST(),
     });
 
-    await assertStatusCode(res, 415);
-    const json = await res.json();
-    assertRequiredFields(json, ['error']);
+    await assertUnsupportedMediaTypeRequest(res);
   });
 
   test('Create Document Invalid Body 400', async ({request}) => {
@@ -331,9 +329,7 @@ test.describe.parallel('Document API Tests', () => {
       multipart: payload,
     });
 
-    await assertStatusCode(res, 415);
-    const json = await res.json();
-    assertRequiredFields(json, ['error']);
+    await assertUnsupportedMediaTypeRequest(res);
   });
 
   test('Create Multiple Documents Invalid Body 400', async ({request}) => {
