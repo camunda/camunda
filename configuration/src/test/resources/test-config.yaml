@@ -1,0 +1,27 @@
+new:
+  multilinelistsyntax:
+    - newItem1
+    - newItem2
+  inlinelistsyntax: ["newItem3" , "newItem4"]
+  inlinelistsyntaxwithoutqoutes: [newItem7, newItem8]
+  commaseparatedstring: "newItem5, newItem6"
+
+legacy:
+  multilinelistsyntax:
+    - legacyItem1
+    - legacyItem2
+  inlinelistsyntax: ["legacyItem3" , "legacyItem4"]
+  inlinelistsyntaxwithoutqoutes: [legacyItem7, legacyItem8]
+  commaseparatedstring: "legacyItem5, legacyItem6"
+  durationsmultilinesyntax:
+    - 10s
+    - 20m
+    - 30h
+  durationinlinesyntax: [40s, 50m, 60h]
+  commaseparatedduration: "70s, 80m, 90h"
+  datasizemultilinesyntax:
+    - 10B
+    - 20MB
+    - 30GB
+  datasizeinlinesyntax: [40B, 50MB, 60GB]
+  commaseparateddatasize: "70B, 80MB, 90GB"
