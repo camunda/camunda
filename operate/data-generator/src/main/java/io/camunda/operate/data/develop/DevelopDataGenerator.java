@@ -175,6 +175,15 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     jobWorkers.add(progressSimpleTask("processMessageA"));
     jobWorkers.add(progressSimpleTask("processMessageB"));
 
+    // call activity chain (level-1, level-2) - level-3 intentionally not deployed
+    jobWorkers.add(progressSimpleTask("level1PostProcessing"));
+    jobWorkers.add(progressSimpleTask("level2PostProcessing"));
+
+    // incidents / root cause process
+    jobWorkers.add(progressSimpleTask("rootCauseIOMapping"));
+    jobWorkers.add(progressSimpleTask("rootCauseBadPath"));
+    jobWorkers.add(progressSimpleTask("rootCauseGoodPath"));
+
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
     sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
@@ -312,6 +321,14 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_A), "develop/process-with-message-subscriptions.bpmn");
 
+    // Deploy call activity chain for incident propagation testing
+    // Note: level-3 is intentionally NOT deployed to create incident chain
+    ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/level-1.bpmn");
+    ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/level-2.bpmn");
+
+    ZeebeTestUtil.deployProcess(
+        true, client, getTenant(TENANT_A), "develop/incidents-process.bpmn");
+
     // reverted in Zeebe https://github.com/camunda/camunda/issues/13640
     // ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A),
     // "develop/inclusiveGateway.bpmn");
@@ -403,6 +420,20 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(
             ZeebeTestUtil.startProcessInstance(
                 true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null));
+
+        // Call activity chain (level-1 → level-2 → level-3 [not deployed] = incident chain)
+        processInstanceKeys.add(
+            ZeebeTestUtil.startProcessInstance(
+                true, client, getTenant(TENANT_A), "call-level-1-process", null));
+
+        // Incidents / root cause test process
+        processInstanceKeys.add(
+            ZeebeTestUtil.startProcessInstance(
+                true,
+                client,
+                getTenant(TENANT_A),
+                "incidents-process",
+                "{\"testItems\": [1, 2, 3]}"));
 
         // reverted in Zeebe https://github.com/camunda/camunda/issues/13640
         //        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client,
