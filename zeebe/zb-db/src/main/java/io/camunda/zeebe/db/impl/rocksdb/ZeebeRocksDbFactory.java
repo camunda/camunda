@@ -131,6 +131,7 @@ public final class ZeebeRocksDbFactory<
 
     final var dbOptions =
         DBOptions.getDBOptionsFromProps(props)
+            .setAvoidUnnecessaryBlockingIO(true)
             .setErrorIfExists(false)
             .setCreateIfMissing(true)
             .setParanoidChecks(true)
