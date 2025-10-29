@@ -6,40 +6,62 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useInfiniteQuery} from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  type InfiniteData,
+  type QueryKey,
+} from '@tanstack/react-query';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
-import type {QueryElementInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {queryKeys} from '../queryKeys';
+import type {QueryElementInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {RequestError} from 'modules/request';
 
 const MAX_ELEMENT_INSTANCES_PER_REQUEST = 50;
 
+type PageParam = {
+  page: number;
+  pageElementInstanceScopeKey?: string;
+};
+
 const useSearchElementInstancesByScope = (
-  scopeKey: string,
-  options: {enabled: boolean} = {enabled: true},
+  payload: Parameters<typeof queryKeys.elementInstances.searcyByScope>[0],
 ) => {
-  return useInfiniteQuery({
-    queryKey: ['elementInstancesSearchByScope', scopeKey],
+  const {elementInstanceScopeKey} = payload;
+  return useInfiniteQuery<
+    QueryElementInstancesResponseBody,
+    RequestError,
+    InfiniteData<QueryElementInstancesResponseBody>,
+    QueryKey,
+    PageParam
+  >({
+    queryKey: queryKeys.elementInstances.searcyByScope({
+      elementInstanceScopeKey,
+    }),
     queryFn: async ({pageParam}) => {
-      const payload: QueryElementInstancesRequestBody = {
+      const {page, pageElementInstanceScopeKey} = pageParam;
+      const {response, error} = await searchElementInstances({
         filter: {
-          scopeKey,
+          elementInstanceScopeKey:
+            pageElementInstanceScopeKey ?? elementInstanceScopeKey,
         },
         page: {
           limit: MAX_ELEMENT_INSTANCES_PER_REQUEST,
-          from: pageParam,
+          from: page,
         },
-      };
-      const {response, error} = await searchElementInstances(payload);
+      });
       if (response !== null) {
         return response;
       }
       throw error;
     },
-    select(data) {
-      return {pages: data.pages.map((page) => page.items)};
+    initialPageParam: {
+      page: 0,
     },
-    refetchInterval: 5000,
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _, lastPageParam) => {
+    getNextPageParam: (
+      lastPage,
+      _,
+      {page: lastPageParam, pageElementInstanceScopeKey},
+    ) => {
       const {page} = lastPage;
       const nextPage = lastPageParam + MAX_ELEMENT_INSTANCES_PER_REQUEST;
 
@@ -47,18 +69,23 @@ const useSearchElementInstancesByScope = (
         return null;
       }
 
-      return nextPage;
+      return {page: nextPage, pageElementInstanceScopeKey};
     },
-    getPreviousPageParam: (_, __, firstPageParam) => {
+    getPreviousPageParam: (
+      _,
+      __,
+      {page: firstPageParam, pageElementInstanceScopeKey},
+    ) => {
       const previousPage = firstPageParam - MAX_ELEMENT_INSTANCES_PER_REQUEST;
 
       if (previousPage < 0) {
         return null;
       }
 
-      return previousPage;
+      return {page: previousPage, pageElementInstanceScopeKey};
     },
-    ...options,
+    refetchInterval: 5000,
+    maxPages: 2,
   });
 };
 

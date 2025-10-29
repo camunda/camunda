@@ -7,6 +7,7 @@
  */
 
 import type {
+  ElementInstance,
   ProcessInstance,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.8';
@@ -58,6 +59,28 @@ const queryKeys = {
       'incidentsSearchByElementInstanceKey',
       elementInstanceKey,
     ],
+  },
+  elementInstances: {
+    search: (payload: {
+      elementId: string;
+      processInstanceKey: string;
+      elementType: ElementInstance['type'];
+      pageSize: number;
+    }) => {
+      const {elementId, processInstanceKey, elementType, pageSize} = payload;
+
+      return [
+        'elementInstancesSearch',
+        elementId,
+        processInstanceKey,
+        elementType,
+        pageSize,
+      ];
+    },
+    searcyByScope: (payload: {elementInstanceScopeKey: string}) => {
+      const {elementInstanceScopeKey} = payload;
+      return ['elementInstancesSearch', elementInstanceScopeKey];
+    },
   },
 };
 
