@@ -40,7 +40,7 @@ public class UpdateMappingRuleTest extends ClientRestTest {
 
     // when
     client
-        .newUpdateMappingRule(MAPPING_RULE_ID)
+        .newUpdateMappingRuleCommand(MAPPING_RULE_ID)
         .name(UPDATED_NAME)
         .claimName(UPDATED_CLAIM_NAME)
         .claimValue(UPDATED_CLAIM_VALUE)
@@ -62,7 +62,7 @@ public class UpdateMappingRuleTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUpdateMappingRule(MAPPING_RULE_ID)
+                    .newUpdateMappingRuleCommand(MAPPING_RULE_ID)
                     .name(invalidName)
                     .claimName(UPDATED_CLAIM_NAME)
                     .claimValue(UPDATED_CLAIM_VALUE)
@@ -78,7 +78,7 @@ public class UpdateMappingRuleTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUpdateMappingRule(MAPPING_RULE_ID)
+                    .newUpdateMappingRuleCommand(MAPPING_RULE_ID)
                     .name(UPDATED_NAME)
                     .claimName(invalidClaimName)
                     .claimValue(UPDATED_CLAIM_VALUE)
@@ -94,7 +94,7 @@ public class UpdateMappingRuleTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUpdateMappingRule(MAPPING_RULE_ID)
+                    .newUpdateMappingRuleCommand(MAPPING_RULE_ID)
                     .name(UPDATED_NAME)
                     .claimName(UPDATED_CLAIM_NAME)
                     .claimValue(invalidClaimValue)

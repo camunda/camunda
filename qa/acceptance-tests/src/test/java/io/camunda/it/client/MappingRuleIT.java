@@ -68,7 +68,7 @@ public class MappingRuleIT {
 
     // when
     client
-        .newUpdateMappingRule(EXISTING_RULE_ID)
+        .newUpdateMappingRuleCommand(EXISTING_RULE_ID)
         .name(name)
         .claimName(claimName)
         .claimValue(claimValue)

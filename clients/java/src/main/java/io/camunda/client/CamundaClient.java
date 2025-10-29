@@ -1788,7 +1788,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UpdateMappingRuleCommandStep1 newUpdateMappingRule(String mappingRuleId);
+  UpdateMappingRuleCommandStep1 newUpdateMappingRuleCommand(String mappingRuleId);
 
   /*
    * Retrieves the XML representation of a decision requirements.

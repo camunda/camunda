@@ -204,7 +204,7 @@ class MappingRuleAuthorizationIT {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUpdateMappingRule(MAPPING_RULE_1.id())
+                    .newUpdateMappingRuleCommand(MAPPING_RULE_1.id())
                     .name("name")
                     .claimName("claim")
                     .claimValue("value")
@@ -225,7 +225,7 @@ class MappingRuleAuthorizationIT {
     // when
     final Future<UpdateMappingRuleResponse> result =
         camundaClient
-            .newUpdateMappingRule(MAPPING_RULE_1.id())
+            .newUpdateMappingRuleCommand(MAPPING_RULE_1.id())
             .name(name)
             .claimName(claimName)
             .claimValue(claimValue)
