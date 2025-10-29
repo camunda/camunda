@@ -244,7 +244,7 @@ jobs:
       # Extra modules for skipping in general-unit-tests, these modules are used in ZEEBE_EXPORTER_MODULES instead
       GENERAL_UT_EXTRA_SKIP_MODULES: "camunda-exporter rdbms-exporter"
       # Zeebe, Operate, Tasklist, Optimize modules that are required for a successful build
-      GENERAL_UT_DO_NOT_SKIP_MODULES: "zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-util operate-qa-data-generator operate-qa-it-tests operate-qa-backup-restore-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-qa-backup-restore-tests tasklist-test-coverage"
+      GENERAL_UT_DO_NOT_SKIP_MODULES: "zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-util operate-qa-data-generator operate-qa-it-tests operate-qa-backup-restore-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-qa-backup-restore-tests tasklist-test-coverage optimize-commons"
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions: { }
