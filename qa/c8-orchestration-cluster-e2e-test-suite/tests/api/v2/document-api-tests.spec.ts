@@ -17,8 +17,7 @@ import {
   assertUnsupportedMediaTypeRequest,
   assertBadRequest,
   assertNotFoundRequest,
-  assertForbiddenRequest,
-  assertStatusCode
+  assertForbiddenRequest
 } from '../../../utils/http';
 import {
   CREATE_DOC_INVALID_REQUEST,
