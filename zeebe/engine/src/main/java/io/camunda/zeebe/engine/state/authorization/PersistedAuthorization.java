@@ -35,18 +35,21 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
   private final EnumProperty<AuthorizationResourceMatcher> resourceMatcherProp =
       new EnumProperty<>("resourceMatcher", AuthorizationResourceMatcher.class);
   private final StringProperty resourceIdProp = new StringProperty("resourceId");
+  private final StringProperty resourcePropertyNameProp =
+      new StringProperty("resourcePropertyName");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
   private final ArrayProperty<StringValue> permissionTypesProp =
       new ArrayProperty<>("permissionTypes", StringValue::new);
 
   public PersistedAuthorization() {
-    super(7);
+    super(8);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
         .declareProperty(resourceMatcherProp)
         .declareProperty(resourceIdProp)
+        .declareProperty(resourcePropertyNameProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionTypesProp);
   }
@@ -55,6 +58,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
     setAuthorizationKey(authorizationRecord.getAuthorizationKey())
         .setOwnerId(authorizationRecord.getOwnerId())
         .setOwnerType(authorizationRecord.getOwnerType())
+        .setResourcePropertyName(authorizationRecord.getResourcePropertyName())
         .setResourceMatcher(authorizationRecord.getResourceMatcher())
         .setResourceId(authorizationRecord.getResourceId())
         .setResourceType(authorizationRecord.getResourceType())
@@ -104,6 +108,15 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
 
   public PersistedAuthorization setResourceId(final String resourceId) {
     resourceIdProp.setValue(resourceId);
+    return this;
+  }
+
+  public String getResourcePropertyName() {
+    return bufferAsString(resourcePropertyNameProp.getValue());
+  }
+
+  public PersistedAuthorization setResourcePropertyName(final String resourcePropertyName) {
+    resourcePropertyNameProp.setValue(resourcePropertyName);
     return this;
   }
 
