@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -57,7 +58,9 @@ public class DeleteHistoryApplierTest {
                     m.addPartition(
                         partitionId,
                         PartitionState.active(
-                            1, new DynamicPartitionConfig(new ExportingConfig(Map.of())))));
+                            1,
+                            new DynamicPartitionConfig(
+                                new ExportingConfig(ExportingState.EXPORTING, Map.of())))));
     // when
     final var result = deleteHistoryApplier.init(clusterConfigWithPartition);
 

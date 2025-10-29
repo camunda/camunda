@@ -58,6 +58,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -229,11 +230,23 @@ public class ProtoBufSerializer
     return new DynamicPartitionConfig(decodeExportingConfig(config.getExporting()));
   }
 
-  private ExportingConfig decodeExportingConfig(final Topology.ExportingConfig exporting) {
+  ExportingConfig decodeExportingConfig(final Topology.ExportingConfig exporting) {
     return new ExportingConfig(
+        decodeExportingState(exporting.getState()),
         exporting.getExportersMap().entrySet().stream()
             .map(e -> Map.entry(e.getKey(), decodeExporterState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
+  }
+
+  private ExportingState decodeExportingState(final Topology.ExportingStateEnum exportingState) {
+    return switch (exportingState) {
+      case EXPORTING_STATE_UNKNOWN -> ExportingState.UNKNOWN;
+      case EXPORTING -> ExportingState.EXPORTING;
+      case SOFT_PAUSED -> ExportingState.SOFT_PAUSED;
+      case PAUSED -> ExportingState.PAUSED;
+      case UNRECOGNIZED ->
+          throw new IllegalStateException("Unknown exporting state " + exportingState);
+    };
   }
 
   private ExporterState decodeExporterState(final Topology.ExporterState value) {
@@ -294,11 +307,21 @@ public class ProtoBufSerializer
 
   private Topology.ExportingConfig encodeExportingConfig(final ExportingConfig exporting) {
     return Topology.ExportingConfig.newBuilder()
+        .setState(encodeExportingState(exporting.state()))
         .putAllExporters(
             exporting.exporters().entrySet().stream()
                 .map(e -> Map.entry(e.getKey(), encodeExporterState(e.getValue())))
                 .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
         .build();
+  }
+
+  private Topology.ExportingStateEnum encodeExportingState(final ExportingState state) {
+    return switch (state) {
+      case UNKNOWN -> Topology.ExportingStateEnum.EXPORTING_STATE_UNKNOWN;
+      case EXPORTING -> Topology.ExportingStateEnum.EXPORTING;
+      case SOFT_PAUSED -> Topology.ExportingStateEnum.SOFT_PAUSED;
+      case PAUSED -> Topology.ExportingStateEnum.PAUSED;
+    };
   }
 
   private Topology.ExporterState encodeExporterState(final ExporterState value) {
@@ -669,7 +692,7 @@ public class ProtoBufSerializer
           topologyChangeOperation.getPartitionForceReconfigure().getPartitionId(),
           topologyChangeOperation.getPartitionForceReconfigure().getMembersList().stream()
               .map(MemberId::from)
-              .toList());
+              .collect(Collectors.toSet()));
     } else if (topologyChangeOperation.hasMemberRemove()) {
       return new MemberRemoveOperation(
           memberId, MemberId.from(topologyChangeOperation.getMemberRemove().getMemberToRemove()));

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -28,13 +30,13 @@ import java.util.stream.Stream;
  * @param version - represents the current version of the configuration. It is incremented only by
  *     the coordinator when a new configuration change is triggered.
  * @param members - represents the state of each member
- * @param pendingChanges- keeps track of the ongoing configuration changes
+ * @param pendingChanges - keeps track of the ongoing configuration changes
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
  */
 public record ClusterConfiguration(
     long version,
-    Map<MemberId, MemberState> members,
+    SortedMap<MemberId, MemberState> members,
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges,
     Optional<RoutingState> routingState,
@@ -42,6 +44,36 @@ public record ClusterConfiguration(
 
   public static final int INITIAL_VERSION = 1;
   private static final int UNINITIALIZED_VERSION = -1;
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  public ClusterConfiguration(
+      final long version,
+      final Map<MemberId, MemberState> members,
+      final Optional<CompletedChange> lastChange,
+      final Optional<ClusterChangePlan> pendingChanges,
+      final Optional<RoutingState> routingState,
+      final Optional<String> clusterId) {
+    this(
+        version,
+        ImmutableSortedMap.copyOf(members),
+        lastChange,
+        pendingChanges,
+        routingState,
+        clusterId);
+  }
+
+  public ClusterConfiguration {
+    if (version < UNINITIALIZED_VERSION) {
+      throw new IllegalArgumentException(
+          String.format("Version must be >= %d", UNINITIALIZED_VERSION));
+    }
+
+    Objects.requireNonNull(members);
+    Objects.requireNonNull(lastChange);
+    Objects.requireNonNull(pendingChanges);
+    Objects.requireNonNull(routingState);
+    Objects.requireNonNull(clusterId);
+  }
 
   public static ClusterConfiguration uninitialized() {
     return new ClusterConfiguration(

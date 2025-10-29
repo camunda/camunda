@@ -58,7 +58,10 @@ message PartitionState {
 
 message PartitionConfig { ExportingConfig exporting = 1; }
 
-message ExportingConfig { map<string, ExporterState> exporters = 1; }
+message ExportingConfig {
+  map<string, ExporterState> exporters = 1;
+  ExportingStateEnum state = 2;
+}
 
 message ExporterState {
   ExporterStateEnum state = 1;
@@ -198,4 +201,11 @@ enum ExporterStateEnum {
   ENABLED = 1;
   DISABLED = 2;
   CONFIG_NOT_FOUND = 3;
+}
+
+enum ExportingStateEnum {
+  EXPORTING_STATE_UNKNOWN = 0;
+  EXPORTING = 1;
+  SOFT_PAUSED = 2;
+  PAUSED = 3;
 }

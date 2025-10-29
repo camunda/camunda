@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.Map;
@@ -125,6 +126,7 @@ final class ClusterPurgeRequestTransformerTest {
     final var transformer = new PurgeRequestTransformer();
     final ExportingConfig exportingConfig =
         new ExportingConfig(
+            ExportingState.EXPORTING,
             Map.of(
                 "exporter",
                 new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config"))));
@@ -161,6 +163,7 @@ final class ClusterPurgeRequestTransformerTest {
         DynamicPartitionConfig.init()
             .updateExporting(
                 new ExportingConfig(
+                    ExportingState.EXPORTING,
                     Map.of(
                         "exporter",
                         new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config")))));
@@ -168,6 +171,7 @@ final class ClusterPurgeRequestTransformerTest {
         DynamicPartitionConfig.init()
             .updateExporting(
                 new ExportingConfig(
+                    ExportingState.EXPORTING,
                     Map.of(
                         "exporter", new ExporterState(1, State.DISABLED, Optional.of("config")))));
 

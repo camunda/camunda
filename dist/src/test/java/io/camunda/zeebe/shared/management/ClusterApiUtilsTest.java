@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -41,7 +42,6 @@ import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -239,6 +239,7 @@ final class ClusterApiUtilsTest {
     final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
             new ExportingConfig(
+                ExportingState.EXPORTING,
                 Map.of(
                     "exporter-1",
                     new ExporterState(0, exporterState, Optional.empty()),
@@ -284,7 +285,7 @@ final class ClusterApiUtilsTest {
     final MemberId memberId1 = member(1);
     final MemberId memberId2 = member(2);
     final SortedSet<Integer> partitionSet = new TreeSet<>(Set.of(1, 2, 3));
-    final Collection<MemberId> memberCollection = List.of(memberId1, memberId2);
+    final Set<MemberId> memberCollection = Set.of(memberId1, memberId2);
     final Optional<RoutingState> emptyRoutingState = Optional.empty();
     final Optional<String> emptyExporterId = Optional.empty();
     final Optional<DynamicPartitionConfig> emptyConfig = Optional.empty();

@@ -8,20 +8,32 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedMap;
 
 /**
  * Represents configuration or state of exporting in a partition that can be updated during runtime.
  *
  * @param exporters the state of each exporter in this partition
  */
-public record ExportingConfig(Map<String, ExporterState> exporters) {
+public record ExportingConfig(ExportingState state, SortedMap<String, ExporterState> exporters) {
 
-  public static ExportingConfig empty() {
-    return new ExportingConfig(Map.of());
+  public ExportingConfig(final ExportingState state, final Map<String, ExporterState> exporters) {
+    this(state, ImmutableSortedMap.copyOf(exporters));
+  }
+
+  public ExportingConfig {
+    Objects.requireNonNull(state);
+    Objects.requireNonNull(exporters);
+  }
+
+  public static ExportingConfig init() {
+    return new ExportingConfig(ExportingState.UNKNOWN, Map.of());
   }
 
   private ExportingConfig updateExporter(
@@ -31,7 +43,7 @@ public record ExportingConfig(Map<String, ExporterState> exporters) {
             .putAll(exporters)
             .put(exporterName, exporterState)
             .buildKeepingLast(); // choose last one if there are duplicate keys
-    return new ExportingConfig(newExporters);
+    return new ExportingConfig(state, newExporters);
   }
 
   public ExportingConfig disableExporter(final String exporterName) {
@@ -48,7 +60,7 @@ public record ExportingConfig(Map<String, ExporterState> exporters) {
         exporters.entrySet().stream()
             .filter(entry -> !entry.getKey().equals(exporterName))
             .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-    return new ExportingConfig(newExporters);
+    return new ExportingConfig(state, newExporters);
   }
 
   public ExportingConfig disableExporters(final Collection<String> exporterNames) {
@@ -65,7 +77,7 @@ public record ExportingConfig(Map<String, ExporterState> exporters) {
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys
-    return new ExportingConfig(newExporters);
+    return new ExportingConfig(state, newExporters);
   }
 
   public ExportingConfig enableExporter(final String exporterName, final long metadataVersion) {
@@ -96,7 +108,7 @@ public record ExportingConfig(Map<String, ExporterState> exporters) {
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys
-    return new ExportingConfig(newExporters);
+    return new ExportingConfig(state, newExporters);
   }
 
   /**
@@ -119,6 +131,6 @@ public record ExportingConfig(Map<String, ExporterState> exporters) {
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys
-    return new ExportingConfig(newExporters);
+    return new ExportingConfig(state, newExporters);
   }
 }

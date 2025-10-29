@@ -18,7 +18,6 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -57,8 +56,8 @@ class ForceScaleDownRequestTransformerTest {
     assertThat(result.get())
         .hasSize(4)
         .containsExactlyInAnyOrder(
-            new PartitionForceReconfigureOperation(id0, 1, List.of(id0)),
-            new PartitionForceReconfigureOperation(id2, 2, List.of(id2)),
+            new PartitionForceReconfigureOperation(id0, 1, Set.of(id0)),
+            new PartitionForceReconfigureOperation(id2, 2, Set.of(id2)),
             new MemberRemoveOperation(id0, id1),
             new MemberRemoveOperation(id0, id3));
   }

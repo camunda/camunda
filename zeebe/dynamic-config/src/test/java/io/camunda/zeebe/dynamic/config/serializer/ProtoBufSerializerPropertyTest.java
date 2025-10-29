@@ -32,8 +32,11 @@ final class ProtoBufSerializerPropertyTest {
 
     // then
     assertThat(decodedState.getClusterConfiguration())
-        .describedAs("Decoded clusterTopology must be equal to initial one")
-        .usingRecursiveComparison()
+        .describedAs(
+            """
+            Decoded clusterTopology must be equal to initial one.
+            If this fails even though both objects look the same, make sure to take defensive copies of collections in the ClusterTopology and its nested types.
+            jqwik tends to generate sorted sets and maps which are not equal to the unsorted collections created on deserialization.""")
         .isEqualTo(clusterConfiguration);
   }
 }

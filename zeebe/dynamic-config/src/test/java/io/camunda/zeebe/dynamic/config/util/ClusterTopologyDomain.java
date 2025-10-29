@@ -21,13 +21,19 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.util.ReflectUtil;
+import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
 import net.jqwik.api.Provide;
 import net.jqwik.api.domains.DomainContextBase;
+import net.jqwik.api.providers.ArbitraryProvider;
+import net.jqwik.api.providers.TypeUsage;
+import net.jqwik.api.support.CollectorsSupport;
 
 /**
  * Contains all arbitraries needed to generate a {@link ClusterConfiguration}. The topology is not
@@ -108,18 +114,8 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   }
 
   @Provide
-  Arbitrary<SortedSet<Integer>> sortedIntegerSets() {
-    return Arbitraries.integers().list().map(TreeSet::new);
-  }
-
-  @Provide
   Arbitrary<MemberId> memberIds() {
     return Arbitraries.integers().greaterOrEqual(0).map(id -> MemberId.from(id.toString()));
-  }
-
-  @Provide
-  Arbitrary<ExportingConfig> exportersConfigs() {
-    return Arbitraries.forType(ExportingConfig.class).enableRecursion();
   }
 
   @Provide
@@ -128,5 +124,48 @@ public final class ClusterTopologyDomain extends DomainContextBase {
         .enableRecursion()
         .map(DynamicPartitionConfig::new)
         .filter(DynamicPartitionConfig::isInitialized);
+  }
+
+  @SuppressWarnings("unused")
+  static class SortedMapArbitraryProvider implements ArbitraryProvider {
+    @Override
+    public boolean canProvideFor(final TypeUsage targetType) {
+      return targetType.isAssignableFrom(SortedMap.class);
+    }
+
+    @Override
+    public Set<Arbitrary<?>> provideFor(
+        final TypeUsage targetType, final SubtypeProvider subtypeProvider) {
+      final TypeUsage keyType = targetType.getTypeArgument(0);
+      final TypeUsage valueType = targetType.getTypeArgument(1);
+
+      return subtypeProvider
+          .resolveAndCombine(keyType, valueType)
+          .map(
+              arbitraries -> {
+                final Arbitrary<?> keyArbitrary = arbitraries.get(0);
+                final Arbitrary<?> valueArbitrary = arbitraries.get(1);
+                return Arbitraries.maps(keyArbitrary, valueArbitrary).map(TreeMap::new);
+              })
+          .collect(CollectorsSupport.toLinkedHashSet());
+    }
+  }
+
+  @SuppressWarnings("unused")
+  static class SortedSetArbitraryProvider implements ArbitraryProvider {
+    @Override
+    public boolean canProvideFor(final TypeUsage targetType) {
+      return targetType.isAssignableFrom(SortedSet.class);
+    }
+
+    @Override
+    public Set<Arbitrary<?>> provideFor(
+        final TypeUsage targetType, final SubtypeProvider subtypeProvider) {
+      final TypeUsage elementType = targetType.getTypeArgument(0);
+      final Set<Arbitrary<?>> elementArbitraries = subtypeProvider.apply(elementType);
+      return elementArbitraries.stream()
+          .map(arbitrary -> arbitrary.set().map(TreeSet::new))
+          .collect(CollectorsSupport.toLinkedHashSet());
+    }
   }
 }

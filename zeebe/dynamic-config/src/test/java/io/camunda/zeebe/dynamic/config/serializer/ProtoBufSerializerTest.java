@@ -25,11 +25,13 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.List;
@@ -260,5 +262,27 @@ final class ProtoBufSerializerTest {
             state -> {
               assertThat(state.requestHandling()).isEqualTo(new RequestHandling.AllPartitions(3));
             });
+  }
+
+  @Test
+  void shouldDecodeExportingConfigWithoutStateCorrectly() throws InvalidProtocolBufferException {
+    // given
+    final var serialized =
+        Topology.ExportingConfig.newBuilder()
+            .putAllExporters(
+                Map.of(
+                    "exporter-1",
+                    Topology.ExporterState.newBuilder()
+                        .setState(ExporterStateEnum.ENABLED)
+                        .build()))
+            .build()
+            .toByteArray();
+
+    // when
+    final var deserialized =
+        protoBufSerializer.decodeExportingConfig(Topology.ExportingConfig.parseFrom(serialized));
+
+    // then
+    assertThat(deserialized.state()).isEqualTo(ExportingState.UNKNOWN);
   }
 }

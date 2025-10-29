@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -46,7 +47,9 @@ final class ClusterConfigurationModifierTest {
                     Map.of(
                         1,
                         PartitionState.active(
-                            1, new DynamicPartitionConfig(new ExportingConfig(Map.of()))))));
+                            1,
+                            new DynamicPartitionConfig(
+                                new ExportingConfig(ExportingState.EXPORTING, Map.of()))))));
 
     @Test
     void shouldInitializeRoutingStateIfPartitionScalingIsEnabled() {
@@ -111,6 +114,7 @@ final class ClusterConfigurationModifierTest {
       final var expectedConfig =
           new DynamicPartitionConfig(
               new ExportingConfig(
+                  ExportingState.UNKNOWN,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
@@ -157,6 +161,7 @@ final class ClusterConfigurationModifierTest {
       final var expectedConfig =
           new DynamicPartitionConfig(
               new ExportingConfig(
+                  ExportingState.EXPORTING,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
@@ -180,6 +185,7 @@ final class ClusterConfigurationModifierTest {
       final var expectedConfig =
           new DynamicPartitionConfig(
               new ExportingConfig(
+                  ExportingState.EXPORTING,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
@@ -196,6 +202,7 @@ final class ClusterConfigurationModifierTest {
       final var expectedConfig =
           new DynamicPartitionConfig(
               new ExportingConfig(
+                  ExportingState.EXPORTING,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
@@ -218,6 +225,7 @@ final class ClusterConfigurationModifierTest {
       final var initialConfig =
           new DynamicPartitionConfig(
               new ExportingConfig(
+                  ExportingState.EXPORTING,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
@@ -238,6 +246,7 @@ final class ClusterConfigurationModifierTest {
       final var expectedConfig =
           new DynamicPartitionConfig(
               new ExportingConfig(
+                  ExportingState.EXPORTING,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
@@ -254,6 +263,7 @@ final class ClusterConfigurationModifierTest {
       final var initialConfig =
           new DynamicPartitionConfig(
               new ExportingConfig(
+                  ExportingState.EXPORTING,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
@@ -282,6 +292,7 @@ final class ClusterConfigurationModifierTest {
       final DynamicPartitionConfig config =
           new DynamicPartitionConfig(
               new ExportingConfig(
+                  ExportingState.EXPORTING,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),

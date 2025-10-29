@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import com.google.common.collect.ImmutableSortedSet;
 import io.atomix.cluster.MemberId;
-import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 
 /**
@@ -80,7 +81,11 @@ public sealed interface ClusterConfigurationChangeOperation {
      */
     record AwaitRedistributionCompletion(
         MemberId memberId, int desiredPartitionCount, SortedSet<Integer> partitionsToRedistribute)
-        implements ScaleUpOperation {}
+        implements ScaleUpOperation {
+      public AwaitRedistributionCompletion {
+        partitionsToRedistribute = ImmutableSortedSet.copyOf(partitionsToRedistribute);
+      }
+    }
 
     /**
      * @param memberId the id of the member that initiated the scale up
@@ -89,7 +94,11 @@ public sealed interface ClusterConfigurationChangeOperation {
      */
     record AwaitRelocationCompletion(
         MemberId memberId, int desiredPartitionCount, SortedSet<Integer> partitionsToRelocate)
-        implements ScaleUpOperation {}
+        implements ScaleUpOperation {
+      public AwaitRelocationCompletion {
+        partitionsToRelocate = ImmutableSortedSet.copyOf(partitionsToRelocate);
+      }
+    }
   }
 
   sealed interface PartitionChangeOperation extends ClusterConfigurationChangeOperation {
@@ -133,8 +142,14 @@ public sealed interface ClusterConfigurationChangeOperation {
      * @param members the members of the partition's replication group after the reconfiguration
      */
     record PartitionForceReconfigureOperation(
-        MemberId memberId, int partitionId, Collection<MemberId> members)
-        implements PartitionChangeOperation {}
+        MemberId memberId, int partitionId, SortedSet<MemberId> members)
+        implements PartitionChangeOperation {
+
+      public PartitionForceReconfigureOperation(
+          final MemberId memberId, final int partitionId, final Set<MemberId> members) {
+        this(memberId, partitionId, ImmutableSortedSet.copyOf(members));
+      }
+    }
 
     /**
      * Operation to disable an exporter on a partition in the given member.

@@ -267,6 +267,7 @@ class ClusterConfigurationTest {
     final String exporterName = "exporter";
     final var exportersConfig =
         new ExportingConfig(
+            ExportingState.EXPORTING,
             Map.of(exporterName, new ExporterState(1, ENABLED, Optional.of("other"))));
     final var config = new DynamicPartitionConfig(exportersConfig);
 
@@ -312,7 +313,9 @@ class ClusterConfigurationTest {
 
     final DynamicPartitionConfig validConfig =
         new DynamicPartitionConfig(
-            new ExportingConfig(Map.of("expA", new ExporterState(1, ENABLED, Optional.empty()))));
+            new ExportingConfig(
+                ExportingState.EXPORTING,
+                Map.of("expA", new ExporterState(1, ENABLED, Optional.empty()))));
     final var topologyWithValidConfig =
         new ClusterConfiguration(
             0,
