@@ -108,6 +108,7 @@ import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicy
 import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -502,7 +503,8 @@ public class WebSecurityConfig {
               // only
               .sessionManagement(
                   (sessionManagement) ->
-                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER));
+                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+              .requestCache((cache) -> cache.requestCache(new NullRequestCache()));
 
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
@@ -776,6 +778,12 @@ public class WebSecurityConfig {
                           headers,
                           securityConfiguration.getHttpHeaders(),
                           securityConfiguration.getSaas().isConfigured()))
+              // do not create a session on api authentication, that's to be done on webapp login
+              // only
+              .sessionManagement(
+                  (sessionManagement) ->
+                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+              .requestCache((cache) -> cache.requestCache(new NullRequestCache()))
               .exceptionHandling(
                   (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
               .sessionManagement(
