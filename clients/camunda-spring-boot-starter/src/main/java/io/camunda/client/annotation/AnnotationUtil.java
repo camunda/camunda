@@ -22,11 +22,14 @@ import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.VariableValue;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.jobhandling.DocumentContext;
+import io.camunda.client.jobhandling.parameter.KeyTargetType;
+import java.lang.annotation.Annotation;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -36,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +54,17 @@ public class AnnotationUtil {
           ParameterType.SINGLE,
           DocumentContext.class.getName(),
           ParameterType.CONTEXT);
+  private static final Map<Class<? extends Annotation>, Function<ActivatedJob, Long>>
+      KEY_ANNOTATIONS =
+          Map.of(
+              ProcessInstanceKey.class,
+              ActivatedJob::getProcessInstanceKey,
+              ElementInstanceKey.class,
+              ActivatedJob::getElementInstanceKey,
+              JobKey.class,
+              ActivatedJob::getKey,
+              ProcessDefinitionKey.class,
+              ActivatedJob::getProcessDefinitionKey);
 
   public static boolean isVariable(final ParameterInfo parameterInfo) {
     return parameterInfo.getParameter().isAnnotationPresent(Variable.class)
@@ -60,6 +75,25 @@ public class AnnotationUtil {
     return parameterInfo.getParameter().isAnnotationPresent(Document.class)
         && (DOCUMENT_PARAMETER_TYPES.containsKey(
             parameterInfo.getParameter().getParameterizedType().getTypeName()));
+  }
+
+  public static boolean isKey(final ParameterInfo parameterInfo) {
+    return KEY_ANNOTATIONS.keySet().stream()
+            .anyMatch(parameterInfo.getParameter()::isAnnotationPresent)
+        && KeyTargetType.isValidParameterType(parameterInfo.getParameter().getType());
+  }
+
+  public static Optional<Function<ActivatedJob, Long>> getKeyResolver(
+      final ParameterInfo parameterInfo) {
+    if (isKey(parameterInfo)) {
+      return Optional.of(
+          KEY_ANNOTATIONS.get(
+              KEY_ANNOTATIONS.keySet().stream()
+                  .filter(parameterInfo.getParameter()::isAnnotationPresent)
+                  .findFirst()
+                  .get()));
+    }
+    return Optional.empty();
   }
 
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {

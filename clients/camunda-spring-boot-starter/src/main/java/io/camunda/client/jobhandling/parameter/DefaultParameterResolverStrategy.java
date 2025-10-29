@@ -16,9 +16,11 @@
 package io.camunda.client.jobhandling.parameter;
 
 import static io.camunda.client.annotation.AnnotationUtil.getDocumentValue;
+import static io.camunda.client.annotation.AnnotationUtil.getKeyResolver;
 import static io.camunda.client.annotation.AnnotationUtil.getVariableValue;
 import static io.camunda.client.annotation.AnnotationUtil.isCustomHeaders;
 import static io.camunda.client.annotation.AnnotationUtil.isDocument;
+import static io.camunda.client.annotation.AnnotationUtil.isKey;
 import static io.camunda.client.annotation.AnnotationUtil.isVariable;
 import static io.camunda.client.annotation.AnnotationUtil.isVariablesAsType;
 
@@ -90,6 +92,9 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
       final ParameterType documentParameterType = documentValue.getParameterType();
       return new DocumentParameterResolver(
           variableName, optional, documentParameterType, camundaClient);
+    } else if (isKey(parameterInfo)) {
+      return new KeyParameterResolver(
+          KeyTargetType.from(parameterType), getKeyResolver(parameterInfo).get());
     }
     throw new IllegalStateException(
         "Could not create parameter resolver for parameter " + parameterInfo);
