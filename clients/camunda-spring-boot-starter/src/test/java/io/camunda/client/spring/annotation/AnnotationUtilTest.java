@@ -18,15 +18,23 @@ package io.camunda.client.spring.annotation;
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.parameterInfo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.client.annotation.AnnotationUtil;
+import io.camunda.client.annotation.ElementInstanceKey;
+import io.camunda.client.annotation.JobKey;
+import io.camunda.client.annotation.ProcessDefinitionKey;
+import io.camunda.client.annotation.ProcessInstanceKey;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.VariableValue;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.ParameterInfo;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -191,5 +199,68 @@ public class AnnotationUtilTest {
 
     public void testSingle(
         @io.camunda.client.annotation.Document final DocumentReferenceResponse document) {}
+  }
+
+  @Nested
+  class KeyResolver {
+    @Test
+    void shouldExtractProcessInstanceKeyResolver() {
+      // given
+      final ParameterInfo parameterInfo = parameterInfo(this, "testProcessInstanceKey");
+      final ActivatedJob job = mock(ActivatedJob.class);
+      when(job.getProcessInstanceKey()).thenReturn(123L);
+      // when
+      final Function<ActivatedJob, Long> keyResolver =
+          AnnotationUtil.getKeyResolver(parameterInfo).get();
+      // then
+      assertThat(keyResolver.apply(job)).isEqualTo(123L);
+    }
+
+    @Test
+    void shouldExtractProcessDefinitionKeyResolver() {
+      // given
+      final ParameterInfo parameterInfo = parameterInfo(this, "testProcessDefinitionKey");
+      final ActivatedJob job = mock(ActivatedJob.class);
+      when(job.getProcessDefinitionKey()).thenReturn(123L);
+      // when
+      final Function<ActivatedJob, Long> keyResolver =
+          AnnotationUtil.getKeyResolver(parameterInfo).get();
+      // then
+      assertThat(keyResolver.apply(job)).isEqualTo(123L);
+    }
+
+    @Test
+    void shouldExtractJobKeyResolver() {
+      // given
+      final ParameterInfo parameterInfo = parameterInfo(this, "testJobKey");
+      final ActivatedJob job = mock(ActivatedJob.class);
+      when(job.getKey()).thenReturn(123L);
+      // when
+      final Function<ActivatedJob, Long> keyResolver =
+          AnnotationUtil.getKeyResolver(parameterInfo).get();
+      // then
+      assertThat(keyResolver.apply(job)).isEqualTo(123L);
+    }
+
+    @Test
+    void shouldExtractElementInstanceKeyResolver() {
+      // given
+      final ParameterInfo parameterInfo = parameterInfo(this, "testElementInstanceKey");
+      final ActivatedJob job = mock(ActivatedJob.class);
+      when(job.getElementInstanceKey()).thenReturn(123L);
+      // when
+      final Function<ActivatedJob, Long> keyResolver =
+          AnnotationUtil.getKeyResolver(parameterInfo).get();
+      // then
+      assertThat(keyResolver.apply(job)).isEqualTo(123L);
+    }
+
+    public void testProcessInstanceKey(@ProcessInstanceKey final String key) {}
+
+    public void testProcessDefinitionKey(@ProcessDefinitionKey final String key) {}
+
+    public void testJobKey(@JobKey final String key) {}
+
+    public void testElementInstanceKey(@ElementInstanceKey final String key) {}
   }
 }

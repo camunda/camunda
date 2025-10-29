@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.Document;
+import io.camunda.client.annotation.ProcessInstanceKey;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.bean.ParameterInfo;
@@ -71,6 +72,48 @@ public class DefaultParameterResolverStrategyTest {
     assertThat(parameterResolver).isInstanceOf(DocumentParameterResolver.class);
   }
 
+  @Test
+  void shouldResolveProcessInstanceKeyNative() {
+    final DefaultParameterResolverStrategy strategy =
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
+    final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyNative");
+    assertThat(parameters).hasSize(1);
+    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
+    assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
+    final KeyParameterResolver processInstanceKeyParameterResolver =
+        (KeyParameterResolver) parameterResolver;
+    assertThat(processInstanceKeyParameterResolver.getKeyTargetType())
+        .isEqualTo(KeyTargetType.LONG);
+  }
+
+  @Test
+  void shouldResolveProcessInstanceKeyLong() {
+    final DefaultParameterResolverStrategy strategy =
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
+    final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyLong");
+    assertThat(parameters).hasSize(1);
+    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
+    assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
+    final KeyParameterResolver processInstanceKeyParameterResolver =
+        (KeyParameterResolver) parameterResolver;
+    assertThat(processInstanceKeyParameterResolver.getKeyTargetType())
+        .isEqualTo(KeyTargetType.LONG);
+  }
+
+  @Test
+  void shouldResolveProcessInstanceKeyString() {
+    final DefaultParameterResolverStrategy strategy =
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
+    final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyString");
+    assertThat(parameters).hasSize(1);
+    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
+    assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
+    final KeyParameterResolver processInstanceKeyParameterResolver =
+        (KeyParameterResolver) parameterResolver;
+    assertThat(processInstanceKeyParameterResolver.getKeyTargetType())
+        .isEqualTo(KeyTargetType.STRING);
+  }
+
   public void legacyMethod(
       final io.camunda.zeebe.client.api.worker.JobClient jobClient,
       final io.camunda.zeebe.client.api.response.ActivatedJob job) {}
@@ -78,4 +121,10 @@ public class DefaultParameterResolverStrategyTest {
   public void currentMethod(final JobClient jobClient, final ActivatedJob job) {}
 
   public void documentMethod(@Document final DocumentContext myDoc) {}
+
+  public void processInstanceKeyNative(@ProcessInstanceKey final long processInstanceKey) {}
+
+  public void processInstanceKeyLong(@ProcessInstanceKey final Long processInstanceKey) {}
+
+  public void processInstanceKeyString(@ProcessInstanceKey final String processInstanceKey) {}
 }
