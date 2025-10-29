@@ -1071,7 +1071,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UpdateMappingRuleCommandStep1 newUpdateMappingRule(final String mappingRuleId) {
+  public UpdateMappingRuleCommandStep1 newUpdateMappingRuleCommand(final String mappingRuleId) {
     return new UpdateMappingRuleCommandImpl(httpClient, mappingRuleId, jsonMapper);
   }
 
