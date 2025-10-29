@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class ClusterConfigurationManagerImpl implements ClusterConfigurationManager {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterConfigurationManagerImpl.class);
-  private static final Duration MIN_RETRY_DELAY = Duration.ofSeconds(10);
+  private static final Duration MIN_RETRY_DELAY = Duration.ofMillis(250);
   private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
   private final ConcurrencyControl executor;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
