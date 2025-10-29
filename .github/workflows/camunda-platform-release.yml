@@ -290,6 +290,7 @@ jobs:
           chmod +x zcl
       - name: Identify previous release version
         id: prev_version
+        if: ${{ !inputs.dryRun }}
         uses: camunda/infra-global-github-actions/previous-version@main
         with:
           version: "${{ inputs.releaseVersion }}"
