@@ -71,7 +71,7 @@ export async function assertUnauthorizedRequest(response: APIResponse) {
 export async function assertUnsupportedMediaTypeRequest(response: APIResponse) {
   await assertStatusCode(response, 415);
   const json = await response.json();
-  expect(json.error).toContain('Unsupported Media Type');
+  expect(json.title).toContain('Unsupported Media Type');
 }
 
 export async function assertBadRequest(
