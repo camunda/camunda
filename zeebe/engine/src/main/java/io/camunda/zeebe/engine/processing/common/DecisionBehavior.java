@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.common;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.dmn.DecisionEngine;
+import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.DecisionEvaluationResult;
 import io.camunda.zeebe.dmn.EvaluatedDecision;
 import io.camunda.zeebe.dmn.EvaluatedInput;
@@ -42,17 +43,14 @@ public class DecisionBehavior {
   private static final DecisionInfo UNKNOWN_DECISION_INFO = new DecisionInfo(-1L, -1);
   private static final String SYNTHESIZED_RULE_ID_PREFIX = "ZB_SYNTH_RULE_ID";
   private static final String SYNTHESIZED_RULE_ID_TEMPLATE = "%s_%s_v%s_r%s";
-  private final DecisionEngine decisionEngine;
+  private DecisionEngine decisionEngine;
   private final DecisionState decisionState;
   private final ProcessEngineMetrics metrics;
 
   public DecisionBehavior(
-      final DecisionEngine decisionEngine,
-      final ProcessingState processingState,
-      final ProcessEngineMetrics metrics) {
+      final ProcessingState processingState, final ProcessEngineMetrics metrics) {
 
     decisionState = processingState.getDecisionState();
-    this.decisionEngine = decisionEngine;
     this.metrics = metrics;
   }
 
@@ -127,7 +125,7 @@ public class DecisionBehavior {
       final DirectBuffer variables) {
     final var evaluationContext = new VariablesContext(MsgPackConverter.convertToMap(variables));
     final var evaluationResult =
-        decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
+        getDecisionEngine().evaluateDecisionById(drg, decisionId, evaluationContext);
 
     updateDecisionMetrics(evaluationResult);
 
@@ -305,6 +303,13 @@ public class DecisionBehavior {
     if (evaluatedOutput.outputName() != null) {
       outputRecord.setOutputName(evaluatedOutput.outputName());
     }
+  }
+
+  private DecisionEngine getDecisionEngine() {
+    if (decisionEngine == null) {
+      decisionEngine = DecisionEngineFactory.createDecisionEngine();
+    }
+    return decisionEngine;
   }
 
   private record DecisionInfo(long key, int version) {

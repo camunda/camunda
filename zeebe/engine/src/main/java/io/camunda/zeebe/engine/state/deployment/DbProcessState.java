@@ -49,7 +49,7 @@ public final class DbProcessState implements MutableProcessState {
 
   private static final int DEFAULT_VERSION_VALUE = 0;
 
-  private final BpmnTransformer transformer;
+  private BpmnTransformer transformer;
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
   private final Cache<TenantIdAndProcessIdAndVersion, DeployedProcess>
       processesByTenantAndProcessIdAndVersionCache;
@@ -108,13 +108,16 @@ public final class DbProcessState implements MutableProcessState {
       processDefinitionKeyByProcessIdAndVersionTagColumnFamily;
 
   private final VersionManager versionManager;
+  private final EngineConfiguration config;
+  private final InstantSource clock;
 
   public DbProcessState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final EngineConfiguration config,
       final InstantSource clock) {
-    transformer = BpmnFactory.createTransformer(clock, config);
+    this.config = config;
+    this.clock = clock;
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();
@@ -186,6 +189,13 @@ public final class DbProcessState implements MutableProcessState {
         CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
     processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
         CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+  }
+
+  private BpmnTransformer getBpmnTransformer() {
+    if (transformer == null) {
+      transformer = BpmnFactory.createTransformer(clock, config);
+    }
+    return transformer;
   }
 
   @Override
@@ -382,7 +392,8 @@ public final class DbProcessState implements MutableProcessState {
 
     final BpmnModelInstance modelInstance =
         readModelInstanceFromBuffer(copiedProcess.getResource());
-    final List<ExecutableProcess> definitions = transformer.transformDefinitions(modelInstance);
+    final List<ExecutableProcess> definitions =
+        getBpmnTransformer().transformDefinitions(modelInstance);
 
     final ExecutableProcess executableProcess =
         definitions.stream()

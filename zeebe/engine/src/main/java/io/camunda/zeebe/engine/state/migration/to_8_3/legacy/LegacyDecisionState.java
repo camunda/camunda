@@ -42,7 +42,7 @@ import org.agrona.DirectBuffer;
 
 public final class LegacyDecisionState {
 
-  private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
+  private DecisionEngine decisionEngine;
 
   private final DbLong dbDecisionKey;
   private final DbForeignKey<DbLong> fkDecision;
@@ -218,7 +218,7 @@ public final class LegacyDecisionState {
 
     final var resourceBytes = BufferUtil.bufferAsArray(persistedDrg.getResource());
     final ParsedDecisionRequirementsGraph parsedDrg =
-        decisionEngine.parse(new ByteArrayInputStream(resourceBytes));
+        getDecisionEngine().parse(new ByteArrayInputStream(resourceBytes));
 
     return new DeployedDrg(parsedDrg, persistedDrg);
   }
@@ -454,6 +454,13 @@ public final class LegacyDecisionState {
   public ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
       getDecisionRequirementsKeyByIdAndVersion() {
     return decisionRequirementsKeyByIdAndVersion;
+  }
+
+  private DecisionEngine getDecisionEngine() {
+    if (decisionEngine == null) {
+      decisionEngine = DecisionEngineFactory.createDecisionEngine();
+    }
+    return decisionEngine;
   }
 
   /**

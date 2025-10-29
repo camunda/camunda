@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
@@ -126,9 +125,7 @@ public final class EngineProcessors {
 
     subscriptionCommandSender.setWriters(writers);
 
-    final var decisionBehavior =
-        new DecisionBehavior(
-            DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+    final var decisionBehavior = new DecisionBehavior(processingState, processEngineMetrics);
     final var authCheckBehavior =
         new AuthorizationCheckBehavior(processingState, securityConfig, config);
     final var asyncRequestBehavior =

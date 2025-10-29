@@ -41,15 +41,18 @@ import org.camunda.bpm.model.xml.ModelParseException;
 
 public final class BpmnResourceTransformer implements DeploymentResourceTransformer {
 
-  private final BpmnTransformer bpmnTransformer;
+  private BpmnTransformer bpmnTransformer;
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
 
-  private final BpmnValidator validator;
+  private BpmnValidator validator;
   private final ProcessState processState;
   private final boolean enableStraightThroughProcessingLoopDetector;
+  private final ExpressionProcessor expressionProcessor;
+  private final EngineConfiguration config;
+  private final InstantSource clock;
 
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
@@ -60,14 +63,13 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final boolean enableStraightThroughProcessingLoopDetector,
       final EngineConfiguration config,
       final InstantSource clock) {
-    bpmnTransformer = BpmnFactory.createTransformer(clock, config);
+    this.expressionProcessor = expressionProcessor;
+    this.config = config;
+    this.clock = clock;
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.processState = processState;
-    validator =
-        BpmnFactory.createValidator(
-            clock, expressionProcessor, config.getValidatorsResultsOutputMaxSize());
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
@@ -80,12 +82,13 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     return readProcessDefinition(resource)
         .flatMap(
             definition -> {
-              final String validationError = validator.validate(definition);
+              final String validationError = getValidator().validate(definition);
 
               if (validationError == null) {
                 // transform the model to avoid unexpected failures that are not covered by the
                 // validator
-                final var executableProcesses = bpmnTransformer.transformDefinitions(definition);
+                final var executableProcesses =
+                    getBpmnTransformer().transformDefinitions(definition);
 
                 return checkForDuplicateBpmnId(definition, resource, deployment)
                     .flatMap(
@@ -249,5 +252,21 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
         && lastProcess != null
         && lastVersionDigest.equals(resourceDigest)
         && lastProcess.getResourceName().equals(deploymentResource.getResourceNameBuffer());
+  }
+
+  private BpmnTransformer getBpmnTransformer() {
+    if (bpmnTransformer == null) {
+      bpmnTransformer = BpmnFactory.createTransformer(clock, config);
+    }
+    return bpmnTransformer;
+  }
+
+  private BpmnValidator getValidator() {
+    if (validator == null) {
+      validator =
+          BpmnFactory.createValidator(
+              clock, expressionProcessor, config.getValidatorsResultsOutputMaxSize());
+    }
+    return validator;
   }
 }

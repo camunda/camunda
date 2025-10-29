@@ -48,7 +48,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   private static final Either<Failure, Object> NO_DUPLICATES = Either.right(null);
 
-  private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
+  private DecisionEngine decisionEngine;
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -73,7 +73,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       final DeploymentResourceContext context) {
 
     final var dmnResource = new ByteArrayInputStream(resource.getResource());
-    final var parsedDrg = decisionEngine.parse(dmnResource);
+    final var parsedDrg = getDecisionEngine().parse(dmnResource);
 
     if (parsedDrg.isValid()) {
       return checkForDuplicateIds(resource, parsedDrg, deployment)
@@ -353,5 +353,12 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
           .map(versionTag -> versionTag.getAttributeValue(ZeebeConstants.ATTRIBUTE_VALUE));
     }
     return Optional.empty();
+  }
+
+  private DecisionEngine getDecisionEngine() {
+    if (decisionEngine == null) {
+      decisionEngine = DecisionEngineFactory.createDecisionEngine();
+    }
+    return decisionEngine;
   }
 }

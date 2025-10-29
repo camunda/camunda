@@ -42,7 +42,7 @@ import org.agrona.DirectBuffer;
 
 public final class DbDecisionState implements MutableDecisionState {
 
-  private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
+  private DecisionEngine decisionEngine;
 
   private final DbString tenantIdKey;
   private final DbLong dbDecisionKey;
@@ -364,7 +364,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
     final var resourceBytes = BufferUtil.bufferAsArray(persistedDrg.getResource());
     final ParsedDecisionRequirementsGraph parsedDrg =
-        decisionEngine.parse(new ByteArrayInputStream(resourceBytes));
+        getDecisionEngine().parse(new ByteArrayInputStream(resourceBytes));
 
     return new DeployedDrg(parsedDrg, persistedDrg);
   }
@@ -654,6 +654,13 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     latestDecisionRequirementsKeysById.upsert(
         tenantAwareDecisionRequirementsId, fkDecisionRequirements);
+  }
+
+  private DecisionEngine getDecisionEngine() {
+    if (decisionEngine == null) {
+      decisionEngine = DecisionEngineFactory.createDecisionEngine();
+    }
+    return decisionEngine;
   }
 
   private record TenantIdAndDrgKey(String tenantId, Long drgKey) {}
