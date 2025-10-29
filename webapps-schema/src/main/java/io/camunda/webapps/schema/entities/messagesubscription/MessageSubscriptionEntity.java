@@ -34,34 +34,34 @@ public class MessageSubscriptionEntity
 
   @SinceVersion880 private Long flowNodeInstanceKey;
 
-  private MessageSubscriptionState eventType;
-  private OffsetDateTime dateTime;
+  @SinceVersion880 private MessageSubscriptionState eventType;
+  @SinceVersion880 private OffsetDateTime dateTime;
 
-  private MessageSubscriptionMetadataEntity metadata;
+  @SinceVersion880 private MessageSubscriptionMetadataEntity metadata;
 
   @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  private Long positionProcessMessageSubscription;
+  @SinceVersion880 private Long positionProcessMessageSubscription;
 
   /**
    * @deprecated since 8.9
    */
-  @Deprecated private EventSourceType eventSourceType;
+  @SinceVersion880 @Deprecated private EventSourceType eventSourceType;
 
   /**
    * @deprecated since 8.9
    */
-  @Deprecated private Long position;
+  @SinceVersion880 @Deprecated private Long position;
 
   /**
    * @deprecated since 8.9
    */
-  @Deprecated private Long positionIncident;
+  @SinceVersion880 @Deprecated private Long positionIncident;
 
   /**
    * @deprecated since 8.9
    */
-  @Deprecated private Long positionJob;
+  @SinceVersion880 @Deprecated private Long positionJob;
 
   @Override
   public String getId() {
