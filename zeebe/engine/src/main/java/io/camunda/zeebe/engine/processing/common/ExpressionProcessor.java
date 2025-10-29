@@ -36,7 +36,7 @@ public final class ExpressionProcessor {
   private static final List<ResultType> NULLABLE_DATE_TIME_RESULT_TYPES =
       List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
 
-  private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> null;
+  private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> Either.left(null);
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
@@ -57,9 +57,11 @@ public final class ExpressionProcessor {
    * @param scopedEvaluationContext new top level evaluation context
    * @return new instance which uses {@code primaryContext} as new top level evaluation context
    */
-  public ExpressionProcessor withContext(final ScopedEvaluationContext scopedEvaluationContext) {
+  public ExpressionProcessor prependContext(final ScopedEvaluationContext scopedEvaluationContext) {
     return new ExpressionProcessor(
-        expressionLanguage, CombinedEvaluationContext.withContexts(scopedEvaluationContext));
+        expressionLanguage,
+        CombinedEvaluationContext.withContexts(
+            scopedEvaluationContext, this.scopedEvaluationContext));
   }
 
   /**

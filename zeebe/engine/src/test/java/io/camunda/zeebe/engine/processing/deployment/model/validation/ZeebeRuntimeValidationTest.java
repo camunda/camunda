@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.io.InputStream;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -541,7 +542,7 @@ public final class ZeebeRuntimeValidationTest {
     final List<ExpectedValidationResult> unmatchedExpectations = new ArrayList<>(expectedResults);
     final List<ValidationResult> unmatchedResults =
         results.getResults().values().stream()
-            .flatMap(l -> l.stream())
+            .flatMap(Collection::stream)
             .collect(Collectors.toList());
 
     match(unmatchedResults, unmatchedExpectations);

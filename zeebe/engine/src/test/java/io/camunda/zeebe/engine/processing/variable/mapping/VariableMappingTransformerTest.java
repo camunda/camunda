@@ -88,7 +88,7 @@ public final class VariableMappingTransformerTest {
     final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, name -> null);
+    final var result = expressionLanguage.evaluateExpression(expression, name -> Either.left(null));
 
     // then
     assertThat(result.isFailure())
