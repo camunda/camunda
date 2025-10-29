@@ -90,7 +90,7 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
-          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/zeebe
+          repository: europe-docker.pkg.dev/camunda-saas-registry/docker-hub/camunda/camunda
           version: ${{ steps.image-tag.outputs.image-tag }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
@@ -143,6 +143,6 @@ jobs:
               \"variables\": $variables
             }"
         env:
-          IMAGE: zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
+          IMAGE: docker-hub/camunda/camunda:${{ steps.image-tag.outputs.image-tag }}
           access_token: ${{ env.access_token }}
 
