@@ -11,8 +11,6 @@ import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import java.util.HashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * When initialising the ExporterRepository via Spring, we inject predefined beans of the
@@ -20,7 +18,6 @@ import org.slf4j.LoggerFactory;
  * provide an instance of the ExporterDescriptor as spring bean.
  */
 public class ExporterDescriptor {
-  private static final Logger LOG = LoggerFactory.getLogger(ExporterDescriptor.class);
 
   private final ExporterConfiguration configuration;
   private final ExporterFactory exporterFactory;
@@ -44,7 +41,6 @@ public class ExporterDescriptor {
       final String id, final ExporterFactory exporterFactory, final Map<String, Object> args) {
     configuration = new ExporterConfiguration(id, args);
     this.exporterFactory = exporterFactory;
-    LOG.info("Creating exporter descriptor {} with config {}", id, configuration);
   }
 
   public Exporter newInstance() throws ExporterInstantiationException {

@@ -16,19 +16,21 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func SetEnvVars(javaHome string) error {
+func SetEnvVars(javaHome string, shouldStartElasticsearch bool) error {
 	envVars := map[string]string{
 		"CAMUNDA_OPERATE_CSRFPREVENTIONENABLED":                  "false",
 		"CAMUNDA_OPERATE_IMPORTER_READERBACKOFF":                 "1000",
 		"CAMUNDA_REST_QUERY_ENABLED":                             "true",
 		"CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED":                 "false",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY":   "1",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE":    "1",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX": "zeebe-record",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL":          "http://localhost:9200",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME":         "io.camunda.zeebe.exporter.ElasticsearchExporter",
 		"ES_JAVA_HOME": javaHome,
 		"ES_JAVA_OPTS": "-Xms1g -Xmx1g",
+	}
+	if shouldStartElasticsearch {
+		envVars["ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY"] = "1"
+		envVars["ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE"] = "1"
+		envVars["ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX"] = "zeebe-record"
+		envVars["ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL"] = "http://localhost:9200"
+		envVars["ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME"] = "io.camunda.zeebe.exporter.ElasticsearchExporter"
 	}
 
 	for key, value := range envVars {

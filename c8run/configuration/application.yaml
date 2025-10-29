@@ -38,6 +38,9 @@ zeebe:
     network:
       host: localhost
       advertisedHost: localhost
+    exporters:
+      rdbms:
+        className: io.camunda.exporter.rdbms.RdbmsExporter
 spring:
   profiles:
     active: "broker,consolidated-auth,identity,tasklist"

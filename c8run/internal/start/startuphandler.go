@@ -181,7 +181,10 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	settings := state.Settings
 	processInfo := state.ProcessInfo
 
-	// Rresolve JAVA_HOME and javaBinary
+	// Check if Elasticsearch should be started (only if secondary-storage.type is elasticsearch)
+	shouldStartElasticsearch := !settings.DisableElasticsearch
+
+	// Resolve JAVA_HOME and javaBinary
 	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -193,7 +196,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		os.Exit(1)
 	}
 
-	err = overrides.SetEnvVars(javaHome)
+	err = overrides.SetEnvVars(javaHome, shouldStartElasticsearch)
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
@@ -226,8 +229,6 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
-	// Check if Elasticsearch should be started (only if secondary-storage.type is elasticsearch)
-	shouldStartElasticsearch := !settings.DisableElasticsearch
 	if shouldStartElasticsearch {
 		// Check if the config specifies RDBMS instead of Elasticsearch
 		configPath := filepath.Join(parentDir, "configuration", "application.yaml")
