@@ -211,14 +211,8 @@ public class ElasticsearchSearchClient
         createDeleteRequest(dependentSourceIdx, dependentIdFieldName, processInstanceKey);
     try {
       client.deleteByQuery(deleteRequest);
-      System.out.printf(
-          "DELETION SUCCESS FOR: %s, %s, %d%n",
-          dependentSourceIdx, dependentIdFieldName, processInstanceKey);
       return true;
     } catch (final IOException | ElasticsearchException e) {
-      System.out.printf(
-          "DELETION FAILED FOR: %s, %s, %d%n",
-          dependentSourceIdx, dependentIdFieldName, processInstanceKey);
       throw new RuntimeException(e);
     }
   }
