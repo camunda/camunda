@@ -8,12 +8,13 @@
 package io.camunda.webapps.schema.entities.form;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import java.util.List;
 
 public class EmbeddedFormBatch implements ExporterEntity<EmbeddedFormBatch> {
 
-  private String id;
-  private List<FormEntity> forms;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private List<FormEntity> forms;
 
   @Override
   public String getId() {

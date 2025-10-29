@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.flownode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -20,32 +21,32 @@ public class FlowNodeInstanceEntity
         PartitionedEntity<FlowNodeInstanceEntity>,
         TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
-  private String flowNodeId;
-  private String flowNodeName;
-  private OffsetDateTime startDate;
-  private OffsetDateTime endDate;
-  private FlowNodeState state;
-  private FlowNodeType type;
-  @Deprecated private Long incidentKey;
-  private Long processInstanceKey;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private long key;
+  @SinceVersion880 private int partitionId;
+  @SinceVersion880 private String flowNodeId;
+  @SinceVersion880 private String flowNodeName;
+  @SinceVersion880 private OffsetDateTime startDate;
+  @SinceVersion880 private OffsetDateTime endDate;
+  @SinceVersion880 private FlowNodeState state;
+  @SinceVersion880 private FlowNodeType type;
+  @SinceVersion880 @Deprecated private Long incidentKey;
+  @SinceVersion880 private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  private Long processDefinitionKey;
+  @SinceVersion880 private Long processDefinitionKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  private String bpmnProcessId;
+  @SinceVersion880 private String bpmnProcessId;
 
-  private String treePath;
-  private int level;
-  private Long position;
-  private boolean incident;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  private Long scopeKey;
+  @SinceVersion880 private String treePath;
+  @SinceVersion880 private int level;
+  @SinceVersion880 private Long position;
+  @SinceVersion880 private boolean incident;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private Long scopeKey;
 
-  @JsonIgnore private Object[] sortValues;
+  @SinceVersion880 @JsonIgnore private Object[] sortValues;
 
   @Override
   public String getId() {

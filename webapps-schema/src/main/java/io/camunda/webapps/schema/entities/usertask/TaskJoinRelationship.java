@@ -8,11 +8,13 @@
 package io.camunda.webapps.schema.entities.usertask;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import java.util.Objects;
 
 public class TaskJoinRelationship {
-  private String name;
+  @SinceVersion880 private String name;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long parent;
 

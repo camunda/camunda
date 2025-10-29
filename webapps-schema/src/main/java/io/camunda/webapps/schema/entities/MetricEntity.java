@@ -13,11 +13,11 @@ import java.util.Objects;
 
 public class MetricEntity implements ExporterEntity<MetricEntity>, TenantOwned {
 
-  private String id;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  private String event;
-  private String value;
-  private OffsetDateTime eventTime;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private String event;
+  @SinceVersion880 private String value;
+  @SinceVersion880 private OffsetDateTime eventTime;
 
   public MetricEntity() {}
 

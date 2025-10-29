@@ -15,21 +15,21 @@ import java.util.Objects;
 
 public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned {
 
-  private String id;
-  private long key;
-  private String name;
-  private int version;
-  private String versionTag;
-  private String bpmnProcessId;
-  private String bpmnXml;
-  private String resourceName;
-  private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
-  @JsonIgnore private List<String> callActivityIds = new ArrayList<>();
-  private String formId;
-  private String formKey;
-  private Boolean isFormEmbedded;
-  private Boolean isPublic;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private long key;
+  @SinceVersion880 private String name;
+  @SinceVersion880 private int version;
+  @SinceVersion880 private String versionTag;
+  @SinceVersion880 private String bpmnProcessId;
+  @SinceVersion880 private String bpmnXml;
+  @SinceVersion880 private String resourceName;
+  @SinceVersion880 private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
+  @SinceVersion880 @JsonIgnore private List<String> callActivityIds = new ArrayList<>();
+  @SinceVersion880 private String formId;
+  @SinceVersion880 private String formKey;
+  @SinceVersion880 private Boolean isFormEmbedded;
+  @SinceVersion880 private Boolean isPublic;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   public String getName() {
     return name;

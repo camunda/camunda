@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.incident;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -17,42 +18,42 @@ import java.util.Objects;
 public class IncidentEntity
     implements ExporterEntity<IncidentEntity>, PartitionedEntity<IncidentEntity>, TenantOwned {
 
-  private String id;
+  @SinceVersion880 private String id;
 
-  private long key;
+  @SinceVersion880 private long key;
 
-  private int partitionId;
+  @SinceVersion880 private int partitionId;
 
-  private ErrorType errorType;
+  @SinceVersion880 private ErrorType errorType;
 
-  private String errorMessage;
+  @SinceVersion880 private String errorMessage;
 
   // Is only used by binding to ES results
-  private Integer errorMessageHash;
+  @SinceVersion880 private Integer errorMessageHash;
 
-  private IncidentState state;
+  @SinceVersion880 private IncidentState state;
 
-  private String flowNodeId;
+  @SinceVersion880 private String flowNodeId;
 
-  private Long flowNodeInstanceKey;
+  @SinceVersion880 private Long flowNodeInstanceKey;
 
-  private Long jobKey;
+  @SinceVersion880 private Long jobKey;
 
-  private Long processInstanceKey;
+  @SinceVersion880 private Long processInstanceKey;
 
-  private OffsetDateTime creationTime;
+  @SinceVersion880 private OffsetDateTime creationTime;
 
-  private Long processDefinitionKey;
+  @SinceVersion880 private Long processDefinitionKey;
 
-  private String bpmnProcessId;
+  @SinceVersion880 private String bpmnProcessId;
 
-  private String treePath;
+  @SinceVersion880 private String treePath;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  private Long position;
+  @SinceVersion880 private Long position;
 
-  @Deprecated @JsonIgnore private boolean pending = true;
+  @SinceVersion880 @Deprecated @JsonIgnore private boolean pending = true;
 
   @Override
   public String getId() {
