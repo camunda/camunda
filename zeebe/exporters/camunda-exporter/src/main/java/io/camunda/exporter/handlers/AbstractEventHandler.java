@@ -69,7 +69,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
             record.getValueType() == null ? null : record.getValueType().name()));
     messageSubscriptionEntity.setDateTime(
         toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    messageSubscriptionEntity.setMessageSubscriptionState(
+    messageSubscriptionEntity.setEventType(
         MessageSubscriptionState.fromZeebeIntent(record.getIntent().name()));
   }
 
@@ -82,7 +82,7 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     final Map<String, Object> jsonMap = new HashMap<>();
     jsonMap.put(KEY, entity.getKey());
     jsonMap.put(EVENT_SOURCE_TYPE, entity.getEventSourceType());
-    jsonMap.put(MESSAGE_SUBSCRIPTION_STATE, entity.getMessageSubscriptionState());
+    jsonMap.put(MESSAGE_SUBSCRIPTION_STATE, entity.getEventType());
     jsonMap.put(DATE_TIME, entity.getDateTime());
     jsonMap.put(PROCESS_KEY, entity.getProcessDefinitionKey());
     jsonMap.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());

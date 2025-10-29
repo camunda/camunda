@@ -25,7 +25,7 @@ public class MessageSubscriptionEntityTransformer
         value.getProcessInstanceKey(),
         value.getFlowNodeId(),
         value.getFlowNodeInstanceKey(),
-        toMessageSubscriptionState(value.getMessageSubscriptionState()),
+        toMessageSubscriptionState(value.getEventType()),
         value.getDateTime(),
         value.getMetadata().getMessageName(),
         value.getMetadata().getCorrelationKey(),

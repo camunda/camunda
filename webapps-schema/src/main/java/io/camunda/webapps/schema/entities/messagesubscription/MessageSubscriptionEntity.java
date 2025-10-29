@@ -33,7 +33,7 @@ public class MessageSubscriptionEntity
 
   private Long flowNodeInstanceKey;
 
-  private MessageSubscriptionState messageSubscriptionState;
+  private MessageSubscriptionState eventType;
   private OffsetDateTime dateTime;
 
   private MessageSubscriptionMetadataEntity metadata;
@@ -138,13 +138,12 @@ public class MessageSubscriptionEntity
     return this;
   }
 
-  public MessageSubscriptionState getMessageSubscriptionState() {
-    return messageSubscriptionState;
+  public MessageSubscriptionState getEventType() {
+    return eventType;
   }
 
-  public MessageSubscriptionEntity setMessageSubscriptionState(
-      final MessageSubscriptionState messageSubscriptionState) {
-    this.messageSubscriptionState = messageSubscriptionState;
+  public MessageSubscriptionEntity setEventType(final MessageSubscriptionState eventType) {
+    this.eventType = eventType;
     return this;
   }
 
@@ -266,7 +265,7 @@ public class MessageSubscriptionEntity
         flowNodeId,
         flowNodeInstanceKey,
         eventSourceType,
-        messageSubscriptionState,
+        eventType,
         dateTime,
         metadata,
         tenantId,
@@ -294,7 +293,7 @@ public class MessageSubscriptionEntity
         && Objects.equals(flowNodeId, that.flowNodeId)
         && Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey)
         && eventSourceType == that.eventSourceType
-        && messageSubscriptionState == that.messageSubscriptionState
+        && eventType == that.eventType
         && Objects.equals(dateTime, that.dateTime)
         && Objects.equals(metadata, that.metadata)
         && Objects.equals(tenantId, that.tenantId)

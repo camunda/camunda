@@ -156,7 +156,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getEventSourceType()).isEqualTo(EventSourceType.PROCESS_MESSAGE_SUBSCRIPTION);
-    assertThat(entity.getMessageSubscriptionState())
+    assertThat(entity.getEventType())
         .isEqualTo(MessageSubscriptionState.fromZeebeIntent(intent.name()));
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(elementInstanceKey);
