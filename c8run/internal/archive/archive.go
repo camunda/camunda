@@ -22,10 +22,17 @@ const (
 )
 
 func DownloadFile(filepath string, url string, authToken string) error {
-	// if the file already exists locally, don't download a new copy
-	_, err := os.Stat(filepath)
-	if !errors.Is(err, os.ErrNotExist) {
-		return nil
+	info, err := os.Stat(filepath)
+	if err == nil {
+		if info.Size() > 0 {
+			// Non-empty file already present; assume previous download succeeded.
+			return nil
+		}
+		if removeErr := os.Remove(filepath); removeErr != nil {
+			return fmt.Errorf("DownloadFile: failed to remove empty file: %s\n%w\n%s", filepath, removeErr, debug.Stack())
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("DownloadFile: failed to stat file: %s\n%w\n%s", filepath, err, debug.Stack())
 	}
 
 	out, err := os.Create(filepath)
