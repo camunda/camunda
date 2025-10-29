@@ -99,7 +99,9 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
         jobError.getRetries() == null ? (job.getRetries() - 1) : jobError.getRetries();
     final String errorMessage = JobHandlingUtil.createErrorMessage(jobError);
     final Duration backoff =
-        jobError.getRetryBackoff() == null ? Duration.ZERO : jobError.getRetryBackoff();
+        jobError.getRetryBackoff().apply(retries) == null
+            ? Duration.ZERO
+            : jobError.getRetryBackoff().apply(retries);
     final FailJobCommandStep2 command =
         jobClient
             .newFailCommand(job.getKey())
