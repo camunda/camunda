@@ -18,6 +18,7 @@ import {
   assertBadRequest,
   assertNotFoundRequest,
   assertForbiddenRequest,
+  assertStatusCode
 } from '../../../utils/http';
 import {
   CREATE_DOC_INVALID_REQUEST,
@@ -76,14 +77,15 @@ test.describe.parallel('Document API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  //Skipped due to bug 38510: https://github.com/camunda/camunda/issues/38510
-  test.skip('Create Document Invalid Header 415', async ({request}) => {
+  test('Create Document Invalid Header 415', async ({request}) => {
     const res = await request.post(buildUrl('/documents'), {
       headers: jsonHeaders(),
       multipart: CREATE_TXT_DOCUMENT_REQUEST(),
     });
 
-    await assertUnsupportedMediaTypeRequest(res);
+    await assertStatusCode(res, 415);
+    const json = await res.json();
+    assertRequiredFields(json, ['error']);
   });
 
   test('Create Document Invalid Body 400', async ({request}) => {
@@ -320,8 +322,7 @@ test.describe.parallel('Document API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  //Skipped due to bug 38510: https://github.com/camunda/camunda/issues/38510
-  test.skip('Create Multiple Documents Invalid Header 415', async ({request}) => {
+  test('Create Multiple Documents Invalid Header 415', async ({request}) => {
     const name = generateUniqueId();
     const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
 
@@ -330,7 +331,9 @@ test.describe.parallel('Document API Tests', () => {
       multipart: payload,
     });
 
-    await assertUnsupportedMediaTypeRequest(res);
+    await assertStatusCode(res, 415);
+    const json = await res.json();
+    assertRequiredFields(json, ['error']);
   });
 
   test('Create Multiple Documents Invalid Body 400', async ({request}) => {
