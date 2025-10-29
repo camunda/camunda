@@ -18,7 +18,7 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
-jobs:  
+jobs:
   build-camunda:
     if: >
       github.event.pull_request.state != 'closed' && (
@@ -39,10 +39,11 @@ jobs:
         vault-address: ${{ secrets.VAULT_ADDR }}
         vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        minimus: true
 
     - uses: ./.github/actions/build-zeebe
       id: build-camunda
-      with: 
+      with:
         maven-extra-args: -Dskip.fe.build=false
 
     - uses: ./.github/actions/build-platform-docker
