@@ -116,7 +116,8 @@ test.describe.parallel('Search User Task Variables Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search user task variables - bad request - invalid payload', async ({
+  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
+  test.skip('Search user task variables - bad request - invalid payload', async ({
     request,
   }) => {
     const userTaskKey = await findUserTask(
