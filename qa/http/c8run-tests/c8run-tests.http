@@ -128,6 +128,10 @@ Accept: application/json
 
 ###
 # @name get-process-definition-authorized
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
@@ -142,6 +146,10 @@ Accept: application/json
 
 ###
 # @name get-process-definition-xml-authorized
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/xml
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
@@ -156,6 +164,10 @@ Accept: text/xml
 
 ###
 # @name get-process-definition-start-form-with-no-form-attached-authorized
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/form
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
