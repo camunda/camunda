@@ -250,7 +250,7 @@ public interface ClusterConfigurationInitializer {
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
-    private static final Duration SYNC_QUERY_RETRY_DELAY = Duration.ofSeconds(5);
+    private static final Duration SYNC_QUERY_RETRY_DELAY = Duration.ofMillis(250);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final ActorFuture<ClusterConfiguration> initialized;
     private final List<MemberId> knownMembersToSync;
