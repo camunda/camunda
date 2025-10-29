@@ -17,12 +17,23 @@ public class AuthorizationScope {
 
   private AuthorizationResourceMatcher matcher;
   private String resourceId;
+  private String resourcePropertyName;
 
   public AuthorizationScope() {}
 
   public AuthorizationScope(final AuthorizationResourceMatcher matcher, final String resourceId) {
     this.matcher = matcher;
     this.resourceId = resourceId;
+    this.resourcePropertyName = "";
+  }
+
+  public AuthorizationScope(
+      final AuthorizationResourceMatcher matcher,
+      final String resourceId,
+      final String resourcePropertyName) {
+    this.matcher = matcher;
+    this.resourceId = resourceId;
+    this.resourcePropertyName = resourcePropertyName;
   }
 
   public AuthorizationResourceMatcher getMatcher() {
@@ -43,16 +54,27 @@ public class AuthorizationScope {
     return this;
   }
 
+  public String getResourcePropertyName() {
+    return resourcePropertyName;
+  }
+
+  public AuthorizationScope setResourcePropertyName(final String resourcePropertyName) {
+    this.resourcePropertyName = resourcePropertyName;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(matcher, resourceId);
+    return Objects.hash(matcher, resourceId, resourcePropertyName);
   }
 
   @Override
   public boolean equals(final Object obj) {
     if (obj instanceof AuthorizationScope) {
       final AuthorizationScope other = (AuthorizationScope) obj;
-      return matcher.equals(other.matcher) && resourceId.equals(other.resourceId);
+      return Objects.equals(matcher, other.matcher)
+          && Objects.equals(resourceId, other.resourceId)
+          && Objects.equals(resourcePropertyName, other.resourcePropertyName);
     }
     return false;
   }
@@ -66,6 +88,14 @@ public class AuthorizationScope {
       throw new IllegalArgumentException(errorMsg);
     }
     return new AuthorizationScope(AuthorizationResourceMatcher.ID, resourceId);
+  }
+
+  public static AuthorizationScope property(final String resourcePropertyName)
+      throws IllegalArgumentException {
+    if (resourcePropertyName == null || resourcePropertyName.isEmpty()) {
+      throw new IllegalArgumentException("Resource property name cannot be null or empty");
+    }
+    return new AuthorizationScope(AuthorizationResourceMatcher.PROPERTY, "", resourcePropertyName);
   }
 
   public static AuthorizationScope of(final String resourceId) {
