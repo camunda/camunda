@@ -1,0 +1,41 @@
+name: Tech Debt
+description: Template for raising technical debt issues.
+labels: ["tech-debt"]
+type: Tech-debt
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: <!-- Component -->
+      description: Which component is affected by this technical debt?
+      # The components should be kept in alphabetical order, with "Not sure" at the top
+      options:
+        - <!-- C8-API- -->
+        - <!-- C8Run- -->
+        - <!-- Camunda Process Test- -->
+        - <!-- Clients- -->
+        - <!-- Data Layer- -->
+        - <!-- Feel- -->
+        - <!-- Identity- -->
+        - <!-- Operate- -->
+        - <!-- Optimize- -->
+        - <!-- Spring SDK- -->
+        - <!-- Tasklist- -->
+        - <!-- Zeebe- -->
+      default: null
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the technical debt and how we might improve it.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Describe the impact of this technical debt on the system, developers, or users. Also consider what is the benefit of removing this tech debt? Does it improve code maintenance? Does it boost performance? Does it increase stability?
+    validations:
+      required: true
