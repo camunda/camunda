@@ -73,8 +73,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -247,7 +247,8 @@ final class ClusterApiUtils {
     };
   }
 
-  private static List<BrokerState> mapBrokerStates(final Map<MemberId, MemberState> topology) {
+  private static List<BrokerState> mapBrokerStates(
+      final SortedMap<MemberId, MemberState> topology) {
     return topology.entrySet().stream()
         .map(
             entry ->
@@ -280,7 +281,7 @@ final class ClusterApiUtils {
   }
 
   private static List<PartitionState> mapPartitionStates(
-      final Map<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
+      final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
     return partitions.entrySet().stream()
         .map(
             entry ->
