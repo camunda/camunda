@@ -15,18 +15,18 @@ import java.util.Objects;
 public class JobEntity
     implements ExporterEntity<JobEntity>, PartitionedEntity<JobEntity>, TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
-  private Long processInstanceKey;
-  private Long flowNodeInstanceId;
-  private String flowNodeId;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private long key;
+  @SinceVersion880 private int partitionId;
+  @SinceVersion880 private Long processInstanceKey;
+  @SinceVersion880 private Long flowNodeInstanceId;
+  @SinceVersion880 private String flowNodeId;
 
   /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
-  private Long processDefinitionKey;
+  @SinceVersion880 private Long processDefinitionKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
-  private String bpmnProcessId;
+  @SinceVersion880 private String bpmnProcessId;
 
   /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
   private OffsetDateTime creationTime;
@@ -34,25 +34,25 @@ public class JobEntity
   /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
   private OffsetDateTime lastUpdateTime;
 
-  private String tenantId;
-  private String type;
-  private String worker;
-  private Integer retries;
-  private String state;
-  private String errorMessage;
-  private String errorCode;
-  private OffsetDateTime deadline;
-  private OffsetDateTime endTime;
-  private Map<String, String> customHeaders;
-  private boolean jobFailedWithRetriesLeft;
-  private String jobKind;
+  @SinceVersion880 private String tenantId;
+  @SinceVersion880 private String type;
+  @SinceVersion880 private String worker;
+  @SinceVersion880 private Integer retries;
+  @SinceVersion880 private String state;
+  @SinceVersion880 private String errorMessage;
+  @SinceVersion880 private String errorCode;
+  @SinceVersion880 private OffsetDateTime deadline;
+  @SinceVersion880 private OffsetDateTime endTime;
+  @SinceVersion880 private Map<String, String> customHeaders;
+  @SinceVersion880 private boolean jobFailedWithRetriesLeft;
+  @SinceVersion880 private String jobKind;
 
-  private String listenerEventType;
+  @SinceVersion880 private String listenerEventType;
 
-  private Long position;
+  @SinceVersion880 private Long position;
 
-  private Boolean denied;
-  private String deniedReason;
+  @SinceVersion880 private Boolean denied;
+  @SinceVersion880 private String deniedReason;
 
   @Override
   public String getId() {

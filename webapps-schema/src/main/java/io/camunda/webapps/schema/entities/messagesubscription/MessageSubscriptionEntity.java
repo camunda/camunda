@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.messagesubscription;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -18,27 +19,27 @@ public class MessageSubscriptionEntity
         PartitionedEntity<MessageSubscriptionEntity>,
         TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private long key;
+  @SinceVersion880 private int partitionId;
 
   /** Process data. */
-  private Long processDefinitionKey;
+  @SinceVersion880 private Long processDefinitionKey;
 
-  private Long processInstanceKey;
-  private String bpmnProcessId;
+  @SinceVersion880 private Long processInstanceKey;
+  @SinceVersion880 private String bpmnProcessId;
 
   /** Activity data. */
-  private String flowNodeId;
+  @SinceVersion880 private String flowNodeId;
 
-  private Long flowNodeInstanceKey;
+  @SinceVersion880 private Long flowNodeInstanceKey;
 
   private MessageSubscriptionState eventType;
   private OffsetDateTime dateTime;
 
   private MessageSubscriptionMetadataEntity metadata;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private Long positionProcessMessageSubscription;
 

@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.usertask;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
@@ -18,16 +19,16 @@ public class SnapshotTaskVariableEntity
         PartitionedEntity<SnapshotTaskVariableEntity>,
         TenantOwned {
 
-  private String id;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  private long key;
-  private int partitionId;
-  private String taskId;
-  private String name;
-  private String value;
-  private String fullValue;
-  private boolean isPreview;
-  private Long processInstanceKey;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private long key;
+  @SinceVersion880 private int partitionId;
+  @SinceVersion880 private String taskId;
+  @SinceVersion880 private String name;
+  @SinceVersion880 private String value;
+  @SinceVersion880 private String fullValue;
+  @SinceVersion880 private boolean isPreview;
+  @SinceVersion880 private Long processInstanceKey;
 
   public SnapshotTaskVariableEntity() {}
 

@@ -8,15 +8,16 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 
 public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
 
-  private Long key;
-  private String tenantId;
-  private String name;
-  private String description;
+  @SinceVersion880 private Long key;
+  @SinceVersion880 private String tenantId;
+  @SinceVersion880 private String name;
+  @SinceVersion880 private String description;
 
-  private EntityJoinRelation join;
+  @SinceVersion880 private EntityJoinRelation join;
 
   public Long getKey() {
     return key;

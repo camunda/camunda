@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.usertask;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -20,95 +21,122 @@ import java.util.Set;
 public class TaskEntity
     implements ExporterEntity<TaskEntity>, PartitionedEntity<TaskEntity>, TenantOwned {
 
-  private String id;
+  @SinceVersion880 private String id;
 
-  private long key;
+  @SinceVersion880 private long key;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  private int partitionId;
+  @SinceVersion880 private int partitionId;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeBpmnId;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String name;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeInstanceId;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime completionTime;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String processInstanceId;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long position;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskState state;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime creationTime;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String bpmnProcessId;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String processDefinitionId;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String assignee;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String[] candidateGroups;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String[] candidateUsers;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String formKey;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String formId;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long formVersion;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Boolean isFormEmbedded;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime followUpDate;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime dueDate;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String externalFormReference;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer processDefinitionVersion;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Map<String, String> customHeaders;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer priority;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Set<String> tags;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String action;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<String> changedAttributes;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 
+  @SinceVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskImplementation implementation;
 

@@ -8,15 +8,16 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 
 public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
-  private Long key;
-  private String groupId;
-  private String name;
-  private String description;
+  @SinceVersion880 private Long key;
+  @SinceVersion880 private String groupId;
+  @SinceVersion880 private String name;
+  @SinceVersion880 private String description;
 
-  private EntityJoinRelation join;
+  @SinceVersion880 private EntityJoinRelation join;
 
   public Long getKey() {
     return key;

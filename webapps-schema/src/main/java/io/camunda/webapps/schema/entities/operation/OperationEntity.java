@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities.operation;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -17,35 +18,35 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
   /**
    * Is used by batch operation engine in zeebe to identify the resource (process, incident, ...)
    */
-  private Long itemKey;
+  @SinceVersion880 private Long itemKey;
 
-  private Long processInstanceKey;
-
-  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  private Long processDefinitionKey;
+  @SinceVersion880 private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  private String bpmnProcessId;
+  @SinceVersion880 private Long processDefinitionKey;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
+  @SinceVersion880 private String bpmnProcessId;
 
   /** Attention! This field will be filled in only for data imported after v. 8.3.0. */
-  private Long decisionDefinitionKey;
+  @SinceVersion880 private Long decisionDefinitionKey;
 
-  private Long incidentKey;
-  private Long scopeKey;
-  private String variableName;
-  private String variableValue;
-  private OperationType type;
-  private OffsetDateTime lockExpirationTime;
-  private String lockOwner;
-  private OperationState state;
-  private String errorMessage;
-  private String batchOperationId;
-  private Long zeebeCommandKey;
-  private String username;
-  private String modifyInstructions;
-  private String migrationPlan;
+  @SinceVersion880 private Long incidentKey;
+  @SinceVersion880 private Long scopeKey;
+  @SinceVersion880 private String variableName;
+  @SinceVersion880 private String variableValue;
+  @SinceVersion880 private OperationType type;
+  @SinceVersion880 private OffsetDateTime lockExpirationTime;
+  @SinceVersion880 private String lockOwner;
+  @SinceVersion880 private OperationState state;
+  @SinceVersion880 private String errorMessage;
+  @SinceVersion880 private String batchOperationId;
+  @SinceVersion880 private Long zeebeCommandKey;
+  @SinceVersion880 private String username;
+  @SinceVersion880 private String modifyInstructions;
+  @SinceVersion880 private String migrationPlan;
 
-  private OffsetDateTime completedDate;
+  @SinceVersion880 private OffsetDateTime completedDate;
 
   public Long getItemKey() {
     return itemKey;

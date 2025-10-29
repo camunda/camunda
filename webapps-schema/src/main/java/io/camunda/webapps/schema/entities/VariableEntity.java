@@ -15,27 +15,27 @@ import java.util.Objects;
 public class VariableEntity
     implements ExporterEntity<VariableEntity>, PartitionedEntity<VariableEntity>, TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
-  private String name;
-  private String value;
-  private String fullValue;
-  private boolean isPreview;
-  private Long scopeKey;
-  private Long processInstanceKey;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private long key;
+  @SinceVersion880 private int partitionId;
+  @SinceVersion880 private String name;
+  @SinceVersion880 private String value;
+  @SinceVersion880 private String fullValue;
+  @SinceVersion880 private boolean isPreview;
+  @SinceVersion880 private Long scopeKey;
+  @SinceVersion880 private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  private Long processDefinitionKey;
+  @SinceVersion880 private Long processDefinitionKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  private String bpmnProcessId;
+  @SinceVersion880 private String bpmnProcessId;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  private Long position;
+  @SinceVersion880 private Long position;
 
-  @JsonIgnore private Object[] sortValues;
+  @SinceVersion880 @JsonIgnore private Object[] sortValues;
 
   @Override
   public String getId() {
