@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class NamespacedEvaluationContext implements ScopedEvaluationContext {
@@ -29,7 +30,9 @@ public final class NamespacedEvaluationContext implements ScopedEvaluationContex
 
   @Override
   public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
-    return Either.right(namespaces.getOrDefault(variableName, null));
+    return Optional.ofNullable(namespaces.get(variableName))
+        .<Either<DirectBuffer, EvaluationContext>>map(Either::right)
+        .orElse(Either.left(null));
   }
 
   @Override
