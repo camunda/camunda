@@ -44,7 +44,9 @@ public class HistoryDeletionWriter implements HistoryDeletionWriteClient {
             .filter(t -> !(t instanceof OperationTemplate))
             .map(
                 dependant -> {
-                  final var dependentSourceIdx = dependant.getFullQualifiedName();
+                  final var dependentSourceIdx =
+                      dependant.getFullQualifiedName()
+                          + "*"; // Add wildcard to delete from archived indices
                   final var dependentIdFieldName = dependant.getProcessInstanceDependantField();
                   return documentBasedWriteClient.deleteByFieldValue(
                       dependentSourceIdx, dependentIdFieldName, processInstanceKey);

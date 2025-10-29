@@ -69,14 +69,14 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
 
   private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     try {
-      LOG.trace("Looking for the next instance to delete.");
+      LOG.debug("Looking for the next instance to delete.");
       executing.set(true);
       final var currentBatchSize = new AtomicInteger(0);
 
       // Find next process instance to delete (return true to break out of loop)
       historyDeletionState.forEachProcessInstanceToDelete(
           (processInstanceKey, batchOperationReference) -> {
-            LOG.trace("Deleting process instance with key {}", processInstanceKey);
+            LOG.debug("Deleting process instance with key {}", processInstanceKey);
             writeClientsProxy.deleteHistoricData(processInstanceKey);
 
             // TODO only delete if delete = success
