@@ -301,6 +301,8 @@ public class BrokerBasedPropertiesOverride {
         .getCluster()
         .setMessageCompression(
             CompressionAlgorithm.valueOf(cluster.getCompressionAlgorithm().name()));
+
+    populateFromGlobalListeners(override);
   }
 
   private void populateFromLongPolling(final BrokerBasedProperties override) {
@@ -879,5 +881,12 @@ public class BrokerBasedPropertiesOverride {
 
     exporters.forEach(
         (name, exporter) -> override.getExporters().put(name, exporter.toExporterCfg()));
+  }
+
+  private void populateFromGlobalListeners(final BrokerBasedProperties override) {
+    override
+        .getExperimental()
+        .getEngine()
+        .setGlobalListeners(unifiedConfiguration.getCamunda().getCluster().getGlobalListeners());
   }
 }

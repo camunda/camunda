@@ -448,7 +448,7 @@ public final class SystemContext {
   }
 
   private void validateListenersConfig(final GlobalListenersCfg listeners) {
-    final String propertyLocation = "experimental.engine.globalListeners.userTask";
+    final String propertyLocation = "camunda.cluster.global-listeners.user-task";
     final List<String> supportedEventTypes = GlobalListenerConfiguration.TASK_LISTENER_EVENT_TYPES;
     final List<GlobalListenerCfg> taskListeners = listeners.getUserTask();
 
