@@ -117,6 +117,10 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
       pathStream.forEach(
           sourcePath -> {
             try {
+              if (sourcePath.toString().contains(DIRECTORY_INITIALIZED_FILE)) {
+                // do not copy the initialization file from the source directory
+                return;
+              }
               if (sourcePath.toString().contains("runtime")) {
                 LOG.info("Skipping copying runtime directory {}", sourcePath);
                 return;
