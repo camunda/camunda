@@ -9,6 +9,8 @@ package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.stream.Stream;
 
 public class AuthorizationRecordStream
@@ -30,5 +32,18 @@ public class AuthorizationRecordStream
 
   public AuthorizationRecordStream withAuthorizationKey(final long authorizationKey) {
     return valueFilter(v -> v.getAuthorizationKey() == authorizationKey);
+  }
+
+  public AuthorizationRecordStream withResourceMatcher(
+      final AuthorizationResourceMatcher resourceMatcher) {
+    return valueFilter(v -> v.getResourceMatcher() == resourceMatcher);
+  }
+
+  public AuthorizationRecordStream withResourceType(final AuthorizationResourceType resourceType) {
+    return valueFilter(v -> v.getResourceType() == resourceType);
+  }
+
+  public AuthorizationRecordStream withResourcePropertyName(final String propertyName) {
+    return valueFilter(v -> v.getResourcePropertyName().equals(propertyName));
   }
 }

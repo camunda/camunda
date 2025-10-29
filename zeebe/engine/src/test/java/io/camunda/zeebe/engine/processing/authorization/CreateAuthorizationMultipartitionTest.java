@@ -193,4 +193,83 @@ public class CreateAuthorizationMultipartitionTest {
             "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist."
                 .formatted(nonexistentMappingId));
   }
+
+  @Test
+  public void shouldDistributePropertyBasedAuthorizationToAllPartitions() {
+    // when
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .withPartitionId(1)
+                .limit(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED))
+                .filter(
+                    record ->
+                        record.getValueType() == ValueType.AUTHORIZATION
+                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+                                    == AuthorizationIntent.CREATE)))
+        .extracting(
+            io.camunda.zeebe.protocol.record.Record::getIntent,
+            io.camunda.zeebe.protocol.record.Record::getRecordType)
+        .containsSubsequence(
+            tuple(AuthorizationIntent.CREATE, RecordType.COMMAND),
+            tuple(AuthorizationIntent.CREATED, RecordType.EVENT),
+            tuple(CommandDistributionIntent.STARTED, RecordType.EVENT))
+        .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT));
+
+    // Verify authorization is created on all partitions
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.authorizationRecords()
+                  .withAuthorizationKey(authorizationKey)
+                  .withPartitionId(partitionId)
+                  .withIntent(AuthorizationIntent.CREATED)
+                  .getFirst()
+                  .getValue())
+          .satisfies(
+              value -> {
+                assertThat(value.getResourceMatcher())
+                    .isEqualTo(AuthorizationResourceMatcher.PROPERTY);
+                assertThat(value.getResourcePropertyName()).isEqualTo("assignee");
+                assertThat(value.getResourceId()).isEmpty();
+              });
+    }
+  }
+
+  @Test
+  public void shouldDistributePropertyBasedAuthorizationInIdentityQueue() {
+    // when
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId("ownerId")
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .withResourcePropertyName("candidateUsers")
+        .withResourceType(AuthorizationResourceType.USER_TASK)
+        .withPermissions(PermissionType.UPDATE)
+        .create();
+
+    // then
+    assertThat(
+            RecordingExporter.commandDistributionRecords()
+                .limit(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED))
+                .withIntent(CommandDistributionIntent.ENQUEUED))
+        .extracting(r -> r.getValue().getQueueId())
+        .containsOnly(DistributionQueue.IDENTITY.getQueueId());
+  }
 }
