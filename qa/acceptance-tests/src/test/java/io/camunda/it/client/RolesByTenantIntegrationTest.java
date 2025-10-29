@@ -39,11 +39,9 @@ public class RolesByTenantIntegrationTest {
   private static final String PASSWORD = "password";
 
   private static CamundaClient camundaClient;
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Test
   void shouldAssignRoleToTenant() {
@@ -300,7 +298,7 @@ public class RolesByTenantIntegrationTest {
         .join();
   }
 
-  private static void waitForTenantsToBeCreated(final String tenantId) {
+  private void waitForTenantsToBeCreated(final String tenantId) {
     Awaitility.await("should create tenants and import in ES")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -313,8 +311,8 @@ public class RolesByTenantIntegrationTest {
   }
 
   // TODO once available, this test should use the client to make the request
-  private static Either<Tuple<HttpStatus, String>, TenantResponse> getTenantById(
-      final String tenantId) throws URISyntaxException, IOException, InterruptedException {
+  private Either<Tuple<HttpStatus, String>, TenantResponse> getTenantById(final String tenantId)
+      throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
         Base64.getEncoder().encodeToString("%s:%s".formatted(ADMIN_USERNAME, PASSWORD).getBytes());
     final HttpRequest request =
@@ -331,7 +329,7 @@ public class RolesByTenantIntegrationTest {
 
     // Send the request and get the response
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     if (response.statusCode() == HttpStatus.OK.value()) {
       return Either.right(OBJECT_MAPPER.readValue(response.body(), TenantResponse.class));

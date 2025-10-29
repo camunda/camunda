@@ -43,7 +43,7 @@ public class BasicAuthenticationIT {
   private static final String PASSWORD = "correct_password";
   @UserDefinition private static final TestUser USER = new TestUser(USERNAME, PASSWORD, List.of());
   private static CamundaClient camundaClient;
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Test
   void basicAuthWithValidCredentials(@Authenticated(USERNAME) final CamundaClient userClient)
@@ -55,7 +55,7 @@ public class BasicAuthenticationIT {
             .header("Authorization", basicAuthentication(USERNAME))
             .build();
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
@@ -68,7 +68,7 @@ public class BasicAuthenticationIT {
         HttpRequest.newBuilder().uri(createUri(camundaClient, PATH_V2_AUTHENTICATION_ME)).build();
 
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
@@ -83,7 +83,7 @@ public class BasicAuthenticationIT {
             .header("Authorization", basicAuthentication("bad"))
             .build();
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
