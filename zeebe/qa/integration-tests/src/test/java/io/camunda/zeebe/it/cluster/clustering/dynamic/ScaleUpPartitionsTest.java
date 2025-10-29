@@ -163,7 +163,7 @@ public class ScaleUpPartitionsTest {
     cluster.awaitHealthyTopology();
 
     // A 400KB string that will be part of process definitions
-    final var bigString = "B".repeat(1 * 1024);
+    final var bigString = "B".repeat(400 * 1024);
     final var numProcessDefinitions = 100;
     final var processIds =
         IntStream.range(0, numProcessDefinitions).mapToObj(i -> "processId-" + i).toList();
