@@ -41,6 +41,8 @@ test.beforeAll(async () => {
     './resources/processWithDeployedForm.bpmn',
     './resources/create_invoice.form',
     './resources/zeebe_and_job_worker_process.bpmn',
+    './resources/bigVariableProcessWithForm.bpmn',
+    './resources/bigVariableForm.form',
   ]);
   await sleep(1000);
 
@@ -73,6 +75,7 @@ test.beforeAll(async () => {
     }),
     createInstances('processWithDeployedForm', 1, 1),
     createInstances('zeebe_and_job_worker_process', 1, 1),
+    createInstances('bigVariableProcessWithForm', 1, 1),
   ]);
 
   await sleep(1000);
@@ -535,5 +538,14 @@ test.describe('task details page', () => {
     await taskDetailsPage.processTab.click();
 
     await expect(taskDetailsPage.bpmnDiagram).toBeVisible();
+  });
+
+  test('task completion with large variable form', async ({
+    taskPanelPage,
+    page,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Big Variable Usertask');
+    await expect(page.getByText('Variables are too large')).toBeVisible();
   });
 });

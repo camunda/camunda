@@ -312,12 +312,22 @@ class TaskDetailsPageV1 {
     await this.addDynamicListRowButton.click();
   }
 
-  async assertFieldValue(label: string, expectedValue: string): Promise<void> {
-    const input = this.page.getByLabel(label, {exact: true});
+  async assertFieldValue(
+    label: string,
+    expectedValue: string | RegExp,
+    options?: {exact?: boolean; partial?: boolean},
+  ): Promise<void> {
+    const {exact = true, partial = false} = options || {};
+    const input = this.page.getByLabel(label, {exact});
+
     await waitForAssertion({
       assertion: async () => {
-        const actualValue = input;
-        await expect(actualValue).toHaveValue(expectedValue);
+        if (partial) {
+          const inputValue = await input.inputValue();
+          expect(inputValue).toContain(expectedValue);
+        } else {
+          await expect(input).toHaveValue(expectedValue);
+        }
       },
       onFailure: async () => {
         console.log(`Retrying assertion for field "${label}"...`);
