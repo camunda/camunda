@@ -352,7 +352,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ needs.c8-orchestration-cluster-e2e-tests.result == 'success' && format('<@qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<@qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
+                    "text": "${{ needs.c8-orchestration-cluster-e2e-tests.result == 'success' && format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
                   }
                 }
               ]
