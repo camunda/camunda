@@ -375,7 +375,7 @@ jobs:
         env:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
+          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_docker_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 
       - name: Wait for Optimize to start
