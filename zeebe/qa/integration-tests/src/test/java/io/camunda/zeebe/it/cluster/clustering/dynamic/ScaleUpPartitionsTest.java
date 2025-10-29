@@ -18,11 +18,13 @@ import static org.assertj.core.api.Assertions.fail;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CreateGroupResponse;
+import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.Filesystem;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
@@ -40,7 +42,6 @@ import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -55,7 +56,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
@@ -77,58 +76,49 @@ public class ScaleUpPartitionsTest {
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
   private static final String PROCESS_ID = DEFAULT_PROCESS_ID;
-  // must be static so that it's initialized before the cluster
-  @TempDir private static Path backupPath;
-
-  @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   private static final MemberId MEMBER_0 = MemberId.from("0");
   @AutoClose CamundaClient camundaClient;
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
 
-  private final String containerName =
-      RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
+  @TestZeebe private final TestCluster cluster;
 
-  @TestZeebe
-  private final TestCluster cluster =
-      TestCluster.builder()
-          .useRecordingExporter(true)
-          .withEmbeddedGateway(true)
-          .withBrokersCount(3)
-          .withPartitionsCount(PARTITIONS_COUNT)
-          .withReplicationFactor(3)
-          .withBrokerConfig(
-              b ->
-                  b.withBrokerConfig(this::configureBackupStore)
-                      .withBrokerConfig(
-                          bb -> {
-                            bb.getCluster()
-                                .getMembership()
-                                .setSyncInterval(Duration.ofSeconds(1))
-                                .setGossipInterval(Duration.ofMillis(500));
+  ScaleUpPartitionsTest(@TempDir final Path backupPath) {
+    cluster =
+        TestCluster.builder()
+            .useRecordingExporter(true)
+            .withEmbeddedGateway(true)
+            .withBrokersCount(3)
+            .withPartitionsCount(PARTITIONS_COUNT)
+            .withReplicationFactor(3)
+            .withBrokerConfig(
+                b ->
+                    b.withBrokerConfig(
+                        cfg -> {
+                          final var backup = cfg.getData().getBackup();
+                          backup.setStore(BackupStoreType.FILESYSTEM);
+                          final var fs = new FilesystemBackupStoreConfig();
+                          fs.setBasePath(backupPath.toString());
+                          backup.setFilesystem(fs);
 
-                            final var engineDistribution =
-                                bb.getExperimental().getEngine().getDistribution();
-                            engineDistribution.setMaxBackoffDuration(Duration.ofSeconds(1));
-                            engineDistribution.setRedistributionInterval(Duration.ofMillis(200));
-                          }))
-          .build();
+                          cfg.getCluster()
+                              .getMembership()
+                              .setSyncInterval(Duration.ofSeconds(1))
+                              .setGossipInterval(Duration.ofMillis(500));
+
+                          final var engineDistribution =
+                              cfg.getExperimental().getEngine().getDistribution();
+                          engineDistribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                          engineDistribution.setRedistributionInterval(Duration.ofMillis(200));
+                        }))
+            .build();
+  }
 
   @BeforeEach
   void createClient() {
     camundaClient = cluster.availableGateway().newClientBuilder().build();
     clusterActuator = ClusterActuator.of(cluster.availableGateway());
     backupActuator = BackupActuator.of(cluster.availableGateway());
-  }
-
-  private void configureBackupStore(final BrokerBasedProperties bb) {
-    final var backup = bb.getData().getBackup();
-    backup.setStore(BackupStoreType.AZURE);
-    final var azure = backup.getAzure();
-
-    backup.setStore(BackupStoreType.AZURE);
-    azure.setBasePath(containerName);
-    azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
   }
 
   private Camunda getRestoreConfig(final BrokerCfg brokerCfg) {
@@ -147,13 +137,10 @@ public class ScaleUpPartitionsTest {
     unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getClusterSize());
 
     final var backupConfig = unifiedRestoreConfig.getData().getBackup();
-    // configure azure backup
-    backupConfig.setStore(io.camunda.configuration.Backup.BackupStoreType.AZURE);
-    final var azure = backupConfig.getAzure();
-    // populate azure config from broker config
-    final var brokerAzure = brokerCfg.getData().getBackup().getAzure();
-    azure.setBasePath(brokerAzure.getBasePath());
-    azure.setConnectionString(brokerAzure.getConnectionString());
+    backupConfig.setStore(Backup.BackupStoreType.FILESYSTEM);
+    final var filesystem = new Filesystem();
+    filesystem.setBasePath(brokerCfg.getData().getBackup().getFilesystem().getBasePath());
+    backupConfig.setFilesystem(filesystem);
     return unifiedRestoreConfig;
   }
 
