@@ -70,11 +70,10 @@ jobs:
 
     steps:
       - name: Dump issue JSON
-        if: always()
         run: |
-          ISSUE_JSON='${{ toJSON(github.event.issue) }}'
-          echo 'Github Issue Context JSON:'
-          printf '%s\n' "$ISSUE_JSON"
+          cat << 'EOF'
+          ${{ toJSON(github.event.issue) }}
+          EOF
       - name: Check issue
         id: check_issue
         run: |
@@ -182,7 +181,7 @@ jobs:
 
           # Check for urgency-locked label
           has_urgency_locked=$(echo "$LABELS" | jq -r 'any(. == "urgency-locked")')
-          
+
           if [[ "$has_urgency_locked" == "true" ]]; then
             echo "🔒 Issue has 'urgency-locked' label - automatic urgency updates will be skipped"
           fi
@@ -260,7 +259,7 @@ jobs:
             # elif (( score <= 4 )); then URGENCY="planned"
             # elif (( score <= 6 )); then URGENCY="next"
             # else URGENCY="immediate"; fi
-            
+
             echo "🎯 Urgency: $URGENCY"
           fi
 
