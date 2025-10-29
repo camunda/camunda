@@ -120,6 +120,11 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         ZeebeTestUtil.startProcessInstance(
             true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null);
     doNotTouchProcessInstanceKeys.add(rootCauseDecisionInstance);
+
+    final long messageSubscriptionInstance =
+        ZeebeTestUtil.startProcessInstance(
+            true, client, getTenant(TENANT_A), "Process_MessageSubscriptions", null);
+    doNotTouchProcessInstanceKeys.add(messageSubscriptionInstance);
   }
 
   @Override
@@ -166,9 +171,16 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     // escalation events process
     jobWorkers.add(progressPlaceOrderTask());
 
+    // message subscriptions process
+    jobWorkers.add(progressSimpleTask("processMessageA"));
+    jobWorkers.add(progressSimpleTask("processMessageB"));
+
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
     sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
+    // Send messages for message subscriptions process
+    sendMessages("MessageA", "{\"messageAVar\": \"valueA\"}", 5, "123");
+    sendMessages("MessageB", "{\"messageBVar\": \"valueB\"}", 5, "456");
   }
 
   @Override
@@ -296,6 +308,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_A), "develop/process-with-root-cause-decision.bpmn");
+
+    ZeebeTestUtil.deployProcess(
+        true, client, getTenant(TENANT_A), "develop/process-with-message-subscriptions.bpmn");
 
     // reverted in Zeebe https://github.com/camunda/camunda/issues/13640
     // ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A),
