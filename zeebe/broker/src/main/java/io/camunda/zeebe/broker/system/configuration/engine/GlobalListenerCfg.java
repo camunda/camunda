@@ -8,18 +8,18 @@
 package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
-import io.camunda.zeebe.engine.ListenerConfiguration;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ListenerCfg implements ConfigurationEntry {
+public class GlobalListenerCfg implements ConfigurationEntry {
 
   private static final String DEFAULT_RETRIES = "3";
 
   private List<String> eventTypes = new ArrayList<>();
   private String type;
   private String retries = DEFAULT_RETRIES;
-  private boolean afterLocal = false;
+  private boolean afterNonGlobal = false;
 
   public List<String> getEventTypes() {
     return eventTypes;
@@ -45,15 +45,15 @@ public class ListenerCfg implements ConfigurationEntry {
     this.retries = retries;
   }
 
-  public boolean isAfterLocal() {
-    return afterLocal;
+  public boolean isAfterNonGlobal() {
+    return afterNonGlobal;
   }
 
-  public void setAfterLocal(final boolean afterLocal) {
-    this.afterLocal = afterLocal;
+  public void setAfterNonGlobal(final boolean afterNonGlobal) {
+    this.afterNonGlobal = afterNonGlobal;
   }
 
-  public ListenerConfiguration createListenerConfiguration() {
-    return new ListenerConfiguration(eventTypes, type, retries, afterLocal);
+  public GlobalListenerConfiguration createGlobalListenerConfiguration() {
+    return new GlobalListenerConfiguration(eventTypes, type, retries, afterNonGlobal);
   }
 }

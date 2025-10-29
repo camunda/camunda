@@ -8,28 +8,28 @@
 package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
-import io.camunda.zeebe.engine.ListenersConfiguration;
+import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ListenersCfg implements ConfigurationEntry {
+public class GlobalListenersCfg implements ConfigurationEntry {
 
   /**
    * Configures global listeners that will be applied to all user tasks within the process and will
    * be triggered during task processing.
    */
-  private List<ListenerCfg> task = new ArrayList<>();
+  private List<GlobalListenerCfg> userTask = new ArrayList<>();
 
-  public List<ListenerCfg> getTask() {
-    return task;
+  public List<GlobalListenerCfg> getUserTask() {
+    return userTask;
   }
 
-  public void setTask(final List<ListenerCfg> task) {
-    this.task = task;
+  public void setUserTask(final List<GlobalListenerCfg> userTask) {
+    this.userTask = userTask;
   }
 
-  public ListenersConfiguration createListenersConfiguration() {
-    return new ListenersConfiguration(
-        task.stream().map(ListenerCfg::createListenerConfiguration).toList());
+  public GlobalListenersConfiguration createGlobalListenersConfiguration() {
+    return new GlobalListenersConfiguration(
+        userTask.stream().map(GlobalListenerCfg::createGlobalListenerConfiguration).toList());
   }
 }

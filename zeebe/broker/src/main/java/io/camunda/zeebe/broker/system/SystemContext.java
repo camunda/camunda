@@ -35,11 +35,11 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.engine.BatchOperationCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
-import io.camunda.zeebe.broker.system.configuration.engine.ListenerCfg;
-import io.camunda.zeebe.broker.system.configuration.engine.ListenersCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.engine.ListenerConfiguration;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -232,7 +232,7 @@ public final class SystemContext {
 
     Optional.of(experimental)
         .map(ExperimentalCfg::getEngine)
-        .map(EngineCfg::getListeners)
+        .map(EngineCfg::getGlobalListeners)
         .ifPresent(c -> validateListenersConfig(c));
   }
 
@@ -447,15 +447,15 @@ public final class SystemContext {
         security.getKeyStore().getFilePath());
   }
 
-  private void validateListenersConfig(final ListenersCfg listeners) {
-    final String propertyLocation = "experimental.engine.listeners.task";
-    final List<String> supportedEventTypes = ListenerConfiguration.TASK_LISTENER_EVENT_TYPES;
-    final List<ListenerCfg> taskListeners = listeners.getTask();
+  private void validateListenersConfig(final GlobalListenersCfg listeners) {
+    final String propertyLocation = "experimental.engine.globalListeners.userTask";
+    final List<String> supportedEventTypes = GlobalListenerConfiguration.TASK_LISTENER_EVENT_TYPES;
+    final List<GlobalListenerCfg> taskListeners = listeners.getUserTask();
 
     // Validate listeners and ignore invalid ones
-    final List<ListenerCfg> validListeners = new ArrayList<>();
+    final List<GlobalListenerCfg> validListeners = new ArrayList<>();
     for (int i = 0; i < taskListeners.size(); i++) {
-      final ListenerCfg listener = taskListeners.get(i);
+      final GlobalListenerCfg listener = taskListeners.get(i);
       final String propertyPrefix = String.format("%s.%d", propertyLocation, i);
 
       // Check if type is present
@@ -471,12 +471,12 @@ public final class SystemContext {
       final var eventTypes = // consider event types in lowercase for validation
           listener.getEventTypes().stream().map(String::toLowerCase).toList();
       final boolean containsAllEventsKeyword =
-          eventTypes.contains(ListenerConfiguration.ALL_EVENT_TYPES);
+          eventTypes.contains(GlobalListenerConfiguration.ALL_EVENT_TYPES);
       final List<String> validEventTypes =
           eventTypes.stream()
               .filter( // check if provided event types have valid values
                   eventType -> {
-                    if (ListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
+                    if (GlobalListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
                         || supportedEventTypes.contains(eventType)) {
                       return true;
                     } else {
@@ -489,12 +489,14 @@ public final class SystemContext {
                   })
               .filter(
                   eventType -> { // check if "all" is used alongside other event types
-                    if (!ListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
+                    if (!GlobalListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
                         && containsAllEventsKeyword) {
                       LOG.warn(
                           String.format(
                               "Extra event type defined alongside '%s' will be ignored: '%s' [%s.eventTypes]",
-                              ListenerConfiguration.ALL_EVENT_TYPES, eventType, propertyPrefix));
+                              GlobalListenerConfiguration.ALL_EVENT_TYPES,
+                              eventType,
+                              propertyPrefix));
                       return false;
                     }
                     return true;
@@ -541,7 +543,7 @@ public final class SystemContext {
       validListeners.add(listener);
     }
 
-    listeners.setTask(validListeners);
+    listeners.setUserTask(validListeners);
   }
 
   public ActorScheduler getScheduler() {

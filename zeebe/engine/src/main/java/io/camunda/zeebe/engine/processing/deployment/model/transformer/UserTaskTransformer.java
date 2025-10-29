@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.StaticExpression;
-import io.camunda.zeebe.engine.ListenerConfiguration;
-import io.camunda.zeebe.engine.ListenersConfiguration;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
+import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
@@ -46,13 +46,13 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final ExpressionLanguage expressionLanguage;
-  private final ListenersConfiguration listenersConfiguration;
+  private final GlobalListenersConfiguration globalListenersConfiguration;
 
   public UserTaskTransformer(
       final ExpressionLanguage expressionLanguage,
-      final ListenersConfiguration listenersConfiguration) {
+      final GlobalListenersConfiguration globalListenersConfiguration) {
     this.expressionLanguage = expressionLanguage;
-    this.listenersConfiguration = listenersConfiguration;
+    this.globalListenersConfiguration = globalListenersConfiguration;
   }
 
   @Override
@@ -311,11 +311,12 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
     // Add global listeners to be executed before local ones
     final var globalListenersConfiguration =
-        Optional.ofNullable(listenersConfiguration).map(ListenersConfiguration::task);
+        Optional.ofNullable(this.globalListenersConfiguration)
+            .map(GlobalListenersConfiguration::userTask);
     globalListenersConfiguration.ifPresent(
         listeners ->
             listeners.stream()
-                .filter(Predicate.not(ListenerConfiguration::afterLocal))
+                .filter(Predicate.not(GlobalListenerConfiguration::afterNonGlobal))
                 .map(l -> toTaskListenerModel(l, userTaskProperties))
                 .forEach(taskListeners::addAll));
 
@@ -332,7 +333,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     globalListenersConfiguration.ifPresent(
         listeners ->
             listeners.stream()
-                .filter(ListenerConfiguration::afterLocal)
+                .filter(GlobalListenerConfiguration::afterNonGlobal)
                 .map(l -> toTaskListenerModel(l, userTaskProperties))
                 .forEach(taskListeners::addAll));
 
@@ -368,14 +369,15 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
   /** Convert global user task listener configuration to task listener model(s). */
   private List<TaskListener> toTaskListenerModel(
-      final ListenerConfiguration globalTaskListener, final UserTaskProperties userTaskProperties) {
+      final GlobalListenerConfiguration globalTaskListener,
+      final UserTaskProperties userTaskProperties) {
 
     final var jobType = globalTaskListener.type();
     final var jobRetries = globalTaskListener.retries();
 
     // Extract the list of supported listener event typese
     var eventTypes =
-        globalTaskListener.eventTypes().contains(ListenerConfiguration.ALL_EVENT_TYPES)
+        globalTaskListener.eventTypes().contains(GlobalListenerConfiguration.ALL_EVENT_TYPES)
             ? List.of(ZeebeTaskListenerEventType.values())
             : globalTaskListener.eventTypes().stream()
                 .map(ZeebeTaskListenerEventType::valueOf)

@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.ListenerConfiguration;
-import io.camunda.zeebe.engine.ListenersConfiguration;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
+import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -47,10 +47,10 @@ class UserTaskTransformerTest {
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(
           new ZeebeFeelEngineClock(InstantSource.system()));
-  private final ListenersConfiguration listenersConfiguration =
-      new ListenersConfiguration(new ArrayList<>());
+  private final GlobalListenersConfiguration globalListenersConfiguration =
+      new GlobalListenersConfiguration(new ArrayList<>());
   private final BpmnTransformer transformer =
-      new BpmnTransformer(expressionLanguage, listenersConfiguration);
+      new BpmnTransformer(expressionLanguage, globalListenersConfiguration);
 
   private BpmnModelInstance processWithUserTask(final Consumer<UserTaskBuilder> userTaskModifier) {
     return Bpmn.createExecutableProcess().startEvent().userTask(TASK_ID, userTaskModifier).done();
@@ -287,7 +287,7 @@ class UserTaskTransformerTest {
 
     @BeforeEach
     public void resetGlobalListeners() {
-      listenersConfiguration.task().clear();
+      globalListenersConfiguration.userTask().clear();
     }
 
     Stream<Arguments> taskListeners() {
@@ -419,9 +419,9 @@ class UserTaskTransformerTest {
     @Test
     void shouldTransformGlobalListenersWithTaskHeaders() {
       // given
-      listenersConfiguration
-          .task()
-          .add(new ListenerConfiguration(List.of("creating"), "global", "3", false));
+      globalListenersConfiguration
+          .userTask()
+          .add(new GlobalListenerConfiguration(List.of("creating"), "global", "3", false));
 
       // when
       final var userTask =
@@ -444,9 +444,9 @@ class UserTaskTransformerTest {
     @Test
     void shouldTransformGenericGlobalListenerWithMultipleIndividualListeners() {
       // given
-      listenersConfiguration
-          .task()
-          .add(new ListenerConfiguration(List.of("all"), "global", "3", false));
+      globalListenersConfiguration
+          .userTask()
+          .add(new GlobalListenerConfiguration(List.of("all"), "global", "3", false));
 
       // when
       final var userTask =
@@ -470,18 +470,22 @@ class UserTaskTransformerTest {
     @Test
     void shouldTransformGlobalListenersAndPreserveListenersDefinitionOrderPerEventType() {
       // given
-      listenersConfiguration
-          .task()
-          .add(new ListenerConfiguration(List.of("creating"), "globalCreateBefore", "3", false));
-      listenersConfiguration
-          .task()
-          .add(new ListenerConfiguration(List.of("all"), "globalGenericBefore", "3", false));
-      listenersConfiguration
-          .task()
-          .add(new ListenerConfiguration(List.of("creating"), "globalCreateAfter", "3", true));
-      listenersConfiguration
-          .task()
-          .add(new ListenerConfiguration(List.of("updating"), "globalUpdateAfter", "3", true));
+      globalListenersConfiguration
+          .userTask()
+          .add(
+              new GlobalListenerConfiguration(
+                  List.of("creating"), "globalCreateBefore", "3", false));
+      globalListenersConfiguration
+          .userTask()
+          .add(new GlobalListenerConfiguration(List.of("all"), "globalGenericBefore", "3", false));
+      globalListenersConfiguration
+          .userTask()
+          .add(
+              new GlobalListenerConfiguration(List.of("creating"), "globalCreateAfter", "3", true));
+      globalListenersConfiguration
+          .userTask()
+          .add(
+              new GlobalListenerConfiguration(List.of("updating"), "globalUpdateAfter", "3", true));
 
       // when
       final var userTask =
@@ -516,10 +520,10 @@ class UserTaskTransformerTest {
     @Test
     void shouldTransformDeprecatedGlobalListenersWhileAvoidingDuplicates() {
       // given
-      listenersConfiguration
-          .task()
+      globalListenersConfiguration
+          .userTask()
           .add(
-              new ListenerConfiguration(
+              new GlobalListenerConfiguration(
                   List.of("creating", "create"), "globalCreateBefore", "3", false));
 
       // when

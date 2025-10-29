@@ -11,8 +11,8 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import java.util.List;
 import java.util.stream.Stream;
 
-public record ListenerConfiguration(
-    List<String> eventTypes, String type, String retries, boolean afterLocal) {
+public record GlobalListenerConfiguration(
+    List<String> eventTypes, String type, String retries, boolean afterNonGlobal) {
 
   public static final String ALL_EVENT_TYPES = "all";
 
