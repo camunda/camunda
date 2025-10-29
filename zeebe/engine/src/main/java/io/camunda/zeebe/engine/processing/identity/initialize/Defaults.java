@@ -18,10 +18,19 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class DefaultRoles {
+public class Defaults {
+
+  public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  public static final String DEFAULT_TENANT_NAME = "Default";
+
+  static void setupDefaultTenant(final IdentitySetupRecord setupRecord) {
+    setupRecord.setDefaultTenant(
+        new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
+  }
 
   public static void setupDefaultRoles(final IdentitySetupRecord setupRecord) {
     setupReadOnlyAdminRole(setupRecord);
@@ -43,7 +52,7 @@ public class DefaultRoles {
 
       final var readBasedPermissions =
           resourceType.getSupportedPermissionTypes().stream()
-              .filter(DefaultRoles::isReadPermission)
+              .filter(Defaults::isReadPermission)
               .collect(Collectors.toSet());
 
       setupRecord.addAuthorization(
@@ -92,7 +101,7 @@ public class DefaultRoles {
     }
     setupRecord.addTenantMember(
         new TenantRecord()
-            .setTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
+            .setTenantId(DEFAULT_TENANT_ID)
             .setEntityType(EntityType.ROLE)
             .setEntityId(adminRoleId));
   }
@@ -132,7 +141,7 @@ public class DefaultRoles {
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)));
     setupRecord.addTenantMember(
         new TenantRecord()
-            .setTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
+            .setTenantId(DEFAULT_TENANT_ID)
             .setEntityType(EntityType.ROLE)
             .setEntityId(connectorsRoleId));
   }
@@ -166,7 +175,7 @@ public class DefaultRoles {
             .setPermissionTypes(Set.of(PermissionType.CREATE)));
     setupRecord.addTenantMember(
         new TenantRecord()
-            .setTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
+            .setTenantId(DEFAULT_TENANT_ID)
             .setEntityType(EntityType.ROLE)
             .setEntityId(appIntegrationsRoleId));
   }
@@ -193,7 +202,7 @@ public class DefaultRoles {
                 .setPermissionTypes(Set.of(PermissionType.UPDATE_PROCESS_INSTANCE)))
         .addTenantMember(
             new TenantRecord()
-                .setTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
+                .setTenantId(DEFAULT_TENANT_ID)
                 .setEntityType(EntityType.ROLE)
                 .setEntityId(rpaRoleId));
   }
