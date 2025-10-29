@@ -33,25 +33,28 @@ public class MappingRulesSearchTest {
   @BeforeAll
   static void setup() {
     createMappingRule(MAPPING_RULE_ID_1, CLAIM_NAME_1, CLAIM_VALUE_1);
-    assertMappingRuleCreated(MAPPING_RULE_ID_1, CLAIM_NAME_1, CLAIM_VALUE_1);
+    assertMappingRuleCreated(MAPPING_RULE_ID_1);
 
     createMappingRule(MAPPING_RULE_ID_2, CLAIM_NAME_2, CLAIM_VALUE_2);
-    assertMappingRuleCreated(MAPPING_RULE_ID_2, CLAIM_NAME_2, CLAIM_VALUE_2);
+    assertMappingRuleCreated(MAPPING_RULE_ID_2);
   }
 
   @Test
   void searchShouldReturnAllMappingRules() {
+    // when
     final var mappingRuleSearchResponse =
         camundaClient.newMappingRulesSearchRequest().send().join();
 
+    // then
     assertThat(mappingRuleSearchResponse.items())
         .hasSizeGreaterThanOrEqualTo(2)
-        .extracting(MappingRule::getClaimName)
-        .contains(CLAIM_NAME_1, CLAIM_NAME_2);
+        .extracting(MappingRule::getMappingRuleId)
+        .contains(MAPPING_RULE_ID_1, MAPPING_RULE_ID_2);
   }
 
   @Test
   void searchShouldReturnMappingRuleFilteredByClaimName() {
+    // when
     final var mappingRuleSearchResponse =
         camundaClient
             .newMappingRulesSearchRequest()
@@ -59,15 +62,17 @@ public class MappingRulesSearchTest {
             .send()
             .join();
 
+    // then
     assertThat(mappingRuleSearchResponse.items())
         .hasSize(1)
         .first()
-        .extracting(MappingRule::getClaimName)
-        .isEqualTo(CLAIM_NAME_1);
+        .extracting(MappingRule::getMappingRuleId)
+        .isEqualTo(MAPPING_RULE_ID_1);
   }
 
   @Test
   void searchShouldReturnMappingRuleFilteredByClaimValue() {
+    // when
     final var mappingRuleSearchResponse =
         camundaClient
             .newMappingRulesSearchRequest()
@@ -75,33 +80,35 @@ public class MappingRulesSearchTest {
             .send()
             .join();
 
+    // then
     assertThat(mappingRuleSearchResponse.items())
         .hasSize(1)
         .first()
-        .extracting(MappingRule::getClaimValue)
-        .isEqualTo(CLAIM_VALUE_2);
+        .extracting(MappingRule::getMappingRuleId)
+        .isEqualTo(MAPPING_RULE_ID_2);
   }
 
   @Test
   void searchShouldReturnMappingRulesWithPaging() {
+    // when
     final var mappingRuleSearchResponse =
         camundaClient.newMappingRulesSearchRequest().page(p -> p.limit(1)).send().join();
 
+    // then
     assertThat(mappingRuleSearchResponse.items()).hasSize(1);
   }
 
   @Test
   void searchShouldReturnMappingRulesWithSorting() {
+    // when
     final var mappingRuleSearchResponse =
         camundaClient.newMappingRulesSearchRequest().sort(s -> s.claimName().asc()).send().join();
 
-    assertThat(mappingRuleSearchResponse.items()).hasSizeGreaterThanOrEqualTo(2);
-    // Verify sorting is applied - first item should have claimName <= second item
-    if (mappingRuleSearchResponse.items().size() >= 2) {
-      final var firstClaimName = mappingRuleSearchResponse.items().get(0).getClaimName();
-      final var secondClaimName = mappingRuleSearchResponse.items().get(1).getClaimName();
-      assertThat(firstClaimName).isLessThanOrEqualTo(secondClaimName);
-    }
+    // then
+    final var mappingRules = mappingRuleSearchResponse.items();
+
+    assertThat(mappingRules).hasSizeGreaterThanOrEqualTo(2);
+    assertThat(mappingRules).extracting(r -> r.getClaimName()).isSorted();
   }
 
   private static void createMappingRule(
@@ -116,25 +123,17 @@ public class MappingRulesSearchTest {
         .join();
   }
 
-  private static void assertMappingRuleCreated(
-      final String mappingRuleId, final String claimName, final String claimValue) {
+  private static void assertMappingRuleCreated(final String mappingRuleId) {
     Awaitility.await()
         .untilAsserted(
             () -> {
               final var mappingRuleSearchResponse =
                   camundaClient
                       .newMappingRulesSearchRequest()
-                      .filter(f -> f.claimName(claimName).claimValue(claimValue))
+                      .filter(f -> f.mappingRuleId(mappingRuleId))
                       .send()
                       .join();
-              assertThat(mappingRuleSearchResponse.items())
-                  .hasSize(1)
-                  .first()
-                  .satisfies(
-                      mappingRule -> {
-                        assertThat(mappingRule.getClaimName()).isEqualTo(claimName);
-                        assertThat(mappingRule.getClaimValue()).isEqualTo(claimValue);
-                      });
+              assertThat(mappingRuleSearchResponse.items()).hasSize(1);
             });
   }
 }
