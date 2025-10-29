@@ -110,7 +110,7 @@ public final class FileBasedSnapshotTest {
   }
 
   @Test
-  public void shouldMarkAsReservedBootstrappedSnapshots() throws IOException {
+  public void shoulNotdMarkAsReservedBootstrappedSnapshots() throws IOException {
     // given
     final var metadata = new FileBasedSnapshotMetadata(1, 1L, 1L, 0, true);
     final var snapshotPath = snapshotDir.resolve("snapshot");
@@ -120,7 +120,7 @@ public final class FileBasedSnapshotTest {
     final var snapshot = createSnapshot(snapshotPath, checksumPath, metadata);
 
     // then
-    assertThat(snapshot.isReserved()).isTrue();
+    assertThat(snapshot.isReserved()).isFalse();
     assertThat(snapshot.isBootstrap()).isTrue();
   }
 
