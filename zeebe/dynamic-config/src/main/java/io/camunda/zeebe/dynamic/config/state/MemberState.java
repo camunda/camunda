@@ -8,10 +8,12 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 import java.util.function.UnaryOperator;
 
 /**
@@ -26,10 +28,13 @@ import java.util.function.UnaryOperator;
  * @param partitions state of all partitions that the member is replicating
  */
 public record MemberState(
-    long version, Instant lastUpdated, State state, Map<Integer, PartitionState> partitions) {
-
-  public MemberState {
-    partitions = Map.copyOf(partitions);
+    long version, Instant lastUpdated, State state, SortedMap<Integer, PartitionState> partitions) {
+  public MemberState(
+      final long version,
+      final Instant lastUpdated,
+      final State state,
+      final Map<Integer, PartitionState> partitions) {
+    this(version, lastUpdated, state, ImmutableSortedMap.copyOf(partitions));
   }
 
   public static MemberState initializeAsActive(

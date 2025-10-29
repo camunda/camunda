@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import com.google.common.collect.ImmutableSortedSet;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -121,9 +123,19 @@ public record RoutingState(
      */
     record ActivePartitions(
         int basePartitionCount,
-        Set<Integer> additionalActivePartitions,
-        Set<Integer> inactivePartitions)
+        SortedSet<Integer> additionalActivePartitions,
+        SortedSet<Integer> inactivePartitions)
         implements RequestHandling {
+      public ActivePartitions(
+          final int basePartitionCount,
+          final Set<Integer> additionalActivePartitions,
+          final Set<Integer> inactivePartitions) {
+        this(
+            basePartitionCount,
+            ImmutableSortedSet.copyOf(additionalActivePartitions),
+            ImmutableSortedSet.copyOf(inactivePartitions));
+      }
+
       public ActivePartitions {
         Objects.requireNonNull(additionalActivePartitions);
         Objects.requireNonNull(inactivePartitions);

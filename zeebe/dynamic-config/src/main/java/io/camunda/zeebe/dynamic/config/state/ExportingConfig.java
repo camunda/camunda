@@ -8,20 +8,22 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SortedMap;
 
 /**
  * Represents configuration or state of exporting in a partition that can be updated during runtime.
  *
  * @param exporters the state of each exporter in this partition
  */
-public record ExportingConfig(ExportingState state, Map<String, ExporterState> exporters) {
+public record ExportingConfig(ExportingState state, SortedMap<String, ExporterState> exporters) {
 
-  public ExportingConfig {
-    exporters = Map.copyOf(exporters);
+  public ExportingConfig(final ExportingState state, final Map<String, ExporterState> exporters) {
+    this(state, ImmutableSortedMap.copyOf(exporters));
   }
 
   public static ExportingConfig init() {

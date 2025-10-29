@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import com.google.common.collect.ImmutableSortedSet;
 import io.atomix.cluster.MemberId;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
 
 /**
  * An operation that changes the configuration. The operation could be a member join or leave a
@@ -83,7 +83,7 @@ public sealed interface ClusterConfigurationChangeOperation {
         MemberId memberId, int desiredPartitionCount, SortedSet<Integer> partitionsToRedistribute)
         implements ScaleUpOperation {
       public AwaitRedistributionCompletion {
-        partitionsToRedistribute = new TreeSet<>(partitionsToRedistribute);
+        partitionsToRedistribute = ImmutableSortedSet.copyOf(partitionsToRedistribute);
       }
     }
 
@@ -96,7 +96,7 @@ public sealed interface ClusterConfigurationChangeOperation {
         MemberId memberId, int desiredPartitionCount, SortedSet<Integer> partitionsToRelocate)
         implements ScaleUpOperation {
       public AwaitRelocationCompletion {
-        partitionsToRelocate = new TreeSet<>(partitionsToRelocate);
+        partitionsToRelocate = ImmutableSortedSet.copyOf(partitionsToRelocate);
       }
     }
   }
@@ -142,10 +142,12 @@ public sealed interface ClusterConfigurationChangeOperation {
      * @param members the members of the partition's replication group after the reconfiguration
      */
     record PartitionForceReconfigureOperation(
-        MemberId memberId, int partitionId, Set<MemberId> members)
+        MemberId memberId, int partitionId, SortedSet<MemberId> members)
         implements PartitionChangeOperation {
-      public PartitionForceReconfigureOperation {
-        members = Set.copyOf(members);
+
+      public PartitionForceReconfigureOperation(
+          final MemberId memberId, final int partitionId, final Set<MemberId> members) {
+        this(memberId, partitionId, ImmutableSortedSet.copyOf(members));
       }
     }
 
