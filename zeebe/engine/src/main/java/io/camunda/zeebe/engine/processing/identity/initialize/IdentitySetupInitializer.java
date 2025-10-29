@@ -14,22 +14,24 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-/** Reads the configuration properties at <code>camunda.security.initialization</code> and */
+/**
+ * Dispatches a <code>IdentitySetupIntent.INITIALIZE</code> command with a value, containing both:
+ *
+ * <ul>
+ *   <li>Default Entities
+ *   <li>configuration at <code>camunda.security.initialization</code>
+ * </ul>
+ */
 public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware {
-
-  public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
-  public static final String DEFAULT_TENANT_NAME = "Default";
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
@@ -78,7 +80,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     final var initialization = securityConfig.getInitialization();
     final var setupRecord = new IdentitySetupRecord();
 
-    DefaultRoles.setupDefaultRoles(setupRecord);
+    Defaults.setupDefaultTenant(setupRecord);
+    Defaults.setupDefaultRoles(setupRecord);
 
     initialization
         .getUsers()
@@ -101,9 +104,6 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                         .setClaimName(mappingRule.getClaimName())
                         .setClaimValue(mappingRule.getClaimValue())
                         .setName(mappingRule.getMappingRuleId())));
-
-    setupRecord.setDefaultTenant(
-        new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
 
     setupRoleMembership(initialization, setupRecord);
     return setupRecord;
