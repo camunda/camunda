@@ -21,17 +21,18 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.Task;
-import io.camunda.zeebe.stream.api.scheduling.TaskResult;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware, Task {
+/** Reads the configuration properties at <code>camunda.security.initialization</code> and */
+public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware {
+
   public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   public static final String DEFAULT_TENANT_NAME = "Default";
+
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
+
   private final SecurityConfiguration securityConfig;
   private final boolean enableIdentitySetup;
   private final PasswordEncoder passwordEncoder;
@@ -62,11 +63,18 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
     // We use a timestamp of 0L to ensure this is runs immediately once the stream processor is
     // started,
-    context.getScheduleService().runAtAsync(0L, this);
+    context
+        .getScheduleService()
+        .runAtAsync(
+            0L,
+            (taskResultBuilder) -> {
+              taskResultBuilder.appendCommandRecord(
+                  IdentitySetupIntent.INITIALIZE, buildSetupRecord());
+              return taskResultBuilder.build();
+            });
   }
 
-  @Override
-  public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+  private IdentitySetupRecord buildSetupRecord() {
     final var initialization = securityConfig.getInitialization();
     final var setupRecord = new IdentitySetupRecord();
 
@@ -98,9 +106,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
 
     setupRoleMembership(initialization, setupRecord);
-
-    taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, setupRecord);
-    return taskResultBuilder.build();
+    return setupRecord;
   }
 
   private static void setupRoleMembership(
