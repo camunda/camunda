@@ -88,11 +88,11 @@ import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -237,7 +237,8 @@ public class SearchClientReaderConfiguration {
   @Bean
   public MessageSubscriptionReader messageSubscriptionReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new MessageSubscriptionDocumentReader(executor, descriptors.get(EventTemplate.class));
+    return new MessageSubscriptionDocumentReader(
+        executor, descriptors.get(MessageSubscriptionTemplate.class));
   }
 
   @Bean

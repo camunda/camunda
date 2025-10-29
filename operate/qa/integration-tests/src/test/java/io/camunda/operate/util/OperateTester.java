@@ -138,14 +138,6 @@ public class OperateTester {
   private Predicate<Object[]> flowNodeIsActiveCheck;
 
   @Autowired
-  @Qualifier("eventIsImportedCheck")
-  private Predicate<Object[]> eventIsImportedCheck;
-
-  @Autowired
-  @Qualifier("eventIsImportedForFlowNodeCheck")
-  private Predicate<Object[]> eventIsImportedForFlowNodeCheck;
-
-  @Autowired
   @Qualifier("flowNodesAreActiveCheck")
   private Predicate<Object[]> flowNodesAreActiveCheck;
 

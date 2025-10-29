@@ -10,9 +10,9 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
-import io.camunda.webapps.schema.entities.event.EventEntity;
-import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import java.util.List;
 import java.util.Set;
 
-public class EventFromProcessMessageSubscriptionHandler
+public class MessageSubscriptionFromProcessMessageSubscriptionHandler
     extends AbstractEventHandler<ProcessMessageSubscriptionRecordValue> {
 
   public static final Set<Intent> STATES =
@@ -31,7 +31,7 @@ public class EventFromProcessMessageSubscriptionHandler
           ProcessMessageSubscriptionIntent.DELETED,
           ProcessMessageSubscriptionIntent.MIGRATED);
 
-  public EventFromProcessMessageSubscriptionHandler(final String indexName) {
+  public MessageSubscriptionFromProcessMessageSubscriptionHandler(final String indexName) {
     super(indexName);
   }
 
@@ -56,7 +56,8 @@ public class EventFromProcessMessageSubscriptionHandler
 
   @Override
   public void updateEntity(
-      final Record<ProcessMessageSubscriptionRecordValue> record, final EventEntity entity) {
+      final Record<ProcessMessageSubscriptionRecordValue> record,
+      final MessageSubscriptionEntity entity) {
 
     final ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
     entity
@@ -85,7 +86,7 @@ public class EventFromProcessMessageSubscriptionHandler
       entity.setFlowNodeInstanceKey(activityInstanceKey);
     }
 
-    final EventMetadataEntity eventMetadata = new EventMetadataEntity();
+    final MessageSubscriptionMetadataEntity eventMetadata = new MessageSubscriptionMetadataEntity();
     eventMetadata.setMessageName(recordValue.getMessageName());
     eventMetadata.setCorrelationKey(recordValue.getCorrelationKey());
 
@@ -93,10 +94,10 @@ public class EventFromProcessMessageSubscriptionHandler
   }
 
   @Override
-  public void flush(final EventEntity entity, final BatchRequest batchRequest) {
+  public void flush(final MessageSubscriptionEntity entity, final BatchRequest batchRequest) {
     persistEvent(
         entity,
-        EventTemplate.POSITION_MESSAGE,
+        MessageSubscriptionTemplate.POSITION_MESSAGE,
         entity.getPositionProcessMessageSubscription(),
         batchRequest);
   }

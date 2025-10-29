@@ -8,9 +8,9 @@
 package io.camunda.operate.webapp.rest;
 
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
-import io.camunda.operate.webapp.reader.EventReader;
 import io.camunda.operate.webapp.reader.JobReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.reader.MessageSubscriptionReader;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.operate.webapp.rest.dto.metadata.BusinessRuleTaskInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.CallActivityInstanceMetadataDto;
@@ -19,9 +19,9 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.ServiceTaskInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
 import io.camunda.webapps.schema.entities.JobEntity;
-import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +41,7 @@ public class FlowNodeInstanceMetadataBuilder {
 
   private final ListViewReader listViewReader;
 
-  private final EventReader eventReader;
+  private final MessageSubscriptionReader messageSubscriptionReader;
 
   private final UserTaskReader userTaskReader;
 
@@ -62,12 +62,12 @@ public class FlowNodeInstanceMetadataBuilder {
   public FlowNodeInstanceMetadataBuilder(
       final ListViewReader listViewReader,
       final DecisionInstanceReader decisionInstanceReader,
-      final EventReader eventReader,
+      final MessageSubscriptionReader messageSubscriptionReader,
       final UserTaskReader userTaskReader,
       final JobReader jobReader) {
     this.listViewReader = listViewReader;
     this.decisionInstanceReader = decisionInstanceReader;
-    this.eventReader = eventReader;
+    this.messageSubscriptionReader = messageSubscriptionReader;
     this.userTaskReader = userTaskReader;
     this.jobReader = jobReader;
   }
@@ -87,8 +87,10 @@ public class FlowNodeInstanceMetadataBuilder {
 
   private FlowNodeInstanceMetadataDto getDefaultFlowNodeInstanceMetadataDto(
       final FlowNodeInstanceEntity flowNodeInstanceEntity) {
-    final EventEntity event =
-        eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstanceEntity.getId()).orElse(null);
+    final MessageSubscriptionEntity messageSubscription =
+        messageSubscriptionReader
+            .getMessageSubscriptionEntityByFlowNodeInstanceId(flowNodeInstanceEntity.getId())
+            .orElse(null);
     return new FlowNodeInstanceMetadataDto(
         flowNodeInstanceEntity.getFlowNodeId(),
         flowNodeInstanceEntity.getId(),
@@ -96,7 +98,7 @@ public class FlowNodeInstanceMetadataBuilder {
         flowNodeInstanceEntity.getStartDate(),
         flowNodeInstanceEntity.getEndDate(),
         generateEventId(flowNodeInstanceEntity),
-        event);
+        messageSubscription);
   }
 
   private String generateEventId(final FlowNodeInstanceEntity flowNodeInstanceEntity) {
@@ -111,8 +113,10 @@ public class FlowNodeInstanceMetadataBuilder {
     final var instanceIdAndDefinitionName =
         decisionInstanceReader.getCalledDecisionInstanceAndDefinitionByFlowNodeInstanceId(
             flowNodeInstance.getId());
-    final EventEntity event =
-        eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()).orElse(null);
+    final MessageSubscriptionEntity messageSubscription =
+        messageSubscriptionReader
+            .getMessageSubscriptionEntityByFlowNodeInstanceId(flowNodeInstance.getId())
+            .orElse(null);
     final JobEntity job =
         jobReader.getJobByFlowNodeInstanceId(flowNodeInstance.getId()).orElse(null);
     final var calledDecisionInstanceId = instanceIdAndDefinitionName.getLeft();
@@ -123,7 +127,7 @@ public class FlowNodeInstanceMetadataBuilder {
         flowNodeInstance.getType(),
         flowNodeInstance.getStartDate(),
         flowNodeInstance.getEndDate(),
-        event,
+        messageSubscription,
         job,
         generateEventId(flowNodeInstance),
         calledDecisionInstanceId,
@@ -134,7 +138,9 @@ public class FlowNodeInstanceMetadataBuilder {
       final FlowNodeInstanceEntity flowNodeInstance) {
     final var userTask = userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey());
     final var event =
-        eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()).orElse(null);
+        messageSubscriptionReader
+            .getMessageSubscriptionEntityByFlowNodeInstanceId(flowNodeInstance.getId())
+            .orElse(null);
     final var job = jobReader.getJobByFlowNodeInstanceId(flowNodeInstance.getId()).orElse(null);
     final var result =
         new UserTaskInstanceMetadataDto(
@@ -182,8 +188,10 @@ public class FlowNodeInstanceMetadataBuilder {
     final var processInstanceIdAndName =
         listViewReader.getCalledProcessInstanceIdAndNameByFlowNodeInstanceId(
             flowNodeInstance.getId());
-    final EventEntity event =
-        eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()).orElse(null);
+    final MessageSubscriptionEntity messageSubscription =
+        messageSubscriptionReader
+            .getMessageSubscriptionEntityByFlowNodeInstanceId(flowNodeInstance.getId())
+            .orElse(null);
     final JobEntity job =
         jobReader.getJobByFlowNodeInstanceId(flowNodeInstance.getId()).orElse(null);
     final var calledProcessInstanceId = processInstanceIdAndName.getLeft();
@@ -195,7 +203,7 @@ public class FlowNodeInstanceMetadataBuilder {
         flowNodeInstance.getType(),
         flowNodeInstance.getStartDate(),
         flowNodeInstance.getEndDate(),
-        event,
+        messageSubscription,
         job,
         generateEventId(flowNodeInstance),
         calledProcessInstanceId,
@@ -204,8 +212,10 @@ public class FlowNodeInstanceMetadataBuilder {
 
   private ServiceTaskInstanceMetadataDto getServiceTaskInstanceMetadataDto(
       final FlowNodeInstanceEntity flowNodeInstance) {
-    final EventEntity event =
-        eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()).orElse(null);
+    final MessageSubscriptionEntity messageSubscription =
+        messageSubscriptionReader
+            .getMessageSubscriptionEntityByFlowNodeInstanceId(flowNodeInstance.getId())
+            .orElse(null);
     final JobEntity job =
         jobReader.getJobByFlowNodeInstanceId(flowNodeInstance.getId()).orElse(null);
 
@@ -216,7 +226,7 @@ public class FlowNodeInstanceMetadataBuilder {
         flowNodeInstance.getStartDate(),
         flowNodeInstance.getEndDate(),
         generateEventId(flowNodeInstance),
-        event,
+        messageSubscription,
         job);
   }
 }

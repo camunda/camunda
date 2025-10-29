@@ -232,11 +232,11 @@ import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -251,11 +251,11 @@ import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
-import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
@@ -375,7 +375,7 @@ public final class ServiceTransformers {
     mappers.put(DecisionDefinitionEntity.class, new DecisionDefinitionEntityTransformer());
     mappers.put(DecisionRequirementsEntity.class, new DecisionRequirementsEntityTransformer());
     mappers.put(DecisionInstanceEntity.class, new DecisionInstanceEntityTransformer());
-    mappers.put(EventEntity.class, new MessageSubscriptionEntityTransformer());
+    mappers.put(MessageSubscriptionEntity.class, new MessageSubscriptionEntityTransformer());
     mappers.put(FlowNodeInstanceEntity.class, new FlowNodeInstanceEntityTransformer());
     mappers.put(FormEntity.class, new FormEntityTransformer());
     mappers.put(GroupEntity.class, new GroupEntityTransformer());
@@ -508,7 +508,8 @@ public final class ServiceTransformers {
     mappers.put(JobFilter.class, new JobFilterTransformer(indexDescriptors.get(JobTemplate.class)));
     mappers.put(
         MessageSubscriptionFilter.class,
-        new MessageSubscriptionFilterTransformer(indexDescriptors.get(EventTemplate.class)));
+        new MessageSubscriptionFilterTransformer(
+            indexDescriptors.get(MessageSubscriptionTemplate.class)));
     mappers.put(
         CorrelatedMessageSubscriptionFilter.class,
         new CorrelatedMessageSubscriptionFilterTransformer(

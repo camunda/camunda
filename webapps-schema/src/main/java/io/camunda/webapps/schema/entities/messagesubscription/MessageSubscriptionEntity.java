@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.event;
+package io.camunda.webapps.schema.entities.messagesubscription;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
@@ -13,8 +13,10 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class EventEntity
-    implements ExporterEntity<EventEntity>, PartitionedEntity<EventEntity>, TenantOwned {
+public class MessageSubscriptionEntity
+    implements ExporterEntity<MessageSubscriptionEntity>,
+        PartitionedEntity<MessageSubscriptionEntity>,
+        TenantOwned {
 
   private String id;
   private long key;
@@ -31,21 +33,34 @@ public class EventEntity
 
   private Long flowNodeInstanceKey;
 
-  /** Event data. */
-  private EventSourceType eventSourceType;
-
-  private EventType eventType;
+  private MessageSubscriptionState eventType;
   private OffsetDateTime dateTime;
 
-  /** Metadata */
-  private EventMetadataEntity metadata;
+  private MessageSubscriptionMetadataEntity metadata;
 
   private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  private Long position;
-  private Long positionIncident;
   private Long positionProcessMessageSubscription;
-  private Long positionJob;
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated private EventSourceType eventSourceType;
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated private Long position;
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated private Long positionIncident;
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated private Long positionJob;
 
   @Override
   public String getId() {
@@ -53,7 +68,7 @@ public class EventEntity
   }
 
   @Override
-  public EventEntity setId(final String id) {
+  public MessageSubscriptionEntity setId(final String id) {
     this.id = id;
     return this;
   }
@@ -62,7 +77,7 @@ public class EventEntity
     return key;
   }
 
-  public EventEntity setKey(final long key) {
+  public MessageSubscriptionEntity setKey(final long key) {
     this.key = key;
     return this;
   }
@@ -73,7 +88,7 @@ public class EventEntity
   }
 
   @Override
-  public EventEntity setPartitionId(final int partitionId) {
+  public MessageSubscriptionEntity setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
@@ -82,7 +97,7 @@ public class EventEntity
     return processDefinitionKey;
   }
 
-  public EventEntity setProcessDefinitionKey(final Long processDefinitionKey) {
+  public MessageSubscriptionEntity setProcessDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -91,7 +106,7 @@ public class EventEntity
     return processInstanceKey;
   }
 
-  public EventEntity setProcessInstanceKey(final Long processInstanceKey) {
+  public MessageSubscriptionEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -100,7 +115,7 @@ public class EventEntity
     return bpmnProcessId;
   }
 
-  public EventEntity setBpmnProcessId(final String bpmnProcessId) {
+  public MessageSubscriptionEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -109,7 +124,7 @@ public class EventEntity
     return flowNodeId;
   }
 
-  public EventEntity setFlowNodeId(final String flowNodeId) {
+  public MessageSubscriptionEntity setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
     return this;
   }
@@ -118,25 +133,16 @@ public class EventEntity
     return flowNodeInstanceKey;
   }
 
-  public EventEntity setFlowNodeInstanceKey(final Long flowNodeInstanceKey) {
+  public MessageSubscriptionEntity setFlowNodeInstanceKey(final Long flowNodeInstanceKey) {
     this.flowNodeInstanceKey = flowNodeInstanceKey;
     return this;
   }
 
-  public EventSourceType getEventSourceType() {
-    return eventSourceType;
-  }
-
-  public EventEntity setEventSourceType(final EventSourceType eventSourceType) {
-    this.eventSourceType = eventSourceType;
-    return this;
-  }
-
-  public EventType getEventType() {
+  public MessageSubscriptionState getEventType() {
     return eventType;
   }
 
-  public EventEntity setEventType(final EventType eventType) {
+  public MessageSubscriptionEntity setEventType(final MessageSubscriptionState eventType) {
     this.eventType = eventType;
     return this;
   }
@@ -145,16 +151,16 @@ public class EventEntity
     return dateTime;
   }
 
-  public EventEntity setDateTime(final OffsetDateTime dateTime) {
+  public MessageSubscriptionEntity setDateTime(final OffsetDateTime dateTime) {
     this.dateTime = dateTime;
     return this;
   }
 
-  public EventMetadataEntity getMetadata() {
+  public MessageSubscriptionMetadataEntity getMetadata() {
     return metadata;
   }
 
-  public EventEntity setMetadata(final EventMetadataEntity metadata) {
+  public MessageSubscriptionEntity setMetadata(final MessageSubscriptionMetadataEntity metadata) {
     this.metadata = metadata;
     return this;
   }
@@ -164,26 +170,8 @@ public class EventEntity
     return tenantId;
   }
 
-  public EventEntity setTenantId(final String tenantId) {
+  public MessageSubscriptionEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
-    return this;
-  }
-
-  public Long getPosition() {
-    return position;
-  }
-
-  public EventEntity setPosition(final Long position) {
-    this.position = position;
-    return this;
-  }
-
-  public Long getPositionIncident() {
-    return positionIncident;
-  }
-
-  public EventEntity setPositionIncident(final Long positionIncident) {
-    this.positionIncident = positionIncident;
     return this;
   }
 
@@ -191,17 +179,76 @@ public class EventEntity
     return positionProcessMessageSubscription;
   }
 
-  public EventEntity setPositionProcessMessageSubscription(
+  public MessageSubscriptionEntity setPositionProcessMessageSubscription(
       final Long positionProcessMessageSubscription) {
     this.positionProcessMessageSubscription = positionProcessMessageSubscription;
     return this;
   }
 
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated
+  public EventSourceType getEventSourceType() {
+    return eventSourceType;
+  }
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated
+  public MessageSubscriptionEntity setEventSourceType(final EventSourceType eventSourceType) {
+    this.eventSourceType = eventSourceType;
+    return this;
+  }
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated
+  public Long getPosition() {
+    return position;
+  }
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated
+  public MessageSubscriptionEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated
+  public Long getPositionIncident() {
+    return positionIncident;
+  }
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated
+  public MessageSubscriptionEntity setPositionIncident(final Long positionIncident) {
+    this.positionIncident = positionIncident;
+    return this;
+  }
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated
   public Long getPositionJob() {
     return positionJob;
   }
 
-  public EventEntity setPositionJob(final Long positionJob) {
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated
+  public MessageSubscriptionEntity setPositionJob(final Long positionJob) {
     this.positionJob = positionJob;
     return this;
   }
@@ -236,7 +283,7 @@ public class EventEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final EventEntity that = (EventEntity) o;
+    final MessageSubscriptionEntity that = (MessageSubscriptionEntity) o;
     return Objects.equals(id, that.id)
         && key == that.key
         && partitionId == that.partitionId

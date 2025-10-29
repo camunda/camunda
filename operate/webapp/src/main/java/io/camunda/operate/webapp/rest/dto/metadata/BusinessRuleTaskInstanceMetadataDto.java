@@ -10,8 +10,8 @@ package io.camunda.operate.webapp.rest.dto.metadata;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.webapps.schema.entities.JobEntity;
-import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -28,12 +28,20 @@ public class BusinessRuleTaskInstanceMetadataDto extends JobFlowNodeInstanceMeta
       final FlowNodeType flowNodeType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
-      final EventEntity event,
+      final MessageSubscriptionEntity messageSubscription,
       final JobEntity job,
       final String eventId,
       final String calledDecisionInstanceId,
       final String calledDecisionDefinitionName) {
-    super(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate, eventId, event, job);
+    super(
+        flowNodeId,
+        flowNodeInstanceId,
+        flowNodeType,
+        startDate,
+        endDate,
+        eventId,
+        messageSubscription,
+        job);
     if (calledDecisionInstanceId != null) {
       setCalledDecisionInstanceId(calledDecisionInstanceId);
     }

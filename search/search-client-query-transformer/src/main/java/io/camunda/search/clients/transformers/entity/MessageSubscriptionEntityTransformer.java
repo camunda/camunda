@@ -8,17 +8,17 @@
 package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
-import io.camunda.search.entities.MessageSubscriptionEntity;
-import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
-import io.camunda.webapps.schema.entities.event.EventEntity;
-import io.camunda.webapps.schema.entities.event.EventType;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
+import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
 
 public class MessageSubscriptionEntityTransformer
-    implements ServiceTransformer<EventEntity, MessageSubscriptionEntity> {
+    implements ServiceTransformer<
+        MessageSubscriptionEntity, io.camunda.search.entities.MessageSubscriptionEntity> {
 
   @Override
-  public MessageSubscriptionEntity apply(final EventEntity value) {
-    return new MessageSubscriptionEntity(
+  public io.camunda.search.entities.MessageSubscriptionEntity apply(
+      final MessageSubscriptionEntity value) {
+    return new io.camunda.search.entities.MessageSubscriptionEntity(
         value.getKey(),
         value.getBpmnProcessId(),
         value.getProcessDefinitionKey(),
@@ -32,15 +32,20 @@ public class MessageSubscriptionEntityTransformer
         value.getTenantId());
   }
 
-  private MessageSubscriptionState toMessageSubscriptionState(final EventType value) {
+  private io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState
+      toMessageSubscriptionState(final MessageSubscriptionState value) {
     if (value == null) {
       return null;
     }
     return switch (value) {
-      case CORRELATED -> MessageSubscriptionState.CORRELATED;
-      case CREATED -> MessageSubscriptionState.CREATED;
-      case MIGRATED -> MessageSubscriptionState.MIGRATED;
-      case DELETED -> MessageSubscriptionState.DELETED;
+      case CORRELATED ->
+          io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState.CORRELATED;
+      case CREATED ->
+          io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState.CREATED;
+      case MIGRATED ->
+          io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState.MIGRATED;
+      case DELETED ->
+          io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState.DELETED;
       default -> throw new IllegalArgumentException("Unknown EventType: " + value);
     };
   }

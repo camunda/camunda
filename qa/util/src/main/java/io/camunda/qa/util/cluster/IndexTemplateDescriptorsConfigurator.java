@@ -18,11 +18,11 @@ import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
-import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
@@ -89,9 +89,10 @@ public class IndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
-  public EventTemplate getEventTemplate(
+  public MessageSubscriptionTemplate getMessageSubscriptionTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new EventTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
+    return new MessageSubscriptionTemplate(
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
