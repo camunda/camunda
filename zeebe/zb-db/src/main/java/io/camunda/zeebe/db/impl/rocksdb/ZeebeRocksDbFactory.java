@@ -65,11 +65,12 @@ public final class ZeebeRocksDbFactory<
   }
 
   @Override
-  public ZeebeTransactionDb<ColumnFamilyType> createDb(final File pathName) {
+  public ZeebeTransactionDb<ColumnFamilyType> createDb(
+      final File pathName, final boolean avoidFlush) {
     final List<AutoCloseable> closeables = Collections.synchronizedList(new ArrayList<>());
     try {
       return ZeebeTransactionDb.openTransactionalDb(
-          prepareOptions(closeables),
+          prepareOptions(closeables, avoidFlush),
           pathName.getAbsolutePath(),
           closeables,
           rocksDbConfiguration,
@@ -83,9 +84,14 @@ public final class ZeebeRocksDbFactory<
   }
 
   @Override
+  public ZeebeTransactionDb<ColumnFamilyType> createDb(final File pathName) {
+    return createDb(pathName, true);
+  }
+
+  @Override
   public ZeebeDb<ColumnFamilyType> openSnapshotOnlyDb(final File pathName) {
     final List<AutoCloseable> managedResources = Collections.synchronizedList(new ArrayList<>());
-    final var options = prepareOptions(managedResources);
+    final var options = prepareOptions(managedResources, true);
     final var snapshotOnlyOptions =
         new Options(options.dbOptions(), options.cfOptions())
             // only open existing databases
@@ -104,22 +110,24 @@ public final class ZeebeRocksDbFactory<
     }
   }
 
-  private RocksDbOptions prepareOptions(final List<AutoCloseable> managedResources) {
+  private RocksDbOptions prepareOptions(
+      final List<AutoCloseable> managedResources, final boolean avoidFlush) {
     // column family options have to be closed as last
     final var columnFamilyOptions = createColumnFamilyOptions(managedResources);
     managedResources.add(columnFamilyOptions);
-    final var dbOptions = createDefaultDbOptions(managedResources);
+    final var dbOptions = createDefaultDbOptions(managedResources, avoidFlush);
     managedResources.add(dbOptions);
     return new RocksDbOptions(dbOptions, columnFamilyOptions);
   }
 
-  private DBOptions createDefaultDbOptions(final List<AutoCloseable> closeables) {
+  private DBOptions createDefaultDbOptions(
+      final List<AutoCloseable> closeables, final boolean avoidFlush) {
     final var props = new Properties();
     props.put("file_checksum_gen_factory", "FileChecksumGenCrc32cFactory");
     //    Enables full file checksum
 
     // No sense in flushing data that we will just discard anyway. We always recover from snapshot.
-    props.setProperty("avoid_flush_during_shutdown", "true");
+    props.setProperty("avoid_flush_during_shutdown", avoidFlush ? "true" : "false");
 
     final var dbOptions =
         DBOptions.getDBOptionsFromProps(props)

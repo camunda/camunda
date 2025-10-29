@@ -99,6 +99,11 @@ final class StreamProcessorTransactionErrorTest {
     }
 
     @Override
+    public ZeebeDb<ZbColumnFamilies> createDb(final File pathName, final boolean avoidFlush) {
+      return new ErrorProneZeebeDb(delegate.createDb(pathName), commitException);
+    }
+
+    @Override
     public ZeebeDb<ZbColumnFamilies> createDb(final File pathName) {
       return new ErrorProneZeebeDb(delegate.createDb(pathName), commitException);
     }
