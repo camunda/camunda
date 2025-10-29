@@ -250,6 +250,10 @@ jobs:
         with:
           work-dir: ./optimize
 
+      - name: Update zeebe and identity versions
+        if: ${{ env.IS_RC == 'false' }}
+        run: ./.github/optimize/scripts/update-zeebe-identity.sh
+
       - name: Clean release
         run: |
           ./mvnw release:clean
