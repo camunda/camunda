@@ -692,6 +692,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions,
       final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+
     // Collect all terminate instance keys
     final Set<Long> terminatedInstanceKeys =
         terminateInstructions.stream()
@@ -700,40 +701,19 @@ public final class ProcessInstanceModificationModifyProcessor
 
     // For each activation, determine required flow scope instance key
     final List<String> conflictingActivations = new ArrayList<>();
-    for (final var instruction : activateInstructions) {
-      final var elementToActivate = process.getProcess().getElementById(instruction.getElementId());
-      if (elementToActivate == null) {
-        continue; // Already validated elsewhere
-      }
-      final long ancestorScopeKey = instruction.getAncestorScopeKey();
-      final long requiredFlowScopeKey;
-      if (ancestorScopeKey > 0) {
-        requiredFlowScopeKey = ancestorScopeKey;
-      } else {
-        // Find the active instance of the flow scope for this element
-        final var flowScope = elementToActivate.getFlowScope();
-        if (flowScope == null) {
-          continue; // No flow scope required
-        }
-        final var flowScopeInstance =
-            elementInstanceState.getChildren(processInstance.getKey()).stream()
-                .filter(
-                    ei ->
-                        BufferUtil.bufferAsString(flowScope.getId())
-                            .equals(ei.getValue().getElementId()))
-                .findFirst()
-                .orElse(null);
-        if (flowScopeInstance == null) {
-          continue; // No active flow scope instance found
-        }
-        requiredFlowScopeKey = flowScopeInstance.getKey();
-      }
-      if (terminatedInstanceKeys.contains(requiredFlowScopeKey)) {
+    for (final var activationInstruction : activateInstructions) {
+      final var elementToActivate =
+          process.getProcess().getElementById(activationInstruction.getElementId());
+
+      final var requiredFlowScopeKey =
+          getRequiredFlowScopeKey(processInstance, activationInstruction, elementToActivate);
+      if (requiredFlowScopeKey.isPresent()
+          && terminatedInstanceKeys.contains(requiredFlowScopeKey.get())) {
         conflictingActivations.add(
             String.format(
                 ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_CONFLICT,
-                instruction.getElementId(),
-                requiredFlowScopeKey));
+                activationInstruction.getElementId(),
+                requiredFlowScopeKey.get()));
       }
     }
     if (conflictingActivations.isEmpty()) {
@@ -745,6 +725,35 @@ public final class ProcessInstanceModificationModifyProcessor
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join(", ", conflictingActivations));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Optional<Long> getRequiredFlowScopeKey(
+      final ElementInstance processInstance,
+      final ProcessInstanceModificationActivateInstructionValue activationInstruction,
+      final AbstractFlowElement elementToActivate) {
+    final long ancestorScopeKey = activationInstruction.getAncestorScopeKey();
+    if (ancestorScopeKey > 0) {
+      return Optional.of(ancestorScopeKey);
+    } else {
+      var flowScope = elementToActivate.getFlowScope();
+      while (flowScope != null) {
+        // Find the active instance of the flow scope for this element
+        final ExecutableFlowElement finalFlowScope = flowScope;
+        final var flowScopeInstance =
+            elementInstanceState.getChildren(processInstance.getKey()).stream()
+                .filter(
+                    ei ->
+                        BufferUtil.bufferAsString(finalFlowScope.getId())
+                            .equals(ei.getValue().getElementId()))
+                .findFirst()
+                .orElse(null);
+        if (flowScopeInstance != null) {
+          return Optional.of(flowScopeInstance.getKey());
+        }
+        flowScope = flowScope.getFlowScope();
+      }
+    }
+    return Optional.empty();
   }
 
   public void executeVariableInstruction(
