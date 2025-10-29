@@ -325,6 +325,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     // Note: level-3 is intentionally NOT deployed to create incident chain
     ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/level-1.bpmn");
     ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/level-2.bpmn");
+    ZeebeTestUtil.deployDecision(
+            client, getTenant(TENANT_A), "develop/decisions-chain-a.dmn");
 
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_A), "develop/incidents-process.bpmn");
