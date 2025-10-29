@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.HistoryDeletionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -20,7 +19,6 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,19 +35,13 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
   private final int batchSize;
   private final HistoryDeletionState historyDeletionState;
   private final WriteClientsProxy writeClientsProxy;
-  private final TypedCommandWriter commandWriter;
-  private final KeyGenerator keyGenerator;
 
   public HistoryDeletionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final WriteClientsProxy writeClientsProxy,
-      final TypedCommandWriter commandWriter,
-      final KeyGenerator keyGenerator,
       final EngineConfiguration config) {
     historyDeletionState = scheduledTaskStateFactory.get().getHistoryDeletionState();
     this.writeClientsProxy = writeClientsProxy;
-    this.commandWriter = commandWriter;
-    this.keyGenerator = keyGenerator;
     interval = config.getHistoryDeletionInterval();
     batchSize = config.getHistoryDeletionBatchSize();
   }
@@ -89,7 +81,7 @@ public class HistoryDeletionScheduler implements StreamProcessorLifecycleAware {
 
             // TODO only delete if delete = success
             taskResultBuilder.appendCommandRecord(
-                keyGenerator.nextKey(),
+                processInstanceKey,
                 ProcessInstanceIntent.DELETE_COMPLETE,
                 new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
                 FollowUpCommandMetadata.of(
