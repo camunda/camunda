@@ -8,6 +8,10 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -19,6 +23,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -26,12 +32,12 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 
 final class SegmentedJournalWriterTest {
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final TestJournalFactory journalFactory =
       new TestJournalFactory("data", 2, this::fillWithOnes);
-  private final SegmentsFlusher flusher = new SegmentsFlusher(journalFactory.metaStore());
 
   private SegmentsManager segments;
   private SegmentedJournalWriter writer;
@@ -48,7 +54,8 @@ final class SegmentedJournalWriterTest {
   void beforeEach(final @TempDir Path tempDir) {
     segments = journalFactory.segmentsManager(tempDir);
     segments.open();
-    writer = new SegmentedJournalWriter(segments, flusher, journalFactory.metrics());
+    writer =
+        new SegmentedJournalWriter(segments, journalFactory.metaStore(), journalFactory.metrics());
   }
 
   @AfterEach
@@ -69,7 +76,7 @@ final class SegmentedJournalWriterTest {
     writer.deleteAfter(2);
 
     // then
-    assertThat(flusher.nextFlushIndex()).isEqualTo(3L);
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(2L);
     assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
   }
 
@@ -84,7 +91,7 @@ final class SegmentedJournalWriterTest {
     writer.reset(8);
 
     // then
-    assertThat(flusher.nextFlushIndex()).isEqualTo(8L);
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(7L);
     assertThat(journalFactory.metaStore().hasLastFlushedIndex()).isFalse();
   }
 
@@ -160,9 +167,7 @@ final class SegmentedJournalWriterTest {
     followerSegments.open();
     final var followerWriter =
         new SegmentedJournalWriter(
-            followerSegments,
-            new SegmentsFlusher(followerJournalFactory.metaStore()),
-            followerJournalFactory.metrics());
+            followerSegments, journalFactory.metaStore(), followerJournalFactory.metrics());
 
     try (final SegmentedJournalReader reader =
         new SegmentedJournalReader(
@@ -178,5 +183,72 @@ final class SegmentedJournalWriterTest {
     }
 
     followerSegments.close();
+  }
+
+  @Test
+  void shouldFlushAllSegments() throws FlushException {
+    // given
+    writer.append(1, journalFactory.entry());
+    writer.append(2, journalFactory.entry());
+    writer.append(3, journalFactory.entry());
+    writer.append(4, journalFactory.entry());
+
+    // when
+    writer.flush();
+
+    // then
+
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(4L);
+  }
+
+  @Test
+  void shouldStoreLastFlushedIndexOnPartialFlush() {
+    // given
+
+    final SortedMap<Long, FlushableSegment> sortedMap = new TreeMap<>();
+    sortedMap.put(1L, new TestSegment(15, true));
+    sortedMap.put(2L, new TestSegment(30, false));
+
+    final var segments = Mockito.mock(SegmentsManager.class);
+    final var segment = Mockito.mock(Segment.class);
+    when(segment.index()).thenReturn(1L);
+    when(segments.getLastSegment()).thenReturn(segment);
+    when(segment.writer()).thenReturn(Mockito.mock(SegmentWriter.class));
+
+    final var segmentJournal = journalFactory.journal(segments);
+    when(segments.getFirstSegment()).thenReturn(segment);
+    when(segments.getTailSegments(anyLong())).thenAnswer(invocation -> sortedMap);
+
+    // when
+    assertThatThrownBy(segmentJournal::flush);
+
+    // then
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(15L);
+  }
+
+  @Test
+  void shouldStoreLastFlushedIndexOnPartialFailedFlush() {
+    // given
+    final var error = new FlushException(new IOException("Cannot allocate memory"));
+    final SortedMap<Long, FlushableSegment> sortedMap = new TreeMap<>();
+    sortedMap.put(1L, new TestSegment(15));
+    sortedMap.put(2L, new TestSegment(30, error));
+
+    final var segments = Mockito.mock(SegmentsManager.class);
+    final var segment = Mockito.mock(Segment.class);
+    when(segment.index()).thenReturn(1L);
+    when(segments.getLastSegment()).thenReturn(segment);
+    when(segment.writer()).thenReturn(Mockito.mock(SegmentWriter.class));
+
+    final var segmentJournal = journalFactory.journal(segments);
+    when(segments.getFirstSegment()).thenReturn(segment);
+    when(segments.getTailSegments(anyLong())).thenAnswer(invocation -> sortedMap);
+
+    // when
+    assertThatCode(segmentJournal::flush).isSameAs(error);
+    assertThatThrownBy(segmentJournal::flush);
+
+    // then
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(15L);
   }
 }
