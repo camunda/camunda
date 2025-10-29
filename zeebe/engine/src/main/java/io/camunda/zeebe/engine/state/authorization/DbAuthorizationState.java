@@ -100,7 +100,9 @@ public class DbAuthorizationState implements MutableAuthorizationState {
               permissions.addAuthorizationScope(
                   permissionType,
                   new AuthorizationScope(
-                      authorization.getResourceMatcher(), authorization.getResourceId()));
+                      authorization.getResourceMatcher(),
+                      authorization.getResourceId(),
+                      authorization.getResourcePropertyName()));
             });
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
 
@@ -140,7 +142,8 @@ public class DbAuthorizationState implements MutableAuthorizationState {
                   Set.of(
                       new AuthorizationScope(
                           persistedAuthorization.getResourceMatcher(),
-                          persistedAuthorization.getResourceId())));
+                          persistedAuthorization.getResourceId(),
+                          persistedAuthorization.getResourcePropertyName())));
             });
 
     // delete the old authorization record
