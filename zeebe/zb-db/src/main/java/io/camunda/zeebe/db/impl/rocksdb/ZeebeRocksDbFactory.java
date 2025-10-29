@@ -117,6 +117,9 @@ public final class ZeebeRocksDbFactory<
     props.put("file_checksum_gen_factory", "FileChecksumGenCrc32cFactory");
     //    Enables full file checksum
 
+    // No sense in flushing data that we will just discard anyway. We always recover from snapshot.
+    props.setProperty("avoid_flush_during_shutdown", "true");
+
     final var dbOptions =
         DBOptions.getDBOptionsFromProps(props)
             .setErrorIfExists(false)
