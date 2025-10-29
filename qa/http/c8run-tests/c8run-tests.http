@@ -96,11 +96,11 @@ Content-Type: application/octet-stream
 %}
 
 ###
+# @name process-definition-search-authorized
 < {%
   import {wait} from "../js/wait"
   wait(1)
 %}
-# @name process-definition-search-authorized
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/search
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
@@ -127,10 +127,6 @@ Accept: application/json
 %}
 
 ###
-< {%
-  import {wait} from "../js/wait"
-  wait(4)
-%}
 # @name get-process-definition-authorized
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
@@ -173,28 +169,6 @@ Accept: application/json
 %}
 
 ###
-# @name get-process-definition-statistics-authorized
-< {%
-  import {wait} from "../js/wait"
-  wait(2)
-%}
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/statistics/element-instances
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
-Content-Type: application/json
-Accept: application/json
-
-{}
-
-> {%
-  client.test("Process definition retrieval is successful", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
-    client.assert(Array.isArray(response.body.items), "items must be array");
-    client.assert(response.body.items.length > 0, "Expect at least one element");
-  });
-%}
-
-###
 # @name create-process-instance
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
@@ -223,11 +197,29 @@ let expectedDefinitionKey = client.global.get("PROCESS_DEFINITION_KEY");
 %}
 
 ###
-# @name get-process-instance
+# @name get-process-definition-statistics-authorized
 < {%
   import {wait} from "../js/wait"
   wait(4)
 %}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/{{PROCESS_DEFINITION_KEY}}/statistics/element-instances
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+{}
+
+> {%
+  client.test("Process definition retrieval is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(Array.isArray(response.body.items), "items must be array");
+    client.assert(response.body.items.length > 0, "Expect at least one element");
+  });
+%}
+
+###
+# @name get-process-instance
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
@@ -297,10 +289,6 @@ Accept: application/json
 
 ###
 # @name get-process-instance-call-hierarchy
-< {%
-  import {wait} from "../js/wait"
-  wait(1)
-%}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}/call-hierarchy
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
@@ -527,104 +515,11 @@ Accept: application/json
 %}
 
 ###
-# @name get-process-instance-with-incident
+# @name user-task-search-authorized
 < {%
   import {wait} from "../js/wait"
   wait(4)
 %}
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_INCIDENT}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
-Content-Type: application/json
-Accept: application/json
-
-> {%
-  client.test("Process instance is successful returned", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
-  });
-
-  client.test("Response should be JSON", function () {
-    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
-  });
-
-  let expectedInstanceKey = client.global.get("PROCESS_INSTANCE_KEY");
-  client.test("Response should not be empty", function () {
-    client.assert(response.body.processInstanceKey === expectedInstanceKey, "Process instances wasn't returned");
-    client.assert(response.body.state === "INCIDENT", "Process instance is not ACTIVE");
-    client.assert(response.body.hasIncident === true, "Process instance is healthy");
-  });
-%}
-
-###
-# @name process-incident-search-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/search
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
-Content-Type: application/json
-Accept: application/json
-
-{
-  "sort": [
-    {
-      "field": "processInstanceKey",
-      "order": "ASC"
-    }
-  ],
-  "page": {
-    "from": 0,
-    "limit": 100
-  }
-}
-
-> {%
-  client.test("Process instance search is successful", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
-  });
-
-  client.test("Response should be JSON", function () {
-    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
-  });
-
-  client.test("Response should not be empty", function () {
-    client.assert(response.body.items.length > 0, "Process instances were not returned");
-    client.global.set("INCIDENT_KEY", response.body.items[0].incidentKey);
-  });
-%}
-
-###
-# @name get-process-incident-authorized
-GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/{{INCIDENT_KEY}}
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
-Content-Type: application/json
-Accept: application/json
-
-> {%
-  client.test("Process incident retrieval is successful", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
-  });
-%}
-
-###
-# @name process-incident-resolution-authorized
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/{{INCIDENT_KEY}}/resolution
-Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
-X-CSRF-TOKEN: {{csrf_token}}
-Content-Type: application/json
-Accept: application/json
-
-{
-  "operationReference": 1
-}
-
-> {%
-  client.test("Process incident resolution is successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
-  });
-%}
-
-###
-# @name user-task-search-authorized
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/search
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
@@ -871,7 +766,7 @@ Accept: application/json
 # @name get-updated-assigned-user-task-authorized
 < {%
   import {wait} from "../js/wait"
-  wait(2)
+  wait(4)
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/user-tasks/{{USER_TASK_KEY}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
@@ -984,6 +879,103 @@ Accept: application/json
 
   client.test("Variables should be returned", function () {
     client.assert(response.body.variableKey !== undefined, "Variable was not returned");
+  });
+%}
+
+###
+# @name get-process-instance-with-incident
+< {%
+  import {wait} from "../js/wait"
+  wait(4)
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY_INCIDENT}}
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Process instance is successful returned", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  let expectedInstanceKey = client.global.get("PROCESS_INSTANCE_KEY_INCIDENT");
+  client.test("Response should not be empty", function () {
+    client.assert(response.body.processInstanceKey === expectedInstanceKey, "Process instances wasn't returned");
+    client.assert(response.body.state === "ACTIVE", "Process instance is not ACTIVE");
+    client.assert(response.body.hasIncident === true, "Process instance is healthy");
+  });
+%}
+
+###
+# @name process-incident-search-authorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/search
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "processInstanceKey",
+      "order": "ASC"
+    }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("Process instance search is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Response should not be empty", function () {
+    client.assert(response.body.items.length > 0, "Process instances were not returned");
+    client.global.set("INCIDENT_KEY", response.body.items[0].incidentKey);
+  });
+%}
+
+###
+# @name get-process-incident-authorized
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/{{INCIDENT_KEY}}
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Process incident retrieval is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+%}
+
+###
+# @name process-incident-resolution-authorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/incidents/{{INCIDENT_KEY}}/resolution
+Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
+X-CSRF-TOKEN: {{csrf_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "operationReference": 1
+}
+
+> {%
+  client.test("Process incident resolution is successful", function () {
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
