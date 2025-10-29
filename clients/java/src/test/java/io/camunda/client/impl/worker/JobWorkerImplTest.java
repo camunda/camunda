@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.awaitility.Awaitility;
@@ -59,6 +60,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.mockito.Mockito;
 
 @SuppressWarnings("resource")
 @RunWith(JUnit4.class)
@@ -276,6 +278,50 @@ public final class JobWorkerImplTest {
       // then
       Awaitility.await("Worker should be closed after detecting underlying executor is closed")
           .until(jobWorker::isClosed, Matchers.equalTo(true));
+    }
+  }
+
+  @Test
+  public void shouldUseJobHandlingExecutorForJobs() {
+    // given
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor =
+        Mockito.spy(Executors.newSingleThreadExecutor(r -> new Thread(r, "test-executor-")));
+    final ExecutorResource executorResource =
+        new ExecutorResource(scheduler, false, jobHandlingExecutor, false);
+
+    try (final CamundaClient client =
+        new CamundaClientImpl(
+            new CamundaClientBuilderImpl(),
+            channel,
+            GatewayGrpc.newStub(channel),
+            executorResource)) {
+
+      try (final JobWorker jobWorker =
+          client
+              .newWorker()
+              .jobType("t")
+              .handler(
+                  (c, j) -> {
+                    assertThat(Thread.currentThread().getName()).startsWith("test-executor-");
+                  })
+              .pollInterval(Duration.ofHours(1))
+              .streamEnabled(true)
+              .open()) {
+
+        Awaitility.await("We need to wait until the streams have been opened")
+            .until(() -> !gateway.openStreams.isEmpty());
+
+        // when
+        gateway.pushJob(TestData.job());
+
+        // then
+        Awaitility.await("Handler should be invoked")
+            .untilAsserted(
+                () ->
+                    Mockito.verify(jobHandlingExecutor, Mockito.atLeastOnce())
+                        .execute(Mockito.any(Runnable.class)));
+      }
     }
   }
 
