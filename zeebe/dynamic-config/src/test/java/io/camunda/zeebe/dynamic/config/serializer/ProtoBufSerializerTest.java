@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.Hash
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.List;
@@ -282,6 +283,6 @@ final class ProtoBufSerializerTest {
         protoBufSerializer.decodeExportingConfig(Topology.ExportingConfig.parseFrom(serialized));
 
     // then
-    assertThat(deserialized.state()).isNull();
+    assertThat(deserialized.state()).isEqualTo(ExportingState.UNKNOWN);
   }
 }

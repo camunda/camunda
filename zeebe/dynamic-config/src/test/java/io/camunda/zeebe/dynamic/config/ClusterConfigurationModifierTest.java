@@ -114,7 +114,7 @@ final class ClusterConfigurationModifierTest {
       final var expectedConfig =
           new DynamicPartitionConfig(
               new ExportingConfig(
-                  null,
+                  ExportingState.UNKNOWN,
                   Map.of(
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),

@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 
@@ -26,8 +27,13 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
     this(state, ImmutableSortedMap.copyOf(exporters));
   }
 
+  public ExportingConfig {
+    Objects.requireNonNull(state);
+    Objects.requireNonNull(exporters);
+  }
+
   public static ExportingConfig init() {
-    return new ExportingConfig(null, Map.of());
+    return new ExportingConfig(ExportingState.UNKNOWN, Map.of());
   }
 
   private ExportingConfig updateExporter(

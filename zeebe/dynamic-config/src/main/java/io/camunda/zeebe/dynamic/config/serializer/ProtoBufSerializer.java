@@ -240,7 +240,7 @@ public class ProtoBufSerializer
 
   private ExportingState decodeExportingState(final Topology.ExportingStateEnum exportingState) {
     return switch (exportingState) {
-      case EXPORTING_STATE_UNKNOWN -> null;
+      case EXPORTING_STATE_UNKNOWN -> ExportingState.UNKNOWN;
       case EXPORTING -> ExportingState.EXPORTING;
       case SOFT_PAUSED -> ExportingState.SOFT_PAUSED;
       case PAUSED -> ExportingState.PAUSED;
@@ -317,8 +317,7 @@ public class ProtoBufSerializer
 
   private Topology.ExportingStateEnum encodeExportingState(final ExportingState state) {
     return switch (state) {
-      // TODO: no need to handle null as soon as we have a proper initializer.
-      case null -> Topology.ExportingStateEnum.EXPORTING_STATE_UNKNOWN;
+      case UNKNOWN -> Topology.ExportingStateEnum.EXPORTING_STATE_UNKNOWN;
       case EXPORTING -> Topology.ExportingStateEnum.EXPORTING;
       case SOFT_PAUSED -> Topology.ExportingStateEnum.SOFT_PAUSED;
       case PAUSED -> Topology.ExportingStateEnum.PAUSED;

@@ -9,6 +9,11 @@ package io.camunda.zeebe.dynamic.config.state;
 
 /** Controls the overall state of exporting across all exporters. */
 public enum ExportingState {
+  /**
+   * The exporting state is not yet controlled through {@link DynamicPartitionConfig}, we don't know
+   * whether we are exporting or not.
+   */
+  UNKNOWN,
   /** All enabled exporters are actively exporting records. */
   EXPORTING,
   /**
