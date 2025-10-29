@@ -2,6 +2,28 @@
 name: Optimize Release Camunda Optimize C8
 
 on:
+  workflow_call:
+    inputs:
+      RELEASE_VERSION:
+        required: true
+        description: "Version to release. Applied to pom.xml and Git tag"
+        type: string
+      DEVELOPMENT_VERSION:
+        required: true
+        description: "Next development version"
+        type: string
+      BRANCH:
+        required: true
+        description: "The branch used for the release checkout"
+        type: string
+      DOCKER_LATEST:
+        required: true
+        description: "Should the docker image be tagged as latest?"
+        type: boolean
+      IS_DRY_RUN:
+        required: true
+        description: "Is this a dry run?"
+        type: boolean
   schedule:
     - cron: "0 0 * * 1-5"
   workflow_dispatch:
