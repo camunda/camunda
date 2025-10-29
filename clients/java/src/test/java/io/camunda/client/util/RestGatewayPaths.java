@@ -37,8 +37,8 @@ public class RestGatewayPaths {
   private static final String URL_INCIDENT = REST_API_PATH + "/incidents/%s";
   private static final String URL_INCIDENT_RESOLUTION = REST_API_PATH + "/incidents/%s/resolution";
   private static final String URL_JOB_ACTIVATION = REST_API_PATH + "/jobs/activation";
-  private static final String URL_MAPPING_RULE = REST_API_PATH + "/mapping-rules/%s";
   private static final String URL_MAPPING_RULES = REST_API_PATH + "/mapping-rules";
+  private static final String URL_MAPPING_RULE = URL_MAPPING_RULES + "/%s";
   private static final String URL_MESSAGE_PUBLICATION = REST_API_PATH + "/messages/publication";
   private static final String URL_MESSAGE_CORRELATION = REST_API_PATH + "/messages/correlation";
   private static final String URL_PROCESS_DEFINITION = REST_API_PATH + "/process-definitions/%s";

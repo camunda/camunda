@@ -96,6 +96,7 @@ import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
+import io.camunda.client.api.command.UpdateMappingRuleCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRoleCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
@@ -240,6 +241,7 @@ import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateJobCommandImpl;
+import io.camunda.client.impl.command.UpdateMappingRuleCommandImpl;
 import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserCommandImpl;
@@ -1068,6 +1070,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CreateMappingRuleCommandStep1 newCreateMappingRuleCommand() {
     return new CreateMappingRuleCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UpdateMappingRuleCommandStep1 newUpdateMappingRuleCommand(final String mappingRuleId) {
+    return new UpdateMappingRuleCommandImpl(httpClient, mappingRuleId, jsonMapper);
   }
 
   @Override

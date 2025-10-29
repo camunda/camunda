@@ -85,6 +85,7 @@ import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
+import io.camunda.client.api.command.UpdateMappingRuleCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRoleCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
@@ -1771,6 +1772,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CreateMappingRuleCommandStep1 newCreateMappingRuleCommand();
+
+  /**
+   * Command to update a mapping rule.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUpdateMappingRule("mappingRuleId")
+   *  .name("name")
+   *  .claimName("claim name")
+   *  .claimValue("claim value")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UpdateMappingRuleCommandStep1 newUpdateMappingRuleCommand(String mappingRuleId);
 
   /*
    * Retrieves the XML representation of a decision requirements.

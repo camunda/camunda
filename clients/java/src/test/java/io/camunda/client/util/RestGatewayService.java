@@ -39,6 +39,7 @@ import io.camunda.client.protocol.rest.IncidentResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.MappingRuleCreateResult;
 import io.camunda.client.protocol.rest.MappingRuleResult;
+import io.camunda.client.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.client.protocol.rest.MessagePublicationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
@@ -274,6 +275,11 @@ public class RestGatewayService {
 
   public void onUpdateRoleRequest(final String roleId, final RoleUpdateResult response) {
     registerPut(RestGatewayPaths.getRoleUrl(roleId), response);
+  }
+
+  public void onUpdateMappingRuleRequest(
+      final String mappingRuleId, final MappingRuleUpdateResult response) {
+    registerPut(RestGatewayPaths.getMappingRuleUrl(mappingRuleId), response);
   }
 
   public void onDecisionRequirementsRequest(
