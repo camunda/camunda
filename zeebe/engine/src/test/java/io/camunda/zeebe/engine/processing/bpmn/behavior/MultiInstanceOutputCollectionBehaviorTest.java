@@ -57,6 +57,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
     final var loopCharacteristics =
         createLoopCharacteristics(outputCollectionName, outputElementExpression);
     final var flowScopeContextKey = 12345L;
+    final var tenantId = "tenant-1";
 
     final var mockStateBehavior = mock(BpmnStateBehavior.class, Answers.RETURNS_DEEP_STUBS);
     when(mockStateBehavior.getLocalVariable(any(), eq(outputCollectionName)))
@@ -71,6 +72,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
     when(mockElement.getLoopCharacteristics()).thenReturn(loopCharacteristics);
 
     final var mockChildContext = mock(BpmnElementContext.class);
+    when(mockChildContext.getTenantId()).thenReturn(tenantId);
     when(mockStateBehavior.getElementInstance(mockChildContext).getMultiInstanceLoopCounter())
         .thenReturn(indexThatIsOutOfBounds);
 
@@ -106,6 +108,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
     final var loopCharacteristics =
         createLoopCharacteristics(outputCollectionName, outputElementExpression);
     final var flowScopeContextKey = 12345L;
+    final var tenantId = "tenant-1";
 
     final var mockStateBehavior = mock(BpmnStateBehavior.class, Answers.RETURNS_DEEP_STUBS);
     when(mockStateBehavior.getLocalVariable(any(), eq(outputCollectionName)))
@@ -120,6 +123,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
     when(mockElement.getLoopCharacteristics()).thenReturn(loopCharacteristics);
 
     final var mockChildContext = mock(BpmnElementContext.class);
+    when(mockChildContext.getTenantId()).thenReturn(tenantId);
     when(mockStateBehavior.getElementInstance(mockChildContext).getMultiInstanceLoopCounter())
         .thenReturn(index);
 

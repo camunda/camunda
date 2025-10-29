@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 public class FeelExpressionTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = name -> null;
+  private static final EvaluationContext EMPTY_CONTEXT = name -> Either.left(null);
 
   private final TestFeelEngineClock clock = new TestFeelEngineClock();
 

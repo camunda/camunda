@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 public class FeelCycleFunctionTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = x -> null;
+  private static final EvaluationContext EMPTY_CONTEXT = x -> Either.left(null);
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
