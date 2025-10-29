@@ -43,7 +43,9 @@ public class ValidationVisitor extends TypeHierarchyVisitor {
   @Override
   protected void visit(
       final ModelElementType implementedType, final BpmnModelElementInstance instance) {
+
     resultCollector.setCurrentElement(instance);
+
     validators
         .getOrDefault(implementedType.getInstanceType(), Collections.emptyList())
         .forEach(validator -> validator.validate(instance, resultCollector));
