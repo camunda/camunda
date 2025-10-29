@@ -86,6 +86,11 @@ public final class AuthorizationClient {
       return this;
     }
 
+    public AuthorizationCreateClient withResourcePropertyName(final String resourcePropertyName) {
+      authorizationCreationRecord.setResourcePropertyName(resourcePropertyName);
+      return this;
+    }
+
     public AuthorizationCreateClient withResourceType(
         final AuthorizationResourceType resourceType) {
       authorizationCreationRecord.setResourceType(resourceType);
