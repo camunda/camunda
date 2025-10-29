@@ -154,13 +154,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
-          description: >
-            An Internal Error occurred.
-            More details are provided in the response body. If the response body contains RESOURCE_EXHAUSTED, this signals back pressure.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
   /jobs/search:
