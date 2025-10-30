@@ -97,7 +97,6 @@ export type {
   OperationEntityType,
   FlowNodeState,
   InstanceEntityState,
-  DecisionInstanceEntityState,
   OperationEntity,
   InstanceOperationEntity,
   ResourceBasedPermissionDto,
