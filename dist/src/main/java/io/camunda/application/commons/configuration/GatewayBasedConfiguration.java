@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
-@Profile("!broker")
+@Profile("gateway")
 public final class GatewayBasedConfiguration {
 
   private final GatewayBasedProperties properties;
@@ -70,54 +70,14 @@ public final class GatewayBasedConfiguration {
     return new RestApiCompositeFilter(filters);
   }
 
-  @Bean
-  public ActivateJobHandlerConfiguration activateJobHandlerConfiguration() {
-    return new ActivateJobHandlerConfiguration(
-        "ActivateJobsHandlerRest-Gateway",
-        properties.getLongPolling(),
-        properties.getNetwork().getMaxMessageSize());
-  }
-
-  @Bean
-  public BrokerClientTimeoutConfiguration brokerClientConfig() {
-    return new BrokerClientTimeoutConfiguration(properties.getCluster().getRequestTimeout());
-  }
-
-  @Bean
-  public SchedulerConfiguration schedulerConfiguration() {
-    final var cpuThreads = properties.getThreads().getManagementThreads();
-    // We set ioThreads to zero as the Gateway isn't using any IO threads.
-    final var ioThreads = 0;
-    final var metricsEnabled = false;
-    final var nodeId = properties.getCluster().getMemberId();
-    return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Gateway", nodeId);
-  }
-
-  @Bean
-  public ClusterConfig clusterConfig() {
-    final var cluster = properties.getCluster();
-    final var name = cluster.getClusterName();
-    final var messaging = messagingConfig(properties);
-    final var discovery = discoveryConfig(cluster.getInitialContactPoints());
-    final var membership = membershipConfig(cluster.getMembership());
-    final var member = memberConfig(cluster);
-
-    return new ClusterConfig()
-        .setClusterId(name)
-        .setNodeConfig(member)
-        .setDiscoveryConfig(discovery)
-        .setMessagingConfig(messaging)
-        .setProtocolConfig(membership);
-  }
-
-  private MemberConfig memberConfig(final ClusterCfg cluster) {
+  public static MemberConfig memberConfig(final ClusterCfg cluster) {
     final var advertisedAddress =
         Address.from(cluster.getAdvertisedHost(), cluster.getAdvertisedPort());
 
     return new MemberConfig().setId(cluster.getMemberId()).setAddress(advertisedAddress);
   }
 
-  private SwimMembershipProtocolConfig membershipConfig(final MembershipCfg config) {
+  public static SwimMembershipProtocolConfig membershipConfig(final MembershipCfg config) {
     return new SwimMembershipProtocolConfig()
         .setBroadcastDisputes(config.isBroadcastDisputes())
         .setBroadcastUpdates(config.isBroadcastUpdates())
@@ -131,7 +91,7 @@ public final class GatewayBasedConfiguration {
         .setSyncInterval(config.getSyncInterval());
   }
 
-  private BootstrapDiscoveryConfig discoveryConfig(final Collection<String> contactPoints) {
+  public static  BootstrapDiscoveryConfig discoveryConfig(final Collection<String> contactPoints) {
     final var nodes =
         contactPoints.stream()
             .map(Address::from)
@@ -140,7 +100,7 @@ public final class GatewayBasedConfiguration {
     return new BootstrapDiscoveryConfig().setNodes(nodes);
   }
 
-  private MessagingConfig messagingConfig(final GatewayCfg config) {
+  public static MessagingConfig messagingConfig(final GatewayCfg config) {
     final var cluster = config.getCluster();
 
     final var messaging =

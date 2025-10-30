@@ -17,6 +17,7 @@ import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
 import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.application.commons.configuration.SharedBeans;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -193,10 +194,11 @@ final class StandaloneGatewaySecurityTest {
 
   private GatewayModuleConfiguration buildGateway(final GatewayBasedProperties gatewayCfg) {
     final var gatewayConfig = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
-    final var schedulerConfig = gatewayConfig.schedulerConfiguration();
-    final var brokerClientConfig = gatewayConfig.brokerClientConfig();
+    final var sharedBeans = new SharedBeans(gatewayCfg, null);
+    final var schedulerConfig = sharedBeans.schedulerConfiguration();
+    final var brokerClientConfig = sharedBeans.brokerClientConfig();
 
-    final var clusterConfig = gatewayConfig.clusterConfig();
+    final var clusterConfig = sharedBeans.clusterConfig();
     final var clusterConfiguration =
         new AtomixClusterConfiguration(clusterConfig, null, meterRegistry);
     atomixCluster = clusterConfiguration.atomixCluster();

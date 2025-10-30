@@ -29,6 +29,7 @@ import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.application.commons.configuration.SharedBeans;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
@@ -342,19 +343,20 @@ public class ClusteringRule extends ExternalResource {
     final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
     final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
+    final var sharedBeans = new SharedBeans(null, brokerCfg);
     final var meterRegistry = new SimpleMeterRegistry();
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =
         new AtomixCluster(
-            brokerSpringConfig.clusterConfig(),
+            sharedBeans.clusterConfig(),
             Version.from(VersionUtil.getVersion()),
             "Broker",
             meterRegistry);
 
     final var scheduler =
         new ActorSchedulerConfiguration(
-                brokerSpringConfig.schedulerConfiguration(),
+                sharedBeans.schedulerConfiguration(),
                 IdleStrategySupplier.ofDefault(),
                 actorClockConfiguration,
                 meterRegistry)
@@ -365,7 +367,7 @@ public class ClusteringRule extends ExternalResource {
     final var topologyManager =
         dynamicClusterServices.brokerTopologyManagerForEmbeddedBrokerClient();
 
-    final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
+    final var brokerClientConfig = sharedBeans.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, scheduler, topologyManager, meterRegistry);
@@ -481,9 +483,9 @@ public class ClusteringRule extends ExternalResource {
   }
 
   private GatewayResource createGateway(final GatewayBasedProperties gatewayCfg) {
-    final var config = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
-    final var clusterConfig = config.clusterConfig();
-    final var actorConfig = config.schedulerConfiguration();
+    final var sharedBeans = new SharedBeans(gatewayCfg, null);
+    final var clusterConfig = sharedBeans.clusterConfig();
+    final var actorConfig = sharedBeans.schedulerConfiguration();
     final var meterRegistry = new SimpleMeterRegistry();
 
     final ActorScheduler actorScheduler =
@@ -507,7 +509,7 @@ public class ClusteringRule extends ExternalResource {
     final var topologyManager =
         dynamicClusterServices.brokerTopologyManager(clusterTopologyService);
 
-    final var brokerClientConfig = config.brokerClientConfig();
+    final var brokerClientConfig = sharedBeans.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, actorScheduler, topologyManager, meterRegistry);

@@ -8,7 +8,6 @@
 package io.camunda.application.commons.configuration;
 
 import io.atomix.cluster.ClusterConfig;
-import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
@@ -57,22 +56,6 @@ public class BrokerBasedConfiguration {
     return workingDirectory;
   }
 
-  @Bean
-  public BrokerClientTimeoutConfiguration brokerClientConfig() {
-    return new BrokerClientTimeoutConfiguration(
-        properties.getGateway().getCluster().getRequestTimeout());
-  }
-
-  @Bean
-  public SchedulerConfiguration schedulerConfiguration() {
-    final var threadCfg = properties.getThreads();
-    final var cpuThreads = threadCfg.getCpuThreadCount();
-    final var ioThreads = threadCfg.getIoThreadCount();
-    final var metricsEnabled = properties.getExperimental().getFeatures().isEnableActorMetrics();
-    final var nodeId = String.valueOf(properties.getCluster().getNodeId());
-    return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
-  }
-
   @ConditionalOnRestGatewayEnabled
   @Bean
   public CompositeFilter restApiCompositeFilter() {
@@ -82,22 +65,8 @@ public class BrokerBasedConfiguration {
     return new RestApiCompositeFilter(filters);
   }
 
-  @Bean
-  public ActivateJobHandlerConfiguration activateJobHandlerConfiguration() {
-    return new ActivateJobHandlerConfiguration(
-        "ActivateJobsHandlerRest-Broker",
-        properties.getGateway().getLongPolling(),
-        properties.getGateway().getNetwork().getMaxMessageSize());
-  }
-
   public Duration shutdownTimeout() {
     return lifecycle.getTimeoutPerShutdownPhase();
-  }
-
-  @Bean
-  public ClusterConfig clusterConfig() {
-    final var configFactory = new ClusterConfigFactory();
-    return configFactory.mapConfiguration(properties);
   }
 
   @Bean
