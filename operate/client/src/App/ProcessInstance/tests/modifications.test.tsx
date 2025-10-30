@@ -17,7 +17,7 @@ import {ProcessInstance} from '../index';
 import {
   createBatchOperation,
   createUser,
-  createVariableV2,
+  createvariable,
 } from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {incidentsStore} from 'modules/stores/incidents';
@@ -190,13 +190,13 @@ describe('ProcessInstance - modification mode', () => {
 
   it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -228,7 +228,7 @@ describe('ProcessInstance - modification mode', () => {
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -241,7 +241,7 @@ describe('ProcessInstance - modification mode', () => {
     );
 
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },

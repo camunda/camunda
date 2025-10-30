@@ -142,7 +142,7 @@ const createProcessInstance = (
   };
 };
 
-const createVariableV2 = (options: Partial<Variable> = {}): Variable => {
+const createvariable = (options: Partial<Variable> = {}): Variable => {
   const name = options.name ?? 'testVariableName';
   return {
     variableKey: `2251799813725337-${name}`,
@@ -1228,7 +1228,7 @@ export {
   eventSubProcess,
   createMultiInstanceFlowNodeInstances,
   createEventSubProcessFlowNodeInstances,
-  createVariableV2,
+  createvariable,
   createBatchOperation,
   createUser,
   createProcessInstance,
