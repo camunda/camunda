@@ -14,6 +14,7 @@ import {autorun} from 'mobx';
 import {incidentsStore, type Incident} from 'modules/stores/incidents';
 import {isInstanceRunning} from './instance';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
+import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
 const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
   UNSPECIFIED: 'Unspecified',
@@ -127,29 +128,14 @@ const isSingleIncidentSelectedV2 = (
 };
 
 const getFilteredIncidentsV2 = (incidents: EnhancedIncident[]) => {
-  const {selectedFlowNodes, selectedErrorTypes} = incidentsStore.state;
+  const {selectedErrorTypes} = incidentsPanelStore.state;
 
-  const hasSelectedFlowNodes = selectedFlowNodes.length > 0;
-  const hasSelectedErrorTypes = selectedErrorTypes.length > 0;
-
-  if (!hasSelectedFlowNodes && !hasSelectedErrorTypes) {
+  if (selectedErrorTypes.length === 0) {
     return incidents;
   }
 
   return incidents.filter((incident) => {
-    if (hasSelectedErrorTypes && hasSelectedFlowNodes) {
-      return (
-        selectedErrorTypes.includes(incident.errorType) &&
-        selectedFlowNodes.includes(incident.elementId)
-      );
-    }
-    if (hasSelectedErrorTypes) {
-      return selectedErrorTypes.includes(incident.errorType);
-    }
-    if (hasSelectedFlowNodes) {
-      return selectedFlowNodes.includes(incident.elementId);
-    }
-    return [];
+    return selectedErrorTypes.includes(incident.errorType);
   });
 };
 
