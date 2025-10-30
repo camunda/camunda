@@ -47,10 +47,10 @@
         <executions>
           <execution>
             <id>install-node-and-npm</id>
-            <phase>generate-sources</phase>
             <goals>
               <goal>install-node-and-npm</goal>
             </goals>
+            <phase>generate-sources</phase>
             <configuration>
               <nodeVersion>${version.node}</nodeVersion>
               <npmVersion>${npm.version}</npmVersion>
@@ -58,10 +58,10 @@
           </execution>
           <execution>
             <id>bundle-openapi</id>
-            <phase>generate-sources</phase>
             <goals>
               <goal>npx</goal>
             </goals>
+            <phase>generate-sources</phase>
             <configuration>
               <arguments>--yes @redocly/cli@latest bundle ${project.basedir}/src/main/proto/rest-api.yaml --output ${openapi.bundled.file} --ext yaml</arguments>
             </configuration>

@@ -207,9 +207,13 @@ JobCompletionRequest:
       $ref: "#/JobResult"
 
 JobResult:
-  description: The result of the completed job as determined by the worker.
+  description: >
+    The result of the completed job as determined by the worker.
   discriminator:
     propertyName: type
+    mapping:
+      userTask: '#/JobResultUserTask'
+      adHocSubProcess: '#/JobResultAdHocSubProcess'
   oneOf:
     - $ref: '#/JobResultUserTask'
     - $ref: '#/JobResultAdHocSubProcess'
