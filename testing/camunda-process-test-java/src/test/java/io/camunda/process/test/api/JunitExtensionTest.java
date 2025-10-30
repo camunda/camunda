@@ -17,7 +17,9 @@ package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,6 +58,8 @@ public class JunitExtensionTest {
 
   private static final URI GRPC_API_ADDRESS = URI.create("http://my-host:100");
   private static final URI REST_API_ADDRESS = URI.create("http://my-host:200");
+  private static final String CLASS_CONTEXT_ID = "class-context-id";
+  private static final String NESTED_CONTEXT_ID = "nested-context-id";
 
   private static final Consumer<String> NOOP = s -> {};
 
@@ -91,6 +95,7 @@ public class JunitExtensionTest {
                     .grpcAddress(GRPC_API_ADDRESS)
                     .restAddress(REST_API_ADDRESS));
 
+    when(extensionContext.getUniqueId()).thenReturn(CLASS_CONTEXT_ID);
     when(extensionContext.getRequiredTestInstances()).thenReturn(testInstances);
     when(testInstances.getAllInstances()).thenReturn(Collections.singletonList(this));
     when(extensionContext.getStore(any())).thenReturn(store);
@@ -236,6 +241,26 @@ public class JunitExtensionTest {
     // then
     verify(camundaContainerRuntime).start();
     verify(camundaContainerRuntime).close();
+  }
+
+  @Test
+  void shouldNotStartAndCloseRuntimeInNestedContext() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    final ExtensionContext nestedContext = mock(ExtensionContext.class);
+    when(nestedContext.getUniqueId()).thenReturn(NESTED_CONTEXT_ID);
+
+    // when
+    extension.beforeAll(extensionContext);
+    extension.beforeAll(nestedContext);
+    extension.beforeEach(extensionContext);
+    extension.afterAll(nestedContext);
+
+    // then
+    verify(camundaContainerRuntime).start();
+    verify(camundaContainerRuntime, times(0)).close();
   }
 
   @Test

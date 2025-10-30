@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
@@ -113,6 +115,9 @@ public class CamundaProcessTestExtension
   private CamundaManagementClient camundaManagementClient;
   private CamundaProcessTestContext camundaProcessTestContext;
 
+  private String initializingExtensionContextId;
+  private String runNamePrefix;
+
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
       final ProcessCoverageBuilder processCoverageBuilder,
@@ -143,6 +148,14 @@ public class CamundaProcessTestExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) {
+    if (runtime != null) {
+      // already initialized in parent context
+      runNamePrefix =
+          ofNullable(runNamePrefix).map(s -> s + "#").orElse("") + context.getDisplayName();
+      return;
+    }
+    initializingExtensionContextId = context.getUniqueId();
+
     // create runtime
     runtime = runtimeBuilder.build();
     runtime.start();
@@ -272,7 +285,8 @@ public class CamundaProcessTestExtension
     }
 
     try {
-      processCoverage.collectTestRunCoverage(context.getDisplayName());
+      final String prefix = ofNullable(runNamePrefix).map(s -> s + "#").orElse("");
+      processCoverage.collectTestRunCoverage(prefix + context.getDisplayName());
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -335,6 +349,10 @@ public class CamundaProcessTestExtension
   public void afterAll(final ExtensionContext context) throws Exception {
     if (runtime == null) {
       // Skip if the runtime is not created.
+      return;
+    }
+    if (!context.getUniqueId().equals(initializingExtensionContextId)) {
+      // runtime was not initialized in this hierarchy level
       return;
     }
 
