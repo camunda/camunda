@@ -18,6 +18,8 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -41,6 +43,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('<Bar />', () => {
   it('should show the node name and an icon based on node state', () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(
@@ -60,6 +63,7 @@ describe('<Bar />', () => {
   });
 
   it('should toggle the timestamp', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(
@@ -83,6 +87,7 @@ describe('<Bar />', () => {
   });
 
   it('should show latest successful migration date', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(
@@ -103,6 +108,7 @@ describe('<Bar />', () => {
   });
 
   it('should not show latest successful migration date for non-root', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(
