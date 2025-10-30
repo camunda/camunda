@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import org.springframework.util.unit.DataSize;
 
 public final class StreamProcessorBuilder {
 
@@ -151,6 +152,11 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder maxCommandsInBatch(final int maxCommandsInBatch) {
     streamProcessorContext.maxCommandsInBatch(maxCommandsInBatch);
+    return this;
+  }
+
+  public StreamProcessorBuilder maxKeywordFieldSize(final DataSize maxKeywordFieldSize) {
+    streamProcessorContext.maxKeywordFieldSize(maxKeywordFieldSize);
     return this;
   }
 
