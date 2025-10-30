@@ -41,7 +41,7 @@ import org.springframework.context.annotation.Profile;
 
 @Configuration
 @EnableConfigurationProperties(LegacyGatewayBasedProperties.class)
-@Profile("!broker")
+@Profile("gateway")
 @DependsOn("unifiedConfigurationHelper")
 public class GatewayBasedPropertiesOverride {
 

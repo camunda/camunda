@@ -42,10 +42,8 @@ public class StandaloneCamunda {
   private static final String DEFAULT_CAMUNDA_PROFILES =
       String.join(
           ",",
-          Profile.OPERATE.getId(),
-          Profile.TASKLIST.getId(),
+          Profile.GATEWAY.getId(),
           Profile.BROKER.getId(),
-          Profile.IDENTITY.getId(),
           Profile.CONSOLIDATED_AUTH.getId());
 
   public static void main(final String[] args) {
@@ -86,6 +84,11 @@ public class StandaloneCamunda {
                 new WebappsConfigurationInitializer())
             .listeners(new ApplicationErrorListener())
             .build(args);
+
+    standaloneCamundaApplication.addInitializers(context -> {
+      ProfilesStreamlining processor = new ProfilesStreamlining();
+      processor.postProcessEnvironment(context.getEnvironment(), standaloneCamundaApplication);
+    });
 
     standaloneCamundaApplication.run(args);
   }
