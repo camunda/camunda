@@ -116,15 +116,20 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.validate-inputs.outputs.components-matrix) }}
     steps:
+      - name: Checkout workflow repository
+        uses: actions/checkout@v5
+          
       - name: Checkout and resolve ref
         id: resolve
         uses: actions/checkout@v5
         with:
           token: ${{ github.token }}
           ref: ${{ needs.validate-inputs.outputs.commit || needs.validate-inputs.outputs.branch }}
+          path: build-repo
       
       - name: Get resolved SHA
         id: get-sha
+        working-directory: build-repo
         run: |
           # If commit was provided, use it; otherwise resolve from checked out branch
           COMMIT="${{ needs.validate-inputs.outputs.commit }}"
@@ -140,53 +145,19 @@ jobs:
           echo "full-sha=$FULL_SHA" >> "$GITHUB_OUTPUT"
           echo "short-sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
           
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
-            secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
-      
-      - name: Log into Harbor
-        uses: docker/login-action@v3
-        with:
-            registry: registry.camunda.cloud
-            username: ${{ steps.secrets.outputs.ci-account-username }}
-            password: ${{ steps.secrets.outputs.ci-account-password }}
-            
-      - name: Log into Minimus Registry
-        uses: docker/login-action@v3
-        with:
-            registry: reg.mini.dev
-            username: minimus
-            password: ${{ steps.secrets.outputs.minimus-token }}
-
+          harbor: true          
+          minimus: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          maven-mirrors: '[{"id": "camunda-nexus", "name": "Camunda Nexus", "url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "mirrorOf": "*"}]'  
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      - name: Configure Maven settings
-        uses: s4u/maven-settings-action@v4.0.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.ci-account-username }}",
-              "password": "${{ steps.secrets.outputs.ci-account-password }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "Camunda Nexus"}]'
       - name: Build Maven artifacts
+        working-directory: build-repo
         run: |
           case "${{ matrix.component }}" in
             "camunda"|"operate"|"tasklist"|"zeebe")
@@ -235,8 +206,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ${{ matrix.component == 'zeebe' && 'Dockerfile' || format('{0}.Dockerfile', matrix.component) }}
+          context: ./build-repo
+          file: ./build-repo/${{ matrix.component == 'zeebe' && 'Dockerfile' || format('{0}.Dockerfile', matrix.component) }}
           platforms: ${{ env.PLATFORMS }}
           push: true
           provenance: false
