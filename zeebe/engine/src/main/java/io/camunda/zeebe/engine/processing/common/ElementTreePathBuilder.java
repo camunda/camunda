@@ -128,7 +128,7 @@ public class ElementTreePathBuilder {
   private ElementInstance getElementInstance(final long elementInstanceKey) {
     final ElementInstance instance = elementInstanceProvider.getInstance(elementInstanceKey);
     if (instance == null) {
-      throw new IllegalStateException(
+      throw new ElementInstanceNotFoundException(
           String.format(
               "Expected to find element instance for given key '%d', but didn't exist.",
               elementInstanceKey));
@@ -145,4 +145,11 @@ public class ElementTreePathBuilder {
       Long elementInstanceKey,
       Long parentElementInstanceKey,
       ProcessInstanceRecordValue processInstanceRecord) {}
+
+  private static class ElementInstanceNotFoundException extends IllegalStateException {
+
+    ElementInstanceNotFoundException(final String message) {
+      super(message);
+    }
+  }
 }
