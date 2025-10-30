@@ -16,22 +16,44 @@ on:
     - cron: '0 1 * * 1-5'
 
 jobs:
+  create-fake-tag:
+    name: "Create fake tag for dry runs"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Git User Setup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Create fake tag locally
+        run: |
+          git fetch origin tag 0.0.0-dryrun-minor --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun-minor -m "Dummy tag for dry run minor"
+          git fetch origin tag 0.0.0-dryrun-alpha --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun-alpha -m "Dummy tag for dry run alpha"
+          echo "Created fake tags for all dry runs locally (not pushed)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: create-fake-tag
+          path: .git
   dry-run-release:
     name: "${{ matrix.version }} from ${{ inputs.branch || 'main' }}"
+    needs: [create-fake-tag]
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     strategy:
       fail-fast: false
       matrix:
-        # These versions were selected to ensure compatibility with the japicmp plugin (introduced Oct 10, 2025),
-        # which requires webapps-schema artifact (introduced Sep 13, 2024).
-        # Earlier versions from 2021 predate this dependency and cause build failures.
-        # See discussion at: https://camunda.slack.com/archives/C06UWQNCU7M/p1760468857576009?thread_ts=1760406101.424439&cid=C06UWQNCU7M
-        version: [ 8.6.1, 8.8.0-alpha8 ]
+        # Uses fake tag for dry run testing without affecting real releases
+        version: [ 0.0.0-dryrun-minor, 0.0.0-dryrun-alpha ]
         include:
-          - version: 8.6.1
+          - version: 0.0.0-dryrun-minor
             latest: true
-          - version: 8.8.0-alpha8
+          - version: 0.0.0-dryrun-alpha
             latest: false
     with:
       releaseBranch: ${{ inputs.branch || 'main' }}
@@ -43,7 +65,7 @@ jobs:
   notify:
     name: Send Slack notification
     runs-on: ubuntu-latest
-    needs: [dry-run-release]
+    needs: [create-fake-tag, dry-run-release]
     if: always()
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
