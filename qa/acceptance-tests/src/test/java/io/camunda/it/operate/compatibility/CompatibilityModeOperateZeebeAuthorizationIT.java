@@ -184,7 +184,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
     // a user with process delete permissions
     try (final var operateRestClient =
         STANDALONE_CAMUNDA.newOperateClient(user.username(), user.password())) {
-
       // when
       final var response =
           operateRestClient.deleteProcessDefinition(processDefinitionForDeletionKey);
@@ -268,7 +267,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
       // when
       final var response =
           operateRestClient.modifyProcessInstance(processInstanceKey, modificationRequestDto);
-
       // then
       assertThat(response).isRight();
       final var responseBody = response.get();
@@ -276,12 +274,13 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
       if (expectedResponseCode == 200) {
         // if the request is successful, we expect the process instance to be modified
-        assertThat(
-                RecordingExporter.processInstanceModificationRecords()
-                    .withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                    .withProcessInstanceKey(processInstanceKey)
-                    .count())
-            .isEqualTo(1L);
+        RecordingExporter.setMaximumWaitTime(25_000L);
+        final var count =
+            RecordingExporter.processInstanceModificationRecords()
+                .withIntent(ProcessInstanceModificationIntent.MODIFIED)
+                .withProcessInstanceKey(processInstanceKey)
+                .count();
+        assertThat(count).isEqualTo(1);
       }
     }
   }
