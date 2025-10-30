@@ -347,4 +347,230 @@ public class UpdateAuthorizationTest {
         .hasResourceType(AuthorizationResourceType.USER_TASK)
         .hasPermissionTypes(Set.of(PermissionType.UPDATE));
   }
+
+  @Test
+  public void shouldRejectUpdateWithPropertyMatcherWhenPropertyNameIsMissing() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to update authorization with matcher 'PROPERTY', but no resource property name was provided. Please provide a resource property name.");
+  }
+
+  @Test
+  public void shouldRejectUpdateWithPropertyMatcherWhenBothPropertyNameAndResourceIdAreProvided() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceId("resourceId") // should not be provided
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.CLAIM)
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to update authorization with matcher 'PROPERTY', but both resource property name and resource ID were provided. Please provide only a resource property name.");
+  }
+
+  @Test
+  public void shouldRejectUpdateWithIdMatcherWhenPropertyNameIsProvided() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourcePropertyName("resourceProperty") // should not be provided
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to update authorization with matcher 'ID', but a resource property name was provided. Resource property names are only valid for matcher 'PROPERTY'.");
+  }
+
+  @Test
+  public void shouldRejectUpdateWithAnyMatcherWhenPropertyNameIsProvided() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .withResourceId(WILDCARD_CHAR)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.DELETE_FORM)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .withResourcePropertyName("propertyName") // should not be provided
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.DELETE_PROCESS)
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to update authorization with matcher 'ANY', but a resource property name was provided. Resource property names are only valid for matcher 'PROPERTY'.");
+  }
+
+  @Test
+  public void shouldRejectUpdateWithIdMatcherWhenResourceIdIsMissing() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to update authorization with matcher 'ID', but no resource ID was provided. Please provide a resource ID.");
+  }
+
+  @Test
+  public void shouldRejectUpdateWithAnyMatcherWhenResourceIdIsMissing() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .withResourceId(WILDCARD_CHAR)
+            .withResourceType(AuthorizationResourceType.USER)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .withResourceType(AuthorizationResourceType.USER)
+            .withPermissions(PermissionType.UPDATE)
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to update authorization with matcher 'ANY', but no resource ID was provided. Please provide a resource ID.");
+  }
 }
