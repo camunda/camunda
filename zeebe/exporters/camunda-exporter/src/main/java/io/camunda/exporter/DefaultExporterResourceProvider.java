@@ -63,6 +63,7 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogHandler;
 import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
@@ -320,6 +321,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName()),
             new ProcessInstanceModificationAuditLogHandler(
+                (indexDescriptors.get(AuditLogIndex.class).getFullQualifiedName()),
+                configuration.getAuditLog(),
+                objectMapper),
+            new BatchOperationLifecycleManagementAuditLogHandler(
                 (indexDescriptors.get(AuditLogIndex.class).getFullQualifiedName()),
                 configuration.getAuditLog(),
                 objectMapper)));

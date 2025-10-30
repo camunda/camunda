@@ -116,7 +116,7 @@ public final class BatchOperationResumeProcessor
       return;
     }
 
-    resumeBatchOperation(resumeKey, batchOperation.get(), command.getValue());
+    resumeBatchOperation(resumeKey, batchOperation.get(), command);
     responseWriter.writeEventOnCommand(
         resumeKey, BatchOperationIntent.RESUMED, command.getValue(), command);
     commandDistributionBehavior
@@ -140,7 +140,7 @@ public final class BatchOperationResumeProcessor
           "Processing distributed command to resume with key '{}': {}",
           batchOperationKey,
           recordValue);
-      resumeBatchOperation(command.getKey(), batchOperation.get(), recordValue);
+      resumeBatchOperation(command.getKey(), batchOperation.get(), command);
     } else {
       LOGGER.debug(
           "Distributed command to resume a batch operation with key '{}' will be ignored: {}",
@@ -154,12 +154,15 @@ public final class BatchOperationResumeProcessor
   void resumeBatchOperation(
       final Long resumeKey,
       final PersistedBatchOperation batchOperation,
-      final BatchOperationLifecycleManagementRecord recordValue) {
+      final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
+    final var claims = command.getAuthorizations();
+    final var recordValue = command.getValue();
     stateWriter.appendFollowUpEvent(
         resumeKey,
         BatchOperationIntent.RESUMED,
         recordValue,
-        FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperation.getKey())));
+        FollowUpEventMetadata.of(
+            m -> m.batchOperationReference(batchOperation.getKey()).claims(claims)));
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());
