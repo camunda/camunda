@@ -16,13 +16,18 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.core.ResolvableType;
 
 public class Cluster implements Cloneable {
 
+  // Property names for initial contact points configuration
+  public static final String LEGACY_INITIAL_CONTACT_POINTS_PROPERTY;
   private static final String PREFIX = "camunda.cluster";
+  public static final String UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY =
+      PREFIX + ".initial-contact-points";
 
   private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
       Map.of(
@@ -42,6 +47,11 @@ public class Cluster implements Cloneable {
           "messageCompression", "zeebe.broker.cluster.messageCompression",
           "clusterName", "zeebe.broker.cluster.clusterName",
           "initialContactPoints", "zeebe.broker.cluster.initialContactPoints");
+
+  static {
+    LEGACY_INITIAL_CONTACT_POINTS_PROPERTY =
+        Objects.requireNonNull(LEGACY_BROKER_PROPERTIES.get("initialContactPoints"));
+  }
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
@@ -130,7 +140,7 @@ public class Cluster implements Cloneable {
 
   public List<String> getInitialContactPoints() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".initial-contact-points",
+        UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY,
         initialContactPoints,
         ResolvableType.forClassWithGenerics(List.class, String.class),
         BackwardsCompatibilityMode.SUPPORTED,
