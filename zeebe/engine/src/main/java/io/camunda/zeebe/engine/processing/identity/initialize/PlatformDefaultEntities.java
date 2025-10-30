@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Defaults {
+public class PlatformDefaultEntities {
 
   public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   public static final String DEFAULT_TENANT_NAME = "Default";
