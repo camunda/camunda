@@ -52,11 +52,12 @@ public class AuthorizationChecker {
   public List<AuthorizationScope> retrieveAuthorizedAuthorizationScopes(
       final SecurityContext securityContext) {
     final var authentication = securityContext.authentication();
-    final var resourceType = securityContext.authorization().resourceType();
-    final var permissionType = securityContext.authorization().permissionType();
+    final var resourceType = securityContext.authorizations().get(0).resourceType();
+    final var permissionType = securityContext.authorizations().get(0).permissionType();
     return getOrElseDefaultResult(
         authentication,
         (ownerIds) -> {
+          // TODO: Ensure to get only authorization with resource ids (but not properties)
           final var query =
               AuthorizationQuery.of(
                   q ->
@@ -74,6 +75,34 @@ public class AuthorizationChecker {
         List::of);
   }
 
+  public List<AuthorizationScope> retrieveAuthorizedAuthorizationPropertyScopes(
+      final SecurityContext securityContext) {
+    final var authentication = securityContext.authentication();
+    final var resourceType = securityContext.authorizations().get(0).resourceType();
+    final var permissionType = securityContext.authorizations().get(0).permissionType();
+    return getOrElseDefaultResult(
+        authentication,
+        (ownerIds) -> {
+          // TODO: Ensure to get only authorization with properties (but not authorization with
+          // resource ids)
+          final var query =
+              AuthorizationQuery.of(
+                  q ->
+                      q.filter(
+                              f ->
+                                  f.ownerTypeToOwnerIds(ownerIds)
+                                      .resourceType(resourceType.name())
+                                      .permissionTypes(permissionType))
+                          .unlimited());
+          return authorizationReader.search(query, ResourceAccessChecks.disabled()).items().stream()
+              .filter(e -> e.permissionTypes().contains(permissionType))
+              // TODO: replace "assignee" with "authorizationEntity.propertyName()"
+              .map(authorizationEntity -> AuthorizationScope.propertyName("assignee"))
+              .toList();
+        },
+        List::of);
+  }
+
   /**
    * Checks if a specific authorization scope is authorized for the user or one of their groups or
    * roles defined in the provided SecurityContext. The authorization check is based on the resource
@@ -86,8 +115,8 @@ public class AuthorizationChecker {
   public boolean isAuthorized(
       final AuthorizationScope authorizationScope, final SecurityContext securityContext) {
     final var authentication = securityContext.authentication();
-    final var resourceType = securityContext.authorization().resourceType();
-    final var permissionType = securityContext.authorization().permissionType();
+    final var resourceType = securityContext.authorizations().get(0).resourceType();
+    final var permissionType = securityContext.authorizations().get(0).permissionType();
     return getOrElseDefaultResult(
         authentication,
         (ownerIds) -> {

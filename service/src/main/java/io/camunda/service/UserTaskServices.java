@@ -20,6 +20,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -99,8 +100,19 @@ public final class UserTaskServices
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
     return search(
         query,
-        securityContextProvider.provideSecurityContext(
-            authentication, USER_TASK_READ_AUTHORIZATION));
+        new SecurityContext.Builder()
+            .withAuthentication(authentication)
+            .withAuthorization(
+                USER_TASK_READ_AUTHORIZATION,
+                Authorization.of(
+                    b ->
+                        b.processDefinition()
+                            .read()
+                            .properties()
+                            .add("assignee", auth -> List.of(auth.authenticatedUsername()))
+                            .propertyName("assignee")
+                            .propertyValuesSupplier(auth -> List.of(auth.authenticatedUsername()))))
+            .build());
   }
 
   private SearchQueryResult<UserTaskEntity> search(
@@ -193,7 +205,21 @@ public final class UserTaskServices
                         securityContextProvider.provideSecurityContext(
                             authentication,
                             withAuthorization(
-                                USER_TASK_READ_AUTHORIZATION, UserTaskEntity::processDefinitionId)))
+                                USER_TASK_READ_AUTHORIZATION, UserTaskEntity::processDefinitionId)),
+                        Authorization.of(
+                            b ->
+                                b.processDefinition()
+                                    .read()
+                                    .propertyMatcher(UserTaskPropertyMatcher)
+                                    .anyOf(
+                                        "assignee",
+                                        (userTask) ->
+                                            ((UserTaskEntity) userTask)
+                                                .assignee()
+                                                .equals(authentication.authenticatedUsername()),
+                                        "candidateUsers", (userTask) -> ((UserTaskEntity) userTask)
+                                            .candidateUsers()
+                                            .contains(authentication.authenticatedUsername())))
                     .getUserTask(userTaskKey));
 
     final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());

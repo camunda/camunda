@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.exception.ErrorMessages.ERROR_INDEX_FILTER_TRANSFORMER_AUTH_CHECK_MISSING;
 import static io.camunda.search.exception.ErrorMessages.ERROR_INDEX_FILTER_TRANSFORMER_TENANT_CHECK_MISSING;
@@ -21,10 +22,12 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -82,14 +85,28 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     if (!authorizationCheck.enabled()) {
       return matchAll();
     }
-    final var authorization = authorizationCheck.authorization();
-    final var resourceIds = authorization.resourceIds();
 
-    if (resourceIds == null || resourceIds.isEmpty()) {
+    final var authorization = authorizationCheck.authorization();
+    final var queries = new ArrayList<SearchQuery>();
+    authorization.stream()
+        .map(
+            a -> {
+              if (a.resourceIds() != null && a.resourceIds().isEmpty()) {
+                return toAuthorizationCheckSearchQuery(a);
+              } else if (a.propertyName() != null) {
+                return toAuthorizationCheckSearchQueryByProperty(
+                    authorizationCheck.authentication(), a);
+              }
+              return null;
+            })
+        .filter(Objects::nonNull)
+        .forEach(queries::add);
+
+    if (queries.isEmpty()) {
       return matchNone();
     }
 
-    return toAuthorizationCheckSearchQuery(authorization);
+    return or(queries);
   }
 
   private SearchQuery applyTenantChecks(final TenantCheck tenantCheck) {
@@ -127,6 +144,11 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
   }
 
   protected abstract SearchQuery toAuthorizationCheckSearchQuery(Authorization<?> authorization);
+
+  protected SearchQuery toAuthorizationCheckSearchQueryByProperty(
+      final CamundaAuthentication authentication, final Authorization<?> authorization) {
+    return null;
+  }
 
   @Override
   public IndexDescriptor getIndex() {

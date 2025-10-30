@@ -16,6 +16,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -47,11 +48,20 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+
+
+    final var authorization = resourceAccessChecks.authorizationCheck().authorization().get(0);
+    if (authorization.resourceType() == AuthorizationResourceType.PROCESS_DEFINITION) {
+      // TODO
+    }
+
     final var dbQuery =
         UserTaskDbQuery.of(
             b ->
                 b.filter(query.filter())
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedProperties("assignee", ...)
+                    .authorizedProperties("candidateUsers", ...)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
                     .page(convertPaging(dbSort, query.page())));

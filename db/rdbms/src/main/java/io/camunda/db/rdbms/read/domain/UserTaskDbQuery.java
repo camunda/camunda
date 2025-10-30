@@ -11,7 +11,10 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -32,6 +35,7 @@ public record UserTaskDbQuery(
     private static final UserTaskFilter EMPTY_FILTER = FilterBuilders.userTask().build();
 
     private UserTaskFilter filter;
+    private final Map<AuthorizationResourceType, List<String>> authorizedByType = new HashMap<>();
     private List<String> authorizedResourceIds = java.util.Collections.emptyList();
     private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<UserTaskEntity> sort;
@@ -52,7 +56,14 @@ public record UserTaskDbQuery(
       return this;
     }
 
+    public UserTaskDbQuery.Builder authorizedResourceIds(
+        final AuthorizationResourceType type, final List<String> authorizedResourceIds) {
+      authorizedByType.put(type, authorizedResourceIds);
+      return this;
+    }
+
     public UserTaskDbQuery.Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      authorizedResourceIds(AuthorizationResourceType.PROCESS_DEFINITION, authorizedResourceIds);
       this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }

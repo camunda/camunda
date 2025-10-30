@@ -29,6 +29,7 @@ public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, Tenant
 
     return Optional.of(authorizationCheck)
         .map(AuthorizationCheck::authorization)
+        .map(List::getFirst)
         .map(Authorization::resourceIds)
         .orElse(List.of());
   }

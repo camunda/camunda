@@ -13,16 +13,21 @@ public class AuthorizationScope {
 
   public static final String WILDCARD_CHAR = "*";
   public static final AuthorizationScope WILDCARD =
-      new AuthorizationScope(AuthorizationResourceMatcher.ANY, WILDCARD_CHAR);
+      new AuthorizationScope(AuthorizationResourceMatcher.ANY, WILDCARD_CHAR, null);
 
   private AuthorizationResourceMatcher matcher;
   private String resourceId;
+  private String propertyName;
 
   public AuthorizationScope() {}
 
-  public AuthorizationScope(final AuthorizationResourceMatcher matcher, final String resourceId) {
+  public AuthorizationScope(
+      final AuthorizationResourceMatcher matcher,
+      final String resourceId,
+      final String propertyName) {
     this.matcher = matcher;
     this.resourceId = resourceId;
+    this.propertyName = propertyName;
   }
 
   public AuthorizationResourceMatcher getMatcher() {
@@ -43,18 +48,33 @@ public class AuthorizationScope {
     return this;
   }
 
+  public String getPropertyName() {
+    return propertyName;
+  }
+
+  public void setPropertyName(final String propertyName) {
+    this.propertyName = propertyName;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(matcher, resourceId);
+    return Objects.hash(matcher, resourceId, propertyName);
   }
 
   @Override
   public boolean equals(final Object obj) {
     if (obj instanceof AuthorizationScope) {
       final AuthorizationScope other = (AuthorizationScope) obj;
-      return matcher.equals(other.matcher) && resourceId.equals(other.resourceId);
+      return matcher.equals(other.matcher)
+          && resourceId.equals(other.resourceId)
+          && propertyName.equals(other.propertyName);
     }
     return false;
+  }
+
+  public static AuthorizationScope propertyName(final String propertyName)
+      throws IllegalArgumentException {
+    return new AuthorizationScope(AuthorizationResourceMatcher.PROPERTY, null, propertyName);
   }
 
   public static AuthorizationScope id(final String resourceId) throws IllegalArgumentException {
@@ -65,7 +85,7 @@ public class AuthorizationScope {
               WILDCARD_CHAR);
       throw new IllegalArgumentException(errorMsg);
     }
-    return new AuthorizationScope(AuthorizationResourceMatcher.ID, resourceId);
+    return new AuthorizationScope(AuthorizationResourceMatcher.ID, resourceId, null);
   }
 
   public static AuthorizationScope of(final String resourceId) {
