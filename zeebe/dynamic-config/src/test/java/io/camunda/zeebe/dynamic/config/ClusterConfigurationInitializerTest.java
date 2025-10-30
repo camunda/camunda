@@ -151,6 +151,7 @@ final class ClusterConfigurationInitializerTest {
         id -> syncResponseFuture;
     final var initializer =
         new SyncInitializer(
+            Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             knownMembers,
             new TestConcurrencyControl(),
@@ -180,6 +181,7 @@ final class ClusterConfigurationInitializerTest {
         id -> syncResponseFuture;
     final var initializer =
         new SyncInitializer(
+            Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             knownMembers,
             new TestConcurrencyControl(),
@@ -320,6 +322,7 @@ final class ClusterConfigurationInitializerTest {
           id -> syncResponseFuture;
       final var syncInitializer =
           new SyncInitializer(
+              Duration.ofSeconds(5),
               new TestClusterConfigurationNotifier(),
               knownMembers,
               new TestConcurrencyControl(),
@@ -348,6 +351,7 @@ final class ClusterConfigurationInitializerTest {
           id -> syncResponseFuture;
       final var syncInitializer =
           new SyncInitializer(
+              Duration.ofSeconds(5),
               new TestClusterConfigurationNotifier(),
               knownMembers,
               new TestConcurrencyControl(),
