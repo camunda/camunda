@@ -3,3 +3,5 @@ zeebe:
     cluster:
       clusterSize: 4
       nodeId: 2
+      initialContactPoints:
+        - localhost:26502
