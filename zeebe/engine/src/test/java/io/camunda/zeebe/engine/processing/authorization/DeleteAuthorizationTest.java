@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -26,7 +27,7 @@ public class DeleteAuthorizationTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldDeleteAuthorization() {
+  public void shouldDeleteIdBasedAuthorization() {
     // given
     final var authorizationKey =
         engine
@@ -47,9 +48,32 @@ public class DeleteAuthorizationTest {
         engine.authorization().deleteAuthorization(authorizationKey).delete().getValue();
 
     // then
-    assertThat(deletedAuthorization)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("authorizationKey", authorizationKey);
+    Assertions.assertThat(deletedAuthorization).hasAuthorizationKey(authorizationKey);
+  }
+
+  @Test
+  public void shouldDeletePropertyBasedAuthorization() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.COMPLETE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var deletedAuthorization =
+        engine.authorization().deleteAuthorization(authorizationKey).delete().getValue();
+
+    // then
+    Assertions.assertThat(deletedAuthorization).hasAuthorizationKey(authorizationKey);
   }
 
   @Test

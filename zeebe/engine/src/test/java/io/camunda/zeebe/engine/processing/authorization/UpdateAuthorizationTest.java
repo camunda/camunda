@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.authorization;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -177,5 +178,173 @@ public class UpdateAuthorizationTest {
         .hasRejectionReason(
             "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist."
                 .formatted(nonexistentMappingRuleId));
+  }
+
+  @Test
+  public void shouldUpdatePropertyMatcherToIdMatcherAuthorization() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var updatedAuthorization =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("userTaskKey-123")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .update()
+            .getValue();
+
+    // then
+    Assertions.assertThat(updatedAuthorization)
+        .hasAuthorizationKey(authorizationKey)
+        .hasOwnerId("ownerId")
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceMatcher(AuthorizationResourceMatcher.ID)
+        .hasResourceId("userTaskKey-123")
+        .hasResourceType(AuthorizationResourceType.USER_TASK)
+        .hasPermissionTypes(Set.of(PermissionType.UPDATE));
+  }
+
+  @Test
+  public void shouldUpdatePropertyMatcherToAnyMatcherAuthorization() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("candidateGroups")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.CLAIM)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var updatedAuthorization =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .withResourceId(WILDCARD_CHAR)
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.CLAIM)
+            .update()
+            .getValue();
+
+    // then
+    Assertions.assertThat(updatedAuthorization)
+        .hasAuthorizationKey(authorizationKey)
+        .hasOwnerId("ownerId")
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceMatcher(AuthorizationResourceMatcher.ANY)
+        .hasResourceId(WILDCARD_CHAR)
+        .hasResourceType(AuthorizationResourceType.USER_TASK)
+        .hasPermissionTypes(Set.of(PermissionType.CLAIM));
+  }
+
+  @Test
+  public void shouldUpdateIdMatcherToPropertyMatcherAuthorization() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceId("userTaskKey-456")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var updatedAuthorization =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("candidateUsers")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .update()
+            .getValue();
+
+    // then
+    Assertions.assertThat(updatedAuthorization)
+        .hasAuthorizationKey(authorizationKey)
+        .hasOwnerId("ownerId")
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .hasResourcePropertyName("candidateUsers")
+        .hasResourceType(AuthorizationResourceType.USER_TASK)
+        .hasPermissionTypes(Set.of(PermissionType.UPDATE));
+  }
+
+  @Test
+  public void shouldUpdatePropertyMatcherAuthorizationWithDifferentPropertyName() {
+    // given
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    // when
+    final var updatedAuthorization =
+        engine
+            .authorization()
+            .updateAuthorization(authorizationKey)
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("candidateUsers")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .update()
+            .getValue();
+
+    // then
+    Assertions.assertThat(updatedAuthorization)
+        .hasAuthorizationKey(authorizationKey)
+        .hasOwnerId("ownerId")
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .hasResourcePropertyName("candidateUsers")
+        .hasResourceType(AuthorizationResourceType.USER_TASK)
+        .hasPermissionTypes(Set.of(PermissionType.UPDATE));
   }
 }
