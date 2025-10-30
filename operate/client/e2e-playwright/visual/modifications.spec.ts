@@ -186,6 +186,7 @@ test.describe('modifications', () => {
         statisticsV2: instanceWithIncident.statisticsV2,
         sequenceFlows: instanceWithIncident.sequenceFlows,
         sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
+        variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
         metaData: instanceWithIncident.metaData,
