@@ -17,8 +17,11 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,7 +43,9 @@ class ZeebeDbPartitionTransitionStepTest {
   void setup() throws IOException {
 
     when(stateController.recover()).thenReturn(TestActorFuture.completedFuture(zeebeDb));
+    when(stateController.closeDb()).thenReturn(TestActorFuture.completedFuture(null));
     transitionContext.setStateController(stateController);
+    transitionContext.setConcurrencyControl(new TestConcurrencyControl());
 
     step = new ZeebeDbPartitionTransitionStep();
   }
@@ -56,7 +61,8 @@ class ZeebeDbPartitionTransitionStepTest {
     final var existingZeebeDb = transitionContext.getZeebeDb();
 
     // when
-    step.prepareTransition(transitionContext, 1, targetRole);
+    assertThat(step.prepareTransition(transitionContext, 1, targetRole))
+        .succeedsWithin(Duration.ofMinutes(1));
 
     // then
     assertThat(transitionContext.getZeebeDb()).isEqualTo(existingZeebeDb);
@@ -91,7 +97,8 @@ class ZeebeDbPartitionTransitionStepTest {
     }
 
     // when
-    step.prepareTransition(transitionContext, 1, targetRole);
+    assertThat(step.prepareTransition(transitionContext, 1, targetRole))
+        .succeedsWithin(Duration.ofMinutes(1));
 
     // then
     assertThat(transitionContext.getZeebeDb()).isNull();
@@ -134,6 +141,30 @@ class ZeebeDbPartitionTransitionStepTest {
     verify(stateController, never()).recover();
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      names = {"FOLLOWER", "LEADER", "CANDIDATE"})
+  void shouldReturnExceptionIfCloseDbFails(final Role currentRole) throws Exception {
+    // given
+    final var exception = new Exception("Test failure");
+    when(stateController.closeDb())
+        .thenReturn(CompletableActorFuture.completedExceptionally(exception));
+    transitionContext.setCurrentRole(currentRole);
+    transitionContext.setZeebeDb(zeebeDbFromPrevRole);
+
+    // when
+    assertThat(step.prepareTransition(transitionContext, 1, Role.INACTIVE))
+        .failsWithin(Duration.ofMinutes(1))
+        .withThrowableThat()
+        .withCause(exception);
+
+    // then
+    assertThat(transitionContext.getZeebeDb()).isNull();
+    verify(stateController).closeDb();
+    verify(stateController, never()).recover();
+  }
+
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
     return Stream.of(
         Arguments.of(Role.CANDIDATE, Role.FOLLOWER),
@@ -165,8 +196,9 @@ class ZeebeDbPartitionTransitionStepTest {
   }
 
   private void transitionTo(final Role role) {
-    step.prepareTransition(transitionContext, 1, role).join();
-    step.transitionTo(transitionContext, 1, role).join();
+    assertThat(step.prepareTransition(transitionContext, 1, role))
+        .succeedsWithin(Duration.ofMinutes(1));
+    assertThat(step.transitionTo(transitionContext, 1, role)).succeedsWithin(Duration.ofMinutes(1));
     transitionContext.setCurrentRole(role);
   }
 }
