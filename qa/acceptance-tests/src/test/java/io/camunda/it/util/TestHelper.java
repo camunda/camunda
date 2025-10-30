@@ -31,6 +31,7 @@ import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
@@ -38,6 +39,7 @@ import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -582,10 +584,11 @@ public final class TestHelper {
             });
   }
 
-  public static void waitForElementInstances(
+  public static List<ElementInstance> waitForElementInstances(
       final CamundaClient camundaClient,
       final Consumer<ElementInstanceFilter> filter,
       final int expectedElementInstances) {
+    final List<ElementInstance> elementInstances = new ArrayList<>();
     Awaitility.await("should wait until element instances are available")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -594,7 +597,25 @@ public final class TestHelper {
               final var result =
                   camundaClient.newElementInstanceSearchRequest().filter(filter).send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
+              elementInstances.addAll(result.items());
             });
+    return elementInstances;
+  }
+
+  public static List<ElementInstance> waitForElementInstances(
+      final CamundaClient camundaClient, final Consumer<ElementInstanceFilter> filter) {
+    final List<ElementInstance> elementInstances = new ArrayList<>();
+    Awaitility.await("should wait until element instances are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newElementInstanceSearchRequest().filter(filter).send().join();
+              assertThat(result.items()).isNotEmpty();
+              elementInstances.addAll(result.items());
+            });
+    return elementInstances;
   }
 
   public static void waitForProcessInstances(
