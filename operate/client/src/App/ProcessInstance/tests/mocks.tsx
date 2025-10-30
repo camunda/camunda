@@ -45,6 +45,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
@@ -132,6 +133,10 @@ const mockRequests = () => {
   mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
+  });
+  mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
+    items: [],
+    page: {totalItems: 0},
   });
   mockFetchProcess().withSuccess(mockProcess);
   mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
