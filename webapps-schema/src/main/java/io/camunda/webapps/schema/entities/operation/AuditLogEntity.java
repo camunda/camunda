@@ -11,20 +11,30 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 
 public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
-  // this can be generated from the record intent
-  private String operationType;
-  // this is optional, provided by Operate to correlate Zeebe events to Operate operations
-  private String operationReference;
   // this can be the value type
   private String entityType;
   // this is the unique identifier (key) of the entity that was affected by the operation
-  private String entityId;
-  // the time when the operation was performed
-  private String timestamp;
+  private String entityKey;
+  // this can be generated from the record intent
+  private String operationType;
+  // this is optional, provided by Operate to correlate Zeebe events to Operate operations
+  private String batchOperationKey;
+  // the time when the operation was performed, or started for batch operations
+  private Long createTimestamp;
+  // the time when the operation was completed, for batch operations
+  private Long completeTimestamp;
+  // this can be the value type
+  private String identityEntityType;
   // the user that performed the operation
-  private String username;
+  private String identityEntityId;
+  // marks if the operations was successful or failed
+  private Short operationStatus;
+  // details
+  private String details;
   // the explanation on why the operation was performed
-  private String annotation;
+  private String note;
+  // the tena
+  private String tenantId;
 
   public String getOperationType() {
     return operationType;
@@ -35,12 +45,12 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return this;
   }
 
-  public String getOperationReference() {
-    return operationReference;
+  public String getBatchOperationKey() {
+    return batchOperationKey;
   }
 
-  public AuditLogEntity setOperationReference(final String operationReference) {
-    this.operationReference = operationReference;
+  public AuditLogEntity setBatchOperationKey(final String batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
     return this;
   }
 
@@ -53,39 +63,83 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return this;
   }
 
-  public String getEntityId() {
-    return entityId;
+  public String getEntityKey() {
+    return entityKey;
   }
 
-  public AuditLogEntity setEntityId(final String entityId) {
-    this.entityId = entityId;
+  public AuditLogEntity setEntityKey(final String entityKey) {
+    this.entityKey = entityKey;
     return this;
   }
 
-  public String getTimestamp() {
-    return timestamp;
+  public Long getCreateTimestamp() {
+    return createTimestamp;
   }
 
-  public AuditLogEntity setTimestamp(final String timestamp) {
-    this.timestamp = timestamp;
+  public AuditLogEntity setCreateTimestamp(final Long createTimestamp) {
+    this.createTimestamp = createTimestamp;
     return this;
   }
 
-  public String getUsername() {
-    return username;
+  public String getIdentityEntityId() {
+    return identityEntityId;
   }
 
-  public AuditLogEntity setUsername(final String username) {
-    this.username = username;
+  public AuditLogEntity setIdentityEntityId(final String identityEntityId) {
+    this.identityEntityId = identityEntityId;
     return this;
   }
 
-  public String getAnnotation() {
-    return annotation;
+  public String getIdentityEntityType() {
+    return identityEntityType;
   }
 
-  public AuditLogEntity setAnnotation(final String annotation) {
-    this.annotation = annotation;
+  public AuditLogEntity setIdentityEntityType(final String identityEntityType) {
+    this.identityEntityType = identityEntityType;
     return this;
+  }
+
+  public Long getCompleteTimestamp() {
+    return completeTimestamp;
+  }
+
+  public AuditLogEntity setCompleteTimestamp(final Long completeTimestamp) {
+    this.completeTimestamp = completeTimestamp;
+    return this;
+  }
+
+  public Short getOperationStatus() {
+    return operationStatus;
+  }
+
+  public AuditLogEntity setOperationStatus(final Short operationStatus) {
+    this.operationStatus = operationStatus;
+    return this;
+  }
+
+  public String getDetails() {
+    return details;
+  }
+
+  public AuditLogEntity setDetails(final String details) {
+    this.details = details;
+    return this;
+  }
+
+  public String getNote() {
+    return note;
+  }
+
+  public AuditLogEntity setNote(final String note) {
+    this.note = note;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
   }
 }
