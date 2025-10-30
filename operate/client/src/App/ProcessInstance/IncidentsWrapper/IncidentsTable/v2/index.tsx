@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IncidentOperation} from 'modules/components/IncidentOperation';
+import {IncidentOperationV2} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
 import {sortIncidents} from './service';
@@ -197,10 +197,9 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               ),
               operations:
                 hasPermissionForRetryOperation && areOperationsVisible ? (
-                  <IncidentOperation
-                    instanceId={incident.processInstanceKey}
+                  <IncidentOperationV2
                     incidentKey={incident.incidentKey}
-                    showSpinner={true} // TODO: What to do here?
+                    jobKey={incident.jobKey}
                   />
                 ) : undefined,
             };
