@@ -71,12 +71,14 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
+import org.springframework.util.unit.DataSize;
 
 @ExtendWith(StreamPlatformExtension.class)
 public final class StreamProcessorTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
+  private static final DataSize MAX_FIELD_SIZE = DataSize.ofKilobytes(32);
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
@@ -129,7 +131,8 @@ public final class StreamProcessorTest {
   @Test
   public void shouldNotRespondWithoutRequestId() {
     // given
-    final var builder = new BufferedProcessingResultBuilder((recordLength, batchLength) -> true);
+    final var builder =
+        new BufferedProcessingResultBuilder((recordLength, batchLength) -> true, MAX_FIELD_SIZE);
 
     // when - responding with an invalid request id
     final var result =
@@ -470,7 +473,7 @@ public final class StreamProcessorTest {
   public void shouldSetSourcePointerForFollowUpRecords() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, v) -> true, MAX_FIELD_SIZE);
     resultBuilder.appendRecordReturnEither(
         1,
         Records.processInstance(1),
@@ -658,7 +661,7 @@ public final class StreamProcessorTest {
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var mockPostCommitTask = mock(PostCommitTask.class);
     when(mockPostCommitTask.flush()).thenReturn(true);
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.appendPostCommitTask(mockPostCommitTask);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
@@ -678,7 +681,7 @@ public final class StreamProcessorTest {
     final var mockPostCommitTask = mock(PostCommitTask.class);
     when(mockPostCommitTask.flush()).thenReturn(false);
 
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.appendPostCommitTask(mockPostCommitTask);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
 
@@ -699,7 +702,7 @@ public final class StreamProcessorTest {
     final var mockPostCommitTask = mock(PostCommitTask.class);
     when(mockPostCommitTask.flush()).thenThrow(new RuntimeException("expected"));
 
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.appendPostCommitTask(mockPostCommitTask);
     when(defaultMockedRecordProcessor.process(any(), any()))
         .thenReturn(resultBuilder.build())
@@ -731,7 +734,7 @@ public final class StreamProcessorTest {
         };
     // in order to not mark the processing as skipped we need to return a result
     testProcessor.processingResult =
-        new BufferedProcessingResultBuilder((c, s) -> true)
+        new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE)
             .appendPostCommitTask(() -> true)
             .build();
     doCallRealMethod()
@@ -771,7 +774,8 @@ public final class StreamProcessorTest {
           throw new RuntimeException("expected");
         };
     // in order to not mark the processing as skipped we need to return a result
-    testProcessor.processingResult = new BufferedProcessingResultBuilder((c, s) -> true).build();
+    testProcessor.processingResult =
+        new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE).build();
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
         .when(testProcessor)
@@ -881,7 +885,7 @@ public final class StreamProcessorTest {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
 
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.withResponse(
         RecordType.EVENT,
         3,
@@ -921,7 +925,7 @@ public final class StreamProcessorTest {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
 
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder
         .withResponse(
             RecordType.EVENT,
@@ -941,7 +945,8 @@ public final class StreamProcessorTest {
                 .intent(ELEMENT_ACTIVATING)
                 .rejectionType(RejectionType.NULL_VAL)
                 .rejectionReason(""));
-    final var secondResultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var secondResultBuilder =
+        new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     secondResultBuilder.withResponse(
         RecordType.EVENT,
         4,
@@ -1044,7 +1049,7 @@ public final class StreamProcessorTest {
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     when(defaultMockedRecordProcessor.process(any(), any())).thenThrow(new RuntimeException());
 
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.withResponse(
         RecordType.EVENT,
         3,
@@ -1081,7 +1086,8 @@ public final class StreamProcessorTest {
   @Test
   public void shouldWriteOnlyErrorResponseOnFailedEventProcessing() {
     // given
-    final var successResultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var successResultBuilder =
+        new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     successResultBuilder
         .withResponse(
             RecordType.EVENT,
@@ -1107,7 +1113,8 @@ public final class StreamProcessorTest {
         .thenReturn(successResultBuilder.build())
         .thenThrow(new RuntimeException());
 
-    final var errorResultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var errorResultBuilder =
+        new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     errorResultBuilder.withResponse(
         RecordType.EVENT,
         4,
@@ -1162,7 +1169,7 @@ public final class StreamProcessorTest {
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     when(defaultMockedRecordProcessor.process(any(), any())).thenThrow(new RuntimeException());
 
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.appendRecordReturnEither(
         1,
         Records.processInstance(1),
@@ -1204,7 +1211,7 @@ public final class StreamProcessorTest {
     final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
 
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.appendPostCommitTask(() -> true);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
@@ -1225,7 +1232,7 @@ public final class StreamProcessorTest {
     // given
     final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 
@@ -1244,7 +1251,7 @@ public final class StreamProcessorTest {
     // given
     final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.appendPostCommitTask(() -> true);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
@@ -1264,7 +1271,7 @@ public final class StreamProcessorTest {
     // given
     final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.appendRecordReturnEither(
         1,
         Records.processInstance(1),
@@ -1302,7 +1309,7 @@ public final class StreamProcessorTest {
     // given
     final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true, MAX_FIELD_SIZE);
     resultBuilder.withResponse(
         RecordType.EVENT,
         1,
