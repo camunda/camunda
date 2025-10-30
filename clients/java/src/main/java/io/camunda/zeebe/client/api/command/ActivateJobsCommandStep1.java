@@ -101,5 +101,20 @@ public interface ActivateJobsCommandStep1
      *     it to the broker.
      */
     ActivateJobsCommandStep3 fetchVariables(String... fetchVariables);
+
+    /**
+     * Sets the request timeout for the command.
+     *
+     * <p>Additionally, it sets the HTTP response timeout to the specified value, incremented by the
+     * offset defined in {@link
+     * io.camunda.zeebe.client.ZeebeClientConfiguration#getDefaultRequestTimeoutOffset()} (default 1
+     * second), ensuring that the client timeout does not occur before the server timeout.
+     *
+     * @see FinalCommandStep#requestTimeout(Duration)
+     * @param requestTimeout the request timeout
+     * @return the configured command
+     */
+    @Override
+    FinalCommandStep<ActivateJobsResponse> requestTimeout(Duration requestTimeout);
   }
 }

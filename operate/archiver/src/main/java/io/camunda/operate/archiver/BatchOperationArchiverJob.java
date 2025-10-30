@@ -10,7 +10,6 @@ package io.camunda.operate.archiver;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -28,8 +27,6 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
   private final Archiver archiver;
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
-
-  @Autowired private OperateProperties operateProperties;
 
   @Autowired private Metrics metrics;
 
@@ -59,6 +56,8 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
                   archiveBatchFuture.completeExceptionally(e);
                   return;
                 }
+                metrics.recordCounts(
+                    Metrics.COUNTER_NAME_BATCH_OPERATIONS_ARCHIVED, archiveBatch.getIds().size());
                 archiveBatchFuture.complete(archiveBatch.getIds().size());
               });
     } else {

@@ -91,7 +91,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          #detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -143,7 +143,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          #detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -208,7 +208,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -265,7 +265,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -355,15 +355,24 @@ jobs:
       - uses: actions/checkout@v4
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
+  utils-get-snapshot-docker-tag-and-concurrency-group:
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      base_group_name: deploy-docker-snapshot
+
   deploy-docker-snapshot:
     name: Deploy snapshot Docker image
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
-    needs: [ test-summary ]
+    needs: [ test-summary, utils-get-snapshot-docker-tag-and-concurrency-group ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
-      group: deploy-docker-snapshot8.7
+      group:  ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -381,7 +390,7 @@ jobs:
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
-          version: 8.7.0-SNAPSHOT
+          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}

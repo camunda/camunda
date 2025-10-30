@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.springframework.util.unit.DataSize;
 
 public final class ClusterCfg {
 
@@ -42,6 +43,8 @@ public final class ClusterCfg {
   private MembershipCfg membership = new MembershipCfg();
   private SecurityCfg security = new SecurityCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
+  private DataSize socketSendBuffer = null;
+  private DataSize socketReceiveBuffer = null;
 
   public String getMemberId() {
     return memberId;
@@ -156,6 +159,24 @@ public final class ClusterCfg {
     return this;
   }
 
+  public DataSize getSocketSendBuffer() {
+    return socketSendBuffer;
+  }
+
+  public ClusterCfg setSocketSendBuffer(final DataSize socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
+    return this;
+  }
+
+  public DataSize getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
+  }
+
+  public ClusterCfg setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -167,7 +188,9 @@ public final class ClusterCfg {
         port,
         membership,
         security,
-        messageCompression);
+        messageCompression,
+        socketSendBuffer,
+        socketReceiveBuffer);
   }
 
   @Override
@@ -187,7 +210,9 @@ public final class ClusterCfg {
         && Objects.equals(host, that.host)
         && Objects.equals(membership, that.membership)
         && Objects.equals(security, that.security)
-        && Objects.equals(messageCompression, that.messageCompression);
+        && Objects.equals(messageCompression, that.messageCompression)
+        && Objects.equals(socketSendBuffer, that.socketSendBuffer)
+        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer);
   }
 
   @Override
@@ -214,6 +239,10 @@ public final class ClusterCfg {
         + security
         + ", messageCompression="
         + messageCompression
+        + ", socketSendBuffer="
+        + socketSendBuffer
+        + ", socketReceiveBuffer="
+        + socketReceiveBuffer
         + '}';
   }
 }

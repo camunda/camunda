@@ -80,8 +80,8 @@ public final class ClusterConfigurationManagerService
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
-    gossipActor = new Actor() {};
-    managerActor = new Actor() {};
+    gossipActor = Actor.newActor().name("ClusterConfigGossip").build();
+    managerActor = Actor.newActor().name("ClusterConfigManager").build();
     clusterConfigurationManager =
         new ClusterConfigurationManagerImpl(
             managerActor, localMemberId, persistedClusterConfiguration, topologyManagerMetrics);

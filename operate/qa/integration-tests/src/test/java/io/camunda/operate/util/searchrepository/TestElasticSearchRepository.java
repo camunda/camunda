@@ -22,8 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -46,6 +48,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
@@ -374,6 +377,35 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
+  public List<DecisionInstanceEntity> getDecisionInstances(
+      final String indexName, final List<Long> decisionInstanceKeys, final List<String> ids)
+      throws IOException {
+    final QueryBuilder idsQ =
+        CollectionUtil.isEmpty(ids)
+            ? QueryBuilders.matchAllQuery()
+            : idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
+
+    final QueryBuilder decisionInstanceKeysQ =
+        CollectionUtil.isEmpty(decisionInstanceKeys)
+            ? QueryBuilders.matchAllQuery()
+            : termsQuery(DecisionInstanceTemplate.KEY, decisionInstanceKeys);
+
+    final SearchRequest searchRequest =
+        new SearchRequest(indexName)
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        constantScoreQuery(
+                            ElasticsearchUtil.joinWithAnd(decisionInstanceKeysQ, idsQ)))
+                    .size(100));
+
+    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    return ElasticsearchUtil.mapSearchHits(
+        response.getHits().getHits(), objectMapper, DecisionInstanceEntity.class);
+  }
+
+  @Override
   public Optional<List<Long>> getIds(
       final String indexName,
       final String idFieldName,
@@ -390,6 +422,21 @@ public class TestElasticSearchRepository implements TestSearchRepository {
         throw ex;
       }
       return Optional.empty();
+    }
+  }
+
+  @Override
+  public Long getIndexTemplatePriority(final String templateName) {
+    try {
+      final var request = new GetComposableIndexTemplateRequest(templateName);
+      final var response = esClient.indices().getIndexTemplate(request, RequestOptions.DEFAULT);
+      final var templates = response.getIndexTemplates();
+      if (templates.isEmpty()) {
+        throw new IllegalStateException(templateName + " index template not found");
+      }
+      return templates.get(templateName).priority();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

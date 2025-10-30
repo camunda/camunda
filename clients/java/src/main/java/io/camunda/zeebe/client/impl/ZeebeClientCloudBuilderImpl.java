@@ -29,6 +29,7 @@ import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3;
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4;
+import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4.ZeebeClientCloudBuilderStep5;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -47,12 +48,12 @@ public class ZeebeClientCloudBuilderImpl
     implements ZeebeClientCloudBuilderStep1,
         ZeebeClientCloudBuilderStep2,
         ZeebeClientCloudBuilderStep3,
-        ZeebeClientCloudBuilderStep4 {
+        ZeebeClientCloudBuilderStep4,
+        ZeebeClientCloudBuilderStep5 {
 
-  private static final String BASE_ADDRESS = "zeebe.camunda.io";
-  private static final String BASE_AUTH_URL = "https://login.cloud.camunda.io/oauth/token";
-
+  private static final String DEFAULT_DOMAIN = "camunda.io";
   private static final String DEFAULT_REGION = "bru-2";
+  private static final String ZEEBE_DOMAIN_COMPONENT = "zeebe";
 
   private final ZeebeClientBuilderImpl innerBuilder = new ZeebeClientBuilderImpl();
 
@@ -60,6 +61,7 @@ public class ZeebeClientCloudBuilderImpl
   private String clientId;
   private String clientSecret;
   private String region = DEFAULT_REGION;
+  private String domain = DEFAULT_DOMAIN;
 
   @Override
   public ZeebeClientCloudBuilderStep2 withClusterId(final String clusterId) {
@@ -80,8 +82,14 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 withRegion(final String region) {
+  public ZeebeClientCloudBuilderStep5 withRegion(final String region) {
     this.region = region;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientCloudBuilderStep5 withDomain(final String domain) {
+    this.domain = domain;
     return this;
   }
 
@@ -200,6 +208,12 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder defaultRequestTimeoutOffset(final Duration requestTimeoutOffset) {
+    innerBuilder.defaultRequestTimeoutOffset(requestTimeoutOffset);
+    return this;
+  }
+
+  @Override
   public ZeebeClientBuilder usePlaintext() {
     innerBuilder.usePlaintext();
     return this;
@@ -289,7 +303,8 @@ public class ZeebeClientCloudBuilderImpl
     if (isNeedToSetCloudRestAddress()) {
       ensureNotNull("cluster id", clusterId);
       final String cloudRestAddress =
-          String.format("https://%s.zeebe.%s:443/%s", region, BASE_ADDRESS, clusterId);
+          String.format(
+              "https://%s.%s.%s:443/%s", region, ZEEBE_DOMAIN_COMPONENT, domain, clusterId);
       return getURIFromString(cloudRestAddress);
     } else {
       Loggers.LOGGER.debug(
@@ -304,7 +319,8 @@ public class ZeebeClientCloudBuilderImpl
     if (isNeedToSetCloudGrpcAddress() && isNeedToSetCloudGatewayAddress()) {
       ensureNotNull("cluster id", clusterId);
       final String cloudGrpcAddress =
-          String.format("https://%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
+          String.format(
+              "https://%s.%s.%s.%s:443", clusterId, region, ZEEBE_DOMAIN_COMPONENT, domain);
       return getURIFromString(cloudGrpcAddress);
     } else {
       if (!isNeedToSetCloudGrpcAddress()) {
@@ -335,10 +351,10 @@ public class ZeebeClientCloudBuilderImpl
         Loggers.LOGGER.debug("Expected setting 'usePlaintext' to be 'false', but found 'true'.");
       }
       return builder
-          .audience(String.format("%s.%s.%s", clusterId, region, BASE_ADDRESS))
+          .audience(String.format("%s.%s", ZEEBE_DOMAIN_COMPONENT, domain))
           .clientId(clientId)
           .clientSecret(clientSecret)
-          .authorizationServerUrl(BASE_AUTH_URL)
+          .authorizationServerUrl(String.format("https://login.cloud.%s/oauth/token", domain))
           .build();
     } else {
       Loggers.LOGGER.debug(

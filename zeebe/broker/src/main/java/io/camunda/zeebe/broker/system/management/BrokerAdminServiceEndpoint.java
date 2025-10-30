@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.management;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -87,5 +88,10 @@ public class BrokerAdminServiceEndpoint {
         .getAdminService()
         .map(BrokerAdminService::getPartitionStatus)
         .orElse(Map.of());
+  }
+
+  @ReadOperation
+  public Optional<PartitionStatus> singlePartition(@Selector final Integer partitionId) {
+    return Optional.ofNullable(partitionStatus().get(partitionId));
   }
 }

@@ -64,7 +64,7 @@ public class LoggingBackupStore implements BackupStore {
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
-    logger.atLevel(level).log("Marking {} as failed", id, failureReason);
+    logger.atLevel(level).log("Marking {} as failed: {}", id, failureReason);
     return store.markFailed(id, failureReason);
   }
 

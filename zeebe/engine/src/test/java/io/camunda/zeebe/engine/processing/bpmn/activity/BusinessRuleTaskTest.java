@@ -855,4 +855,68 @@ public final class BusinessRuleTaskTest {
         .hasDecisionRequirementsKey(lastDeployedDecisionRequirements.getDecisionRequirementsKey())
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
+
+  @Test
+  public void shouldEvaluateBusinessRuleTaskWithSynthesizedRuleIdWhenMissing() {
+    // given
+    final String decisionId = "shippingDecision";
+    final String resultVar = "shippingType";
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .businessRuleTask(
+                TASK_ID, t -> t.zeebeCalledDecisionId(decisionId).zeebeResultVariable(resultVar))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource("/dmn/decision-table-with-missing-ruleId.dmn")
+        .withXmlResource(process)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("amount", 300).create();
+
+    // then (decision evaluation event exists and is successful)
+    final var decisionEvaluationRecordValue =
+        RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withDecisionId(decisionId)
+            .getFirst()
+            .getValue();
+
+    assertThat(decisionEvaluationRecordValue)
+        .hasDecisionId(decisionId)
+        .hasDecisionOutput("\"EXPRESS\"")
+        .hasDecisionVersion(1);
+
+    // verify matched rule: index 2 and synthesized ruleId
+    final var evaluatedDecision =
+        decisionEvaluationRecordValue.getEvaluatedDecisions().stream()
+            .filter(d -> decisionId.equals(d.getDecisionId()))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(evaluatedDecision.getMatchedRules())
+        .singleElement()
+        .satisfies(
+            matchedRule -> {
+              assertThat(matchedRule.getRuleIndex()).isEqualTo(2);
+              assertThat(matchedRule.getRuleId())
+                  .isEqualTo("ZB_SYNTH_RULE_ID_shippingDecision_v1_r2");
+            });
+
+    // result variable written by the business rule task
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(processInstanceKey)
+                .withName(resultVar)
+                .getFirst()
+                .getValue())
+        .hasValue("\"EXPRESS\"");
+  }
 }

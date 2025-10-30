@@ -30,6 +30,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
+import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -156,7 +157,35 @@ class ExporterDirectorPartitionTransitionStepTest {
   }
 
   @Test
-  void shouldDisableExporterIfConfigChangedConcurrently() {
+  void shouldCreateDescriptorsForConfigNotFoundExporters() {
+    // given
+    final String enabledExporterId = "expA";
+    final String configNotFoundExporterId = "expB";
+    final var exporterConfig =
+        getExporterConfig(
+            enabledExporterId, State.ENABLED, configNotFoundExporterId, State.CONFIG_NOT_FOUND);
+
+    final Map<String, ExporterDescriptor> exporters =
+        Map.of(
+            enabledExporterId, new ExporterDescriptor(enabledExporterId, Exporter.class, Map.of()));
+    when(exporterRepository.getExporters()).thenReturn(exporters);
+    transitionContext.setDynamicPartitionConfig(exporterConfig);
+
+    final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
+    final var exporterDirectorStep = getExporterDirectorPartitionTransitionStep(capturedContext);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then
+    assertThat(
+            capturedContext.get().getDescriptors().keySet().stream().map(ExporterDescriptor::getId))
+        .containsExactlyInAnyOrder(enabledExporterId, configNotFoundExporterId);
+  }
+
+  @Test
+  void shouldRemoveExporterIfConfigChangedConcurrently() {
     // given
     final String enabledExporterId = "expA";
     final String disabledExporterId = "expB";
@@ -181,8 +210,41 @@ class ExporterDirectorPartitionTransitionStepTest {
     startingFuture.complete(null);
 
     // then
-    verify(mockedExporterDirector, timeout(1000)).disableExporter(disabledExporterId);
-    verify(mockedExporterDirector, never()).disableExporter(enabledExporterId);
+    verify(mockedExporterDirector, timeout(1000)).removeExporter(disabledExporterId);
+    verify(mockedExporterDirector, never()).removeExporter(enabledExporterId);
+  }
+
+  @Test
+  void shouldDeleteExporterIfConfigChangedConcurrently() {
+    // given
+    final String enabledExporterId = "expA";
+    final String toBeDeletedExporterId = "expB";
+    final var exporterConfig =
+        getExporterConfig(enabledExporterId, State.ENABLED, toBeDeletedExporterId, State.ENABLED);
+
+    setExportersInContext(enabledExporterId, toBeDeletedExporterId, exporterConfig);
+
+    final var mockedExporterDirector = mock(ExporterDirector.class);
+    final var startingFuture = new TestActorFuture<Void>();
+    when(mockedExporterDirector.startAsync(any())).thenReturn(startingFuture);
+    final var exporterDirectorStep =
+        new ExporterDirectorPartitionTransitionStep((ctx, phase) -> mockedExporterDirector);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER);
+
+    // new config removes expB entirely
+    final var updatedConfig =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of(enabledExporterId, new ExporterState(0, State.ENABLED, Optional.empty()))));
+    transitionContext.setDynamicPartitionConfig(updatedConfig);
+    startingFuture.complete(null);
+
+    // then
+    verify(mockedExporterDirector, timeout(1000)).removeExporter(toBeDeletedExporterId);
+    verify(mockedExporterDirector, never()).removeExporter(enabledExporterId);
   }
 
   @Test

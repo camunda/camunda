@@ -35,13 +35,13 @@ class ActivateJobsTest {
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withGatewayConfig(c -> c.getLongPolling().setEnabled(false));
+          .withGatewayConfig(c -> c.getLongPolling().setEnabled(true));
 
   ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofMillis(500)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -64,14 +64,41 @@ class ActivateJobsTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldRespondNoActivatedJobsWhenNoJobsAvailable(final boolean useRest) {
+  public void shouldReturnEmptyListOnRequestTimeout(final boolean useRest) {
     // when
-    final ZeebeFuture<ActivateJobsResponse> responseFuture =
-        getCommand(client, useRest).jobType("notExisting").maxJobsToActivate(1).send();
+    final var actual =
+        getCommand(client, useRest).jobType("notExisting").maxJobsToActivate(1).send().join();
 
     // then
-    final ActivateJobsResponse response = responseFuture.join();
-    assertThat(response.getJobs()).isEmpty();
+    assertThat(actual.getJobs()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldReturnEmptyListOnUserDefinedGlobalRequestTimeout(final boolean useRest) {
+    // when
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(1)).build();
+    final var actual =
+        getCommand(client, useRest).jobType("notExisting").maxJobsToActivate(1).send().join();
+
+    // then
+    assertThat(actual.getJobs()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldReturnEmptyListOnUserDefinedCommandRequestTimeout(final boolean useRest) {
+    // when
+    final var actual =
+        getCommand(client, useRest)
+            .jobType("notExisting")
+            .maxJobsToActivate(1)
+            .requestTimeout(Duration.ofSeconds(1))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual.getJobs()).isEmpty();
   }
 
   private ActivateJobsCommandStep1 getCommand(final ZeebeClient client, final boolean useRest) {

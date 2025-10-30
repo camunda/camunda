@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.7-SNAPSHOT</version>
+    <version>8.7.17-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -21,7 +21,6 @@
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
-    <skip.fe.build>false</skip.fe.build>
   </properties>
 
   <dependencies>

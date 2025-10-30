@@ -153,3 +153,17 @@ To pause command redistribution we can set the `ZEEBE_BROKER_EXPERIMENTAL_ENGINE
 (i.e. `zeebe.broker.experimental.engine.distribution.pauseCommandDistribution`) flag to `true` and
 restart the brokers. This will prevent the `CommandRedistributor` from scheduling the retry cycle
 and allow an engineer to investigate any issues.
+
+#### Configuring retry intervals
+
+The retry intervals can be configured to better suit different environments:
+
+- **Redistribution Interval**: The initial redistribution interval (default: 10 seconds) can be configured using
+  `ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_REDISTRIBUTIONINTERVAL` or
+  `zeebe.broker.experimental.engine.distribution.redistributionInterval`.
+
+- **Maximum Backoff Duration**: The maximum backoff duration (default: 5 minutes) can be configured using
+  `ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_MAXBACKOFFDURATION` or
+  `zeebe.broker.experimental.engine.distribution.maxBackoffDuration`.
+
+This allows operators to tune the retry behavior for incident response, performance optimization, or testing scenarios.

@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
@@ -48,6 +49,8 @@ import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
 import io.camunda.operate.zeebeimport.post.opensearch.OpensearchIncidentPostImportAction;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -85,7 +88,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       DatabaseInfo.class,
       OpenSearchSchemaTestHelper.class,
       OpenSearchClientTestHelper.class,
-      OpensearchIncidentPostImportAction.class
+      OpensearchIncidentPostImportAction.class,
+      Metrics.class,
+      SimpleMeterRegistry.class
     },
     properties = {"spring.profiles.active=", OperateProperties.PREFIX + ".database=opensearch"})
 @EnableConfigurationProperties(OperateProperties.class)
@@ -102,6 +107,7 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
   @Autowired protected FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   @Autowired protected PostImporterQueueTemplate postImporterQueueTemplate;
   @Autowired protected IncidentTemplate incidentTemplate;
+  @Autowired protected Metrics metrics;
 
   // not needed for the test but to satisfy our auto wirings
   @MockitoBean("postImportThreadPoolScheduler")
@@ -126,7 +132,8 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
     schemaTestHelper.dropSchema();
   }
 
-  private void createProcessInstance(String key, Consumer<Map<String, Object>> propertiesCreator) {
+  private void createProcessInstance(
+      final String key, final Consumer<Map<String, Object>> propertiesCreator) {
 
     final Map<String, Object> processInstance = new HashMap<String, Object>();
     propertiesCreator.accept(processInstance);
@@ -141,10 +148,10 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
   }
 
   private void createFlowNodeInstance(
-      String key,
-      String processInstanceKey,
-      Consumer<Map<String, Object>> listViewPropertiesCreator,
-      Consumer<Map<String, Object>> flowNodeInstancePropertiesCreator) {
+      final String key,
+      final String processInstanceKey,
+      final Consumer<Map<String, Object>> listViewPropertiesCreator,
+      final Consumer<Map<String, Object>> flowNodeInstancePropertiesCreator) {
 
     final Map<String, Object> listViewFlowNodeInstance = new HashMap<String, Object>();
     listViewPropertiesCreator.accept(listViewFlowNodeInstance);
@@ -166,8 +173,7 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
   }
 
   @Test
-  public void shouldUseCorrectRoutingValueWhenUpdatingFlowNodeInstance()
-      throws IOException, InterruptedException {
+  public void shouldUseCorrectRoutingValueWhenUpdatingFlowNodeInstance() throws IOException {
 
     // given
     schemaManager.createSchema();
@@ -261,13 +267,20 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
     assertUpdateWasRoutedTo(
         bulkActions, listViewTemplate, calledFlowNodeInstanceKey, calledProcessInstanceKey);
     assertUpdateWasRoutedTo(bulkActions, flowNodeInstanceTemplate, calledFlowNodeInstanceKey, null);
+
+    // then - verify that the post importer queue size metric is registered and has correct value
+    final Gauge queueSizeGauge =
+        metrics.getMeterRegistry().find(Metrics.GAUGE_POST_IMPORTER_QUEUE_SIZE).gauge();
+    assertThat(queueSizeGauge).isNotNull();
+    assertThat(queueSizeGauge.getId().getTag("partition")).isEqualTo(String.valueOf(PARTITION_ID));
+    assertThat(queueSizeGauge.value()).isEqualTo(1.0); // One entry in the queue
   }
 
   private void assertUpdateWasRoutedTo(
-      List<JsonNode> bulkActions,
-      IndexDescriptor index,
-      String documentId,
-      String expectedRountingKey) {
+      final List<JsonNode> bulkActions,
+      final IndexDescriptor index,
+      final String documentId,
+      final String expectedRountingKey) {
     final List<JsonNode> updatesForDocument =
         filterUpdatesToIndexAndDocument(bulkActions, index, documentId);
 
@@ -285,7 +298,7 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
   }
 
   private List<JsonNode> filterUpdatesToIndexAndDocument(
-      List<JsonNode> bulkActions, IndexDescriptor index, String documentId) {
+      final List<JsonNode> bulkActions, final IndexDescriptor index, final String documentId) {
     return bulkActions.stream()
         .filter(n -> n.has("update")) // only updates
         .map(n -> n.get("update"))
@@ -296,7 +309,7 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
         .collect(Collectors.toList());
   }
 
-  private List<JsonNode> parseActions(String bulkRequestBody) throws IOException {
+  private List<JsonNode> parseActions(final String bulkRequestBody) throws IOException {
     final ObjectMapper objectMapper = new ObjectMapper();
     final ObjectReader reader = objectMapper.readerFor(JsonNode.class);
 

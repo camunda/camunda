@@ -132,7 +132,7 @@ public class Metadata {
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, partNo, partCount);
+    return Objects.hash(backupId, version, partNo, partCount);
   }
 
   @Override
@@ -144,7 +144,8 @@ public class Metadata {
       return false;
     }
     final Metadata that = (Metadata) o;
-    return Objects.equals(version, that.version)
+    return Objects.equals(backupId, that.backupId)
+        && Objects.equals(version, that.version)
         && Objects.equals(partNo, that.partNo)
         && Objects.equals(partCount, that.partCount);
   }

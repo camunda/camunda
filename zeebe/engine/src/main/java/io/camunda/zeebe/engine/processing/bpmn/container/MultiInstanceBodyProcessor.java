@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBeh
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceInputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -63,6 +64,7 @@ public final class MultiInstanceBodyProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final MultiInstanceInputCollectionBehavior multiInstanceInputCollectionBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
@@ -74,6 +76,7 @@ public final class MultiInstanceBodyProcessor
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    multiInstanceInputCollectionBehavior = bpmnBehaviors.inputCollectionBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
@@ -87,7 +90,8 @@ public final class MultiInstanceBodyProcessor
   public Either<Failure, ?> onActivate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     // verify that the input collection variable is present and valid
-    return readInputCollectionVariable(element, context)
+    return multiInstanceInputCollectionBehavior
+        .initializeInputCollection(element, context)
         .flatMap(
             inputCollection ->
                 eventSubscriptionBehavior
@@ -140,7 +144,8 @@ public final class MultiInstanceBodyProcessor
     final int loopCounter =
         stateBehavior.getElementInstance(childContext).getMultiInstanceLoopCounter();
 
-    return readInputCollectionVariable(multiInstanceBody, childContext)
+    return multiInstanceInputCollectionBehavior
+        .getInputCollection(multiInstanceBody, flowScopeContext)
         .flatMap(
             collection -> {
               // the loop counter starts at 1
@@ -183,8 +188,12 @@ public final class MultiInstanceBodyProcessor
       return satisfiesCompletionConditionOrFailure;
     }
 
-    // test that input collection variable can be evaluated correctly
-    return readInputCollectionVariable(element, flowScopeContext)
+    // Test that input collection variable can be evaluated correctly.
+    // This should not be necessary now that we fetch the input collection from the state. However,
+    // to remain backwards compatible we need to keep this check, as there could be existing multi
+    // instance bodies that do not have an input collection stored in the state.
+    return multiInstanceInputCollectionBehavior
+        .getInputCollection(element, flowScopeContext)
         .map(ok -> satisfiesCompletionConditionOrFailure.get());
   }
 
@@ -210,7 +219,8 @@ public final class MultiInstanceBodyProcessor
       }
       return;
     }
-    final var inputCollectionOrFailure = readInputCollectionVariable(element, flowScopeContext);
+    final var inputCollectionOrFailure =
+        multiInstanceInputCollectionBehavior.getInputCollection(element, flowScopeContext);
     if (inputCollectionOrFailure.isLeft()) {
       // this incident is un-resolvable
       incidentBehavior.createIncident(inputCollectionOrFailure.getLeft(), childContext);
@@ -363,13 +373,6 @@ public final class MultiInstanceBodyProcessor
         childContext,
         LOOP_COUNTER_VARIABLE,
         wrapVariable(loopCounterVariableBuffer, loopCounterVariableView, loopCounter));
-  }
-
-  private Either<Failure, List<DirectBuffer>> readInputCollectionVariable(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-    final Expression inputCollection = element.getLoopCharacteristics().getInputCollection();
-    return expressionBehavior.evaluateArrayExpression(
-        inputCollection, context.getElementInstanceKey());
   }
 
   private void createInnerInstance(

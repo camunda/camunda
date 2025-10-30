@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -49,10 +50,11 @@ public class RestoreManager {
     this.meterRegistry = meterRegistry;
   }
 
-  public CompletableFuture<Void> restore(final long backupId, final boolean validateConfig) {
+  public CompletableFuture<Void> restore(
+      final long backupId, final boolean validateConfig, final List<String> ignoreFilesInTarget) {
     final Path dataDirectory = Path.of(configuration.getData().getDirectory());
     try {
-      if (!dataFolderIsEmpty(dataDirectory)) {
+      if (!dataFolderIsEmpty(dataDirectory, ignoreFilesInTarget)) {
         LOG.error(
             "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
             dataDirectory);
@@ -147,15 +149,16 @@ public class RestoreManager {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private static boolean dataFolderIsEmpty(final Path dir) throws IOException {
+  private boolean dataFolderIsEmpty(final Path dir, final List<String> ignoreFilesInTarget)
+      throws IOException {
     if (!Files.exists(dir)) {
       return true;
     }
 
     try (final var entries = Files.list(dir)) {
       return entries
-          // ignore the well-known lost+found directory, we don't care that it's there.
-          .filter(path -> !path.endsWith("lost+found"))
+          // ignore configured files/directories that we don't care about, e.g. `lost+found`.
+          .filter(path -> ignoreFilesInTarget.stream().noneMatch(path::endsWith))
           .findFirst()
           .isEmpty();
     }

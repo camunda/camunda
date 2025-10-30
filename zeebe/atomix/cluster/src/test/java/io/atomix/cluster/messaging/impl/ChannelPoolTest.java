@@ -27,7 +27,7 @@ class ChannelPoolTest {
         when(channel.isActive()).thenReturn(true);
         return CompletableFuture.completedFuture(channel);
       };
-  private final ChannelPool channelPool = new ChannelPool(factory, 8);
+  private final ChannelPool channelPool = new ChannelPool(factory);
 
   @Test
   void shouldNotUseOldChannelWhenIPChanged() throws UnknownHostException {

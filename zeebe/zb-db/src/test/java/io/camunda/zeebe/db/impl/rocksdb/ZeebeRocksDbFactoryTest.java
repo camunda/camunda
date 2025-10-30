@@ -74,13 +74,12 @@ final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
-  void shouldOverwriteDefaultColumnFamilyOptions() {
+  void shouldMergeUserOptionsWithDefaultsInsteadOfOverwriting() {
     // given
     final var customProperties = new Properties();
     customProperties.put("write_buffer_size", String.valueOf(ByteValue.ofMegabytes(16)));
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
-    //noinspection unchecked
     final var factoryWithDefaults =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
@@ -95,7 +94,7 @@ final class ZeebeRocksDbFactoryTest {
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
     final var customOptions = factoryWithCustomOptions.createColumnFamilyOptions(new ArrayList<>());
 
-    // then
+    // then - defaults should be preserved
     assertThat(defaults)
         .extracting(
             ColumnFamilyOptions::writeBufferSize,
@@ -103,13 +102,64 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::numLevels)
         .containsExactly(50704475L, CompactionPriority.OldestSmallestSeqFirst, 4);
 
-    // user cfg will only be set and all other is rocksdb default
+    // then - user options should override defaults
     assertThat(customOptions)
         .extracting(
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(ByteValue.ofMegabytes(16), CompactionPriority.ByCompensatedSize, 7);
+        // numLevels is not overridden, so the default of 4 should remain
+        .containsExactly(ByteValue.ofMegabytes(16), CompactionPriority.ByCompensatedSize, 4);
+  }
+
+  @Test
+  void shouldCreateDbWithExpectedOptions() {
+    // given
+    final var factoryWithDefaults =
+        (ZeebeRocksDbFactory<DefaultColumnFamily>)
+            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+
+    // when
+    final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
+
+    // then - column family options match our defaults
+    assertThat(defaults.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);
+    assertThat(defaults.minWriteBufferNumberToMerge()).isEqualTo(3);
+    assertThat(defaults.maxWriteBufferNumberToMaintain()).isEqualTo(6);
+    assertThat(defaults.maxWriteBufferNumber()).isEqualTo(6);
+    assertThat(defaults.writeBufferSize()).isEqualTo(50_704_475L);
+    assertThat(defaults.compactionPriority())
+        .isEqualTo(org.rocksdb.CompactionPriority.OldestSmallestSeqFirst);
+    assertThat(defaults.compactionStyle()).isEqualTo(org.rocksdb.CompactionStyle.LEVEL);
+    assertThat(defaults.level0FileNumCompactionTrigger()).isEqualTo(6);
+    assertThat(defaults.level0SlowdownWritesTrigger()).isEqualTo(9);
+    assertThat(defaults.level0StopWritesTrigger()).isEqualTo(12);
+    assertThat(defaults.numLevels()).isEqualTo(4);
+    assertThat(defaults.maxBytesForLevelBase()).isEqualTo(33_554_432L);
+    assertThat(defaults.maxBytesForLevelMultiplier()).isEqualTo(10.0);
+    assertThat(defaults.compressionPerLevel())
+        .containsExactly(
+            org.rocksdb.CompressionType.NO_COMPRESSION,
+            org.rocksdb.CompressionType.NO_COMPRESSION,
+            org.rocksdb.CompressionType.LZ4_COMPRESSION,
+            org.rocksdb.CompressionType.LZ4_COMPRESSION);
+    assertThat(defaults.targetFileSizeBase()).isEqualTo(8 * 1_024 * 1_024L);
+    assertThat(defaults.targetFileSizeMultiplier()).isEqualTo(2);
+
+    // then - table config matches our defaults
+    final var tableConfig = (org.rocksdb.BlockBasedTableConfig) defaults.tableFormatConfig();
+    assertThat(tableConfig.blockSize()).isEqualTo(32 * 1_024L);
+    assertThat(tableConfig.formatVersion()).isEqualTo(5);
+    assertThat(tableConfig.cacheIndexAndFilterBlocks()).isTrue();
+    assertThat(tableConfig.pinL0FilterAndIndexBlocksInCache()).isTrue();
+    assertThat(tableConfig.cacheIndexAndFilterBlocksWithHighPriority()).isTrue();
+    assertThat(tableConfig.indexType()).isEqualTo(org.rocksdb.IndexType.kHashSearch);
+    assertThat(tableConfig.dataBlockIndexType())
+        .isEqualTo(org.rocksdb.DataBlockIndexType.kDataBlockBinaryAndHash);
+    assertThat(tableConfig.dataBlockHashTableUtilRatio()).isEqualTo(0.75);
+    assertThat(tableConfig.wholeKeyFiltering()).isTrue();
+
+    defaults.close();
   }
 
   @Test

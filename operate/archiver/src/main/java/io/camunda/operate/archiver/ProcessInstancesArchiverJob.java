@@ -61,7 +61,7 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
               })
           .thenAccept(
               (i) -> {
-                metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, i);
+                metrics.recordCounts(Metrics.COUNTER_NAME_PROCESS_INSTANCES_ARCHIVED, i);
                 archiveBatchFuture.complete(i);
               })
           .exceptionally(

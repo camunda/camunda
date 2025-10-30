@@ -41,6 +41,8 @@ public interface BpmnBehaviors {
 
   BpmnSignalBehavior signalBehavior();
 
+  MultiInstanceInputCollectionBehavior inputCollectionBehavior();
+
   MultiInstanceOutputCollectionBehavior outputCollectionBehavior();
 
   CatchEventBehavior catchEventBehavior();

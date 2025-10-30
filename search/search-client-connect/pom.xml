@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-search</artifactId>
-    <version>8.7.7-SNAPSHOT</version>
+    <version>8.7.17-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>camunda-search-client-connect</artifactId>
@@ -88,11 +88,6 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>aws-crt-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-core</artifactId>
     </dependency>
 
     <dependency>

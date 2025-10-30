@@ -94,6 +94,13 @@ export default defineConfig({
       testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Edge'],
     },
+    {
+      name: 'tasklist-e2e',
+      testMatch: ['tests/tasklist/*.spec.ts'],
+      use: devices['Desktop Edge'],
+      testIgnore: 'task-panel.spec.ts',
+      teardown: 'chromium-subset',
+    },
   ],
   reporter:
     process.env.INCLUDE_SLACK_REPORTER === 'true'

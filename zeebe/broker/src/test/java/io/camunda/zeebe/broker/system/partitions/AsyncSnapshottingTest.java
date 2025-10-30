@@ -26,6 +26,7 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -104,25 +105,13 @@ public final class AsyncSnapshottingTest {
         .thenReturn(CompletableActorFuture.completed(100L));
   }
 
-  private void createAsyncSnapshotDirectorOfProcessingMode() {
+  private void createSnapshotDirector(final StreamProcessorMode mode) {
     asyncSnapshotDirector =
-        AsyncSnapshotDirector.ofProcessingMode(
-            0,
+        AsyncSnapshotDirector.of(
             1,
             mockStreamProcessor,
             snapshotController,
-            Duration.ofMinutes(1),
-            () -> CompletableFuture.completedFuture(null));
-    actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
-  }
-
-  private void createAsyncSnapshotDirectorOfReplayMode() {
-    asyncSnapshotDirector =
-        AsyncSnapshotDirector.ofReplayMode(
-            0,
-            1,
-            mockStreamProcessor,
-            snapshotController,
+            mode,
             Duration.ofMinutes(1),
             () -> CompletableFuture.completedFuture(null));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
@@ -131,7 +120,7 @@ public final class AsyncSnapshottingTest {
   @Test
   public void shouldValidSnapshotWhenCommitPositionGreaterEquals() {
     // given
-    createAsyncSnapshotDirectorOfProcessingMode();
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
     final var snapshot = asyncSnapshotDirector.forceSnapshot();
 
     // when
@@ -145,7 +134,7 @@ public final class AsyncSnapshottingTest {
   @Test
   public void shouldTakeSnapshotsOneByOne() {
     // given
-    createAsyncSnapshotDirectorOfProcessingMode();
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
     final var firstSnapshot = asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(99L);
     assertThat(firstSnapshot.join()).isNotNull();
@@ -168,7 +157,7 @@ public final class AsyncSnapshottingTest {
   @Test
   public void shouldSucceedToTakeSnapshotOnNextIntervalWhenLastWritePosRetrievingFailed() {
     // given
-    createAsyncSnapshotDirectorOfProcessingMode();
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
     final long lastProcessedPosition = 25L;
     final long lastWrittenPosition = 26L;
     final long commitPosition = 100L;
@@ -195,7 +184,7 @@ public final class AsyncSnapshottingTest {
   @Test
   public void shouldSucceedToTakeSnapshotOnNextIntervalWhenLastProcessedPosRetrievingFailed() {
     // given
-    createAsyncSnapshotDirectorOfProcessingMode();
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
     final long lastProcessedPosition = 25L;
     final long lastWrittenPosition = 26L;
     final long commitPosition = 100L;
@@ -223,7 +212,7 @@ public final class AsyncSnapshottingTest {
   @Test
   public void shouldPersistSnapshotWithoutWaitingForCommitWhenInReplayMode() {
     // when
-    createAsyncSnapshotDirectorOfReplayMode();
+    createSnapshotDirector(StreamProcessorMode.REPLAY);
     final var snapshot = asyncSnapshotDirector.forceSnapshot();
 
     // then
@@ -237,11 +226,11 @@ public final class AsyncSnapshottingTest {
     final CompletableFuture<Void> flushFuture = new CompletableFuture<>();
 
     asyncSnapshotDirector =
-        AsyncSnapshotDirector.ofProcessingMode(
-            0,
+        AsyncSnapshotDirector.of(
             1,
             mockStreamProcessor,
             snapshotController,
+            StreamProcessorMode.PROCESSING,
             Duration.ofMinutes(1),
             () -> flushFuture);
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
@@ -264,11 +253,11 @@ public final class AsyncSnapshottingTest {
     final CompletableFuture<Void> flushFuture = new CompletableFuture<>();
 
     asyncSnapshotDirector =
-        AsyncSnapshotDirector.ofReplayMode(
-            0,
+        AsyncSnapshotDirector.of(
             1,
             mockStreamProcessor,
             snapshotController,
+            StreamProcessorMode.REPLAY,
             Duration.ofMinutes(1),
             () -> flushFuture);
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();

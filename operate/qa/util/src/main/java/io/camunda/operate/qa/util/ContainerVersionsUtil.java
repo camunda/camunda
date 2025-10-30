@@ -21,12 +21,13 @@ public class ContainerVersionsUtil {
   public static final String VERSIONS_DELIMITER = ",";
   private static final String VERSIONS_FILE = "/container-versions.properties";
 
-  public static String readProperty(String propertyName) {
-    try (InputStream propsFile = ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
+  public static String readProperty(final String propertyName) {
+    try (final InputStream propsFile =
+        ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
       final Properties props = new Properties();
       props.load(propsFile);
       return props.getProperty(propertyName);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Unable to read the list of supported Zeebe zeebeVersions.", e);
     }

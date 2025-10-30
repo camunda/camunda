@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.s3;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
@@ -48,7 +49,8 @@ final class ConnectionErrorTest {
     // when
     final var res =
         store.list(
-            new BackupIdentifierWildcardImpl(Optional.empty(), Optional.of(1), Optional.empty()));
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(1), CheckpointPattern.any()));
 
     // then
     assertThat(res)

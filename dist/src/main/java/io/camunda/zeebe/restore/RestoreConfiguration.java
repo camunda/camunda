@@ -7,8 +7,11 @@
  */
 package io.camunda.zeebe.restore;
 
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 @ConfigurationProperties(prefix = "zeebe.restore")
-public record RestoreConfiguration(@DefaultValue("true") boolean validateConfig) {}
+public record RestoreConfiguration(
+    @DefaultValue("true") boolean validateConfig,
+    @DefaultValue({"lost+found"}) List<String> ignoreFilesInTarget) {}

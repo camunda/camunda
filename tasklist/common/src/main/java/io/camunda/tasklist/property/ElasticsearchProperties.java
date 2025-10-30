@@ -21,6 +21,7 @@ public class ElasticsearchProperties {
   public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
+  public static final int DEFAULT_MAX_TERMS_COUNT = 10_000;
 
   private String clusterName = "elasticsearch";
 
@@ -33,11 +34,14 @@ public class ElasticsearchProperties {
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
 
   private int batchSize = 200;
+  private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
   private Integer socketTimeout;
   private Integer connectTimeout;
 
   private boolean createSchema = true;
+  // default to false to avoid breaking change in 8.7 patch version
+  private boolean updateSchemaSettings = false;
 
   private String url;
   private String username;
@@ -112,12 +116,28 @@ public class ElasticsearchProperties {
     this.batchSize = batchSize;
   }
 
+  public int getMaxTermsCount() {
+    return maxTermsCount;
+  }
+
+  public void setMaxTermsCount(final int maxTermsCount) {
+    this.maxTermsCount = maxTermsCount;
+  }
+
   public boolean isCreateSchema() {
     return createSchema;
   }
 
   public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
+  }
+
+  public boolean isUpdateSchemaSettings() {
+    return updateSchemaSettings;
+  }
+
+  public void setUpdateSchemaSettings(final boolean updateSchemaSettings) {
+    this.updateSchemaSettings = updateSchemaSettings;
   }
 
   public String getPassword() {

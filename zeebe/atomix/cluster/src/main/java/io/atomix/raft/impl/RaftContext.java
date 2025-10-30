@@ -80,6 +80,7 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Random;
@@ -156,7 +157,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       MissedSnapshotReplicationEvents.NONE;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
-  private volatile HealthReport health = HealthReport.healthy(this);
+  private volatile HealthReport health;
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
@@ -182,6 +183,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     random = randomFactory.get();
     this.partitionId = partitionId;
     this.meterRegistry = checkNotNull(meterRegistry, "meterRegistry cannot be null");
+    health = HealthReport.healthy(this);
 
     raftRoleMetrics = new RaftRoleMetrics(name, meterRegistry);
 
@@ -309,10 +311,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private void notifyFailureListeners(final Throwable error) {
     try {
       if (error instanceof UnrecoverableException) {
-        health = HealthReport.dead(this).withIssue(error);
+        health = HealthReport.dead(this).withIssue(error, Instant.now());
         failureListeners.forEach((l) -> l.onUnrecoverableFailure(health));
       } else {
-        health = HealthReport.unhealthy(this).withIssue(error);
+        health = HealthReport.unhealthy(this).withIssue(error, Instant.now());
         failureListeners.forEach((l) -> l.onFailure(health));
       }
     } catch (final Exception e) {
@@ -527,19 +529,28 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @param commitIndex The commit index.
    * @return the previous commit index
    */
-  public long setCommitIndex(final long commitIndex) {
+  public long setCommitIndex(long commitIndex) {
     checkArgument(commitIndex >= 0, "commitIndex must be positive");
+
+    // Do not set the commitIndex to be greater than the events we persisted.
+    // In case of a heartbeat, the leader sends its commitIndex which may be greater than what's
+    // persisted in case we failed to persist a previous AppendEntries
+    commitIndex = Math.min(commitIndex, raftLog.getLastIndex());
+
     final long previousCommitIndex = this.commitIndex;
     if (commitIndex > previousCommitIndex) {
-      this.commitIndex = commitIndex;
-      raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
       if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
       }
-      final long configurationIndex = cluster.getConfiguration().index();
-      if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
-        cluster.commitCurrentConfiguration();
+      raftLog.setCommitIndex(commitIndex);
+      this.commitIndex = commitIndex;
+      final var clusterConfig = cluster.getConfiguration();
+      if (clusterConfig != null) {
+        final long configurationIndex = clusterConfig.index();
+        if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
+          cluster.commitCurrentConfiguration();
+        }
       }
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
@@ -694,7 +705,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     if (!this.role.role().active() && role.active()) {
       health = HealthReport.healthy(this);
-      failureListeners.forEach(FailureListener::onRecovered);
+      failureListeners.forEach(l -> l.onRecovered(health));
     }
 
     if (this.role.role() == role) {
@@ -892,7 +903,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       this.firstCommitIndex = firstCommitIndex;
       LOGGER.info(
-          "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events upto this index",
+          "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events up to this index",
           firstCommitIndex);
     }
   }
@@ -984,8 +995,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @return The server name.
    */
-  @Override
   public String getName() {
+    return name;
+  }
+
+  @Override
+  public String componentName() {
     return name;
   }
 
@@ -1269,7 +1284,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     COMPLETED
   }
 
-  /** Commit listener is active only until the server is ready * */
+  /** Commit listener is active only until the server is ready */
   final class AwaitingReadyCommitListener implements RaftCommitListener {
     private final Logger throttledLogger = new ThrottledLogger(LOGGER, Duration.ofSeconds(30));
 

@@ -23,7 +23,9 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
@@ -105,6 +108,9 @@ public class PartitionStartupAndTransitionContextImpl
   private ControllableStreamClock clock;
   private final MeterRegistry startupMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
+  private final HealthTreeMetrics healthGraphMetrics;
+  private final BrokerHealthCheckService brokerHealthCheckService;
+  private volatile boolean migrationsPerformed = false;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -125,7 +131,8 @@ public class PartitionStartupAndTransitionContextImpl
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
       final TopologyManager topologyManager,
-      final MeterRegistry startupMeterRegistry) {
+      final MeterRegistry startupMeterRegistry,
+      final BrokerHealthCheckService brokerHealthCheckService) {
     this.nodeId = nodeId;
     this.partitionCount = partitionCount;
     this.clusterCommunicationService = clusterCommunicationService;
@@ -147,6 +154,8 @@ public class PartitionStartupAndTransitionContextImpl
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
     this.startupMeterRegistry = startupMeterRegistry;
+    healthGraphMetrics = new HealthTreeMetrics(startupMeterRegistry);
+    this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -373,6 +382,21 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public void markMigrationsDone() {
+    migrationsPerformed = true;
+  }
+
+  @Override
+  public boolean areMigrationsPerformed() {
+    return migrationsPerformed;
+  }
+
+  @Override
+  public ComponentTreeListener getComponentTreeListener() {
+    return healthGraphMetrics;
+  }
+
+  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
@@ -520,6 +544,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public PartitionStartupAndTransitionContextImpl createTransitionContext() {
     return this;
+  }
+
+  @Override
+  public BrokerHealthCheckService brokerHealthCheckService() {
+    return brokerHealthCheckService;
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.zeebe.util;
 import static org.apache.commons.lang3.StringUtils.isNumeric;
 
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -21,6 +22,10 @@ import java.util.regex.Pattern;
 public record SemanticVersion(
     int major, int minor, int patch, String preRelease, String buildMetadata)
     implements Comparable<SemanticVersion> {
+
+  private static final ConcurrentHashMap<String, SemanticVersion> CACHE =
+      new ConcurrentHashMap<>(16);
+
   /**
    * @see <a
    *     href="https://semver.org/spec/v2.0.0.html#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string">
@@ -52,6 +57,10 @@ public record SemanticVersion(
       return Optional.empty();
     }
 
+    return Optional.ofNullable(CACHE.computeIfAbsent(version, SemanticVersion::doParse));
+  }
+
+  private static SemanticVersion doParse(final String version) {
     final var matcher = PATTERN.matcher(version);
     if (matcher.matches()) {
       final var major = Integer.parseInt(matcher.group("major"));
@@ -59,9 +68,10 @@ public record SemanticVersion(
       final var patch = Integer.parseInt(matcher.group("patch"));
       final var preRelease = matcher.group("preRelease");
       final var buildMetadata = matcher.group("buildMetadata");
-      return Optional.of(new SemanticVersion(major, minor, patch, preRelease, buildMetadata));
+      return new SemanticVersion(major, minor, patch, preRelease, buildMetadata);
+    } else {
+      return null;
     }
-    return Optional.empty();
   }
 
   @Override

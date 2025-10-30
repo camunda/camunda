@@ -92,6 +92,14 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
     final var readerBackoff = (long) tasklistProperties.getImporter().getReaderBackoff();
     final boolean useOnlyPosition = tasklistProperties.getImporter().isUseOnlyPosition();
     try {
+      metrics.registerGauge(
+          Metrics.GAUGE_IMPORT_QUEUE_SIZE,
+          importJobs,
+          q -> q.size(),
+          Metrics.TAG_KEY_PARTITION,
+          String.valueOf(partitionId),
+          Metrics.TAG_KEY_TYPE,
+          importValueType.name());
       final ImportBatch importBatch;
       final var latestPosition =
           importPositionHolder.getLatestScheduledPosition(

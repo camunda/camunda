@@ -19,10 +19,6 @@ import org.junit.jupiter.api.extension.Extension;
 
 public interface DatabaseTestExtension extends Extension {
 
-  void setIndexMaxTermsCount(final String indexName, final int maxTermsCount) throws IOException;
-
-  int getIndexMaxTermsCount(final String indexName) throws IOException;
-
   void assertMaxOpenScrollContexts(final int maxOpenScrollContexts);
 
   void refreshIndexesInElasticsearch();

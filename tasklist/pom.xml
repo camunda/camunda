@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.7-SNAPSHOT</version>
+    <version>8.7.17-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
   <groupId>io.camunda</groupId>
@@ -32,14 +32,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <!-- release parent settings -->
-    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist/</nexus.release.repository>
-
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 
-    <skip.fe.build>true</skip.fe.build>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 

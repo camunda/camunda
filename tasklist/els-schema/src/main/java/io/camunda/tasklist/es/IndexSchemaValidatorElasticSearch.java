@@ -18,7 +18,11 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,9 +85,7 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
               tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
       final List<String> allAliasesNames = map(indexDescriptors, IndexDescriptor::getAlias);
 
-      return indices.containsAll(allIndexNames)
-          && aliases.containsAll(allAliasesNames)
-          && validateNumberOfReplicas(allIndexNames);
+      return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);
     } catch (final Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
@@ -139,12 +141,6 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
     return olderVersionsForIndex(indexDescriptor, versions);
   }
 
-  @Override
-  public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
-    return newerVersionsForIndex(indexDescriptor, versions);
-  }
-
   private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
     final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
     return allIndexNames.stream()
@@ -152,19 +148,5 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
         .filter(Optional::isPresent)
         .map(Optional::get)
         .collect(Collectors.toSet());
-  }
-
-  public boolean validateNumberOfReplicas(final List<String> indexes) {
-    for (final String index : indexes) {
-      final Map<String, String> response =
-          retryElasticsearchClient.getIndexSettingsFor(
-              index, RetryElasticsearchClient.NUMBERS_OF_REPLICA);
-      if (!response
-          .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA)
-          .equals(String.valueOf(tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
-        return false;
-      }
-    }
-    return true;
   }
 }

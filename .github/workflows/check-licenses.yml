@@ -8,14 +8,20 @@ on:
     branches:
     - main
     - stable/*
+    - release/*
+    - release-*
     tags:
     - '*'
 
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
 jobs:
   analyze:
-    name: Analyze dependencies
+    name: "Analyze ${{ matrix.project.name }} dependencies"
     permissions: {}
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-8-default
+    timeout-minutes: 20
     strategy:
       # The matrix is necessary to run separate analyses
       matrix:
@@ -27,9 +33,9 @@ jobs:
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
-    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v4
+
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
       id: secrets
@@ -41,25 +47,29 @@ jobs:
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
           secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
+
     - uses: ./.github/actions/setup-build
       if: matrix.project.name == 'single-app'
       with:
         vault-address: ${{ secrets.VAULT_ADDR }}
         vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
     - uses: actions/setup-go@v5
       if: matrix.project.name == 'c8run'
       with:
         go-version: '>=1.23.1'
         cache: false  # disabling since not working anyways without a cache-dependency-path specified
+
     - name: Update Maven configs
       if: matrix.project.maven-config != ''
       env:
         MAVEN_CONFIG: ${{ matrix.project.maven-config }}
       run: |
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
+
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@2859a21a3c3f4930156dd7b3325eb3709bd4074f
+      uses: camunda/infra-global-github-actions/fossa/setup@0cefec60b9a847594d0e33cddef4857772e3b09a
     - name: Adjust pom.xml files for FOSSA
       if: matrix.project.name == 'single-app'
       run: |
@@ -75,9 +85,20 @@ jobs:
           'del(.project.modules.module[] | select(. == "bom" or . == "parent"))' \
           pom.xml
     - name: Analyze project
-      uses: camunda/infra-global-github-actions/fossa/analyze@2859a21a3c3f4930156dd7b3325eb3709bd4074f
+      uses: camunda/infra-global-github-actions/fossa/analyze@0cefec60b9a847594d0e33cddef4857772e3b09a
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{ github.ref_name }}
         path: ${{ matrix.project.path }}
         revision-id: ${{ github.sha }}
+
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        job_name: "analyze/${{ matrix.project.name }}"
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

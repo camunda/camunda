@@ -12,7 +12,6 @@ import static io.camunda.tasklist.schema.indices.VariableIndex.ID;
 import static io.camunda.tasklist.schema.indices.VariableIndex.NAME;
 import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
-import static io.camunda.tasklist.util.OpenSearchUtil.DEFAULT_MAX_TERMS_COUNT;
 import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.OpenSearchUtil.scrollInChunks;
 import static java.util.stream.Collectors.groupingBy;
@@ -36,7 +35,6 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,8 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -65,8 +61,6 @@ import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
-import org.opensearch.client.opensearch.indices.GetIndicesSettingsRequest;
-import org.opensearch.client.opensearch.indices.GetIndicesSettingsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,7 +71,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class VariableStoreOpenSearch implements VariableStore {
-  public static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreOpenSearch.class);
 
   @Autowired
@@ -89,13 +82,6 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Autowired private VariableIndex variableIndex;
   @Autowired private TaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
-  private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
-
-  @PostConstruct
-  void scheduleUpdateTermsCount() {
-    Executors.newSingleThreadScheduledExecutor()
-        .scheduleAtFixedRate(this::refreshMaxTermsCount, 30, 1800, TimeUnit.SECONDS);
-  }
 
   @Override
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
@@ -105,7 +91,7 @@ public class VariableStoreOpenSearch implements VariableStore {
     try {
       return OpenSearchUtil.scrollInChunks(
           flowNodeInstanceIds,
-          maxTermsCount,
+          tasklistProperties.getOpenSearch().getMaxTermsCount(),
           chunk -> buildSearchVariablesByScopeFNIsAndVarNamesRequest(chunk, varNames, fieldNames),
           VariableEntity.class,
           osClient);
@@ -222,7 +208,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
       return scrollInChunks(
           processInstanceIds,
-          maxTermsCount,
+          tasklistProperties.getOpenSearch().getMaxTermsCount(),
           this::buildSearchFNIByProcessInstanceIdsRequest,
           FlowNodeInstanceEntity.class,
           osClient);
@@ -280,26 +266,6 @@ public class VariableStoreOpenSearch implements VariableStore {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public void refreshMaxTermsCount() {
-    final GetIndicesSettingsResponse response;
-    try {
-      response =
-          osClient
-              .indices()
-              .getSettings(
-                  new GetIndicesSettingsRequest.Builder()
-                      .index(variableIndex.getFullQualifiedName())
-                      .includeDefaults(true)
-                      .name(MAX_TERMS_COUNT_SETTING)
-                      .build());
-      maxTermsCount =
-          response.get(variableIndex.getFullQualifiedName()).settings().index().maxTermsCount();
-    } catch (final IOException e) {
-      LOGGER.warn("Failed to update max_terms_count setting", e);
     }
   }
 

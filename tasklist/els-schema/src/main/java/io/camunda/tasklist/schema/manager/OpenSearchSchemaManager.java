@@ -7,6 +7,10 @@
  */
 package io.camunda.tasklist.schema.manager;
 
+import static io.camunda.tasklist.os.RetryOpenSearchClient.DEFAULT_SHARDS;
+import static io.camunda.tasklist.os.RetryOpenSearchClient.NO_REPLICA;
+import static java.util.Optional.ofNullable;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,8 +38,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.http.util.EntityUtils;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
@@ -51,7 +57,6 @@ import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
-import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest.Builder;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.Logger;
@@ -242,41 +247,134 @@ public class OpenSearchSchemaManager implements SchemaManager {
     createIndex(request, indexDescriptor.getFullQualifiedName());
   }
 
-  private PutIndexTemplateRequest prepareIndexTemplateRequest(
-      final TemplateDescriptor templateDescriptor, final String json) {
-    final var templateSettings = templateSettings(templateDescriptor);
-    final var templateBuilder =
-        new IndexTemplateMapping.Builder()
-            .aliases(templateDescriptor.getAlias(), new Alias.Builder().build());
+  @Override
+  public void updateIndexSettings() {
+    updateIndicesNumberOfReplicas();
+    updateIndexTemplateSettings();
+    updateComponentTemplateSettings();
+  }
 
-    try {
+  private void updateIndexTemplateSettings() {
+    final var indexTemplates =
+        retryOpenSearchClient.getIndexTemplates(
+            tasklistProperties.getOpenSearch().getIndexPrefix() + "*");
+    for (final var templateDescriptor : templateDescriptors) {
+      var indexTemplate = indexTemplates.get(templateDescriptor.getTemplateName());
+      if (indexTemplate == null) {
+        LOGGER.debug(
+            "Index template '{}' not found in wildcard search results by pattern. Attempting direct lookup by full template name",
+            templateDescriptor.getTemplateName());
+        indexTemplate =
+            retryOpenSearchClient.getIndexTemplate(templateDescriptor.getTemplateName());
+      }
+      final var expectedShards =
+          String.valueOf(
+              tasklistProperties
+                  .getOpenSearch()
+                  .getNumberOfShards(templateDescriptor.getIndexName()));
+      final var expectedReplicas =
+          String.valueOf(
+              tasklistProperties
+                  .getOpenSearch()
+                  .getNumberOfReplicas(templateDescriptor.getIndexName()));
 
-      final var indexAsJSONNode = objectMapper.readTree(new StringReader(json));
+      final var expectedPriority =
+          ofNullable(tasklistProperties.getOpenSearch().getIndexTemplatePriority())
+              .map(Long::valueOf)
+              .orElse(null);
 
-      final var customSettings = getCustomSettings(templateSettings, indexAsJSONNode);
-      final var mappings = getMappings(indexAsJSONNode.get(MAPPINGS));
+      String actualShards = null;
+      String actualReplicas = null;
 
-      final IndexTemplateMapping template =
-          templateBuilder.mappings(mappings).settings(customSettings).build();
+      final var templateSettings = indexTemplate.template().settings();
 
-      final PutIndexTemplateRequest request =
-          new Builder()
-              .name(templateDescriptor.getTemplateName())
-              .indexPatterns(templateDescriptor.getIndexPattern())
-              .template(template)
-              .composedOf(settingsTemplateName())
-              .build();
-      return request;
-    } catch (final Exception ex) {
-      throw new TasklistRuntimeException(ex);
+      if (templateSettings.containsKey("index")) {
+        final var indexSettingsData = templateSettings.get("index");
+        final var indexSettingsJson = indexSettingsData.toJson().asJsonObject();
+
+        actualShards = indexSettingsJson.getString("number_of_shards", null);
+        actualReplicas = indexSettingsJson.getString("number_of_replicas", null);
+      }
+      final var actualPriority = indexTemplate.priority();
+
+      if (!expectedShards.equals(actualShards)
+          || !expectedReplicas.equals(actualReplicas)
+          || !Objects.equals(expectedPriority, actualPriority)) {
+        LOGGER.info(
+            "Updating index template settings for {} to shards={}, replicas={}, priority={}",
+            templateDescriptor.getTemplateName(),
+            expectedShards,
+            expectedReplicas,
+            expectedPriority);
+
+        // Recreate the template with updated settings
+        putIndexTemplate(templateDescriptor, true);
+      }
     }
   }
 
-  private TypeMapping getMappings(final JsonNode mappingsAsJSON) {
-    final JsonbJsonpMapper jsonpMapper = new JsonbJsonpMapper();
-    final JsonParser jsonParser =
-        JsonProvider.provider().createParser(new StringReader(mappingsAsJSON.toPrettyString()));
-    return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
+  private void putIndexTemplate(
+      final TemplateDescriptor templateDescriptor, final boolean overwrite) {
+    putIndexTemplate(
+        new PutIndexTemplateRequest.Builder()
+            .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
+            .template(getTemplateFrom(templateDescriptor))
+            .name(templateDescriptor.getTemplateName())
+            .composedOf(List.of(getComponentTemplateName()))
+            .priority(tasklistProperties.getOpenSearch().getIndexTemplatePriority())
+            .build(),
+        overwrite);
+  }
+
+  public String getComponentTemplateName() {
+    return String.format("%s_template", tasklistProperties.getOpenSearch().getIndexPrefix());
+  }
+
+  private void updateComponentTemplateSettings() {
+    final var settings =
+        retryOpenSearchClient.getComponentTemplateIndexSettings(getComponentTemplateName());
+
+    final var expectedShards =
+        String.valueOf(tasklistProperties.getOpenSearch().getNumberOfShards());
+    final var expectedReplicas =
+        String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas());
+    final var actualShards =
+        ofNullable(settings).map(IndexSettings::numberOfShards).orElse(DEFAULT_SHARDS);
+    final var actualReplicas =
+        ofNullable(settings).map(IndexSettings::numberOfReplicas).orElse(NO_REPLICA);
+
+    if (!expectedShards.equals(actualShards) || !expectedReplicas.equals(actualReplicas)) {
+      LOGGER.info(
+          "Updating component template settings to shards={}, replicas={}",
+          expectedShards,
+          expectedReplicas);
+      createComponentTemplate(true);
+    }
+  }
+
+  private void updateIndicesNumberOfReplicas() {
+    Stream.concat(indexDescriptors.stream(), templateDescriptors.stream())
+        .forEach(
+            indexDescriptor -> {
+              final var expectedReplicas =
+                  String.valueOf(
+                      tasklistProperties
+                          .getOpenSearch()
+                          .getNumberOfReplicas(indexDescriptor.getIndexName()));
+              final var settings =
+                  retryOpenSearchClient.getIndexSettingsForIndexPattern(indexDescriptor.getAlias());
+              if (!settings.values().stream()
+                  .map(s -> ofNullable(s.settings().numberOfReplicas()).orElse(NO_REPLICA))
+                  .allMatch(expectedReplicas::equals)) {
+                LOGGER.info(
+                    "Updating number of replicas of {} to {}",
+                    indexDescriptor.getAlias(),
+                    expectedReplicas);
+                retryOpenSearchClient.setIndexSettingsFor(
+                    IndexSettings.of(b -> b.numberOfReplicas(expectedReplicas)),
+                    indexDescriptor.getAlias());
+              }
+            });
   }
 
   public void createIndexLifeCyclesIfNotExist() {
@@ -341,28 +439,28 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   private void createDefaults() {
     final TasklistOpenSearchProperties elsConfig = tasklistProperties.getOpenSearch();
-
-    final String settingsTemplateName = settingsTemplateName();
+    final String settingsTemplateName = getComponentTemplateName();
     LOGGER.info(
         "Create default settings '{}' with {} shards and {} replicas per index.",
         settingsTemplateName,
         elsConfig.getNumberOfShards(),
         elsConfig.getNumberOfReplicas());
 
+    createComponentTemplate(false);
+  }
+
+  private void createComponentTemplate(final boolean overwrite) {
     final IndexSettings settings = getDefaultIndexSettings();
     retryOpenSearchClient.createComponentTemplate(
         PutComponentTemplateRequest.of(
-            b -> b.name(settingsTemplateName).template(t -> t.settings(settings))));
+            b -> b.name(getComponentTemplateName()).template(t -> t.settings(settings))),
+        overwrite);
   }
 
   private IndexSettings getIndexSettings(final String indexName) {
     final var osConfig = tasklistProperties.getOpenSearch();
-    final var shards =
-        osConfig.getNumberOfShardsPerIndex().getOrDefault(indexName, osConfig.getNumberOfShards());
-    final var replicas =
-        osConfig
-            .getNumberOfReplicasPerIndex()
-            .getOrDefault(indexName, osConfig.getNumberOfReplicas());
+    final var shards = osConfig.getNumberOfShards(indexName);
+    final var replicas = osConfig.getNumberOfReplicas(indexName);
     return IndexSettings.of(
         b -> b.numberOfShards(String.valueOf(shards)).numberOfReplicas(String.valueOf(replicas)));
   }
@@ -373,11 +471,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
         b ->
             b.numberOfShards(String.valueOf(osConfig.getNumberOfShards()))
                 .numberOfReplicas(String.valueOf(osConfig.getNumberOfReplicas())));
-  }
-
-  private String settingsTemplateName() {
-    final TasklistOpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
-    return String.format("%s_template", osConfig.getIndexPrefix());
   }
 
   private void createTemplates() {
@@ -391,17 +484,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   private void createTemplate(
       final TemplateDescriptor templateDescriptor, final boolean overwrite) {
-    final IndexTemplateMapping template = getTemplateFrom(templateDescriptor);
-
-    putIndexTemplate(
-        new PutIndexTemplateRequest.Builder()
-            .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
-            .template(template)
-            .name(templateDescriptor.getTemplateName())
-            .composedOf(List.of(settingsTemplateName()))
-            .build(),
-        overwrite);
-
+    putIndexTemplate(templateDescriptor, overwrite);
     // This is necessary, otherwise tasklist won't find indexes at startup
     createIndex(templateDescriptor);
   }
@@ -427,6 +510,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
       return new IndexTemplateMapping.Builder()
           .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
           .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
+          .settings(templateSettings(templateDescriptor))
           .build();
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
@@ -449,31 +533,12 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   private IndexSettings templateSettings(final TemplateDescriptor indexDescriptor) {
     final var shards =
-        tasklistProperties
-            .getOpenSearch()
-            .getNumberOfShardsPerIndex()
-            .get(indexDescriptor.getIndexName());
-
+        String.valueOf(
+            tasklistProperties.getOpenSearch().getNumberOfShards(indexDescriptor.getIndexName()));
     final var replicas =
-        tasklistProperties
-            .getOpenSearch()
-            .getNumberOfReplicasPerIndex()
-            .get(indexDescriptor.getIndexName());
-
-    if (shards != null || replicas != null) {
-      final var indexSettingsBuilder = new IndexSettings.Builder();
-
-      if (shards != null) {
-        indexSettingsBuilder.numberOfShards(shards.toString());
-      }
-
-      if (replicas != null) {
-        indexSettingsBuilder.numberOfReplicas(replicas.toString());
-      }
-
-      return indexSettingsBuilder.build();
-    }
-    return null;
+        String.valueOf(
+            tasklistProperties.getOpenSearch().getNumberOfReplicas(indexDescriptor.getIndexName()));
+    return IndexSettings.of(b -> b.numberOfShards(shards).numberOfReplicas(replicas));
   }
 
   private IndexSettings getCustomSettings(

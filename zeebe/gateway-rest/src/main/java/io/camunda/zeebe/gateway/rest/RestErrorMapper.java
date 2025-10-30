@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.cmd.ConcurrentRequestException;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.util.Optional;
@@ -43,6 +44,10 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 public class RestErrorMapper {
+  public static final Function<String, Exception> RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER =
+      msg -> new BrokerErrorException(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, msg));
+  public static final Function<String, Throwable> REQUEST_CANCELED_EXCEPTION_PROVIDER =
+      RuntimeException::new;
 
   public static final Function<BrokerRejection, ProblemDetail> DEFAULT_REJECTION_MAPPER =
       rejection -> {

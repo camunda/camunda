@@ -32,6 +32,7 @@ import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -1574,6 +1575,90 @@ public final class MultiInstanceActivityTest {
                 BpmnElementType.MULTI_INSTANCE_BODY,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test // Regression test for https://github.com/camunda/camunda/issues/31837
+  public void shouldCompleteWhenRemovingVariableFromInputCollectionDuringProcessing() {
+    // given
+    final var process = process(miBuilder);
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    // when
+    final var miBodyKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst()
+            .getKey();
+    final var updatedInputCollection = new ArrayList<>(INPUT_COLLECTION);
+    updatedInputCollection.removeLast();
+    ENGINE
+        .variables()
+        .ofScope(miBodyKey)
+        .withDocument(Map.of(INPUT_COLLECTION_EXPRESSION, updatedInputCollection))
+        .update();
+    // As the original input collection is stored in state, we should have the original input
+    // collection size of jobs to complete.
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .filterRootScope()
+                .limitToProcessInstanceCompleted())
+        .extracting(Record::getIntent)
+        .containsExactly(ProcessInstanceIntent.ELEMENT_COMPLETED);
+  }
+
+  @Test // Regression test for https://github.com/camunda/camunda/issues/31837
+  public void shouldCompleteWhenAddingVariableFromInputCollectionDuringProcessing() {
+    // given
+    final var process = process(miBuilder);
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    // when
+    final var miBodyKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst()
+            .getKey();
+    final var updatedInputCollection = new ArrayList<>(INPUT_COLLECTION);
+    updatedInputCollection.add(40);
+    ENGINE
+        .variables()
+        .ofScope(miBodyKey)
+        .withDocument(Map.of(INPUT_COLLECTION_EXPRESSION, updatedInputCollection))
+        .update();
+    // As the original input collection is stored in state, we should have the original input
+    // collection size of jobs to complete.
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .filterRootScope()
+                .limitToProcessInstanceCompleted())
+        .extracting(Record::getIntent)
+        .containsExactly(ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 
   private void completeJobs(final long processInstanceKey, final int count) {

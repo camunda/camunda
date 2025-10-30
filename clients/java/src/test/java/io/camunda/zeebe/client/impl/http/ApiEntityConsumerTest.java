@@ -16,8 +16,10 @@
 package io.camunda.zeebe.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Error;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Response;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Unknown;
@@ -68,15 +70,9 @@ class ApiEntityConsumerTest {
     consumer.streamStart(ContentType.APPLICATION_JSON);
     // Feed the data
     consumer.data(byteBuffer, true);
-    // Generate the content
-    final ApiEntity<TestEntity> entity = consumer.generateContent();
 
-    // then
-    assertThat(entity).isInstanceOf(Error.class);
-    final ProblemDetail response = entity.problem();
-    assertThat(response).isNotNull();
-    assertThat(response.getTitle()).isEqualTo("Unexpected server response");
-    assertThat(response.getDetail()).isEqualTo(jsonResponse);
+    // when-then Generate the content
+    assertThatThrownBy(consumer::generateContent).isInstanceOf(UnrecognizedPropertyException.class);
   }
 
   @Test
@@ -92,15 +88,9 @@ class ApiEntityConsumerTest {
     consumer.streamStart(ContentType.APPLICATION_PROBLEM_JSON);
     // Feed the data
     consumer.data(byteBuffer, true);
-    // Generate the content
-    final ApiEntity<TestEntity> entity = consumer.generateContent();
 
-    // then
-    assertThat(entity).isInstanceOf(Error.class);
-    final ProblemDetail response = entity.problem();
-    assertThat(response).isNotNull();
-    assertThat(response.getTitle()).isEqualTo("Unexpected server response");
-    assertThat(response.getDetail()).isEqualTo(jsonResponse);
+    // when-then Generate the content
+    assertThatThrownBy(consumer::generateContent).isInstanceOf(UnrecognizedPropertyException.class);
   }
 
   @Test

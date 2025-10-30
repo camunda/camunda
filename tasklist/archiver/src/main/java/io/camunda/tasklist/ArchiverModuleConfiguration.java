@@ -26,7 +26,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "camunda.tasklist.archiverEnabled",
+    name = "camunda.tasklist.archiver-enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class ArchiverModuleConfiguration {

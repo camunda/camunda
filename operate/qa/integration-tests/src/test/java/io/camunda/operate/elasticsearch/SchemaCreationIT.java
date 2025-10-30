@@ -22,6 +22,7 @@ import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.io.IOException;
@@ -54,6 +55,8 @@ public class SchemaCreationIT extends OperateSearchAbstractIT {
         operateProperties
             .getElasticsearch()
             .setNumberOfReplicasForIndices(numberOfReplicasForIndices);
+        operateProperties.getOpensearch().setIndexTemplatePriority(100);
+        operateProperties.getElasticsearch().setIndexTemplatePriority(100);
       };
 
   @Autowired private EventTemplate eventTemplate;
@@ -61,6 +64,7 @@ public class SchemaCreationIT extends OperateSearchAbstractIT {
   @Autowired private ProcessIndex processIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private List<IndexDescriptor> indexDescriptors;
+  @Autowired private List<TemplateDescriptor> templateDescriptors;
   @Autowired private IndicesCheck indicesCheck;
   @Autowired private OperateProperties operateProperties;
 
@@ -153,6 +157,15 @@ public class SchemaCreationIT extends OperateSearchAbstractIT {
     for (final IndexDescriptor indexDescriptor : strictMappingIndices) {
       assertThatIndexHasDynamicMappingOf(
           indexDescriptor, TestSearchRepository.DynamicMappingType.Strict);
+    }
+  }
+
+  @Test
+  void testIndexTemplatePriority() {
+    for (final var templateDescriptor : templateDescriptors) {
+      assertThat(
+              testSearchRepository.getIndexTemplatePriority(templateDescriptor.getTemplateName()))
+          .isEqualTo(100L);
     }
   }
 

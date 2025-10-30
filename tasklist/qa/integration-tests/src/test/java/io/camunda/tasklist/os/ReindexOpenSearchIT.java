@@ -31,10 +31,8 @@ public class ReindexOpenSearchIT extends TasklistIntegrationTest {
   private static final String SOURCE_INDEX_124 = "index-1.2.4";
 
   private static final String INDEX_NAME_123 = SOURCE_INDEX_123 + "_";
-
-  private static final String INDEX_NAME_124 = SOURCE_INDEX_124 + "_";
-
   private static final String INDEX_NAME_ARCHIVER_123 = INDEX_NAME_123 + "2021-05-23";
+  private static final String INDEX_NAME_124 = SOURCE_INDEX_124 + "_";
   private static final String INDEX_NAME_ARCHIVER_124 = INDEX_NAME_124 + "2021-05-23";
 
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
@@ -56,7 +54,7 @@ public class ReindexOpenSearchIT extends TasklistIntegrationTest {
     retryOpenSearchClient.deleteIndicesFor(idxName("index-*"));
   }
 
-  private String idxName(String name) {
+  private String idxName(final String name) {
     return indexPrefix + "-" + name;
   }
 
@@ -102,10 +100,7 @@ public class ReindexOpenSearchIT extends TasklistIntegrationTest {
             .build();
     retryOpenSearchClient.setIndexSettingsFor(settings, idxName(INDEX_NAME_123));
     final IndexSettings reindexSettings =
-        retryOpenSearchClient.getIndexSettingsFor(
-            idxName("index-1.2.3_"),
-            RetryOpenSearchClient.NUMBERS_OF_REPLICA,
-            RetryOpenSearchClient.REFRESH_INTERVAL);
+        retryOpenSearchClient.getIndexSettingsFor(idxName("index-1.2.3_"));
     assertThat(reindexSettings.numberOfReplicas()).isEqualTo(RetryOpenSearchClient.NO_REPLICA);
     assertThat(reindexSettings.refreshInterval().time())
         .isEqualTo(RetryOpenSearchClient.NO_REFRESH);
@@ -116,7 +111,7 @@ public class ReindexOpenSearchIT extends TasklistIntegrationTest {
         .isEqualTo("2");
   }
 
-  private void createIndex(final String indexName, List<Map<String, String>> documents) {
+  private void createIndex(final String indexName, final List<Map<String, String>> documents) {
 
     retryOpenSearchClient.createIndex(new CreateIndexRequest.Builder().index(indexName).build());
 

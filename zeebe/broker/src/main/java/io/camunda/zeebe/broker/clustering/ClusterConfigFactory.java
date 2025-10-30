@@ -83,6 +83,13 @@ public final class ClusterConfigFactory {
             .setHeartbeatTimeout(network.getHeartbeatTimeout())
             .setHeartbeatInterval(network.getHeartbeatInterval());
 
+    if (network.getSocketSendBuffer() != null) {
+      messaging.setSocketSendBuffer((int) network.getSocketSendBuffer().toBytes());
+    }
+    if (network.getSocketReceiveBuffer() != null) {
+      messaging.setSocketReceiveBuffer((int) network.getSocketReceiveBuffer().toBytes());
+    }
+
     if (network.getSecurity().isEnabled()) {
       final var security = network.getSecurity();
 

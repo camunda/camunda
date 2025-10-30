@@ -30,7 +30,9 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch._types.ShardFailure;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
@@ -86,9 +88,35 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     if (!response.shards().failures().isEmpty()) {
       throw new OpenSearchFailedShardsException(
           format(
-              "Shards failed executing request (request=%s, failed shards=%s)",
-              request, response.shards().failures()));
+              "Shards failed executing request (indices=%s, failed shards=%s)",
+              request.index(),
+              response.shards().failures().stream().map(this::formatShardFailure).toList()));
     }
+  }
+
+  private String formatShardFailure(final ShardFailure failure) {
+    return String.format(
+        "ShardFailure[index=%s, shard=%s, status=%s, node=%s, reason=%s]",
+        failure.index(),
+        failure.shard(),
+        failure.status(),
+        failure.node(),
+        formatErrorCause(failure.reason()));
+  }
+
+  private String formatErrorCause(final ErrorCause errorCause) {
+    if (errorCause == null) {
+      return "";
+    }
+    final StringBuilder details = new StringBuilder();
+    details.append("type=").append(errorCause.type());
+    if (errorCause.reason() != null) {
+      details.append(", reason=").append(errorCause.reason());
+    }
+    if (errorCause.causedBy() != null) {
+      details.append(", causedBy=[").append(formatErrorCause(errorCause.causedBy())).append("]");
+    }
+    return details.toString();
   }
 
   public <R> Map<String, Aggregate> unsafeScrollWith(

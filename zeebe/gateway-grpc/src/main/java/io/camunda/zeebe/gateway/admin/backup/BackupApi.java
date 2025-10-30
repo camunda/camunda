@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 public interface BackupApi {
+  String WILDCARD = "*";
 
   /**
    * Triggers backup on all partitions. Returned future is completed successfully after all
@@ -39,7 +40,16 @@ public interface BackupApi {
   /**
    * @return a list of available backups
    */
-  CompletionStage<List<BackupStatus>> listBackups();
+  default CompletionStage<List<BackupStatus>> listBackups() {
+    return listBackups(WILDCARD);
+  }
+
+  /**
+   * Returns a list of backups with ids matching the prefix.
+   *
+   * @param prefix A string that backup ids must match. Must end in a single `*`.
+   */
+  CompletionStage<List<BackupStatus>> listBackups(String prefix);
 
   /**
    * Deletes the backup with the given id

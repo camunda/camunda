@@ -80,6 +80,19 @@ final class ElasticsearchExporterTest {
         .isInstanceOf(ElasticsearchExporterException.class);
   }
 
+  @Test
+  void shouldNotFailOnOpenIfElasticMetadataDoesNotContainRecordCounters() {
+    // given
+    final var exporter = new ElasticsearchExporter();
+    exporter.configure(context);
+    final var storedMetadataAsJSON = "{\"recordCountersByValueType\":{}}";
+    final var serializedMetadata = storedMetadataAsJSON.getBytes(StandardCharsets.UTF_8);
+    controller.updateLastExportedRecordPosition(1, serializedMetadata);
+
+    // when
+    assertThatCode(() -> exporter.open(controller)).doesNotThrowAnyException();
+  }
+
   @Nested
   final class RecordFilterTest {
 
@@ -376,6 +389,17 @@ final class ElasticsearchExporterTest {
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
     }
+
+    @Test
+    void shouldForbidNegativePriority() {
+      // given
+      config.index.setTemplatePriority(-1);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessage("Elasticsearch index template priority must be >= 0. Current value: -1");
+    }
   }
 
   @Nested
@@ -518,7 +542,6 @@ final class ElasticsearchExporterTest {
       final var expectedMetadataAsJSON =
           "{\"recordCountersByValueType\":{\"PROCESS_INSTANCE\":2,\"VARIABLE\":1}}";
       assertThat(controller.readMetadata())
-          .isPresent()
           .map(metadata -> new String(metadata, StandardCharsets.UTF_8))
           .hasValue(expectedMetadataAsJSON);
     }

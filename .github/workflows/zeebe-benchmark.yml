@@ -262,6 +262,14 @@ jobs:
     name: Deploy
     needs:
       - calculate-image-tag
+      - build-zeebe-image
+      - build-benchmark-images
+    # To have the possibility to re-deploy the benchmarks without rebuilding the images,
+    # the deploy will be run, when build is skipped or successful.
+    if: |
+      always() &&
+      (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
+      (needs.build-benchmark-images.result == 'success' || needs.build-benchmark-images.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -290,7 +298,7 @@ jobs:
           echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> $GITHUB_OUTPUT
       - name: Helm install
         run: >
-          helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark --wait --timeout 10m0s
+          helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark --wait --timeout 35m0s
           --namespace ${{ inputs.name }}
           --create-namespace
           --reuse-values
@@ -305,6 +313,9 @@ jobs:
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
           ${{ inputs.benchmark-load }}
+      - name: Label namespace
+        run: >
+            kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
       - name: Summarize deployment
         if: success()
         run: |

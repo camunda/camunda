@@ -13,12 +13,12 @@ on:
   merge_group: {}
   workflow_dispatch: {}
 
-# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
-# Exception for main branch: complete builds for every commit needed for confidenence
+# Limit workflow to 1 concurrent run per ref (branch) and trigger event (push/schedule/etc): new commit -> old runs are canceled to save costs
+# Exception for main + stable/* branches: complete builds for every commit needed for confidenence
 # Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
   cancel-in-progress: true
-  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
 
 defaults:
   run:
@@ -66,7 +66,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: '1.7.7'
+      ACTIONLINT_VERSION: '1.7.8'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.56.0'
     steps:
@@ -251,7 +251,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -370,7 +370,74 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  archunit-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "General / Unit - ArchUnit"
+    needs: [ detect-changes ]
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-16-default
+    env:
+      TEST_OWNER: General
+      TEST_PRODUCT: Camunda
+      TEST_TYPE: Unit
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: archunit-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Test Build
+        shell: bash
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        run: >
+          ./mvnw -B --no-snapshot-updates
+          -D skipITs -D skipQaBuild=false -D skipChecks -Dsurefire.rerunFailingTestsCount=3
+          -P skipFrontendBuild,extract-flaky-tests
+          -pl :camunda-archunit-tests
+          -am
+          -Dtest='*ArchTest'
+          -Dsurefire.failIfNoSpecifiedTests=false
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "General / Unit - ArchUnit"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -443,9 +510,11 @@ jobs:
           version: ${{ steps.build-camunda-docker.outputs.version }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           goldenfile: camunda-docker-labels.golden.json
+          dockerfile: camunda.Dockerfile
       - name: Run Docker tests
         run: |
           ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
+          -Pextract-flaky-tests \
           -Dcamunda.docker.test.enabled=true \
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}" \
           -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}" \
@@ -456,6 +525,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -521,7 +591,7 @@ jobs:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
@@ -621,6 +691,7 @@ jobs:
       checks: read
     needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
+      - archunit-tests
       - build-operate-backend
       - build-platform-frontend
       - commitlint
@@ -644,17 +715,35 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - run: |
+          echo "The \`check-results\` job has the function to fail if any previous job was unsuccessful!"
+          echo "If you're reading this and wondering what the is the problem, please check other GHA jobs of this workflow run to for errors/cancellation and see their logs."
+
+          # shellcheck disable=SC2242
+          exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+
+
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
+  utils-get-concurrency-group-for-maven-snapshot:
+    needs: [ check-results ]
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    if: always() && needs.check-results.result == 'success'
+    with:
+      job_to_run: 'concurrency-group'
+      base_group_name: deploy-maven-snapshot
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
-    needs: [ check-results ]
+    needs: [ check-results, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 25
     permissions: {}  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
-      group: deploy-maven-snapshot8.7
+      group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -690,15 +779,26 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
+  utils-get-snapshot-docker-tag-and-concurrency-group:
+    needs: [ check-results ]
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    if: always() && needs.check-results.result == 'success'
+    with:
+      base_group_name: deploy-camunda-docker-snapshot
+
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ check-results ]
+    needs: [ check-results, utils-get-snapshot-docker-tag-and-concurrency-group]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
-      group: deploy-camunda-docker-snapshot8.7
+      group: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -728,7 +828,7 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: 8.7.0-SNAPSHOT
+          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile

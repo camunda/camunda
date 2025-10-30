@@ -20,7 +20,6 @@ import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
-import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.schema.util.TestDynamicIndex;
 import io.camunda.operate.schema.util.TestIndex;
 import io.camunda.operate.schema.util.TestTemplate;
@@ -30,7 +29,6 @@ import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.opensearch.OpensearchTaskStore;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +58,6 @@ public class IndexSchemaValidatorIT extends AbstractSchemaIT {
   @Autowired public IndexSchemaValidator validator;
 
   @Autowired public SchemaManager schemaManager;
-  @Autowired public SchemaTestHelper schemaHelper;
 
   @Autowired public TestIndex testIndex;
   @Autowired public TestDynamicIndex testDynamicIndex;
@@ -69,11 +66,6 @@ public class IndexSchemaValidatorIT extends AbstractSchemaIT {
   @BeforeEach
   public void createDefault() {
     schemaManager.createDefaults();
-  }
-
-  @AfterEach
-  public void dropSchema() {
-    schemaHelper.dropSchema();
   }
 
   @Test

@@ -20,7 +20,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     basePackages = "io.camunda.operate.webapp",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "camunda.operate.webappEnabled",
+    name = "camunda.operate.webapp-enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class WebappModuleConfiguration {

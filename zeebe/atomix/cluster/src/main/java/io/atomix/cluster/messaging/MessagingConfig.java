@@ -24,7 +24,7 @@ import java.util.List;
 
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
-  private final int connectionPoolSize = 8;
+  public static final int AUTO_SOCKET_SIZE = -11;
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
   private Duration shutdownQuietPeriod = Duration.ofMillis(20);
@@ -37,6 +37,8 @@ public class MessagingConfig implements Config {
   private String keyStorePassword;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
+  private int socketSendBuffer = AUTO_SOCKET_SIZE;
+  private int socketReceiveBuffer = AUTO_SOCKET_SIZE;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -76,15 +78,6 @@ public class MessagingConfig implements Config {
   public MessagingConfig setPort(final Integer port) {
     this.port = port;
     return this;
-  }
-
-  /**
-   * Returns the connection pool size.
-   *
-   * @return the connection pool size
-   */
-  public int getConnectionPoolSize() {
-    return connectionPoolSize;
   }
 
   /**
@@ -267,6 +260,42 @@ public class MessagingConfig implements Config {
 
   public MessagingConfig setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = heartbeatInterval;
+    return this;
+  }
+
+  /**
+   * @return the configured size in bytes for SO_SNDBUF or `-1` if not configured.
+   */
+  public int getSocketSendBuffer() {
+    return socketSendBuffer;
+  }
+
+  /**
+   * Sets the size of SO_SNDBUF.GatewayCfgT
+   *
+   * @param socketSendBuffer the data size in bytes to use for SO_SNDBUF
+   * @return this config for chaining
+   */
+  public MessagingConfig setSocketSendBuffer(final int socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
+    return this;
+  }
+
+  /**
+   * @return the configured size in bytes for SO_RCVBUF or `-1` if not configured.
+   */
+  public int getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
+  }
+
+  /**
+   * Sets the size of SO_RCVBUF.
+   *
+   * @param socketReceiveBuffer the data size in bytes to use for SO_RCVBUF
+   * @return this config for chaining
+   */
+  public MessagingConfig setSocketReceiveBuffer(final int socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
     return this;
   }
 

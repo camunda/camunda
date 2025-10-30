@@ -54,6 +54,10 @@ public class SchemaStartup {
           DatabaseInfo.isOpensearch()
               ? operateProperties.getOpensearch().isCreateSchema()
               : operateProperties.getElasticsearch().isCreateSchema();
+      final boolean updateSchemaSettings =
+          DatabaseInfo.isOpensearch()
+              ? operateProperties.getOpensearch().isUpdateSchemaSettings()
+              : operateProperties.getElasticsearch().isUpdateSchemaSettings();
       if (createSchema && !schemaValidator.schemaExists()) {
         LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
         schemaManager.createSchema();
@@ -70,6 +74,9 @@ public class SchemaStartup {
           LOGGER.info(
               "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
         }
+      }
+      if (createSchema && updateSchemaSettings) {
+        schemaManager.updateIndexSettings();
       }
       if (migrationProperties.isMigrationEnabled()) {
         LOGGER.info("SchemaStartup: migrate schema.");

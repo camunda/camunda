@@ -9,6 +9,7 @@ package io.camunda.operate.util.searchrepository;
 
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
 import java.util.List;
@@ -81,9 +82,24 @@ public interface TestSearchRepository {
   List<ProcessInstanceForListViewEntity> getProcessInstances(String indexName, List<Long> ids)
       throws IOException;
 
+  default List<DecisionInstanceEntity> getDecisionInstancesByKeys(
+      final String indexName, final List<Long> decisionInstanceKeys) throws IOException {
+    return getDecisionInstances(indexName, decisionInstanceKeys, List.of());
+  }
+
+  default List<DecisionInstanceEntity> getDecisionInstancesByIds(
+      final String indexName, final List<String> ids) throws IOException {
+    return getDecisionInstances(indexName, List.of(), ids);
+  }
+
+  List<DecisionInstanceEntity> getDecisionInstances(
+      String indexName, List<Long> decisionInstanceKeys, List<String> ids) throws IOException;
+
   Optional<List<Long>> getIds(
       String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex)
       throws IOException;
+
+  Long getIndexTemplatePriority(String templateName);
 
   record IndexSettings(Integer shards, Integer replicas) {}
 

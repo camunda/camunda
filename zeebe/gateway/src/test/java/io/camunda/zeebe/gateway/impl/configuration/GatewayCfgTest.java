@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
+import org.springframework.util.unit.DataSize;
 
 public final class GatewayCfgTest {
 
@@ -150,9 +151,8 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.interceptors.0.id", "overwritten");
     setEnv("zeebe.gateway.interceptors.0.className", "Overwritten");
     setEnv("zeebe.gateway.interceptors.0.jarPath", "./overwritten.jar");
-    setEnv("zeebe.gateway.filters.0.id", "overwrittenFilter");
-    setEnv("zeebe.gateway.filters.0.className", "OverwrittenFilter");
-    setEnv("zeebe.gateway.filters.0.jarPath", "./overwrittenFilter.jar");
+    setEnv("zeebe.gateway.network.socketSendBuffer", "3MB");
+    setEnv("zeebe.gateway.network.socketReceiveBuffer", "3MB");
 
     final GatewayCfg expected = new GatewayCfg();
     expected
@@ -168,6 +168,10 @@ public final class GatewayCfgTest {
         .setMemberId("envMember")
         .setHost("envHost")
         .setPort(12345);
+    expected
+        .getCluster()
+        .setSocketReceiveBuffer(DataSize.ofMegabytes(3))
+        .setSocketSendBuffer(DataSize.ofMegabytes(3));
     expected.getThreads().setManagementThreads(32);
     expected
         .getSecurity()

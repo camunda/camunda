@@ -29,7 +29,7 @@ public final class PartitionHealthBroadcaster implements FailureListener {
   }
 
   @Override
-  public void onRecovered() {
+  public void onRecovered(final HealthReport report) {
     delegate.onHealthChanged(partitionId, HealthStatus.HEALTHY);
   }
 

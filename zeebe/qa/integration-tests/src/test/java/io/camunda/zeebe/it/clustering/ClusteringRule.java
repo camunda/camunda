@@ -697,21 +697,22 @@ public class ClusteringRule extends ExternalResource {
             .getRaftPartition(partitionId)
             .getServer();
 
-    Awaitility.await("Promote request is successful")
-        .pollInterval(Duration.ofMillis(500))
-        .timeout(Duration.ofMinutes(1))
-        .untilAsserted(
-            () ->
-                assertThat(serverOfExpectedLeader.promote())
-                    .succeedsWithin(Duration.ofSeconds(15)));
-
     Awaitility.await("New leader of partition %s is %s".formatted(partitionId, expectedLeaderId))
         .pollInterval(Duration.ofMillis(500))
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions()
-        .until(
-            () -> getLeaderForPartition(partitionId),
-            (leader) -> leader.getNodeId() == expectedLeaderId);
+        .untilAsserted(
+            () -> {
+              assertThat(serverOfExpectedLeader.promote())
+                  .describedAs("Promote request is successful")
+                  .succeedsWithin(Duration.ofSeconds(15));
+              final int currentLeaderId = getLeaderForPartition(partitionId).getNodeId();
+              assertThat(currentLeaderId)
+                  .withFailMessage(
+                      "Expected the leader of partition %d to be %d, but was %d",
+                      partitionId, expectedLeaderId, currentLeaderId)
+                  .isEqualTo(expectedLeaderId);
+            });
   }
 
   public void waitForTopology(final Consumer<TopologyAssert> assertions) {
@@ -826,11 +827,15 @@ public class ClusteringRule extends ExternalResource {
     var currentSegments = 0;
     var writtenEntries = 0;
     while (currentSegments < minimumSegmentCount || writtenEntries < minimumWrittenEntries) {
-      client.newPublishMessageCommand().messageName("msg").correlationKey("key").send().join();
+      publishMessage();
       currentSegments =
           brokers.stream().map(this::getSegmentsCount).min(Integer::compareTo).orElse(0);
       writtenEntries += 1;
     }
+  }
+
+  public void publishMessage() {
+    client.newPublishMessageCommand().messageName("msg").correlationKey("key").send().join();
   }
 
   /**

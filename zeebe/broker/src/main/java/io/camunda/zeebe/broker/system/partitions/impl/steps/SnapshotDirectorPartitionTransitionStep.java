@@ -11,9 +11,11 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +30,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
       final var director = context.getSnapshotDirector();
-      context.getComponentHealthMonitor().removeComponent(director.getName());
+      context.getComponentHealthMonitor().removeComponent(director);
       context.getRaftPartition().getServer().removeCommittedEntryListener(director);
       final ActorFuture<Void> future = director.closeAsync();
       future.onComplete(
@@ -52,26 +54,16 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       final Callable<CompletableFuture<Void>> flushLog = server::flushLog;
 
       final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
-      final AsyncSnapshotDirector director;
-      if (targetRole == Role.LEADER) {
-        director =
-            AsyncSnapshotDirector.ofProcessingMode(
-                context.getNodeId(),
-                context.getPartitionId(),
-                context.getStreamProcessor(),
-                context.getStateController(),
-                snapshotPeriod,
-                flushLog);
-      } else {
-        director =
-            AsyncSnapshotDirector.ofReplayMode(
-                context.getNodeId(),
-                context.getPartitionId(),
-                context.getStreamProcessor(),
-                context.getStateController(),
-                snapshotPeriod,
-                flushLog);
-      }
+
+      final var processingMode = StreamProcessorMode.fromRole(targetRole.isLeader());
+      final var director =
+          AsyncSnapshotDirector.of(
+              context.getPartitionId(),
+              context.getStreamProcessor(),
+              context.getStateController(),
+              processingMode,
+              snapshotPeriod,
+              flushLog);
 
       final var future =
           context.getActorSchedulingService().submitActor(director, SchedulingHints.cpuBound());
@@ -79,9 +71,21 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
           (ok, error) -> {
             if (error == null) {
               context.setSnapshotDirector(director);
-              context.getComponentHealthMonitor().registerComponent(director.getName(), director);
+              context.getComponentHealthMonitor().registerComponent(director);
               if (targetRole == Role.LEADER) {
                 server.addCommittedEntryListener(director);
+
+                // Raft server will only notify if there is a new entry commited. If the node has
+                // just restarted or transitioned to leader, but there are no new processing records
+                // written or committed, the listener is not triggered. As a result the
+                // commitPosition in the snapshotDirector remain 0, thus preventing snapshots even
+                // if the state has changed after replaying previously committed events. Hence, set
+                // the commit position from the last record in the log stream.
+                try (final LogStreamReader logStreamReader =
+                    context.getLogStream().newLogStreamReader()) {
+                  final var commitPosition = logStreamReader.seekToEnd();
+                  director.onCommit(commitPosition);
+                }
               }
             }
           });

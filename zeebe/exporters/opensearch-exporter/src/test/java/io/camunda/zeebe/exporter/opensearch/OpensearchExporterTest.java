@@ -81,6 +81,19 @@ final class OpensearchExporterTest {
   }
 
   @Test
+  void shouldNotFailOnOpenIfElasticMetadataDoesNotContainRecordCounters() {
+    // given
+    final var exporter = new OpensearchExporter();
+    exporter.configure(context);
+    final var storedMetadataAsJSON = "{\"recordCountersByValueType\":{}}";
+    final var serializedMetadata = storedMetadataAsJSON.getBytes(StandardCharsets.UTF_8);
+    controller.updateLastExportedRecordPosition(1, serializedMetadata);
+
+    // when
+    assertThatCode(() -> exporter.open(controller)).doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldCreateIndexStateManagementPolicy() {
     // given
     config.retention.setEnabled(true);
@@ -401,6 +414,17 @@ final class OpensearchExporterTest {
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+
+    @Test
+    void shouldForbidNegativePriority() {
+      // given
+      config.index.setPriority(-1);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessage("Opensearch index template priority must be >= 0. Current value: -1");
     }
   }
 

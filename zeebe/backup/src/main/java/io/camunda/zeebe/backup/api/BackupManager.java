@@ -38,9 +38,10 @@ public interface BackupManager {
    * Get all available backups where status is one of {@link BackupStatusCode#COMPLETED}, {@link
    * BackupStatusCode#FAILED}, {@link BackupStatusCode#IN_PROGRESS}
    *
-   * @return a collection of backup status
+   * @param pattern null, empty, a prefix ending in '*' or an exact backup id
+   * @return all backups with ids matching the pattern
    */
-  ActorFuture<Collection<BackupStatus>> listBackups();
+  ActorFuture<Collection<BackupStatus>> listBackups(final String pattern);
 
   /**
    * Deletes the backup.

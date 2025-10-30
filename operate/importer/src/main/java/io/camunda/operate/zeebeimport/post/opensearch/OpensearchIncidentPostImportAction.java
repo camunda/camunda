@@ -114,6 +114,11 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
             .size(operateProperties.getZeebeOpensearch().getBatchSize());
 
     final var response = richOpenSearchClient.doc().search(postImporterQueueRequest, Result.class);
+
+    // Update the queue size metric with the total hits count
+    final long queueSize = response.hits().total().value();
+    updateQueueSizeMetric(queueSize);
+
     incidents2Process =
         response.hits().hits().stream()
             .map(Hit::source)

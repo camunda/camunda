@@ -43,9 +43,6 @@ public class MetadataTest {
                 metadata.getVersion()),
             "");
     assertThat(extracted).isEqualTo(metadata);
-    assertThat(extracted.getBackupId())
-        .isEqualTo(
-            metadata.getBackupId()); // why backupId is not part of the Metadata.equals() method??
   }
 
   @Test

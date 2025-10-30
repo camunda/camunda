@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.util.StringUtils;
 
 public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationProcessor {
 
@@ -68,6 +69,7 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
           final DeploymentEvent deploymentResult =
               deployment.getResources().stream()
                   .flatMap(resource -> Stream.of(getResources(resource)))
+                  .distinct()
                   .map(
                       resource -> {
                         try (final InputStream inputStream = resource.getInputStream()) {
@@ -78,6 +80,12 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
                         }
                       })
                   .filter(Objects::nonNull)
+                  .peek(
+                      deploy -> {
+                        if (deployment.getTenantId() != null) {
+                          deploy.tenantId(deployment.getTenantId());
+                        }
+                      })
                   .reduce((first, second) -> second)
                   .orElseThrow(
                       () ->
@@ -114,6 +122,13 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
     } else {
       final List<String> resources =
           Arrays.stream(annotation.get().resources()).collect(Collectors.toList());
+      final String tenantId =
+          StringUtils.hasText(annotation.get().tenantId()) ? annotation.get().tenantId() : null;
+      ZeebeDeploymentValue.builder()
+          .beanInfo(beanInfo)
+          .resources(resources)
+          .tenantId(tenantId)
+          .build();
       return Optional.of(
           ZeebeDeploymentValue.builder().beanInfo(beanInfo).resources(resources).build());
     }

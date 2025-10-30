@@ -37,6 +37,7 @@ public final class OAuthCredentialsProviderBuilder {
   public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
   public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
   public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
+  public static final String OAUTH_ENV_TOKEN_RESOURCE = "ZEEBE_TOKEN_RESOURCE";
   public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
   public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
   public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
@@ -68,6 +69,7 @@ public final class OAuthCredentialsProviderBuilder {
   private String clientAssertionKeystorePassword;
   private String clientAssertionKeystoreKeyAlias;
   private String clientAssertionKeystoreKeyPassword;
+  private String resource;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -183,6 +185,19 @@ public final class OAuthCredentialsProviderBuilder {
     return readTimeout;
   }
 
+  /** The resource for which the access token should be valid. */
+  public OAuthCredentialsProviderBuilder resource(final String resource) {
+    this.resource = resource;
+    return this;
+  }
+
+  /**
+   * @see OAuthCredentialsProviderBuilder#resource(String)
+   */
+  public String getResource() {
+    return resource;
+  }
+
   /**
    * @return a new {@link OAuthCredentialsProvider} with the provided configuration options.
    */
@@ -213,6 +228,7 @@ public final class OAuthCredentialsProviderBuilder {
     final String envClientSecret = Environment.system().get(OAUTH_ENV_CLIENT_SECRET);
     final String envAudience = Environment.system().get(OAUTH_ENV_TOKEN_AUDIENCE);
     final String envScope = Environment.system().get(OAUTH_ENV_TOKEN_SCOPE);
+    final String envResource = Environment.system().get(OAUTH_ENV_TOKEN_RESOURCE);
     final String envAuthorizationUrl = Environment.system().get(OAUTH_ENV_AUTHORIZATION_SERVER);
     final String envCachePath = Environment.system().get(OAUTH_ENV_CACHE_PATH);
     final String envReadTimeout = Environment.system().get(OAUTH_ENV_READ_TIMEOUT);
@@ -232,6 +248,10 @@ public final class OAuthCredentialsProviderBuilder {
 
     if (envScope != null) {
       scope = envScope;
+    }
+
+    if (envResource != null) {
+      resource = envResource;
     }
 
     if (envAuthorizationUrl != null) {

@@ -18,5 +18,9 @@ public enum StreamProcessorMode {
    * When in REPLAY mode, all events are replayed and commands are never processed. This is the mode
    * used in followers.
    */
-  REPLAY
+  REPLAY;
+
+  public static StreamProcessorMode fromRole(final boolean isLeader) {
+    return isLeader ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
+  }
 }

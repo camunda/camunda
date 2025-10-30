@@ -134,8 +134,8 @@ public final class RaftPartitionFactory {
 
     Loggers.RAFT.warn(
         """
-          Explicit Raft flush is disabled. Data will be flushed to disk only before a snapshot is
-          taken. This is generally unsafe and could lead to data loss or corruption. Make sure to
+          Explicit Raft flush is disabled. Data will be flushed to disk only before a snapshot is \
+          taken. This is generally unsafe and could lead to data loss or corruption. Make sure to \
           read the documentation regarding this feature.""");
 
     return RaftLogFlusher.Factory::noop;

@@ -41,6 +41,7 @@ jobs:
   integration-tests:
     name: Test
     runs-on: gcp-perf-core-16-default
+    timeout-minutes: 40
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
@@ -55,7 +56,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -111,6 +112,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "integration-tests/${{ matrix.database }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}

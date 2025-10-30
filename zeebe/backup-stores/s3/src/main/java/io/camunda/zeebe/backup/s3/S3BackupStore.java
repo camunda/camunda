@@ -37,8 +37,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -51,6 +49,7 @@ import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
@@ -132,12 +131,8 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
-    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
-        .takeWhile(Optional::isPresent)
-        .map(Optional::get)
-        .map(Number::toString)
-        .collect(Collectors.joining("/", config.basePath().map(base -> base + "/").orElse(""), ""));
+    return config.basePath().map(base -> base + "/").orElse("")
+        + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
   public String objectPrefix(final BackupIdentifier id) {
@@ -396,6 +391,12 @@ public final class S3BackupStore implements BackupStore {
 
     // Enable auto-tuning of various parameters based on the environment
     builder.defaultsMode(DefaultsMode.AUTO);
+
+    // Enable legacy MD5 plugin if configured, as it is required for compatibility with S3
+    // compatible storage systems that expect MD5 checksums in the request.
+    if (config.supportLegacyMd5()) {
+      builder.addPlugin(LegacyMd5Plugin.create());
+    }
 
     builder.httpClient(
         NettyNioAsyncHttpClient.builder()

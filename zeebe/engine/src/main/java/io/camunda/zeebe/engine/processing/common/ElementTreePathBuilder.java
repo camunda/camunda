@@ -11,6 +11,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCal
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -48,29 +50,53 @@ public class ElementTreePathBuilder {
   }
 
   private void buildElementTreePathProperties(final long elementInstanceKey) {
-    final List<Long> elementInstancePath = new LinkedList<>();
-    elementInstancePath.add(elementInstanceKey);
-    ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
-    long parentElementInstanceKey = instance.getParentKey();
-    while (parentElementInstanceKey != -1) {
-      instance = elementInstanceState.getInstance(parentElementInstanceKey);
-      elementInstancePath.addFirst(parentElementInstanceKey);
-      parentElementInstanceKey = instance.getParentKey();
-    }
-    properties.elementInstancePath.addFirst(elementInstancePath);
-    final var processInstanceRecord = instance.getValue();
-    properties.processDefinitionPath.addFirst(processInstanceRecord.getProcessDefinitionKey());
+    final var elementInstance = getElementInstance(elementInstanceKey);
+    final long parentElementInstanceKey = elementInstance.getParentKey();
+    final var elementProperties =
+        new ElementProperties(
+            elementInstanceKey, parentElementInstanceKey, elementInstance.getValue());
 
-    final long callingElementInstanceKey = processInstanceRecord.getParentElementInstanceKey();
-    if (callingElementInstanceKey != -1) {
-      properties.callingElementPath.addFirst(getCallActivityIndex(callingElementInstanceKey));
-      buildElementTreePathProperties(callingElementInstanceKey);
+    buildElementTreePathProperties(elementProperties);
+  }
+
+  private void buildElementTreePathProperties(final ElementProperties elementProperties) {
+    final Deque<ElementProperties> elementQueue = new LinkedList<>();
+    elementQueue.offer(elementProperties);
+    while (!elementQueue.isEmpty()) {
+      final var curr = elementQueue.poll();
+      var processInstanceRecord = curr.processInstanceRecord;
+      // Build current element instance path
+      final List<Long> elementInstancePath = new LinkedList<>();
+      elementInstancePath.add(curr.elementInstanceKey);
+      long currParent = curr.parentElementInstanceKey;
+      while (currParent != -1) {
+        elementInstancePath.addFirst(currParent);
+        final var instance = getElementInstance(currParent);
+        processInstanceRecord = instance.getValue();
+        currParent = instance.getParentKey();
+      }
+      properties.elementInstancePath.addFirst(elementInstancePath);
+      properties.processDefinitionPath.addFirst(processInstanceRecord.getProcessDefinitionKey());
+
+      // Prepare for call-activity loop: step up if needed
+      final long callingElementInstanceKey = processInstanceRecord.getParentElementInstanceKey();
+      if (callingElementInstanceKey != -1) {
+        properties.callingElementPath.addFirst(getCallActivityIndex(callingElementInstanceKey));
+        // For next iteration: walk to the parent process instance
+        final ElementInstance callingInstance = getElementInstance(callingElementInstanceKey);
+        // Add the calling element instance to the queue
+        elementQueue.offer(
+            new ElementProperties(
+                callingElementInstanceKey,
+                callingInstance.getParentKey(),
+                callingInstance.getValue()));
+      }
     }
   }
 
   private Integer getCallActivityIndex(final long callingElementInstanceKey) {
     final ElementInstance callActivityElementInstance =
-        elementInstanceState.getInstance(callingElementInstanceKey);
+        getElementInstance(callingElementInstanceKey);
     final var callActivityInstanceRecord = callActivityElementInstance.getValue();
 
     final ExecutableCallActivity callActivity =
@@ -83,8 +109,24 @@ public class ElementTreePathBuilder {
     return callActivity.getLexicographicIndex();
   }
 
+  private ElementInstance getElementInstance(final long elementInstanceKey) {
+    final ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
+    if (instance == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find element instance for given key '%d', but didn't exist.",
+              elementInstanceKey));
+    }
+    return instance;
+  }
+
   public record ElementTreePathProperties(
       List<List<Long>> elementInstancePath,
       List<Long> processDefinitionPath,
       List<Integer> callingElementPath) {}
+
+  private record ElementProperties(
+      Long elementInstanceKey,
+      Long parentElementInstanceKey,
+      ProcessInstanceRecordValue processInstanceRecord) {}
 }

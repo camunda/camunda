@@ -28,11 +28,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.Convertable;
 import io.camunda.operate.util.MapPath;
 import java.io.IOException;
@@ -47,6 +50,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -63,6 +67,8 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Autowired private ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
 
   @Autowired private ObjectMapper objectMapper;
+
+  @Autowired private OpenSearchClient openSearchClient;
 
   @Override
   public boolean isConnected() {
@@ -368,6 +374,26 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
+  public List<DecisionInstanceEntity> getDecisionInstances(
+      final String indexName, final List<Long> decisionInstanceKeys, final List<String> ids)
+      throws IOException {
+    final var searchRequestBuilder =
+        searchRequestBuilder(indexName)
+            .query(
+                constantScore(
+                    and(
+                        CollectionUtil.isEmpty(ids) ? matchAll() : ids(toSafeArrayOfStrings(ids)),
+                        CollectionUtil.isEmpty(decisionInstanceKeys)
+                            ? matchAll()
+                            : longTerms(DecisionInstanceTemplate.KEY, decisionInstanceKeys))))
+            .size(100);
+
+    return richOpenSearchClient
+        .doc()
+        .searchValues(searchRequestBuilder, DecisionInstanceEntity.class, true);
+  }
+
+  @Override
   public Optional<List<Long>> getIds(
       final String indexName,
       final String idFieldName,
@@ -391,6 +417,20 @@ public class TestOpenSearchRepository implements TestSearchRepository {
         throw ex;
       }
       return Optional.empty();
+    }
+  }
+
+  @Override
+  public Long getIndexTemplatePriority(final String templateName) {
+    try {
+      final var response =
+          openSearchClient.indices().getIndexTemplate(req -> req.name(templateName));
+      if (response.indexTemplates().isEmpty()) {
+        throw new IllegalStateException(templateName + " index template not found");
+      }
+      return response.indexTemplates().get(0).indexTemplate().priority();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
     }
   }
 }

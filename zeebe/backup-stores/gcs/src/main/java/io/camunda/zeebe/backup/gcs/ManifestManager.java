@@ -30,13 +30,10 @@ import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class ManifestManager {
@@ -216,12 +213,8 @@ public final class ManifestManager {
    * the prefix is empty, the prefix will only contain the first prefix component and so forth.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
-    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
-        .takeWhile(Optional::isPresent)
-        .map(Optional::get)
-        .map(Number::toString)
-        .collect(Collectors.joining("/", MANIFESTS_ROOT_PATH_FORMAT.formatted(basePath), ""));
+    return MANIFESTS_ROOT_PATH_FORMAT.formatted(basePath)
+        + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
   private Predicate<Blob> filterBlobsByWildcard(final BackupIdentifierWildcard wildcard) {
@@ -230,7 +223,7 @@ public final class ManifestManager {
                 MANIFEST_PATH_FORMAT.formatted(
                     Pattern.quote(basePath),
                     wildcard.partitionId().map(Number::toString).orElse("\\d+"),
-                    wildcard.checkpointId().map(Number::toString).orElse("\\d+"),
+                    wildcard.checkpointPattern().asRegex(),
                     wildcard.nodeId().map(Number::toString).orElse("\\d+"),
                     Pattern.quote(MANIFEST_BLOB_NAME)))
             .asMatchPredicate();

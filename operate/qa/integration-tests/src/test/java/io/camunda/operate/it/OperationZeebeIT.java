@@ -21,28 +21,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.util.*;
+import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
+import io.camunda.operate.webapp.rest.dto.listview.*;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
@@ -1002,13 +995,17 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     final MvcResult mvcResult =
         postOperation(processInstanceKey, op, HttpURLConnection.HTTP_BAD_REQUEST);
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: a variable with this name already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
@@ -1021,7 +1018,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     // then it succeeds
     postOperation(processInstanceKey, op, HttpURLConnection.HTTP_OK);
 
@@ -1031,7 +1029,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: an ADD_VARIABLE operation for this variable already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test

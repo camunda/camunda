@@ -106,11 +106,7 @@ class AdhocSubprocessValidatorTest {
         process(adHocSubProcess -> adHocSubProcess.intermediateCatchEvent().signal("signal"));
 
     // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process,
-        expect(
-            AdHocSubProcess.class,
-            "Any intermediate catch event must have an outgoing sequence flow."));
+    ProcessValidationUtil.assertThatProcessIsValid(process);
   }
 
   @Test

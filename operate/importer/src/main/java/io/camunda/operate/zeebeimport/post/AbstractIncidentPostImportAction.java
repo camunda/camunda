@@ -9,6 +9,7 @@ package io.camunda.operate.zeebeimport.post;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -17,10 +18,12 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,12 +45,33 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
   @Autowired protected OperateProperties operateProperties;
 
   @Autowired protected ImportPositionHolder importPositionHolder;
+
+  @Autowired protected Metrics metrics;
+
   protected ImportPositionEntity lastProcessedPosition;
   private final BackoffIdleStrategy errorStrategy;
+  private final AtomicLong lastKnownQueueSize = new AtomicLong(0);
 
   public AbstractIncidentPostImportAction(final int partitionId) {
     this.partitionId = partitionId;
     errorStrategy = new BackoffIdleStrategy(BACKOFF, 1.2f, 10_000);
+  }
+
+  @PostConstruct
+  protected void initializeMetrics() {
+    final var metricDoc = PostImporterMetricsDoc.POST_IMPORTER_QUEUE_SIZE.getName();
+    final var description = PostImporterMetricsDoc.POST_IMPORTER_QUEUE_SIZE.getDescription();
+
+    metrics.registerGaugeSupplier(
+        metricDoc,
+        description,
+        () -> lastKnownQueueSize,
+        Metrics.TAG_KEY_PARTITION,
+        String.valueOf(partitionId));
+  }
+
+  protected void updateQueueSizeMetric(final long queueSize) {
+    lastKnownQueueSize.set(queueSize);
   }
 
   @Override

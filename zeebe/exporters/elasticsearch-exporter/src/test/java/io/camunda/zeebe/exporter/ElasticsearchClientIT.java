@@ -148,7 +148,7 @@ final class ElasticsearchClientIT {
         .isPresent()
         .get()
         .extracting(ComponentTemplateWrapper::name)
-        .isEqualTo(config.index.prefix);
+        .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
 
     final var template = templateWrapper.get().template();
     assertIndexTemplate(template, expectedTemplate);

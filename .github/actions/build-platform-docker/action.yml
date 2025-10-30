@@ -52,8 +52,19 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Detect branch type
+      id: branch-detect
+      shell: bash
+      env:
+        IS_MAIN_OR_STABLE_BRANCH: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
+      run: |
+        echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
+
     - name: Set up multi-platform support
       uses: docker/setup-qemu-action@v3
+      with:
+        # only cache on persistent branches where reuse is likely
+        cache-image: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
 
     # Creating a context is required when installing buildx on self-hosted runners
     - name: Create context

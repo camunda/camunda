@@ -20,10 +20,12 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -62,7 +64,7 @@ public final class AsyncSnapshotDirector extends Actor
   private CompletableActorFuture<PersistedSnapshot> ongoingSnapshotFuture;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
-  private volatile HealthReport healthReport = HealthReport.healthy(this);
+  private volatile HealthReport healthReport;
 
   private long commitPosition;
 
@@ -78,9 +80,32 @@ public final class AsyncSnapshotDirector extends Actor
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
     this.partitionId = partitionId;
-    actorName = buildActorName("SnapshotDirector", this.partitionId);
+    actorName = actorName(partitionId);
     this.streamProcessorMode = streamProcessorMode;
     this.flushLog = flushLog;
+    healthReport = HealthReport.healthy(this);
+  }
+
+  /**
+   * Create an AsyncSnapshotDirector that can take snapshot when the StreamProcessor is in the
+   * provided replay mode
+   *
+   * @param partitionId partition id
+   * @param streamProcessor stream processor for the partition
+   * @param stateController state controller that manages state
+   * @param streamProcessorMode mode of the stream processor
+   * @param snapshotRate rate at which the snapshot is taken
+   * @return snapshot director
+   */
+  public static AsyncSnapshotDirector of(
+      final int partitionId,
+      final StreamProcessor streamProcessor,
+      final StateController stateController,
+      final StreamProcessorMode streamProcessorMode,
+      final Duration snapshotRate,
+      final Callable<CompletableFuture<Void>> flushLog) {
+    return new AsyncSnapshotDirector(
+        partitionId, streamProcessor, stateController, snapshotRate, streamProcessorMode, flushLog);
   }
 
   @Override
@@ -120,65 +145,18 @@ public final class AsyncSnapshotDirector extends Actor
         failure);
 
     resetStateOnFailure(failure);
-    healthReport = HealthReport.unhealthy(this).withIssue(failure);
+    healthReport = HealthReport.unhealthy(this).withIssue(failure, Instant.now());
+    notifyAllListeners();
+  }
 
+  public static String actorName(final int partitionId) {
+    return buildActorName("SnapshotDirector", partitionId);
+  }
+
+  private void notifyAllListeners() {
     for (final var listener : listeners) {
       listener.onFailure(healthReport);
     }
-  }
-
-  /**
-   * Create an AsyncSnapshotDirector that can take snapshot when the StreamProcessor is in
-   * continuous replay mode.
-   *
-   * @param nodeId id of this broker
-   * @param partitionId partition id
-   * @param streamProcessor stream processor for the partition
-   * @param stateController state controller that manages state
-   * @param snapshotRate rate at which the snapshot is taken
-   * @return snapshot director
-   */
-  public static AsyncSnapshotDirector ofReplayMode(
-      final int nodeId,
-      final int partitionId,
-      final StreamProcessor streamProcessor,
-      final StateController stateController,
-      final Duration snapshotRate,
-      final Callable<CompletableFuture<Void>> flushLog) {
-    return new AsyncSnapshotDirector(
-        partitionId,
-        streamProcessor,
-        stateController,
-        snapshotRate,
-        StreamProcessorMode.REPLAY,
-        flushLog);
-  }
-
-  /**
-   * Create an AsyncSnapshotDirector that can take snapshot when the StreamProcessor is in
-   * processing mode
-   *
-   * @param nodeId id of this broker
-   * @param partitionId partition id
-   * @param streamProcessor stream processor for the partition
-   * @param stateController state controller that manages state
-   * @param snapshotRate rate at which the snapshot is taken
-   * @return snapshot director
-   */
-  public static AsyncSnapshotDirector ofProcessingMode(
-      final int nodeId,
-      final int partitionId,
-      final StreamProcessor streamProcessor,
-      final StateController stateController,
-      final Duration snapshotRate,
-      final Callable<CompletableFuture<Void>> flushLog) {
-    return new AsyncSnapshotDirector(
-        partitionId,
-        streamProcessor,
-        stateController,
-        snapshotRate,
-        StreamProcessorMode.PROCESSING,
-        flushLog);
   }
 
   private void scheduleSnapshotOnRate() {
@@ -192,10 +170,15 @@ public final class AsyncSnapshotDirector extends Actor
    * @return A future that is completed successfully when the snapshot was taken. If the snapshot
    *     was skipped, the future is also completed successfully but with a null.
    */
-  public CompletableActorFuture<PersistedSnapshot> forceSnapshot() {
+  public ActorFuture<PersistedSnapshot> forceSnapshot() {
     final var newSnapshotFuture = new CompletableActorFuture<PersistedSnapshot>();
     actor.call(() -> trySnapshot().onComplete(newSnapshotFuture));
     return newSnapshotFuture;
+  }
+
+  @Override
+  public String componentName() {
+    return actorName;
   }
 
   @Override
@@ -234,12 +217,9 @@ public final class AsyncSnapshotDirector extends Actor
               if (error != null) {
                 LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
                 snapshotFuture.completeExceptionally(error);
-              } else if (position == StreamProcessor.UNSET_POSITION) {
-                LOG.debug(
-                    "We will skip taking this snapshot, because we haven't processed anything yet.");
-                snapshotFuture.complete(null);
               } else {
-                inProgressSnapshot.lowerBoundSnapshotPosition = position;
+                inProgressSnapshot.lowerBoundSnapshotPosition =
+                    position == StreamProcessor.UNSET_POSITION ? 0L : position;
                 snapshot(inProgressSnapshot).onComplete(snapshotFuture);
               }
             });
@@ -337,20 +317,19 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private ActorFuture<Void> getLastWrittenPosition(final InProgressSnapshot inProgressSnapshot) {
-    final ActorFuture<Void> lastWrittenPositionReceived = new CompletableActorFuture<>();
-    streamProcessor
+    return streamProcessor
         .getLastWrittenPositionAsync()
-        .onComplete(
+        .andThen(
             (position, error) -> {
               if (error != null) {
                 LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
-                lastWrittenPositionReceived.completeExceptionally(error);
+                return CompletableActorFuture.completedExceptionally(error);
               } else {
                 inProgressSnapshot.lastWrittenPosition = position;
-                lastWrittenPositionReceived.complete(null);
+                return CompletableActorFuture.completed(null);
               }
-            });
-    return lastWrittenPositionReceived;
+            },
+            actor);
   }
 
   private ActorFuture<Void> waitUntilLastWrittenPositionIsCommitted(
@@ -367,21 +346,20 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private ActorFuture<Void> takeTransientSnapshot(final InProgressSnapshot inProgressSnapshot) {
-    final ActorFuture<Void> snapshotTaken = new CompletableActorFuture<>();
-    stateController
+    return stateController
         .takeTransientSnapshot(inProgressSnapshot.lowerBoundSnapshotPosition)
-        .onComplete(
+        .andThen(
             (snapshot, error) -> {
               if (error != null) {
                 logSnapshotTakenError(error);
-                snapshotTaken.completeExceptionally(error);
+                return CompletableActorFuture.completedExceptionally(error);
               } else {
                 inProgressSnapshot.pendingSnapshot = snapshot;
-                snapshotTaken.complete(null);
                 onRecovered();
+                return CompletableActorFuture.completed(null);
               }
-            });
-    return snapshotTaken;
+            },
+            actor);
   }
 
   void logSnapshotTakenError(final Throwable snapshotTakenError) {
@@ -401,7 +379,7 @@ public final class AsyncSnapshotDirector extends Actor
   private void onRecovered() {
     if (!healthReport.isHealthy()) {
       healthReport = HealthReport.healthy(this);
-      listeners.forEach(FailureListener::onRecovered);
+      listeners.forEach(l -> l.onRecovered(healthReport));
     }
   }
 
@@ -413,7 +391,7 @@ public final class AsyncSnapshotDirector extends Actor
   public void newPositionCommitted(final long currentCommitPosition) {
     actor.run(
         () -> {
-          commitPosition = currentCommitPosition;
+          commitPosition = Math.max(currentCommitPosition, commitPosition);
           final var futuresToComplete = commitAwaiters.headMap(commitPosition, true);
           futuresToComplete.forEach((k, f) -> f.complete(null));
           futuresToComplete.clear();
@@ -437,6 +415,11 @@ public final class AsyncSnapshotDirector extends Actor
         nextStep.run();
       }
     };
+  }
+
+  @VisibleForTesting
+  public long getCommitPosition() {
+    return commitPosition;
   }
 
   private static final class InProgressSnapshot {

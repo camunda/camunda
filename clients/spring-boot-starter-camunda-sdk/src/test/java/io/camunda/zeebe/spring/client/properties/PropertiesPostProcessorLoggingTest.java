@@ -17,21 +17,54 @@ package io.camunda.zeebe.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
-@SpringBootTest(
-    properties = "zeebe.client.broker.grpc-address=http://legacy:26500",
-    classes = CamundaClientPropertiesTestConfig.class)
-@ExtendWith(OutputCaptureExtension.class)
 public class PropertiesPostProcessorLoggingTest {
-  @Test
-  void shouldLogPropertyMapping(final CapturedOutput output) {
-    assertThat(output)
-        .contains(
-            "Legacy property 'zeebe.client.broker.grpc-address' found, setting to 'camunda.client.zeebe.grpc-address'. Please update your setup to use the latest property");
+
+  @Nested
+  @SpringBootTest(
+      properties = "zeebe.client.broker.grpc-address=http://legacy:26500",
+      classes = CamundaClientPropertiesTestConfig.class)
+  @ExtendWith(OutputCaptureExtension.class)
+  class DeprecatedPropertyMapping {
+    @Test
+    void shouldLogPropertyMapping(final CapturedOutput output) {
+      assertThat(output)
+          .contains(
+              "Legacy property 'zeebe.client.broker.grpc-address' found, setting to 'camunda.client.zeebe.grpc-address'. Please update your setup to use the latest property");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(classes = CamundaClientPropertiesTestConfig.class)
+  @ExtendWith(OutputCaptureExtension.class)
+  class RestOverGrpcWarning {
+
+    @Test
+    void shouldLogRestOverGrpcWarning(final CapturedOutput output) {
+      assertThat(output)
+          .contains(
+              "No 'camunda.client.zeebe.prefer-rest-over-grpc' is set. Please set to 'true' or 'false' explicitly as the default behaviour will change from 'false' to 'true' in the next release.");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      properties = "camunda.client.zeebe.prefer-rest-over-grpc=true",
+      classes = CamundaClientPropertiesTestConfig.class)
+  @ExtendWith(OutputCaptureExtension.class)
+  class RestOverGrpcSet {
+
+    @Test
+    void shouldNotLogRestOverGrpcWarning(final CapturedOutput output) {
+      assertThat(output)
+          .doesNotContain(
+              "No 'camunda.client.zeebe.prefer-rest-over-grpc' is set. Please set to 'true' or 'false' explicitly as the default behaviour will change from 'false' to 'true' in the next release.");
+    }
   }
 }

@@ -97,11 +97,10 @@ public class BackupManagerOpenSearch extends BackupManager {
     validateRepositoryExists();
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
-    final String version = getCurrentTasklistVersion();
     for (int index = 0; index < count; index++) {
       final String snapshotName =
           new Metadata()
-              .setVersion(version)
+              .setVersion("*")
               .setPartCount(count)
               .setPartNo(index + 1)
               .setBackupId(backupId)
@@ -638,7 +637,7 @@ public class BackupManagerOpenSearch extends BackupManager {
         // No need to continue
         return false;
       }
-      if (currentSnapshot.state().equals(SnapshotState.STARTED.name())) {
+      if (currentSnapshot.state().equals(SnapshotState.IN_PROGRESS.name())) {
         ThreadUtil.sleepFor(100);
         count++;
         if (count % 600 == 0) { // approx. 1 minute, depending on how long findSnapshots takes

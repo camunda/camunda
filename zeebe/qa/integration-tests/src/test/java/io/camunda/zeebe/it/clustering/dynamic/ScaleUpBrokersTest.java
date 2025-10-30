@@ -193,7 +193,7 @@ final class ScaleUpBrokersTest {
         .brokerHasPartition(0, 1);
 
     // Changes are reflected in the topology returned by grpc query
-    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(30));
   }
 
   @Test

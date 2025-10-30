@@ -21,6 +21,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
+import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
@@ -168,11 +169,17 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   public static Storage buildClient(final GcsBackupConfig config) {
-    return StorageOptions.newBuilder()
-        .setHost(config.connection().host())
-        .setCredentials(config.connection().auth().credentials())
-        .build()
-        .getService();
+    final var builder =
+        StorageOptions.newBuilder()
+            .setHost(config.connection().host())
+            .setCredentials(config.connection().auth().credentials());
+
+    // Without authentication, we need to set the project ID explicitly
+    if (config.connection().auth() instanceof None(final String projectId)) {
+      builder.setProjectId(projectId);
+    }
+
+    return builder.build().getService();
   }
 
   public static void validateConfig(final GcsBackupConfig config) {

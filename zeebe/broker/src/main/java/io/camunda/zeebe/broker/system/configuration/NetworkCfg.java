@@ -29,6 +29,8 @@ public final class NetworkCfg implements ConfigurationEntry {
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
+  private DataSize socketSendBuffer = null;
+  private DataSize socketReceiveBuffer = null;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -105,6 +107,22 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.heartbeatInterval = heartbeatInterval;
   }
 
+  public DataSize getSocketSendBuffer() {
+    return socketSendBuffer;
+  }
+
+  public void setSocketSendBuffer(final DataSize socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
+  }
+
+  public DataSize getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
+  }
+
+  public void setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
+  }
+
   public CommandApiCfg getCommandApi() {
     return commandApi;
   }
@@ -140,6 +158,10 @@ public final class NetworkCfg implements ConfigurationEntry {
         + heartbeatTimeout
         + ", heartbeatInterval="
         + heartbeatInterval
+        + ", socketReceiveBuffer="
+        + socketReceiveBuffer
+        + ", socketSendBuffer="
+        + socketSendBuffer
         + ", commandApi="
         + commandApi
         + ", internalApi="

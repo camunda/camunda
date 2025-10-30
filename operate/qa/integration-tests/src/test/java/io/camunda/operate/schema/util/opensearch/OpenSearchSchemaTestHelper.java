@@ -131,6 +131,25 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
     }
   }
 
+  @Override
+  public IndexSettings getComponentTemplateSettings(final String componentTemplateName) {
+    final var settings =
+        openSearchClient.template().getComponentTemplateIndexSettings(componentTemplateName);
+    return new IndexSettings(settings.numberOfShards(), settings.numberOfReplicas(), null);
+  }
+
+  @Override
+  public IndexSettings getIndexTemplateSettings(final String indexTemplateName) {
+    final var indexTemplate = openSearchClient.template().getIndexTemplate(indexTemplateName);
+    final var indexSettings =
+        indexTemplate.template().settings().get("index").toJson().asJsonObject();
+
+    return new IndexSettings(
+        indexSettings.getString("number_of_shards"),
+        indexSettings.getString("number_of_replicas"),
+        indexTemplate.priority());
+  }
+
   protected IndexMappingProperty mapProperty(final Entry<String, Property> property)
       throws OperateRuntimeException {
 

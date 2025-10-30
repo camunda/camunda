@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.schema;
 
-import io.camunda.tasklist.exceptions.MigrationException;
-import io.camunda.tasklist.property.MigrationProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
@@ -38,10 +36,8 @@ public class SchemaStartup {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private MigrationProperties migrationProperties;
-
   @PostConstruct
-  public void initializeSchema() throws MigrationException, IOException {
+  public void initializeSchema() throws IOException {
     try {
       LOGGER.info("SchemaStartup started.");
       LOGGER.info("SchemaStartup: validate index versions.");
@@ -53,6 +49,10 @@ public class SchemaStartup {
           TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())
               ? tasklistProperties.getOpenSearch().isCreateSchema()
               : tasklistProperties.getElasticsearch().isCreateSchema();
+      final boolean isUpdateSchemaSettings =
+          TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())
+              ? tasklistProperties.getOpenSearch().isUpdateSchemaSettings()
+              : tasklistProperties.getElasticsearch().isUpdateSchemaSettings();
       if (createSchema && !schemaValidator.schemaExists()) {
         LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
         schemaManager.createSchema();
@@ -69,6 +69,9 @@ public class SchemaStartup {
           LOGGER.info(
               "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
         }
+      }
+      if (createSchema && isUpdateSchemaSettings) {
+        schemaManager.updateIndexSettings();
       }
       LOGGER.info("SchemaStartup finished.");
     } catch (final Exception ex) {

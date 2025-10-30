@@ -29,6 +29,7 @@ import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -416,8 +417,23 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             openFuture.completeExceptionally(throwable);
           }
 
-          final var report = HealthReport.dead(this).withIssue(throwable);
-          failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
+          if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
+              && !(throwable instanceof UnrecoverableException)) {
+            // If the stream processor is in replay mode, we do not want to report it as dead
+            // because it is not critical. The leaders are still active and able to process
+            // requests.
+            final var report =
+                HealthReport.unhealthy(this).withIssue(throwable, ActorClock.current().instant());
+            failureListeners.forEach(l -> l.onFailure(report));
+          } else {
+
+            // If it is a leader, we always want to report it as dead so that all related
+            // services
+            // are shutdown. (https://github.com/camunda/camunda/issues/16180)
+            final var report =
+                HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
+            failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
+          }
         });
   }
 
@@ -463,21 +479,28 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   @Override
+  public String componentName() {
+    return actorName;
+  }
+
+  @Override
   public HealthReport getHealthReport() {
+    final var instant =
+        ActorClock.current() != null ? ActorClock.current().instant() : Instant.now();
     if (actor.isClosed()) {
-      return HealthReport.unhealthy(this).withMessage("actor is closed");
+      return HealthReport.unhealthy(this).withMessage("actor is closed", instant);
     }
 
     if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
       return HealthReport.unhealthy(this)
-          .withMessage("Processing not making progress. It is in an error handling loop.");
+          .withMessage("Processing not making progress. It is in an error handling loop.", instant);
     }
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
     if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
-      return HealthReport.unhealthy(this).withMessage("actor appears blocked");
+      return HealthReport.unhealthy(this).withMessage("actor appears blocked", instant);
     } else if (streamProcessorContext.getStreamProcessorPhase() == Phase.FAILED) {
-      return HealthReport.unhealthy(this).withMessage("in failed phase");
+      return HealthReport.unhealthy(this).withMessage("in failed phase", instant);
     } else {
       return HealthReport.healthy(this);
     }

@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.7.7-SNAPSHOT</version>
+    <version>8.7.17-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-it-tests</artifactId>
 
@@ -471,7 +471,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.5.3</version>
         <configuration>
           <skipITs>false</skipITs>
           <includes>
@@ -480,7 +479,7 @@
           <excludes>
             <exclude>${excludeITNames}</exclude>
           </excludes>
-          <forkCount>1</forkCount>
+          <forkCount>${testForkCount}</forkCount>
           <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>

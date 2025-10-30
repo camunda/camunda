@@ -43,6 +43,14 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
             Optional.empty()));
   }
 
+  public ExportersConfig deleteExporter(final String exporterName) {
+    final var newExporters =
+        exporters.entrySet().stream()
+            .filter(entry -> !entry.getKey().equals(exporterName))
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    return new ExportersConfig(newExporters);
+  }
+
   public ExportersConfig disableExporters(final Collection<String> exporterNames) {
     final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
 
@@ -85,6 +93,29 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
     exporterNames.forEach(
         exporterName ->
             builder.put(exporterName, new ExporterState(0, State.ENABLED, Optional.empty())));
+
+    final var newExporters =
+        builder.buildKeepingLast(); // choose last one if there are duplicate keys
+    return new ExportersConfig(newExporters);
+  }
+
+  /**
+   * Updates existing exporters to state {@link ExporterState.State#CONFIG_NOT_FOUND}.
+   *
+   * @param exporterNames the names of exporters for which the state should be updated
+   * @return a new {@link ExportersConfig} with the updated state for the specified exporters
+   */
+  public ExportersConfig withConfigNotFoundFor(final Collection<String> exporterNames) {
+    final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
+
+    exporterNames.forEach(
+        exporterName ->
+            builder.put(
+                exporterName,
+                new ExporterState(
+                    exporters.get(exporterName).metadataVersion(),
+                    ExporterState.State.CONFIG_NOT_FOUND,
+                    exporters.get(exporterName).initializedFrom())));
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys

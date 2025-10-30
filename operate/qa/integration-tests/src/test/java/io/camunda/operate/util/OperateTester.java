@@ -91,6 +91,7 @@ public class OperateTester {
   private Long processInstanceKey;
   private Long jobKey;
   private JwtDecoder jwtDecoder;
+  private long decisionInstanceKey;
 
   @Autowired(required = false)
   private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
@@ -243,6 +244,10 @@ public class OperateTester {
     return operationReader.getOperationsByBatchOperationId(operation.getId());
   }
 
+  public long getDecisionInstanceKey() {
+    return decisionInstanceKey;
+  }
+
   public OperateTester createAndDeploySimpleProcess(
       final String processId, final String activityId) {
     final BpmnModelInstance process =
@@ -366,6 +371,14 @@ public class OperateTester {
 
   public OperateTester processInstanceIsCanceled() {
     searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    return this;
+  }
+
+  public OperateTester evaluateDecisionInstance(
+      final String decisionId, final Map<String, Object> variables) {
+    LOGGER.info("Evaluating decision instance id '{}'  with variables '{}'", decisionId, variables);
+    decisionInstanceKey =
+        ZeebeTestUtil.evaluateDecisionInstance(zeebeClient, decisionId, variables);
     return this;
   }
 

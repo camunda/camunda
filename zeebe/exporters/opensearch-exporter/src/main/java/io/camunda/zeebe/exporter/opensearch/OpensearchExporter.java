@@ -70,6 +70,7 @@ public class OpensearchExporter implements Exporter {
             .readMetadata()
             .map(this::deserializeExporterMetadata)
             .map(OpensearchExporterMetadata::getRecordCountersByValueType)
+            .filter(counters -> !counters.isEmpty())
             .map(OpensearchRecordCounters::new)
             .orElse(new OpensearchRecordCounters());
 
@@ -152,6 +153,12 @@ public class OpensearchExporter implements Exporter {
       throw new ExporterException(
           String.format(
               "Opensearch numberOfReplicas must be >= 0. Current value: %d", numberOfReplicas));
+    }
+
+    final int priority = configuration.index.getPriority();
+    if (priority < 0) {
+      throw new ExporterException(
+          "Opensearch index template priority must be >= 0. Current value: %d".formatted(priority));
     }
   }
 

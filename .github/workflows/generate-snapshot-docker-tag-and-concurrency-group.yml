@@ -1,0 +1,85 @@
+# description: Generate a Docker version tag for snapshot builds based on the branch name.
+# type: CI
+# owner: @camunda/monorepo-devops-team
+name: Generate Docker Version Tag (SNAPSHOT)
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      job_to_run:
+        description: "Defines which job to run in the workflow. If not specified, all jobs will be run. Options: 'snapshot-tag', 'concurrency-group', or 'all'"
+        required: false
+        default: "all"
+        type: string
+      base_group_name:
+        description: "Base concurrency group name for the workflow"
+        required: false
+        default: ''
+        type: string
+    outputs:
+      version_tag:
+        description: "Generated Docker version tag"
+        value: ${{  jobs.get-snapshot-docker-version-tag.outputs.tag }}
+      concurrency_group_name:
+        description: "Concurrency group name for the workflow"
+        value: ${{ jobs.get-concurrency-group-dynamically.outputs.result }}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  get-snapshot-docker-version-tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: {}
+    if: >-
+      github.repository == 'camunda/camunda' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) &&
+      (inputs.job_to_run == 'all' || inputs.job_to_run == 'snapshot-tag')
+    outputs:
+      tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
+    steps:
+      - name: Determine Snapshot Docker Version Tag
+        id: set_docker_snapshot_version_tag
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == "main" ]]; then
+            TAG="SNAPSHOT"
+          elif [[ "$BRANCH" == stable/* ]]; then
+            TAG="${BRANCH#stable/}-SNAPSHOT"
+          else
+            echo "Unsupported branch: $BRANCH"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+  get-concurrency-group-dynamically:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: { }
+    if: >-
+      github.repository == 'camunda/camunda' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) &&
+      (inputs.job_to_run == 'all' || inputs.job_to_run == 'concurrency-group') &&
+      inputs.base_group_name != ''
+    outputs:
+      result: ${{ steps.split_branch.outputs.result }}
+    steps:
+      - name: Determine concurrency group name
+        id: split_branch
+        env:
+          BASE_GROUP_NAME: ${{ inputs.base_group_name }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == stable/* ]]; then
+            SUFFIX="${BRANCH#stable/}"
+            CONCURRENCY_GROUP_NAME="${BASE_GROUP_NAME}${SUFFIX}"
+          elif [[ "$BRANCH" == "main" ]]; then
+            CONCURRENCY_GROUP_NAME="${BASE_GROUP_NAME}"
+          else
+            echo "Unsupported branch: $BRANCH"
+            exit 1
+          fi
+          echo "result=$CONCURRENCY_GROUP_NAME" >> "$GITHUB_OUTPUT"

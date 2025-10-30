@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -82,10 +83,14 @@ public final class ZeebePartition extends Actor
     transition.setConcurrencyControl(actor);
 
     final var partitionId = context.getPartitionId();
-    actorName = buildActorName("ZeebePartition", transitionContext.getPartitionId());
+    actorName = buildActorName("ZeebePartition", partitionId);
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
-            "Partition-" + transitionContext.getPartitionId(), actor, LOG));
+            componentName(partitionId),
+            actor,
+            transitionContext.getComponentTreeListener(),
+            Optional.of(transitionContext.brokerHealthCheckService().componentName()),
+            LOG));
     zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId(), transition);
     healthMetrics = new HealthMetrics(transitionContext.getPartitionStartupMeterRegistry());
     healthMetrics.setUnhealthy();
@@ -94,6 +99,10 @@ public final class ZeebePartition extends Actor
         new RoleMetrics(
             transitionContext.getPartitionStartupMeterRegistry(),
             transitionContext.getPartitionId());
+  }
+
+  public static String componentName(final int partitionId) {
+    return String.format("Partition-%s", partitionId);
   }
 
   public PartitionAdminAccess getAdminAccess() {
@@ -142,15 +151,11 @@ public final class ZeebePartition extends Actor
   @Override
   protected void onActorStarted() {
     context.getComponentHealthMonitor().startMonitoring();
-    context
-        .getComponentHealthMonitor()
-        .registerComponent(context.getRaftPartition().name(), context.getRaftPartition());
+    context.getComponentHealthMonitor().registerComponent(context.getRaftPartition());
     // Add a component that keep track of health of ZeebePartition. This way
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
-    context
-        .getComponentHealthMonitor()
-        .registerComponent(zeebePartitionHealth.getName(), zeebePartitionHealth);
+    context.getComponentHealthMonitor().registerComponent(zeebePartitionHealth);
   }
 
   @Override
@@ -182,8 +187,8 @@ public final class ZeebePartition extends Actor
           closing = true;
 
           removeListeners();
-          context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth.getName());
-          context.getComponentHealthMonitor().removeComponent(context.getRaftPartition().name());
+          context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth);
+          context.getComponentHealthMonitor().removeComponent(context.getRaftPartition());
 
           final var inactiveTransitionFuture = transitionToInactive();
 
@@ -201,6 +206,34 @@ public final class ZeebePartition extends Actor
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
     onInstallFailure(failure);
+  }
+
+  @Override
+  public String componentName() {
+    return String.format("Partition-%d", getPartitionId());
+  }
+
+  @Override
+  public HealthReport getHealthReport() {
+    return context.getComponentHealthMonitor().getHealthReport();
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    actor.run(
+        () -> {
+          failureListeners.add(failureListener);
+          if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
+            failureListener.onRecovered(getHealthReport());
+          } else {
+            failureListener.onFailure(getHealthReport());
+          }
+        });
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
   }
 
   /**
@@ -326,11 +359,11 @@ public final class ZeebePartition extends Actor
 
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
-  public void onRecovered() {
+  public void onRecovered(final HealthReport report) {
     actor.run(
         () -> {
           healthMetrics.setHealthy();
-          failureListeners.forEach(FailureListener::onRecovered);
+          failureListeners.forEach(l -> l.onRecovered(report));
         });
   }
 
@@ -387,7 +420,9 @@ public final class ZeebePartition extends Actor
   }
 
   private void handleUnrecoverableFailure(final Throwable error) {
-    final var report = HealthReport.dead(this).withIssue(error);
+    final var instant = ActorClock.current().instant();
+
+    final var report = HealthReport.dead(this).withIssue(error, instant);
     healthMetrics.setDead();
     zeebePartitionHealth.onUnrecoverableFailure(error);
     stopPartitionOnError();
@@ -409,29 +444,6 @@ public final class ZeebePartition extends Actor
 
   private void onRecoveredInternal() {
     zeebePartitionHealth.setServicesInstalled(true);
-  }
-
-  @Override
-  public HealthReport getHealthReport() {
-    return context.getComponentHealthMonitor().getHealthReport();
-  }
-
-  @Override
-  public void addFailureListener(final FailureListener failureListener) {
-    actor.run(
-        () -> {
-          failureListeners.add(failureListener);
-          if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
-            failureListener.onRecovered();
-          } else {
-            failureListener.onFailure(getHealthReport());
-          }
-        });
-  }
-
-  @Override
-  public void removeFailureListener(final FailureListener failureListener) {
-    actor.run(() -> failureListeners.remove(failureListener));
   }
 
   @Override
@@ -521,6 +533,12 @@ public final class ZeebePartition extends Actor
   public ActorFuture<Void> disableExporter(final String exporterId) {
     final var future = new CompletableActorFuture<Void>();
     actor.run(() -> partitionConfigurationManager.disableExporter(exporterId).onComplete(future));
+    return future;
+  }
+
+  public ActorFuture<Void> deleteExporter(final String exporterId) {
+    final var future = new CompletableActorFuture<Void>();
+    actor.run(() -> partitionConfigurationManager.deleteExporter(exporterId).onComplete(future));
     return future;
   }
 

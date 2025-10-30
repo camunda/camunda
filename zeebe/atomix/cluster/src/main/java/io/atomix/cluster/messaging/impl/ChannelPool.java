@@ -16,14 +16,11 @@
  */
 package io.atomix.cluster.messaging.impl;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.netty.channel.Channel;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -35,13 +32,11 @@ class ChannelPool {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChannelPool.class);
 
   private final Function<Address, CompletableFuture<Channel>> factory;
-  private final int size;
-  private final Map<Tuple<Address, InetAddress>, List<CompletableFuture<Channel>>> channels =
+  private final Map<Tuple<Address, InetAddress>, Map<String, CompletableFuture<Channel>>> channels =
       Maps.newConcurrentMap();
 
-  ChannelPool(final Function<Address, CompletableFuture<Channel>> factory, final int size) {
+  ChannelPool(final Function<Address, CompletableFuture<Channel>> factory) {
     this.factory = factory;
-    this.size = size;
   }
 
   /**
@@ -50,33 +45,10 @@ class ChannelPool {
    * @param address the address for which to return the channel pool
    * @return the channel pool for the given address
    */
-  private List<CompletableFuture<Channel>> getChannelPool(
+  private Map<String, CompletableFuture<Channel>> getChannelPool(
       final Address address, final InetAddress inetAddress) {
-    final Tuple<Address, InetAddress> channelPoolIdentifier = new Tuple<>(address, inetAddress);
-
-    final List<CompletableFuture<Channel>> channelPool = channels.get(channelPoolIdentifier);
-    if (channelPool != null) {
-      return channelPool;
-    }
     return channels.computeIfAbsent(
-        channelPoolIdentifier,
-        e -> {
-          final List<CompletableFuture<Channel>> defaultList = new ArrayList<>(size);
-          for (int i = 0; i < size; i++) {
-            defaultList.add(null);
-          }
-          return Lists.newCopyOnWriteArrayList(defaultList);
-        });
-  }
-
-  /**
-   * Returns the channel offset for the given message type.
-   *
-   * @param messageType the message type for which to return the channel offset
-   * @return the channel offset for the given message type
-   */
-  private int getChannelOffset(final String messageType) {
-    return Math.abs(messageType.hashCode() % size);
+        new Tuple<>(address, inetAddress), k -> Maps.newConcurrentMap());
   }
 
   /**
@@ -89,13 +61,13 @@ class ChannelPool {
   CompletableFuture<Channel> getChannel(final Address address, final String messageType) {
     final InetAddress inetAddress = address.getAddress();
 
-    final List<CompletableFuture<Channel>> channelPool = getChannelPool(address, inetAddress);
-    final int offset = getChannelOffset(messageType);
+    final Map<String, CompletableFuture<Channel>> channelPool =
+        getChannelPool(address, inetAddress);
 
-    CompletableFuture<Channel> channelFuture = channelPool.get(offset);
+    CompletableFuture<Channel> channelFuture = channelPool.get(messageType);
     if (channelFuture == null || channelFuture.isCompletedExceptionally()) {
       synchronized (channelPool) {
-        channelFuture = channelPool.get(offset);
+        channelFuture = channelPool.get(messageType);
         if (channelFuture == null || channelFuture.isCompletedExceptionally()) {
           LOGGER.debug("Connecting to {}", address);
           channelFuture = factory.apply(address);
@@ -111,14 +83,14 @@ class ChannelPool {
                           closed -> {
                             synchronized (channelPool) {
                               // Remove channel from the pool after it is closed.
-                              removeChannel(channelPool, offset, finalFuture);
+                              removeChannel(channelPool, messageType, finalFuture);
                             }
                           });
                 } else {
                   LOGGER.debug("Failed to connect to {}", address, error);
                 }
               });
-          channelPool.set(offset, channelFuture);
+          channelPool.put(messageType, channelFuture);
         }
       }
     }
@@ -131,13 +103,13 @@ class ChannelPool {
             if (!channel.isActive()) {
               CompletableFuture<Channel> currentFuture;
               synchronized (channelPool) {
-                currentFuture = channelPool.get(offset);
+                currentFuture = channelPool.get(messageType);
                 if (currentFuture == finalFuture) {
-                  channelPool.set(offset, null);
+                  channelPool.put(messageType, null);
                 } else if (currentFuture == null) {
                   currentFuture = factory.apply(address);
                   currentFuture.whenComplete(this::logConnection);
-                  channelPool.set(offset, currentFuture);
+                  channelPool.put(messageType, currentFuture);
                 }
               }
 
@@ -165,13 +137,13 @@ class ChannelPool {
   }
 
   private static void removeChannel(
-      final List<CompletableFuture<Channel>> channelPool,
-      final int offset,
+      final Map<String, CompletableFuture<Channel>> channelPool,
+      final String messageType,
       final CompletableFuture<Channel> finalFuture) {
-    final var currentFuture = channelPool.get(offset);
+    final var currentFuture = channelPool.get(messageType);
     // check if new channel is already replaced before removing it.
     if (finalFuture == currentFuture) {
-      channelPool.set(offset, null);
+      channelPool.remove(messageType);
     }
   }
 

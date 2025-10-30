@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.7-SNAPSHOT</version>
+    <version>8.7.17-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -29,15 +29,9 @@
   </modules>
 
   <properties>
-
-    <!-- release parent settings -->
-    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-operate-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-operate/</nexus.release.repository>
-
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 
-    <skip.fe.build>false</skip.fe.build>
     <skipSurefire>false</skipSurefire>
     <testForkCount>${env.LIMITS_CPU}</testForkCount>
     <includeITNames>**/*IT.java</includeITNames>
@@ -155,7 +149,7 @@
     </profile>
 
     <profile>
-      <id>operateItStage2</id>
+      <id>operateItZeebe</id>
       <properties>
         <includeITNames>**/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
@@ -166,7 +160,7 @@
     <profile>
       <id>operateItImport</id>
       <properties>
-        <includeITNames>**/*ZeebeImportIT.java, **/*ZeebeIT.java</includeITNames>
+        <includeITNames>**/*ZeebeImportIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>
@@ -175,7 +169,7 @@
     <profile>
       <id>operateItOpensearch</id>
       <properties>
-        <includeITNames>**/api/v1/**/*IT.java,io/camunda/operate/opensearch/Opensearch*IT.java</includeITNames>
+        <includeITNames>**/api/v1/**/*IT.java,io/camunda/operate/opensearch/Opensearch*IT.java,io/camunda/operate/schema/*IT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>

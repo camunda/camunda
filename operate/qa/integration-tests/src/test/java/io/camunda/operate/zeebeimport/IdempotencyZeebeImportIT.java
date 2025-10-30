@@ -12,6 +12,7 @@ import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.apps.idempotency.ZeebeImportIdempotencyTestConfig;
 import io.camunda.operate.zeebe.ImportValueType;
 import java.util.function.Predicate;
+import org.junit.Ignore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -27,6 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       "spring.main.allow-bean-definition-overriding=true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
+@Ignore("https://github.com/camunda/camunda/issues/39185")
 public class IdempotencyZeebeImportIT extends BasicZeebeImportIT {
 
   @Autowired

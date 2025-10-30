@@ -119,7 +119,7 @@ const CustomFiltersModal: React.FC<Props> = ({
       <FilterNameModal
         isOpen={isOpen && currentStep === 'name'}
         onApply={(filterName) => {
-          const filterId = crypto.randomUUID();
+          const filterId = `${Date.now()}${Math.random()}`;
           storeStateLocally('customFilters', {
             ...getStateLocally('customFilters'),
             [filterId]: {

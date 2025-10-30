@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.impl.http;
 
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.ProblemException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -47,7 +46,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   }
 
   @Override
-  public boolean cancel(final boolean mayInterruptIfRunning) {
+  public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
     if (transportFuture != null) {
       transportFuture.cancel(mayInterruptIfRunning);
     }
@@ -78,12 +77,12 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
     }
   }
 
-  private ProblemException unwrapExecutionException(final ExecutionException e) {
+  private ClientException unwrapExecutionException(final ExecutionException e) {
     final Throwable cause = e.getCause();
-    if (cause instanceof ProblemException) {
-      throw (ProblemException) cause;
+    if (cause instanceof ClientException) {
+      return (ClientException) cause;
     } else {
-      throw new ClientException(cause);
+      return new ClientException(cause);
     }
   }
 }

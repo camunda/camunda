@@ -8,18 +8,18 @@
 package io.camunda.zeebe.scheduler.health;
 
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
-import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 /** Healthy only if all components are healthy */
@@ -32,21 +32,79 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   private final Logger log;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
-  private volatile HealthReport healthReport =
-      HealthReport.unhealthy(this).withMessage("Components are not yet initialized");
+  private volatile HealthReport healthReport;
 
   private final String name;
+  private final Duration monitoringInterval;
+  private final ComponentTreeListener graphListener;
 
   public CriticalComponentsHealthMonitor(
-      final String name, final ActorControl actor, final Logger log) {
+      final String name,
+      final ActorControl actor,
+      final ComponentTreeListener healthGraphMetrics,
+      final Optional<String> parentComponent,
+      final Logger log) {
+    this(name, actor, healthGraphMetrics, parentComponent, log, HEALTH_MONITORING_PERIOD);
+  }
+
+  public CriticalComponentsHealthMonitor(
+      final String name,
+      final ActorControl actor,
+      final ComponentTreeListener graphListener,
+      final Optional<String> parentComponent,
+      final Logger log,
+      final Duration monitoringInterval) {
     this.name = name;
     this.actor = actor;
     this.log = log;
+    this.graphListener = graphListener;
+    this.monitoringInterval = monitoringInterval;
+    healthReport =
+        HealthReport.unhealthy(this)
+            .withMessage("Components are not yet initialized", Instant.now());
+    this.graphListener.registerNode(this, parentComponent);
   }
 
   @Override
   public void startMonitoring() {
-    actor.runAtFixedRate(HEALTH_MONITORING_PERIOD, this::updateHealth);
+    final var initialDelay = Math.max(5, monitoringInterval.toSeconds() / 5);
+    actor.schedule(Duration.ofSeconds(initialDelay), this::updateHealth);
+    actor.runAtFixedRate(monitoringInterval, this::updateHealth);
+  }
+
+  @Override
+  public void registerComponent(final HealthMonitorable component) {
+    actor.run(
+        () -> {
+          final var componentName = component.componentName();
+          final var monitoredComponent = new MonitoredComponent(componentName, component);
+          monitoredComponents.put(componentName, monitoredComponent);
+          componentHealth.put(componentName, component.getHealthReport());
+
+          component.addFailureListener(monitoredComponent);
+          calculateHealth();
+          // register graphs
+          // it's safe to do it more than once
+          graphListener.registerNode(component, this);
+          log.info("Registered component {}:{}", componentName, component.componentName());
+        });
+  }
+
+  @Override
+  public void removeComponent(final HealthMonitorable component) {
+    actor.run(
+        () -> {
+          final var componentName = component.componentName();
+          final var monitoredComponent = monitoredComponents.remove(componentName);
+          if (monitoredComponent != null) {
+            componentHealth.remove(componentName);
+            monitoredComponent.component.removeFailureListener(monitoredComponent);
+            graphListener.unregisterRelationship(name, componentName);
+            graphListener.unregisterNode(monitoredComponent.component);
+            log.trace("Unregistered edge {}:{}", name, componentName);
+            calculateHealth();
+          }
+        });
   }
 
   @Override
@@ -55,32 +113,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   @Override
-  public void removeComponent(final String componentName) {
-    actor.run(
-        () -> {
-          final var monitoredComponent = monitoredComponents.remove(componentName);
-          if (monitoredComponent != null) {
-            componentHealth.remove(componentName);
-            monitoredComponent.component.removeFailureListener(monitoredComponent);
-          }
-        });
-  }
-
-  @Override
-  public void registerComponent(final String componentName, final HealthMonitorable component) {
-    actor.run(
-        () -> {
-          final var monitoredComponent = new MonitoredComponent(componentName, component);
-          monitoredComponents.put(componentName, monitoredComponent);
-          componentHealth.put(componentName, component.getHealthReport());
-
-          component.addFailureListener(monitoredComponent);
-          calculateHealth();
-        });
-  }
-
-  @Override
-  public String getName() {
+  public String componentName() {
     return name;
   }
 
@@ -114,13 +147,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
       return;
     }
 
-    switch (healthReport.getStatus()) {
-      case HEALTHY -> failureListeners.forEach(FailureListener::onRecovered);
-      case UNHEALTHY -> failureListeners.forEach(l -> l.onFailure(healthReport));
-      case DEAD -> failureListeners.forEach(l -> l.onUnrecoverableFailure(healthReport));
-      default -> log.warn("Unknown health status {}", healthReport);
-    }
-
+    failureListeners.forEach(l -> l.onHealthReport(healthReport));
     logComponentStatus(healthReport);
   }
 
@@ -132,18 +159,8 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   private HealthReport calculateStatus() {
-    final var componentByStatus =
-        componentHealth.values().stream()
-            .collect(Collectors.toMap(HealthReport::getStatus, Function.identity(), (l, r) -> l));
-    final var deadReport = componentByStatus.get(HealthStatus.DEAD);
-    final var unhealthyReport = componentByStatus.get(HealthStatus.UNHEALTHY);
-    if (deadReport != null) {
-      return HealthReport.dead(this).withIssue(deadReport);
-    } else if (unhealthyReport != null) {
-      return HealthReport.unhealthy(this).withIssue(unhealthyReport);
-    } else {
-      return HealthReport.healthy(this);
-    }
+    return HealthReport.fromChildrenStatus(name, componentHealth)
+        .orElse(HealthReport.unknown(name));
   }
 
   private HealthReport getHealth(final String componentName) {
@@ -175,8 +192,8 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     }
 
     @Override
-    public void onRecovered() {
-      actor.run(this::onComponentRecovered);
+    public void onRecovered(final HealthReport report) {
+      actor.run(() -> onComponentRecovered(report));
     }
 
     @Override
@@ -192,16 +209,18 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
       log.warn("{} failed, marking it as unhealthy: {}", componentName, report);
       componentHealth.put(componentName, report);
       calculateHealth();
+      failureListeners.forEach(l -> l.onFailure(getHealthReport()));
     }
 
-    private void onComponentRecovered() {
+    private void onComponentRecovered(final HealthReport healthReport) {
       if (!monitoredComponents.containsKey(componentName)) {
         return;
       }
 
       log.info("{} recovered, marking it as healthy", componentName);
-      componentHealth.put(componentName, HealthReport.healthy(component));
+      componentHealth.put(componentName, healthReport);
       calculateHealth();
+      failureListeners.forEach(l -> l.onRecovered(getHealthReport()));
     }
 
     private void onComponentDied(final HealthReport report) {
@@ -212,6 +231,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
       log.error("{} failed, marking it as dead: {}", componentName, report);
       componentHealth.put(componentName, report);
       calculateHealth();
+      failureListeners.forEach(l -> l.onUnrecoverableFailure(getHealthReport()));
     }
   }
 }

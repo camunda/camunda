@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWrit
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
@@ -293,6 +294,10 @@ public final class CommandDistributionBehavior {
     DistributionRequestBuilder unordered();
 
     DistributionRequestBuilder inQueue(String queue);
+
+    default DistributionRequestBuilder inQueue(final DistributionQueue queue) {
+      return inQueue(queue.getQueueId());
+    }
 
     ContinuationRequestBuilder afterQueue(String queue);
   }

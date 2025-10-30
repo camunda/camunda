@@ -49,12 +49,19 @@ public class Metrics {
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI =
       "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
-  public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
+  public static final String COUNTER_NAME_PROCESS_INSTANCES_ARCHIVED = "archived.process.instances";
+  public static final String COUNTER_NAME_BATCH_OPERATIONS_ARCHIVED = "archiver.batch.operations";
+  public static final String COUNTER_NAME_STANDALONE_DECISIONS_ARCHIVED =
+      "archiver.standalone.decisions";
   public static final String COUNTER_NAME_IMPORT_FNI_TREE_PATH_CACHE_RESULT =
       "import.fni.tree.path.cache.result";
+  public static final String COUNTER_NAME_REINDEX_FAILURES = "archival.reindex.failures";
+  public static final String COUNTER_NAME_DELETE_FAILURES = "archival.delete.failures";
 
   // Gauges:
   public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";
+  public static final String GAUGE_POST_IMPORTER_QUEUE_SIZE =
+      OPERATE_NAMESPACE + "post.importer.queue.size";
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
   public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
 
@@ -105,6 +112,14 @@ public class Metrics {
     Gauge.builder(name, gaugeSupplier).tags(tags).register(registry);
   }
 
+  public void registerGaugeSupplier(
+      final String name,
+      final String description,
+      final Supplier<Number> gaugeSupplier,
+      final String... tags) {
+    Gauge.builder(name, gaugeSupplier).tags(tags).description(description).register(registry);
+  }
+
   public <E> void registerGaugeQueueSize(
       final String name, final Queue<E> queue, final String... tags) {
     registerGauge(name, queue, q -> q.size(), tags);
@@ -112,6 +127,10 @@ public class Metrics {
 
   public Timer getTimer(final String name, final String... tags) {
     return registry.timer(name, tags);
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return registry;
   }
 
   public Timer getHistogram(final String name, final String... tags) {

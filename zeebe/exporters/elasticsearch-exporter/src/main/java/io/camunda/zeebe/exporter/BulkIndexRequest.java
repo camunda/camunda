@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.exporter;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -30,8 +34,15 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
+  private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
+      new ObjectMapper()
+          .addMixIn(Record.class, RecordSequenceMixin.class)
+          .addMixIn(DeploymentRecordValue.class, Deployment86Mixin.class)
+          .enable(Feature.ALLOW_SINGLE_QUOTES);
+
   // The property of the ES record template to store the sequence of the record.
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
+  private static final String RESOURCE_METADATA_PROPERTY = "resourceMetadata";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -76,7 +87,9 @@ final class BulkIndexRequest implements ContentProducer {
 
   private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
       throws IOException {
-    return MAPPER
+    final var mapper =
+        isPreviousVersionRecord(record.getBrokerVersion()) ? PREVIOUS_VERSION_MAPPER : MAPPER;
+    return mapper
         .writer()
         // Enhance the serialized record by its sequence number. The sequence number is not a part
         // of the record itself but a special property for Elasticsearch. It can be used to limit
@@ -132,8 +145,29 @@ final class BulkIndexRequest implements ContentProducer {
     }
   }
 
+  private static boolean isPreviousVersionRecord(final String brokerVersion) {
+    final SemanticVersion semanticVersion =
+        SemanticVersion.parse(brokerVersion)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Expected to parse valid semantic version, but got [%s]"
+                            .formatted(brokerVersion)));
+    final int currentMinorVersion =
+        VersionUtil.getSemanticVersion()
+            .map(SemanticVersion::minor)
+            .orElseThrow(
+                () -> new IllegalStateException("Expected to have a valid semantic version"));
+    return semanticVersion.minor() < currentMinorVersion;
+  }
+
   record BulkOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   private static final class RecordSequenceMixin {}
+
+  @JsonIgnoreProperties({
+    RESOURCE_METADATA_PROPERTY,
+  })
+  private static final class Deployment86Mixin {}
 }

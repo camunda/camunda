@@ -120,8 +120,13 @@ class TaskDetailsPage {
 
   async clickCompleteTaskButton() {
     await this.completeTaskButton.click({timeout: 60000});
-    await expect(this.taskCompletedBanner).toBeVisible({
-      timeout: 200000,
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.taskCompletedBanner).toBeVisible({timeout: 120000});
+      },
+      onFailure: async () => {
+        console.log('Task completed banner not visible, retrying...');
+      },
     });
   }
 
@@ -206,10 +211,28 @@ class TaskDetailsPage {
 
   async fillTextInput(label: string, value: string): Promise<void> {
     const input = this.page.getByLabel(label, {exact: true});
-    await input.click({timeout: 60000});
-    await input.fill(value);
-    await input.blur();
-    await expect(input).toHaveValue(value, {timeout: 5000});
+    const maxRetries = 3;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        await input.click({timeout: 120000});
+        await input.fill(value);
+        await input.blur();
+        await expect(input).toHaveValue(value);
+        return;
+      } catch (error) {
+        attempt++;
+        console.log(
+          `Attempt ${attempt} to fill input "${label}" failed with error: ${error}`,
+        );
+        if (attempt === maxRetries) {
+          throw new Error(
+            `Failed to set value "${value}" for label "${label}" after ${maxRetries} attempts.`,
+          );
+        }
+        await sleep(500);
+      }
+    }
   }
 
   async priorityAssertion(priority: string): Promise<void> {
@@ -291,12 +314,22 @@ class TaskDetailsPage {
     await this.addDynamicListRowButton.click();
   }
 
-  async assertFieldValue(label: string, expectedValue: string): Promise<void> {
-    const input = this.page.getByLabel(label, {exact: true});
+  async assertFieldValue(
+    label: string,
+    expectedValue: string | RegExp,
+    options?: {exact?: boolean; contains?: boolean},
+  ): Promise<void> {
+    const {exact = true, contains = false} = options || {};
+    const input = this.page.getByLabel(label, {exact});
+
     await waitForAssertion({
       assertion: async () => {
-        const actualValue = input;
-        await expect(actualValue).toHaveValue(expectedValue);
+        if (contains) {
+          const inputValue = await input.inputValue();
+          expect(inputValue).toContain(expectedValue);
+        } else {
+          await expect(input).toHaveValue(expectedValue);
+        }
       },
       onFailure: async () => {
         console.log(`Retrying assertion for field "${label}"...`);

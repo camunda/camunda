@@ -55,7 +55,7 @@ message ExportersConfig{
 }
 
 message ExporterState {
-  EnabledDisabledState state = 1;
+  ExporterStateEnum state = 1;
   int64 metadataVersion = 2;
   optional string initializedFrom = 3;
 }
@@ -89,6 +89,8 @@ message TopologyChangeOperation {
     PartitionDisableExporterOperation partitionDisableExporter = 9;
     PartitionEnableExporterOperation partitionEnableExporter = 10;
     PartitionBootstrapOperation partitionBootstrap = 11;
+    // Because this is backported from 8.8, we have to use non-contiguous index
+    PartitionDeleteExporterOperation partitionDeleteExporter = 17;
   }
 }
 
@@ -117,6 +119,11 @@ message PartitionForceReconfigureOperation {
 }
 
 message PartitionDisableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+}
+
+message PartitionDeleteExporterOperation {
   int32 partitionId = 1;
   string exporterId = 2;
 }
@@ -157,10 +164,11 @@ enum ChangeStatus {
   CANCELLED = 4;
 }
 
-enum EnabledDisabledState {
+enum ExporterStateEnum {
   ENABLED_DISBALED_UNKNOWN = 0;
   ENABLED = 1;
   DISABLED = 2;
+  CONFIG_NOT_FOUND = 3;
 }
 
 

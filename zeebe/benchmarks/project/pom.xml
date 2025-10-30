@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.7-SNAPSHOT</version>
+    <version>8.7.17-SNAPSHOT</version>
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
 
@@ -29,7 +29,7 @@
     <version.java>21</version.java>
 
     <!-- dependency versions -->
-    <version.config>1.4.3</version.config>
+    <version.config>1.4.5</version.config>
 
     <!-- maven plugin versions -->
     <plugin.version.license>3.0</plugin.version.license>

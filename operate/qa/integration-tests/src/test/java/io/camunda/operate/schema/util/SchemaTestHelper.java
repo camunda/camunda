@@ -20,4 +20,10 @@ public interface SchemaTestHelper {
   void createIndex(IndexDescriptor indexDescriptor, String indexName, String indexSchemaFilename);
 
   void setReadOnly(String indexName, boolean readOnly);
+
+  IndexSettings getComponentTemplateSettings(String componentTemplateName);
+
+  IndexSettings getIndexTemplateSettings(String indexTemplateName);
+
+  record IndexSettings(String numberOfShards, String numberOfReplicas, Long priority) {}
 }

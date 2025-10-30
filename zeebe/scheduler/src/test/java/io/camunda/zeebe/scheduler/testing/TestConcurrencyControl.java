@@ -12,9 +12,12 @@ import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.LockUtil;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.concurrent.Callable;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,7 +33,7 @@ import java.util.function.Consumer;
  * differences are as follows:
  *
  * <ul>
- *   <li>Callables, runaables passed to its methods are called immediately, synchronously on the
+ *   <li>Callables, runnables passed to its methods are called immediately, synchronously on the
  *       current thread (as opposed to the actor scheduler which would schedule them to run deferred
  *       and asynchronous - from the point of view of the caller)
  *   <li>Works best in conjunction with {@code TestActorFuture} returned by this class
@@ -46,6 +49,16 @@ public class TestConcurrencyControl implements ConcurrencyControl {
   public static final int ENDLESS_LOOP_COUNT = 10;
   // use concrete type to allow us to query if we're holding the lock below
   private final ReentrantLock lock = new ReentrantLock();
+  private final PriorityBlockingQueue<ScheduledTask> tasks = new PriorityBlockingQueue<>(1024);
+  private final boolean asyncSchedule;
+
+  public TestConcurrencyControl() {
+    this(false);
+  }
+
+  public TestConcurrencyControl(final boolean asyncSchedule) {
+    this.asyncSchedule = asyncSchedule;
+  }
 
   @Override
   public <T> void runOnCompletion(
@@ -101,6 +114,11 @@ public class TestConcurrencyControl implements ConcurrencyControl {
 
   @Override
   public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+    if (asyncSchedule) {
+      final var task = new ScheduledTask(System.currentTimeMillis() + delay.toMillis(), runnable);
+      tasks.add(task);
+      return () -> tasks.removeIf(t -> t == task);
+    }
     // in some cases, scheduled callbacks will re-schedule themselves. if we run them inline, this
     // will just lead to a stack overflow.
     // this is however a valid case, so we don't want to change production code to prevent this.
@@ -145,5 +163,27 @@ public class TestConcurrencyControl implements ConcurrencyControl {
     final ActorFuture<U> result = createFuture();
     result.completeExceptionally(error);
     return result;
+  }
+
+  public int runAll() {
+    final var list = new ArrayList<ScheduledTask>(tasks.size());
+    tasks.drainTo(list);
+    list.forEach(task -> task.task.run());
+    return list.size();
+  }
+
+  public int scheduledTasks() {
+    return tasks.size();
+  }
+
+  private record ScheduledTask(long deadline, Runnable task) implements Comparable<ScheduledTask> {
+
+    private static final Comparator<ScheduledTask> COMPARATOR =
+        Comparator.comparingLong(ScheduledTask::deadline);
+
+    @Override
+    public int compareTo(final TestConcurrencyControl.ScheduledTask other) {
+      return COMPARATOR.compare(this, other);
+    }
   }
 }

@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 import org.springframework.util.unit.DataSize;
 
 public class FailOverReplicationTest {
@@ -44,7 +45,13 @@ public class FailOverReplicationTest {
   private final ClusteringRule clusteringRule =
       new ClusteringRule(PARTITION_COUNT, 3, 3, FailOverReplicationTest::configureBroker);
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
+
+  private final Timeout testTimeout = Timeout.seconds(120);
+
+  @Rule
+  public RuleChain ruleChain =
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
+
   private ZeebeClient client;
 
   @Before
@@ -90,23 +97,22 @@ public class FailOverReplicationTest {
   @Test
   public void shouldReceiveEntriesAfterNetworkPartition() {
     // given
-    final var segmentCount = 2;
     final var oldLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var oldLeader = clusteringRule.getBroker(oldLeaderId);
     clusteringRule.disconnect(oldLeader);
     clusteringRule.awaitOtherLeader(1, oldLeaderId);
-    final List<Broker> followers = clusteringRule.getOtherBrokerObjects(oldLeaderId);
-    clusteringRule.fillSegments(followers, segmentCount);
+    // generate some events with quorum of remaining brokers
+    clusteringRule.publishMessage();
+    clusteringRule.publishMessage();
 
     // when
     clusteringRule.connect(oldLeader);
+    clusteringRule.forceNewLeaderForPartition(oldLeaderId, 1);
 
     // then
-    Awaitility.await()
-        .pollInterval(Duration.ofMillis(100))
-        .atMost(Duration.ofSeconds(10))
-        .until(() -> getSegmentsCount(oldLeader), count -> count >= segmentCount);
-    assertThat(getSegmentsCount(oldLeader)).isGreaterThanOrEqualTo(segmentCount);
+    assertThat(clusteringRule.getCurrentLeaderForPartition(1).getNodeId())
+        .describedAs("Reconnected broker can become leader again after receiving missing events")
+        .isEqualTo(oldLeaderId);
   }
 
   @Test
@@ -126,9 +132,18 @@ public class FailOverReplicationTest {
     // when
     clusteringRule.connect(previousLeader);
 
-    // then
-    final var receivedSnapshot = clusteringRule.waitForSnapshotAtBroker(previousLeader);
-    assertThat(receivedSnapshot).isEqualTo(snapshotMetadata);
+    // then -- reconnected member is forced to receive a snapshot because leader has compacted the
+    // log after taking the snapshot.
+    Awaitility.await("snapshot received")
+        .pollInterval(Duration.ofMillis(100))
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(clusteringRule.getSnapshot(previousLeader))
+                    .hasValueSatisfying(
+                        id ->
+                            assertThat(id.getIndex())
+                                .isGreaterThanOrEqualTo(snapshotMetadata.getIndex())));
   }
 
   // regression test for https://github.com/zeebe-io/zeebe/issues/4810

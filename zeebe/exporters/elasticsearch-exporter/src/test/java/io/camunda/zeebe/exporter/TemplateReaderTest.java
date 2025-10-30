@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -116,7 +117,7 @@ final class TemplateReaderTest {
     // then
     assertThat(template.composedOf())
         .as("index template is composed of the component template")
-        .containsExactly(config.index.prefix);
+        .containsExactly(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
     assertThat(template.patterns()).containsExactly("searchPattern");
     assertThat(template.template().aliases())
         .containsExactlyEntriesOf(Map.of("alias", Collections.emptyMap()));
@@ -138,7 +139,9 @@ final class TemplateReaderTest {
 
     // then
     assertThat(template.composedOf())
-        .allMatch(composedOf -> composedOf.equals(config.index.prefix));
+        .allMatch(
+            composedOf ->
+                composedOf.equals(config.index.prefix + "-" + VersionUtil.getVersionLowerCase()));
   }
 
   @Test

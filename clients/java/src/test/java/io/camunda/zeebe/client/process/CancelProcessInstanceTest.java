@@ -64,6 +64,19 @@ public final class CancelProcessInstanceTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final int operationReference = 456;
+
+    // when
+    client.newCancelInstanceCommand(123).operationReference(operationReference).send().join();
+
+    // then
+    final CancelProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldNotHaveNullResponse() {
     // given
     final CancelProcessInstanceCommandStep1 command = client.newCancelInstanceCommand(12);

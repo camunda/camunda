@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSendTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
@@ -88,7 +89,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
     ELEMENT_FACTORIES.put(ScriptTask.class, ExecutableScriptTask::new);
-    ELEMENT_FACTORIES.put(SendTask.class, ExecutableJobWorkerTask::new);
+    ELEMENT_FACTORIES.put(SendTask.class, ExecutableSendTask::new);
     ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableJobWorkerTask::new);
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableStartEvent::new);

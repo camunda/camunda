@@ -75,7 +75,40 @@ public final class BackupEndpoint {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> status(@Selector @NonNull final long id) {
+  public WebEndpointResponse<?> listAll() {
+    return listPrefix(BackupApi.WILDCARD);
+  }
+
+  @ReadOperation
+  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
+    if (prefixOrId.endsWith(BackupApi.WILDCARD)) {
+      return listPrefix(prefixOrId);
+    }
+    final long id;
+    try {
+      id = Long.parseLong(prefixOrId);
+    } catch (final NumberFormatException e) {
+      return new WebEndpointResponse<>(
+          new Error()
+              .message(
+                  "Expected a backup ID or prefix ending with '*', but got '%s'."
+                      .formatted(prefixOrId)),
+          400);
+    }
+    return status(id);
+  }
+
+  @DeleteOperation
+  public WebEndpointResponse<?> delete(@Selector @NonNull final long id) {
+    try {
+      api.deleteBackup(id).toCompletableFuture().join();
+      return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
+    } catch (final Exception e) {
+      return mapErrorResponse(e);
+    }
+  }
+
+  private WebEndpointResponse<?> status(final long id) {
     try {
       final BackupStatus status = api.getStatus(id).toCompletableFuture().join();
       if (status.status() == State.DOES_NOT_EXIST) {
@@ -88,22 +121,11 @@ public final class BackupEndpoint {
     }
   }
 
-  @ReadOperation
-  public WebEndpointResponse<?> list() {
+  private WebEndpointResponse<?> listPrefix(final String prefix) {
     try {
-      final var backups = api.listBackups().toCompletableFuture().join();
+      final var backups = api.listBackups(prefix).toCompletableFuture().join();
       final var response = backups.stream().map(this::getBackupInfoFromBackupStatus).toList();
       return new WebEndpointResponse<>(response);
-    } catch (final Exception e) {
-      return mapErrorResponse(e);
-    }
-  }
-
-  @DeleteOperation
-  public WebEndpointResponse<?> delete(@Selector @NonNull final long id) {
-    try {
-      api.deleteBackup(id).toCompletableFuture().join();
-      return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
       return mapErrorResponse(e);
     }

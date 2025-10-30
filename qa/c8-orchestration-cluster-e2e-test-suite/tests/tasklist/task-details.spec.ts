@@ -41,8 +41,9 @@ test.beforeAll(async () => {
     './resources/processWithDeployedForm.bpmn',
     './resources/create_invoice.form',
     './resources/zeebe_and_job_worker_process.bpmn',
+    './resources/bigVariableProcessWithForm.bpmn',
+    './resources/bigVariableForm.form',
   ]);
-
   await sleep(1000);
 
   await Promise.all([
@@ -74,6 +75,7 @@ test.beforeAll(async () => {
     }),
     createInstances('processWithDeployedForm', 1, 1),
     createInstances('zeebe_and_job_worker_process', 1, 1),
+    createInstances('bigVariableProcessWithForm', 1, 1),
   ]);
 
   await sleep(1000);
@@ -176,6 +178,7 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
+    test.slow();
     await taskPanelPage.openTask('Zeebe_user_task');
     await taskDetailsPage.clickUnassignButton();
     await taskDetailsPage.clickAssignToMeButton();
@@ -186,10 +189,9 @@ test.describe('task details page', () => {
     });
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-
     await taskPanelPage.openTask('JobWorker_user_task');
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
+      timeout: 120000,
     });
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
@@ -203,7 +205,9 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Zeebe_user_task');
-    await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
+    await expect(page.getByText('zeebeVar', {exact: true})).toBeVisible({
+      timeout: 60000,
+    });
     await expect(taskDetailsPage.assignToMeButton).toBeHidden();
     await expect(taskDetailsPage.unassignButton).toBeHidden();
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
@@ -575,5 +579,27 @@ test.describe('task details page', () => {
     await taskDetailsPage.processTab.click();
 
     await expect(taskDetailsPage.bpmnDiagram).toBeVisible();
+  });
+
+  test('task completion with large variable form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Big Variable Usertask');
+
+    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assertFieldValue(
+      'Process input variable',
+      'name:"Adeel Solangi"',
+      {contains: true},
+    );
+    await taskDetailsPage.assertFieldValue(
+      'Process input variable',
+      'Maecenas quis nisi nunc.", version:2.69',
+      {contains: true},
+    );
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
   });
 });

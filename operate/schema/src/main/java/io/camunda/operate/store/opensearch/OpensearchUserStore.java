@@ -42,7 +42,9 @@ public class OpensearchUserStore implements UserStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchUserStore.class);
 
-  @Autowired protected OpenSearchClient openSearchClient;
+  @Autowired
+  @Qualifier("openSearchClient")
+  protected OpenSearchClient openSearchClient;
 
   @Autowired
   @Qualifier("operateObjectMapper")

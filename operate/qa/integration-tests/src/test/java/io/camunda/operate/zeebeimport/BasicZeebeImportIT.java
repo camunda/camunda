@@ -573,8 +573,9 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     final List<Integer> operatePartitions = partitionHolder.getPartitionIds();
     final int zeebePartitionsCount =
         zeebeClient.newTopologyRequest().send().join().getPartitionsCount();
-    assertThat(operatePartitions).hasSize(zeebePartitionsCount);
-    assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);
+    assertThat(operatePartitions)
+        .hasSize(zeebePartitionsCount)
+        .allMatch(id -> id <= zeebePartitionsCount && id >= 1);
   }
 
   @Test
@@ -612,11 +613,11 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
             decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
 
     assertThat(decisionEntities).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedInputs()).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedInputs().get(0).getValue())
+    assertThat(decisionEntities.getFirst().getEvaluatedInputs()).hasSize(1);
+    assertThat(decisionEntities.getFirst().getEvaluatedInputs().getFirst().getValue())
         .contains(bigJSONVariablePayload);
-    assertThat(decisionEntities.get(0).getEvaluatedOutputs()).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedOutputs().get(0).getValue())
+    assertThat(decisionEntities.getFirst().getEvaluatedOutputs()).hasSize(1);
+    assertThat(decisionEntities.getFirst().getEvaluatedOutputs().getFirst().getValue())
         .contains(bigJSONVariablePayload);
   }
 
@@ -658,7 +659,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
             decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
 
     assertThat(decisionEntities).hasSize(1);
-    final DecisionInstanceEntity entity = decisionEntities.get(0);
+    final DecisionInstanceEntity entity = decisionEntities.getFirst();
     assertThat(entity.getId()).isNotNull();
     assertThat(entity.getKey()).isNotNull();
     assertThat(entity.getExecutionIndex()).isNotNull();
@@ -673,8 +674,8 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(entity.getDecisionRequirementsKey()).isNotNull();
     assertThat(entity.getElementId()).isEqualTo(elementId);
     assertThat(entity.getElementInstanceKey()).isNotNull();
-    assertThat(entity.getEvaluationFailure()).isNotNull();
-    assertThat(entity.getEvaluationFailure())
+    assertThat(entity.getEvaluationFailureMessage())
+        .isNotNull()
         .containsIgnoringCase("no variable found for name 'amount'");
     assertThat(entity.getEvaluationDate()).isNotNull();
     assertThat(entity.getPosition()).isNotNull();
@@ -687,8 +688,9 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
     assertThat(entity.getDecisionType()).isEqualTo(DecisionType.DECISION_TABLE);
     assertThat(entity.getRootDecisionName()).isEqualTo(decision2Name);
-    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
-    assertThat(entity.getRootDecisionDefinitionId()).isNotEqualTo(entity.getDecisionDefinitionId());
+    assertThat(entity.getRootDecisionDefinitionId())
+        .isNotNull()
+        .isNotEqualTo(entity.getDecisionDefinitionId());
   }
 
   @Test
@@ -750,7 +752,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
           assertThat(entity.getDecisionRequirementsKey()).isNotNull();
           assertThat(entity.getElementId()).isEqualTo(elementId);
           assertThat(entity.getElementInstanceKey()).isNotNull();
-          assertThat(entity.getEvaluationFailure()).isNull();
+          assertThat(entity.getEvaluationFailureMessage()).isNull();
           assertThat(entity.getEvaluationDate()).isNotNull();
           assertThat(entity.getPosition()).isNotNull();
           assertThat(entity.getProcessDefinitionKey()).isNotNull();
@@ -818,7 +820,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(entity.getDecisionRequirementsKey()).isNotNull();
     assertThat(entity.getElementId()).isEqualTo(elementId);
     assertThat(entity.getElementInstanceKey()).isNotNull();
-    assertThat(entity.getEvaluationFailure()).isNull();
+    assertThat(entity.getEvaluationFailureMessage()).isNull();
     assertThat(entity.getEvaluationDate()).isNotNull();
     assertThat(entity.getPosition()).isNotNull();
     assertThat(entity.getProcessDefinitionKey()).isNotNull();
@@ -844,8 +846,9 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(activity.getBpmnProcessId()).isNotNull();
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(activity.getIncidentKey()).isNotNull();
-    assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    assertThat(activity.getStartDate())
+        .isAfterOrEqualTo(testStartTime)
+        .isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
   private void assertFlowNodeIsCompleted(
@@ -854,10 +857,12 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(activity.getProcessDefinitionKey()).isNotNull();
     assertThat(activity.getBpmnProcessId()).isNotNull();
     assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
-    assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-    assertThat(activity.getEndDate()).isAfterOrEqualTo(activity.getStartDate());
-    assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    assertThat(activity.getStartDate())
+        .isAfterOrEqualTo(testStartTime)
+        .isBeforeOrEqualTo(OffsetDateTime.now());
+    assertThat(activity.getEndDate())
+        .isAfterOrEqualTo(activity.getStartDate())
+        .isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
   private String query() {

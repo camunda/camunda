@@ -20,6 +20,7 @@ import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.Message;
@@ -242,7 +243,25 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             expect(
                 IntermediateThrowEvent.class,
                 "Must have either one 'zeebe:publishMessage' or one 'zeebe:taskDefinition' extension element"))
-      }
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .receiveTask(
+                "receive_task",
+                r -> r.message(m -> m.name("wait").zeebeCorrelationKeyExpression("123")))
+            .boundaryEvent("boundary_event", AbstractCatchEventBuilder::messageEventDefinition)
+            .endEvent("test")
+            .done(),
+        singletonList(expect(MessageEventDefinition.class, "Must reference a message"))
+      },
+      {
+        getProcessWithMultipleStartEventsWithSameMessageName(),
+        singletonList(
+            expect(
+                "process",
+                "Multiple message event definitions with the same name 'messageName' are not allowed."))
+      },
     };
   }
 
@@ -270,6 +289,14 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
     final String messageName = "messageName";
     process.startEvent("start1").message(m -> m.id("start-message").name(messageName)).endEvent();
     process.startEvent("start2").message(messageName).endEvent();
+    return process.done();
+  }
+
+  private static BpmnModelInstance getProcessWithMultipleStartEventsWithSameMessageName() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess("process");
+    final String messageName = "messageName";
+    process.startEvent("start1").message(m -> m.id("start1-message").name(messageName)).endEvent();
+    process.startEvent("start2").message(m -> m.id("start2-message").name(messageName)).endEvent();
     return process.done();
   }
 

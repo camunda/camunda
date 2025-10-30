@@ -50,7 +50,6 @@ final class NoSnapshotTest {
     // when
     state.close();
     state.withNewBroker().start(true);
-    assertThat(state).hasNoSnapshotAvailable(1);
 
     // then
     testCase.runAfter(state, processInstanceKey, key);

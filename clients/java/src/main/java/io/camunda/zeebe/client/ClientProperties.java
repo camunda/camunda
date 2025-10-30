@@ -99,6 +99,11 @@ public final class ClientProperties {
   public static final String DEFAULT_REQUEST_TIMEOUT = "zeebe.client.requestTimeout";
 
   /**
+   * @see ZeebeClientBuilder#defaultRequestTimeoutOffset(Duration)
+   */
+  public static final String DEFAULT_REQUEST_TIMEOUT_OFFSET = "camunda.client.requestTimeoutOffset";
+
+  /**
    * @see ZeebeClientBuilder#usePlaintext()
    */
   public static final String USE_PLAINTEXT_CONNECTION = "zeebe.client.security.plaintext";

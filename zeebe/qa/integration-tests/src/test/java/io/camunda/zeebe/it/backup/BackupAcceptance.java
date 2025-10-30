@@ -76,6 +76,33 @@ public interface BackupAcceptance {
   }
 
   @Test
+  default void shouldListBackupsByPrefix() {
+    // given
+    final TestCluster cluster = getTestCluster();
+    final var actuator = BackupActuator.of(cluster.availableGateway());
+    try (final var client = cluster.newClientBuilder().build()) {
+      client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
+    }
+
+    // when
+    actuator.take(100);
+    actuator.take(105);
+    actuator.take(200);
+
+    waitUntilBackupIsCompleted(actuator, 100);
+    waitUntilBackupIsCompleted(actuator, 105);
+    waitUntilBackupIsCompleted(actuator, 200);
+
+    // then
+    final var status = actuator.list("10*");
+    assertThat(status)
+        .hasSize(2)
+        .extracting(BackupInfo::getBackupId, BackupInfo::getState)
+        .containsExactly(
+            Tuple.tuple(100L, StateCode.COMPLETED), Tuple.tuple(105L, StateCode.COMPLETED));
+  }
+
+  @Test
   default void shouldDeleteBackup() {
     // given
     final TestCluster cluster = getTestCluster();

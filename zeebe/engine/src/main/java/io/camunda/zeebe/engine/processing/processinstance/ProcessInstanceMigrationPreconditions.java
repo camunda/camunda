@@ -560,12 +560,14 @@ public final class ProcessInstanceMigrationPreconditions {
    * need to check whether the given element instance and target element has the same user task
    * type. Throws an exception if they have different types.
    *
+   * @param sourceProcessDefinition source process definition to retrieve the source element type
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireSameUserTaskImplementation(
+      final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
       final ElementInstance elementInstance,
@@ -590,8 +592,13 @@ public final class ProcessInstanceMigrationPreconditions {
         targetUserTask.getUserTaskProperties() != null
             ? ZEEBE_USER_TASK_IMPLEMENTATION
             : JOB_WORKER_IMPLEMENTATION;
+
+    final ExecutableUserTask sourceUserTask =
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(elementInstanceRecord.getElementId(), ExecutableUserTask.class);
     final String sourceUserTaskType =
-        elementInstance.getUserTaskKey() > 0
+        sourceUserTask.getUserTaskProperties() != null
             ? ZEEBE_USER_TASK_IMPLEMENTATION
             : JOB_WORKER_IMPLEMENTATION;
 

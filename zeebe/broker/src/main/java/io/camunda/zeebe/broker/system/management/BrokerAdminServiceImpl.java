@@ -21,6 +21,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -150,6 +151,11 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     return partitionStatus;
   }
 
+  private Map<Integer, HealthReport> getPartitionHealth() {
+    return partitionManager.getZeebePartitions().stream()
+        .collect(Collectors.toMap(ZeebePartition::getPartitionId, ZeebePartition::getHealthReport));
+  }
+
   private void getPartitionStatus(
       final Role role,
       final ZeebePartition partition,
@@ -168,6 +174,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
             .map(FileBasedSnapshotId::getProcessedPosition)
             .orElse(null);
     final var clockFuture = streamProcessor.getClock();
+
+    final var partitionHealth = getPartitionHealth().get(partition.getPartitionId());
 
     actor.runOnCompletion(
         List.of(
@@ -195,7 +203,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
                   processorPhase,
                   exporterPhase,
                   exporterPosition,
-                  clock);
+                  clock,
+                  HealthTree.fromHealthReport(partitionHealth));
           partitionStatus.complete(status);
         });
   }

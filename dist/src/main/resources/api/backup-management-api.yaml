@@ -66,16 +66,15 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
-  /{backupId}:
+  /{backupIdOrPrefix}:
     get:
       summary: Get information of a backup
       description: A detailed information of the backup with the give backup id.
       parameters:
-        - $ref: '#/components/parameters/BackupId'
+        - $ref: '#/components/parameters/BackupIdOrPrefix'
       responses:
         '200':
-          description: OK
-          $ref: '#/components/responses/BackupInfo'
+          $ref: '#/components/responses/BackupStatusOrList'
         '400':
           description: Backup is not enabled or configured on the brokers
           $ref: '#/components/responses/Error'
@@ -118,6 +117,15 @@ components:
       description: Id of the backup
       schema:
         $ref: '#/components/schemas/BackupId'
+    BackupIdOrPrefix:
+      name: backupIdOrPrefix
+      required: true
+      in: path
+      description: A prefix of ids ending with '*', or a full backup id. Defaults to '*', matching all backup ids.
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/BackupId'
+          - $ref: '#/components/schemas/BackupIdPrefix'
 
   responses:
     Error:
@@ -126,7 +134,15 @@ components:
         application/json:
           schema:
             "$ref": "#/components/schemas/Error"
-
+    BackupStatusOrList:
+      description: |
+        Status of a single backup or list of statuses when querying for multiple backups
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/BackupList'
+              - $ref: '#/components/schemas/BackupInfo'
     BackupList:
       description: |
        List of all available backups.
@@ -170,6 +186,15 @@ components:
       format: int64
       example: 1
       minimum: 0
+
+    BackupIdPrefix:
+      title: Backup ID Prefix
+      description: |
+        Prefix of a backup id, followed by an '*' as wildcard to match any backups with a backup ID
+        starting with the given prefix.
+      type: string
+      pattern: "^\\d*\\*$"
+      example: "17567*"
 
     PartitionId:
       title: Partition ID

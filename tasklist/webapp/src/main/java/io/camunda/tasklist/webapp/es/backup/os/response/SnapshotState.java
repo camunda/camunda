@@ -8,18 +8,8 @@
 package io.camunda.tasklist.webapp.es.backup.os.response;
 
 public enum SnapshotState {
-  FAILED("FAILED"),
-  PARTIAL("PARTIAL"),
-  STARTED("STARTED"),
-  SUCCESS("SUCCESS");
-  private final String state;
-
-  SnapshotState(final String state) {
-    this.state = state;
-  }
-
-  @Override
-  public String toString() {
-    return state;
-  }
+  FAILED,
+  PARTIAL,
+  IN_PROGRESS,
+  SUCCESS;
 }

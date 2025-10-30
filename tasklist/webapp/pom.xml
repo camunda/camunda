@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-parent</artifactId>
-    <version>8.7.7-SNAPSHOT</version>
+    <version>8.7.17-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>tasklist-webapp</artifactId>
@@ -157,6 +157,10 @@
           <groupId>org.elasticsearch.client</groupId>
           <artifactId>transport</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.apache.tomcat</groupId>
+          <artifactId>tomcat-annotations-api</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -218,11 +222,6 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sts</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-sts</artifactId>
     </dependency>
 
     <dependency>
@@ -588,10 +587,9 @@
             <dependency>org.thymeleaf:thymeleaf</dependency>
             <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
-            <!-- Thesse dependencies are indirectly used by the awssdk auth plugin. It requires these
-     classes on the classpath in order to resolve the AWS credentials -->
+            <!-- This dependency are indirectly used by the awssdk auth plugin. It requires these
+     classes on the classpath to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
-            <dependency>com.amazonaws:aws-java-sdk-sts</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
