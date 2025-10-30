@@ -1,0 +1,178 @@
+/mapping-rules:
+  post:
+    tags:
+      - Mapping rule
+    operationId: createMappingRule
+    summary: Create mapping rule
+    description: |
+      Create a new mapping rule
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/mapping-rules/mapping-rule-models.yaml#/MappingRuleCreateRequest"
+    responses:
+      "201":
+        description: The mapping rule was created successfully.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/mapping-rules/mapping-rule-models.yaml#/MappingRuleCreateResult"
+      "400":
+        $ref: "../responses/common-responses.yaml#/InvalidData"
+      "403":
+        description: |
+          The request to create a mapping rule was denied.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "404":
+        description: The request to create a mapping rule was denied.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: "../responses/common-responses.yaml#/InternalServerError"
+    x-eventually-consistent: false
+/mapping-rules/{mappingRuleId}:
+  put:
+    tags:
+      - Mapping rule
+    operationId: updateMappingRule
+    summary: Update mapping rule
+    description: |
+      Update a mapping rule.
+    parameters:
+      - name: mappingRuleId
+        in: path
+        required: true
+        description: The ID of the mapping rule to update.
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/mapping-rules/mapping-rule-models.yaml#/MappingRuleUpdateRequest"
+    responses:
+      "200":
+        description: The mapping rule was updated successfully.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/mapping-rules/mapping-rule-models.yaml#/MappingRuleUpdateResult"
+      "400":
+        $ref: "../responses/common-responses.yaml#/InvalidData"
+      "403":
+        description: |
+          The request to update a mapping rule was denied.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "404":
+        description: The request to update a mapping rule was denied.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: "../responses/common-responses.yaml#/InternalServerError"
+      "503":
+        $ref: "../responses/common-responses.yaml#/ServiceUnavailable"
+    x-eventually-consistent: false
+  delete:
+    tags:
+      - Mapping rule
+    operationId: deleteMappingRule
+    summary: Delete a mapping rule
+    description: |
+      Deletes the mapping rule with the given ID.
+    parameters:
+      - name: mappingRuleId
+        in: path
+        required: true
+        description: The ID of the mapping rule to delete.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The mapping rule was deleted successfully.
+      "401":
+        $ref: "../responses/common-responses.yaml#/Unauthorized"
+      "404":
+        description: The mapping rule with the mappingRuleId was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: "../responses/common-responses.yaml#/InternalServerError"
+      "503":
+        $ref: "../responses/common-responses.yaml#/ServiceUnavailable"
+    x-eventually-consistent: false
+  get:
+    tags:
+      - Mapping rule
+    operationId: getMappingRule
+    summary: Get a mapping rule
+    description: |
+      Gets the mapping rule with the given ID.
+    parameters:
+      - name: mappingRuleId
+        in: path
+        required: true
+        description: The ID of the mapping rule to get.
+        schema:
+          type: string
+    responses:
+      "200":
+        description: The mapping rule was returned successfully.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/mapping-rules/mapping-rule-models.yaml#/MappingRuleResult"
+      "401":
+        $ref: "../responses/common-responses.yaml#/Unauthorized"
+      "404":
+        description: The mapping rule with the mappingRuleId was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: "../responses/common-responses.yaml#/InternalServerError"
+    x-eventually-consistent: true
+/mapping-rules/search:
+  post:
+    tags:
+      - Mapping rule
+    operationId: searchMappingRule
+    summary: Search mapping rules
+    description: |
+      Search for mapping rules based on given criteria.
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/mapping-rules/mapping-rule-models.yaml#/MappingRuleSearchQueryRequest"
+    responses:
+      "200":
+        description: The mapping rule search result.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/mapping-rules/mapping-rule-models.yaml#/MappingRuleSearchQueryResult"
+      "400":
+        $ref: "../responses/common-responses.yaml#/InvalidData"
+      "401":
+        $ref: "../responses/common-responses.yaml#/Unauthorized"
+      "403":
+        $ref: "../responses/common-responses.yaml#/Forbidden"
+      "500":
+        $ref: "../responses/common-responses.yaml#/InternalServerError"
+    x-eventually-consistent: true

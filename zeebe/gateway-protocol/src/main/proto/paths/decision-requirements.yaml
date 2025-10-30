@@ -1,0 +1,108 @@
+# Decision requirements endpoints
+/decision-requirements/search:
+  post:
+    tags:
+      - Decision requirements
+    operationId: searchDecisionRequirements
+    summary: Search decision requirements
+    description: Search for decision requirements based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/decisions/decision-requirements-models.yaml#/DecisionRequirementsSearchQuery'
+    responses:
+      "200":
+        description: The decision requirements search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/decisions/decision-requirements-models.yaml#/DecisionRequirementsSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/decision-requirements/{decisionRequirementsKey}:
+  get:
+    tags:
+      - Decision requirements
+    operationId: getDecisionRequirements
+    summary: Get decision requirements
+    description: Returns Decision Requirements as JSON.
+    parameters:
+      - name: decisionRequirementsKey
+        in: path
+        required: true
+        description: The assigned key of the decision requirements, which acts as a unique identifier for this decision requirements.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/DecisionRequirementsKey'
+    responses:
+      "200":
+        description: The decision requirements is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/decisions/decision-requirements-models.yaml#/DecisionRequirementsResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: >
+          The decision requirements with the given key was not found.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/decision-requirements/{decisionRequirementsKey}/xml:
+  get:
+    tags:
+      - Decision requirements
+    operationId: getDecisionRequirementsXML
+    summary: Get decision requirements XML
+    description: Returns decision requirements as XML.
+    parameters:
+      - name: decisionRequirementsKey
+        in: path
+        required: true
+        description: The assigned key of the decision requirements, which acts as a unique identifier for this decision.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/DecisionRequirementsKey'
+    responses:
+      "200":
+        description: The XML of the decision requirements is successfully returned.
+        content:
+          text/xml:
+            schema:
+              type: string
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: >
+          The decision requirements with the given key was not found.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true

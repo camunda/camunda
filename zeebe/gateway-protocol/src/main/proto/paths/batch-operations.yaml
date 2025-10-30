@@ -1,0 +1,215 @@
+# Batch operation endpoints
+/batch-operations/{batchOperationKey}:
+  get:
+    tags:
+      - Batch operation
+    operationId: getBatchOperation
+    summary: Get batch operation
+    description: Get batch operation by key.
+    parameters:
+      - name: batchOperationKey
+        in: path
+        required: true
+        description: The key (or operate legacy ID) of the batch operation.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/BatchOperationKey'
+    responses:
+      "200":
+        description: The batch operation was found.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/batch-operations/batch-operation-models.yaml#/BatchOperationResponse'
+      "400":
+        description: The provided data is not valid.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "404":
+        description: The batch operation is not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/batch-operations/search:
+  post:
+    tags:
+      - Batch operation
+    operationId: searchBatchOperations
+    summary: Search batch operations
+    description: Search for batch operations based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/batch-operations/batch-operation-models.yaml#/BatchOperationSearchQuery'
+    responses:
+      "200":
+        description: The batch operation search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/batch-operations/batch-operation-models.yaml#/BatchOperationSearchQueryResult'
+      "400":
+        description: The provided data is not valid.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/batch-operations/{batchOperationKey}/cancellation:
+  post:
+    tags:
+      - Batch operation
+    operationId: cancelBatchOperation
+    summary: Cancel Batch operation
+    description: |
+      Cancels a running batch operation.
+      This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+    parameters:
+      - name: batchOperationKey
+        in: path
+        required: true
+        description: The key (or operate legacy ID) of the batch operation.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/BatchOperationKey'
+    requestBody:
+      content:
+        application/json: {}
+      required: false
+    responses:
+      "204":
+        description: The batch operation cancel request was created.
+        content: {}
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The batch operation was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/batch-operations/{batchOperationKey}/suspension:
+  post:
+    tags:
+      - Batch operation
+    operationId: suspendBatchOperation
+    summary: Suspend Batch operation
+    description: |
+      Suspends a running batch operation.
+      This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+    parameters:
+      - name: batchOperationKey
+        in: path
+        required: true
+        description: The key (or operate legacy ID) of the batch operation.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/BatchOperationKey'
+    requestBody:
+      content:
+        application/json: {}
+      required: false
+    responses:
+      "204":
+        description: The batch operation pause request was created.
+        content: {}
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The batch operation was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: true
+
+/batch-operations/{batchOperationKey}/resumption:
+  post:
+    tags:
+      - Batch operation
+    operationId: resumeBatchOperation
+    summary: Resume Batch operation
+    description: |
+      Resumes a suspended batch operation.
+      This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+    parameters:
+      - name: batchOperationKey
+        in: path
+        required: true
+        description: The key (or operate legacy ID) of the batch operation.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/BatchOperationKey'
+    requestBody:
+      content:
+        application/json: {}
+      required: false
+    responses:
+      "204":
+        description: The batch operation resume request was created.
+        content: {}
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The batch operation was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: true
+
+/batch-operation-items/search:
+  post:
+    tags:
+      - Batch operation
+    operationId: searchBatchOperationItems
+    summary: Search batch operation items
+    description: Search for batch operation items based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/batch-operations/batch-operation-models.yaml#/BatchOperationItemSearchQuery'
+    responses:
+      "200":
+        description: The batch operation search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/batch-operations/batch-operation-models.yaml#/BatchOperationItemSearchQueryResult'
+      "400":
+        description: The provided data is not valid.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true

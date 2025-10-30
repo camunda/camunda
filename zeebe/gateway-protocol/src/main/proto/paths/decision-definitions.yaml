@@ -1,0 +1,153 @@
+# Decision definition endpoints
+/decision-definitions/search:
+  post:
+    tags:
+      - Decision definition
+    operationId: searchDecisionDefinitions
+    summary: Search decision definitions
+    description: Search for decision definitions based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/decisions/decision-definition-models.yaml#/DecisionDefinitionSearchQuery'
+    responses:
+      "200":
+        description: The decision definition search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/decisions/decision-definition-models.yaml#/DecisionDefinitionSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/decision-definitions/{decisionDefinitionKey}:
+  get:
+    tags:
+      - Decision definition
+    operationId: getDecisionDefinition
+    summary: Get decision definition
+    description: Returns a decision definition by key.
+    parameters:
+      - name: decisionDefinitionKey
+        in: path
+        required: true
+        description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/DecisionDefinitionKey'
+    responses:
+      "200":
+        description: The decision definition is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/decisions/decision-definition-models.yaml#/DecisionDefinitionResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: >
+          The decision definition with the given key was not found.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/decision-definitions/{decisionDefinitionKey}/xml:
+  get:
+    tags:
+      - Decision definition
+    operationId: getDecisionDefinitionXML
+    summary: Get decision definition XML
+    description: Returns decision definition as XML.
+    parameters:
+      - name: decisionDefinitionKey
+        in: path
+        required: true
+        description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/DecisionDefinitionKey'
+    responses:
+      "200":
+        description: The XML of the decision definition is successfully returned.
+        content:
+          text/xml:
+            schema:
+              type: string
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: >
+          The decision definition with the given key was not found.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/decision-definitions/evaluation:
+  post:
+    tags:
+      - Decision definition
+    operationId: evaluateDecision
+    summary: Evaluate decision
+    description: |
+      Evaluates a decision.
+      You specify the decision to evaluate either by using its unique key (as returned by
+      DeployResource), or using the decision ID. When using the decision ID, the latest deployed
+      version of the decision is used.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/decisions/decision-definition-models.yaml#/DecisionEvaluationInstruction'
+          examples:
+            By decision definition key:
+              summary: Evaluate the decision by decisionDefinitionKey.
+              value:
+                decisionDefinitionKey: "12345"
+                variables: {}
+            By decision definition ID:
+              summary: Evaluate the decision by decisionDefinitionId.
+              value:
+                decisionDefinitionId: 1234-5678
+                variables: {}
+    responses:
+      "200":
+        description: The decision was evaluated.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/decisions/decision-definition-models.yaml#/EvaluateDecisionResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: The decision is not found.
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false

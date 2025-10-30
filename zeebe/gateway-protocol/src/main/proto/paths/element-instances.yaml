@@ -1,0 +1,199 @@
+# Element instance endpoints
+/element-instances/search:
+  post:
+    tags:
+      - Element instance
+    operationId: searchElementInstances
+    summary: Search element instances
+    description: Search for element instances based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/element/element-instance-models.yaml#/ElementInstanceSearchQuery'
+    responses:
+      "200":
+        description: The element instance search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/element/element-instance-models.yaml#/ElementInstanceSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/element-instances/{elementInstanceKey}:
+  get:
+    tags:
+      - Element instance
+    operationId: getElementInstance
+    summary: Get element instance
+    description: Returns element instance as JSON.
+    parameters:
+      - name: elementInstanceKey
+        in: path
+        required: true
+        description: The assigned key of the element instance, which acts as a unique identifier for this element instance.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/ElementInstanceKey'
+    responses:
+      "200":
+        description: The element instance is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/element/element-instance-models.yaml#/ElementInstanceResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: |
+          The element instance with the given key was not found.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/element-instances/{elementInstanceKey}/variables:
+  put:
+    tags:
+      - Element instance
+    operationId: createElementInstanceVariables
+    summary: Update element instance variables
+    description: |
+      Updates all the variables of a particular scope (for example, process instance, element instance) with the given variable data.
+      Specify the element instance in the `elementInstanceKey` parameter.
+    parameters:
+      - name: elementInstanceKey
+        in: path
+        required: true
+        description: |
+          The key of the element instance to update the variables for.
+          This can be the process instance key (as obtained during instance creation), or a given
+          element, such as a service task (see the `elementInstanceKey` on the job message).
+        schema:
+          $ref: '../schemas/common/keys.yaml#/ElementInstanceKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/variables/variable-models.yaml#/SetVariableRequest'
+    responses:
+      "204":
+        description: The variables were updated.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/element-instances/{elementInstanceKey}/incidents/search:
+  post:
+    tags:
+      - Element instance
+    operationId: searchElementInstanceIncidents
+    summary: Search for incidents of a specific element instance
+    description: |
+      Search for incidents caused by the specified element instance, including incidents of any child instances created from this element instance.
+
+      Although the `elementInstanceKey` is provided as a path parameter to indicate the root element instance,
+      you may also include an `elementInstanceKey` within the filter object to narrow results to specific
+      child element instances. This is useful, for example, if you want to isolate incidents associated with
+      nested or subordinate elements within the given element instance while excluding incidents directly tied
+      to the root element itself.
+    parameters:
+      - name: elementInstanceKey
+        in: path
+        required: true
+        description: The unique key of the element instance to search incidents for.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/ElementInstanceKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/element/element-instance-models.yaml#/ElementInstanceIncidentSearchQuery'
+    responses:
+      "200":
+        description: The element instance incident search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/incidents/incident-models.yaml#/IncidentSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: The element instance with the given key was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+
+/element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
+  post:
+    tags:
+      - Ad-hoc sub-process
+    operationId: activateAdHocSubProcessActivities
+    summary: Activate activities within an ad-hoc sub-process
+    description: |
+      Activates selected activities within an ad-hoc sub-process identified by element ID.
+      The provided element IDs must exist within the ad-hoc sub-process instance identified by the
+      provided adHocSubProcessInstanceKey.
+    parameters:
+      - name: adHocSubProcessInstanceKey
+        in: path
+        required: true
+        description: The key of the ad-hoc sub-process instance that contains the activities.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/ElementInstanceKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/element/element-instance-models.yaml#/AdHocSubProcessActivateActivitiesInstruction'
+    responses:
+      "204":
+        description: The ad-hoc sub-process instance is modified.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: The ad-hoc sub-process instance is not found or the provided key does not identify an
+            ad-hoc sub-process.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false

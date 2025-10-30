@@ -1,0 +1,67 @@
+# Variable endpoints
+/variables/search:
+  post:
+    tags:
+      - Variable
+    operationId: searchVariables
+    summary: Search variables
+    description: Search for process and local variables based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/variables/variable-models.yaml#/VariableSearchQuery'
+    responses:
+      "200":
+        description: The variable search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/variables/variable-models.yaml#/VariableSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/variables/{variableKey}:
+  get:
+    tags:
+      - Variable
+    operationId: getVariable
+    summary: Get variable
+    description: Get the variable by the variable key.
+    parameters:
+      - name: variableKey
+        in: path
+        required: true
+        description: The variable key.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/VariableKey'
+    responses:
+      "200":
+        description: The variable is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/variables/variable-models.yaml#/VariableResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
