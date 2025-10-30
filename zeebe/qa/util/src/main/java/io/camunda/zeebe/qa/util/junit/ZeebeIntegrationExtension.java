@@ -24,6 +24,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -162,12 +163,17 @@ final class ZeebeIntegrationExtension
       final ExtensionContext extensionContext, final Iterable<ClusterResource> resources) {
     final var store = store(extensionContext);
 
-    // register all resources first to ensure we close them; this avoids leaking resource if
-    // starting one fails
-    resources.forEach(resource -> store.put(resource, resource));
+    final var directories = new ArrayList<Path>();
     for (final var resource : resources) {
-      final var directory = createManagedDirectory(store, resource.cluster().name());
-      manageCluster(directory, resource);
+      // The directory must be inserted into the store first, otherwise it will get deleted
+      // before the cluster shuts down, leading to slowdown in the shutdown procedure.
+      directories.add(createManagedDirectory(store, resource.cluster().name()));
+      store.put(resource, resource);
+    }
+
+    var i = 0;
+    for (final var resource : resources) {
+      manageCluster(directories.get(i++), resource);
     }
   }
 
