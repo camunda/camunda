@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.ListenerConfiguration;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +47,7 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
-    assertThat(configuration.getListeners().task()).isEmpty();
+    assertThat(configuration.getListeners().userTask()).isEmpty();
   }
 
   @Test
@@ -70,8 +70,8 @@ final class EngineCfgTest {
     assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(Duration.ofMinutes(20));
-    assertThat(configuration.getListeners().task()).hasSize(2);
-    final var taskListeners = configuration.getListeners().task();
+    assertThat(configuration.getListeners().userTask()).hasSize(2);
+    final var taskListeners = configuration.getListeners().userTask();
     assertListenerCfg(
         taskListeners.get(0), "test1", new String[] {"creating", "canceling"}, "5", false);
     assertListenerCfg(
@@ -79,14 +79,14 @@ final class EngineCfgTest {
   }
 
   void assertListenerCfg(
-      final ListenerConfiguration config,
+      final GlobalListenerConfiguration config,
       final String type,
       final String[] eventTypes,
       final String retries,
-      final boolean afterLocal) {
+      final boolean afterNonGlobal) {
     assertThat(config.type()).isEqualTo(type);
     assertThat(config.eventTypes()).containsExactly(eventTypes);
     assertThat(config.retries()).isEqualTo(retries);
-    assertThat(config.afterLocal()).isEqualTo(afterLocal);
+    assertThat(config.afterNonGlobal()).isEqualTo(afterNonGlobal);
   }
 }

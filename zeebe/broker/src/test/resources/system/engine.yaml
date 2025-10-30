@@ -18,8 +18,8 @@ zeebe:
           redistributionInterval: 60s
           maxBackoffDuration: 20m
         maxProcessDepth: 2000
-        listeners:
-          task:
+        globalListeners:
+          userTask:
             - type: test1
               eventTypes:
                 - creating
@@ -30,4 +30,4 @@ zeebe:
                 - assigning
                 - canceling
               retries: 2
-              afterLocal: true
+              afterNonGlobal: true

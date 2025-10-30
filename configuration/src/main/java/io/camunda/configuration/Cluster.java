@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +104,13 @@ public class Cluster implements Cloneable {
    * <p>Note: When there is no latency enabling this may have a performance impact.
    */
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
+
+  /**
+   * Configuration for global listeners defined at cluster-level instead of directly in the BPMN
+   * model.
+   */
+  @NestedConfigurationProperty
+  private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
 
   public Metadata getMetadata() {
     return metadata;
@@ -225,6 +233,14 @@ public class Cluster implements Cloneable {
 
   public void setCompressionAlgorithm(final CompressionAlgorithm compressionAlgorithm) {
     this.compressionAlgorithm = compressionAlgorithm;
+  }
+
+  public GlobalListenersCfg getGlobalListeners() {
+    return globalListeners;
+  }
+
+  public void setGlobalListeners(final GlobalListenersCfg globalListeners) {
+    this.globalListeners = globalListeners;
   }
 
   @Override

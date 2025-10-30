@@ -21,7 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.broker.system.configuration.engine.ListenerCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
@@ -627,8 +627,8 @@ final class SystemContextTest {
     brokerCfg
         .getExperimental()
         .getEngine()
-        .getListeners()
-        .setTask(
+        .getGlobalListeners()
+        .setUserTask(
             List.of(
                 createListenerCfg("test", List.of("creating", "non-existing-type", "assigning"))));
 
@@ -636,9 +636,10 @@ final class SystemContextTest {
     initSystemContext(brokerCfg);
 
     // then
-    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    assertThat(brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask())
+        .hasSize(1);
     final var listenerConfig =
-        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+        brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask().getFirst();
     assertThat(listenerConfig.getEventTypes()).containsExactly("creating", "assigning");
   }
 
@@ -649,8 +650,8 @@ final class SystemContextTest {
     brokerCfg
         .getExperimental()
         .getEngine()
-        .getListeners()
-        .setTask(
+        .getGlobalListeners()
+        .setUserTask(
             List.of(
                 createListenerCfg("test", List.of("creating")),
                 createListenerCfg(null, List.of("assigning"))));
@@ -659,9 +660,10 @@ final class SystemContextTest {
     initSystemContext(brokerCfg);
 
     // then
-    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    assertThat(brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask())
+        .hasSize(1);
     final var listenerConfig =
-        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+        brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask().getFirst();
     assertThat(listenerConfig.getType()).isEqualTo("test");
     assertThat(listenerConfig.getEventTypes()).containsExactly("creating");
   }
@@ -673,8 +675,8 @@ final class SystemContextTest {
     brokerCfg
         .getExperimental()
         .getEngine()
-        .getListeners()
-        .setTask(
+        .getGlobalListeners()
+        .setUserTask(
             List.of(
                 createListenerCfg("test1", List.of("creating")),
                 createListenerCfg(
@@ -686,9 +688,10 @@ final class SystemContextTest {
     initSystemContext(brokerCfg);
 
     // then
-    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    assertThat(brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask())
+        .hasSize(1);
     final var listenerConfig =
-        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+        brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask().getFirst();
     assertThat(listenerConfig.getType()).isEqualTo("test1");
     assertThat(listenerConfig.getEventTypes()).containsExactly("creating");
   }
@@ -700,16 +703,17 @@ final class SystemContextTest {
     brokerCfg
         .getExperimental()
         .getEngine()
-        .getListeners()
-        .setTask(List.of(createListenerCfg("test", List.of("creating", "all", "updating"))));
+        .getGlobalListeners()
+        .setUserTask(List.of(createListenerCfg("test", List.of("creating", "all", "updating"))));
 
     // when
     initSystemContext(brokerCfg);
 
     // then
-    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    assertThat(brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask())
+        .hasSize(1);
     final var listenerConfig =
-        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+        brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask().getFirst();
     assertThat(listenerConfig.getType()).isEqualTo("test");
     assertThat(listenerConfig.getEventTypes()).containsExactly("all");
   }
@@ -721,8 +725,8 @@ final class SystemContextTest {
     brokerCfg
         .getExperimental()
         .getEngine()
-        .getListeners()
-        .setTask(
+        .getGlobalListeners()
+        .setUserTask(
             List.of(
                 createListenerCfg("test1", List.of("creating")), // missing retries
                 createListenerCfg("test2", List.of("creating"), "not-a-number"), // invalid retries
@@ -733,8 +737,10 @@ final class SystemContextTest {
     initSystemContext(brokerCfg);
 
     // then
-    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(2);
-    final var listenersConfig = brokerCfg.getExperimental().getEngine().getListeners().getTask();
+    assertThat(brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask())
+        .hasSize(2);
+    final var listenersConfig =
+        brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask();
     assertThat(listenersConfig.get(0).getType()).isEqualTo("test1");
     assertThat(listenersConfig.get(1).getType()).isEqualTo("test4");
   }
@@ -746,30 +752,32 @@ final class SystemContextTest {
     brokerCfg
         .getExperimental()
         .getEngine()
-        .getListeners()
-        .setTask(List.of(createListenerCfg("test", List.of("creating", "creating", "updating"))));
+        .getGlobalListeners()
+        .setUserTask(
+            List.of(createListenerCfg("test", List.of("creating", "creating", "updating"))));
 
     // when
     initSystemContext(brokerCfg);
 
     // then
-    assertThat(brokerCfg.getExperimental().getEngine().getListeners().getTask()).hasSize(1);
+    assertThat(brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask())
+        .hasSize(1);
     final var listenerConfig =
-        brokerCfg.getExperimental().getEngine().getListeners().getTask().getFirst();
+        brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask().getFirst();
     assertThat(listenerConfig.getType()).isEqualTo("test");
     assertThat(listenerConfig.getEventTypes()).containsExactly("creating", "updating");
   }
 
-  private ListenerCfg createListenerCfg(final String type, final List<String> eventTypes) {
-    final ListenerCfg listenerCfg = new ListenerCfg();
+  private GlobalListenerCfg createListenerCfg(final String type, final List<String> eventTypes) {
+    final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
     listenerCfg.setType(type);
     listenerCfg.setEventTypes(eventTypes);
     return listenerCfg;
   }
 
-  private ListenerCfg createListenerCfg(
+  private GlobalListenerCfg createListenerCfg(
       final String type, final List<String> eventTypes, final String retries) {
-    final ListenerCfg listenerCfg = createListenerCfg(type, eventTypes);
+    final GlobalListenerCfg listenerCfg = createListenerCfg(type, eventTypes);
     listenerCfg.setRetries(retries);
     return listenerCfg;
   }
