@@ -71,6 +71,7 @@ import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
@@ -1333,13 +1334,18 @@ public class CompactRecordLogger {
   }
 
   private String summarizeAuthorization(final AuthorizationRecordValue value) {
+    final String resourceIdentifier =
+        value.getResourceMatcher() == AuthorizationResourceMatcher.PROPERTY
+            ? "based on \"%s\" property".formatted(value.getResourcePropertyName())
+            : formatId(value.getResourceId());
+
     return "%s %s can %s %s %s"
         .formatted(
             value.getOwnerType(),
             formatId(value.getOwnerId()),
             value.getPermissionTypes(),
             value.getResourceType(),
-            formatId(value.getResourceId()));
+            resourceIdentifier);
   }
 
   private String summarizeAsyncRequest(final Record<?> record) {
