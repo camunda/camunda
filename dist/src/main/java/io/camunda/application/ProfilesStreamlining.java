@@ -62,7 +62,10 @@ public class ProfilesStreamlining implements EnvironmentPostProcessor {
     if (gatewayActive) {
       LOGGER.info("🚀 Gateway active. Deactivating broker's embedded gateway...");
       environment.getPropertySources().addFirst(new MapPropertySource(
-          this.getClass().getSimpleName(), Map.of("zeebe.broker.gateway.enable", "false")));
+          this.getClass().getSimpleName(),Map.of(
+              "zeebe.broker.gateway.enable", "false",
+              "camunda.webapps.enabled", "true"
+      )));
     }
   }
 }

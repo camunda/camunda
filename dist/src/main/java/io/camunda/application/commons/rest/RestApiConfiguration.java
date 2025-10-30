@@ -49,13 +49,4 @@ public class RestApiConfiguration {
     return new HttpSessionBasedAuthenticationHolder(
         request, securityConfiguration.getAuthentication());
   }
-
-  @Bean
-  public CamundaAuthenticationProvider camundaAuthenticationProvider(
-      final List<CamundaAuthenticationHolder> holders,
-      final List<CamundaAuthenticationConverter<Authentication>> converters) {
-    return new DefaultCamundaAuthenticationProvider(
-        new CamundaAuthenticationDelegatingHolder(holders),
-        new CamundaAuthenticationDelegatingConverter(converters));
-  }
 }

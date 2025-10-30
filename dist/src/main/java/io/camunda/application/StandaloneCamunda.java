@@ -29,6 +29,7 @@ import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
+import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import java.util.HashMap;
@@ -67,6 +68,8 @@ public class StandaloneCamunda {
                 GatewayRestPropertiesOverride.class,
                 SearchEngineConnectPropertiesOverride.class,
                 SearchEngineIndexPropertiesOverride.class,
+                // Tmp
+                WebappsRequestForwardManager.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,

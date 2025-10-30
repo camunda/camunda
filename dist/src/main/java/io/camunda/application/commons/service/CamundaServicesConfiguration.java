@@ -74,7 +74,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnRestGatewayEnabled
 public class CamundaServicesConfiguration {
 
   @Bean

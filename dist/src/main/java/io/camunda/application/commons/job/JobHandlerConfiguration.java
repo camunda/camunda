@@ -29,7 +29,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.unit.DataSize;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnRestGatewayEnabled
 public class JobHandlerConfiguration {
 
   private final ActivateJobHandlerConfiguration config;

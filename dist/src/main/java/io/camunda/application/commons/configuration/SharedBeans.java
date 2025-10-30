@@ -11,15 +11,33 @@ import io.atomix.cluster.ClusterConfig;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
+import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
+import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
+import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.configuration.beans.GatewayBasedProperties;
+import io.camunda.search.clients.IncidentSearchClient;
+import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.auth.CamundaAuthenticationConverter;
+import io.camunda.security.auth.CamundaAuthenticationHolder;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.ApiServicesExecutorProvider;
+import io.camunda.service.IncidentServices;
+import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
 import org.springframework.util.unit.DataSize;
 
 @Configuration
@@ -92,6 +110,15 @@ public class SharedBeans {
           .setMessagingConfig(messaging)
           .setProtocolConfig(membership);
     }
+  }
+
+  @Bean
+  public CamundaAuthenticationProvider camundaAuthenticationProvider(
+      final List<CamundaAuthenticationHolder> holders,
+      final List<CamundaAuthenticationConverter<Authentication>> converters) {
+    return new DefaultCamundaAuthenticationProvider(
+        new CamundaAuthenticationDelegatingHolder(holders),
+        new CamundaAuthenticationDelegatingConverter(converters));
   }
 
   private GatewayCfg gateway() {
