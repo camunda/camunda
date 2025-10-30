@@ -5,49 +5,38 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.handlers;
+package io.camunda.exporter.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.config.ExporterConfiguration.AuditLogConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.operation.AuditLogEntity;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.camunda.zeebe.test.util.Strings;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-public class AuditLogHandlerTest {
+public class ProcessInstanceModificationAuditLogHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-audit";
-  private final AuditLogHandler underTest = new AuditLogHandler(indexName);
-
-  @Test
-  void testGetHandledValueTypes() {
-    assertThat(underTest.getHandledValueTypes())
-        .containsExactlyInAnyOrder(
-            ValueType.GROUP,
-            ValueType.ROLE,
-            ValueType.USER,
-            ValueType.TENANT,
-            ValueType.MAPPING_RULE,
-            ValueType.AUTHORIZATION);
-  }
+  private final ProcessInstanceModificationAuditLogHandler underTest =
+      new ProcessInstanceModificationAuditLogHandler(
+          indexName, new AuditLogConfiguration(), TestObjectMapper.objectMapper());
 
   @Test
   void testGetHandledValueType() {
-    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.NULL_VAL);
+    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.PROCESS_INSTANCE_MODIFICATION);
   }
 
   @Test
@@ -56,174 +45,79 @@ public class AuditLogHandlerTest {
   }
 
   @Test
-  void testGetIndexName() {
-    assertThat(underTest.getIndexName()).isEqualTo(indexName);
-  }
-
-  @Test
-  void shouldHandleGroupCreatedRecord() {
+  void shouldHandleModifiedRecord() {
     // given
-    final Record<RecordValue> groupCreatedRecord =
-        factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.CREATED);
+    final Record<ProcessInstanceModificationRecordValue> piModificationrecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE_MODIFICATION,
+            b -> b.withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, "test-user")),
+            ProcessInstanceModificationIntent.MODIFIED);
 
     // when - then
-    assertThat(underTest.handlesRecord(groupCreatedRecord)).isTrue();
+    assertThat(underTest.handlesRecord(piModificationrecord)).isTrue();
   }
 
   @Test
-  void shouldHandleRoleCreatedRecord() {
+  void shouldGenerateIds() {
     // given
-    final Record<RecordValue> roleCreatedRecord =
-        factory.generateRecordWithIntent(ValueType.ROLE, RoleIntent.CREATED);
+    final Record<ProcessInstanceModificationRecordValue> piModificationrecord =
+        factory.generateRecordWithIntent(
+            ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationIntent.MODIFIED);
 
-    // when - then
-    assertThat(underTest.handlesRecord(roleCreatedRecord)).isTrue();
-  }
+    // when
+    final var idList = underTest.generateIds(piModificationrecord);
 
-  @Test
-  void shouldNotHandleUnsupportedValueType() {
-    // given - process record is not supported
-    final Record<RecordValue> processRecord =
-        factory.generateRecordWithIntent(ValueType.PROCESS, null);
-
-    // when - then
-    assertThat(underTest.handlesRecord(processRecord)).isFalse();
-  }
-
-  @Test
-  void shouldNotHandleUnsupportedIntent() {
-    // given - GROUP UPDATED is not in supported intents
-    final Record<RecordValue> groupUpdatedRecord =
-        factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.UPDATED);
-
-    // when - then
-    assertThat(underTest.handlesRecord(groupUpdatedRecord)).isFalse();
+    // then
+    assertThat(idList).containsExactly(String.valueOf(piModificationrecord.getPosition()));
   }
 
   @Test
   void shouldCreateNewEntity() {
     // when
-    final var result = underTest.createNewEntity("test-id");
+    final var result = underTest.createNewEntity("id");
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getId()).isEqualTo("test-id");
-    assertThat(result).isInstanceOf(AuditLogEntity.class);
-  }
-
-  @Test
-  void shouldGenerateUniqueIds() {
-    // given
-    final Record<RecordValue> groupRecord =
-        factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.CREATED);
-
-    // when
-    final var ids1 = underTest.generateIds(groupRecord);
-    final var ids2 = underTest.generateIds(groupRecord);
-
-    // then
-    assertThat(ids1).hasSize(1);
-    assertThat(ids2).hasSize(1);
-    assertThat(ids1.getFirst()).isNotEqualTo(ids2.getFirst()); // UUIDs should be different
+    assertThat(result.getId()).isEqualTo("id");
   }
 
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    final var recordKey = 123L;
-    final var groupId = Strings.newRandomValidIdentityId();
-
-    final GroupRecordValue groupRecordValue =
-        ImmutableGroupRecordValue.builder()
-            .from(factory.generateObject(GroupRecordValue.class))
-            .withName("test-group")
-            .withDescription("test-description")
-            .withGroupId(groupId)
-            .withGroupKey(recordKey)
-            .build();
-
-    final Record<RecordValue> groupRecord =
+    final String recordKey = "123L";
+    final Record<ProcessInstanceModificationRecordValue> piModificationRecord =
         factory.generateRecord(
-            ValueType.GROUP,
-            r -> r.withIntent(GroupIntent.CREATED).withValue(groupRecordValue).withKey(recordKey));
+            ValueType.PROCESS_INSTANCE_MODIFICATION,
+            b -> b.withAuthorizations(Map.of(Authorization.AUTHORIZED_CLIENT_ID, "test-client")),
+            ProcessInstanceModificationIntent.MODIFIED);
+    final var piModificationRecordValue = piModificationRecord.getValue();
 
-    final AuditLogEntity auditLogEntity = new AuditLogEntity().setId("test-id");
+    // when
+    final var auditLogEntity =
+        new AuditLogEntity()
+            .setId(recordKey)
+            .setEntityKey(String.valueOf(piModificationRecord.getKey()))
+            .setEntityType(piModificationRecord.getValueType().name());
 
-    // when - updateEntity is currently a no-op, so we just verify it doesn't throw
-    underTest.updateEntity(groupRecord, auditLogEntity);
+    underTest.updateEntity(piModificationRecord, auditLogEntity);
 
-    // then - no exception should be thrown
-    assertThat(auditLogEntity.getId()).isEqualTo("test-id");
+    // then
+    assertThat(auditLogEntity.getEntityKey())
+        .isEqualTo(String.valueOf(piModificationRecord.getKey()));
+    assertThat(auditLogEntity.getEntityType())
+        .isEqualTo(piModificationRecord.getValueType().name());
   }
 
   @Test
   void shouldAddEntityOnFlush() throws PersistenceException {
     // given
-    final AuditLogEntity inputEntity = new AuditLogEntity().setId("test-audit-log");
-    final BatchRequest mockRequest = mock(BatchRequest.class);
+    final var inputEntity = new AuditLogEntity().setId("111");
+    final var mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1)).add(indexName, inputEntity);
-  }
-
-  @Test
-  void shouldHandleAllSupportedIntentsAndValueTypes() {
-    // Test that all combinations of supported value types and intents are handled correctly
-
-    // GROUP + CREATED
-    final Record<RecordValue> groupCreated =
-        factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.CREATED);
-    assertThat(underTest.handlesRecord(groupCreated)).isTrue();
-
-    // ROLE + CREATED
-    final Record<RecordValue> roleCreated =
-        factory.generateRecordWithIntent(ValueType.ROLE, RoleIntent.CREATED);
-    assertThat(underTest.handlesRecord(roleCreated)).isTrue();
-
-    // USER + CREATED
-    final Record<RecordValue> userCreated =
-        factory.generateRecordWithIntent(ValueType.USER, UserIntent.CREATED);
-    assertThat(underTest.handlesRecord(userCreated)).isTrue();
-  }
-
-  @Test
-  void shouldNotHandleRecordsWithBothUnsupportedValueTypeAndIntent() {
-    // given - both value type and intent are unsupported
-    final Record<RecordValue> unsupportedRecord =
-        factory.generateRecordWithIntent(ValueType.PROCESS, null);
-
-    // when - then
-    assertThat(underTest.handlesRecord(unsupportedRecord)).isFalse();
-  }
-
-  @Test
-  void shouldHandleUserCreatedRecord() {
-    // given
-    final Record<RecordValue> userCreatedRecord =
-        factory.generateRecordWithIntent(ValueType.USER, UserIntent.CREATED);
-
-    // when - then
-    assertThat(underTest.handlesRecord(userCreatedRecord)).isTrue();
-  }
-
-  @Test
-  void shouldGenerateIdsForDifferentRecordTypes() {
-    // given
-    final Record<RecordValue> groupRecord =
-        factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.CREATED);
-    final Record<RecordValue> roleRecord =
-        factory.generateRecordWithIntent(ValueType.ROLE, RoleIntent.CREATED);
-
-    // when
-    final var groupIds = underTest.generateIds(groupRecord);
-    final var roleIds = underTest.generateIds(roleRecord);
-
-    // then
-    assertThat(groupIds).hasSize(1);
-    assertThat(roleIds).hasSize(1);
-    assertThat(groupIds.getFirst()).isNotEqualTo(roleIds.getFirst());
   }
 }

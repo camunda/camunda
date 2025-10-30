@@ -15,7 +15,6 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
-import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
 import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler;
@@ -64,6 +63,7 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
@@ -319,8 +319,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName()),
-            new AuditLogHandler(
-                (indexDescriptors.get(AuditLogIndex.class).getFullQualifiedName()))));
+            new ProcessInstanceModificationAuditLogHandler(
+                (indexDescriptors.get(AuditLogIndex.class).getFullQualifiedName()),
+                configuration.getAuditLog(),
+                objectMapper)));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
