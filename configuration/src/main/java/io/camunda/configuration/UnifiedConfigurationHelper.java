@@ -267,15 +267,27 @@ public class UnifiedConfigurationHelper {
     // generic types
     if (isPropertyCollection(expectedType) && generics.length == 1) {
       final Collection collection = getCollectionFromEnvironment(legacyProperty);
-      if (collection != null) {
-        final TypeDescriptor targetType =
-            TypeDescriptor.collection(rawClass, TypeDescriptor.valueOf(generics[0].resolve()));
-        return (T)
-            CONVERSION_SERVICE.convert(
-                collection, TypeDescriptor.valueOf(Collection.class), targetType);
-      } else {
+      if (collection.isEmpty()) {
         return null;
       }
+      final TypeDescriptor targetType =
+          TypeDescriptor.collection(rawClass, TypeDescriptor.valueOf(generics[0].resolve()));
+      return (T)
+          CONVERSION_SERVICE.convert(
+              collection, TypeDescriptor.valueOf(Collection.class), targetType);
+    }
+
+    if (isPropertyMap(expectedType) && generics.length == 2) {
+      final Map map = getMapFromEnvironment(legacyProperty);
+      if (map.isEmpty()) {
+        return null;
+      }
+      final TypeDescriptor targetType =
+          TypeDescriptor.map(
+              rawClass,
+              TypeDescriptor.valueOf(generics[0].resolve()),
+              TypeDescriptor.valueOf(generics[1].resolve()));
+      return (T) CONVERSION_SERVICE.convert(map, TypeDescriptor.valueOf(Map.class), targetType);
     }
 
     throw new IllegalArgumentException("Unsupported type: " + expectedType);
@@ -285,6 +297,8 @@ public class UnifiedConfigurationHelper {
       final String property, final ResolvableType expectedType) {
     if (isPropertyCollection(expectedType)) {
       return !getCollectionFromEnvironment(property).isEmpty();
+    } else if (isPropertyMap(expectedType)) {
+      return !getMapFromEnvironment(property).isEmpty();
     } else {
       return environment.containsProperty(property);
     }
@@ -301,6 +315,18 @@ public class UnifiedConfigurationHelper {
     return Binder.get(environment)
         .bind(normalizedProperty.toString(), Collection.class)
         .orElse(Collections.emptyList());
+  }
+
+  private static boolean isPropertyMap(final ResolvableType expectedType) {
+    return expectedType.resolve() != null && Map.class.isAssignableFrom(expectedType.resolve());
+  }
+
+  private static Map getMapFromEnvironment(final String property) {
+    final ConfigurationPropertyName normalizedProperty =
+        ConfigurationPropertyName.adapt(property, '.');
+    return Binder.get(environment)
+        .bind(normalizedProperty.toString(), Map.class)
+        .orElse(Collections.emptyMap());
   }
 
   /* Helper methods */

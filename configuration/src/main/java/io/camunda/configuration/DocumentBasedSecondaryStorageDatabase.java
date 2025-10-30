@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.core.ResolvableType;
 
 public abstract class DocumentBasedSecondaryStorageDatabase
     extends SecondaryStorageDatabase<DocumentBasedHistory> {
@@ -264,7 +265,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".number-of-replicas-per-index",
         numberOfReplicasPerIndex,
-        Map.class,
+        ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
         BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
         legacyReplicasByIndexNameProperties());
   }
@@ -277,7 +278,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".number-of-shards-per-index",
         numberOfShardsPerIndex,
-        Map.class,
+        ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
         BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
         legacyShardsByIndexNameProperties());
   }
