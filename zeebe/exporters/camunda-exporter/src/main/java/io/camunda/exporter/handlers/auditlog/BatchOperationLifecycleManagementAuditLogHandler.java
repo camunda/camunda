@@ -23,8 +23,11 @@ public class BatchOperationLifecycleManagementAuditLogHandler
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(
+          BatchOperationIntent.RESUME,
           BatchOperationIntent.RESUMED,
+          BatchOperationIntent.SUSPEND,
           BatchOperationIntent.SUSPENDED,
+          BatchOperationIntent.CANCEL,
           BatchOperationIntent.CANCELED);
   private static final Set<RejectionType> SUPPORTED_REJECTION_TYPES =
       Set.of(RejectionType.INVALID_STATE);

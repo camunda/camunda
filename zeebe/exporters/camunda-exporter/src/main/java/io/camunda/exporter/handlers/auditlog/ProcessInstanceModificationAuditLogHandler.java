@@ -23,7 +23,7 @@ public class ProcessInstanceModificationAuditLogHandler
     extends AbstractAuditLogHandler<ProcessInstanceModificationRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
-      Set.of(ProcessInstanceModificationIntent.MODIFIED);
+      Set.of(ProcessInstanceModificationIntent.MODIFY, ProcessInstanceModificationIntent.MODIFIED);
   private static final Set<RejectionType> SUPPORTED_REJECTION_TYPES =
       Set.of(RejectionType.INVALID_STATE);
 
