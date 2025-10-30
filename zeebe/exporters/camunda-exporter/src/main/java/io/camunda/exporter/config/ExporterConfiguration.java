@@ -10,6 +10,7 @@ package io.camunda.exporter.config;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import java.util.Set;
 
 public class ExporterConfiguration {
 
@@ -23,6 +24,7 @@ public class ExporterConfiguration {
   private PostExportConfiguration postExport = new PostExportConfiguration();
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
+  private AuditLogConfiguration auditLog = new AuditLogConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -113,6 +115,14 @@ public class ExporterConfiguration {
     this.batchOperation = batchOperation;
   }
 
+  public AuditLogConfiguration getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(final AuditLogConfiguration auditLog) {
+    this.auditLog = auditLog;
+  }
+
   @Override
   public String toString() {
     return "ExporterConfiguration{"
@@ -136,6 +146,8 @@ public class ExporterConfiguration {
         + postExport
         + ", batchOperation="
         + batchOperation
+        + ", auditLog="
+        + auditLog
         + '}';
   }
 
@@ -464,6 +476,78 @@ public class ExporterConfiguration {
           + "exportItemsOnCreation="
           + exportItemsOnCreation
           + '}';
+    }
+  }
+
+  public static final class AuditLogConfiguration {
+
+    private EntityAuditLogConfiguration user = new EntityAuditLogConfiguration();
+    private EntityAuditLogConfiguration client = new EntityAuditLogConfiguration();
+
+    public EntityAuditLogConfiguration getUser() {
+      return user;
+    }
+
+    public AuditLogConfiguration setUser(final EntityAuditLogConfiguration user) {
+      this.user = user;
+      return this;
+    }
+
+    public EntityAuditLogConfiguration getClient() {
+      return client;
+    }
+
+    public AuditLogConfiguration setClient(final EntityAuditLogConfiguration client) {
+      this.client = client;
+      return this;
+    }
+
+    @Override
+    public String toString() {
+      return "AuditLogConfiguration{" + "user=" + user + ", client=" + client + '}';
+    }
+
+    public static final class EntityAuditLogConfiguration {
+      private Set<AuditLogCategory> categories =
+          Set.of(AuditLogCategory.OPERATOR, AuditLogCategory.USER_TASK, AuditLogCategory.ADMIN);
+      private boolean includeVariableChanges = true;
+
+      public boolean isIncludeVariableChanges() {
+        return includeVariableChanges;
+      }
+
+      public EntityAuditLogConfiguration setIncludeVariableChanges(
+          final boolean includeVariableChanges) {
+        this.includeVariableChanges = includeVariableChanges;
+        return this;
+      }
+
+      public Set<AuditLogCategory> getCategories() {
+        return categories;
+      }
+
+      public EntityAuditLogConfiguration setCategories(final Set<AuditLogCategory> categories) {
+        this.categories = categories;
+        return this;
+      }
+
+      @Override
+      public String toString() {
+        return "EntityAuditLogConfiguration{"
+            + "categories="
+            + categories
+            + ", includeVariableChanges="
+            + includeVariableChanges
+            + '}';
+      }
+    }
+
+    public static enum AuditLogCategory {
+      NONE,
+      OPERATOR,
+      USER_TASK,
+      ADMIN,
+      ALL
     }
   }
 }
