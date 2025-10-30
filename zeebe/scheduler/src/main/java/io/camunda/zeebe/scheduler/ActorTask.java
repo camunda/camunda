@@ -387,25 +387,45 @@ public class ActorTask {
   private boolean pollSubscriptions() {
     boolean hasJobs = false;
 
-    for (final ActorSubscription subscription : subscriptions) {
-      if (pollSubscription(subscription)) {
-        final ActorJob job = subscription.getJob();
-        job.schedulingState = TaskSchedulingState.QUEUED;
+    try {
+      for (final ActorSubscription subscription : subscriptions) {
+        if (pollSubscription(subscription)) {
+          final ActorJob job = subscription.getJob();
+          job.schedulingState = TaskSchedulingState.QUEUED;
 
-        if (currentJob == null) {
-          currentJob = job;
-        } else {
-          fastLaneJobs.offer(job);
+          if (currentJob == null) {
+            currentJob = job;
+          } else {
+            fastLaneJobs.offer(job);
+          }
+
+          hasJobs = true;
         }
-
-        hasJobs = true;
       }
+
+      return hasJobs;
+    } catch (final Exception e) {
+      LOG.error(
+          "Exception while polling subscriptions of actor {} : thread {} ",
+          actor.getName(),
+          ActorThread.current(),
+          e);
+      throw e;
     }
-    return hasJobs;
   }
 
   private boolean pollSubscription(final ActorSubscription subscription) {
-    return subscription.triggersInPhase(lifecyclePhase) && subscription.poll();
+    try {
+      return subscription.triggersInPhase(lifecyclePhase) && subscription.poll();
+    } catch (final Exception e) {
+      LOG.error(
+          "Exception while polling subscription {} of actor {} : thread {}",
+          subscription,
+          actor.getName(),
+          ActorThread.current(),
+          e);
+      throw e;
+    }
   }
 
   private boolean pollSubscriptionsWithoutAddingJobs(final List<ActorSubscription> subscriptions) {
@@ -487,11 +507,22 @@ public class ActorTask {
 
   public void addSubscription(final ActorSubscription subscription) {
     ensureCalledFromActorThread("addSubscription(ActorSubscription)");
+    LOG.info(
+        "FINDME: adding subscription {} from actor {}: thread {}",
+        subscription,
+        actor.getName(),
+        ActorThread.current());
+
     subscriptions.add(subscription);
   }
 
   private void removeSubscription(final ActorSubscription subscription) {
     ensureCalledFromActorThread("removeSubscription(ActorSubscription)");
+    LOG.info(
+        "FINDME: removing subscription {} from actor {} : thread {}",
+        subscription,
+        actor.getName(),
+        ActorThread.current());
     subscriptions.remove(subscription);
   }
 
