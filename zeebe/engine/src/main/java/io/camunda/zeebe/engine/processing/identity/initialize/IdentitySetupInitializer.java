@@ -24,11 +24,12 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
- * Dispatches a <code>IdentitySetupIntent.INITIALIZE</code> command with a value, containing both:
+ * Dispatches a broker command with the <code>IdentitySetupIntent.INITIALIZE</code> intent
+ * containing the values required to initialize:
  *
  * <ul>
- *   <li>Default Entities
- *   <li>configuration at <code>camunda.security.initialization</code>
+ *   <li>System default entities
+ *   <li>User defined configuration at <code>camunda.security.initialization</code>
  * </ul>
  */
 public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware {
@@ -80,8 +81,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     final var initialization = securityConfig.getInitialization();
     final var setupRecord = new IdentitySetupRecord();
 
-    Defaults.setupDefaultTenant(setupRecord);
-    Defaults.setupDefaultRoles(setupRecord);
+    PlatformDefaultEntities.setupDefaultTenant(setupRecord);
+    PlatformDefaultEntities.setupDefaultRoles(setupRecord);
 
     initialization
         .getUsers()
