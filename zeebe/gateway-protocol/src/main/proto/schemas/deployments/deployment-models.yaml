@@ -1,0 +1,198 @@
+# Deployment and resource domain schemas
+DeploymentResult:
+  type: object
+  required:
+    - deploymentKey
+    - tenantId
+    - deployments
+  properties:
+    deploymentKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/DeploymentKey'
+      description: The unique key identifying the deployment.
+    tenantId:
+      description: The tenant ID associated with the deployment.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+    deployments:
+      description: Items deployed by the request.
+      type: array
+      items:
+        $ref: '#/DeploymentMetadataResult'
+
+DeploymentMetadataResult:
+  type: object
+  properties:
+    processDefinition:
+      $ref: '#/DeploymentProcessResult'
+    decisionDefinition:
+      $ref: '#/DeploymentDecisionResult'
+    decisionRequirements:
+      $ref: '#/DeploymentDecisionRequirementsResult'
+    form:
+      $ref: '#/DeploymentFormResult'
+    resource:
+      $ref: '#/DeploymentResourceResult'
+
+DeploymentProcessResult:
+  description: A deployed process.
+  x-semantic-provider:
+    - processDefinitionKey
+    - processDefinitionId
+  type: object
+  required:
+    - processDefinitionId
+    - processDefinitionVersion
+    - resourceName
+    - processDefinitionKey
+    - tenantId
+  properties:
+    processDefinitionId:
+      allOf:
+        - $ref: '../common/identifiers.yaml#/ProcessDefinitionId'
+      description: |
+        The bpmn process ID, as parsed during deployment, together with the version forms a
+        unique identifier for a specific process definition.
+    processDefinitionVersion:
+      type: integer
+      format: int32
+      description: The assigned process version.
+    resourceName:
+      type: string
+      description: The resource name from which this process was parsed.
+    tenantId:
+      description: The tenant ID of the deployed process.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+    processDefinitionKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+      description: The assigned key, which acts as a unique identifier for this process.
+
+DeploymentDecisionResult:
+  description: A deployed decision.
+  type: object
+  x-semantic-provider:
+    - decisionDefinitionKey
+    - decisionRequirementsKey
+  properties:
+    decisionDefinitionId:
+      allOf:
+        - $ref: '../common/identifiers.yaml#/DecisionDefinitionId'
+      description: |
+        The dmn decision ID, as parsed during deployment, together with the version forms a
+        unique identifier for a specific decision.
+    version:
+      type: integer
+      format: int32
+      description: The assigned decision version.
+    name:
+      type: string
+      description: The DMN name of the decision, as parsed during deployment.
+    tenantId:
+      description: The tenant ID of the deployed decision.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+    decisionRequirementsId:
+      type: string
+      description: |
+        The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
+    decisionDefinitionKey:
+      allOf:
+        - $ref:  '../common/keys.yaml#/DecisionDefinitionKey'
+      description: |
+        The assigned decision key, which acts as a unique identifier for this decision.
+    decisionRequirementsKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/DecisionRequirementsKey'
+      description: |
+        The assigned key of the decision requirements graph that this decision is part of.
+
+DeploymentDecisionRequirementsResult:
+  description: Deployed decision requirements.
+  type: object
+  x-semantic-provider:
+    - decisionRequirementsKey
+  properties:
+    decisionRequirementsId:
+      type: string
+    decisionRequirementsName:
+      type: string
+    version:
+      type: integer
+      format: int32
+    resourceName:
+      type: string
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    decisionRequirementsKey:
+      $ref: '../common/keys.yaml#/DecisionRequirementsKey'
+
+DeploymentFormResult:
+  description: A deployed form.
+  type: object
+  x-semantic-provider:
+    - formKey
+  properties:
+    formId:
+      $ref: '../common/identifiers.yaml#/FormId'
+    version:
+      type: integer
+      format: int32
+    resourceName:
+      type: string
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    formKey:
+      $ref: '../common/keys.yaml#/FormKey'
+
+DeploymentResourceResult:
+  description: A deployed Resource.
+  x-semantic-provider:
+    - resourceKey
+  type: object
+  properties:
+    resourceId:
+      type: string
+    resourceName:
+      type: string
+    version:
+      type: integer
+      format: int32
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    resourceKey:
+      $ref: '../common/keys.yaml#/ResourceKey'
+
+DeleteResourceRequest:
+  type: object
+  nullable: true
+  additionalProperties: false
+  properties:
+    operationReference:
+      $ref: '../common/keys.yaml#/OperationReference'
+
+ResourceResult:
+  type: object
+  properties:
+    resourceName:
+      description: The resource name from which this resource was parsed.
+      type: string
+    version:
+      description: The assigned resource version.
+      type: integer
+      format: int32
+    versionTag:
+      description: The version tag of this resource.
+      type: string
+    resourceId:
+      description: The resource ID of this resource.
+      type: string
+    tenantId:
+      description: The tenant ID of this resource.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+    resourceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ResourceKey'
+      description: The unique key of this resource.

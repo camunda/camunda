@@ -1,0 +1,10 @@
+ClockPinRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    timestamp:
+      description: The exact time in epoch milliseconds to which the clock should be pinned.
+      type: integer
+      format: int64
+  required:
+    - timestamp

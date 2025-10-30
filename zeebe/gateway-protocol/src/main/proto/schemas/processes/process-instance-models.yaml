@@ -1,0 +1,641 @@
+# Process instance domain schemas
+ProcessInstanceCreationInstruction:
+  x-polymorphic-schema: true
+  description: |
+    Instructions for creating a process instance. The process definition can be specified
+    either by ID or by key.
+  oneOf:
+    - $ref: '#/ProcessInstanceCreationInstructionById'
+    - $ref: '#/ProcessInstanceCreationInstructionByKey'
+
+ProcessInstanceCreationInstructionById:
+  type: object
+  title: Process creation by ID
+  required:
+    - processDefinitionId
+  additionalProperties: false
+  properties:
+    processDefinitionId:
+      description: |
+        The BPMN process ID of the process definition to start an instance of.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/ProcessDefinitionId'
+    processDefinitionVersion:
+      description: |
+        The version of the process. By default, the latest version of the process is used.
+      type: integer
+      format: int32
+      default: -1
+    variables:
+      description: |
+        JSON object that will instantiate the variables for the root variable scope
+        of the process instance.
+      type: object
+      additionalProperties: true
+    tenantId:
+      description: The tenant ID of the process definition.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+    operationReference:
+      $ref: '../common/keys.yaml#/OperationReference'
+    startInstructions:
+      description: |
+        List of start instructions. By default, the process instance will start at
+        the start event. If provided, the process instance will apply start instructions
+        after it has been created.
+      type: array
+      items:
+        $ref: '#/ProcessInstanceCreationStartInstruction'
+    runtimeInstructions:
+      description: |
+        Runtime instructions (alpha). List of instructions that affect the runtime behavior of
+        the process instance. Refer to specific instruction types for more details.
+
+        This parameter is an alpha feature and may be subject to change
+        in future releases.
+      type: array
+      items:
+        $ref: '#/ProcessInstanceCreationRuntimeInstruction'
+    awaitCompletion:
+      description: |
+        Wait for the process instance to complete. If the process instance completion does
+        not occur within the requestTimeout, the request will be closed. This can lead to a 504
+        response status. Disabled by default.
+      type: boolean
+      default: false
+    fetchVariables:
+      description: |
+        List of variables by name to be included in the response when awaitCompletion is set to true.
+        If empty, all visible variables in the root scope will be returned.
+      type: array
+      example: [ ]
+      items:
+        type: string
+    requestTimeout:
+      description: |
+        Timeout (in ms) the request waits for the process to complete. By default or
+        when set to 0, the generic request timeout configured in the cluster is applied.
+      type: integer
+      format: int64
+      default: 0
+    tags:
+      $ref: '../common/identifiers.yaml#/TagSet'
+
+ProcessInstanceCreationInstructionByKey:
+  type: object
+  title: Process creation by key
+  required:
+    - processDefinitionKey
+  additionalProperties: false
+  properties:
+    processDefinitionKey:
+      $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+    variables:
+      type: object
+      additionalProperties: true
+    startInstructions:
+      type: array
+      items:
+        $ref: '#/ProcessInstanceCreationStartInstruction'
+    runtimeInstructions:
+      type: array
+      items:
+        $ref: '#/ProcessInstanceCreationRuntimeInstruction'
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    operationReference:
+      $ref: '../common/keys.yaml#/OperationReference'
+    awaitCompletion:
+      type: boolean
+      default: false
+    requestTimeout:
+      type: integer
+      format: int64
+      default: 0
+    fetchVariables:
+      type: array
+      items:
+        type: string
+    tags:
+      $ref: '../common/identifiers.yaml#/TagSet'
+
+ProcessInstanceCreationStartInstruction:
+  type: object
+  required:
+    - elementId
+  properties:
+    elementId:
+      $ref: '../common/identifiers.yaml#/ElementId'
+
+ProcessInstanceCreationRuntimeInstruction:
+  discriminator:
+    propertyName: type
+  oneOf:
+    - $ref: '#/ProcessInstanceCreationTerminateInstruction'
+
+ProcessInstanceCreationTerminateInstruction:
+  type: object
+  description: |
+    Terminates the process instance after a specific BPMN element is completed or terminated.
+  required:
+    - afterElementId
+  properties:
+    type:
+      description: The type of the runtime instruction
+      type: string
+      example: TERMINATE_PROCESS_INSTANCE
+    afterElementId:
+      description: |
+        The ID of the element that, once completed or terminated, will cause the process to be terminated.
+      example: Activity_106kosb
+      allOf:
+        - $ref: '../common/identifiers.yaml#/ElementId'
+
+CreateProcessInstanceResult:
+  x-semantic-provider:
+    - processInstanceKey
+  required:
+    - processDefinitionId
+    - processDefinitionKey
+    - processDefinitionVersion
+    - tenantId
+    - variables
+    - processInstanceKey
+  type: object
+  properties:
+    processDefinitionId:
+      description: |
+        The BPMN process ID of the process definition which was used to create the process.
+        instance
+      allOf:
+        - $ref: '../common/identifiers.yaml#/ProcessDefinitionId'
+      example: my-process-model-1
+    processDefinitionVersion:
+      description: |
+        The version of the process definition which was used to create the process instance.
+      type: integer
+      format: int32
+      example: 3
+    tenantId:
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+      description: The tenant ID of the created process instance.
+      example: <default>
+    variables:
+      additionalProperties: true
+      description: All the variables visible in the root scope.
+      type: object
+    processDefinitionKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+      description: |
+        The key of the process definition which was used to create the process instance.
+    processInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: |
+        The unique identifier of the created process instance; to be used wherever a request
+        needs a process instance key (e.g. CancelProcessInstanceRequest).
+    tags:
+      $ref: '../common/identifiers.yaml#/TagSet'
+
+ProcessInstanceSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - processInstanceKey
+        - processDefinitionId
+        - processDefinitionName
+        - processDefinitionVersion
+        - processDefinitionVersionTag
+        - processDefinitionKey
+        - parentProcessInstanceKey
+        - parentElementInstanceKey
+        - startDate
+        - endDate
+        - state
+        - hasIncident
+        - tenantId
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+ProcessInstanceSearchQuery:
+  description: Process instance search request.
+  type: object
+  additionalProperties: false
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/ProcessInstanceSearchQuerySortRequest'
+    filter:
+      $ref: '#/ProcessInstanceFilter'
+      description: The process instance search filters.
+
+ProcessInstanceIncidentSearchQuery:
+  type: object
+  additionalProperties: false
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '../incidents/incident-models.yaml#/IncidentSearchQuerySortRequest'
+
+BaseProcessInstanceFilterFields:
+  description: Base process instance search filter.
+  type: object
+  properties:
+    startDate:
+      $ref: '../common/filters.yaml#/DateTimeFilterProperty'
+      description: The start date.
+    endDate:
+      $ref: '../common/filters.yaml#/DateTimeFilterProperty'
+      description: The end date.
+    state:
+      $ref: '../common/filters.yaml#/ProcessInstanceStateFilterProperty'
+      description: The process instance state.
+    hasIncident:
+      type: boolean
+      description: Whether this process instance has a related incident or not.
+    tenantId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The tenant ID.
+    variables:
+      description: The process instance variables.
+      type: array
+      items:
+        $ref: '../variables/variable-models.yaml#/VariableValueFilterProperty'
+    processInstanceKey:
+      $ref: '../common/filters.yaml#/ProcessInstanceKeyFilterProperty'
+      description: The key of this process instance.
+    parentProcessInstanceKey:
+      $ref: '../common/filters.yaml#/ProcessInstanceKeyFilterProperty'
+      description: The parent process instance key.
+    parentElementInstanceKey:
+      $ref: '../common/filters.yaml#/ElementInstanceKeyFilterProperty'
+      description: The parent element instance key.
+    batchOperationId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The batch operation ID.
+    errorMessage:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The error message related to the process.
+    hasRetriesLeft:
+      description: Whether the process has failed jobs with retries left.
+      type: boolean
+    elementInstanceState:
+      $ref: '../common/filters.yaml#/ElementInstanceStateFilterProperty'
+      description: The state of the element instances associated with the process instance.
+    elementId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The element ID associated with the process instance.
+    hasElementInstanceIncident:
+      description: Whether the element instance has an incident or not.
+      type: boolean
+    incidentErrorHashCode:
+      $ref: '../common/filters.yaml#/IntegerFilterProperty'
+      description: The incident error hash code, associated with this process.
+    tags:
+      $ref: '../common/identifiers.yaml#/TagSet'
+
+ProcessDefinitionStatisticsFilter:
+  description: Process definition statistics search filter.
+  allOf:
+    - $ref: '#/BaseProcessInstanceFilterFields'
+    - type: object
+      properties:
+        $or:
+          description: |
+            Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+            Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+            <br>
+            <em>Example:</em>
+
+            ```json
+            {
+              "state": "ACTIVE",
+              "tenantId": 123,
+              "$or": [
+                { "processDefinitionId": "process_v1" },
+                { "processDefinitionId": "process_v2", "hasIncident": true }
+              ]
+            }
+            ```
+            This matches process instances that:
+
+            <ul style="padding-left: 20px; margin-left: 20px;">
+              <li style="list-style-type: disc;">are in <em>ACTIVE</em> state</li>
+              <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
+              <li style="list-style-type: disc;">and match either:
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v1</em>, or</li>
+                  <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
+                </ul>
+              </li>
+            </ul>
+            <br>
+            <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+          type: array
+          items:
+            $ref: "#/BaseProcessInstanceFilterFields"
+
+ProcessInstanceFilterFields:
+  description: Process instance search filter.
+  type: object
+  allOf:
+    - $ref: '#/BaseProcessInstanceFilterFields'
+  properties:
+    processDefinitionId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The process definition ID.
+    processDefinitionName:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The process definition name.
+    processDefinitionVersion:
+      $ref: '../common/filters.yaml#/IntegerFilterProperty'
+      description: The process definition version.
+    processDefinitionVersionTag:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The process definition version tag.
+    processDefinitionKey:
+      $ref: '../common/filters.yaml#/ProcessDefinitionKeyFilterProperty'
+      description: The process definition key.
+
+ProcessInstanceFilter:
+  description: Process instance search filter.
+  allOf:
+    - $ref: '#/ProcessInstanceFilterFields'
+    - type: object
+      properties:
+        $or:
+          description: |
+            Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+            Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+            <br>
+            <em>Example:</em>
+
+            ```json
+            {
+              "state": "ACTIVE",
+              "tenantId": 123,
+              "$or": [
+                { "processDefinitionId": "process_v1" },
+                { "processDefinitionId": "process_v2", "hasIncident": true }
+              ]
+            }
+            ```
+            This matches process instances that:
+
+            <ul style="padding-left: 20px; margin-left: 20px;">
+              <li style="list-style-type: disc;">are in <em>ACTIVE</em> state</li>
+              <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
+              <li style="list-style-type: disc;">and match either:
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v1</em>, or</li>
+                  <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
+                </ul>
+              </li>
+            </ul>
+            <br>
+            <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+          type: array
+          items:
+            $ref: "#/ProcessInstanceFilterFields"
+
+ProcessInstanceSearchQueryResult:
+  description: Process instance search response.
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  required:
+    - items
+  properties:
+    items:
+      description: The matching process instances.
+      type: array
+      items:
+        $ref: '#/ProcessInstanceResult'
+
+ProcessInstanceResult:
+  description: Process instance search response item.
+  type: object
+  required:
+    - processDefinitionId
+    - processDefinitionName
+    - processDefinitionVersion
+    - startDate
+    - state
+    - hasIncident
+    - tenantId
+    - processInstanceKey
+    - processDefinitionKey
+  properties:
+    processDefinitionId:
+      $ref: '../common/identifiers.yaml#/ProcessDefinitionId'
+    processDefinitionName:
+      type: string
+      description: The process definition name.
+    processDefinitionVersion:
+      type: integer
+      format: int32
+    processDefinitionVersionTag:
+      type: string
+      description: The process definition version tag.
+    startDate:
+      type: string
+      format: date-time
+    endDate:
+      type: string
+      format: date-time
+    state:
+      $ref: '../common/enums.yaml#/ProcessInstanceStateEnum'
+    hasIncident:
+      type: boolean
+      description: Whether this process instance has a related incident or not.
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    processInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: The key of this process instance.
+    processDefinitionKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+      description: The process definition key.
+    parentProcessInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: The parent process instance key.
+    parentElementInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ElementInstanceKey'
+      description: The parent element instance key.
+    tags:
+      $ref: '../common/identifiers.yaml#/TagSet'
+
+CancelProcessInstanceRequest:
+  type: object
+  nullable: true
+  additionalProperties: false
+  properties:
+    operationReference:
+      $ref: '../common/keys.yaml#/OperationReference'
+
+ProcessInstanceCallHierarchyEntry:
+  type: object
+  required:
+    - processInstanceKey
+    - processDefinitionKey
+    - processDefinitionName
+  properties:
+    processInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: The key of the process instance.
+    processDefinitionKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+      description: The key of the process definition.
+    processDefinitionName:
+      type: string
+      description: The name of the process definition (fall backs to the process definition ID if not available).
+
+ProcessInstanceSequenceFlowsQueryResult:
+  description: Process instance sequence flows query response.
+  type: object
+  properties:
+    items:
+      description: The sequence flows.
+      type: array
+      items:
+        $ref: '#/ProcessInstanceSequenceFlowResult'
+
+ProcessInstanceSequenceFlowResult:
+  description: Process instance sequence flow result.
+  type: object
+  properties:
+    sequenceFlowId:
+      type: string
+      description: The sequence flow ID.
+    processInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: The key of this process instance.
+    processDefinitionKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+      description: The process definition key.
+    processDefinitionId:
+      allOf:
+        - $ref: '../common/identifiers.yaml#/ProcessDefinitionId'
+      description: The process definition ID.
+    elementId:
+      $ref: '../common/identifiers.yaml#/ElementId'
+      description: The element ID for this sequence flow, as provided in the BPMN process.
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+
+ProcessInstanceElementStatisticsQueryResult:
+  description: Process instance element statistics query response.
+  type: object
+  properties:
+    items:
+      description: The element statistics.
+      type: array
+      items:
+        $ref: './process-definition-models.yaml#/ProcessElementStatisticsResult'
+
+ProcessInstanceMigrationInstruction:
+  type: object
+  additionalProperties: false
+  description: |
+    The migration instructions describe how to migrate a process instance from one process definition to another.
+  properties:
+    targetProcessDefinitionKey:
+      $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+    mappingInstructions:
+      type: array
+      items:
+        $ref: '#/MigrateProcessInstanceMappingInstruction'
+    operationReference:
+      $ref: '../common/keys.yaml#/OperationReference'
+  required:
+    - targetProcessDefinitionKey
+    - mappingInstructions
+
+MigrateProcessInstanceMappingInstruction:
+  type: object
+  description: |
+    The mapping instructions describe how to map elements from the source process definition to the target process definition.
+  properties:
+    sourceElementId:
+      $ref: '../common/identifiers.yaml#/ElementId'
+    targetElementId:
+      $ref: '../common/identifiers.yaml#/ElementId'
+  required:
+    - sourceElementId
+    - targetElementId
+
+ProcessInstanceModificationInstruction:
+  type: object
+  additionalProperties: false
+  properties:
+    activateInstructions:
+      type: array
+      items:
+        $ref: '#/ProcessInstanceModificationActivateInstruction'
+    terminateInstructions:
+      type: array
+      items:
+        $ref: '#/ProcessInstanceModificationTerminateInstruction'
+    operationReference:
+      $ref: '../common/keys.yaml#/OperationReference'
+
+ProcessInstanceModificationActivateInstruction:
+  description: Instructions describing an element that should be activated.
+  type: object
+  properties:
+    elementId:
+      $ref: '../common/identifiers.yaml#/ElementId'
+    ancestorElementInstanceKey:
+      $ref: '../common/keys.yaml#/ElementInstanceKey'
+    variableInstructions:
+      type: array
+      items:
+        $ref: '#/ModifyProcessInstanceVariableInstruction'
+  required:
+    - elementId
+
+ModifyProcessInstanceVariableInstruction:
+  type: object
+  description: Instructions describing which variables should be created.
+  properties:
+    variables:
+      type: object
+      additionalProperties: true
+    scopeId:
+      $ref: '../common/identifiers.yaml#/ElementId'
+  required:
+    - variables
+
+ProcessInstanceModificationTerminateInstruction:
+  type: object
+  description: Instructions describing which elements should be terminated.
+  properties:
+    elementInstanceKey:
+      $ref: '../common/keys.yaml#/ElementInstanceKey'
+  required:
+    - elementInstanceKey
