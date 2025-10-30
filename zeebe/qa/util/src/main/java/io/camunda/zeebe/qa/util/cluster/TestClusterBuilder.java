@@ -352,6 +352,12 @@ public final class TestClusterBuilder {
                   cluster.setClusterSize(brokersCount);
                   cluster.setClusterName(name);
                 })
+            .withBrokerConfig(
+                cfg -> {
+                  final var replicas = (partitionsCount * replicationFactor) / brokersCount;
+                  cfg.getThreads().setIoThreadCount(replicas);
+                  cfg.getThreads().setCpuThreadCount(replicas);
+                })
             .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
             .withRecordingExporter(useRecordingExporter);
     return broker;
