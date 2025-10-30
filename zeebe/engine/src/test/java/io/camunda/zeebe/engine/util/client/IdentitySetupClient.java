@@ -52,7 +52,7 @@ public final class IdentitySetupClient {
     private final RoleRecord defaultRole =
         new RoleRecord().setRoleId(Strings.newRandomValidIdentityId());
     private final TenantRecord defaultTenant =
-        new TenantRecord().setTenantId(Strings.newRandomValidIdentityId());
+        new TenantRecord().setTenantId(Strings.newRandomValidTenantId());
     private Function<Long, Record<IdentitySetupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public IdentitySetupInitializeClient(final CommandWriter writer) {

@@ -49,6 +49,20 @@ test.describe.serial('groups CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
+  test('tries to create a group with invalid id', async ({
+    identityGroupsPage,
+  }) => {
+    await identityGroupsPage.createGroupButton.click();
+    await identityGroupsPage.createGroupIdField.fill('invalid!!%');
+    await expect(identityGroupsPage.createGroupModal).toContainText(
+      'Please enter a valid group ID',
+    );
+    await expect(identityGroupsPage.createGroupIdField).toHaveAttribute(
+      'data-invalid',
+      'true',
+    );
+  });
+
   test('creates a group', async ({page, identityGroupsPage}) => {
     await identityGroupsPage.createGroup(
       NEW_GROUP.groupId,

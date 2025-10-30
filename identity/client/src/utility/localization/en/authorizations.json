@@ -26,9 +26,13 @@
   "createAuthorizationIntroduction": "Grant an owner access to a resource with specific permissions. <2>Learn more</2>.",
   "selectPermission": "Select at least one permission. All available resource permissions can be found <2>here</2>.",
   "enterUsername": "Enter username",
+  "pleaseEnterValidUsername": "Please enter a valid username (only characters, numbers and _ ~ @ . + - and max 256 characters)",
   "ownerRequired": "Owner is required",
   "usernameRequired": "Username is required",
   "groupIdRequired": "Group ID is required",
+  "pleaseEnterValidGroupId": "Please enter a valid Group ID (only characters, numbers and _ ~ @ . + - and max 256 characters)",
   "resourceIdRequired": "Resource ID is required",
-  "permissionRequired": "Please select at least one permission"
+  "permissionRequired": "Please select at least one permission",
+  "pleaseEnterValidClientId": "Please enter a valid Client ID (only characters, numbers and _ ~ @ . + - and max 256 characters)",
+  "pleaseEnterValidResourceId": "Please enter a valid Resource ID (only characters, numbers and _ ~ @ . + - and max 256 characters or wildcard '*')"
 }

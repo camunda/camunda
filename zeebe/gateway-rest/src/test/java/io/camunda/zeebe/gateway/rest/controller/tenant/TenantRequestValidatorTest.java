@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierValidator.TENANT_ID_MASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -36,7 +37,7 @@ public class TenantRequestValidatorTest {
             .description("A new tenant for testing");
 
     // when
-    final var validationResult = TenantRequestValidator.validateCreateRequest(request, ID_PATTERN);
+    final var validationResult = TenantRequestValidator.validateCreateRequest(request);
 
     // then
     assertThat(validationResult).isEmpty();
@@ -68,7 +69,7 @@ public class TenantRequestValidatorTest {
             .description("A new tenant for testing");
 
     // when
-    final var validationResult = TenantRequestValidator.validateCreateRequest(request, ID_PATTERN);
+    final var validationResult = TenantRequestValidator.validateCreateRequest(request);
 
     // then
     assertThat(validationResult)
@@ -94,16 +95,18 @@ public class TenantRequestValidatorTest {
   }
 
   private static Stream<Arguments> validTenantIds() {
-    return Stream.of(Arguments.of("<default>"), Arguments.of("custom_1.2@3"));
+    return Stream.of(Arguments.of("<default>"), Arguments.of("custom_1.2-3"));
   }
 
   private static Stream<Arguments> invalidTenantIds() {
     return Stream.of(
         Arguments.of(
-            "<custom>", ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("tenantId", ID_PATTERN) + "."),
+            "<custom>",
+            ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("tenantId", TENANT_ID_MASK) + "."),
         Arguments.of("   ", ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("tenantId") + "."),
         Arguments.of("", ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("tenantId") + "."),
         Arguments.of(
-            "not blank", ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("tenantId", ID_PATTERN) + "."));
+            "not blank",
+            ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("tenantId", TENANT_ID_MASK) + "."));
   }
 }

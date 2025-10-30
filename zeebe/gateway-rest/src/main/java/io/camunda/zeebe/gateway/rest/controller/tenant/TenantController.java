@@ -87,8 +87,7 @@ public class TenantController {
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createTenant(
       @RequestBody final TenantCreateRequest createTenantRequest) {
-    return RequestMapper.toTenantCreateDto(
-            createTenantRequest, securityConfiguration.getCompiledIdValidationPattern())
+    return RequestMapper.toTenantCreateDto(createTenantRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createTenant);
   }
 

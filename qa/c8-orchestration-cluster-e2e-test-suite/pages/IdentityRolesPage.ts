@@ -121,11 +121,9 @@ export class IdentityRolesPage {
   async clickCreateRoles() {
     await this.createRoleButton.click();
   }
-
   async fillRoleId(rowName: string) {
     await this.editRoleButton(rowName).click();
   }
-
   async createRole(role: {id: string; name: string}) {
     await this.clickCreateRoles();
     await expect(this.createRoleModal).toBeVisible();
@@ -139,7 +137,6 @@ export class IdentityRolesPage {
       clickNext: true,
     });
   }
-
   async clickRole(roleID: string) {
     const item = this.roleCell(roleID);
     await waitForItemInList(this.page, item, {
@@ -159,7 +156,6 @@ export class IdentityRolesPage {
       .click({timeout: 60000});
     await this.assignUserButtonModal.click();
   }
-
   async deleteRole(roleName: string) {
     await waitForItemInList(this.page, this.roleCell(roleName), {
       clickNext: true,

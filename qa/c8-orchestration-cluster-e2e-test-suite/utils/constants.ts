@@ -67,6 +67,27 @@ export const createUniqueTenant = (customId?: string) => {
   };
 };
 
+// Create unique mapping rule with optional custom ID
+export const createUniqueMappingRule = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    id: `mapping${id}`,
+    name: `Test Mapping Rule ${id}`,
+    claimName: `claim${id}`,
+    claimValue: `value${id}`,
+  };
+};
+
+// Create unique edited mapping rule data with optional custom ID
+export const createEditedMappingRule = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    name: `Edited Mapping Rule ${id}`,
+    claimName: `edited-claim${id}`,
+    claimValue: `edited-value${id}`,
+  };
+};
+
 // Generic function to create specific test data with shared ID
 
 export const createUserAuthorization = (authRole: {name: string}) => ({
@@ -94,6 +115,8 @@ export const createTestData = (options: {
   group?: boolean;
   editedGroup?: boolean;
   tenant?: boolean;
+  mappingRule?: boolean;
+  editedMappingRule?: boolean;
 }) => {
   const {
     user = false,
@@ -103,6 +126,8 @@ export const createTestData = (options: {
     group = false,
     editedGroup = false,
     tenant = false,
+    mappingRule = false,
+    editedMappingRule = false,
   } = options;
   const sharedId = generateUniqueId();
 
@@ -114,6 +139,8 @@ export const createTestData = (options: {
     group?: ReturnType<typeof createUniqueGroup>;
     editedGroup?: ReturnType<typeof createEditedGroup>;
     tenant?: ReturnType<typeof createUniqueTenant>;
+    mappingRule?: ReturnType<typeof createUniqueMappingRule>;
+    editedMappingRule?: ReturnType<typeof createEditedMappingRule>;
     id: string;
   } = {id: sharedId};
 
@@ -135,6 +162,14 @@ export const createTestData = (options: {
 
   if (tenant) {
     result.tenant = createUniqueTenant(sharedId);
+  }
+
+  if (mappingRule) {
+    result.mappingRule = createUniqueMappingRule(sharedId);
+  }
+
+  if (editedMappingRule) {
+    result.editedMappingRule = createEditedMappingRule(sharedId);
   }
 
   // Create authorizations only if authRole is also created

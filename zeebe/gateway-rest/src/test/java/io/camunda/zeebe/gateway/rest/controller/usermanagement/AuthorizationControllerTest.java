@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
@@ -41,6 +42,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -48,6 +50,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(AuthorizationController.class)
+@Import(SecurityConfiguration.class)
 public class AuthorizationControllerTest extends RestControllerTest {
 
   @MockitoBean private AuthorizationServices authorizationServices;
@@ -300,6 +303,24 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(List.of()),
-            "No permissionTypes provided."));
+            "No permissionTypes provided."),
+        Arguments.of(
+            new AuthorizationRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("foo!!")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "The provided resourceId contains illegal characters. It must match the pattern '%s'."
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+        Arguments.of(
+            new AuthorizationRequest()
+                .ownerId("ownerId!!")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("foo")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "The provided ownerId contains illegal characters. It must match the pattern '%s'."
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)));
   }
 }
