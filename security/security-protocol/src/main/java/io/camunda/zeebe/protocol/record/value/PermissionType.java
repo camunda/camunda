@@ -8,7 +8,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 public enum PermissionType {
-  ACCESS,
+  ACCESS(true),
 
   CREATE,
   CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,
@@ -22,13 +22,13 @@ public enum PermissionType {
   CREATE_PROCESS_INSTANCE,
   CREATE_DECISION_INSTANCE,
 
-  READ,
-  READ_PROCESS_INSTANCE,
-  READ_USER_TASK,
-  READ_DECISION_INSTANCE,
-  READ_PROCESS_DEFINITION,
-  READ_DECISION_DEFINITION,
-  READ_USAGE_METRIC,
+  READ(true),
+  READ_PROCESS_INSTANCE(true),
+  READ_USER_TASK(true),
+  READ_DECISION_INSTANCE(true),
+  READ_PROCESS_DEFINITION(true),
+  READ_DECISION_DEFINITION(true),
+  READ_USAGE_METRIC(true),
 
   UPDATE,
   UPDATE_PROCESS_INSTANCE,
@@ -42,5 +42,19 @@ public enum PermissionType {
   DELETE_FORM,
   DELETE_RESOURCE,
   DELETE_PROCESS_INSTANCE,
-  DELETE_DECISION_INSTANCE
+  DELETE_DECISION_INSTANCE;
+
+  private final boolean isReadPermission;
+
+  PermissionType(final boolean isReadPermission) {
+    this.isReadPermission = isReadPermission;
+  }
+
+  PermissionType() {
+    isReadPermission = false;
+  }
+
+  public boolean isReadPermission() {
+    return isReadPermission;
+  }
 }
