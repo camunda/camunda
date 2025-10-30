@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -127,37 +126,40 @@ public class AuthorizationCreateProcessor
     final boolean hasResourceId = !resourceId.isEmpty();
     final boolean hasPropertyName = !resourcePropertyName.isEmpty();
 
-    // For PROPERTY matcher, propertyName must be provided and resourceId should be empty
-    if (matcher == AuthorizationResourceMatcher.PROPERTY) {
-      if (!hasPropertyName) {
-        return Either.left(
-            new Rejection(
-                RejectionType.INVALID_ARGUMENT,
-                "Expected to create authorization with matcher 'PROPERTY', but no resource property name was provided. Please provide a resource property name."));
+    switch (matcher) {
+      case PROPERTY -> {
+        // For PROPERTY matcher, propertyName must be provided and resourceId should be empty
+        if (!hasPropertyName) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  "Expected to create authorization with matcher 'PROPERTY', but no resource property name was provided. Please provide a resource property name."));
+        }
+        if (hasResourceId) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  "Expected to create authorization with matcher 'PROPERTY', but both resource property name and resource ID were provided. Please provide only a resource property name."));
+        }
       }
-      if (hasResourceId) {
-        return Either.left(
-            new Rejection(
-                RejectionType.INVALID_ARGUMENT,
-                "Expected to create authorization with matcher 'PROPERTY', but both resource property name and resource ID were provided. Please provide only a resource property name."));
-      }
-    } else {
-      // For ID and ANY matchers, resourceId should be provided and propertyName should be empty
-      if (hasPropertyName) {
-        return Either.left(
-            new Rejection(
-                RejectionType.INVALID_ARGUMENT,
-                String.format(
-                    "Expected to create authorization with matcher '%s', but a resource property name was provided. Resource property names are only valid for matcher 'PROPERTY'.",
-                    matcher)));
-      }
-      if (!hasResourceId) {
-        return Either.left(
-            new Rejection(
-                RejectionType.INVALID_ARGUMENT,
-                String.format(
-                    "Expected to create authorization with matcher '%s', but no resource ID was provided. Please provide a resource ID.",
-                    matcher)));
+      case ID, ANY -> {
+        // For ID and ANY matchers, resourceId should be provided and propertyName should be empty
+        if (hasPropertyName) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  String.format(
+                      "Expected to create authorization with matcher '%s', but a resource property name was provided. Resource property names are only valid for matcher 'PROPERTY'.",
+                      matcher)));
+        }
+        if (!hasResourceId) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  String.format(
+                      "Expected to create authorization with matcher '%s', but no resource ID was provided. Please provide a resource ID.",
+                      matcher)));
+        }
       }
     }
 
