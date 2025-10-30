@@ -593,29 +593,41 @@ ProcessInstanceModificationInstruction:
   type: object
   additionalProperties: false
   properties:
+    operationReference:
+      $ref: '../common/keys.yaml#/OperationReference'
     activateInstructions:
+      description: Instructions describing which elements should be activated in which scopes and which variables should be created.
       type: array
       items:
         $ref: '#/ProcessInstanceModificationActivateInstruction'
     terminateInstructions:
+      description: Instructions describing which elements should be terminated.
       type: array
       items:
         $ref: '#/ProcessInstanceModificationTerminateInstruction'
-    operationReference:
-      $ref: '../common/keys.yaml#/OperationReference'
 
 ProcessInstanceModificationActivateInstruction:
   description: Instructions describing an element that should be activated.
   type: object
   properties:
     elementId:
-      $ref: '../common/identifiers.yaml#/ElementId'
-    ancestorElementInstanceKey:
-      $ref: '../common/keys.yaml#/ElementInstanceKey'
+      description: The ID of the element that should be activated.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/ElementId'
     variableInstructions:
+      description: Instructions describing which variables should be created.
       type: array
       items:
         $ref: '#/ModifyProcessInstanceVariableInstruction'
+    ancestorElementInstanceKey:
+      description: |
+        The key of the ancestor scope the element instance should be created in.
+        Set to -1 to create the new element instance within an existing element instance of the
+        flow scope.
+      oneOf:
+        - type: string
+          default: "-1"
+        - $ref: '../common/keys.yaml#/ElementInstanceKey'
   required:
     - elementId
 
@@ -624,10 +636,17 @@ ModifyProcessInstanceVariableInstruction:
   description: Instructions describing which variables should be created.
   properties:
     variables:
-      type: object
+      description: |
+        JSON document that will instantiate the variables for the root variable scope of the process instance.
+        It must be a JSON object, as variables will be mapped in a key-value fashion.
       additionalProperties: true
+      type: object
     scopeId:
-      $ref: '../common/identifiers.yaml#/ElementId'
+      description: |
+        The ID of the element in which scope the variables should be created.
+        Leave empty to create the variables in the global scope of the process instance
+      type: string
+      default: ""
   required:
     - variables
 
@@ -636,6 +655,8 @@ ProcessInstanceModificationTerminateInstruction:
   description: Instructions describing which elements should be terminated.
   properties:
     elementInstanceKey:
-      $ref: '../common/keys.yaml#/ElementInstanceKey'
+      allOf:
+        - $ref: '../common/keys.yaml#/ElementInstanceKey'
+      description: The ID of the element that should be terminated.
   required:
     - elementInstanceKey

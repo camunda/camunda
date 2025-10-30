@@ -328,7 +328,7 @@ CorrelatedMessageSubscriptionFilter:
       $ref: '../common/filters.yaml#/ElementInstanceKeyFilterProperty'
       description: The element instance key that received the message.
     messageKey:
-      $ref: '../common/filters.yaml#/StringFilterProperty'
+      $ref: '../common/filters.yaml#/BasicStringFilterProperty'
       description: The message key.
     messageName:
       $ref: '../common/filters.yaml#/StringFilterProperty'
