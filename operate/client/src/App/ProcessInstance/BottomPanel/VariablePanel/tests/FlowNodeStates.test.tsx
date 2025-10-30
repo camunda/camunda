@@ -14,7 +14,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariableV2,
+  createvariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -180,7 +180,7 @@ describe('VariablePanel', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {totalItems: 1},
     });
 
@@ -194,13 +194,13 @@ describe('VariablePanel', () => {
 
   it('should display correct state for a flow node that has only one running token on it', async () => {
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -396,13 +396,13 @@ describe('VariablePanel', () => {
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -626,19 +626,19 @@ describe('VariablePanel', () => {
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },

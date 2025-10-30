@@ -19,14 +19,14 @@ import {
   mockProcessInstance,
   mockProcessInstanceDeprecated,
 } from './mocks';
-import {createInstance, createVariableV2} from 'modules/testUtils';
+import {createInstance, createvariable} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {mockVariablesV2} from './index.setup';
+import {mockvariables} from './index.setup';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
 import {VariablePanel} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
@@ -49,7 +49,7 @@ describe('Edit variable', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockvariables);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
   });
 
@@ -58,12 +58,12 @@ describe('Edit variable', () => {
 
     const mockVariables = {
       items: [
-        createVariableV2({
+        createvariable({
           name: 'firstVariable',
           value: '"initial-value"',
           isTruncated: false,
         }),
-        createVariableV2({
+        createvariable({
           name: 'secondVariable',
           value: '"another-value"',
           isTruncated: false,
@@ -148,10 +148,10 @@ describe('Edit variable', () => {
   });
 
   it('should show/hide edit variable inputs', async () => {
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
@@ -196,10 +196,10 @@ describe('Edit variable', () => {
   });
 
   it('should disable save button when nothing is changed', async () => {
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
@@ -231,10 +231,10 @@ describe('Edit variable', () => {
   });
 
   it('should validate when editing variables', async () => {
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceDeprecated().withSuccess(
@@ -300,12 +300,12 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           name: 'clientNo',
           value: '"value-preview"',
           isTruncated: true,
         }),
-        createVariableV2({
+        createvariable({
           name: 'mwst',
           value: '"124.26"',
         }),
@@ -316,12 +316,12 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           name: 'clientNo',
           value: '"value-preview"',
           isTruncated: true,
         }),
-        createVariableV2({
+        createvariable({
           name: 'mwst',
           value: '"124.26"',
         }),
@@ -344,7 +344,7 @@ describe('Edit variable', () => {
     });
 
     mockGetVariable().withSuccess(
-      createVariableV2({
+      createvariable({
         name: 'clientNo',
         value: '"full-value"',
         isTruncated: false,
@@ -378,7 +378,7 @@ describe('Edit variable', () => {
   it('should display notification if error occurs when getting single variable details', async () => {
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '"value-preview"',
           isTruncated: true,
         }),
@@ -389,7 +389,7 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '"value-preview"',
           isTruncated: true,
         }),
@@ -439,7 +439,7 @@ describe('Edit variable', () => {
   it('should not get variable details on edit button click if the variables value was not a preview', async () => {
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '"full-value"',
           isTruncated: false,
         }),
@@ -450,7 +450,7 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '"full-value"',
           isTruncated: false,
         }),
@@ -502,7 +502,7 @@ describe('Edit variable', () => {
 
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '123',
           isTruncated: true,
         }),
@@ -513,7 +513,7 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '123',
           isTruncated: true,
         }),
@@ -523,7 +523,7 @@ describe('Edit variable', () => {
       },
     });
     mockGetVariable().withSuccess(
-      createVariableV2({
+      createvariable({
         value: '123456',
         isTruncated: false,
       }),
@@ -556,7 +556,7 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '123',
           isTruncated: true,
         }),
@@ -567,7 +567,7 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '123',
           isTruncated: true,
         }),
@@ -577,7 +577,7 @@ describe('Edit variable', () => {
       },
     });
     mockGetVariable().withSuccess(
-      createVariableV2({
+      createvariable({
         value: '123456',
         isTruncated: false,
       }),
@@ -600,7 +600,7 @@ describe('Edit variable', () => {
     });
 
     mockGetVariable().withSuccess(
-      createVariableV2({
+      createvariable({
         value: '123456',
         isTruncated: false,
       }),
@@ -620,13 +620,13 @@ describe('Edit variable', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -669,7 +669,7 @@ describe('Edit variable', () => {
     });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },

@@ -14,7 +14,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariableV2,
+  createvariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -173,7 +173,7 @@ describe('VariablePanel', () => {
       mockProcessWithInputOutputMappingsXML,
     );
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -237,7 +237,7 @@ describe('VariablePanel', () => {
       ],
     };
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -355,7 +355,7 @@ describe('VariablePanel', () => {
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -460,7 +460,7 @@ describe('VariablePanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -495,7 +495,7 @@ describe('VariablePanel', () => {
 
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           name: 'some-other-variable',
         }),
       ],
@@ -505,7 +505,7 @@ describe('VariablePanel', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           name: 'some-other-variable',
         }),
       ],
@@ -564,7 +564,7 @@ describe('VariablePanel', () => {
     });
     modificationsStore.enableModificationMode();
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -587,7 +587,7 @@ describe('VariablePanel', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           name: 'some-other-variable',
         }),
       ],
@@ -597,7 +597,7 @@ describe('VariablePanel', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           name: 'some-other-variable',
         }),
       ],

@@ -14,7 +14,7 @@ import {testData} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createUser,
-  createVariableV2,
+  createvariable,
 } from 'modules/testUtils';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
@@ -121,7 +121,7 @@ const mockRequests = () => {
     ],
   });
   mockSearchVariables().withSuccess({
-    items: [createVariableV2()],
+    items: [createvariable()],
     page: {
       totalItems: 1,
     },

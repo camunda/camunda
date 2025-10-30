@@ -19,7 +19,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariableV2,
+  createvariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -150,7 +150,7 @@ describe('VariablePanel spinner', () => {
 
   it('should display spinner for variables tab when switching between tabs', async () => {
     mockSearchVariables().withDelay({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -166,7 +166,7 @@ describe('VariablePanel spinner', () => {
 
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withDelay({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -192,11 +192,11 @@ describe('VariablePanel spinner', () => {
   it('should display spinner on second variable fetch', async () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withDelay({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {totalItems: 1},
     });
     mockSearchVariables().withDelay({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {totalItems: 1},
     });
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
@@ -223,13 +223,13 @@ describe('VariablePanel spinner', () => {
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
