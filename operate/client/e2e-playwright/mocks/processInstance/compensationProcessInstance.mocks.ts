@@ -240,7 +240,6 @@ const compensationProcessInstance: InstanceMock = {
     ],
   },
   variables: [],
-  variablesV2: [],
 };
 
 export {compensationProcessInstance};

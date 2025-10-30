@@ -16,7 +16,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
-  VariableEntity,
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
   MetaDataDto,
@@ -33,8 +32,7 @@ type InstanceMock = {
   statisticsV2: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
   sequenceFlowsV2: GetProcessInstanceSequenceFlowsResponseBody;
-  variables: VariableEntity[];
-  variablesV2: Variable[];
+  variables: Variable[];
   incidents?: ProcessInstanceIncidentsDto;
   metaData?: MetaDataDto;
 };
@@ -48,7 +46,6 @@ function mockResponses({
   sequenceFlows,
   sequenceFlowsV2,
   variables,
-  variablesV2,
   xml,
   incidents,
   metaData,
@@ -60,8 +57,7 @@ function mockResponses({
   statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
   sequenceFlowsV2?: GetProcessInstanceSequenceFlowsResponseBody;
-  variables?: VariableEntity[];
-  variablesV2?: Variable[];
+  variables?: Variable[];
   xml?: string;
   incidents?: ProcessInstanceIncidentsDto;
   metaData?: MetaDataDto;
@@ -125,23 +121,13 @@ function mockResponses({
 
     if (route.request().url().includes('v2/variables/search')) {
       return route.fulfill({
-        status: variablesV2 === undefined ? 400 : 200,
+        status: variables === undefined ? 400 : 200,
         body: JSON.stringify({
-          items: variablesV2,
+          items: variables,
           page: {
-            totalItems: variablesV2?.length ?? 0,
+            totalItems: variables?.length ?? 0,
           },
         }),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('variables')) {
-      return route.fulfill({
-        status: variables === undefined ? 400 : 200,
-        body: JSON.stringify(variables),
         headers: {
           'content-type': 'application/json',
         },
