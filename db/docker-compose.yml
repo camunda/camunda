@@ -6,7 +6,7 @@ networks:
 services:
 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     restart: always
     # set shared memory limit when using docker-compose
     shm_size: 128mb
@@ -18,7 +18,7 @@ services:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
     environment:
       POSTGRES_USER: camunda
-      POSTGRES_PASSWORD: demo
+      POSTGRES_PASSWORD: camunda
     ports:
       - "5432:5432"
 
@@ -32,31 +32,31 @@ services:
       - "1433:1433"
 
   mariadb:
-    image: mariadb:11.8
+    image: mariadb:12.0
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: example
       MARIADB_DATABASE: camunda
       MARIADB_USER: camunda
-      MARIADB_PASSWORD: demo
+      MARIADB_PASSWORD: camunda
     ports:
       - "3306:3306"
 
   mysql:
-    image: mysql:8.4
+    image: mysql:9.4
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: example
       MYSQL_DATABASE: camunda
       MYSQL_USER: camunda
-      MYSQL_PASSWORD: demo
+      MYSQL_PASSWORD: camunda
     ports:
       - "3306:3306"
 
       # Name of the Docker Compose service
   oracle:
     # Docker Hub image (feel free to change the tag "latest" to any other available one)
-    image: gvenzl/oracle-free:latest
+    image: gvenzl/oracle-free:23-slim-faststart
     # Forward Oracle port to localhost
     ports:
       - "1521:1521"
@@ -64,7 +64,7 @@ services:
     environment:
       ORACLE_PASSWORD: sys_user_password
       APP_USER: camunda
-      APP_USER_PASSWORD: demo
+      APP_USER_PASSWORD: camunda
     # Customize healthcheck script options for startup
     healthcheck:
       test: [ "CMD", "healthcheck.sh" ]

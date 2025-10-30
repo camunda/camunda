@@ -106,8 +106,8 @@ public class UsersUpdateIntegrationTest {
                       .send()
                       .join();
               assertThat(response.items().getFirst().getUsername()).isEqualTo(username);
-              assertThat(response.items().getFirst().getName()).isEmpty();
-              assertThat(response.items().getFirst().getEmail()).isEmpty();
+              assertThat(response.items().getFirst().getName()).isNullOrEmpty();
+              assertThat(response.items().getFirst().getEmail()).isNullOrEmpty();
             });
   }
 
