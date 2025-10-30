@@ -84,6 +84,9 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     PlatformDefaultEntities.setupDefaultTenant(setupRecord);
     PlatformDefaultEntities.setupDefaultRoles(setupRecord);
 
+    // TODO: remove after implementing actual functionality
+    LOG.debug("Configured authorizations: {}", initialization.getAuthorizations());
+
     initialization
         .getUsers()
         .forEach(
