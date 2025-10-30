@@ -79,6 +79,19 @@ describe('Restricted user with resource based permissions', () => {
   it('should not display add/edit variable buttons when update process instance permission is not available', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({isTruncated: true})],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({isTruncated: true})],
+      page: {
+        totalItems: 1,
+      },
+    });
+
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
@@ -94,18 +107,6 @@ describe('Restricted user with resource based permissions', () => {
   it('should have a button to see full variable value', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-    mockSearchVariables().withSuccess({
-      items: [createVariableV2({isTruncated: true})],
-      page: {
-        totalItems: 1,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [createVariableV2({isTruncated: true})],
-      page: {
-        totalItems: 1,
-      },
-    });
     mockSearchVariables().withSuccess({
       items: [createVariableV2({isTruncated: true})],
       page: {
