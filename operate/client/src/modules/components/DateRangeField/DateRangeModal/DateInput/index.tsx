@@ -38,7 +38,7 @@ const DateInput = forwardRef<DatePickerInput, Props>(
               ref={ref}
               placeholder="YYYY-MM-DD"
               pattern={'\\d{4}-\\d{1,2}-\\d{1,2}'}
-              defaultValue={input.value}
+              value={input.value}
               maxLength={10}
               autoComplete="off"
             />
