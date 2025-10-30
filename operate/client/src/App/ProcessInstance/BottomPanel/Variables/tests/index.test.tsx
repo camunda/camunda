@@ -7,20 +7,14 @@
  */
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {mockVariables, mockVariablesV2} from '../index.setup';
+import {mockVariablesV2} from '../index.setup';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {
-  createInstance,
-  createVariable,
-  createVariableV2,
-} from 'modules/testUtils';
+import {createInstance, createVariableV2} from 'modules/testUtils';
 import {getWrapper, mockProcessInstance} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {VariablePanel} from '../../VariablePanel';
 
@@ -50,13 +44,6 @@ describe('Variables', () => {
   it('should render variables table', async () => {
     mockSearchVariables().withSuccess(mockVariablesV2);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
@@ -79,45 +66,6 @@ describe('Variables', () => {
     });
   });
 
-  it.skip('should show/hide spinner next to variable according to it having an active operation', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-      wrapper: getWrapper(),
-    });
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
-    const {items} = variablesStore.state;
-    const [activeOperationVariable] = items.filter(
-      ({hasActiveOperation}) => hasActiveOperation,
-    );
-
-    expect(activeOperationVariable).toBeDefined();
-    expect(
-      within(
-        screen.getByTestId(`variable-${activeOperationVariable!.name}`),
-      ).getByTestId('variable-operation-spinner'),
-    ).toBeInTheDocument();
-
-    const [inactiveOperationVariable] = items.filter(
-      ({hasActiveOperation}) => !hasActiveOperation,
-    );
-
-    expect(
-      within(
-        screen.getByTestId(`variable-${inactiveOperationVariable!.name!}`),
-      ).queryByTestId('variable-operation-spinner'),
-    ).not.toBeInTheDocument();
-  });
-
   it('should have a button to see full variable value', async () => {
     mockSearchVariables().withSuccess({
       items: [createVariableV2({isTruncated: true})],
@@ -132,14 +80,6 @@ describe('Variables', () => {
     processInstanceDetailsStore.setProcessInstance({
       ...instanceMock,
       state: 'COMPLETED',
-    });
-
-    mockFetchVariables().withSuccess([createVariable({isPreview: true})]);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
     });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {

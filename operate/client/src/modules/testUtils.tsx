@@ -19,7 +19,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
-  VariableEntity,
   OperationEntity,
   InstanceOperationEntity,
 } from 'modules/types/operate';
@@ -139,22 +138,6 @@ const createProcessInstance = (
     tenantId: '<default>',
     startDate: '2018-06-21',
     hasIncident: false,
-    ...options,
-  };
-};
-
-const createVariable = (
-  options: Partial<VariableEntity> = {},
-): VariableEntity => {
-  const name = options.name ?? 'testVariableName';
-  return {
-    id: `2251799813725337-${name}`,
-    name,
-    value: '1',
-    isPreview: false,
-    hasActiveOperation: false,
-    isFirst: false,
-    sortValues: [name],
     ...options,
   };
 };
@@ -1221,7 +1204,34 @@ export const createEventSubProcessFlowNodeInstances = (
 };
 
 export {
+<<<<<<< HEAD
   createVariable,
+=======
+  createIncident,
+  createIncidentV2,
+  createEnhancedIncidentV2,
+  createOperation,
+  groupedProcessesMock,
+  createProcess,
+  createInstanceByProcess,
+  createIncidentByError,
+  createIncidentsByError,
+  createDiagramNode,
+  createSequenceFlows,
+  mockProcessStatisticsV2,
+  mockMultipleStatesStatistics,
+  mockProcessXML,
+  mockProcessWithInputOutputMappingsXML,
+  mockCallActivityProcessXML,
+  mockProcessInstances,
+  mockProcessInstancesWithOperation,
+  mockCalledProcessInstances,
+  operations,
+  multiInstanceProcess,
+  eventSubProcess,
+  createMultiInstanceFlowNodeInstances,
+  createEventSubProcessFlowNodeInstances,
+>>>>>>> 0c42c162 (refactor: remove dead code)
   createVariableV2,
   createBatchOperation,
   createUser,
