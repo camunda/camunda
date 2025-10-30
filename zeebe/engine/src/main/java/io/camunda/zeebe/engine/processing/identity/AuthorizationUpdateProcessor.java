@@ -172,6 +172,9 @@ public class AuthorizationUpdateProcessor
                       matcher)));
         }
       }
+      default -> {
+        // No additional validation for other matchers to keep backward compatibility
+      }
     }
 
     return Either.right(record);
