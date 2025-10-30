@@ -1,0 +1,210 @@
+# Common key schemas used across the API
+LongKey:
+  description: Zeebe Engine resource key (Java long serialized as string)
+  type: string
+  pattern: ^-?[0-9]+$
+  minLength: 1
+  maxLength: 25
+
+ProcessInstanceKey:
+  description: System-generated key for a process instance.
+  format: ProcessInstanceKey
+  x-semantic-type: ProcessInstanceKey
+  example: "2251799813690746"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+ProcessDefinitionKey:
+  description: System-generated key for a deployed process definition.
+  format: ProcessDefinitionKey
+  x-semantic-type: ProcessDefinitionKey
+  example: "2251799813686749"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+ElementInstanceKey:
+  description: System-generated key for a element instance.
+  format: ElementInstanceKey
+  x-semantic-type: ElementInstanceKey
+  example: "2251799813686789"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+UserTaskKey:
+  description: System-generated key for a user task.
+  format: UserTaskKey
+  type: string
+  x-semantic-type: UserTaskKey
+  allOf:
+    - $ref: '#/LongKey'
+
+FormKey:
+  description: System-generated key for a deployed form.
+  format: FormKey
+  x-semantic-type: FormKey
+  example: "2251799813684365"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+VariableKey:
+  description: System-generated key for a variable.
+  format: VariableKey
+  x-semantic-type: VariableKey
+  example: "2251799813683287"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+ScopeKey:
+  description: System-generated key for a scope.
+  format: ScopeKey
+  x-semantic-type: ScopeKey
+  example: "2251799813683890"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+IncidentKey:
+  description: System-generated key for a incident.
+  format: IncidentKey
+  x-semantic-type: IncidentKey
+  example: "2251799813689432"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+JobKey:
+  description: System-generated key for a job.
+  format: JobKey
+  x-semantic-type: JobKey
+  example: "2251799813653498"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+MessageSubscriptionKey:
+  description: System-generated key for a message subscription.
+  format: MessageSubscriptionKey
+  x-semantic-type: MessageSubscriptionKey
+  example: "2251799813632456"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+MessageCorrelationKey:
+  description: System-generated key for a message correlation.
+  format: MessageCorrelationKey
+  x-semantic-type: MessageCorrelationKey
+  example: "2251799813634265"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+DecisionDefinitionKey:
+  description: System-generated key for a decision definition.
+  format: DecisionDefinitionKey
+  x-semantic-type: DecisionDefinitionKey
+  example: "2251799813326547"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+DecisionEvaluationInstanceKey:
+  description: System-generated key for a decision evaluation instance.
+  format: DecisionEvaluationInstanceKey
+  x-semantic-type: DecisionEvaluationInstanceKey
+  example: "2251799813684367"
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+DecisionEvaluationKey:
+  allOf:
+    - $ref: '#/LongKey'
+  description: System-generated key for a decision evaluation.
+  format: DecisionEvaluationKey
+  x-semantic-type: DecisionEvaluationKey
+  example: "2251792362345323"
+  type: string
+
+DecisionRequirementsKey:
+  allOf:
+    - $ref: '#/LongKey'
+  description: System-generated key for a deployed decision requirements definition.
+  format: DecisionRequirementsKey
+  x-semantic-type: DecisionRequirementsKey
+  example: "2251799813683346"
+  type: string
+
+AuthorizationKey:
+  allOf:
+    - $ref: '#/LongKey'
+  description: System-generated key for an authorization.
+  format: AuthorizationKey
+  x-semantic-type: AuthorizationKey
+  example: "2251799813684332"
+  type: string
+
+MessageKey:
+  allOf:
+    - $ref: '#/LongKey'
+  description: System-generated key for an message.
+  format: MessageKey
+  x-semantic-type: MessageKey
+  example: "2251799813683467"
+  type: string
+
+DecisionInstanceKey:
+  allOf:
+    - $ref: '#/LongKey'
+  description: System-generated key for a deployed decision instance.
+  format: DecisionInstanceKey
+  x-semantic-type: DecisionInstanceKey
+  example: "22517998136843567"
+  type: string
+
+SignalKey:
+  allOf:
+    - $ref: '#/LongKey'
+  description: System-generated key for an signal.
+  format: SignalKey
+  x-semantic-type: SignalKey
+  example: "22517998136987467"
+  type: string
+
+DeploymentKey:
+  description: Key for a deployment.
+  format: DeploymentKey
+  x-semantic-type: DeploymentKey
+  type: string
+  allOf:
+    - $ref: '#/LongKey'
+
+ResourceKey:
+  type: string
+  oneOf:
+    - $ref: '#/ProcessDefinitionKey'
+    - $ref: '#/DecisionRequirementsKey'
+    - $ref: '#/FormKey'
+    - $ref: '#/DecisionDefinitionKey'
+  description: The system-assigned key for this resource.
+  format: ResourceKey
+
+BatchOperationKey:
+  x-semantic-type: BatchOperationKey
+  format: BatchOperationKey | uuid
+  type: string
+  description: System-generated key for an batch operation.
+  example: "2251799813684321"
+
+OperationReference:
+  description: |
+    A reference key chosen by the user that will be part of all records resulting from this operation.
+    Must be > 0 if provided.
+  type: integer
+  format: int64
+  minimum: 1

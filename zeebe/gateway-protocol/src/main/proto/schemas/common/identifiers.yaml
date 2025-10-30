@@ -1,0 +1,81 @@
+# Common identifier schemas (string-based IDs)
+ProcessDefinitionId:
+  description: Id of a process definition, from the model. Only ids of process definitions that are deployed are useful.
+  format: ProcessDefinitionId
+  type: string
+  x-semantic-type: ProcessDefinitionId
+  minLength: 1
+  pattern: ^[a-zA-Z_][a-zA-Z0-9_\-\.]*$
+  example: new-account-onboarding-workflow
+
+ElementId:
+  description: The model-defined id of an element.
+  format: ElementId
+  type: string
+  x-semantic-type: ElementId
+  example: Activity_106kosb
+
+FormId:
+  description: The user-defined id for the form
+  type: string
+  format: FormId
+  x-semantic-type: FormId
+  example: Form_1nx5hav
+
+DecisionDefinitionId:
+  description: Id of a decision definition, from the model. Only ids of decision definitions that are deployed are useful.
+  format: DecisionDefinitionId
+  x-semantic-type: DecisionDefinitionId
+  type: string
+  minLength: 1
+  maxLength: 256
+  pattern: ^[A-Za-z0-9_@.+-]+$
+  example: new-hire-onboarding-workflow
+
+DocumentId:
+  description: Document Id that uniquely identifies a document.
+  format: DocumentId
+  x-semantic-type: DocumentId
+  type: string
+
+TenantId:
+  example: customer-service
+  description: The unique identifier of the tenant.
+  format: TenantId
+  type: string
+  x-semantic-type: TenantId
+  minLength: 1
+  maxLength: 256
+  pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
+
+Username:
+  example: swillis
+  format: Username
+  description: The unique name of a user.
+  x-semantic-type: Username
+  type: string
+  minLength: 1
+  maxLength: 256
+  pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
+
+Tag:
+  description: A tag. Needs to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
+  example: business_key:1234
+  format: Tag
+  x-semantic-type: Tag
+  type: string
+  minLength: 1
+  maxLength: 100
+  pattern: ^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$
+
+TagSet:
+  description: List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
+  type: array
+  format: string<Tag>[]
+  example:
+    - high-touch
+    - remediation
+  items:
+    $ref: '#/Tag'
+  uniqueItems: true
+  maxItems: 10

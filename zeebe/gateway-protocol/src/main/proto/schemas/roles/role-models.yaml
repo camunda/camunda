@@ -1,0 +1,249 @@
+# Role domain schemas
+RoleCreateRequest:
+  additionalProperties: false
+  type: object
+  properties:
+    roleId:
+      type: string
+      description: The ID of the new role.
+    name:
+      type: string
+      description: The display name of the new role.
+    description:
+      type: string
+      description: The description of the new role.
+  required:
+    - roleId
+    - name
+
+RoleCreateResult:
+  type: object
+  properties:
+    roleId:
+      description: The ID of the created role.
+      type: string
+    name:
+      description: The display name of the created role.
+      type: string
+    description:
+      description: The description of the created role.
+      type: string
+
+RoleUpdateRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      description: The display name of the new role.
+    description:
+      type: string
+      description: The description of the new role.
+  required:
+    - name
+    - description
+
+RoleUpdateResult:
+  type: object
+  properties:
+    name:
+      type: string
+      description: The display name of the updated role.
+    description:
+      type: string
+      description: The description of the updated role.
+    roleId:
+      type: string
+      description: The ID of the updated role.
+
+RoleResult:
+  description: Role search response item.
+  type: object
+  properties:
+    name:
+      type: string
+      description: The role name.
+    roleId:
+      type: string
+      description: The role id.
+    description:
+      type: string
+      description: The description of the role.
+
+RoleSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - name
+        - roleId
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+RoleSearchQueryRequest:
+  description: Role search request.
+  additionalProperties: false
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  type: object
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/RoleSearchQuerySortRequest'
+    filter:
+      $ref: '#/RoleFilter'
+      description: The role search filters.
+
+RoleFilter:
+  description: Role filter request
+  type: object
+  properties:
+    roleId:
+      description: The role ID search filters.
+      type: string
+    name:
+      description: The role name search filters.
+      type: string
+
+RoleSearchQueryResult:
+  description: Role search response.
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching roles.
+      type: array
+      items:
+        $ref: '#/RoleResult'
+
+# Role association results
+RoleUserResult:
+  type: object
+  properties:
+    username:
+      $ref: '../common/identifiers.yaml#/Username'
+
+RoleUserSearchResult:
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching users.
+      type: array
+      items:
+        $ref: '#/RoleUserResult'
+
+RoleUserSearchQueryRequest:
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  type: object
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/RoleUserSearchQuerySortRequest'
+
+RoleUserSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - username
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+RoleClientResult:
+  type: object
+  properties:
+    clientId:
+      description: The ID of the client.
+      type: string
+
+RoleClientSearchResult:
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching clients.
+      type: array
+      items:
+        $ref: '#/RoleClientResult'
+
+RoleClientSearchQueryRequest:
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  type: object
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/RoleClientSearchQuerySortRequest'
+
+RoleClientSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - clientId
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+RoleGroupResult:
+  type: object
+  properties:
+    groupId:
+      description: The id of the group.
+      type: string
+
+RoleGroupSearchResult:
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching groups.
+      type: array
+      items:
+        $ref: '#/RoleGroupResult'
+
+RoleGroupSearchQueryRequest:
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  type: object
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/RoleGroupSearchQuerySortRequest'
+
+RoleGroupSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - groupId
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field

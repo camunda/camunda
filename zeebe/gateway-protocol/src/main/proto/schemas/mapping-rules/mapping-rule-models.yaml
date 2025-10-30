@@ -1,0 +1,135 @@
+MappingRuleCreateUpdateRequest:
+  type: object
+  properties:
+    claimName:
+      type: string
+      description: The name of the claim to map.
+    claimValue:
+      type: string
+      description: The value of the claim to map.
+    name:
+      type: string
+      description: The name of the mapping rule.
+  required:
+    - claimName
+    - claimValue
+    - name
+
+MappingRuleCreateRequest:
+  type: object
+  additionalProperties: false
+  allOf:
+    - $ref: "#/MappingRuleCreateUpdateRequest"
+  properties:
+    mappingRuleId:
+      type: string
+      description: The unique ID of the mapping rule.
+  required:
+    - mappingRuleId
+
+MappingRuleUpdateRequest:
+  type: object
+  allOf:
+    - $ref: "#/MappingRuleCreateUpdateRequest"
+
+MappingRuleCreateUpdateResult:
+  type: object
+  properties:
+    claimName:
+      type: string
+      description: The name of the claim to map.
+    claimValue:
+      type: string
+      description: The value of the claim to map.
+    name:
+      type: string
+      description: The name of the mapping rule.
+    mappingRuleId:
+      type: string
+      description: The unique ID of the mapping rule.
+
+MappingRuleCreateResult:
+  type: object
+  allOf:
+    - $ref: "#/MappingRuleCreateUpdateResult"
+
+MappingRuleUpdateResult:
+  type: object
+  allOf:
+    - $ref: "#/MappingRuleCreateUpdateResult"
+
+MappingRuleSearchQueryResult:
+  type: object
+  allOf:
+    - $ref: "../search/search-models.yaml#/SearchQueryResponse"
+  properties:
+    items:
+      description: The matching mapping rules.
+      type: array
+      items:
+        $ref: "#/MappingRuleResult"
+
+MappingRuleResult:
+  type: object
+  properties:
+    claimName:
+      type: string
+      description: The name of the claim to map.
+    claimValue:
+      type: string
+      description: The value of the claim to map.
+    name:
+      type: string
+      description: The name of the mapping rule.
+    mappingRuleId:
+      type: string
+      description: The ID of the mapping rule.
+
+MappingRuleSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - mappingRuleId
+        - claimName
+        - claimValue
+        - name
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+MappingRuleSearchQueryRequest:
+  additionalProperties: false
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  type: object
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: "#/MappingRuleSearchQuerySortRequest"
+    filter:
+      description: The mapping rule search filters.
+      allOf:
+        - $ref: "#/MappingRuleFilter"
+
+MappingRuleFilter:
+  description: Mapping rule search filter.
+  type: object
+  properties:
+    claimName:
+      type: string
+      description: The claim name to match against a token.
+    claimValue:
+      type: string
+      description: The value of the claim to match.
+    name:
+      type: string
+      description: The name of the mapping rule.
+    mappingRuleId:
+      type: string
+      description: The ID of the mapping rule.

@@ -1,0 +1,32 @@
+SignalBroadcastRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    signalName:
+      description: The name of the signal to broadcast.
+      type: string
+    variables:
+      additionalProperties: true
+      description: The signal variables as a JSON object.
+      type: object
+    tenantId:
+      description: The ID of the tenant that owns the signal.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+  required:
+    - signalName
+
+SignalBroadcastResult:
+  type: object
+  required:
+    - tenantId
+    - signalKey
+  x-semantic-provider:
+    - signalKey
+  properties:
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    signalKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/SignalKey'
+      description: The key of the broadcasted signal.

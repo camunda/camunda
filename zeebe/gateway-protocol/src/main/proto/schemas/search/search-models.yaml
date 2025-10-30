@@ -1,0 +1,108 @@
+# Common search-related schemas
+SearchQueryRequest:
+  type: object
+  properties:
+    page:
+      $ref: '#/SearchQueryPageRequest'
+
+SearchQueryPageRequest:
+  x-polymorphic-schema: true
+  description: Pagination criteria. Can use offset-based pagination (from/limit) OR cursor-based pagination (after/before + limit), but not both.
+  oneOf:
+    - $ref: '#/LimitPagination'
+    - $ref: "#/OffsetPagination"
+    - $ref: '#/CursorForwardPagination'
+    - $ref: '#/CursorBackwardPagination'
+
+LimitPagination:
+  type: object
+  title: Limit-based pagination
+  properties:
+    limit:
+      description: The maximum number of items to return in one request.
+      type: integer
+      format: int32
+      default: 100
+      minimum: 1
+      maximum: 10000
+
+OffsetPagination:
+  type: object
+  title: Offset-based pagination
+  properties:
+    from:
+      description: The index of items to start searching from.
+      type: integer
+      format: int32
+    limit:
+      description: The maximum number of items to return in one request.
+      type: integer
+      format: int32
+      default: 100
+      minimum: 1
+
+CursorForwardPagination:
+  type: object
+  title: Cursor-based forward pagination
+  required:
+    - after
+  properties:
+    after:
+      $ref: '../common/cursors.yaml#/StartCursor'
+    limit:
+      description: The maximum number of items to return in one request.
+      type: integer
+      format: int32
+      default: 100
+      minimum: 1
+      maximum: 10000
+
+CursorBackwardPagination:
+  type: object
+  title: Cursor-based backward pagination
+  required:
+    - before
+  properties:
+    before:
+      $ref: '../common/cursors.yaml#/EndCursor'
+    limit:
+      description: The maximum number of items to return in one request.
+      type: integer
+      format: int32
+      default: 100
+      minimum: 1
+      maximum: 10000
+
+SearchQueryResponse:
+  type: object
+  required:
+    - page
+  properties:
+    page:
+      $ref: '#/SearchQueryPageResponse'
+
+SearchQueryPageResponse:
+  description: Pagination information about the search results.
+  type: object
+  required:
+    - totalItems
+  x-semantic-provider:
+    - startCursor
+    - endCursor
+  properties:
+    totalItems:
+      description: Total items matching the criteria.
+      type: integer
+      format: int64
+    hasMoreTotalItems:
+      description: |
+        Indicates whether there are more items matching the criteria beyond the returned items.
+        This is useful for determining if additional requests are needed to retrieve all results.
+      type: boolean
+    startCursor:
+      $ref: '../common/cursors.yaml#/StartCursor'
+    endCursor:
+      $ref: '../common/cursors.yaml#/EndCursor'
+  example:
+    totalItems: 1
+    hasMoreTotalItems: false
