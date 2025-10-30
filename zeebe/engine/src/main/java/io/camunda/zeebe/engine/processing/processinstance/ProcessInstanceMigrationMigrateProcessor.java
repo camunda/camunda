@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.UserTaskProperties;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
@@ -66,6 +67,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -73,6 +75,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -84,8 +87,6 @@ public class ProcessInstanceMigrationMigrateProcessor
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
-  private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
-  private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
   private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -527,6 +528,63 @@ public class ProcessInstanceMigrationMigrateProcessor
     context.init(
         elementInstance.getKey(), updatedElementInstanceRecord, elementInstance.getState());
 
+    final Map<String, String> customHeaders = job.getCustomHeaders();
+    final String formKey = customHeaders.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
+    final Expression formId = sourceElement.getJobWorkerProperties().getFormId();
+    final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
+        newProperties = targetElement.getUserTaskProperties();
+
+    if (formKey != null) {
+      if (formKey.contains("bpmn:userTaskForm")) {
+        // embedded form
+        final AtomicBoolean embeddedFormMigrated = new AtomicBoolean(false);
+
+        if (newProperties.getExternalFormReference() != null) {
+          final Either<Failure, String> res =
+              userTaskBehavior.evaluateExternalFormReferenceExpression(
+                  newProperties.getExternalFormReference(), context.getFlowScopeKey());
+
+          res.ifRight(evaluatedExtFormRef -> {
+            embeddedFormMigrated.set(true);
+            userTaskProperties.externalFormReference(evaluatedExtFormRef);
+          });
+        } else if (newProperties.getFormId() != null) {
+          // internal form
+          final Either<Failure, Long> res =
+              userTaskBehavior.evaluateFormIdExpressionToFormKey(
+                  newProperties.getFormId(),
+                  newProperties.getFormBindingType(),
+                  newProperties.getFormVersionTag(),
+                  context,
+                  context.getFlowScopeKey());
+          res.ifRight(evaluatedFormKey -> {
+            embeddedFormMigrated.set(true);
+            userTaskProperties.formKey(evaluatedFormKey);
+          });
+        } else {
+          // none
+          embeddedFormMigrated.set(true);
+        }
+
+        if (!embeddedFormMigrated.get()) {
+          // TODO improve text: add failure reason from above
+          throw new ProcessInstanceMigrationPreconditionFailedException(
+              "Migrating Job-based User Task to User Task with embedded form is not supported",
+              RejectionType.INVALID_STATE);
+        }
+      } else if (formId == null) {
+        // external form
+        userTaskProperties.externalFormReference(formKey);
+      } else {
+        // internal form
+        userTaskProperties.formKey(Long.parseLong(formKey));
+      }
+    }
+
+    userTaskBehavior
+        .evaluatePriorityExpression(newProperties.getPriority(), context.getFlowScopeKey())
+        .ifRight(userTaskProperties::priority);
+
     final var userTaskRecord =
         userTaskBehavior.createNewUserTask(
             jobKey, // job-based user tasks use the jobKey as userTaskKey
@@ -592,25 +650,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     final String followUpDate = customHeaders.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
     if (followUpDate != null) {
       userTaskProperties.followUpDate(followUpDate);
-    }
-    final String formKey = customHeaders.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
-    final Expression formId = sourceElement.getJobWorkerProperties().getFormId();
-
-    if (formKey != null) {
-      if (formKey.contains("bpmn:userTaskForm")) {
-        // embedded form
-        throw new ProcessInstanceMigrationPreconditionFailedException(
-            "Migrating Job-based User Task to User Task with embedded form is not supported",
-            RejectionType.INVALID_STATE);
-      }
-
-      // external form
-      if (formId == null) {
-        userTaskProperties.externalFormReference(formKey);
-      } else {
-        // internal form
-        userTaskProperties.formKey(Long.parseLong(formKey));
-      }
     }
     return userTaskProperties;
   }
