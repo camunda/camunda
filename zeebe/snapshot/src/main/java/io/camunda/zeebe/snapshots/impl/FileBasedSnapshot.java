@@ -151,9 +151,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   @Override
   public boolean isReserved() {
-    // bootstrap snapshots are not deleted following the normal procedure, they are deleted when the
-    // scaling operation has been terminated
-    return !reservations.isEmpty() || (metadata != null && metadata.isBootstrap());
+    return !reservations.isEmpty();
   }
 
   void delete() {
