@@ -7,15 +7,14 @@
  */
 
 import {render, screen, within, waitFor} from 'modules/testing-library';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {getWrapper, mockProcessInstance, mockVariables} from './mocks';
+import {getWrapper, mockProcessInstance} from './mocks';
 import {createInstance} from 'modules/testUtils';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockVariablesV2} from '../index.setup';
 import {VariablePanel} from '../../VariablePanel';
 
@@ -24,23 +23,18 @@ const instanceMock = createInstance({id: '1'});
 describe('Add variable', () => {
   beforeEach(() => {
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
   });
 
   it('should show/hide add variable inputs', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -101,15 +95,8 @@ describe('Add variable', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockFetchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -164,16 +151,11 @@ describe('Add variable', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockFetchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -282,15 +264,9 @@ describe('Add variable', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchVariables().withSuccess(mockVariables);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -315,7 +291,7 @@ describe('Add variable', () => {
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      mockVariables[0]!.name,
+      mockVariablesV2.items[0]!.name,
     );
 
     expect(
@@ -385,16 +361,10 @@ describe('Add variable', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockFetchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -469,15 +439,8 @@ describe('Add variable', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockFetchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -506,15 +469,8 @@ describe('Add variable', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockFetchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -567,15 +523,8 @@ describe('Add variable', () => {
       ...mockProcessInstance,
       state: 'TERMINATED',
     });
-    mockFetchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -602,15 +551,8 @@ describe('Add variable', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-    mockFetchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,

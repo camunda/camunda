@@ -7,7 +7,6 @@
  */
 
 import {useEffect, useState} from 'react';
-import {variablesStore} from 'modules/stores/variables';
 import {VariablesContent, EmptyMessageWrapper} from './styled';
 import {observer} from 'mobx-react';
 import {reaction} from 'mobx';
@@ -44,9 +43,6 @@ const Variables: React.FC<Props> = observer(
     const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
     const {data: permissions} = usePermissions();
     const isRootNodeSelected = useIsRootNodeSelected();
-    const {
-      state: {pendingItem},
-    } = variablesStore;
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
 
@@ -88,11 +84,6 @@ const Variables: React.FC<Props> = observer(
         return;
       }
 
-      if (pendingItem !== null) {
-        setFooterVariant('pending-variable');
-        return;
-      }
-
       if (initialValues?.name === '' && initialValues?.value === '') {
         setFooterVariant('add-variable');
         return;
@@ -106,7 +97,6 @@ const Variables: React.FC<Props> = observer(
       setFooterVariant('initial');
     }, [
       isProcessInstanceRunning,
-      pendingItem,
       initialValues,
       isViewMode,
       isRootNodeSelected,

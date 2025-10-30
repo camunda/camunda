@@ -14,12 +14,10 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariable,
   createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {useEffect, act} from 'react';
@@ -142,9 +140,6 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
-
     // Add extra mockSearchVariables calls to handle requests with ADD_TOKEN scope IDs
     mockSearchVariables().withSuccess({
       items: [],
@@ -234,8 +229,6 @@ describe('VariablePanel', () => {
       await screen.findByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -504,7 +497,6 @@ describe('VariablePanel', () => {
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -547,7 +539,6 @@ describe('VariablePanel', () => {
       screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -576,7 +567,6 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -635,7 +625,6 @@ describe('VariablePanel', () => {
         endDate: '2022-09-08T12:44:45.406+0000',
       },
     });
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -669,7 +658,6 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -780,7 +768,6 @@ describe('VariablePanel', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     // select only one of the scopes
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
 
     act(() => {

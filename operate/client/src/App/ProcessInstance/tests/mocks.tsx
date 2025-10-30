@@ -14,10 +14,8 @@ import {testData} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createUser,
-  createVariable,
   createVariableV2,
 } from 'modules/testUtils';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -27,7 +25,6 @@ import {
 } from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
 import {waitFor} from '@testing-library/react';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
@@ -122,14 +119,12 @@ const mockRequests = () => {
       },
     ],
   });
-  mockFetchVariables().withSuccess([createVariable()]);
   mockSearchVariables().withSuccess({
     items: [createVariableV2()],
     page: {
       totalItems: 1,
     },
   });
-  mockFetchVariables().withSuccess([createVariable()]);
   mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
@@ -226,7 +221,6 @@ function getWrapper(options?: {
 
 const waitForPollingsToBeComplete = async () => {
   await waitFor(() => {
-    expect(variablesStore.isPollRequestRunning).toBe(false);
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
     expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
     expect(incidentsStore.isPollRequestRunning).toBe(false);
