@@ -36,7 +36,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -155,7 +154,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient testClientWithPermissions,
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient testClientNoPermissions) {
-    RecordingExporter.reset();
     // given
     // deployed decision definitions
     decisionDeploymentEvent = deployResource(adminClient, DECISION_RESOURCE);
@@ -177,11 +175,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
 
     // wait for operate to catch up
     waitForProcessesToBeDeployed(adminClient, 5);
-  }
-
-  @AfterAll
-  public static void afterAll(@Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
-    RecordingExporter.reset();
   }
 
   @ParameterizedTest

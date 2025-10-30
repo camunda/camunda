@@ -267,7 +267,7 @@ public class CamundaMultiDBExtension
     final Class<?> testClass = context.getRequiredTestClass();
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
-
+    RecordingExporter.reset();
     setupTestApplication(testClass);
     switch (databaseType) {
       case LOCAL -> {
@@ -604,6 +604,7 @@ public class CamundaMultiDBExtension
   public void afterAll(final ExtensionContext context) throws Exception {
     CloseHelper.quietCloseAll(closeables);
     authenticatedClientFactory.close();
+    RecordingExporter.reset();
   }
 
   @Override
