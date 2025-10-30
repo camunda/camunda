@@ -218,6 +218,11 @@ public final class AuthorizationClient {
       return this;
     }
 
+    public AuthorizationUpdateClient withResourcePropertyName(final String resourcePropertyName) {
+      authorizationUpdateRecord.setResourcePropertyName(resourcePropertyName);
+      return this;
+    }
+
     public AuthorizationUpdateClient withResourceType(
         final AuthorizationResourceType resourceType) {
       authorizationUpdateRecord.setResourceType(resourceType);
