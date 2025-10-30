@@ -1,0 +1,388 @@
+# Message domain schemas
+MessageCorrelationRequest:
+  type: object
+  additionalProperties: false
+  required:
+    - name
+  properties:
+    name:
+      description: >
+        The message name as defined in the BPMN process
+      type: string
+    correlationKey:
+      description: The correlation key of the message.
+      type: string
+      example: customer-43421
+      default: ""
+    variables:
+      description: The message variables as JSON document
+      additionalProperties: true
+      type: object
+    tenantId:
+      description: the tenant for which the message is published
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+
+MessageCorrelationResult:
+  description: |
+    The message key of the correlated message, as well as the first process instance key it
+    correlated with.
+  type: object
+  properties:
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    messageKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/MessageKey'
+      description: The key of the correlated message.
+    processInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: The key of the first process instance the message correlated with
+
+MessagePublicationRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    name:
+      description: The name of the message.
+      type: string
+    correlationKey:
+      description: The correlation key of the message.
+      type: string
+      example: customer-43421
+      default: ""
+    timeToLive:
+      description: Timespan (in ms) to buffer the message on the broker.
+      type: integer
+      format: int64
+      default: 0
+    messageId:
+      description: |
+        The unique ID of the message. This is used to ensure only one message with the given ID
+        will be published during the lifetime of the message (if `timeToLive` is set).
+      type: string
+    variables:
+      description: The message variables as JSON document.
+      additionalProperties: true
+      type: object
+    tenantId:
+      description: The tenant of the message sender.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+  required:
+    - name
+
+MessagePublicationResult:
+  description: The message key of the published message.
+  type: object
+  properties:
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    messageKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/MessageKey'
+      description: The key of the published message.
+
+MessageSubscriptionSearchQueryResult:
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching message subscriptions.
+      type: array
+      items:
+        $ref: '#/MessageSubscriptionResult'
+
+MessageSubscriptionResult:
+  type: object
+  properties:
+    messageSubscriptionKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/MessageSubscriptionKey'
+      description: The message subscription key associated with this message subscription.
+    processDefinitionId:
+      $ref: '../common/identifiers.yaml#/ProcessDefinitionId'
+      description: The process definition ID associated with this message subscription.
+    processDefinitionKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+      description: The process definition key associated with this message subscription.
+    processInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: The process instance key associated with this message subscription.
+    elementId:
+      $ref: '../common/identifiers.yaml#/ElementId'
+      description: The element ID associated with this message subscription.
+    elementInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ElementInstanceKey'
+      description: The element instance key associated with this message subscription.
+    messageSubscriptionState:
+      $ref: '../common/enums.yaml#/MessageSubscriptionStateEnum'
+    lastUpdatedDate:
+      description: The last updated date of the message subscription.
+      type: string
+      format: date-time
+    messageName:
+      description: The name of the message associated with the message subscription.
+      type: string
+    correlationKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/MessageCorrelationKey'
+      description: The correlation key of the message subscription.
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+
+MessageSubscriptionSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - messageSubscriptionKey
+        - processDefinitionId
+        - processInstanceKey
+        - elementId
+        - elementInstanceKey
+        - messageSubscriptionState
+        - lastUpdatedDate
+        - messageName
+        - correlationKey
+        - tenantId
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+MessageSubscriptionSearchQuery:
+  type: object
+  additionalProperties: false
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/MessageSubscriptionSearchQuerySortRequest'
+    filter:
+      $ref: '#/MessageSubscriptionFilter'
+      description: The incident search filters.
+
+MessageSubscriptionFilter:
+  description: Message subscription search filter.
+  type: object
+  properties:
+    messageSubscriptionKey:
+      $ref: '../common/filters.yaml#/MessageSubscriptionKeyFilterProperty'
+      description: The message subscription key associated with this message subscription.
+    processDefinitionId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The process definition ID associated with this message subscription.
+    processInstanceKey:
+      $ref: '../common/filters.yaml#/ProcessInstanceKeyFilterProperty'
+      description: The process instance key associated with this message subscription.
+    elementId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The element ID associated with this message subscription.
+    elementInstanceKey:
+      $ref: '../common/filters.yaml#/ElementInstanceKeyFilterProperty'
+      description: The element instance key associated with this message subscription.
+    messageSubscriptionState:
+      $ref: '#/MessageSubscriptionStateFilterProperty'
+      description: The message subscription state.
+    lastUpdatedDate:
+      $ref: '../common/filters.yaml#/DateTimeFilterProperty'
+      description: The last updated date of the message subscription.
+    messageName:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The name of the message associated with the message subscription.
+    correlationKey:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The correlation key of the message subscription.
+    tenantId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The unique external tenant ID.
+
+CorrelatedMessageSubscriptionSearchQueryResult:
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching correlated message subscriptions.
+      type: array
+      items:
+        $ref: '#/CorrelatedMessageSubscriptionResult'
+
+CorrelatedMessageSubscriptionResult:
+  type: object
+  properties:
+    correlationKey:
+      description: The correlation key of the message.
+      type: string
+    correlationTime:
+      description: The time when the message was correlated.
+      type: string
+      format: date-time
+    elementId:
+      description: The element ID that received the message.
+      type: string
+    elementInstanceKey:
+      $ref: '../common/keys.yaml#/ElementInstanceKey'
+      description: The element instance key that received the message.
+    messageKey:
+      $ref: '../common/keys.yaml#/MessageKey'
+      description: The message key.
+    messageName:
+      description: The name of the message.
+      type: string
+    partitionId:
+      description: The partition ID that correlated the message.
+      type: integer
+      format: int32
+    processDefinitionId:
+      $ref: '../common/identifiers.yaml#/ProcessDefinitionId'
+      description: The process definition ID associated with this correlated message subscription.
+    processDefinitionKey:
+      $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+      description: The process definition key associated with this correlated message subscription.
+    processInstanceKey:
+      $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: The process instance key associated with this correlated message subscription.
+    subscriptionKey:
+      $ref: '../common/keys.yaml#/MessageSubscriptionKey'
+      description: The subscription key that received the message.
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+      description: The tenant ID associated with this correlated message subscription.
+  required:
+    - correlationKey
+    - correlationTime
+    - elementId
+    - messageKey
+    - messageName
+    - partitionId
+    - processDefinitionId
+    - processInstanceKey
+    - subscriptionKey
+    - tenantId
+
+CorrelatedMessageSubscriptionSearchQuery:
+  type: object
+  additionalProperties: false
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/CorrelatedMessageSubscriptionSearchQuerySortRequest'
+    filter:
+      $ref: '#/CorrelatedMessageSubscriptionFilter'
+      description: The correlated message subscriptions search filters.
+
+CorrelatedMessageSubscriptionSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - correlationKey
+        - correlationTime
+        - elementId
+        - elementInstanceKey
+        - messageKey
+        - messageName
+        - partitionId
+        - processDefinitionId
+        - processDefinitionKey
+        - processInstanceKey
+        - subscriptionKey
+        - tenantId
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+CorrelatedMessageSubscriptionFilter:
+  description: Correlated message subscriptions search filter.
+  type: object
+  properties:
+    correlationKey:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The correlation key of the message.
+    correlationTime:
+      $ref: '../common/filters.yaml#/DateTimeFilterProperty'
+      description: The time when the message was correlated.
+    elementId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The element ID that received the message.
+    elementInstanceKey:
+      $ref: '../common/filters.yaml#/ElementInstanceKeyFilterProperty'
+      description: The element instance key that received the message.
+    messageKey:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The message key.
+    messageName:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The name of the message.
+    partitionId:
+      $ref: '../common/filters.yaml#/IntegerFilterProperty'
+      description: The partition ID that correlated the message.
+    processDefinitionId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The process definition ID associated with this correlated message subscription.
+    processDefinitionKey:
+      $ref: '../common/filters.yaml#/ProcessDefinitionKeyFilterProperty'
+      description: The process definition key associated with this correlated message subscription.
+    processInstanceKey:
+      $ref: '../common/filters.yaml#/ProcessInstanceKeyFilterProperty'
+      description: The process instance key associated with this correlated message subscription.
+    subscriptionKey:
+      $ref: '../common/filters.yaml#/MessageSubscriptionKeyFilterProperty'
+      description: The subscription key that received the message.
+    tenantId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The tenant ID associated with this correlated message subscription.
+
+MessageSubscriptionStateFilterProperty:
+  description: MessageSubscriptionStateEnum with full advanced search capabilities.
+  type: object
+  oneOf:
+    - type: string
+      title: Exact match
+      description: Matches the value exactly.
+      allOf:
+        - $ref: "../common/enums.yaml#/MessageSubscriptionStateEnum"
+    - $ref: "#/AdvancedMessageSubscriptionStateFilter"
+
+AdvancedMessageSubscriptionStateFilter:
+  title: Advanced filter
+  description: Advanced MessageSubscriptionStateEnum filter
+  type: object
+  properties:
+    $eq:
+      description: Checks for equality with the provided value.
+      allOf:
+        - $ref: "../common/enums.yaml#/MessageSubscriptionStateEnum"
+    $neq:
+      description: Checks for inequality with the provided value.
+      allOf:
+        - $ref: "../common/enums.yaml#/MessageSubscriptionStateEnum"
+    $exists:
+      description: Checks if the current property exists.
+      type: boolean
+    $in:
+      description: Checks if the property matches any of the provided values.
+      type: array
+      items:
+        $ref: "../common/enums.yaml#/MessageSubscriptionStateEnum"
+    $like:
+      $ref: "../common/filters.yaml#/LikeFilter"

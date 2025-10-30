@@ -1,0 +1,34 @@
+# Cluster topology and status endpoints
+/topology:
+  get:
+    x-eventually-consistent: false
+    tags:
+      - Cluster
+    operationId: getTopology
+    summary: Get cluster topology
+    description: Obtains the current topology of the cluster the gateway is part of.
+    responses:
+      "200":
+        description: Obtains the current topology of the cluster the gateway is part of.
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/cluster/cluster-models.yaml#/TopologyResponse"
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+
+/status:
+  get:
+    x-eventually-consistent: false
+    tags:
+      - Cluster
+    operationId: getStatus
+    summary: Get cluster status
+    description: Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.
+    responses:
+      "204":
+        description: The cluster is UP and has at least one partition with a healthy leader.
+      "503":
+        description: The cluster is DOWN and does not have any partition with a healthy leader.

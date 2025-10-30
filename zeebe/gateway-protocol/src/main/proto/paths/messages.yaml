@@ -1,0 +1,133 @@
+# Message and message subscription endpoints
+/messages/publication:
+  post:
+    tags:
+      - Message
+    operationId: publishMessage
+    summary: Publish message
+    description: |
+      Publishes a single message.
+      Messages are published to specific partitions computed from their correlation keys.
+      Messages can be buffered.
+      The endpoint does not wait for a correlation result.
+      Use the message correlation endpoint for such use cases.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/messages/message-models.yaml#/MessagePublicationRequest'
+    responses:
+      "200":
+        description: The message was published.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/messages/message-models.yaml#/MessagePublicationResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/messages/correlation:
+  post:
+    tags:
+      - Message
+    operationId: correlateMessage
+    summary: Correlate message
+    description: |
+      Publishes a message and correlates it to a subscription.
+      If correlation is successful it will return the first process instance key the message correlated with.
+      The message is not buffered.
+      Use the publish message endpoint to send messages that can be buffered.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/messages/message-models.yaml#/MessageCorrelationRequest'
+    responses:
+      "200":
+        description: The message is correlated to one or more process instances
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/messages/message-models.yaml#/MessageCorrelationResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/message-subscriptions/search:
+  post:
+    tags:
+      - Message subscription
+    operationId: searchMessageSubscriptions
+    summary: Search message subscriptions
+    description: Search for message subscriptions based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/messages/message-models.yaml#/MessageSubscriptionSearchQuery'
+    responses:
+      "200":
+        description: The message subscription search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/messages/message-models.yaml#/MessageSubscriptionSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/correlated-message-subscriptions/search:
+  post:
+    tags:
+      - Message subscription
+    operationId: searchCorrelatedMessageSubscriptions
+    summary: Search correlated message subscriptions
+    description: Search correlated message subscriptions based on given criteria.
+    x-eventually-consistent: true
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/messages/message-models.yaml#/CorrelatedMessageSubscriptionSearchQuery'
+    responses:
+      "200":
+        description: The correlated message subscriptions search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/messages/message-models.yaml#/CorrelatedMessageSubscriptionSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'

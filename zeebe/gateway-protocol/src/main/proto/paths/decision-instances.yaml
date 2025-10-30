@@ -1,0 +1,69 @@
+# Decision instance endpoints
+/decision-instances/search:
+  post:
+    tags:
+      - Decision instance
+    operationId: searchDecisionInstances
+    summary: Search decision instances
+    description: Search for decision instances based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/decisions/decision-instance-models.yaml#/DecisionInstanceSearchQuery'
+    responses:
+      "200":
+        description: The decision instance search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/decisions/decision-instance-models.yaml#/DecisionInstanceSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/decision-instances/{decisionEvaluationInstanceKey}:
+  get:
+    tags:
+      - Decision instance
+    operationId: getDecisionInstance
+    summary: Get decision instance
+    description: Returns a decision instance.
+    parameters:
+      - name: decisionEvaluationInstanceKey
+        in: path
+        required: true
+        description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/DecisionInstanceKey'
+    responses:
+      "200":
+        description: The decision instance is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/decisions/decision-instance-models.yaml#/DecisionInstanceGetQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: >
+          The decision instance with the given key was not found.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true

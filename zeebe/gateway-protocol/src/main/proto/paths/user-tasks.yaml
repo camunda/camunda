@@ -1,0 +1,315 @@
+# User task endpoints
+/user-tasks/{userTaskKey}/completion:
+  post:
+    tags:
+      - User task
+    operationId: completeUserTask
+    summary: Complete user task
+    description: Completes a user task with the given key.
+    parameters:
+      - name: userTaskKey
+        in: path
+        required: true
+        description: The key of the user task to complete.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/UserTaskKey'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user-tasks/user-task-models.yaml#/UserTaskCompletionRequest'
+    responses:
+      "204":
+        description: The user task was completed successfully.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: The user task with the given key was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "409":
+        description: >
+          The user task with the given key is in the wrong state currently.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/user-tasks/{userTaskKey}/assignment:
+  post:
+    tags:
+      - User task
+    operationId: assignUserTask
+    summary: Assign user task
+    description: Assigns a user task with the given key to the given assignee.
+    parameters:
+      - name: userTaskKey
+        in: path
+        required: true
+        description: The key of the user task to assign.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/UserTaskKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user-tasks/user-task-models.yaml#/UserTaskAssignmentRequest'
+    responses:
+      "204":
+        description: The user task's assignment was adjusted.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: The user task with the given key was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "409":
+        description: >
+          The user task with the given key is in the wrong state currently.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/user-tasks/{userTaskKey}:
+  get:
+    x-eventually-consistent: true
+    tags:
+      - User task
+    operationId: getUserTask
+    summary: Get user task
+    description: Get the user task by the user task key.
+    parameters:
+      - name: userTaskKey
+        in: path
+        required: true
+        description: The user task key.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/UserTaskKey'
+    responses:
+      "200":
+        description: The user task is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/user-tasks/user-task-models.yaml#/UserTaskResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: The user task with the given key was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+
+  patch:
+    tags:
+      - User task
+    operationId: updateUserTask
+    summary: Update user task
+    description: Update a user task with the given key.
+    parameters:
+      - name: userTaskKey
+        in: path
+        required: true
+        description: The key of the user task to update.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/UserTaskKey'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user-tasks/user-task-models.yaml#/UserTaskUpdateRequest'
+    responses:
+      "204":
+        description: The user task was updated successfully.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: The user task with the given key was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "409":
+        description: >
+          The user task with the given key is in the wrong state currently.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/user-tasks/{userTaskKey}/form:
+  get:
+    x-eventually-consistent: true
+    tags:
+      - User task
+    operationId: getUserTaskForm
+    summary: Get user task form
+    description: |
+      Get the form of a user task.
+
+      Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+    parameters:
+      - name: userTaskKey
+        in: path
+        required: true
+        description: The user task key.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/UserTaskKey'
+    responses:
+      "200":
+        description: The form is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/forms/form-models.yaml#/FormResult'
+      "204":
+        description: The user task was found, but no form is associated with it.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+
+/user-tasks/{userTaskKey}/assignee:
+  delete:
+    tags:
+      - User task
+    operationId: unassignUserTask
+    summary: Unassign user task
+    description: Removes the assignee of a task with the given key.
+    parameters:
+      - name: userTaskKey
+        in: path
+        required: true
+        description: The key of the user task.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/UserTaskKey'
+    responses:
+      "204":
+        description: The user task was unassigned successfully.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: The user task with the given key was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "409":
+        description: >
+          The user task with the given key is in the wrong state currently.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/user-tasks/search:
+  post:
+    tags:
+      - User task
+    operationId: searchUserTasks
+    summary: Search user tasks
+    description: Search for user tasks based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user-tasks/user-task-models.yaml#/UserTaskSearchQuery'
+    responses:
+      "200":
+        description: The user task search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/user-tasks/user-task-models.yaml#/UserTaskSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/user-tasks/{userTaskKey}/variables/search:
+  post:
+    x-eventually-consistent: true
+    tags:
+      - User task
+    operationId: searchUserTaskVariables
+    summary: Search user task variables
+    description: Search for user task variables based on given criteria.
+    parameters:
+      - name: userTaskKey
+        in: path
+        required: true
+        description: The key of the user task.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/UserTaskKey'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user-tasks/user-task-models.yaml#/UserTaskVariableSearchQueryRequest'
+    responses:
+      "200":
+        description: The user task variable search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/variables/variable-models.yaml#/VariableSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
