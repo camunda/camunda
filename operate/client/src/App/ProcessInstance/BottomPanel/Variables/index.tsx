@@ -136,4 +136,4 @@ const Variables: React.FC<Props> = observer(
   },
 );
 
-export default Variables;
+export {Variables};

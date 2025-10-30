@@ -15,8 +15,8 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
-import {mockVariablesV2} from '../index.setup';
-import {VariablePanel} from '../../VariablePanel';
+import {mockVariablesV2} from './index.setup';
+import {VariablePanel} from '../index';
 
 const instanceMock = createInstance({id: '1'});
 
