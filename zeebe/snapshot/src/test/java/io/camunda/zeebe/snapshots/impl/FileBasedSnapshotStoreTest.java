@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -519,6 +520,28 @@ public class FileBasedSnapshotStoreTest {
                     .copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles)
                     .join()))
         .hasMessageContaining("Destination folder already exists");
+  }
+
+  @Test
+  public void shouldDeleteRestoredBootstrapSnapshotWhenNeeded() throws IOException {
+    // given
+    final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
+    final var persistedSnapshot = transientSnapshot.persist().join();
+    final var copiedSnapshot =
+        snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
+    assertThat(copiedSnapshot.isBootstrap()).isTrue();
+    snapshotStore.delete().join();
+    snapshotStore.restore(copiedSnapshot).join();
+
+    // when
+    // we take another snapshot
+    final var newTransientSnapshot = takeTransientSnapshotWithFiles(1000L);
+    final var newPersistedSnapshot = newTransientSnapshot.persist().join();
+
+    // then
+    assertThat(snapshotStore.getCompactionBound())
+        .succeedsWithin(Duration.ofSeconds(1))
+        .isEqualTo(newPersistedSnapshot.getIndex());
   }
 
   private boolean createSnapshotDir(final Path path) {
