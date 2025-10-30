@@ -117,12 +117,25 @@ jobs:
         working-directory: ./optimize/client
         run: yarn run e2e:ci:sm:headless
 
+      - name: Run visual tests
+        working-directory: ./optimize/client
+        run: |
+          yarn run e2e:visual
+          yarn run e2e:visual:compare
+
       - name: Upload logs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: logs
           path: ./optimize/client/build/*.log
+
+      - name: Upload diff images as artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: visual-regression-report
+          path: ./optimize/client/e2e/screenshots/
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
