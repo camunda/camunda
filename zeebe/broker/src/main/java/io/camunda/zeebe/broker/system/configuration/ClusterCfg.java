@@ -40,6 +40,20 @@ public final class ClusterCfg implements ConfigurationEntry {
           + " quorum = floor(replication factor / 2) + 1. In this current case the quorum will be"
           + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
           + " make sure to use an odd replication factor.";
+
+  // Property names for initial contact points configuration
+  private static final String LEGACY_INITIAL_CONTACT_POINTS_PROPERTY =
+      "zeebe.broker.cluster.initialContactPoints";
+  private static final String UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY =
+      "camunda.cluster.initial-contact-points";
+  private static final String INITIAL_CONTACT_POINTS_ERROR_MSG =
+      "Initial contact points must be configured when cluster size is greater than 1. "
+          + "Please configure '"
+          + LEGACY_INITIAL_CONTACT_POINTS_PROPERTY
+          + "' or '"
+          + UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY
+          + "'.";
+
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
@@ -80,10 +94,7 @@ public final class ClusterCfg implements ConfigurationEntry {
     }
 
     if (clusterSize > 1 && (initialContactPoints == null || initialContactPoints.isEmpty())) {
-      throw new IllegalArgumentException(
-          "Initial contact points must be configured when cluster size is greater than 1. "
-              + "Please configure 'zeebe.broker.cluster.initialContactPoints' or "
-              + "'camunda.cluster.initial-contact-points'.");
+      throw new IllegalArgumentException(INITIAL_CONTACT_POINTS_ERROR_MSG);
     }
 
     if (heartbeatInterval.toMillis() < 1) {
