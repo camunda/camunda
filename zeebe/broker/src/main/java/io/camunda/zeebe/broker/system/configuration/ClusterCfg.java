@@ -79,6 +79,13 @@ public final class ClusterCfg implements ConfigurationEntry {
       LOG.warn(REPLICATION_FACTOR_WARN_MSG, replicationFactor, (replicationFactor / 2) + 1);
     }
 
+    if (clusterSize > 1 && (initialContactPoints == null || initialContactPoints.isEmpty())) {
+      throw new IllegalArgumentException(
+          "Initial contact points must be configured when cluster size is greater than 1. "
+              + "Please configure 'zeebe.broker.cluster.initialContactPoints' or "
+              + "'camunda.cluster.initial-contact-points'.");
+    }
+
     if (heartbeatInterval.toMillis() < 1) {
       throw new IllegalArgumentException(
           String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
