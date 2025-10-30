@@ -52,7 +52,7 @@ public class Defaults {
 
       final var readBasedPermissions =
           resourceType.getSupportedPermissionTypes().stream()
-              .filter(Defaults::isReadPermission)
+              .filter(PermissionType::isReadPermission)
               .collect(Collectors.toSet());
 
       setupRecord.addAuthorization(
@@ -64,21 +64,6 @@ public class Defaults {
               .setResourceId(WILDCARD.getResourceId())
               .setPermissionTypes(readBasedPermissions));
     }
-  }
-
-  private static boolean isReadPermission(final PermissionType permissionType) {
-    return switch (permissionType) {
-      case ACCESS,
-          READ,
-          READ_PROCESS_INSTANCE,
-          READ_USER_TASK,
-          READ_DECISION_INSTANCE,
-          READ_PROCESS_DEFINITION,
-          READ_DECISION_DEFINITION,
-          READ_USAGE_METRIC ->
-          true;
-      default -> false;
-    };
   }
 
   private static void setupAdminRole(final IdentitySetupRecord setupRecord) {
