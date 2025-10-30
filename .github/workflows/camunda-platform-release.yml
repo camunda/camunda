@@ -298,6 +298,7 @@ jobs:
           verbose: 'false'
       - name: Generate Changelog
         id: gen-changelog
+        if: ${{ !inputs.dryRun }}
         run: |
           # We set some bash properties to better fail/debug this script
           #
