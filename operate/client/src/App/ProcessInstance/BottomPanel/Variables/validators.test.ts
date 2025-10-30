@@ -9,17 +9,14 @@
 import {
   validateModifiedNameComplete,
   validateModifiedNameNotDuplicate,
-  validateModifiedNameNotDuplicateDeprecated,
   validateModifiedValueComplete,
   validateModifiedValueValid,
   validateNameCharacters,
   validateNameComplete,
-  validateNameCompleteDeprecated,
   validateNameNotDuplicate,
   validateValueComplete,
   validateValueValid,
 } from './validators';
-import {variablesStore} from 'modules/stores/variables';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
 import {createVariableV2} from 'modules/testUtils';
 
@@ -140,9 +137,6 @@ describe('validators', () => {
     vi.clearAllTimers();
     vi.useRealTimers();
   });
-  afterAll(() => {
-    variablesStore.reset();
-  });
 
   it('should validate name without delay', async () => {
     const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
@@ -154,47 +148,6 @@ describe('validators', () => {
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
-  });
-
-  it('should validate name with delay', async () => {
-    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
-    variablesStore.setItems([
-      {
-        id: '2251799813686037-clientNo',
-        name: 'clientNo',
-        value: '"CNT-1211132-0223222"',
-        hasActiveOperation: false,
-        sortValues: null,
-        isPreview: false,
-        isFirst: true,
-      },
-    ]);
-
-    await expect(
-      validateNameCompleteDeprecated('', {value: '"something"'}),
-    ).resolves.toBe('Name has to be filled');
-
-    await expect(
-      validateNameCompleteDeprecated(
-        'clientNo',
-        {value: '"something"'},
-        {...MOCK_FIELD_META_STATE, dirty: true},
-      ),
-    ).resolves.toBe('Name should be unique');
-
-    expect(
-      validateNameCompleteDeprecated(
-        'clientNo',
-        {value: '"something"'},
-        {...MOCK_FIELD_META_STATE, dirty: false},
-      ),
-    ).toBeUndefined();
-
-    expect(
-      validateNameCompleteDeprecated('anotherName', {value: '"something"'}),
-    ).toBeUndefined();
-
-    expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
 
   it('should validate value with delay', async () => {
@@ -246,76 +199,6 @@ describe('validators', () => {
         {...MOCK_FIELD_META_STATE, name: 'newVariables[0]'},
       ),
     ).toBe('Name has to be filled');
-  });
-
-  it('should validate modified name not duplicate', () => {
-    variablesStore.setItems([
-      {
-        id: '2251799813686037-clientNo',
-        name: 'clientNo',
-        value: '"CNT-1211132-0223222"',
-        hasActiveOperation: false,
-        sortValues: null,
-        isPreview: false,
-        isFirst: true,
-      },
-    ]);
-
-    expect(
-      validateModifiedNameNotDuplicateDeprecated(
-        'clientNo',
-        {newVariables: undefined},
-        {...MOCK_FIELD_META_STATE, dirty: true},
-      ),
-    ).toBeUndefined();
-
-    expect(
-      validateModifiedNameNotDuplicateDeprecated(
-        'clientNo',
-        {newVariables: [{name: 'clientNo'}]},
-        {...MOCK_FIELD_META_STATE, dirty: true},
-      ),
-    ).toBe('Name should be unique');
-
-    expect(
-      validateModifiedNameNotDuplicateDeprecated(
-        'test',
-        {newVariables: [{name: 'test'}, {name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, active: true},
-      ),
-    ).toBe('Name should be unique');
-
-    expect(
-      validateModifiedNameNotDuplicateDeprecated(
-        'test',
-        {newVariables: [{name: 'test'}, {name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, error: 'Name should be unique'},
-      ),
-    ).toBe('Name should be unique');
-
-    expect(
-      validateModifiedNameNotDuplicateDeprecated(
-        'test',
-        {newVariables: [{name: 'test'}, {name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, validating: true},
-      ),
-    ).toBe('Name should be unique');
-
-    expect(
-      validateModifiedNameNotDuplicateDeprecated(
-        'test',
-        {newVariables: [{name: 'test'}, {name: 'test'}]},
-        {...MOCK_FIELD_META_STATE},
-      ),
-    ).toBeUndefined();
-
-    expect(
-      validateModifiedNameNotDuplicateDeprecated(
-        'test',
-        {newVariables: [{name: 'test'}]},
-        {...MOCK_FIELD_META_STATE, active: true},
-      ),
-    ).toBeUndefined();
   });
 
   it('should validate modified value complete', () => {

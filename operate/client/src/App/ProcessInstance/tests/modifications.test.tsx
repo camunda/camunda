@@ -17,14 +17,12 @@ import {ProcessInstance} from '../index';
 import {
   createBatchOperation,
   createUser,
-  createVariable,
   createVariableV2,
 } from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import * as flowNodeInstanceUtils from 'modules/utils/flowNodeInstance';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
@@ -225,12 +223,10 @@ describe('ProcessInstance - modification mode', () => {
       }),
     );
 
-    mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -244,7 +240,6 @@ describe('ProcessInstance - modification mode', () => {
       }),
     );
 
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -400,7 +395,6 @@ describe('ProcessInstance - modification mode', () => {
       screen.getByText('Process Instance Modification Mode'),
     ).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
@@ -410,8 +404,6 @@ describe('ProcessInstance - modification mode', () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
 
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
-
-    mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(
       await screen.findByRole('button', {
