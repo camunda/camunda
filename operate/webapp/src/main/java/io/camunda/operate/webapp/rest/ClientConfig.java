@@ -31,6 +31,7 @@ public class ClientConfig {
   public String tasklistUrl;
   public boolean resourcePermissionsEnabled;
   public boolean multiTenancyEnabled;
+  public String databaseType;
   @Autowired private OperateProfileService profileService;
   @Autowired private OperateProperties operateProperties;
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -50,6 +51,7 @@ public class ClientConfig {
     tasklistUrl = operateProperties.getTasklistUrl();
     resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfiguration.getMultiTenancy().isChecksEnabled();
+    databaseType = profileService.isRdbmsProfileActive() ? "rdbms" : operateProperties.getDatabase().name().toLowerCase();
     try {
       return String.format(
           "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));
