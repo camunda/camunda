@@ -6,16 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-interface VariableEntity {
-  isFirst: boolean;
-  hasActiveOperation: boolean;
-  id?: string;
-  name: string;
-  value: string;
-  sortValues: [string] | null;
-  isPreview: boolean;
-}
-
 type OperationEntityType =
   | 'RESOLVE_INCIDENT'
   | 'CANCEL_PROCESS_INSTANCE'
@@ -122,7 +112,6 @@ interface ListenerEntity {
 type SortOrder = 'asc' | 'desc';
 
 export type {
-  VariableEntity,
   OperationEntityType,
   FlowNodeState,
   InstanceEntityState,

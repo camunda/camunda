@@ -7,16 +7,9 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getWrapper, mockProcessInstance} from './mocks';
-import {
-  createInstance,
-  createUser,
-  createVariable,
-  createVariableV2,
-} from 'modules/testUtils';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {createInstance, createUser, createVariableV2} from 'modules/testUtils';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -52,7 +45,6 @@ describe('Restricted user with resource based permissions', () => {
       permissions: ['UPDATE_PROCESS_INSTANCE'],
     });
 
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -70,12 +62,6 @@ describe('Restricted user with resource based permissions', () => {
     mockFetchProcessInstanceDeprecated().withSuccess({
       ...instanceMock,
       permissions: ['UPDATE_PROCESS_INSTANCE'],
-    });
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
     });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
@@ -96,14 +82,6 @@ describe('Restricted user with resource based permissions', () => {
   it('should not display add/edit variable buttons when update process instance permission is not available', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-    mockFetchVariables().withSuccess([createVariable()]);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
@@ -119,7 +97,6 @@ describe('Restricted user with resource based permissions', () => {
   it('should have a button to see full variable value', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-    mockFetchVariables().withSuccess([createVariable({isPreview: true})]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2({isTruncated: true})],
       page: {
@@ -143,12 +120,6 @@ describe('Restricted user with resource based permissions', () => {
       page: {
         totalItems: 1,
       },
-    });
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
     });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {

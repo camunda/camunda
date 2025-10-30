@@ -7,7 +7,6 @@
  */
 
 import {useForm} from 'react-final-form';
-import {PendingVariable} from './PendingVariable';
 import {NewVariable} from './NewVariable';
 import {FooterContainer} from './styled';
 import {AddVariableButton} from './AddVariableButton';
@@ -22,7 +21,6 @@ const Footer: React.FC<Props> = ({variant}) => {
 
   return (
     <FooterContainer>
-      {variant === 'pending-variable' && <PendingVariable />}
       {variant === 'add-variable' && <NewVariable />}
       {['initial', 'disabled'].includes(variant) && (
         <AddVariableButton

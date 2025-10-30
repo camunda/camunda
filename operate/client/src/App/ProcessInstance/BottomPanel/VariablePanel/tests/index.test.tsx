@@ -21,13 +21,15 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createBatchOperation,
   createInstance,
+<<<<<<< HEAD
   createOperation,
   createVariable,
+=======
+>>>>>>> 0c42c162 (refactor: remove dead code)
   createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
@@ -142,7 +144,6 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -170,7 +171,6 @@ describe('VariablePanel', () => {
   });
 
   it('should render variables', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -325,9 +325,84 @@ describe('VariablePanel', () => {
     async () => {
       vi.useFakeTimers();
 
+<<<<<<< HEAD
       mockFetchFlowNodeMetadata().withSuccess({
         ...singleInstanceMetadata,
         flowNodeInstanceId: '2251799813686104',
+=======
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '2251799813686104',
+    });
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /add variable/i,
+        }),
+      ).toBeEnabled(),
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /add variable/i,
+      }),
+    );
+    expect(
+      screen.queryByRole('button', {
+        name: /add variable/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /name/i,
+      }),
+      'foo',
+    );
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /value/i,
+      }),
+      '"bar"',
+    );
+
+    mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockUpdateElementInstanceVariables(':instance_id').withSuccess(null);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /save variable/i,
+        }),
+      ).toBeEnabled(),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: /save variable/i,
+      }),
+    );
+    expect(
+      screen.queryByRole('button', {
+        name: /add variable/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
+
+    mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'TEST_FLOW_NODE',
+        flowNodeInstanceId: '2',
+>>>>>>> 0c42c162 (refactor: remove dead code)
       });
 
       const {user} = render(
@@ -378,6 +453,7 @@ describe('VariablePanel', () => {
         createBatchOperation({id: 'batch-operation-id'}),
       );
 
+<<<<<<< HEAD
       await waitFor(() =>
         expect(
           screen.getByRole('button', {
@@ -421,6 +497,12 @@ describe('VariablePanel', () => {
       expect(
         screen.queryByTestId('variable-operation-spinner'),
       ).not.toBeInTheDocument();
+=======
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {totalItems: 1},
+    });
+>>>>>>> 0c42c162 (refactor: remove dead code)
 
       expect(
         screen.getByRole('button', {
@@ -513,6 +595,40 @@ describe('VariablePanel', () => {
         isDismissable: true,
         kind: 'error',
         title: 'Variable could not be saved',
+<<<<<<< HEAD
+=======
+      }),
+    );
+  });
+
+  it('should select correct tab when navigating between flow nodes', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {totalItems: 1},
+    });
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({name: 'test2'})],
+      page: {totalItems: 1},
+    });
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockFetchProcessDefinitionXml().withSuccess('');
+
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: '2',
+>>>>>>> 0c42c162 (refactor: remove dead code)
       });
 
       expect(
@@ -531,12 +647,22 @@ describe('VariablePanel', () => {
         ).not.toBeInTheDocument(),
       );
 
+<<<<<<< HEAD
       await user.type(
         screen.getByRole('textbox', {
           name: /name/i,
         }),
         '{backspace}',
       );
+=======
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({name: 'test2'})],
+      page: {totalItems: 1},
+    });
+    mockFetchProcessDefinitionXml().withSuccess('');
+>>>>>>> 0c42c162 (refactor: remove dead code)
 
       expect(
         await screen.findByText('Name should be unique'),
@@ -556,12 +682,51 @@ describe('VariablePanel', () => {
         },
       });
 
+<<<<<<< HEAD
       const {user} = render(
         <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() => {
         expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+=======
+    await waitFor(() =>
+      expect(flowNodeSelectionStore.state.selection?.flowNodeId).toBe(
+        'Event_0bonl61',
+      ),
+    );
+
+    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({name: 'test2'})],
+      page: {totalItems: 1},
+    });
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+
+    act(() => {
+      flowNodeSelectionStore.clearSelection();
+    });
+
+    expect(
+      screen.queryByText('No Input Mappings defined'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', {name: 'Variables'})).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tab', {name: 'Input Mappings'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('tab', {name: 'Output Mappings'}),
+    ).not.toBeInTheDocument();
+
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'StartEvent_1',
+>>>>>>> 0c42c162 (refactor: remove dead code)
       });
       expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
