@@ -8,12 +8,15 @@
 package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.property.BaseProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.property.UndeclaredProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.springframework.util.unit.DataSize;
 
 public class ObjectValue extends BaseValue {
   private final List<BaseProperty<? extends BaseValue>> declaredProperties;
@@ -144,6 +147,18 @@ public class ObjectValue extends BaseValue {
     return length;
   }
 
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("{");
+
+    writeJson(builder, declaredProperties, true);
+    writeJson(builder, undeclaredProperties, true);
+
+    builder.append("}");
+    return builder.toString();
+  }
+
   private <T extends BaseProperty<?>> void writeJson(
       final StringBuilder builder, final List<T> properties, final boolean maskSanitized) {
     for (int i = 0; i < properties.size(); i++) {
@@ -209,15 +224,22 @@ public class ObjectValue extends BaseValue {
     return declaredProperties.isEmpty() && undeclaredProperties.isEmpty();
   }
 
-  @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("{");
+  public Either<RuntimeException, Void> validateKeywordFields(final DataSize maxSize) {
+    final var validationErrors = new ArrayList<String>();
+    declaredProperties.forEach(
+        prop -> {
+          if (prop instanceof final StringProperty stringProperty
+              && stringProperty.resolveValue().getEncodedLength() > maxSize.toBytes()) {
+            validationErrors.add(
+                "Property " + stringProperty.getKey() + " exceeding max size of " + maxSize + ".");
+          }
+        });
 
-    writeJson(builder, declaredProperties, true);
-    writeJson(builder, undeclaredProperties, true);
-
-    builder.append("}");
-    return builder.toString();
+    if (validationErrors.isEmpty()) {
+      return Either.right(null);
+    }
+    return Either.left(
+        new IllegalArgumentException(
+            "Attribute validation errors: " + String.join(" ", validationErrors)));
   }
 }

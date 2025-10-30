@@ -64,7 +64,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     return key;
   }
 
-  protected T resolveValue() {
+  public T resolveValue() {
     if (isSet) {
       return value;
     } else if (defaultValue != null) {
