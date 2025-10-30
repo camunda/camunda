@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # Configuration
-COMMIT_THRESHOLD="${COMMIT_THRESHOLD:-50}"
+COMMIT_THRESHOLD="${COMMIT_THRESHOLD:-100}"
 STALE_DAYS_THRESHOLD="${STALE_DAYS_THRESHOLD:-7}"
 
 # Get the script directory and source our library functions
