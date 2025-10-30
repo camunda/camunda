@@ -660,7 +660,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       return CompletableFuture.completedFuture(null);
     }
 
-    return CompletableFuture.runAsync(CheckedRunnable.toUnchecked(this::flushLog), threadContext);
+    return CompletableFuture.runAsync(CheckedRunnable.toUnchecked(raftLog::flush), threadContext);
   }
 
   /**
