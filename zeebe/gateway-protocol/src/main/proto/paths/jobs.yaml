@@ -1,0 +1,248 @@
+# Job endpoints
+/jobs/activation:
+  post:
+    tags:
+      - Job
+    operationId: activateJobs
+    summary: Activate jobs
+    description: |
+      Iterate through all known partitions and activate jobs up to the requested maximum.
+    x-eventually-consistent: false
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/jobs/job-models.yaml#/JobActivationRequest'
+    responses:
+      "200":
+        description: The list of activated jobs.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/jobs/job-models.yaml#/JobActivationResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+
+/jobs/search:
+  post:
+    tags:
+      - Job
+    operationId: searchJobs
+    summary: Search jobs
+    description: Search for jobs based on given criteria.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/jobs/job-models.yaml#/JobSearchQuery'
+    responses:
+      "200":
+        description: The job search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/jobs/job-models.yaml#/JobSearchQueryResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/jobs/{jobKey}/failure:
+  post:
+    tags:
+      - Job
+    operationId: failJob
+    summary: Fail job
+    description: |
+      Mark the job as failed.
+    parameters:
+      - name: jobKey
+        in: path
+        required: true
+        description: The key of the job to fail.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/JobKey'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/jobs/job-models.yaml#/JobFailRequest'
+    responses:
+      "204":
+        description: The job is failed.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: >
+          The job with the given jobKey is not found. It was completed by another worker,
+          or the process instance itself was canceled.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "409":
+        description: >
+          The job with the given key is in the wrong state (i.e: not ACTIVATED or ACTIVATABLE).
+          The job was failed by another worker with retries = 0, and the process is now in an
+          incident state.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/jobs/{jobKey}/error:
+  post:
+    tags:
+      - Job
+    operationId: throwJobError
+    summary: Throw error for job
+    description: |
+      Reports a business error (i.e. non-technical) that occurs while processing a job.
+    parameters:
+      - name: jobKey
+        in: path
+        required: true
+        description: The key of the job.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/JobKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/jobs/job-models.yaml#/JobErrorRequest'
+    responses:
+      "204":
+        description: An error is thrown for the job.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: |
+          The job with the given key was not found or is not activated.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "409":
+        description: >
+          The job with the given key is in the wrong state currently.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/jobs/{jobKey}/completion:
+  post:
+    tags:
+      - Job
+    operationId: completeJob
+    summary: Complete job
+    description: |
+      Complete a job with the given payload, which allows completing the associated service task.
+    parameters:
+      - name: jobKey
+        in: path
+        required: true
+        description: The key of the job to complete.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/JobKey'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/jobs/job-models.yaml#/JobCompletionRequest'
+    responses:
+      "204":
+        description: The job was completed successfully.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: The job with the given key was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "409":
+        description: >
+          The job with the given key is in the wrong state currently.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/jobs/{jobKey}:
+  patch:
+    tags:
+      - Job
+    operationId: updateJob
+    summary: Update job
+    description: Update a job with the given key.
+    parameters:
+      - name: jobKey
+        in: path
+        required: true
+        description: The key of the job to update.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/JobKey'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/jobs/job-models.yaml#/JobUpdateRequest'
+    responses:
+      "204":
+        description: The job was updated successfully.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: The job with the jobKey is not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "409":
+        description: >
+          The job with the given key is in the wrong state currently.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
