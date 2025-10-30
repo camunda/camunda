@@ -8607,21 +8607,21 @@ components:
       type: string
       enum:
         - AUTHORIZATION
-        - MAPPING_RULE
-        - MESSAGE
         - BATCH
         - COMPONENT
+        - DECISION_DEFINITION
+        - DECISION_REQUIREMENTS_DEFINITION
+        - DOCUMENT
+        - GROUP
+        - MAPPING_RULE
+        - MESSAGE
+        - PROCESS_DEFINITION
+        - RESOURCE
+        - ROLE
         - SYSTEM
         - TENANT
-        - RESOURCE
-        - PROCESS_DEFINITION
-        - DECISION_REQUIREMENTS_DEFINITION
-        - DECISION_DEFINITION
-        - GROUP
         - USER
         - USER_TASK
-        - ROLE
-        - DOCUMENT
     OwnerTypeEnum:
       type: string
       description: The type of the owner of permissions.
