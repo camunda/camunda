@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.NOT_SUPPORTED;
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
 
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
@@ -14,7 +15,7 @@ import java.time.Duration;
 import java.util.Set;
 
 public class Metadata {
-  private static final String PREFIX = "camunda.cluster.metadata";
+  private static final String PREFIX = "";
 
   private static final Set<String> LEGACY_SYNC_DELAY_PROPERTIES =
       Set.of("zeebe.broker.cluster.configManager.gossip.syncDelay");
@@ -22,6 +23,9 @@ public class Metadata {
       Set.of("zeebe.broker.cluster.configManager.gossip.syncRequestTimeout");
   private static final Set<String> LEGACY_GOSSIP_FANOUT_PROPERTIES =
       Set.of("zeebe.broker.cluster.configManager.gossip.gossipFanout");
+
+  private Duration syncInitializerDelay =
+      ClusterConfigurationGossiperConfig.DEFAULT_SYNC_INITIALIZER_DELAY;
 
   /**
    * The delay between two sync requests in the ClusterConfigurationManager. A sync request is sent
@@ -69,5 +73,18 @@ public class Metadata {
 
   public void setGossipFanout(final Integer gossipFanout) {
     this.gossipFanout = gossipFanout;
+  }
+
+  public Duration getSyncInitializerDelay() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".sync-initializer-delay",
+        syncInitializerDelay,
+        Duration.class,
+        NOT_SUPPORTED,
+        Set.of());
+  }
+
+  public void setSyncInitializerDelay(final Duration delay) {
+    this.syncInitializerDelay = delay;
   }
 }
