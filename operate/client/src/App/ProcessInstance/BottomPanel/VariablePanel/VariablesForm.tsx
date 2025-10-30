@@ -16,7 +16,7 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {type FormRenderProps} from 'react-final-form';
 
 import {AddVariableButton, Form, VariablesContainer} from './styled';
-import Variables from '../Variables';
+import {Variables} from '../Variables';
 import {useWillAllFlowNodesBeCanceled} from 'modules/hooks/modifications';
 import {
   useHasPendingCancelOrMoveModification,

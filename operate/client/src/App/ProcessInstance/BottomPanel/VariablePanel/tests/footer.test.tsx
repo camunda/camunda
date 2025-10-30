@@ -25,8 +25,8 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {mockVariablesV2} from '../index.setup';
-import {VariablePanel} from '../../VariablePanel';
+import {mockVariablesV2} from './index.setup';
+import {VariablePanel} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const instanceMock = createInstance({id: '1'});
