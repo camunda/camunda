@@ -27,6 +27,8 @@ jobs:
           - branch: stable/8.7
             tasklist_mode: v2
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.49.0-jammy
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -138,11 +140,6 @@ jobs:
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
-
-      - name: Install Playwright Browsers
-        shell: bash
-        run: npx playwright install --with-deps chromium
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
         if: always()

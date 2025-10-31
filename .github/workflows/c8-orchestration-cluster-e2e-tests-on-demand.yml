@@ -18,6 +18,8 @@ permissions:
 jobs:
   validate-branch:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.49.0-jammy
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
     steps:
@@ -176,11 +178,6 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-
-      - name: Install Playwright Browsers
-        shell: bash
-        run: npx playwright install --with-deps chromium
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
         uses: actions/setup-python@v5
