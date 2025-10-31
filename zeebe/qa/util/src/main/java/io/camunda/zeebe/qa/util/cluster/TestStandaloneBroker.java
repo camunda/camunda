@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
@@ -134,6 +135,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);
+    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
+    withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
   }
 
   @Override
@@ -350,6 +353,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         SearchEngineIndexProperties.class);
     // enable schema creation as ES is used in the current tests
     withCreateSchema(true);
+
+    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "elasticsearch");
+    withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "elasticsearch");
     return this;
   }
 
