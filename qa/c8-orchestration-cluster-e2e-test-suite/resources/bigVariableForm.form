@@ -1,0 +1,24 @@
+{
+  "components": [
+    {
+      "label": "Process input variable",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_01ol0tq",
+        "columns": null
+      },
+      "id": "Field_00v3s0m",
+      "key": "processVar",
+      "description": "containing large input"
+    }
+  ],
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.4.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.35.0"
+  },
+  "schemaVersion": 18,
+  "id": "BigVariableForm",
+  "type": "default"
+}
