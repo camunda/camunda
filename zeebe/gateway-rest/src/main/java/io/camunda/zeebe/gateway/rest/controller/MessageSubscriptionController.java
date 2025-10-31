@@ -15,8 +15,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionProcessDefinitionStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionProcessDefinitionStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -48,19 +46,6 @@ public class MessageSubscriptionController {
       @RequestBody(required = false) final MessageSubscriptionSearchQuery searchRequest) {
     return SearchQueryRequestMapper.toMessageSubscriptionQuery(searchRequest)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
-  }
-
-  @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/message-subscriptions/statistics/process-definitions")
-  public ResponseEntity<MessageSubscriptionProcessDefinitionStatisticsQueryResult>
-      processDefinitionStatistics(
-          @RequestBody(required = false)
-              final MessageSubscriptionProcessDefinitionStatisticsQuery searchRequest) {
-    return SearchQueryRequestMapper.toMessageSubscriptionProcessDefinitionStatisticsQuery(
-            searchRequest)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            this::getMessageSubscriptionProcessDefinitionStatistics);
   }
 
   @RequiresSecondaryStorage
@@ -96,22 +81,6 @@ public class MessageSubscriptionController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
-  private ResponseEntity<MessageSubscriptionProcessDefinitionStatisticsQueryResult>
-      getMessageSubscriptionProcessDefinitionStatistics(
-          final io.camunda.search.query.MessageSubscriptionProcessDefinitionStatisticsQuery query) {
-    try {
-      final var result =
-          messageSubscriptionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getMessageSubscriptionProcessDefinitionStatistics(query);
-      return ResponseEntity.ok(
-          SearchQueryResponseMapper.toMessageSubscriptionProcessDefinitionStatisticsQueryResponse(
-              result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -32,6 +32,7 @@ import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceStatisticsDbReader;
@@ -77,6 +78,7 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
+import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
@@ -228,6 +230,13 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public ProcessDefinitionMessageSubscriptionStatisticsReader
+      messageSubscriptionProcessDefinitionStatisticsReader(
+          final MessageSubscriptionMapper messageSubscriptionMapper) {
+    return new ProcessDefinitionMessageSubscriptionStatisticsDbReader(messageSubscriptionMapper);
+  }
+
+  @Bean
   public BatchOperationDbReader batchOperationReader(
       final BatchOperationMapper batchOperationMapper) {
     return new BatchOperationDbReader(batchOperationMapper);
@@ -369,6 +378,8 @@ public class RdbmsConfiguration {
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
+      final ProcessDefinitionMessageSubscriptionStatisticsReader
+          processDefinitionMessageSubscriptionStatisticsReader,
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
@@ -400,6 +411,8 @@ public class RdbmsConfiguration {
         usageMetricReader,
         usageMetricTUDbReader,
         messageSubscriptionReader,
+        (ProcessDefinitionMessageSubscriptionStatisticsDbReader)
+            processDefinitionMessageSubscriptionStatisticsReader,
         correlatedMessageSubscriptionReader);
   }
 

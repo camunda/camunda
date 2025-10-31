@@ -17,10 +17,12 @@ package io.camunda.client.impl.statistics.response;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
 import java.util.Collections;
@@ -30,6 +32,13 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 public class StatisticsResponseMapper {
+
+  public static ProcessDefinitionMessageSubscriptionStatistics
+      toProcessDefinitionMessageSubscriptionStatisticsResponse(
+          final ProcessDefinitionMessageSubscriptionStatisticsQueryResult response) {
+    return new ProcessDefinitionMessageSubscriptionStatisticsImpl(
+        response.getItems(), response.getPage().getEndCursor());
+  }
 
   public static List<ProcessElementStatistics> toProcessDefinitionStatisticsResponse(
       final ProcessDefinitionElementStatisticsQueryResult response) {

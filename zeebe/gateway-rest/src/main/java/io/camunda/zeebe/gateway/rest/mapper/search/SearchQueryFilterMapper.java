@@ -30,7 +30,6 @@ import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
-import io.camunda.search.filter.MessageSubscriptionProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
@@ -800,21 +799,6 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-    }
-    return builder.build();
-  }
-
-  static MessageSubscriptionProcessDefinitionStatisticsFilter
-      toMessageSubscriptionProcessDefinitionFilter(
-          final io.camunda.zeebe.gateway.protocol.rest
-                  .MessageSubscriptionProcessDefinitionStatisticsFilter
-              filter) {
-    final var builder = FilterBuilders.messageSubscriptionProcessDefinitionStatistics();
-
-    if (filter != null) {
-      ofNullable(filter.getProcessDefinitionId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::processDefinitionIdOperations);
     }
     return builder.build();
   }

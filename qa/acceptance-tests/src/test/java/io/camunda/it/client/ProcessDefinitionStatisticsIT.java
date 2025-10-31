@@ -953,8 +953,13 @@ public class ProcessDefinitionStatisticsIT {
   }
 
   private static ProcessInstanceEvent createInstance(final long processDefinitionKey) {
+    return createInstance(processDefinitionKey, Map.of());
+  }
+
+  private static ProcessInstanceEvent createInstance(
+      final long processDefinitionKey, final Map<String, Object> variables) {
     return TestHelper.startScopedProcessInstance(
-        camundaClient, processDefinitionKey, testScopeId, Map.of());
+        camundaClient, processDefinitionKey, testScopeId, variables);
   }
 
   private static ProcessInstance getProcessInstance(final long piKey) {
@@ -976,5 +981,63 @@ public class ProcessDefinitionStatisticsIT {
         .join()
         .items()
         .getFirst();
+  }
+
+  @Test
+  void shouldCountMultipleSubscriptionsInSameProcessInstance() {
+    // given
+    final var processModel =
+        Bpmn.createExecutableProcess("multiSubProcess")
+            .startEvent()
+            .parallelGateway("fork")
+            .intermediateCatchEvent(
+                "catch1", e -> e.message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key1")))
+            .endEvent("end1")
+            .moveToNode("fork")
+            .intermediateCatchEvent(
+                "catch2", e -> e.message(m -> m.name("msg2").zeebeCorrelationKeyExpression("key2")))
+            .endEvent("end2")
+            .done();
+    final var processDefinitionKey =
+        deployResource(processModel, "multi-sub-process.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    // Create one instance that will have 2 active subscriptions
+    createInstance(processDefinitionKey, Map.of("key1", "A", "key2", "B"));
+
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.ACTIVE),
+        1);
+
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final var subscriptions =
+                  camundaClient.newMessageSubscriptionSearchRequest().send().join();
+              assertThat(subscriptions.items()).hasSize(2);
+            });
+
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final var subscriptions =
+                  camundaClient.newMessageSubscriptionSearchRequest().send().join();
+              assertThat(subscriptions.items()).hasSize(2);
+            });
+
+    // when
+    final var subs = camundaClient.newMessageSubscriptionSearchRequest().send().join();
+    final var actual =
+        camundaClient.newProcessDefinitionMessageSubscriptionStatisticsRequest().send().join();
+
+    // then
+    assertThat(actual.items()).hasSize(1);
+    final var stats = actual.items().getFirst();
+    assertThat(stats.getActiveSubscriptions()).isEqualTo(2L);
+    // But only 1 process instance has subscriptions
+    assertThat(stats.getProcessInstancesWithActiveSubscriptions()).isEqualTo(1L);
   }
 }

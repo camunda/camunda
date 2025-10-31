@@ -44,11 +44,12 @@ import io.camunda.search.clients.reader.JobReader;
 import io.camunda.search.clients.reader.MappingRuleDocumentReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.clients.reader.MessageSubscriptionDocumentReader;
-import io.camunda.search.clients.reader.MessageSubscriptionProcessDefinitionStatisticsReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
+import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsDocumentReader;
+import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
@@ -251,11 +252,10 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
-  public MessageSubscriptionProcessDefinitionStatisticsReader
+  public ProcessDefinitionMessageSubscriptionStatisticsReader
       messageSubscriptionProcessDefinitionStatisticsReader(
           final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new io.camunda.search.clients.reader
-        .MessageSubscriptionProcessDefinitionStatisticsDocumentReader(
+    return new ProcessDefinitionMessageSubscriptionStatisticsDocumentReader(
         executor, descriptors.get(EventTemplate.class));
   }
 

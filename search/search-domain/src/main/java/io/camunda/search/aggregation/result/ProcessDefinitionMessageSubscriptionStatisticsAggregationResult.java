@@ -7,9 +7,9 @@
  */
 package io.camunda.search.aggregation.result;
 
-import io.camunda.search.entities.MessageSubscriptionProcessDefinitionStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import java.util.List;
 
-public record MessageSubscriptionProcessDefinitionStatisticsAggregationResult(
-    List<MessageSubscriptionProcessDefinitionStatisticsEntity> items, String endCursor)
+public record ProcessDefinitionMessageSubscriptionStatisticsAggregationResult(
+    List<ProcessDefinitionMessageSubscriptionStatisticsEntity> items, String endCursor)
     implements AggregationResultBase {}

@@ -164,6 +164,7 @@ import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
@@ -925,6 +926,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
       final long processInstanceKey);
+
+  /**
+   * Executes a search request to query process definition message subscription statistics.
+   *
+   * <pre>
+   * camundaClient
+   *  .newProcessDefinitionMessageSubscriptionStatisticsRequest()
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process definition message subscription statistics request
+   */
+  ProcessDefinitionMessageSubscriptionStatisticsRequest
+      newProcessDefinitionMessageSubscriptionStatisticsRequest();
 
   /**
    * Executes a search request to query usage metrics statistics.

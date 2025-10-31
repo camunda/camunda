@@ -19,6 +19,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatistics
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
@@ -136,6 +138,19 @@ public class ProcessDefinitionController {
         .fold(RestErrorMapper::mapProblemToResponse, this::elementStatistics);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/message-subscriptions")
+  public ResponseEntity<ProcessDefinitionMessageSubscriptionStatisticsQueryResult>
+      processDefinitionStatistics(
+          @RequestBody(required = false)
+              final ProcessDefinitionMessageSubscriptionStatisticsQuery searchRequest) {
+    return SearchQueryRequestMapper.toMessageSubscriptionProcessDefinitionStatisticsQuery(
+            searchRequest)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            this::getMessageSubscriptionProcessDefinitionStatistics);
+  }
+
   @CamundaPostMapping(path = "/statistics/process-instances")
   public ResponseEntity<ProcessDefinitionInstanceStatisticsQueryResult> processInstanceStatistics(
       @RequestBody(required = false) final ProcessDefinitionInstanceStatisticsQuery query) {
@@ -179,6 +194,22 @@ public class ProcessDefinitionController {
               .getProcessDefinitionInstanceStatistics(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceStatisticsQueryResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<ProcessDefinitionMessageSubscriptionStatisticsQueryResult>
+      getMessageSubscriptionProcessDefinitionStatistics(
+          final io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
+    try {
+      final var result =
+          processDefinitionServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getProcessDefinitionMessageSubscriptionStatistics(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toMessageSubscriptionProcessDefinitionStatisticsQueryResponse(
+              result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

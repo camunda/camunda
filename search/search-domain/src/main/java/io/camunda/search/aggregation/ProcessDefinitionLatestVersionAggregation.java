@@ -26,5 +26,4 @@ public record ProcessDefinitionLatestVersionAggregation(
   // Aggregation fields
   public static final String AGGREGATION_GROUP_BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String AGGREGATION_GROUP_TENANT_ID = "tenantId";
-  public static final String AGGREGATION_MAX_VERSION = "version";
 }

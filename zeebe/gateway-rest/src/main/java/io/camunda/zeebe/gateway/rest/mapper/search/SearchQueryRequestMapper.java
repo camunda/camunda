@@ -598,26 +598,18 @@ public final class SearchQueryRequestMapper {
 
   public static Either<
           ProblemDetail,
-          io.camunda.search.query.MessageSubscriptionProcessDefinitionStatisticsQuery>
+          io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery>
       toMessageSubscriptionProcessDefinitionStatisticsQuery(
-          final MessageSubscriptionProcessDefinitionStatisticsQuery request) {
+          final ProcessDefinitionMessageSubscriptionStatisticsQuery request) {
     if (request == null) {
       return Either.right(
           SearchQueryBuilders.messageSubscriptionProcessDefinitionStatisticsQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
-    final var sort =
-        SearchQuerySortRequestMapper.toSearchQuerySort(
-            SearchQuerySortRequestMapper
-                .fromMessageSubscriptionProcessDefinitionStatisticsSortRequest(request.getSort()),
-            SortOptionBuilders::messageSubscriptionProcessDefinitionStatistics,
-            SearchQuerySortRequestMapper
-                ::applyMessageSubscriptionProcessDefinitionStatisticsSortField);
-    final var filter =
-        SearchQueryFilterMapper.toMessageSubscriptionProcessDefinitionFilter(request.getFilter());
+    final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter,
-        sort,
+        Either.right(null),
         page,
         SearchQueryBuilders::messageSubscriptionProcessDefinitionStatisticsQuery);
   }

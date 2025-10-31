@@ -35,9 +35,9 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
-import io.camunda.search.entities.MessageSubscriptionProcessDefinitionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -112,8 +112,6 @@ import io.camunda.zeebe.gateway.protocol.rest.JobStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionProcessDefinitionStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionProcessDefinitionStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateEnum;
@@ -125,6 +123,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatistic
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
@@ -1398,13 +1398,13 @@ public final class SearchQueryResponseMapper {
                 : processInstanceEntity.processDefinitionName());
   }
 
-  private static List<MessageSubscriptionProcessDefinitionStatisticsResult>
+  private static List<ProcessDefinitionMessageSubscriptionStatisticsResult>
       toMessageSubscriptionProcessDefinitionStatisticsQueryResponse(
-          final List<MessageSubscriptionProcessDefinitionStatisticsEntity> entities) {
+          final List<ProcessDefinitionMessageSubscriptionStatisticsEntity> entities) {
     return entities.stream()
         .map(
             e ->
-                new MessageSubscriptionProcessDefinitionStatisticsResult()
+                new ProcessDefinitionMessageSubscriptionStatisticsResult()
                     .processDefinitionId(e.processDefinitionId())
                     .processDefinitionKey(e.processDefinitionKey())
                     .activeSubscriptions(e.activeSubscriptions())
@@ -1413,11 +1413,11 @@ public final class SearchQueryResponseMapper {
         .toList();
   }
 
-  public static MessageSubscriptionProcessDefinitionStatisticsQueryResult
+  public static ProcessDefinitionMessageSubscriptionStatisticsQueryResult
       toMessageSubscriptionProcessDefinitionStatisticsQueryResponse(
-          final SearchQueryResult<MessageSubscriptionProcessDefinitionStatisticsEntity> result) {
+          final SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new MessageSubscriptionProcessDefinitionStatisticsQueryResult()
+    return new ProcessDefinitionMessageSubscriptionStatisticsQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
