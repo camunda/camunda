@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling.result;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.jobhandling.UserTaskResultFunction;
 
@@ -32,6 +31,7 @@ public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
 
   @Override
   public ResultProcessor createProcessor(final ResultProcessorStrategyContext context) {
+    final MethodInfo methodInfo = context.methodInfo();
     if (methodInfo.getReturnType() != null
         && methodInfo.getReturnType().equals(UserTaskResultFunction.class)) {
       return new ResultFunctionResultProcessor();

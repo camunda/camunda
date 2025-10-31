@@ -76,7 +76,6 @@ public class DefaultParameterResolverStrategyTest {
   @Test
   void shouldResolveDocument() {
     final CamundaClient camundaClient = mock(CamundaClient.class);
-
     final DefaultParameterResolverStrategy strategy =
         new DefaultParameterResolverStrategy(new CamundaObjectMapper());
     final List<ParameterInfo> parameters = parameterInfos(this, "documentMethod");
@@ -89,11 +88,14 @@ public class DefaultParameterResolverStrategyTest {
 
   @Test
   void shouldResolveProcessInstanceKeyNative() {
+    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyNative");
     assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
+    final ParameterResolver parameterResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
     assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
     final KeyParameterResolver processInstanceKeyParameterResolver =
         (KeyParameterResolver) parameterResolver;
@@ -103,11 +105,14 @@ public class DefaultParameterResolverStrategyTest {
 
   @Test
   void shouldResolveProcessInstanceKeyLong() {
+    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyLong");
     assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
+    final ParameterResolver parameterResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
     assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
     final KeyParameterResolver processInstanceKeyParameterResolver =
         (KeyParameterResolver) parameterResolver;
@@ -117,11 +122,14 @@ public class DefaultParameterResolverStrategyTest {
 
   @Test
   void shouldResolveProcessInstanceKeyString() {
+    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyString");
     assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
+    final ParameterResolver parameterResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
     assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
     final KeyParameterResolver processInstanceKeyParameterResolver =
         (KeyParameterResolver) parameterResolver;
