@@ -27,6 +27,7 @@ import io.camunda.zeebe.stream.util.Records;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.verification.VerificationWithTimeout;
+import org.springframework.util.unit.DataSize;
 
 @ExtendWith(StreamPlatformExtension.class)
 class StreamProcessorErrorHandlingTest {
@@ -81,7 +82,8 @@ class StreamProcessorErrorHandlingTest {
   void shouldContinueProcessingEvenIfErrorHandlingFailedForUserCommand() {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var successResult = new BufferedProcessingResultBuilder((c, s) -> true);
+    final var successResult =
+        new BufferedProcessingResultBuilder((c, s) -> true, DataSize.ofKilobytes(32));
     successResult.appendRecordReturnEither(
         1,
         Records.processInstance(1),

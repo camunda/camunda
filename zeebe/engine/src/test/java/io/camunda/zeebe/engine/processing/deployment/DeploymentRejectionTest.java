@@ -55,6 +55,21 @@ public class DeploymentRejectionTest {
   }
 
   @Test
+  public void shouldRejectDeploymentIfIdTooLong() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("x".repeat(33 * 1024)).startEvent().endEvent().done();
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment.getRecordType())
+        .isEqualTo(RecordType.COMMAND_REJECTION);
+  }
+
+  @Test
   public void shouldRejectDeploymentIfNotValidDesignTimeAspect() {
     // given
     final String resource = "/processes/invalid_process.bpmn";
