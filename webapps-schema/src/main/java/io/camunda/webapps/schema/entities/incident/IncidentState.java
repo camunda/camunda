@@ -7,12 +7,11 @@
  */
 package io.camunda.webapps.schema.entities.incident;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public enum IncidentState {
-  ACTIVE("CREATED"),
+  ACTIVE("CREATED", "RESOLVE"),
   MIGRATED("MIGRATED"),
   RESOLVED("RESOLVED"),
   PENDING(null);
@@ -20,20 +19,22 @@ public enum IncidentState {
   private static final Map<String, IncidentState> INTENT_MAP = new HashMap<>();
 
   static {
-    Arrays.stream(IncidentState.values()).forEach(is -> INTENT_MAP.put(is.getZeebeIntent(), is));
+    for (final IncidentState state : IncidentState.values()) {
+      for (final String intent : state.zeebeIntents) {
+        if (intent != null) {
+          INTENT_MAP.put(intent, state);
+        }
+      }
+    }
   }
 
-  private final String zeebeIntent;
+  private final String[] zeebeIntents;
 
-  IncidentState(final String zeebeIntent) {
-    this.zeebeIntent = zeebeIntent;
+  IncidentState(final String... zeebeIntents) {
+    this.zeebeIntents = zeebeIntents != null ? zeebeIntents : new String[0];
   }
 
   public static IncidentState createFrom(final String zeebeIntent) {
     return INTENT_MAP.get(zeebeIntent);
-  }
-
-  public String getZeebeIntent() {
-    return zeebeIntent;
   }
 }

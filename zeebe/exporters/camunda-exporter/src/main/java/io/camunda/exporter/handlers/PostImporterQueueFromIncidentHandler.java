@@ -17,10 +17,13 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 
 public class PostImporterQueueFromIncidentHandler
     implements ExportHandler<PostImporterQueueEntity, IncidentRecordValue> {
 
+  private static final Set<IncidentIntent> SUPPORTED_INTENTS =
+      Set.of(IncidentIntent.CREATED, IncidentIntent.MIGRATED, IncidentIntent.RESOLVED);
   private final String indexName;
 
   public PostImporterQueueFromIncidentHandler(final String indexName) {
@@ -39,7 +42,7 @@ public class PostImporterQueueFromIncidentHandler
 
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
-    return true;
+    return SUPPORTED_INTENTS.contains((IncidentIntent) record.getIntent());
   }
 
   @Override
