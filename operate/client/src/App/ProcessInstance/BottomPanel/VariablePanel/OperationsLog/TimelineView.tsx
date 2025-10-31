@@ -9,14 +9,11 @@
 import {useState, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {Tag} from '@carbon/react';
-import {Information, Edit, Add} from '@carbon/react/icons';
+import {Information} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';
-import {useAuditLog} from 'modules/queries/auditLog/useAuditLog';
-import type {
-  AuditLogEntry,
-  AuditLogSearchRequest,
-} from 'modules/api/v2/auditLog/searchAuditLog';
-import {CommentModal} from 'App/AuditLog/CommentModal';
+import {DetailsModal} from './DetailsModal';
+import {mockOperationLog} from './mocks';
+import type {MockAuditLogEntry} from './mocks';
 import {
   TimelineContainer,
   TimelineItem,
@@ -30,50 +27,23 @@ import {
   TimelineLine,
 } from './styled';
 
-type CommentModalState = {
+type DetailsModalState = {
   open: boolean;
-  entryId: string;
-  initialComment?: string;
-  mode: 'view' | 'edit' | 'add';
+  entry: MockAuditLogEntry | null;
 };
 
 const OperationsLogTimeline: React.FC = observer(() => {
-  const [commentModal, setCommentModal] = useState<CommentModalState>({
+  const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
     open: false,
-    entryId: '',
-    mode: 'view',
+    entry: null,
   });
 
-  // Build request to fetch operations for this process instance
-  const request: AuditLogSearchRequest = useMemo(
-    () => ({
-      sort: [
-        {
-          field: 'startTimestamp',
-          order: 'DESC',
-        },
-      ],
-      filter: {},
-      page: {
-        from: 0,
-        limit: 50,
-      },
-    }),
-    [],
-  );
-
-  const {data, isLoading, error} = useAuditLog(request);
-
-  const openCommentModal = (
-    entryId: string,
-    mode: 'view' | 'edit' | 'add',
-    initialComment?: string,
-  ) => {
-    setCommentModal({open: true, entryId, mode, initialComment});
+  const openDetailsModal = (entry: MockAuditLogEntry) => {
+    setDetailsModal({open: true, entry});
   };
 
-  const closeCommentModal = () => {
-    setCommentModal({open: false, entryId: '', mode: 'view'});
+  const closeDetailsModal = () => {
+    setDetailsModal({open: false, entry: null});
   };
 
   const formatOperationType = (type: string) => {
@@ -108,31 +78,13 @@ const OperationsLogTimeline: React.FC = observer(() => {
       .join(' ');
   };
 
-  if (isLoading) {
-    return <div style={{padding: '16px'}}>Loading operations...</div>;
-  }
-
-  if (error) {
-    return (
-      <div style={{padding: '16px', color: 'red'}}>
-        Error loading operations log
-      </div>
-    );
-  }
-
-  if (!data?.items || data.items.length === 0) {
-    return (
-      <div style={{padding: '16px'}}>No operations found for this instance</div>
-    );
-  }
-
   return (
     <>
       <TimelineContainer>
-        {data.items.map((entry: AuditLogEntry, index: number) => (
+        {mockOperationLog.map((entry: MockAuditLogEntry, index: number) => (
           <TimelineItem key={entry.id}>
             <TimelineMarker $state={entry.operationState} />
-            {index < data.items.length - 1 && <TimelineLine />}
+            {index < mockOperationLog.length - 1 && <TimelineLine />}
             <TimelineContent>
               <TimelineHeader>
                 <TimelineTitle>
@@ -155,82 +107,34 @@ const OperationsLogTimeline: React.FC = observer(() => {
               {entry.comment && <TimelineBody>{entry.comment}</TimelineBody>}
 
               <TimelineActions orientation="horizontal" gap={2}>
-                {entry.comment && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openCommentModal(entry.id, 'view', entry.comment)
-                      }
-                      title="View comment"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        color: 'var(--cds-link-primary)',
-                      }}
-                    >
-                      <Information size={16} />
-                      <span style={{fontSize: '0.875rem'}}>View comment</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openCommentModal(entry.id, 'edit', entry.comment)
-                      }
-                      title="Edit comment"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        color: 'var(--cds-link-primary)',
-                      }}
-                    >
-                      <Edit size={16} />
-                      <span style={{fontSize: '0.875rem'}}>Edit</span>
-                    </button>
-                  </>
-                )}
-                {!entry.comment && (
-                  <button
-                    type="button"
-                    onClick={() => openCommentModal(entry.id, 'add')}
-                    title="Add comment"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      color: 'var(--cds-link-primary)',
-                    }}
-                  >
-                    <Add size={16} />
-                    <span style={{fontSize: '0.875rem'}}>Add comment</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => openDetailsModal(entry)}
+                  title="View details"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: 'var(--cds-text-primary)',
+                  }}
+                >
+                  <Information size={16} />
+                  <span style={{fontSize: '0.875rem'}}>View details</span>
+                </button>
               </TimelineActions>
             </TimelineContent>
           </TimelineItem>
         ))}
       </TimelineContainer>
 
-      <CommentModal
-        open={commentModal.open}
-        onClose={closeCommentModal}
-        entryId={commentModal.entryId}
-        initialComment={commentModal.initialComment}
-        mode={commentModal.mode}
+      <DetailsModal
+        open={detailsModal.open}
+        onClose={closeDetailsModal}
+        entry={detailsModal.entry}
       />
     </>
   );

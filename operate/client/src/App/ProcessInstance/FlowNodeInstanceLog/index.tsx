@@ -41,7 +41,6 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
 
   const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
   const instanceHistoryRef = useRef<HTMLDivElement>(null);
-
   return (
     <Container data-testid="instance-history">
       <PanelHeader title="Instance History" size="sm">

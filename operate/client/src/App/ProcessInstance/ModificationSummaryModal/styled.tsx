@@ -14,7 +14,7 @@ import {DataTable as BaseDataTable} from 'modules/components/DataTable';
 const Title = styled.h4`
   ${styles.productiveHeading01};
   margin-top: var(--cds-spacing-08);
-  margin-bottom: var(--cds-spacing-06);
+  margin-bottom: var(--cds-spacing-03);
 `;
 
 const EmptyMessage = styled.p`

@@ -16,66 +16,87 @@ import {
   TableHeader,
   TableBody,
   TableCell,
+  Tag,
+  Dropdown,
 } from '@carbon/react';
-import {Information, Edit, Add} from '@carbon/react/icons';
+import {Information} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';
-import {useAuditLog} from 'modules/queries/auditLog/useAuditLog';
-import type {
-  AuditLogEntry,
-  AuditLogSearchRequest,
-} from 'modules/api/v2/auditLog/searchAuditLog';
-import {CommentModal} from 'App/AuditLog/CommentModal';
+import {DetailsModal} from './DetailsModal';
+import {mockOperationLog} from './mocks';
+import type {MockAuditLogEntry} from './mocks';
 //import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
+import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {EmptyMessage} from 'modules/components/EmptyMessage';
+import {EmptyMessageContainer} from '../styled';
 
-type CommentModalState = {
+type DetailsModalState = {
   open: boolean;
-  entryId: string;
-  initialComment?: string;
-  mode: 'view' | 'edit' | 'add';
+  entry: MockAuditLogEntry | null;
+};
+
+const getOperationStateType = (
+  state: string,
+): 'red' | 'green' | 'blue' | 'gray' | 'purple' | 'cyan' => {
+  switch (state) {
+    case 'Completed':
+      return 'green';
+    case 'Failed':
+    case 'Cancelled':
+      return 'red';
+    case 'Active':
+      return 'blue';
+    case 'Created':
+      return 'cyan';
+    default:
+      return 'gray';
+  }
 };
 
 const OperationsLogTable: React.FC = observer(() => {
   // const {processInstanceId = ''} = useProcessInstancePageParams();
 
-  const [commentModal, setCommentModal] = useState<CommentModalState>({
+  const isRootNodeSelected = useIsRootNodeSelected();
+  const {data: businessObjects} = useBusinessObjects();
+  const selectedFlowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+  const isUserTaskSelected =
+    !isRootNodeSelected &&
+    selectedFlowNodeId !== undefined &&
+    businessObjects?.[selectedFlowNodeId]?.$type === 'bpmn:UserTask';
+
+  const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
     open: false,
-    entryId: '',
-    mode: 'view',
+    entry: null,
   });
 
-  // Build request to fetch operations for this process instance
-  const request: AuditLogSearchRequest = useMemo(
-    () => ({
-      sort: [
-        {
-          field: 'startTimestamp',
-          order: 'DESC',
-        },
-      ],
-      filter: {
-        // processInstanceKey: processInstanceId, disabling for demo purposes
-      },
-      page: {
-        from: 0,
-        limit: 50,
-      },
-    }),
-    [],
-    // [processInstanceId],
+  const [operationTypeFilter, setOperationTypeFilter] = useState<string>(
+    'All operations',
   );
 
-  const {data, isLoading, error} = useAuditLog(request);
+  const [sortKey, setSortKey] = useState<string>('startTimestamp');
+  const [sortDirection, setSortDirection] = useState<'ASC' | 'DESC' | 'NONE'>(
+    'DESC',
+  );
 
-  const openCommentModal = (
-    entryId: string,
-    mode: 'view' | 'edit' | 'add',
-    initialComment?: string,
-  ) => {
-    setCommentModal({open: true, entryId, mode, initialComment});
+  const handleSort = (key: string) => {
+    if (key === 'actions') {
+      return;
+    }
+    if (key !== sortKey) {
+      setSortKey(key);
+      setSortDirection('ASC');
+      return;
+    }
+    setSortDirection((prev) => (prev === 'ASC' ? 'DESC' : prev === 'DESC' ? 'NONE' : 'ASC'));
   };
 
-  const closeCommentModal = () => {
-    setCommentModal({open: false, entryId: '', mode: 'view'});
+  const openDetailsModal = (entry: MockAuditLogEntry) => {
+    setDetailsModal({open: true, entry});
+  };
+
+  const closeDetailsModal = () => {
+    setDetailsModal({open: false, entry: null});
   };
 
   const formatOperationType = (type: string) => {
@@ -95,106 +116,105 @@ const OperationsLogTable: React.FC = observer(() => {
   const headers = [
     {key: 'operationType', header: 'Operation'},
     {key: 'operationState', header: 'Status'},
-    {key: 'user', header: 'User'},
-    {key: 'startTimestamp', header: 'Timestamp'},
-    {key: 'comment', header: 'Comment'},
-    {key: 'actions', header: ''},
+    {key: 'user', header: 'Performed by'},
+    {key: 'startTimestamp', header: 'Time'},
+    {key: 'actions', header: ' '},
   ];
 
   const rows = useMemo(
     () =>
-      data?.items.map((entry: AuditLogEntry) => ({
+      (
+        isRootNodeSelected
+          ? mockOperationLog.filter(
+              (entry: MockAuditLogEntry) => entry.details?.userTask === undefined,
+            )
+          : isUserTaskSelected
+          ? mockOperationLog.filter(
+              (entry: MockAuditLogEntry) => entry.details?.userTask !== undefined,
+            )
+          : []
+      ).map((entry: MockAuditLogEntry) => ({
         id: entry.id,
         operationType: formatOperationType(entry.operationType),
         operationState: formatOperationState(entry.operationState),
         user: entry.user,
         startTimestamp: formatDate(entry.startTimestamp),
-        comment: entry.comment ? (
-          <div
-            style={{
-              maxWidth: '200px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {entry.comment}
-          </div>
-        ) : (
-          '-'
-        ),
+        // keep raw value for accurate sorting
+        startTimestampRaw: entry.startTimestamp,
         actions: (
           <Stack orientation="horizontal" gap={2}>
-            {entry.comment && (
-              <>
-                <button
-                  type="button"
-                  onClick={() =>
-                    openCommentModal(entry.id, 'view', entry.comment)
-                  }
-                  title="View comment"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                  }}
-                >
-                  <Information size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    openCommentModal(entry.id, 'edit', entry.comment)
-                  }
-                  title="Edit comment"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                  }}
-                >
-                  <Edit size={16} />
-                </button>
-              </>
-            )}
-            {!entry.comment && (
-              <button
-                type="button"
-                onClick={() => openCommentModal(entry.id, 'add')}
-                title="Add comment"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                }}
-              >
-                <Add size={16} />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => openDetailsModal(entry)}
+              title="View details"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                color: 'var(--cds-text-primary)',
+              }}
+            >
+              <Information size={16} />
+            </button>
           </Stack>
         ),
       })) || [],
-    [data],
+    [isRootNodeSelected, isUserTaskSelected],
   );
 
-  if (isLoading) {
-    return <div style={{padding: '16px'}}>Loading operations...</div>;
-  }
-
-  if (error) {
-    return (
-      <div style={{padding: '16px', color: 'red'}}>
-        Error loading operations log
-      </div>
+  const operationTypeOptions = useMemo(() => {
+    const unique = Array.from(
+      new Set(rows.map((row: any) => row.operationType)),
     );
-  }
+    return ['All operations', ...unique];
+  }, [rows]);
 
-  if (!data?.items || data.items.length === 0) {
+  const filteredRows = useMemo(() => {
+    if (operationTypeFilter === 'All operations') {
+      return rows;
+    }
+    return rows.filter((row) => row.operationType === operationTypeFilter);
+  }, [rows, operationTypeFilter]);
+
+  const sortedRows = useMemo(() => {
+    if (sortDirection === 'NONE') {
+      return filteredRows;
+    }
+    const data = [...filteredRows];
+    const directionMultiplier = sortDirection === 'ASC' ? 1 : -1;
+
+    data.sort((a: any, b: any) => {
+      const key = sortKey;
+      let aValue = a[key];
+      let bValue = b[key];
+
+      if (key === 'startTimestamp') {
+        aValue = new Date(a.startTimestampRaw).getTime();
+        bValue = new Date(b.startTimestampRaw).getTime();
+      }
+
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return -1 * directionMultiplier;
+      if (bValue == null) return 1 * directionMultiplier;
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return aValue.localeCompare(bValue) * directionMultiplier;
+      }
+
+      if (aValue < bValue) return -1 * directionMultiplier;
+      if (aValue > bValue) return 1 * directionMultiplier;
+      return 0;
+    });
+
+    return data;
+  }, [filteredRows, sortDirection, sortKey]);
+
+  if (!isRootNodeSelected && !isUserTaskSelected) {
     return (
-      <div style={{padding: '16px'}}>No operations found for this instance</div>
+      <EmptyMessageContainer>
+        <EmptyMessage message="This element has no operations" />
+      </EmptyMessageContainer>
     );
   }
 
@@ -208,22 +228,55 @@ const OperationsLogTable: React.FC = observer(() => {
           flexDirection: 'column',
         }}
       >
-        <Table size="sm">
+        <div style={{padding: 'var(--cds-spacing-03) var(--cds-spacing-05)'}}>
+          <Dropdown
+            id="operationTypeFilter"
+            data-testid="operation-type-filter"
+            titleText="Operation type"
+            label="All operations"
+            hideLabel
+            items={operationTypeOptions}
+            size="md"
+            selectedItem={operationTypeFilter}
+            style={{width: 232}}
+            onChange={({selectedItem}) => {
+              if (typeof selectedItem === 'string') {
+                setOperationTypeFilter(selectedItem);
+              }
+            }}
+          />
+        </div>
+        <Table size="md" style={{tableLayout: 'fixed', width: '100%'}}>
           <TableHead>
             <TableRow>
               {headers.map((header) => (
-                <TableHeader key={header.key}>{header.header}</TableHeader>
+                <TableHeader
+                  key={header.key}
+                  isSortable={header.key !== 'actions'}
+                  isSortHeader={sortKey === header.key}
+                  sortDirection={sortKey === header.key ? sortDirection : 'NONE'}
+                  onClick={() => handleSort(header.key)}
+                  style={header.key === 'actions' ? {width: '72px'} : {}}
+                >
+                  {header.header}
+                </TableHeader>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
+            {sortedRows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell>{row.operationType}</TableCell>
-                <TableCell>{row.operationState}</TableCell>
+                <TableCell>
+                  <Tag
+                    size="sm"
+                    type={getOperationStateType(row.operationState)}
+                  >
+                    {row.operationState}
+                  </Tag>
+                </TableCell>
                 <TableCell>{row.user}</TableCell>
                 <TableCell>{row.startTimestamp}</TableCell>
-                <TableCell>{row.comment}</TableCell>
                 <TableCell>{row.actions}</TableCell>
               </TableRow>
             ))}
@@ -231,12 +284,10 @@ const OperationsLogTable: React.FC = observer(() => {
         </Table>
       </div>
 
-      <CommentModal
-        open={commentModal.open}
-        onClose={closeCommentModal}
-        entryId={commentModal.entryId}
-        initialComment={commentModal.initialComment}
-        mode={commentModal.mode}
+      <DetailsModal
+        open={detailsModal.open}
+        onClose={closeDetailsModal}
+        entry={detailsModal.entry}
       />
     </>
   );

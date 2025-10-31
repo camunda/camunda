@@ -32,6 +32,7 @@ import {
 } from 'modules/hooks/modifications';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {getProcessDefinitionName} from 'modules/utils/instance';
+import { TrashCan } from '@carbon/react/icons';
 
 const OPERATION_DISPLAY_NAME = {
   ADD_TOKEN: 'Add',
@@ -180,39 +181,33 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
           {willAllFlowNodesBeCanceled && !hasParentProcess && <Warning />}
           {areModificationsInvalid && <Error />}
 
-          <Title>Flow Node Modifications</Title>
+          <Title>Element Modifications</Title>
           {modificationsStore.flowNodeModifications.length === 0 ? (
-            <EmptyMessage>No planned flow node modifications</EmptyMessage>
+            <EmptyMessage>No planned element modifications</EmptyMessage>
           ) : (
             <DataTable
               ref={flowNodeModificationsTableRef}
               columnsWithNoContentPadding={['delete']}
               headers={[
-                {header: ' ', key: 'emptyCell'},
                 {
                   header: 'Operation',
                   key: 'operation',
-                  width: '25%',
                 },
                 {
-                  header: 'Flow Node',
-                  key: 'flowNode',
-                  width: '25%',
+                  header: 'Target element',
+                  key: 'targetElement',
                 },
                 {
-                  header: 'Instance Key',
-                  key: 'instanceKey',
-                  width: '25%',
+                  header: 'Previous element',
+                  key: 'previousElement',
                 },
                 {
-                  header: 'Affected Tokens',
+                  header: 'Affected tokens',
                   key: 'affectedTokens',
-                  width: '20%',
                 },
                 {
                   header: ' ',
                   key: 'delete',
-                  width: '5%',
                 },
               ]}
               rows={modificationsStore.flowNodeModifications.map(
@@ -223,36 +218,24 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                       : modification.flowNode.id;
                   return {
                     id: index.toString(),
-                    emptyCell: <EmptyCell />,
                     operation: OPERATION_DISPLAY_NAME[modification.operation],
-                    flowNode: (
+                    targetElement: (
+                      <TruncatedValueContainer>
+                        <TruncatedValue>
+                          {modification.operation === 'MOVE_TOKEN'
+                            ? modification.targetFlowNode.name
+                            : modification.flowNode.name}
+                        </TruncatedValue>
+                      </TruncatedValueContainer>
+                    ),
+                    previousElement: (
                       <TruncatedValueContainer>
                         {modification.operation === 'MOVE_TOKEN' ? (
-                          <>
-                            <TruncatedValue $hasMultipleTruncatedValue>
-                              {modification.flowNode.name}
-                            </TruncatedValue>
-                            &nbsp;→&nbsp;
-                            <TruncatedValue $hasMultipleTruncatedValue>
-                              {modification.targetFlowNode.name}
-                            </TruncatedValue>
-                          </>
-                        ) : (
                           <TruncatedValue>
                             {modification.flowNode.name}
                           </TruncatedValue>
-                        )}
-                      </TruncatedValueContainer>
-                    ),
-                    instanceKey: (
-                      <TruncatedValueContainer>
-                        {modification.operation !== 'ADD_TOKEN' &&
-                        modification.flowNodeInstanceKey !== undefined ? (
-                          <TruncatedValue>
-                            {modification.flowNodeInstanceKey}
-                          </TruncatedValue>
                         ) : (
-                          <>--</>
+                          '–'
                         )}
                       </TruncatedValueContainer>
                     ),
@@ -267,18 +250,19 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     ),
                     delete: (
                       <Button
+                        hasIconOnly
                         kind="danger--ghost"
-                        title="Delete flow node modification"
-                        aria-label="Delete flow node modification"
+                        iconDescription="Delete"
+                        title="Delete element modification"
+                        aria-label="Delete element modification"
                         size="sm"
+                        renderIcon={TrashCan}
                         onClick={() => {
                           modificationsStore.removeFlowNodeModification(
                             modification,
                           );
                         }}
-                      >
-                        Delete
-                      </Button>
+                      />
                     ),
                   };
                 },
@@ -326,27 +310,22 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                 {
                   header: 'Operation',
                   key: 'operation',
-                  width: '25%',
                 },
                 {
-                  header: 'Scope',
+                  header: 'Variable name',
+                  key: 'variableName',
+                },
+                {
+                  header: 'Value',
+                  key: 'value',
+                },
+                {
+                  header: 'Element scope',
                   key: 'scope',
-                  width: '25%',
-                },
-                {
-                  header: 'Name / Value',
-                  key: 'nameValue',
-                  width: '25%',
-                },
-                {
-                  header: ' ',
-                  key: 'emptyCell',
-                  width: '20%',
                 },
                 {
                   header: ' ',
                   key: 'delete',
-                  width: '5%',
                 },
               ]}
               rows={modificationsStore.variableModifications.map(
@@ -354,17 +333,22 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                   return {
                     id: `${scopeId}/${id}`,
                     operation: OPERATION_DISPLAY_NAME[operation],
-                    scope: <TruncatedValue>{flowNodeName}</TruncatedValue>,
-                    nameValue: (
-                      <VariableModification name={name} newValue={newValue} />
+                    variableName: <TruncatedValue>{name}</TruncatedValue>,
+                    value: (
+                      <TruncatedValue>
+                        {JSON.stringify(newValue)}
+                      </TruncatedValue>
                     ),
-                    emptyCell: '',
+                    scope: <TruncatedValue>{flowNodeName}</TruncatedValue>,
                     delete: (
                       <Button
+                        hasIconOnly
                         kind="danger--ghost"
+                        iconDescription="Delete"
                         title="Delete variable modification"
                         aria-label="Delete variable modification"
                         size="sm"
+                        renderIcon={TrashCan}
                         onClick={() => {
                           modificationsStore.removeVariableModification(
                             scopeId,
@@ -373,9 +357,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                             'summaryModal',
                           );
                         }}
-                      >
-                        Delete
-                      </Button>
+                      />
                     ),
                   };
                 },

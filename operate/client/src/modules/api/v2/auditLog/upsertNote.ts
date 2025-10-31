@@ -8,22 +8,22 @@
 
 import {requestWithThrow} from 'modules/request';
 
-export type UpsertCommentRequest = {
+export type UpsertNoteRequest = {
   id: string;
   comment: string;
 };
 
-export type UpsertCommentResponse = {
+export type UpsertNoteResponse = {
   id: string;
   comment: string;
 };
 
-const upsertComment = async (request: UpsertCommentRequest) => {
-  return requestWithThrow<UpsertCommentResponse>({
+const upsertNote = async (request: UpsertNoteRequest) => {
+  return requestWithThrow<UpsertNoteResponse>({
     url: `/api/v2/audit-log`,
     method: 'POST',
     body: request,
   });
 };
 
-export {upsertComment};
+export {upsertNote};

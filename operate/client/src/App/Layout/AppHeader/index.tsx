@@ -190,7 +190,7 @@ const AppHeader: React.FC = observer(() => {
                 ? [
                     {
                       key: 'audit-log',
-                      label: 'Audit log',
+                      label: 'Operations log',
                       isCurrentPage: currentPage === 'audit-log',
                       routeProps: {
                         to: Locations.auditLog(),

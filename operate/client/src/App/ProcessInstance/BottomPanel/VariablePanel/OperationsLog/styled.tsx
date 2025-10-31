@@ -9,6 +9,8 @@
 import styled, {css} from 'styled-components';
 import {Stack} from '@carbon/react';
 import {styles} from '@carbon/elements';
+import {StructuredListCell} from '@carbon/react';
+import {StructuredListRow} from '@carbon/react';
 
 const TimelineContainer = styled.div`
   height: 100%;
@@ -118,6 +120,41 @@ const TimelineActions = styled(Stack)`
   ${styles.label01};
 `;
 
+const Title = styled.h4`
+  margin-top: var(--cds-spacing-04);
+  margin-bottom: var(--cds-spacing-03);
+`;
+
+const Subtitle = styled.h6`
+  margin-bottom: var(--cds-spacing-02);
+`;
+
+const Key = styled.div`
+  font-weight: 600;
+`;
+
+const Value = styled.div`
+  white-space: pre-wrap;
+  word-break: break-all;
+`;
+
+const Property = styled.div`
+  display: flex;
+  gap: var(--cds-spacing-02);
+`;
+
+const FirstColumn = styled(StructuredListCell)`
+  width: 176px;
+`;
+
+const VerticallyAlignedRow = styled(StructuredListRow)`
+  &.cds--structured-list-row {
+    & > .cds--structured-list-td {
+      vertical-align: middle;
+    }
+  }
+`;
+
 export {
   TimelineContainer,
   TimelineItem,
@@ -129,4 +166,11 @@ export {
   TimelineBody,
   TimelineActions,
   TimelineLine,
+  Title,
+  Subtitle,
+  Key,
+  Value,
+  Property,
+  FirstColumn,
+  VerticallyAlignedRow,
 };

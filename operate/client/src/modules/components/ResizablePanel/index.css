@@ -23,6 +23,12 @@
   background-color: var(--cds-border-subtle-01);
 }
 
+.custom-gutter-Vertical:hover::after {
+  transition: all 0.3s ease;
+  height: 1px;
+  background-color: var(--cds-border-interactive);
+}
+
 .custom-dragger-Vertical {
   width: 100% !important;
   height: 10px !important;

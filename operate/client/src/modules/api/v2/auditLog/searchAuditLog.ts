@@ -18,7 +18,9 @@ export type OperationType =
   | 'DELETE_PROCESS_DEFINITION'
   | 'ADD_VARIABLE'
   | 'UPDATE_VARIABLE'
-  | 'DELETE_DECISION_DEFINITION';
+  | 'DELETE_DECISION_DEFINITION'
+  | 'COMPLETE_USER_TASK'
+  | 'ASSIGN_USER_TASK';
 
 // Operation States
 export type OperationState =
@@ -27,7 +29,8 @@ export type OperationState =
   | 'SUSPENDED'
   | 'COMPLETED'
   | 'PARTIALLY_COMPLETED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'FAILED';
 
 // Process Instance States
 export type ProcessInstanceState =

@@ -210,7 +210,7 @@ const ProcessInstance: React.FC = observer(() => {
             header={<ProcessInstanceHeader processInstance={processInstance} />}
             topPanel={<TopPanel />}
             bottomPanel={
-              <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
+              <BottomPanel>
                 <FlowNodeInstanceLog />
                 <VariablePanel
                   setListenerTabVisibility={setListenerTabVisibility}

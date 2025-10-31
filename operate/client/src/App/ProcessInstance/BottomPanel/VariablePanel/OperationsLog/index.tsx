@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// Export the timeline view as the default
-export {OperationsLogTimeline as OperationsLog} from './TimelineView';
+// Export the table view as the default
+export {OperationsLogTable as OperationsLog} from './TableView';
 
-// Also export the table view for reference
-export {OperationsLogTable} from './TableView';
+// Export the timeline view
+export {OperationsLogTimeline} from './TimelineView';

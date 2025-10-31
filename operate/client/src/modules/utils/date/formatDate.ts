@@ -15,10 +15,9 @@ function parseDate(dateString: string | Date) {
 function formatDate(
   dateString: string | Date | null,
   placeholder: string | null = '--',
+  pattern: string = 'yyyy-MM-dd HH:mm:ss',
 ) {
-  return dateString
-    ? format(parseDate(dateString), 'yyyy-MM-dd HH:mm:ss')
-    : placeholder;
+  return dateString ? format(parseDate(dateString), pattern) : placeholder;
 }
 
 export {parseDate, formatDate};

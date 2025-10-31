@@ -18,18 +18,10 @@ import {
 } from 'modules/api/v2/auditLog/searchAuditLog';
 import {useAuditLog} from 'modules/queries/auditLog/useAuditLog';
 import {SortableTable} from 'modules/components/SortableTable';
-import {CommentModal} from './CommentModal';
-import {Information, Edit, Add} from '@carbon/react/icons';
+import {Information} from '@carbon/react/icons';
 import {Stack} from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
-
-type CommentModalState = {
-  open: boolean;
-  entryId: string;
-  initialComment?: string;
-  mode: 'view' | 'edit' | 'add';
-};
 
 const AuditLog: React.FC = () => {
   const location = useLocation();
@@ -67,17 +59,11 @@ const AuditLog: React.FC = () => {
       endDateFrom: params.get('endDateFrom') || undefined,
       endDateTo: params.get('endDateTo') || undefined,
       user: params.get('user') || undefined,
-      comment: params.get('comment') || undefined,
+      note: params.get('note') || undefined,
       tenantId: params.get('tenantId') || undefined,
       searchQuery: params.get('searchQuery') || undefined,
     };
   }, [location.search]);
-
-  const [commentModal, setCommentModal] = useState<CommentModalState>({
-    open: false,
-    entryId: '',
-    mode: 'view',
-  });
 
   const isTenancyEnabled = true; // Assumed enabled based on requirements
 
@@ -98,7 +84,7 @@ const AuditLog: React.FC = () => {
       'endDateFrom',
       'endDateTo',
       'user',
-      'comment',
+      'note',
       'tenantId',
       'searchQuery',
     ];
@@ -138,18 +124,6 @@ const AuditLog: React.FC = () => {
 
   const {data, isLoading, error} = useAuditLog(request);
 
-  const openCommentModal = (
-    entryId: string,
-    mode: 'view' | 'edit' | 'add',
-    initialComment?: string,
-  ) => {
-    setCommentModal({open: true, entryId, mode, initialComment});
-  };
-
-  const closeCommentModal = () => {
-    setCommentModal({open: false, entryId: '', mode: 'view'});
-  };
-
   const formatOperationType = (type: string) => {
     return type
       .split('_')
@@ -170,8 +144,7 @@ const AuditLog: React.FC = () => {
     {key: 'operationState', header: 'Status'},
     {key: 'startTimestamp', header: 'Start timestamp'},
     {key: 'user', header: 'User'},
-    {key: 'comment', header: 'Comment'},
-    {key: 'actions', header: '', isSortable: false},
+    {key: 'note', header: 'Note'},
   ];
 
   const rows = useMemo(
@@ -183,7 +156,7 @@ const AuditLog: React.FC = () => {
         operationState: formatOperationState(entry.operationState),
         startTimestamp: formatDate(entry.startTimestamp),
         user: entry.user,
-        comment: entry.comment ? (
+        note: entry.comment ? (
           <div
             style={{
               maxWidth: '200px',
@@ -196,59 +169,6 @@ const AuditLog: React.FC = () => {
           </div>
         ) : (
           '-'
-        ),
-        actions: (
-          <Stack orientation="horizontal" gap={2}>
-            {entry.comment && (
-              <>
-                <button
-                  type="button"
-                  onClick={() =>
-                    openCommentModal(entry.id, 'view', entry.comment)
-                  }
-                  title="View comment"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                  }}
-                >
-                  <Information size={16} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    openCommentModal(entry.id, 'edit', entry.comment)
-                  }
-                  title="Edit comment"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                  }}
-                >
-                  <Edit size={16} />
-                </button>
-              </>
-            )}
-            {!entry.comment && (
-              <button
-                type="button"
-                onClick={() => openCommentModal(entry.id, 'add')}
-                title="Add comment"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                }}
-              >
-                <Add size={16} />
-              </button>
-            )}
-          </Stack>
         ),
       })) || [],
     [data],
@@ -321,10 +241,6 @@ const AuditLog: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      <div style={{padding: '1rem', paddingBottom: 0}}>
-        <h1 style={{marginBottom: '1rem'}}>Audit log</h1>
-      </div>
-
       <div
         style={{
           padding: '1rem',
@@ -336,48 +252,50 @@ const AuditLog: React.FC = () => {
         }}
       >
         <Stack gap={5}>
-          <AuditLogFilters
-            filters={filtersFromUrl}
-            onFiltersChange={(newFilters) => {
-              updateFilters(newFilters);
-            }}
-            onSearchChange={(query) => {
-              updateFilters({...filtersFromUrl, searchQuery: query});
-            }}
-            isTenancyEnabled={isTenancyEnabled}
-          />
+          <Stack orientation="vertical" gap={1}>
+            <div style={{padding: '1rem', paddingBottom: 0}}>
+              <h4 style={{marginBottom: '1rem'}}>Filter</h4>
+            </div>
+            <AuditLogFilters
+              filters={filtersFromUrl}
+              onFiltersChange={(newFilters) => {
+                updateFilters(newFilters);
+              }}
+              onSearchChange={(query) => {
+                updateFilters({...filtersFromUrl, searchQuery: query});
+              }}
+              isTenancyEnabled={isTenancyEnabled}
+            />
+          </Stack>
 
-          <SortableTable
-            state={isLoading ? 'skeleton' : error ? 'error' : 'content'}
-            headerColumns={headers}
-            rows={sortedRows}
-            onSort={(clickedSortKey) => {
-              const newParams = new URLSearchParams(location.search);
-              const currentSort = getSortParams(location.search);
+          <Stack orientation="vertical" gap={1}>
+            <div style={{padding: '1rem', paddingBottom: 0}}>
+              <h4 style={{marginBottom: '1rem'}}>Operations</h4>
+            </div>
+            <SortableTable
+              state={isLoading ? 'skeleton' : error ? 'error' : 'content'}
+              headerColumns={headers}
+              rows={sortedRows}
+              onSort={(clickedSortKey) => {
+                const newParams = new URLSearchParams(location.search);
+                const currentSort = getSortParams(location.search);
 
-              if (clickedSortKey === currentSort?.sortBy) {
-                // Toggle sort order if same column
-                const newOrder =
-                  currentSort.sortOrder === 'asc' ? 'desc' : 'asc';
-                newParams.set('sort', `${clickedSortKey}+${newOrder}`);
-              } else {
-                // New column, default to DESC
-                newParams.set('sort', `${clickedSortKey}+desc`);
-              }
+                if (clickedSortKey === currentSort?.sortBy) {
+                  // Toggle sort order if same column
+                  const newOrder =
+                    currentSort.sortOrder === 'asc' ? 'desc' : 'asc';
+                  newParams.set('sort', `${clickedSortKey}+${newOrder}`);
+                } else {
+                  // New column, default to DESC
+                  newParams.set('sort', `${clickedSortKey}+desc`);
+                }
 
-              navigate({search: newParams.toString()}, {replace: true});
-            }}
-          />
+                navigate({search: newParams.toString()}, {replace: true});
+              }}
+            />
+          </Stack>
         </Stack>
       </div>
-
-      <CommentModal
-        open={commentModal.open}
-        onClose={closeCommentModal}
-        entryId={commentModal.entryId}
-        initialComment={commentModal.initialComment}
-        mode={commentModal.mode}
-      />
     </div>
   );
 };

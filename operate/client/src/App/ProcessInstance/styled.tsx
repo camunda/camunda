@@ -11,8 +11,7 @@ import {Stack} from '@carbon/react';
 
 const BottomPanel = styled.div<{$shouldExpandPanel?: boolean}>`
   display: grid;
-  grid-template-columns: ${({$shouldExpandPanel}) =>
-    $shouldExpandPanel ? '1.1fr 1.9fr' : '1fr 1fr'};
+  grid-template-columns: 1fr 1.5fr;
   height: 100%;
 `;
 

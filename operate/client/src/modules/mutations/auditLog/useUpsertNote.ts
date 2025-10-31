@@ -8,17 +8,17 @@
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {
-  upsertComment,
-  type UpsertCommentRequest,
-} from 'modules/api/v2/auditLog/upsertComment';
+  upsertNote,
+  type UpsertNoteRequest,
+} from 'modules/api/v2/auditLog/upsertNote';
 import {AUDIT_LOG_QUERY_KEY} from 'modules/queries/auditLog/useAuditLog';
 
-const useUpsertComment = () => {
+const useUpsertNote = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (request: UpsertCommentRequest) => {
-      const {response, error} = await upsertComment(request);
+    mutationFn: async (request: UpsertNoteRequest) => {
+      const {response, error} = await upsertNote(request);
 
       if (response !== null) {
         return response;
@@ -33,4 +33,4 @@ const useUpsertComment = () => {
   });
 };
 
-export {useUpsertComment};
+export {useUpsertNote};
