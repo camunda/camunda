@@ -23,6 +23,8 @@ import {Paths} from 'modules/Routes';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 
 const getWrapper = () => {
   const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
@@ -51,6 +53,7 @@ describe('modifications hooks', () => {
   describe('useWillAllFlowNodesBeCanceled', () => {
     beforeEach(() => {
       modificationsStore.reset();
+      mockFetchProcessInstance().withSuccess(mockProcessInstance);
     });
 
     it('should return true if all flow nodes are canceled', async () => {
@@ -190,6 +193,10 @@ describe('modifications hooks', () => {
   });
 
   describe('useModificationsByFlowNode', () => {
+    beforeEach(() => {
+      mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    });
+
     it('should return modifications by flow node', () => {
       modificationsStore.addModification({
         type: 'token',
@@ -294,6 +301,10 @@ describe('modifications hooks', () => {
   });
 
   describe('useNewScopeIdForFlowNode', () => {
+    beforeEach(() => {
+      mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    });
+
     it('should return null if elementId is undefined', () => {
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,

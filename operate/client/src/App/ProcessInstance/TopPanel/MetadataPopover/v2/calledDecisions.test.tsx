@@ -40,6 +40,7 @@ import {mockIncidents} from 'modules/mocks/incidents';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 import type {
   ElementInstance,
@@ -126,6 +127,19 @@ describe('MetadataPopover', () => {
       ],
     });
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockSearchIncidentsByProcessInstance().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchIncidentsByProcessInstance().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
   });
 
   afterEach(() => {

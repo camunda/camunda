@@ -49,7 +49,9 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockSearchIncidents} from 'modules/mocks/api/v2/incidents/searchIncidents';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 
@@ -227,12 +229,17 @@ describe('TopPanel', () => {
       items: [],
       page: {totalItems: 0},
     });
+    mockSearchIncidents().withSuccess({items: [], page: {totalItems: 0}});
 
     mockSearchJobs().withSuccess({
       items: [],
       page: {
         totalItems: 0,
       },
+    });
+    mockSearchUserTasks().withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
     mockSearchDecisionInstances().withSuccess({
       items: [],
@@ -378,6 +385,11 @@ describe('TopPanel', () => {
       page: {totalItems: 1},
     });
 
+    mockSearchIncidentsByProcessInstance('instance_id').withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -425,7 +437,7 @@ describe('TopPanel', () => {
       ).not.toBeInTheDocument(),
     );
 
-    expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
+    await screen.findByText(/Execution Duration/);
 
     modificationsStore.enableModificationMode();
 

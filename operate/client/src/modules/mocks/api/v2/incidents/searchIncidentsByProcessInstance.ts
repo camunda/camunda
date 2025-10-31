@@ -12,7 +12,9 @@ import {
   type QueryIncidentsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-const mockSearchIncidentsByProcessInstance = (processInstanceKey: string) =>
+const mockSearchIncidentsByProcessInstance = (
+  processInstanceKey: string = ':id',
+) =>
   mockPostRequest<QueryIncidentsResponseBody>(
     endpoints.queryProcessInstanceIncidents.getUrl({
       processInstanceKey,

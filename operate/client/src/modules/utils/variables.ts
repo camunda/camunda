@@ -7,10 +7,8 @@
  */
 
 import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
-import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {applyOperation} from 'modules/api/processInstances/operations';
 import type {InfiniteData} from '@tanstack/react-query';
 
 const getScopeId = () => {
@@ -18,79 +16,6 @@ const getScopeId = () => {
   const {metaData} = flowNodeMetaDataStore.state;
 
   return selection?.flowNodeInstanceId ?? metaData?.flowNodeInstanceId ?? null;
-};
-
-const addVariable = async ({
-  id,
-  name,
-  value,
-  invalidateQueries,
-  onSuccess,
-  onError,
-}: {
-  id: string;
-  name: string;
-  value: string;
-  invalidateQueries: () => void;
-  onSuccess: () => void;
-  onError: (statusCode: number) => void;
-}) => {
-  variablesStore.setPendingItem({
-    name,
-    value,
-    hasActiveOperation: true,
-    isFirst: false,
-    sortValues: null,
-    isPreview: false,
-  });
-
-  const response = await applyOperation(id, {
-    operationType: 'ADD_VARIABLE',
-    variableScopeId: getScopeId() || undefined,
-    variableName: name,
-    variableValue: value,
-  });
-  variablesStore.setPendingItem(null);
-  setTimeout(() => invalidateQueries(), 5000);
-
-  if (response.isSuccess) {
-    onSuccess();
-    return 'SUCCESSFUL';
-  } else {
-    if (response.statusCode === 400) {
-      return 'VALIDATION_ERROR';
-    }
-
-    onError(response.statusCode);
-    return 'FAILED';
-  }
-};
-
-const updateVariable = async ({
-  id,
-  name,
-  value,
-  invalidateQueries,
-  onError,
-}: {
-  id: string;
-  name: string;
-  value: string;
-  invalidateQueries: () => void;
-  onError: (statusCode: number) => void;
-}) => {
-  const response = await applyOperation(id, {
-    operationType: 'UPDATE_VARIABLE',
-    variableScopeId: getScopeId() || undefined,
-    variableName: name,
-    variableValue: value,
-  });
-
-  invalidateQueries();
-
-  if (!response.isSuccess) {
-    onError(response.statusCode);
-  }
 };
 
 const isTruncated = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
@@ -130,12 +55,4 @@ const variablesAsJSON = (
   }
 };
 
-export {
-  getScopeId,
-  addVariable,
-  updateVariable,
-  isTruncated,
-  isPaginated,
-  hasItems,
-  variablesAsJSON,
-};
+export {getScopeId, isTruncated, isPaginated, hasItems, variablesAsJSON};

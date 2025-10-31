@@ -34,7 +34,13 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [],
@@ -197,6 +203,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
     );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1Poll);
 
     vi.runOnlyPendingTimers();

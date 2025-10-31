@@ -183,7 +183,6 @@ const completedInstance: InstanceMock = {
     ],
   },
   variables: [],
-  variablesV2: [],
 };
 
 export {completedInstance};

@@ -7,13 +7,18 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {getWrapper, mockMetaData, mockProcessInstanceDeprecated} from './mocks';
+import {
+  getWrapper,
+  mockMetaData,
+  mockProcessInstance,
+  mockProcessInstanceDeprecated,
+} from './mocks';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {VariablePanel} from '../../VariablePanel';
+import {VariablePanel} from '../index';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
@@ -21,7 +26,6 @@ const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
 describe('Skeleton', () => {
   it('should display empty content if there are no variables', async () => {
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -34,6 +38,7 @@ describe('Skeleton', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {

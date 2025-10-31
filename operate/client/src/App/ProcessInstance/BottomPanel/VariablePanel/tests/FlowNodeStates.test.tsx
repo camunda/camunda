@@ -14,12 +14,10 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariable,
-  createVariableV2,
+  createvariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {useEffect, act} from 'react';
@@ -142,8 +140,37 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
+    // Add extra mockSearchVariables calls to handle requests with ADD_TOKEN scope IDs
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -152,7 +179,7 @@ describe('VariablePanel', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {totalItems: 1},
     });
 
@@ -166,13 +193,13 @@ describe('VariablePanel', () => {
 
   it('should display correct state for a flow node that has only one running token on it', async () => {
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -201,8 +228,6 @@ describe('VariablePanel', () => {
       await screen.findByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -370,13 +395,13 @@ describe('VariablePanel', () => {
 
   it.skip('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -451,7 +476,6 @@ describe('VariablePanel', () => {
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -494,7 +518,6 @@ describe('VariablePanel', () => {
       screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -523,7 +546,6 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -582,21 +604,20 @@ describe('VariablePanel', () => {
         endDate: '2022-09-08T12:44:45.406+0000',
       },
     });
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -619,7 +640,6 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -706,6 +726,7 @@ describe('VariablePanel', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     // select only one of the scopes
+    mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
     act(() => {
       selectFlowNode(
         {},
