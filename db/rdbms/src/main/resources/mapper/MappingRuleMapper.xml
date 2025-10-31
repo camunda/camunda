@@ -27,6 +27,14 @@
     VALUES (#{mappingRuleId}, #{mappingRuleKey}, #{claimName}, #{claimValue}, #{name})
   </insert>
 
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.MappingRuleDbModel">
+    UPDATE ${prefix}MAPPING_RULES
+    SET NAME = #{name},
+        CLAIM_NAME = #{claimName},
+        CLAIM_VALUE = #{claimValue}
+    WHERE MAPPING_RULE_ID = #{mappingRuleId}
+  </update>
+
   <delete id="delete" parameterType="string">
     DELETE
     FROM ${prefix}MAPPING_RULES

@@ -21,7 +21,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 public class MappingRuleIT {
@@ -57,9 +56,7 @@ public class MappingRuleIT {
     assertMappingRuleExists(mappingRuleId, name, claimName, claimValue);
   }
 
-  // TODO: enable when update is supported for rdbms
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldUpdateMappingRule() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -99,7 +96,7 @@ public class MappingRuleIT {
       final String name,
       final String claimName,
       final String claimValue) {
-    Awaitility.await("Mapping rule exists in both storage systems")
+    Awaitility.await("Mapping rule exists in the secondary storage system")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
