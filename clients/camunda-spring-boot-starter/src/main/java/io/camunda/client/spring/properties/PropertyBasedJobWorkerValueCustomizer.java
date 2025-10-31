@@ -207,7 +207,8 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       final Consumer<T> setter,
       final T defaultValue) {
     final T value = getter.get();
-    if (value != null && !Objects.equals(value, defaultValue) || overrideSource == OverrideSource.worker) {
+    if (value != null && !Objects.equals(value, defaultValue)
+        || overrideSource == OverrideSource.worker) {
       LOG.debug("Overriding property '{}' from source {}", propertyName, overrideSource);
       setter.accept(value);
     }
