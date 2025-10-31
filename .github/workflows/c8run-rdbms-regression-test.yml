@@ -6,8 +6,6 @@ name: C8Run RDBMS Regression Tests
 
 on:
   pull_request:
-    branches:
-      - main
     types:
       - assigned
       - unassigned
