@@ -25,8 +25,10 @@ public class BpmnDeploymentBindingValidator {
   private final ZeebeCalledElementDeploymentBindingValidator calledElementValidator;
   private final ZeebeCalledDecisionDeploymentBindingValidator calledDecisionValidator;
   private final ZeebeFormDefinitionDeploymentBindingValidator formDefinitionValidator;
+  private final String tenantId;
 
   public BpmnDeploymentBindingValidator(final DeploymentRecord deployment) {
+    tenantId = deployment.getTenantId();
     calledElementValidator = new ZeebeCalledElementDeploymentBindingValidator(deployment);
     calledDecisionValidator = new ZeebeCalledDecisionDeploymentBindingValidator(deployment);
     formDefinitionValidator = new ZeebeFormDefinitionDeploymentBindingValidator(deployment);

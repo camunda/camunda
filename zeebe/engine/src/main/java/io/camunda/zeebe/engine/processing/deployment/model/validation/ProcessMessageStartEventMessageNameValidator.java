@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.util.Either;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -64,7 +65,7 @@ final class ProcessMessageStartEventMessageNameValidator
     final Expression parseResult = expressionLanguage.parseExpression(nameExpression);
 
     final EvaluationResult evaluationResult =
-        expressionLanguage.evaluateExpression(parseResult, var -> null);
+        expressionLanguage.evaluateExpression(parseResult, var -> Either.left(null));
 
     if (evaluationResult.isFailure()) {
       resultCollector.addError(

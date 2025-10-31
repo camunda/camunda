@@ -224,11 +224,12 @@ public final class CatchEventBehavior {
       return Either.right(evaluation);
     }
     final var scopeKey = evaluation.context().getElementInstanceKey();
+    final var tenantId = evaluation.context().getTenantId();
     final ExecutableMessage message = event.getMessage();
     final Expression messageNameExpression = message.getMessageNameExpression();
     return evaluation
         .expressionProcessor()
-        .evaluateStringExpression(messageNameExpression, scopeKey)
+        .evaluateStringExpression(messageNameExpression, scopeKey, tenantId)
         .map(BufferUtil::wrapString)
         .map(evaluation::recordMessageName);
   }
@@ -246,9 +247,10 @@ public final class CatchEventBehavior {
         event.getElementType() == BpmnElementType.BOUNDARY_EVENT
             ? context.getFlowScopeKey()
             : context.getElementInstanceKey();
+    final String tenantId = context.getTenantId();
     return evaluation
         .expressionProcessor()
-        .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
+        .evaluateMessageCorrelationKeyExpression(expression, scopeKey, tenantId)
         .map(BufferUtil::wrapString)
         .map(evaluation::recordCorrelationKey)
         .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
@@ -260,10 +262,12 @@ public final class CatchEventBehavior {
     if (!event.isTimer()) {
       return Either.right(evaluation);
     }
-    final var scopeKey = context.getElementInstanceKey();
     return event
         .getTimerFactory()
-        .apply(evaluation.expressionProcessor(), scopeKey)
+        .apply(
+            evaluation.expressionProcessor(),
+            context.getElementInstanceKey(),
+            context.getTenantId())
         .map(evaluation::recordTimer);
   }
 
@@ -275,11 +279,12 @@ public final class CatchEventBehavior {
       return Either.right(evaluation);
     }
     final var scopeKey = evaluation.context().getElementInstanceKey();
+    final var tenantId = evaluation.context().getTenantId();
     final ExecutableSignal signal = event.getSignal();
     final Expression signalNameExpression = signal.getSignalNameExpression();
     return evaluation
         .expressionProcessor()
-        .evaluateStringExpression(signalNameExpression, scopeKey)
+        .evaluateStringExpression(signalNameExpression, scopeKey, tenantId)
         .map(BufferUtil::wrapString)
         .map(evaluation::recordSignalName);
   }

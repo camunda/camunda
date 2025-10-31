@@ -11,12 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class FeelCycleFunctionTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = x -> null;
+  private static final EvaluationContext EMPTY_CONTEXT = x -> Either.left(null);
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
@@ -48,7 +49,8 @@ public class FeelCycleFunctionTest {
   public void threeTimesOneHourDuration() {
     final var context = Map.of("repetitions", MsgPackUtil.asMsgPack("3"));
     final var evaluationResult =
-        evaluateExpression("cycle(repetitions, duration(\"PT1H\"))", context::get);
+        evaluateExpression(
+            "cycle(repetitions, duration(\"PT1H\"))", name -> Either.left(context.get(name)));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R3/PT1H");
@@ -58,7 +60,8 @@ public class FeelCycleFunctionTest {
   public void threeTimesTwoMonthsDuration() {
     final var context = Map.of("repetitions", MsgPackUtil.asMsgPack("3"));
     final var evaluationResult =
-        evaluateExpression("cycle(repetitions, duration(\"P2M\"))", context::get);
+        evaluateExpression(
+            "cycle(repetitions, duration(\"P2M\"))", name -> Either.left(context.get(name)));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R3/P2M");
@@ -68,7 +71,8 @@ public class FeelCycleFunctionTest {
   public void nullTimesOneHourDuration() {
     final var context = Map.of("repetitions", MsgPackUtil.asMsgPack("null"));
     final var evaluationResult =
-        evaluateExpression("cycle(repetitions, duration(\"PT1H\"))", context::get);
+        evaluateExpression(
+            "cycle(repetitions, duration(\"PT1H\"))", name -> Either.left(context.get(name)));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R/PT1H");
@@ -78,7 +82,8 @@ public class FeelCycleFunctionTest {
   public void nullTimesTwoMonthsDuration() {
     final var context = Map.of("repetitions", MsgPackUtil.asMsgPack("null"));
     final var evaluationResult =
-        evaluateExpression("cycle(repetitions, duration(\"P2M\"))", context::get);
+        evaluateExpression(
+            "cycle(repetitions, duration(\"P2M\"))", name -> Either.left(context.get(name)));
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("R/P2M");
