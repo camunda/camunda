@@ -34,6 +34,7 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +76,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
     config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
+
+    config.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
+    config.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
+    config.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
 
     config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
