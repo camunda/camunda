@@ -53,17 +53,6 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
       final UpgradeStepType stepType,
       final List<UpgradeStep> prepareSteps,
       final UpgradeStep upgradeStep) {
-    updateStepIsIdempotentAndCanBeRetried(stepType, prepareSteps, upgradeStep);
-  }
-
-  private static Stream<Arguments> getSingleIndexUpdateStepScenarios() {
-    return generateAllUpgradeStepScenarios(testIndexV1, testIndexV2);
-  }
-
-  private void updateStepIsIdempotentAndCanBeRetried(
-      final UpgradeStepType stepType,
-      final List<UpgradeStep> prepareSteps,
-      final UpgradeStep upgradeStep) {
     updateStepIsIdempotentAndCanBeRetried(
         stepType,
         () ->
@@ -73,16 +62,6 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
                     .toVersion(INTERMEDIATE_VERSION)
                     .addUpgradeSteps(prepareSteps)
                     .build()),
-        upgradeStep);
-  }
-
-  private void updateStepIsIdempotentAndCanBeRetried(
-      final UpgradeStepType stepType,
-      final Runnable prepareFunction,
-      final UpgradeStep upgradeStep) {
-    updateStepIsIdempotentAndCanBeRetried(
-        stepType,
-        prepareFunction,
         () -> {
           final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(upgradeStep);
           dbMockServer
@@ -91,6 +70,10 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
           return stepOneLogUpsertRequest;
         },
         upgradeStep);
+  }
+
+  private static Stream<Arguments> getSingleIndexUpdateStepScenarios() {
+    return generateAllUpgradeStepScenarios(testIndexV1, testIndexV2);
   }
 
   private void updateStepIsIdempotentAndCanBeRetried(
