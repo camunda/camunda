@@ -70,6 +70,21 @@ public class ElementTreePathBuilder {
       elementInstancePath.add(curr.elementInstanceKey);
       long currParent = curr.parentElementInstanceKey;
       while (currParent != -1) {
+<<<<<<< HEAD
+=======
+        final ElementInstance instance;
+        try {
+          instance = getElementInstance(currParent);
+        } catch (final ElementInstanceNotFoundException exception) {
+          throw new IllegalStateException(
+              """
+              Expected to build element tree path, but couldn't find element instance '%d'. \
+              Element tree path created so far: '%s'. \
+              Currently adding parent process instance's element instance path: '%s'."""
+                  .formatted(currParent, properties, elementInstancePath),
+              exception);
+        }
+>>>>>>> 536609ed (fix: add logging details)
         elementInstancePath.addFirst(currParent);
         final var instance = getElementInstance(currParent);
         processInstanceRecord = instance.getValue();
@@ -112,7 +127,7 @@ public class ElementTreePathBuilder {
   private ElementInstance getElementInstance(final long elementInstanceKey) {
     final ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
     if (instance == null) {
-      throw new IllegalStateException(
+      throw new ElementInstanceNotFoundException(
           String.format(
               "Expected to find element instance for given key '%d', but didn't exist.",
               elementInstanceKey));
@@ -129,4 +144,11 @@ public class ElementTreePathBuilder {
       Long elementInstanceKey,
       Long parentElementInstanceKey,
       ProcessInstanceRecordValue processInstanceRecord) {}
+
+  private static class ElementInstanceNotFoundException extends IllegalStateException {
+
+    ElementInstanceNotFoundException(final String message) {
+      super(message);
+    }
+  }
 }
