@@ -117,6 +117,11 @@ describe('MetadataPopover', () => {
       page: {totalItems: 0},
     });
 
+    mockSearchIncidentsByProcessInstance().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
