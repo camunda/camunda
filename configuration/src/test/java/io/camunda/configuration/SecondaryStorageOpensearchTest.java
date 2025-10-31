@@ -42,12 +42,20 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 public class SecondaryStorageOpensearchTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
+  private static final String EXPECTED_DATE_FORMAT = "date-format";
+  private static final int EXPECTED_SOCKET_TIMEOUT = 20;
+  private static final int EXPECTED_CONNECTION_TIMEOUT = 30;
   private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";
 
   private static final String EXPECTED_USERNAME = "testUsername";
   private static final String EXPECTED_PASSWORD = "testPassword";
 
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
+  private static final int EXPECTED_NUMBER_OF_REPLICAS = 2;
+  private static final int EXPECTED_VARIABLE_SIZE_THRESHOLD = 5000;
+  private static final int EXPECTED_TEMPLATE_PRIORITY = 100;
+  private static final Map<String, Integer> EXPECTED_REPLICAS_BY_INDEX_NAME = Map.of("my-index", 3);
+  private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("my-index", 2);
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
   private static final String EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "foo";
@@ -92,8 +100,19 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
         "camunda.data.secondary-storage.opensearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
         "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
+        "camunda.data.secondary-storage.opensearch.number-of-replicas="
+            + EXPECTED_NUMBER_OF_REPLICAS,
+        "camunda.data.secondary-storage.opensearch.variable-size-threshold="
+            + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+        "camunda.data.secondary-storage.opensearch.template-priority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.data.secondary-storage.opensearch.number-of-replicas-per-index.my-index=3",
+        "camunda.data.secondary-storage.opensearch.number-of-shards-per-index.my-index=2",
         "camunda.data.secondary-storage.opensearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.opensearch.date-format=" + EXPECTED_DATE_FORMAT,
+        "camunda.data.secondary-storage.opensearch.socket-timeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.data.secondary-storage.opensearch.connection-timeout="
+            + EXPECTED_CONNECTION_TIMEOUT,
         "camunda.data.secondary-storage.opensearch.history.els-rollover-date-format="
             + EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT,
         "camunda.data.secondary-storage.opensearch.history.rollover-interval="
@@ -159,6 +178,7 @@ public class SecondaryStorageOpensearchTest {
       final String expectedUrl = "http://expected-url:4321";
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
+
       assertThat(operateProperties.getOpensearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
@@ -166,6 +186,11 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(operateProperties.getOpensearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(operateProperties.getOpensearch().getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(operateProperties.getOpensearch().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(operateProperties.getOpensearch().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -174,11 +199,20 @@ public class SecondaryStorageOpensearchTest {
       final String expectedUrl = "http://expected-url:4321";
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
       assertThat(tasklistProperties.getOpenSearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(tasklistProperties.getOpenSearch().getClusterName())
+          .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(tasklistProperties.getOpenSearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(tasklistProperties.getOpenSearch().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(tasklistProperties.getOpenSearch().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(tasklistProperties.getOpenSearch().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -197,10 +231,28 @@ public class SecondaryStorageOpensearchTest {
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(exporterConfiguration.getConnect().getClusterName());
       assertThat(exporterConfiguration.getConnect().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(exporterConfiguration.getConnect().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(exporterConfiguration.getConnect().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(exporterConfiguration.getIndex().getNumberOfReplicas())
+          .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
+      assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(exporterConfiguration.getIndex().getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
       assertThat(exporterConfiguration.getHistory().getElsRolloverDateFormat())
@@ -251,12 +303,28 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo(expectedType);
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
       assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(searchEngineConnectProperties.getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(searchEngineConnectProperties.getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(searchEngineConnectProperties.getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(searchEngineIndexProperties.getNumberOfReplicas())
+          .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
+      assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(searchEngineIndexProperties.getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(searchEngineIndexProperties.getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
   }
 
@@ -338,6 +406,7 @@ public class SecondaryStorageOpensearchTest {
         "camunda.database.password=" + EXPECTED_PASSWORD,
         "camunda.operate.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.tasklist.opensearch.password=" + EXPECTED_PASSWORD,
+
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
         //  the className is also configured.
@@ -348,6 +417,22 @@ public class SecondaryStorageOpensearchTest {
         "camunda.tasklist.opensearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.opensearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.opensearch.url=http://matching-url:4321",
+        // date format
+        "camunda.data.secondary-storage.opensearch.date-format=" + EXPECTED_DATE_FORMAT,
+        "camunda.data.dateFormat=" + EXPECTED_DATE_FORMAT,
+        "camunda.tasklist.opensearch.dateFormat=" + EXPECTED_DATE_FORMAT,
+        "camunda.operate.opensearch.dateFormat=" + EXPECTED_DATE_FORMAT,
+        // socket timeout
+        "camunda.data.secondary-storage.opensearch.socket-timeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.data.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.tasklist.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.operate.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        // connection timeout
+        "camunda.data.secondary-storage.opensearch.connection-timeout="
+            + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.data.socketConnectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.tasklist.opensearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.operate.opensearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
 
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
@@ -362,6 +447,30 @@ public class SecondaryStorageOpensearchTest {
         // number of shards
         "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.database.index.numberOfShards=" + EXPECTED_NUMBER_OF_SHARDS,
+
+        // number of replicas
+        "camunda.data.secondary-storage.opensearch.number-of-replicas="
+            + EXPECTED_NUMBER_OF_REPLICAS,
+        "camunda.database.index.numberOfReplicas=" + EXPECTED_NUMBER_OF_REPLICAS,
+
+        // variable size threshold
+        "camunda.data.secondary-storage.opensearch.variable-size-threshold="
+            + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+        "camunda.database.index.variableSizeThreshold=" + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+
+        // template priority
+        "camunda.data.secondary-storage.opensearch.template-priority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
+
+        // template priority
+        "camunda.data.secondary-storage.opensearch.template-priority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
+
+        // per-index overrides
+        "camunda.data.secondary-storage.opensearch.number-of-replicas-per-index.my-index=3",
+        "camunda.database.index.replicasByIndexName.my-index=3",
+        "camunda.data.secondary-storage.opensearch.number-of-shards-per-index.my-index=2",
+        "camunda.database.index.shardsByIndexName.my-index=2",
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -389,6 +498,7 @@ public class SecondaryStorageOpensearchTest {
       final String expectedUrl = "http://matching-url:4321";
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
+
       assertThat(operateProperties.getOpensearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(operateProperties.getOpensearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
@@ -396,6 +506,11 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(operateProperties.getOpensearch().getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(operateProperties.getOpensearch().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(operateProperties.getOpensearch().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -404,6 +519,7 @@ public class SecondaryStorageOpensearchTest {
       final String expectedUrl = "http://matching-url:4321";
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
       assertThat(tasklistProperties.getOpenSearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
@@ -411,6 +527,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(tasklistProperties.getOpenSearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(tasklistProperties.getOpenSearch().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(tasklistProperties.getOpenSearch().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(tasklistProperties.getOpenSearch().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -433,8 +555,25 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(exporterConfiguration.getConnect().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(exporterConfiguration.getConnect().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(exporterConfiguration.getConnect().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(exporterConfiguration.getIndex().getNumberOfReplicas())
+          .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
+      assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(exporterConfiguration.getIndex().getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
 
     @Test
@@ -447,12 +586,27 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(searchEngineConnectProperties.getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(searchEngineConnectProperties.getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(searchEngineConnectProperties.getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(searchEngineIndexProperties.getNumberOfReplicas())
+          .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
+      assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(searchEngineIndexProperties.getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(searchEngineIndexProperties.getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
   }
 
