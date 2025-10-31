@@ -9,9 +9,7 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
-import io.camunda.search.entities.MessageSubscriptionProcessDefinitionStatisticsEntity;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
-import io.camunda.search.query.MessageSubscriptionProcessDefinitionStatisticsQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
@@ -24,8 +22,4 @@ public interface MessageSubscriptionSearchClient {
       CorrelatedMessageSubscriptionQuery query);
 
   MessageSubscriptionSearchClient withSecurityContext(SecurityContext securityContext);
-
-  SearchQueryResult<MessageSubscriptionProcessDefinitionStatisticsEntity>
-      getMessageSubscriptionProcessDefinitionStatistics(
-          MessageSubscriptionProcessDefinitionStatisticsQuery query);
 }

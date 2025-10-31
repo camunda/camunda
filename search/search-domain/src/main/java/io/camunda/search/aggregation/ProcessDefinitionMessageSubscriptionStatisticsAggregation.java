@@ -7,14 +7,10 @@
  */
 package io.camunda.search.aggregation;
 
-import io.camunda.search.filter.MessageSubscriptionProcessDefinitionStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AggregationPaginated;
 
-public record MessageSubscriptionProcessDefinitionStatisticsAggregation(
-    MessageSubscriptionProcessDefinitionStatisticsFilter filter,
-    io.camunda.search.sort.MessageSubscriptionProcessDefinitionStatisticsSort sort,
-    SearchQueryPage page)
+public record ProcessDefinitionMessageSubscriptionStatisticsAggregation(SearchQueryPage page)
     implements AggregationBase, AggregationPaginated {
 
   public static final int AGGREGATION_COMPOSITE_SIZE = 10000;

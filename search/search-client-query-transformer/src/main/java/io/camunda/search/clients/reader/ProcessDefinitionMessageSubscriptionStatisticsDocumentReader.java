@@ -7,31 +7,31 @@
  */
 package io.camunda.search.clients.reader;
 
-import io.camunda.search.aggregation.result.MessageSubscriptionProcessDefinitionStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.ProcessDefinitionMessageSubscriptionStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
-import io.camunda.search.entities.MessageSubscriptionProcessDefinitionStatisticsEntity;
-import io.camunda.search.query.MessageSubscriptionProcessDefinitionStatisticsQuery;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
+import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-public class MessageSubscriptionProcessDefinitionStatisticsDocumentReader
-    extends DocumentBasedReader implements MessageSubscriptionProcessDefinitionStatisticsReader {
+public class ProcessDefinitionMessageSubscriptionStatisticsDocumentReader
+    extends DocumentBasedReader implements ProcessDefinitionMessageSubscriptionStatisticsReader {
 
-  public MessageSubscriptionProcessDefinitionStatisticsDocumentReader(
+  public ProcessDefinitionMessageSubscriptionStatisticsDocumentReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
     super(executor, indexDescriptor);
   }
 
   @Override
-  public SearchQueryResult<MessageSubscriptionProcessDefinitionStatisticsEntity> aggregate(
-      final MessageSubscriptionProcessDefinitionStatisticsQuery query,
+  public SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> aggregate(
+      final ProcessDefinitionMessageSubscriptionStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
     final var aggResult =
         getSearchExecutor()
             .aggregate(
                 query,
-                MessageSubscriptionProcessDefinitionStatisticsAggregationResult.class,
+                ProcessDefinitionMessageSubscriptionStatisticsAggregationResult.class,
                 resourceAccessChecks);
     return new SearchQueryResult<>(
         aggResult.items().size(),

@@ -4513,27 +4513,27 @@ paths:
           $ref: "#/components/responses/InternalServerError"
       x-eventually-consistent: true
 
-  /message-subscriptions/statistics/process-definitions:
+  /process-definitions/statistics/message-subscriptions:
     post:
       tags:
-        - Message subscription statistics
-      operationId: getMessageSubscriptionProcessDefinitionStatistics
-      summary: Get message subscription statistics for process definitions
+        - Process definition
+      operationId: getProcessDefinitionMessageSubscriptionStatistics
+      summary: Get message subscription statistics
       description: |
-        Get message subscription statistics for process definitions based on given criteria.
+        Get message subscription statistics, grouped by process definition.
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsQuery"
+              $ref: "#/components/schemas/ProcessDefinitionMessageSubscriptionStatisticsQuery"
       responses:
         "200":
-          description: The message subscription statistics for process definitions result.
+          description: The process definition message subscription statistics result.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsQueryResult"
+                $ref: "#/components/schemas/ProcessDefinitionMessageSubscriptionStatisticsQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -8120,14 +8120,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IncidentResult"
-    MessageSubscriptionProcessDefinitionStatisticsFilter:
-      description: Process definition search filter.
-      type: object
-      properties:
-        processDefinitionId:
-          description: Process definition ID of this process definition.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
     CorrelatedMessageSubscriptionSearchQueryResult:
       type: object
       allOf:
@@ -8460,53 +8452,36 @@ components:
             $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $like:
           $ref: "#/components/schemas/LikeFilter"
-    MessageSubscriptionProcessDefinitionStatisticsSortRequest:
-      type: object
-      properties:
-        field:
-          description: The field to sort by.
-          type: string
-          enum:
-            - processDefinitionKey
-            - processDefinitionId
-        order:
-          $ref: "#/components/schemas/SortOrderEnum"
-      required:
-        - field
-    MessageSubscriptionProcessDefinitionStatisticsQuery:
+    ProcessDefinitionMessageSubscriptionStatisticsQuery:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
-        sort:
-          description: Sort field criteria.
-          type: array
-          items:
-            $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsSortRequest"
         filter:
-          description: The message subscription process definition statistics filters.
+          description: The message subscription filters.
           allOf:
-            - $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsFilter"
-    MessageSubscriptionProcessDefinitionStatisticsQueryResult:
+            - $ref: "#/components/schemas/MessageSubscriptionFilter"
+    ProcessDefinitionMessageSubscriptionStatisticsQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
-          description: The matching message subscription process definition statistics.
+          description: The matching process definition message subscription statistics.
           type: array
           items:
-            $ref: "#/components/schemas/MessageSubscriptionProcessDefinitionStatisticsResult"
-    MessageSubscriptionProcessDefinitionStatisticsResult:
+            $ref: "#/components/schemas/ProcessDefinitionMessageSubscriptionStatisticsResult"
+    ProcessDefinitionMessageSubscriptionStatisticsResult:
       type: object
       properties:
         processDefinitionId:
           description: The process definition ID associated with this message subscription.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionId"
         processDefinitionKey:
           description: The process definition key associated with this message subscription.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionKey"
         processInstancesWithActiveSubscriptions:
           description: The number of process instances with active message subscriptions.
           type: integer

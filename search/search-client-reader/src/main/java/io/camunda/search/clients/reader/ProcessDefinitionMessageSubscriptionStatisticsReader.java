@@ -7,10 +7,10 @@
  */
 package io.camunda.search.clients.reader;
 
-import io.camunda.search.entities.MessageSubscriptionProcessDefinitionStatisticsEntity;
-import io.camunda.search.query.MessageSubscriptionProcessDefinitionStatisticsQuery;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
+import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 
-public interface MessageSubscriptionProcessDefinitionStatisticsReader
+public interface ProcessDefinitionMessageSubscriptionStatisticsReader
     extends SearchQueryStatisticsReader<
-        MessageSubscriptionProcessDefinitionStatisticsEntity,
-        MessageSubscriptionProcessDefinitionStatisticsQuery> {}
+        ProcessDefinitionMessageSubscriptionStatisticsEntity,
+        ProcessDefinitionMessageSubscriptionStatisticsQuery> {}

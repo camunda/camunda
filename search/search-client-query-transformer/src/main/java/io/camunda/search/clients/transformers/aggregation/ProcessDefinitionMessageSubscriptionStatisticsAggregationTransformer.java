@@ -7,24 +7,24 @@
  */
 package io.camunda.search.clients.transformers.aggregation;
 
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_COMPOSITE_SIZE;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_FIELD_BPMN_PROCESS_ID;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_FIELD_FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_KEY;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_INSTANCE_KEY;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_FIELD_TENANT_ID;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_ACTIVE_SUBSCRIPTIONS;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_DEF_KEY_AND_TENANT_ID;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_PROCESS_INSTANCES_WITH_ACTIVE_SUBSCRIPTIONS;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_TOP_HIT;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_SOURCE_NAME_PROCESS_DEFINITION_KEY;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_SOURCE_NAME_TENANT_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_COMPOSITE_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_FIELD_BPMN_PROCESS_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_FIELD_FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_DEFINITION_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_FIELD_PROCESS_INSTANCE_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_FIELD_TENANT_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_NAME_ACTIVE_SUBSCRIPTIONS;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_DEF_KEY_AND_TENANT_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_NAME_PROCESS_INSTANCES_WITH_ACTIVE_SUBSCRIPTIONS;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_NAME_TOP_HIT;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_SOURCE_NAME_PROCESS_DEFINITION_KEY;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_SOURCE_NAME_TENANT_ID;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.composite;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.topHits;
 
-import io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation;
+import io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
@@ -35,17 +35,15 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
 
-public class MessageSubscriptionProcessDefinitionStatisticsAggregationTransformer
-    implements AggregationTransformer<MessageSubscriptionProcessDefinitionStatisticsAggregation> {
+public class ProcessDefinitionMessageSubscriptionStatisticsAggregationTransformer
+    implements AggregationTransformer<ProcessDefinitionMessageSubscriptionStatisticsAggregation> {
 
   @Override
   public List<SearchAggregator> apply(
-      final Tuple<MessageSubscriptionProcessDefinitionStatisticsAggregation, ServiceTransformers>
+      final Tuple<ProcessDefinitionMessageSubscriptionStatisticsAggregation, ServiceTransformers>
           value) {
-    final var transformers = value.getRight();
     final var aggregation = value.getLeft();
     final var page = aggregation.page();
-    final var sort = aggregation.sort();
     final Builder<EventEntity> topHits = topHits();
 
     // build the top_hits aggregation for processDefinitionId
@@ -77,9 +75,6 @@ public class MessageSubscriptionProcessDefinitionStatisticsAggregationTransforme
         terms()
             .name(AGGREGATION_SOURCE_NAME_PROCESS_DEFINITION_KEY)
             .field(AGGREGATION_FIELD_PROCESS_DEFINITION_KEY);
-    Optional.ofNullable(sort)
-        .map(findSortOptionFor(AGGREGATION_FIELD_PROCESS_DEFINITION_KEY, transformers))
-        .ifPresent(byProcessDefinitionKeyAggSourceBuilder::sorting);
     // build the terms source, will group results by for tenantId
     final SearchTermsAggregator.Builder byTenantIdAggSourceBuilder =
         terms().name(AGGREGATION_SOURCE_NAME_TENANT_ID).field(AGGREGATION_FIELD_TENANT_ID);
