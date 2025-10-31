@@ -277,11 +277,14 @@ public class MappingRuleIT {
     writer.flush();
 
     // then
-    final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId).orElse(null);
-    assertThat(mappingRule.mappingRuleKey()).isEqualTo(randomizedMappingRule.mappingRuleKey());
-    assertThat(mappingRule.mappingRuleId()).isEqualTo(randomizedMappingRule.mappingRuleId());
-    assertThat(mappingRule.name()).isEqualTo("Updated Name");
-    assertThat(mappingRule.claimName()).isEqualTo("Updated Claim Name");
-    assertThat(mappingRule.claimValue()).isEqualTo("Updated Claim Value");
+    final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
+    assertThat(mappingRule)
+        .isPresent()
+        .get()
+        .returns(randomizedMappingRule.mappingRuleKey(), m -> m.mappingRuleKey())
+        .returns(randomizedMappingRule.mappingRuleId(), m -> m.mappingRuleId())
+        .returns("Updated Name", m -> m.name())
+        .returns("Updated Claim Name", m -> m.claimName())
+        .returns("Updated Claim Value", m -> m.claimValue());
   }
 }
