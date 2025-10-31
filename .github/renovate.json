@@ -77,6 +77,14 @@
       "enabled": false
     },
     {
+      "description": "Disable all Renovate updates on EOL 8.5 stable branches to prevent unwanted PRs from Renovate.",
+      "matchBaseBranches": [
+        "stable/8.5",
+        "stable/operate-8.5"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
       "matchManagers": [
         "dockerfile",
