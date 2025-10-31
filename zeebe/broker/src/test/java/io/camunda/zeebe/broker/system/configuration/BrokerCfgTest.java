@@ -267,7 +267,7 @@ public final class BrokerCfgTest {
     final ClusterCfg cfgCluster = cfg.getCluster();
 
     // when - then
-    assertThat(cfgCluster.getInitialContactPoints()).isEmpty();
+    assertThat(cfgCluster.getInitialContactPoints()).containsExactly("localhost:26502");
     assertThat(cfgCluster.getNodeId()).isEqualTo(2);
     assertThat(cfgCluster.getPartitionsCount()).isEqualTo(3);
     assertThat(cfgCluster.getReplicationFactor()).isEqualTo(4);

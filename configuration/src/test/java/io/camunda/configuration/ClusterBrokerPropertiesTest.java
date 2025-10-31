@@ -29,6 +29,19 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 @ActiveProfiles("broker")
 public class ClusterBrokerPropertiesTest {
+  @Test
+  public void shouldMatchThePropertyNamesInClusterCfg() {
+    /*
+     * The same property names are defined twice: broker does not depend on configuration, but we
+     * would like to log them to provide a better user feedback. Considering they should not change,
+     * this simple test is enough to prevent any mistake.
+     */
+    assertThat(Cluster.LEGACY_INITIAL_CONTACT_POINTS_PROPERTY)
+        .isEqualTo(ClusterCfg.LEGACY_INITIAL_CONTACT_POINTS_PROPERTY);
+    assertThat(Cluster.UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY)
+        .isEqualTo(ClusterCfg.UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY);
+  }
+
   @Nested
   @TestPropertySource(
       properties = {
