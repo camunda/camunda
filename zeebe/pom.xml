@@ -63,6 +63,7 @@
     <module>backup-stores/common</module>
     <module>restore</module>
     <module>dynamic-config</module>
+    <module>dynamic-node-id-provider</module>
   </modules>
 
   <profiles>
