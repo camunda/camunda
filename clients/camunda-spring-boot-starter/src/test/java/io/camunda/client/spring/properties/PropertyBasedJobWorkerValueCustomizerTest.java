@@ -57,6 +57,36 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
+  void shouldNotApplyDefaultValue() {
+    final CamundaClientProperties properties = properties();
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
+    jobWorkerValue.setMaxJobsActive(2);
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getMaxJobsActive()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldApplyOverrideValue() {
+    final CamundaClientProperties properties = properties();
+
+    final CamundaClientJobWorkerProperties overrideProperties =
+        new CamundaClientJobWorkerProperties();
+    overrideProperties.setMaxJobsActive(32);
+    properties.getWorker().getOverride().put("test", overrideProperties);
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
+    jobWorkerValue.setMaxJobsActive(2);
+    jobWorkerValue.setType("test");
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getMaxJobsActive()).isEqualTo(32);
+  }
+
+  @Test
   void shouldApplyDistinctFetchVariables() {
     // given
     final CamundaClientProperties properties = properties();

@@ -18,8 +18,12 @@ package io.camunda.client.spring.properties;
 import static io.camunda.client.annotation.AnnotationUtil.getVariableParameters;
 import static io.camunda.client.annotation.AnnotationUtil.getVariableValue;
 import static io.camunda.client.annotation.AnnotationUtil.getVariablesAsTypeParameters;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_POLL_INTERVAL;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_JOBS_ACTIVE;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
 import static org.apache.commons.lang3.StringUtils.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,6 +36,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -153,16 +158,30 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       copyProperty("name", overrideSource, source::getName, target::setName);
       copyProperty("tenantIds", overrideSource, source::getTenantIds, target::setTenantIds);
     }
-    copyProperty("timeout", overrideSource, source::getTimeout, target::setTimeout);
     copyProperty(
-        "maxJobsActive", overrideSource, source::getMaxJobsActive, target::setMaxJobsActive);
+        "timeout", overrideSource, source::getTimeout, target::setTimeout, DEFAULT_JOB_TIMEOUT);
+    copyProperty(
+        "maxJobsActive",
+        overrideSource,
+        source::getMaxJobsActive,
+        target::setMaxJobsActive,
+        DEFAULT_MAX_JOBS_ACTIVE);
     copyProperty(
         "requestTimeout", overrideSource, source::getRequestTimeout, target::setRequestTimeout);
-    copyProperty("pollInterval", overrideSource, source::getPollInterval, target::setPollInterval);
+    copyProperty(
+        "pollInterval",
+        overrideSource,
+        source::getPollInterval,
+        target::setPollInterval,
+        DEFAULT_JOB_POLL_INTERVAL);
     copyProperty("autoComplete", overrideSource, source::getAutoComplete, target::setAutoComplete);
     copyProperty("enabled", overrideSource, source::getEnabled, target::setEnabled);
     copyProperty(
-        "streamEnabled", overrideSource, source::getStreamEnabled, target::setStreamEnabled);
+        "streamEnabled",
+        overrideSource,
+        source::getStreamEnabled,
+        target::setStreamEnabled,
+        DEFAULT_STREAM_ENABLED);
     copyProperty(
         "streamTimeout", overrideSource, source::getStreamTimeout, target::setStreamTimeout);
     copyProperty(
@@ -178,8 +197,17 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       final OverrideSource overrideSource,
       final Supplier<T> getter,
       final Consumer<T> setter) {
+    copyProperty(propertyName, overrideSource, getter, setter, null);
+  }
+
+  private <T> void copyProperty(
+      final String propertyName,
+      final OverrideSource overrideSource,
+      final Supplier<T> getter,
+      final Consumer<T> setter,
+      final T defaultValue) {
     final T value = getter.get();
-    if (value != null) {
+    if (value != null && !Objects.equals(value, defaultValue) || overrideSource == OverrideSource.worker) {
       LOG.debug("Overriding property '{}' from source {}", propertyName, overrideSource);
       setter.accept(value);
     }
