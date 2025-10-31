@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.BoundaryE
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BusinessRuleTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.CallActivityTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.CatchEventTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.ConditionalTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ContextProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.EndEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ErrorTransformer;
@@ -83,6 +84,7 @@ public final class BpmnTransformer {
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
     step1Visitor.registerHandler(new MessageTransformer());
     step1Visitor.registerHandler(new SignalTransformer());
+    step1Visitor.registerHandler(new ConditionalTransformer());
     step1Visitor.registerHandler(new ProcessTransformer());
 
     step2Visitor = new TransformationVisitor();

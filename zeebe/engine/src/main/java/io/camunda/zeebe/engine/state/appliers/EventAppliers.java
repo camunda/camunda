@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConditionSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -125,6 +126,13 @@ public final class EventAppliers implements EventApplier {
     registerUserTaskAppliers(state);
 
     registerSignalAppliers(state);
+
+    register(
+        ConditionSubscriptionIntent.CREATED,
+        new ConditionSubscriptionCreatedApplier(state.getConditionSubscriptionState()));
+    register(
+        ConditionSubscriptionIntent.TRIGGERED,
+        new ConditionSubscriptionTriggeredApplier(state.getConditionSubscriptionState()));
 
     registerCompensationSubscriptionApplier(state);
 

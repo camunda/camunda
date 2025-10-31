@@ -60,6 +60,7 @@ public final class StartEventSubscriptions {
               });
     }
 
+    // TODO - open conditional start event subscriptions here
     startEventSubscriptionManager.openStartEventSubscriptions(deployedProcess);
   }
 }

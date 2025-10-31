@@ -28,6 +28,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private ExecutableCompensation compensation;
   private boolean interrupting;
   private BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory;
+  private ExecutableCondition condition;
 
   private boolean isConnectedToEventBasedGateway;
 
@@ -75,6 +76,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   }
 
   @Override
+  public boolean isCondition() {
+    return condition != null;
+  }
+
+  @Override
   public ExecutableMessage getMessage() {
     return message;
   }
@@ -114,6 +120,15 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public ExecutableSignal getSignal() {
     return signal;
+  }
+
+  @Override
+  public ExecutableCondition getCondition() {
+    return condition;
+  }
+
+  public void setCondition(final ExecutableCondition condition) {
+    this.condition = condition;
   }
 
   public void setSignal(final ExecutableSignal signal) {

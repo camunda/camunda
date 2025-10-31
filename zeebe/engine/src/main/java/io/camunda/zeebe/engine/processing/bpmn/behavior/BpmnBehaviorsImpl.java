@@ -74,7 +74,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     variableBehavior =
         new VariableBehavior(
-            processingState.getVariableState(), writers.state(), processingState.getKeyGenerator());
+            processingState.getVariableState(),
+            writers.state(),
+            writers.command(),
+            processingState.getKeyGenerator(),
+            expressionBehavior,
+            processingState.getElementInstanceState(),
+            processingState.getConditionSubscriptionState(),
+            processingState.getProcessState());
 
     catchEventBehavior =
         new CatchEventBehavior(
@@ -82,8 +89,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             expressionBehavior,
             subscriptionCommandSender,
-            writers.state(),
-            writers.sideEffect(),
+            writers,
             timerChecker,
             routingInfo,
             clock,
@@ -97,7 +103,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             catchEventBehavior,
             writers,
             processingState,
-            stateBehavior);
+            stateBehavior,
+            expressionBehavior);
 
     bpmnDecisionBehavior =
         new BpmnDecisionBehavior(

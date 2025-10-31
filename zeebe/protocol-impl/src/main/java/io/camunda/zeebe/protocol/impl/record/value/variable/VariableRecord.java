@@ -54,6 +54,17 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
         .declareProperty(tenantIdProp);
   }
 
+  public VariableRecord copyFrom(final VariableRecord other) {
+    nameProp.setValue(other.nameProp.getValue());
+    valueProp.setValue(other.valueProp.getValue());
+    scopeKeyProp.setValue(other.scopeKeyProp.getValue());
+    processInstanceKeyProp.setValue(other.processInstanceKeyProp.getValue());
+    processDefinitionKeyProp.setValue(other.processDefinitionKeyProp.getValue());
+    bpmnProcessIdProp.setValue(other.bpmnProcessIdProp.getValue());
+    tenantIdProp.setValue(other.tenantIdProp.getValue());
+    return this;
+  }
+
   @Override
   public String getName() {
     return BufferUtil.bufferAsString(nameProp.getValue());

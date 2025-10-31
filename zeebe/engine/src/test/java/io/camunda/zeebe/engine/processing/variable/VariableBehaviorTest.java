@@ -48,7 +48,9 @@ final class VariableBehaviorTest {
     final var stateWriter = new EventApplyingStateWriter(eventWriter, eventAppliers);
 
     state = processingState.getVariableState();
-    behavior = new VariableBehavior(state, stateWriter, processingState.getKeyGenerator());
+    behavior =
+        new VariableBehavior(
+            state, stateWriter, null, processingState.getKeyGenerator(), null, null, null, null);
   }
 
   @Test

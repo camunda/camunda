@@ -77,7 +77,8 @@ public interface Intent {
           UsageMetricIntent.class,
           MultiInstanceIntent.class,
           RuntimeInstructionIntent.class,
-          ClusterVariableIntent.class);
+          ClusterVariableIntent.class,
+          ConditionSubscriptionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -207,6 +208,8 @@ public interface Intent {
         return RuntimeInstructionIntent.from(intent);
       case CLUSTER_VARIABLE:
         return ClusterVariableIntent.from(intent);
+      case CONDITION_SUBSCRIPTION:
+        return ConditionSubscriptionIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
