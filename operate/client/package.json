@@ -101,7 +101,7 @@
     "jsdom": "26.1.0",
     "monaco-editor": "0.52.2",
     "msw": "2.10.3",
-    "playwright": "1.54.0",
+    "playwright": "1.55.1",
     "prettier": "3.6.2",
     "resize-observer-polyfill": "1.5.1",
     "rollup-plugin-license": "3.6.0",
