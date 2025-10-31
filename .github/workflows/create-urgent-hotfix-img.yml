@@ -70,6 +70,7 @@ jobs:
 
 
           [[ -z "$BRANCH" && -z "$COMMIT" ]] && { echo "❌ Either branch or commit required"; exit 1; }
+          [[ -n "$BRANCH" && "$BRANCH" =~ [[:space:]] ]] && { echo "❌ Branch name cannot contain whitespace"; exit 1; }
           [[ -n "$COMMIT" && ! "$COMMIT" =~ ^[a-f0-9]{40}$ ]] && { echo "❌ Commit must be a full 40-character SHA (got: $COMMIT)"; exit 1; }
           [[ -z "$TICKET_ID" ]] && { echo "❌ Support ticket ID required"; exit 1; }
           [[ ! "$TICKET_ID" =~ ^[a-zA-Z0-9_-]+$ ]] && { echo "❌ Invalid ticket ID format"; exit 1; }
@@ -86,6 +87,13 @@ jobs:
           IFS=',' read -ra ARRAY <<< "$COMPONENTS"
           for ITEM in "${ARRAY[@]}"; do
             ITEM=$(echo "$ITEM" | xargs)
+            
+            # Check for whitespace in the component:version string
+            if [[ "$ITEM" =~ [[:space:]] ]]; then
+              echo "❌ Invalid format: '$ITEM' contains whitespace (spaces are not allowed)"
+              exit 1
+            fi
+            
             if [[ "$ITEM" =~ ^([^:]+):(.+)$ ]]; then
               COMP="${BASH_REMATCH[1]}"
               case "$COMP" in
