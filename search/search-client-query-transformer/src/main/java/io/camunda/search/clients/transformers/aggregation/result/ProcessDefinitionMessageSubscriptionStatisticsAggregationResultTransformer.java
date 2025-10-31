@@ -14,8 +14,8 @@ import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscription
 
 import io.camunda.search.aggregation.result.ProcessDefinitionMessageSubscriptionStatisticsAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
+import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
-import io.camunda.webapps.schema.entities.event.EventEntity;
 import java.util.Map;
 
 public class ProcessDefinitionMessageSubscriptionStatisticsAggregationResultTransformer
@@ -35,9 +35,9 @@ public class ProcessDefinitionMessageSubscriptionStatisticsAggregationResultTran
                 aggregationResult -> {
                   final var topHit = aggregationResult.aggregations().get(AGGREGATION_NAME_TOP_HIT);
                   final var firstHit = topHit.hits().getFirst();
-                  final var source = (EventEntity) firstHit.source();
-                  final var processDefinitionId = source.getBpmnProcessId();
-                  final var processDefinitionKey = String.valueOf(source.getProcessDefinitionKey());
+                  final var source = (MessageSubscriptionEntity) firstHit.source();
+                  final var processDefinitionId = source.processDefinitionId();
+                  final var processDefinitionKey = String.valueOf(source.processDefinitionKey());
 
                   final var activeSubscriptions =
                       aggregationResult

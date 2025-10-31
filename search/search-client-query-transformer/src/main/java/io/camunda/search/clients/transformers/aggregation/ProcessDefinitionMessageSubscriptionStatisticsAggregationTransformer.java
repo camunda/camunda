@@ -29,8 +29,8 @@ import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.page.SearchQueryPage;
-import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +44,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsAggregationTransforme
           value) {
     final var aggregation = value.getLeft();
     final var page = aggregation.page();
-    final Builder<EventEntity> topHits = topHits();
+    final Builder<MessageSubscriptionEntity> topHits = topHits();
 
     // build the top_hits aggregation for processDefinitionId
     final var processDefinitionIdAgg =
@@ -53,7 +53,7 @@ public class ProcessDefinitionMessageSubscriptionStatisticsAggregationTransforme
             .fields(
                 List.of(
                     AGGREGATION_FIELD_BPMN_PROCESS_ID, AGGREGATION_FIELD_PROCESS_DEFINITION_KEY))
-            .documentClass(EventEntity.class)
+            .documentClass(MessageSubscriptionEntity.class)
             .size(1)
             .build();
 
