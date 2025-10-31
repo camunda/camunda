@@ -6,7 +6,7 @@
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:noble"
 ARG BASE_DIGEST="sha256:66460d557b25769b102175144d538d88219c077c678a49af4afca6fbfc1b5252"
-ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
+ARG JDK_IMAGE="eclipse-temurin:21.0.8_9-jdk-noble"
 ARG JDK_DIGEST="sha256:03b731a231066bd04ada0a7ee9003cdbc1460083344f9277245b233e5ffcbf47"
 
 # set to "build" to build zeebe from scratch instead of using a distball
