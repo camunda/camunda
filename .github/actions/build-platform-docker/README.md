@@ -32,8 +32,8 @@ This action leverages Docker BuildKit layer caching using GitHub Actions cache (
 
 - **Cache Scope**: Each Dockerfile has its own cache scope to prevent conflicts between different image builds
 - **Cache Mode**: Uses `mode=max` to cache all intermediate layers, not just the final result
-- **Branch Detection**: QEMU cache images are only stored on persistent branches (main and stable/*) where reuse is likely
 - **Performance**: Intermediate stages like `base`, `jre-build`, and `java` are cached and reused across builds
+- **Cache Retention**: GitHub Actions cache automatically manages retention (7 days for unused caches, 10 GB limit per repository)
 
 ### How It Works
 
