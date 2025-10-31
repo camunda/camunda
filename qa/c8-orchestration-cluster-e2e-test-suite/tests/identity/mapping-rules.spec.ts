@@ -50,7 +50,8 @@ test.describe.serial('mapping rules CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('tries to create a mapping rule with invalid id', async ({
+  // Skipped due to bug #40284: https://github.com/camunda/camunda/issues/40284
+  test.skip('tries to create a mapping rule with invalid id', async ({
     identityMappingRulesPage,
   }) => {
     await identityMappingRulesPage.createMappingRuleButton.click();
