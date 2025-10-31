@@ -117,7 +117,7 @@ public final class ExporterRule implements TestRule {
       final Function<RecordExporter, RecordExporter> recordExporter) {
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
-    capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile()));
+    capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile(), false));
 
     final var descriptorsWithInitializationInfo =
         exporterDescriptors.stream()
