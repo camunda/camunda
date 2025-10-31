@@ -11,17 +11,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record MessageSubscriptionProcessDefinitionStatisticsEntity(
+public record ProcessDefinitionMessageSubscriptionStatisticsEntity(
     String processDefinitionId,
-    Long processDefinitionKey,
+    String processDefinitionKey,
     Long processInstancesWithActiveSubscriptions,
     Long activeSubscriptions) {
 
   public static class Builder
-      implements ObjectBuilder<MessageSubscriptionProcessDefinitionStatisticsEntity> {
+      implements ObjectBuilder<ProcessDefinitionMessageSubscriptionStatisticsEntity> {
 
     private String processDefinitionId;
-    private Long processDefinitionKey;
+    private String processDefinitionKey;
     private Long processInstancesWithActiveSubscriptions;
     private Long activeSubscriptions;
 
@@ -30,7 +30,7 @@ public record MessageSubscriptionProcessDefinitionStatisticsEntity(
       return this;
     }
 
-    public Builder processDefinitionKey(final Long processDefinitionKey) {
+    public Builder processDefinitionKey(final String processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
@@ -47,8 +47,8 @@ public record MessageSubscriptionProcessDefinitionStatisticsEntity(
     }
 
     @Override
-    public MessageSubscriptionProcessDefinitionStatisticsEntity build() {
-      return new MessageSubscriptionProcessDefinitionStatisticsEntity(
+    public ProcessDefinitionMessageSubscriptionStatisticsEntity build() {
+      return new ProcessDefinitionMessageSubscriptionStatisticsEntity(
           processDefinitionId,
           processDefinitionKey,
           processInstancesWithActiveSubscriptions,

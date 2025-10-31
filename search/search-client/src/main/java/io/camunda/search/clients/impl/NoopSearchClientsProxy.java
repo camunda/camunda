@@ -27,9 +27,9 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
-import io.camunda.search.entities.MessageSubscriptionProcessDefinitionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -60,10 +60,10 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
-import io.camunda.search.query.MessageSubscriptionProcessDefinitionStatisticsQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleMemberQuery;
@@ -226,6 +226,13 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity>
+      getProcessDefinitionMessageSubscriptionStatistics(
+          final ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
   public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
       processDefinitionInstanceVersionStatistics(
           final ProcessDefinitionInstanceVersionStatisticsQuery query) {
@@ -324,12 +331,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
     return SearchQueryResult.empty();
-  }
-
-  @Override
-  public SearchQueryResult<MessageSubscriptionProcessDefinitionStatisticsEntity> getMessageSubscriptionProcessDefinitionStatistics(
-      final MessageSubscriptionProcessDefinitionStatisticsQuery query) {
-    return  SearchQueryResult.empty();
   }
 
   @Override

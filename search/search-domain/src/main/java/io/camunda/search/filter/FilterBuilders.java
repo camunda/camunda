@@ -59,11 +59,6 @@ public final class FilterBuilders {
     return new ProcessInstanceFilter.Builder();
   }
 
-  public static MessageSubscriptionProcessDefinitionStatisticsFilter.Builder
-      messageSubscriptionProcessDefinitionStatistics() {
-    return new MessageSubscriptionProcessDefinitionStatisticsFilter.Builder();
-  }
-
   public static SequenceFlowFilter.Builder sequenceFlow() {
     return new SequenceFlowFilter.Builder();
   }
@@ -132,15 +127,6 @@ public final class FilterBuilders {
   public static ProcessInstanceFilter processInstance(
       final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
     return fn.apply(processInstance()).build();
-  }
-
-  public static MessageSubscriptionProcessDefinitionStatisticsFilter
-      messageSubscriptionProcessDefinitionStatistics(
-          final Function<
-                  MessageSubscriptionProcessDefinitionStatisticsFilter.Builder,
-                  ObjectBuilder<MessageSubscriptionProcessDefinitionStatisticsFilter>>
-              fn) {
-    return fn.apply(messageSubscriptionProcessDefinitionStatistics()).build();
   }
 
   public static SequenceFlowFilter sequenceFlow(

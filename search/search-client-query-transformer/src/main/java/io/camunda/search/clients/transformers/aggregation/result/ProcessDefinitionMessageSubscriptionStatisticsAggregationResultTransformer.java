@@ -7,25 +7,25 @@
  */
 package io.camunda.search.clients.transformers.aggregation.result;
 
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_ACTIVE_SUBSCRIPTIONS;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_DEF_KEY_AND_TENANT_ID;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_PROCESS_INSTANCES_WITH_ACTIVE_SUBSCRIPTIONS;
-import static io.camunda.search.aggregation.MessageSubscriptionProcessDefinitionStatisticsAggregation.AGGREGATION_NAME_TOP_HIT;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_NAME_ACTIVE_SUBSCRIPTIONS;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_NAME_BY_PROCESS_DEF_KEY_AND_TENANT_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_NAME_PROCESS_INSTANCES_WITH_ACTIVE_SUBSCRIPTIONS;
+import static io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatisticsAggregation.AGGREGATION_NAME_TOP_HIT;
 
-import io.camunda.search.aggregation.result.MessageSubscriptionProcessDefinitionStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.ProcessDefinitionMessageSubscriptionStatisticsAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
-import io.camunda.search.entities.MessageSubscriptionProcessDefinitionStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import java.util.Map;
 
-public class MessageSubscriptionProcessDefinitionStatisticsAggregationResultTransformer
+public class ProcessDefinitionMessageSubscriptionStatisticsAggregationResultTransformer
     implements AggregationResultTransformer<
-        MessageSubscriptionProcessDefinitionStatisticsAggregationResult> {
+        ProcessDefinitionMessageSubscriptionStatisticsAggregationResult> {
 
   @Override
-  public MessageSubscriptionProcessDefinitionStatisticsAggregationResult apply(
+  public ProcessDefinitionMessageSubscriptionStatisticsAggregationResult apply(
       final Map<String, AggregationResult> aggregations) {
-    return new MessageSubscriptionProcessDefinitionStatisticsAggregationResult(
+    return new ProcessDefinitionMessageSubscriptionStatisticsAggregationResult(
         aggregations
             .get(AGGREGATION_NAME_BY_PROCESS_DEF_KEY_AND_TENANT_ID)
             .aggregations()
@@ -37,7 +37,7 @@ public class MessageSubscriptionProcessDefinitionStatisticsAggregationResultTran
                   final var firstHit = topHit.hits().getFirst();
                   final var source = (EventEntity) firstHit.source();
                   final var processDefinitionId = source.getBpmnProcessId();
-                  final var processDefinitionKey = source.getProcessDefinitionKey();
+                  final var processDefinitionKey = String.valueOf(source.getProcessDefinitionKey());
 
                   final var activeSubscriptions =
                       aggregationResult
@@ -51,7 +51,7 @@ public class MessageSubscriptionProcessDefinitionStatisticsAggregationResultTran
                           .get(AGGREGATION_NAME_PROCESS_INSTANCES_WITH_ACTIVE_SUBSCRIPTIONS)
                           .docCount();
 
-                  return new MessageSubscriptionProcessDefinitionStatisticsEntity(
+                  return new ProcessDefinitionMessageSubscriptionStatisticsEntity(
                       processDefinitionId,
                       processDefinitionKey,
                       processInstancesWithActiveSubscriptions,
