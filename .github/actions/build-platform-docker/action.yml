@@ -131,3 +131,5 @@ runs:
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
           VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
         target: app
+        cache-from: type=gha,scope=${{ inputs.dockerfile }}
+        cache-to: type=gha,mode=max,scope=${{ inputs.dockerfile }}
