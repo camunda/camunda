@@ -138,7 +138,7 @@ public class MultiTenancyIT {
       authUtil.createUser(
           USER_TENANT_A_WITHOUT_DEFAULT_TENANT, USER_TENANT_A_WITHOUT_DEFAULT_TENANT);
       authUtil.createUser(USER_WITHOUT_TENANT, USER_WITHOUT_TENANT);
-
+      assignUsersToTenant(client, "<default>", USER_TENANT_A, USER_TENANT_B, USER_TENANT_A_AND_B);
       createTenantAndAssignUsers(
           client,
           TENANT_A,
