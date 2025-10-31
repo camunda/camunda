@@ -60,7 +60,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -78,7 +77,6 @@ public class ScaleUpPartitionsTest {
   private static final String JOB_TYPE = "job";
   private static final String PROCESS_ID = DEFAULT_PROCESS_ID;
   // must be static so that it's initialized before the cluster
-  @TempDir private static Path backupPath;
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   private static final MemberId MEMBER_0 = MemberId.from("0");
@@ -99,13 +97,14 @@ public class ScaleUpPartitionsTest {
           .withReplicationFactor(3)
           .withBrokerConfig(
               b ->
-                  b.withBrokerConfig(this::configureBackupStore)
+                  b.withProperty("camunda.cluster.metadata.sync-initializer-delay", "100ms")
+                      .withBrokerConfig(this::configureBackupStore)
                       .withBrokerConfig(
                           bb -> {
                             bb.getCluster()
                                 .getMembership()
-                                .setSyncInterval(Duration.ofSeconds(1))
-                                .setGossipInterval(Duration.ofMillis(500));
+                                .setSyncInterval(Duration.ofMillis(500))
+                                .setGossipInterval(Duration.ofMillis(250));
 
                             final var engineDistribution =
                                 bb.getExperimental().getEngine().getDistribution();
