@@ -10,7 +10,8 @@ package io.camunda.zeebe.protocol.record.value;
 public enum AuthorizationResourceMatcher {
   UNSPECIFIED(0),
   ANY(1),
-  ID(2);
+  ID(2),
+  PROPERTY(3);
 
   private final short value;
 
@@ -30,6 +31,8 @@ public enum AuthorizationResourceMatcher {
         return ANY;
       case 2:
         return ID;
+      case 3:
+        return PROPERTY;
       default:
         return UNSPECIFIED;
     }

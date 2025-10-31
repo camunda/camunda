@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -118,6 +119,89 @@ public class AuthorizationCreateAuthorizationTest {
             .withResourceMatcher(WILDCARD.getMatcher())
             .withResourceId(WILDCARD.getResourceId())
             .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .create(user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'");
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreatePropertyBasedAuthorizationWithDefaultUser() {
+    // given
+    final var user = createUser();
+
+    // when
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.USER_TASK)
+        .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .withResourcePropertyName("assignee")
+        .withPermissions(PermissionType.UPDATE)
+        .create(DEFAULT_USER.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId(user.getUsername())
+                .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+                .withResourceType(AuthorizationResourceType.USER_TASK)
+                .withResourcePropertyName("assignee")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreatePropertyBasedAuthorizationWithUser() {
+    // given
+    final var user = createUser();
+    addAuthorizationToUser(user, AuthorizationResourceType.AUTHORIZATION, PermissionType.CREATE);
+
+    // when
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.USER_TASK)
+        .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .withResourcePropertyName("candidateUsers")
+        .withPermissions(PermissionType.UPDATE)
+        .create(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId(user.getUsername())
+                .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+                .withResourceType(AuthorizationResourceType.USER_TASK)
+                .withResourcePropertyName("candidateUsers")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeForbiddenToCreatePropertyBasedAuthorizationIfNoPermissions() {
+    // given
+    final var user = createUser();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(user.getUsername())
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withPermissions(PermissionType.UPDATE)
             .expectRejection()
             .create(user.getUsername());
 

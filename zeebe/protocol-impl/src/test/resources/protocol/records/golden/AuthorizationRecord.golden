@@ -33,6 +33,8 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private static final StringValue OWNER_TYPE_KEY = new StringValue("ownerType");
   private static final StringValue RESOURCE_MATCHER = new StringValue("resourceMatcher");
   private static final StringValue RESOURCE_ID_KEY = new StringValue("resourceId");
+  private static final StringValue RESOURCE_PROPERTY_NAME_KEY =
+      new StringValue("resourcePropertyName");
   private static final StringValue RESOURCE_TYPE_KEY = new StringValue("resourceType");
   private static final StringValue PERMISSION_TYPES_KEY = new StringValue("permissionTypes");
 
@@ -44,6 +46,8 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private final EnumProperty<AuthorizationResourceMatcher> resourceMatcherProp =
       new EnumProperty<>(RESOURCE_MATCHER, AuthorizationResourceMatcher.class);
   private final StringProperty resourceIdProp = new StringProperty(RESOURCE_ID_KEY, "");
+  private final StringProperty resourcePropertyNameProp =
+      new StringProperty(RESOURCE_PROPERTY_NAME_KEY, "");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>(
           RESOURCE_TYPE_KEY,
@@ -53,12 +57,13 @@ public final class AuthorizationRecord extends UnifiedRecordValue
       new ArrayProperty<>(PERMISSION_TYPES_KEY, StringValue::new);
 
   public AuthorizationRecord() {
-    super(7);
+    super(8);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
         .declareProperty(resourceMatcherProp)
         .declareProperty(resourceIdProp)
+        .declareProperty(resourcePropertyNameProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionTypesProp);
   }
@@ -106,6 +111,16 @@ public final class AuthorizationRecord extends UnifiedRecordValue
 
   public AuthorizationRecord setResourceId(final String resourceId) {
     resourceIdProp.setValue(resourceId);
+    return this;
+  }
+
+  @Override
+  public String getResourcePropertyName() {
+    return bufferAsString(resourcePropertyNameProp.getValue());
+  }
+
+  public AuthorizationRecord setResourcePropertyName(final String resourcePropertyName) {
+    resourcePropertyNameProp.setValue(resourcePropertyName);
     return this;
   }
 

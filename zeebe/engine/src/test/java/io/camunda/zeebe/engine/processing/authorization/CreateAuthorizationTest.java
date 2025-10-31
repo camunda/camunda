@@ -166,4 +166,145 @@ public class CreateAuthorizationTest {
             "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist."
                 .formatted(nonexistentMappingId));
   }
+
+  @Test
+  public void shouldCreateAuthorizationWithPropertyMatcher() {
+    // when
+    final var response =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .create()
+            .getValue();
+
+    // then
+    Assertions.assertThat(response)
+        .hasOwnerId("ownerId")
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+        .hasResourcePropertyName("assignee")
+        .hasResourceType(AuthorizationResourceType.USER_TASK)
+        .hasPermissionTypes(Set.of(PermissionType.UPDATE));
+  }
+
+  @Test
+  public void shouldRejectCreateWithPropertyMatcherWhenPropertyNameIsMissing() {
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create authorization with matcher 'PROPERTY', but no resource property name was provided. Please provide a resource property name.");
+  }
+
+  @Test
+  public void shouldRejectCreateWithPropertyMatcherWhenBothPropertyNameAndResourceIdAreProvided() {
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+            .withResourcePropertyName("assignee")
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create authorization with matcher 'PROPERTY', but both resource property name and resource ID were provided. Please provide only a resource property name.");
+  }
+
+  @Test
+  public void shouldRejectCreateWithIdMatcherWhenPropertyNameIsProvided() {
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create authorization with matcher 'ID', but a resource property name was provided. Resource property names are only valid for matcher 'PROPERTY'.");
+  }
+
+  @Test
+  public void shouldRejectCreateWithAnyMatcherWhenPropertyNameIsProvided() {
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .withResourcePropertyName("assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .withPermissions(PermissionType.UPDATE)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create authorization with matcher 'ANY', but a resource property name was provided. Resource property names are only valid for matcher 'PROPERTY'.");
+  }
+
+  @Test
+  public void shouldRejectCreateWithIdMatcherWhenResourceIdIsMissing() {
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceMatcher(AuthorizationResourceMatcher.ID)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create authorization with matcher 'ID', but no resource ID was provided. Please provide a resource ID.");
+  }
 }
