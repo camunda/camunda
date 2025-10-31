@@ -23,6 +23,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -50,6 +51,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
     config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
+
+    config.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
+    config.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
+    config.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
 
     config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
