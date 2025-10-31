@@ -8,20 +8,28 @@
 package io.camunda.webapps.schema.entities.dmn.definition;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 public class DecisionRequirementsEntity
     implements ExporterEntity<DecisionRequirementsEntity>, TenantOwned {
 
-  private String id;
-  private long key;
-  private String decisionRequirementsId;
-  private String name;
-  private int version;
-  private String xml;
-  private String resourceName;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private String id;
+
+  @SinceVersion880 private long key;
+
+  @SinceVersion880 private String decisionRequirementsId;
+
+  @SinceVersion880 private String name;
+
+  @SinceVersion880 private int version;
+
+  @SinceVersion880 private String xml;
+
+  @SinceVersion880 private String resourceName;
+
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Override
   public String getId() {

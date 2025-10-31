@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.messagesubscription;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -18,49 +19,49 @@ public class MessageSubscriptionEntity
         PartitionedEntity<MessageSubscriptionEntity>,
         TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
+  @SinceVersion880 private String id;
+  @SinceVersion880 private long key;
+  @SinceVersion880 private int partitionId;
 
   /** Process data. */
-  private Long processDefinitionKey;
+  @SinceVersion880 private Long processDefinitionKey;
 
-  private Long processInstanceKey;
-  private String bpmnProcessId;
+  @SinceVersion880 private Long processInstanceKey;
+  @SinceVersion880 private String bpmnProcessId;
 
   /** Activity data. */
-  private String flowNodeId;
+  @SinceVersion880 private String flowNodeId;
 
-  private Long flowNodeInstanceKey;
+  @SinceVersion880 private Long flowNodeInstanceKey;
 
-  private MessageSubscriptionState eventType;
-  private OffsetDateTime dateTime;
+  @SinceVersion880 private MessageSubscriptionState eventType;
+  @SinceVersion880 private OffsetDateTime dateTime;
 
-  private MessageSubscriptionMetadataEntity metadata;
+  @SinceVersion880 private MessageSubscriptionMetadataEntity metadata;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  private Long positionProcessMessageSubscription;
-
-  /**
-   * @deprecated since 8.9
-   */
-  @Deprecated private EventSourceType eventSourceType;
+  @SinceVersion880 private Long positionProcessMessageSubscription;
 
   /**
    * @deprecated since 8.9
    */
-  @Deprecated private Long position;
+  @SinceVersion880 @Deprecated private EventSourceType eventSourceType;
 
   /**
    * @deprecated since 8.9
    */
-  @Deprecated private Long positionIncident;
+  @SinceVersion880 @Deprecated private Long position;
 
   /**
    * @deprecated since 8.9
    */
-  @Deprecated private Long positionJob;
+  @SinceVersion880 @Deprecated private Long positionIncident;
+
+  /**
+   * @deprecated since 8.9
+   */
+  @SinceVersion880 @Deprecated private Long positionJob;
 
   @Override
   public String getId() {

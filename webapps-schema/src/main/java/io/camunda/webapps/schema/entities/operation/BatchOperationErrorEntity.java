@@ -8,13 +8,14 @@
 package io.camunda.webapps.schema.entities.operation;
 
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion880;
 import java.util.Objects;
 
 public class BatchOperationErrorEntity implements PartitionedEntity<BatchOperationErrorEntity> {
 
-  private int partitionId;
-  private String type;
-  private String message;
+  @SinceVersion880 private int partitionId;
+  @SinceVersion880 private String type;
+  @SinceVersion880 private String message;
 
   @Override
   public int getPartitionId() {
