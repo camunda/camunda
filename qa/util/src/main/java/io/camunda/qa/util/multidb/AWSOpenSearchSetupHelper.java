@@ -100,7 +100,7 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
     try {
       client.indices().delete(new DeleteIndexRequest.Builder().index(prefix + "*").build());
     } catch (final IOException e) {
-      LOGGER.debug("Exception on cleaning indexes {}", prefix, e);
+      LOGGER.warn("Exception on cleaning indexes {}", prefix, e);
     }
 
     try {
@@ -108,7 +108,7 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
           .indices()
           .deleteIndexTemplate(new DeleteIndexTemplateRequest.Builder().name(prefix + "*").build());
     } catch (final IOException e) {
-      LOGGER.debug("Exception on cleaning index templates {}", prefix, e);
+      LOGGER.warn("Exception on cleaning index templates {}", prefix, e);
     }
   }
 

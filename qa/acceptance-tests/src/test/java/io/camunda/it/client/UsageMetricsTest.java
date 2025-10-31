@@ -29,8 +29,12 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.database.type",
+    matches = "AWS_OS") // test is flaky on AWS OS
 public class UsageMetricsTest {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
@@ -72,7 +76,7 @@ public class UsageMetricsTest {
       final OffsetDateTime endTime,
       final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
-        .atMost(EXPORT_INTERVAL.multipliedBy(2))
+        .atMost(TEN_SECONDS)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->

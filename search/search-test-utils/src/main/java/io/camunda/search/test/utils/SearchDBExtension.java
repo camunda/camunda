@@ -104,4 +104,8 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
    * @return context OpenSearch URL
    */
   public abstract String osUrl();
+
+  public boolean isAws() {
+    return false;
+  }
 }

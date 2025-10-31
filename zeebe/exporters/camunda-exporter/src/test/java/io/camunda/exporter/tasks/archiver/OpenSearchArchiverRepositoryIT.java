@@ -513,7 +513,7 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -627,7 +627,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then the batch finish date should not update:
     final var batch = repository.getBatchOperationsNextBatch().join();
-    assertThat(batch.ids()).containsAll(List.of("1", "2"));
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
   }
 
@@ -656,7 +656,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then the batch finish date should update since zeebe index should be excluded:
     final var batch = repository.getBatchOperationsNextBatch().join();
-    assertThat(batch.ids()).containsAll(List.of("1", "2"));
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
 

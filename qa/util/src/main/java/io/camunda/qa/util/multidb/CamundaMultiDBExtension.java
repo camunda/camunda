@@ -292,14 +292,16 @@ public class CamundaMultiDBExtension
             testPrefix,
             DEFAULT_OS_ADMIN_USER,
             DEFAULT_OS_ADMIN_PW,
-            isHistoryRelatedTest);
+            isHistoryRelatedTest,
+            false);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
       case RDBMS -> multiDbConfigurator.configureRDBMSSupport(isHistoryRelatedTest);
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
-        multiDbConfigurator.configureAWSOpenSearchSupport(awsOSUrl, testPrefix);
+        multiDbConfigurator.configureAWSOpenSearchSupport(
+            awsOSUrl, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new AWSOpenSearchSetupHelper(awsOSUrl, expectedDescriptors);
       }

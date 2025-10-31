@@ -165,7 +165,7 @@ public class MultiDbConfigurator {
       final String indexPrefix,
       final String userName,
       final String userPassword) {
-    configureOpenSearchSupport(opensearchUrl, indexPrefix, userName, userPassword, false);
+    configureOpenSearchSupport(opensearchUrl, indexPrefix, userName, userPassword, false, false);
   }
 
   public void configureOpenSearchSupport(
@@ -173,7 +173,8 @@ public class MultiDbConfigurator {
       final String indexPrefix,
       final String userName,
       final String userPassword,
-      final boolean retentionEnabled) {
+      final boolean retentionEnabled,
+      final boolean isAws) {
     this.indexPrefix = indexPrefix;
 
     final Map<String, Object> opensearchProperties = new HashMap<>();
@@ -182,11 +183,13 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", zeebeIndexPrefix());
     opensearchProperties.put("camunda.tasklist.opensearch.username", userName);
     opensearchProperties.put("camunda.tasklist.opensearch.password", userPassword);
+    opensearchProperties.put("camunda.tasklist.opensearch.aws.enabled", isAws);
 
     /* Operate */
     opensearchProperties.put("camunda.operate.zeebeOpensearch.prefix", zeebeIndexPrefix());
     opensearchProperties.put("camunda.operate.opensearch.username", userName);
     opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
+    opensearchProperties.put("camunda.operate.opensearch.aws.enabled", isAws);
 
     // index prefix
     opensearchProperties.put("camunda.data.secondary-storage.opensearch.index-prefix", indexPrefix);
@@ -211,6 +214,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
     opensearchProperties.put("camunda.database.retention.minimumAge", "0s");
     opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
+    opensearchProperties.put("camunda.database.aws-enabled", isAws);
 
     /* Unified Config */
     opensearchProperties.put("camunda.data.secondary-storage.opensearch.username", userName);
@@ -235,7 +239,9 @@ public class MultiDbConfigurator {
                       "username",
                       userName,
                       "password",
-                      userPassword),
+                      userPassword,
+                      "awsEnabled",
+                      isAws),
                   "index",
                   Map.of("prefix", indexPrefix),
                   "history",
@@ -308,12 +314,9 @@ public class MultiDbConfigurator {
         : zeebePrefix;
   }
 
-  public void configureAWSOpenSearchSupport(final String opensearchUrl, final String indexPrefix) {
-    configureOpenSearchSupport(opensearchUrl, indexPrefix, "", "");
-    final Map<String, Object> opensearchProperties = new HashMap<>();
-    opensearchProperties.put("camunda.tasklist.opensearch.aws.enabled", true);
-    opensearchProperties.put("camunda.operate.opensearch.aws.enabled", true);
-    testApplication.withAdditionalProperties(opensearchProperties);
+  public void configureAWSOpenSearchSupport(
+      final String opensearchUrl, final String indexPrefix, final boolean isHistoryRelatedTest) {
+    configureOpenSearchSupport(opensearchUrl, indexPrefix, "", "", isHistoryRelatedTest, true);
     testApplication.withExporter(
         OpensearchExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
