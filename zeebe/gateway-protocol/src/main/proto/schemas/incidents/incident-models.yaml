@@ -1,0 +1,230 @@
+# Incident domain schemas
+IncidentSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - incidentKey
+        - processDefinitionKey
+        - processDefinitionId
+        - processInstanceKey
+        - errorType
+        - errorMessage
+        - elementId
+        - elementInstanceKey
+        - creationTime
+        - state
+        - jobKey
+        - tenantId
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+IncidentSearchQuery:
+  additionalProperties: false
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/IncidentSearchQuerySortRequest'
+    filter:
+      $ref: '#/IncidentFilter'
+      description: The incident search filters.
+
+IncidentFilter:
+  description: Incident search filter.
+  type: object
+  properties:
+    processDefinitionId:
+      allOf:
+        - $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The process definition ID associated to this incident.
+    errorType:
+      description: Incident error type with a defined set of values.
+      allOf:
+        - $ref: "#/IncidentErrorTypeFilterProperty"
+    errorMessage:
+      allOf:
+        - $ref: '../common/filters.yaml#/StringFilterProperty'
+    elementId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The element ID associated to this incident.
+    creationTime:
+      allOf:
+        - $ref: "../common/filters.yaml#/DateTimeFilterProperty"
+      description: Date of incident creation.
+    state:
+      description: State of this incident with a defined set of values.
+      allOf:
+        - $ref: "#/IncidentStateFilterProperty"
+    tenantId:
+      $ref: '../common/filters.yaml#/StringFilterProperty'
+      description: The tenant ID of the incident.
+    incidentKey:
+      allOf:
+        - $ref: '../common/filters.yaml#/BasicStringFilterProperty'
+      description: The assigned key, which acts as a unique identifier for this incident.
+    processDefinitionKey:
+      allOf:
+        - $ref: '../common/filters.yaml#/ProcessDefinitionKeyFilterProperty'
+      description: The process definition key associated to this incident.
+    processInstanceKey:
+      allOf:
+        - $ref: '../common/filters.yaml#/ProcessInstanceKeyFilterProperty'
+      description: The process instance key associated to this incident.
+    elementInstanceKey:
+      allOf:
+        - $ref: '../common/filters.yaml#/ElementInstanceKeyFilterProperty'
+      description: The element instance key associated to this incident.
+    jobKey:
+      allOf:
+        - $ref: '../common/filters.yaml#/JobKeyFilterProperty'
+      description: The job key, if exists, associated with this incident.
+
+IncidentSearchQueryResult:
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching incidents.
+      type: array
+      items:
+        $ref: '#/IncidentResult'
+
+IncidentResult:
+  type: object
+  properties:
+    processDefinitionId:
+      allOf:
+        - $ref: '../common/identifiers.yaml#/ProcessDefinitionId'
+      description: The process definition ID associated to this incident.
+    errorType:
+      $ref: "../common/enums.yaml#/IncidentErrorTypeEnum"
+    errorMessage:
+      type: string
+      description: Error message which describes the error in more detail.
+    elementId:
+      $ref: '../common/identifiers.yaml#/ElementId'
+      description: The element ID associated to this incident.
+    creationTime:
+      type: string
+      format: date-time
+    state:
+      $ref: "../common/enums.yaml#/IncidentStateEnum"
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+      description: The tenant ID of the incident.
+    incidentKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/IncidentKey'
+      description: The assigned key, which acts as a unique identifier for this incident.
+    processDefinitionKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessDefinitionKey'
+      description: The process definition key associated to this incident.
+    processInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ProcessInstanceKey'
+      description: The process instance key associated to this incident.
+    elementInstanceKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/ElementInstanceKey'
+      description: The element instance key associated to this incident.
+    jobKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/JobKey'
+      description: The job key, if exists, associated with this incident.
+
+IncidentResolutionRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    operationReference:
+      $ref: '../common/keys.yaml#/OperationReference'
+
+AdvancedIncidentErrorTypeFilter:
+  title: Advanced filter
+  description: Advanced IncidentErrorTypeEnum filter
+  type: object
+  properties:
+    $eq:
+      description: Checks for equality with the provided value.
+      allOf:
+        - $ref: "../common/enums.yaml#/IncidentErrorTypeEnum"
+    $neq:
+      description: Checks for inequality with the provided value.
+      allOf:
+        - $ref: "../common/enums.yaml#/IncidentErrorTypeEnum"
+    $exists:
+      description: Checks if the current property exists.
+      type: boolean
+    $in:
+      description: Checks if the property matches any of the provided values.
+      type: array
+      items:
+        $ref: "../common/enums.yaml#/IncidentErrorTypeEnum"
+    $notIn:
+      description: Checks if the property does not match any of the provided values.
+      type: array
+      items:
+        $ref: "../common/enums.yaml#/IncidentErrorTypeEnum"
+    $like:
+      $ref: "../common/filters.yaml#/LikeFilter"
+
+IncidentErrorTypeFilterProperty:
+  description: IncidentErrorTypeEnum with full advanced search capabilities.
+  type: object
+  oneOf:
+    - type: string
+      title: Exact match
+      description: Matches the value exactly.
+      allOf:
+        - $ref: "../common/enums.yaml#/IncidentErrorTypeEnum"
+    - $ref: "#/AdvancedIncidentErrorTypeFilter"
+
+AdvancedIncidentStateFilter:
+  title: Advanced filter
+  description: Advanced IncidentStateEnum filter
+  type: object
+  properties:
+    $eq:
+      description: Checks for equality with the provided value.
+      allOf:
+        - $ref: "../common/enums.yaml#/IncidentStateEnum"
+    $neq:
+      description: Checks for inequality with the provided value.
+      allOf:
+        - $ref: "../common/enums.yaml#/IncidentStateEnum"
+    $exists:
+      description: Checks if the current property exists.
+      type: boolean
+    $in:
+      description: Checks if the property matches any of the provided values.
+      type: array
+      items:
+        $ref: "../common/enums.yaml#/IncidentStateEnum"
+    $notIn:
+      description: Checks if the property does not match any of the provided values.
+      type: array
+      items:
+        $ref: "../common/enums.yaml#/IncidentStateEnum"
+    $like:
+      $ref: "../common/filters.yaml#/LikeFilter"
+IncidentStateFilterProperty:
+  description: IncidentStateEnum with full advanced search capabilities.
+  type: object
+  oneOf:
+    - type: string
+      title: Exact match
+      description: Matches the value exactly.
+      allOf:
+        - $ref: "../common/enums.yaml#/IncidentStateEnum"
+    - $ref: "#/AdvancedIncidentStateFilter"

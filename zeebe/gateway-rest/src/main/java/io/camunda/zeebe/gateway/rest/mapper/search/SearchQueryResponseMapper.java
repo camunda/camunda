@@ -59,6 +59,7 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionResult;
@@ -84,8 +85,10 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
@@ -641,7 +644,7 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return new BatchOperationResponse()
         .batchOperationKey(entity.batchOperationKey())
-        .state(BatchOperationResponse.StateEnum.fromValue(entity.state().name()))
+        .state(BatchOperationStateEnum.fromValue(entity.state().name()))
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
@@ -879,12 +882,12 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
         .processDefinitionId(t.processDefinitionId())
         .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
-        .errorType(IncidentResult.ErrorTypeEnum.fromValue(t.errorType().name()))
+        .errorType(IncidentErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())
         .elementId(t.flowNodeId())
         .elementInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
         .creationTime(formatDate(t.creationTime()))
-        .state(IncidentResult.StateEnum.fromValue(t.state().name()))
+        .state(IncidentStateEnum.fromValue(t.state().name()))
         .jobKey(KeyUtil.keyToString(t.jobKey()))
         .tenantId(t.tenantId());
   }

@@ -1,0 +1,91 @@
+# Decision requirements domain schemas
+DecisionRequirementsSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - decisionRequirementsKey
+        - decisionRequirementsName
+        - version
+        - decisionRequirementsId
+        - tenantId
+    order:
+      $ref: '../common/enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+DecisionRequirementsSearchQuery:
+  type: object
+  additionalProperties: false
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryRequest'
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/DecisionRequirementsSearchQuerySortRequest'
+    filter:
+      $ref: '#/DecisionRequirementsFilter'
+      description: The decision requirements search filters.
+
+DecisionRequirementsFilter:
+  description: Decision requirements search filter.
+  type: object
+  properties:
+    decisionRequirementsName:
+      type: string
+      description: The DMN name of the decision requirements.
+    decisionRequirementsId:
+      type: string
+      description: the DMN ID of the decision requirements.
+    decisionRequirementsKey:
+      $ref: '../common/keys.yaml#/DecisionRequirementsKey'
+    version:
+      type: integer
+      format: int32
+      description: The assigned version of the decision requirements.
+    tenantId:
+      $ref: '../common/identifiers.yaml#/TenantId'
+    resourceName:
+      type: string
+      description: The name of the resource from which the decision requirements were parsed
+
+DecisionRequirementsSearchQueryResult:
+  type: object
+  allOf:
+    - $ref: '../search/search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching decision requirements.
+      type: array
+      items:
+        $ref: '#/DecisionRequirementsResult'
+
+DecisionRequirementsResult:
+  type: object
+  additionalProperties: false
+  properties:
+    decisionRequirementsName:
+      type: string
+      description: The DMN name of the decision requirements.
+    version:
+      type: integer
+      format: int32
+      description: The assigned version of the decision requirements.
+    decisionRequirementsId:
+      type: string
+      description: The DMN ID of the decision requirements.
+    resourceName:
+      type: string
+      description: The name of the resource from which this decision requirements was parsed.
+    tenantId:
+      description: The tenant ID of the decision requirements.
+      allOf:
+        - $ref: '../common/identifiers.yaml#/TenantId'
+    decisionRequirementsKey:
+      allOf:
+        - $ref: '../common/keys.yaml#/DecisionRequirementsKey'
+      description: The assigned key, which acts as a unique identifier for this decision requirements.

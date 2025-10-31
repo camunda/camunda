@@ -1,0 +1,174 @@
+# User endpoints
+/users:
+  post:
+    tags:
+      - User
+    operationId: createUser
+    summary: Create user
+    description: Create a new user.
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users/user-models.yaml#/UserRequest'
+      required: true
+    responses:
+      "201":
+        description: The user was created successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/users/user-models.yaml#/UserCreateResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "409":
+        description: A user with this username already exists.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: true
+
+/users/search:
+  post:
+    tags:
+      - User
+    operationId: searchUsers
+    summary: Search users
+    description: Search for users based on given criteria.
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users/user-models.yaml#/UserSearchQueryRequest'
+    responses:
+      "200":
+        description: The user search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/users/user-models.yaml#/UserSearchResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/users/{username}:
+  get:
+    tags:
+      - User
+    operationId: getUser
+    summary: Get user
+    description: Get a user by its username.
+    parameters:
+      - name: username
+        in: path
+        required: true
+        description: The username of the user.
+        schema:
+          $ref: '../schemas/common/identifiers.yaml#/Username'
+    responses:
+      "200":
+        description: The user is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/users/user-models.yaml#/UserResult'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: The user with the given username was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+  put:
+    x-eventually-consistent: true
+    tags:
+      - User
+    operationId: updateUser
+    summary: Update user
+    description: Updates a user.
+    parameters:
+      - name: username
+        in: path
+        required: true
+        description: The username of the user to update.
+        schema:
+          $ref: '../schemas/common/identifiers.yaml#/Username'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/users/user-models.yaml#/UserUpdateRequest'
+      required: true
+    responses:
+      "200":
+        description: The user was updated successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/users/user-models.yaml#/UserUpdateResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: The user was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+
+  delete:
+    tags:
+      - User
+    operationId: deleteUser
+    summary: Delete user
+    description: Deletes a user.
+    parameters:
+      - name: username
+        in: path
+        required: true
+        description: The username of the user to delete.
+        schema:
+          $ref: '../schemas/common/identifiers.yaml#/Username'
+    responses:
+      "204":
+        description: The user was deleted successfully.
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "404":
+        description: The user is not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "../schemas/common/problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: true

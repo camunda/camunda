@@ -1,0 +1,168 @@
+# Authorization endpoints
+/authorizations:
+  post:
+    tags:
+      - Authorization
+    operationId: createAuthorization
+    summary: Create authorization
+    description: Create the authorization.
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/authorization/authorization-models.yaml#/AuthorizationRequest'
+      required: true
+    responses:
+      "201":
+        description: The authorization was created successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/authorization/authorization-models.yaml#/AuthorizationResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: The owner was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/authorizations/{authorizationKey}:
+  put:
+    tags:
+      - Authorization
+    operationId: updateAuthorization
+    summary: Update authorization
+    description: Update the authorization with the given key.
+    parameters:
+      - name: authorizationKey
+        in: path
+        required: true
+        description: The key of the authorization to delete.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/AuthorizationKey'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/authorization/authorization-models.yaml#/AuthorizationRequest'
+      required: true
+    responses:
+      "204":
+        description: The authorization was updated successfully.
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "404":
+        description: The authorization with the authorizationKey was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+  get:
+    tags:
+      - Authorization
+    operationId: getAuthorization
+    summary: Get authorization
+    description: Get authorization by the given key.
+    parameters:
+      - name: authorizationKey
+        in: path
+        required: true
+        description: The key of the authorization to get.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/AuthorizationKey'
+    responses:
+      "200":
+        description: The authorization was successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/authorization/authorization-models.yaml#/AuthorizationResult'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "404":
+        description: The authorization with the given key was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+  delete:
+    tags:
+      - Authorization
+    operationId: deleteAuthorization
+    summary: Delete authorization
+    description: Deletes the authorization with the given key.
+    parameters:
+      - name: authorizationKey
+        in: path
+        required: true
+        description: The key of the authorization to delete.
+        schema:
+          $ref: '../schemas/common/keys.yaml#/AuthorizationKey'
+    responses:
+      "204":
+        description: The authorization was deleted successfully.
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "404":
+        description: The authorization with the authorizationKey was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: '../schemas/common/problem-detail.yaml#/ProblemDetail'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: '../responses/common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/authorizations/search:
+  post:
+    tags:
+      - Authorization
+    summary: Search authorizations
+    description: Search for authorizations based on given criteria.
+    operationId: searchAuthorizations
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/authorization/authorization-models.yaml#/AuthorizationSearchQuery'
+    responses:
+      "200":
+        description: The authorization search result.
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/authorization/authorization-models.yaml#/AuthorizationSearchResult'
+      "400":
+        $ref: '../responses/common-responses.yaml#/InvalidData'
+      "401":
+        $ref: '../responses/common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: '../responses/common-responses.yaml#/Forbidden'
+      "500":
+        $ref: '../responses/common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true

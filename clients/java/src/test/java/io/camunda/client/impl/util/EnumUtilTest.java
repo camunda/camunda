@@ -33,8 +33,10 @@ import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.protocol.rest.BatchOperationError;
 import io.camunda.client.protocol.rest.BatchOperationItemResponse;
-import io.camunda.client.protocol.rest.BatchOperationResponse;
+import io.camunda.client.protocol.rest.BatchOperationStateEnum;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.client.protocol.rest.IncidentErrorTypeEnum;
+import io.camunda.client.protocol.rest.IncidentStateEnum;
 import io.camunda.client.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import org.junit.jupiter.api.Test;
@@ -252,24 +254,19 @@ public class EnumUtilTest {
   public void shouldConvertIncidentResultState() {
 
     for (final IncidentState value : IncidentState.values()) {
-      final io.camunda.client.protocol.rest.IncidentResult.StateEnum protocolValue =
-          EnumUtil.convert(value, io.camunda.client.protocol.rest.IncidentResult.StateEnum.class);
+      final IncidentStateEnum protocolValue = EnumUtil.convert(value, IncidentStateEnum.class);
       assertThat(protocolValue).isNotNull();
       if (value == IncidentState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue)
-            .isEqualTo(
-                io.camunda.client.protocol.rest.IncidentResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+        assertThat(protocolValue).isEqualTo(IncidentStateEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
     }
 
-    for (final io.camunda.client.protocol.rest.IncidentResult.StateEnum protocolValue :
-        io.camunda.client.protocol.rest.IncidentResult.StateEnum.values()) {
+    for (final IncidentStateEnum protocolValue : IncidentStateEnum.values()) {
       final IncidentState value = EnumUtil.convert(protocolValue, IncidentState.class);
       assertThat(value).isNotNull();
-      if (protocolValue
-          == io.camunda.client.protocol.rest.IncidentResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == IncidentStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(IncidentState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
@@ -281,27 +278,20 @@ public class EnumUtilTest {
   public void shouldConvertIncidentResultErrorType() {
 
     for (final IncidentErrorType value : IncidentErrorType.values()) {
-      final io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum protocolValue =
-          EnumUtil.convert(
-              value, io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum.class);
+      final IncidentErrorTypeEnum protocolValue =
+          EnumUtil.convert(value, IncidentErrorTypeEnum.class);
       assertThat(protocolValue).isNotNull();
       if (value == IncidentErrorType.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue)
-            .isEqualTo(
-                io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum
-                    .UNKNOWN_DEFAULT_OPEN_API);
+        assertThat(protocolValue).isEqualTo(IncidentErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
     }
 
-    for (final io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum protocolValue :
-        io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum.values()) {
+    for (final IncidentErrorTypeEnum protocolValue : IncidentErrorTypeEnum.values()) {
       final IncidentErrorType value = EnumUtil.convert(protocolValue, IncidentErrorType.class);
       assertThat(value).isNotNull();
-      if (protocolValue
-          == io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum
-              .UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == IncidentErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(IncidentErrorType.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
@@ -418,22 +408,20 @@ public class EnumUtilTest {
   public void shouldConvertBatchOperationState() {
 
     for (final BatchOperationState value : BatchOperationState.values()) {
-      final BatchOperationResponse.StateEnum protocolValue =
-          EnumUtil.convert(value, BatchOperationResponse.StateEnum.class);
+      final BatchOperationStateEnum protocolValue =
+          EnumUtil.convert(value, BatchOperationStateEnum.class);
       assertThat(protocolValue).isNotNull();
       if (value == BatchOperationState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue)
-            .isEqualTo(BatchOperationResponse.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+        assertThat(protocolValue).isEqualTo(BatchOperationStateEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
     }
 
-    for (final BatchOperationResponse.StateEnum protocolValue :
-        BatchOperationResponse.StateEnum.values()) {
+    for (final BatchOperationStateEnum protocolValue : BatchOperationStateEnum.values()) {
       final BatchOperationState value = EnumUtil.convert(protocolValue, BatchOperationState.class);
       assertThat(value).isNotNull();
-      if (protocolValue == BatchOperationResponse.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == BatchOperationStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(BatchOperationState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());

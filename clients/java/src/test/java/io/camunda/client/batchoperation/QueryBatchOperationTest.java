@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.*;
-import io.camunda.client.protocol.rest.BatchOperationResponse.StateEnum;
+import io.camunda.client.protocol.rest.BatchOperationResponse;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.time.OffsetDateTime;
@@ -37,7 +37,7 @@ public class QueryBatchOperationTest extends ClientRestTest {
     gatewayService.onBatchOperationRequest(
         batchOperationKey,
         Instancio.create(BatchOperationResponse.class)
-            .state(StateEnum.UNKNOWN_DEFAULT_OPEN_API)
+            .state(BatchOperationStateEnum.UNKNOWN_DEFAULT_OPEN_API)
             .batchOperationType(BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API)
             .endDate(OffsetDateTime.now().toString())
             .startDate(OffsetDateTime.now().toString())
