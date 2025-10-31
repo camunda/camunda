@@ -37,7 +37,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/users")
 @ConditionalOnInternalUserManagement()
 public class UserController {
@@ -63,6 +62,7 @@ public class UserController {
   }
 
   @CamundaGetMapping(path = "/{username}")
+  @RequiresSecondaryStorage
   public ResponseEntity<Object> getUser(@PathVariable final String username) {
     try {
       return ResponseEntity.ok()
@@ -111,6 +111,7 @@ public class UserController {
   }
 
   @CamundaPostMapping(path = "/search")
+  @RequiresSecondaryStorage
   public ResponseEntity<UserSearchResult> searchUsers(
       @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)
