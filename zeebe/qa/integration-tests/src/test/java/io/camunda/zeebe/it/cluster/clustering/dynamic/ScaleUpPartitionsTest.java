@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.CreateUserResponse;
+import io.camunda.client.api.response.CreateGroupResponse;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
@@ -202,7 +202,7 @@ public class ScaleUpPartitionsTest {
       // create users in batches of 10 concurrently
       final var futures =
           IntStream.range(0, 100)
-              .mapToObj(i -> createUserWithIdx(i * 100 + batchId))
+              .mapToObj(i -> createGroupWithIdx(i * 100 + batchId))
               .toList()
               .toArray(CompletableFuture[]::new);
       CompletableFuture.allOf(futures).join();
@@ -222,13 +222,11 @@ public class ScaleUpPartitionsTest {
     }
   }
 
-  private CompletableFuture<CreateUserResponse> createUserWithIdx(final int userIdx) {
+  private CompletableFuture<CreateGroupResponse> createGroupWithIdx(final int userIdx) {
     return camundaClient
-        .newCreateUserCommand()
-        .name("User#" + userIdx)
-        .username("User" + userIdx)
-        .password("password" + userIdx)
-        .email("User" + userIdx + "@email.com")
+        .newCreateGroupCommand()
+        .groupId("Group" + userIdx)
+        .name("Group#" + userIdx)
         .send()
         .toCompletableFuture();
   }
