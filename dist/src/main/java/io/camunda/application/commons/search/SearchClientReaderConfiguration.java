@@ -256,7 +256,7 @@ public class SearchClientReaderConfiguration {
       messageSubscriptionProcessDefinitionStatisticsReader(
           final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new ProcessDefinitionMessageSubscriptionStatisticsDocumentReader(
-        executor, descriptors.get(EventTemplate.class));
+        executor, descriptors.get(MessageSubscriptionTemplate.class));
   }
 
   @Bean
