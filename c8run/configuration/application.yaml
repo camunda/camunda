@@ -1,15 +1,16 @@
 camunda:
-  database:
-    clusterName: elasticsearch
-    type: elasticsearch
-    url: http://localhost:9200
-    index:
-      numberOfReplicas: 0
+  backup:
+    webapps:
+      enabled: false
   data:
     secondary-storage:
-      type: elasticsearch
-      elasticsearch:
-        url: http://localhost:9200
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:camunda
+        username: sa
+        password:
+        flushInterval: PT0.5S
+        queueSize: 1000
   security:
     initialization:
       users:
@@ -30,17 +31,6 @@ camunda:
 
 zeebe:
   broker:
-    exporters:
-      camundaExporter:
-        args:
-          connect:
-            type: elasticsearch
-            url: http://localhost:9200
-          index:
-            shouldWaitForImporters: false
-          retention:
-            enabled: false
-        className: io.camunda.exporter.CamundaExporter
     network:
       host: localhost
       advertisedHost: localhost
@@ -48,3 +38,8 @@ zeebe:
     cluster:
       initialContactPoints: zeebe:26502
       memberId: identity
+
+spring:
+  profiles:
+    active: "broker,consolidated-auth,identity,tasklist"
+
