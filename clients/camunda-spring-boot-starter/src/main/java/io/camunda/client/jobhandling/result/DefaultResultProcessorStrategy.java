@@ -15,31 +15,28 @@
  */
 package io.camunda.client.jobhandling.result;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.jobhandling.UserTaskResultFunction;
 
 public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
-  private final CamundaClient camundaClient;
   private final DocumentResultProcessorFailureHandlingStrategy
       documentResultProcessorFailureHandlingStrategy;
 
   public DefaultResultProcessorStrategy(
-      final CamundaClient camundaClient,
       final DocumentResultProcessorFailureHandlingStrategy
           documentResultProcessorFailureHandlingStrategy) {
-    this.camundaClient = camundaClient;
     this.documentResultProcessorFailureHandlingStrategy =
         documentResultProcessorFailureHandlingStrategy;
   }
 
   @Override
-  public ResultProcessor createProcessor(final MethodInfo methodInfo) {
+  public ResultProcessor createProcessor(final ResultProcessorStrategyContext context) {
+    final MethodInfo methodInfo = context.methodInfo();
     if (methodInfo.getReturnType() != null
         && methodInfo.getReturnType().equals(UserTaskResultFunction.class)) {
       return new ResultFunctionResultProcessor();
     }
     return new DefaultResultProcessor(
-        camundaClient, documentResultProcessorFailureHandlingStrategy);
+        context.camundaClient(), documentResultProcessorFailureHandlingStrategy);
   }
 }
