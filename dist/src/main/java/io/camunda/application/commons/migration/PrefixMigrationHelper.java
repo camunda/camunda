@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
@@ -93,7 +94,8 @@ public final class PrefixMigrationHelper {
           FlowNodeInstanceTemplate.class,
           OperationTemplate.class,
           ImportPositionIndex.class,
-          MigrationRepositoryIndex.class);
+          MigrationRepositoryIndex.class,
+          MetadataIndex.class);
 
   @VisibleForTesting
   public static final Set<Class<? extends AbstractIndexDescriptor>>

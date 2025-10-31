@@ -9,6 +9,7 @@ package io.camunda.search.schema.config;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class IndexConfiguration {
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
@@ -73,6 +74,51 @@ public class IndexConfiguration {
     this.templatePriority = templatePriority;
   }
 
+  public Map<String, Integer> getReplicasByIndexName() {
+    return replicasByIndexName;
+  }
+
+  public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
+    this.replicasByIndexName = replicasByIndexName;
+  }
+
+  public Map<String, Integer> getShardsByIndexName() {
+    return shardsByIndexName;
+  }
+
+  public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
+    this.shardsByIndexName = shardsByIndexName;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        zeebeIndexPrefix,
+        numberOfShards,
+        numberOfReplicas,
+        templatePriority,
+        replicasByIndexName,
+        shardsByIndexName,
+        variableSizeThreshold,
+        shouldWaitForImporters);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IndexConfiguration that = (IndexConfiguration) o;
+    return shouldWaitForImporters == that.shouldWaitForImporters
+        && Objects.equals(zeebeIndexPrefix, that.zeebeIndexPrefix)
+        && Objects.equals(numberOfShards, that.numberOfShards)
+        && Objects.equals(numberOfReplicas, that.numberOfReplicas)
+        && Objects.equals(templatePriority, that.templatePriority)
+        && Objects.equals(replicasByIndexName, that.replicasByIndexName)
+        && Objects.equals(shardsByIndexName, that.shardsByIndexName)
+        && Objects.equals(variableSizeThreshold, that.variableSizeThreshold);
+  }
+
   @Override
   public String toString() {
     return "IndexConfiguration{"
@@ -91,21 +137,5 @@ public class IndexConfiguration {
         + ", zeebeIndexPrefix='"
         + zeebeIndexPrefix
         + '}';
-  }
-
-  public Map<String, Integer> getReplicasByIndexName() {
-    return replicasByIndexName;
-  }
-
-  public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
-    this.replicasByIndexName = replicasByIndexName;
-  }
-
-  public Map<String, Integer> getShardsByIndexName() {
-    return shardsByIndexName;
-  }
-
-  public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
-    this.shardsByIndexName = shardsByIndexName;
   }
 }
