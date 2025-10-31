@@ -167,7 +167,7 @@ public final class StartupProcess<CONTEXT> {
           (contextReturnedByStep, error) -> {
             final var completedAt = System.nanoTime();
             logger.debug(
-                "StartupStep {} completed (error={}) took {} millis ",
+                "StartupStep {} startup completed (error={}) took {} millis ",
                 stepToStart.getName(),
                 error != null,
                 (completedAt - before) / 1e6);
@@ -238,6 +238,7 @@ public final class StartupProcess<CONTEXT> {
       completeShutdownFutureSynchronized(context, shutdownFuture, collectedExceptions);
     } else {
       final var stepToShutdown = startedSteps.pop();
+      final var before = System.nanoTime();
 
       logCurrentStepSynchronized("Shutdown", stepToShutdown);
 
@@ -247,6 +248,7 @@ public final class StartupProcess<CONTEXT> {
           shutdownStepFuture,
           (contextReturnedByShutdown, error) -> {
             final CONTEXT contextToUse;
+            final var completedAt = System.nanoTime();
             if (error != null) {
               collectedExceptions.add(
                   new StartupProcessStepException(stepToShutdown.getName(), error));
@@ -254,7 +256,11 @@ public final class StartupProcess<CONTEXT> {
             } else {
               contextToUse = contextReturnedByShutdown;
             }
-
+            logger.debug(
+                "StartupStep {} shutdown completed (error={}) took {} millis ",
+                stepToShutdown.getName(),
+                error != null,
+                (completedAt - before) / 1e6);
             proceedWithShutdownSynchronized(
                 concurrencyControl, contextToUse, shutdownFuture, collectedExceptions);
           });
