@@ -9,8 +9,6 @@
 import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {modificationsStore} from 'modules/stores/modifications';
-import {TOKEN_OPERATIONS} from 'modules/constants';
 import type {InfiniteData} from '@tanstack/react-query';
 
 const getScopeId = () => {

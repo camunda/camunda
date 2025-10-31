@@ -40,9 +40,7 @@ const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
  * @returns a mocked incident Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createIncident = (
-  options: Partial<IncidentDto> = {},
-): IncidentDto => {
+const createIncident = (options: Partial<IncidentDto> = {}): IncidentDto => {
   return {
     errorMessage: 'Some Condition error has occurred',
     errorType: {
@@ -65,7 +63,7 @@ export const createIncident = (
  * @returns a mocked incident Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createOperation = (
+const createOperation = (
   options: Partial<InstanceOperationEntity> = {},
 ): InstanceOperationEntity => {
   return {
@@ -101,7 +99,7 @@ const createBatchOperation = (
  * @param {*} customProps Obj with any type of custom property
  * @deprecated this function is used to create data in the format of internal API responses.
  */
-export const createInstance = (
+const createInstance = (
   options: Partial<ProcessInstanceEntity> = {},
 ): ProcessInstanceEntity => {
   return {
@@ -174,7 +172,7 @@ const createUser = (options: Partial<CurrentUser> = {}): CurrentUser => ({
 /**
  * A hard coded object to use when mocking fetchGroupedProcesses api/instances.js
  */
-export const groupedProcessesMock: ProcessDto[] = [
+const groupedProcessesMock: ProcessDto[] = [
   {
     bpmnProcessId: 'demoProcess',
     name: 'New demo process',
@@ -275,7 +273,7 @@ export const groupedProcessesMock: ProcessDto[] = [
  * @returns a mocked process Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
-export const createProcess = (options = {}) => {
+const createProcess = (options = {}) => {
   return {
     processId: randomProcessIdIterator.next().value,
     tenantId: '<default>',
@@ -293,7 +291,7 @@ export const createProcess = (options = {}) => {
  * @returns a single mocked instanceByProcess Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createInstanceByProcess = (
+const createInstanceByProcess = (
   options: Partial<ProcessInstanceByNameDto> = {},
 ): ProcessInstanceByNameDto => {
   return {
@@ -318,7 +316,7 @@ export const createInstanceByProcess = (
  * @returns a single mocked instanceByProcess Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createIncidentByError = (
+const createIncidentByError = (
   options: Partial<IncidentByErrorDto> = {},
 ): IncidentByErrorDto => {
   return {
@@ -344,7 +342,7 @@ export const createIncidentByError = (
  * @returns a mocked InstancesByError Object as exposed by 'api/incidents/byError'
  * @param {*} customProps array with any number of instanceByError Objects
  */
-export const createIncidentsByError = (options: IncidentByErrorDto[]) => {
+const createIncidentsByError = (options: IncidentByErrorDto[]) => {
   return options || [createIncidentByError()];
 };
 
@@ -352,7 +350,7 @@ export const createIncidentsByError = (options: IncidentByErrorDto[]) => {
  * @returns a mocked diagramNode Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
-export const createDiagramNode = (options = {}) => {
+const createDiagramNode = (options = {}) => {
   return {
     id: 'StartEvent_1',
     name: 'Start Event',
@@ -363,7 +361,7 @@ export const createDiagramNode = (options = {}) => {
   };
 };
 
-export const createSequenceFlows = () => {
+const createSequenceFlows = () => {
   return [
     {
       processInstanceId: '2251799813693731',
@@ -384,7 +382,7 @@ export const createSequenceFlows = () => {
   ];
 };
 
-export const mockProcessStatisticsV2 = {
+const mockProcessStatisticsV2 = {
   items: [
     {
       elementId: 'ServiceTask_0kt6c5i',
@@ -396,7 +394,7 @@ export const mockProcessStatisticsV2 = {
   ],
 };
 
-export const mockMultipleStatesStatistics = {
+const mockMultipleStatesStatistics = {
   items: [
     {
       elementId: 'EndEvent_042s0oc',
@@ -408,8 +406,8 @@ export const mockMultipleStatesStatistics = {
   ],
 };
 
-export const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1771k9d" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.5.0">
+const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1771k9d" targetNamespace="http://bpmn.io/schema/bpmn" er="Zeebe Modeler" erVersion="0.5.0">
   <bpmn:process id="bigVarProcess" isExecutable="true" name="Big variable process">
     <bpmn:startEvent id="StartEvent_1" name="Start Event 1">
       <bpmn:outgoing>SequenceFlow_04ev4jl</bpmn:outgoing>
@@ -450,7 +448,7 @@ export const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 
-export const mockProcessWithInputOutputMappingsXML = `<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="eb9fa7e" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0" camunda:diagramRelationId="9ee67cec-c2eb-4b0d-968b-f7a9ae3d6d3d">
+const mockProcessWithInputOutputMappingsXML = `<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" er="Camunda Web Modeler" erVersion="eb9fa7e" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0" camunda:diagramRelationId="9ee67cec-c2eb-4b0d-968b-f7a9ae3d6d3d">
 <bpmn:process id="Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f" name="Input Output Mapping Test" isExecutable="true">
   <bpmn:startEvent id="StartEvent_1">
     <bpmn:outgoing>Flow_17h9txj</bpmn:outgoing>
@@ -496,8 +494,8 @@ export const mockProcessWithInputOutputMappingsXML = `<?xml version="1.0" encodi
 </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 
-export const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1e4hrq2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.8.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1e4hrq2" targetNamespace="http://bpmn.io/schema/bpmn" er="Camunda Modeler" erVersion="4.8.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
   <bpmn:process id="Process_0r3smqt" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_1mxj2rr</bpmn:outgoing>
@@ -536,7 +534,7 @@ export const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?
 </bpmn:definitions>
 `;
 
-export const mockProcessInstances = {
+const mockProcessInstances = {
   processInstances: [
     createInstance({id: '2251799813685594', processId: '2251799813685592'}),
     createInstance({
@@ -553,7 +551,7 @@ export const mockProcessInstances = {
   totalCount: 912,
 };
 
-export const mockProcessInstancesWithOperation = {
+const mockProcessInstancesWithOperation = {
   processInstances: [
     createInstance({
       id: '0000000000000002',
@@ -580,7 +578,7 @@ export const mockProcessInstancesWithOperation = {
   totalCount: 1,
 };
 
-export const mockCalledProcessInstances = {
+const mockCalledProcessInstances = {
   processInstances: [
     createInstance({
       id: '2251799813685837',
@@ -591,7 +589,7 @@ export const mockCalledProcessInstances = {
   totalCount: 1,
 };
 
-export const operations: OperationEntity[] = [
+const operations: OperationEntity[] = [
   {
     id: '921455fd-849a-49c5-be17-c92eb6d9e946',
     name: null,
@@ -627,8 +625,8 @@ export const operations: OperationEntity[] = [
   },
 ];
 
-export const multiInstanceProcess = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1kgscet" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.16.0">
+const multiInstanceProcess = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1kgscet" targetNamespace="http://bpmn.io/schema/bpmn" er="Camunda Modeler" erVersion="1.16.0">
   <bpmn:process id="multiInstanceProcess" name="Multi-Instance Process" isExecutable="true">
     <bpmn:startEvent id="start" name="Start">
       <bpmn:outgoing>SequenceFlow_0ywev43</bpmn:outgoing>
@@ -810,8 +808,8 @@ export const multiInstanceProcess = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
-export const eventSubProcess = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.8.0">
+const eventSubProcess = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" er="Zeebe Modeler" erVersion="0.8.0">
   <bpmn:process id="eventSubprocessProcess" name="Event Subprocess Process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1vnazga">
       <bpmn:outgoing>SequenceFlow_0b1strv</bpmn:outgoing>
@@ -993,7 +991,7 @@ export const eventSubProcess = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
-export const createMultiInstanceFlowNodeInstances = (
+const createMultiInstanceFlowNodeInstances = (
   processInstanceId: string,
 ): {
   level1: FlowNodeInstances;
@@ -1129,7 +1127,7 @@ export const createMultiInstanceFlowNodeInstances = (
   };
 };
 
-export const createEventSubProcessFlowNodeInstances = (
+const createEventSubProcessFlowNodeInstances = (
   processInstanceId: string,
 ): {
   level1: FlowNodeInstances;
@@ -1204,9 +1202,8 @@ export const createEventSubProcessFlowNodeInstances = (
 };
 
 export {
+  createInstance,
   createIncident,
-  createIncidentV2,
-  createEnhancedIncidentV2,
   createOperation,
   groupedProcessesMock,
   createProcess,

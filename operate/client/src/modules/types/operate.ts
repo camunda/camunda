@@ -94,6 +94,7 @@ interface DecisionInstanceEntity {
 type SortOrder = 'asc' | 'desc';
 
 export type {
+  DecisionInstanceEntityState,
   OperationEntityType,
   FlowNodeState,
   InstanceEntityState,
