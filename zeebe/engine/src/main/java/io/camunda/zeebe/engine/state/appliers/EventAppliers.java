@@ -286,6 +286,12 @@ public final class EventAppliers implements EventApplier {
     register(
         RuntimeInstructionIntent.INTERRUPTED,
         new RuntimeInstructionInterruptedApplier(elementInstanceState));
+    register(
+        ProcessInstanceIntent.DELETING,
+        new ProcessInstanceDeletingApplier(state.getHistoryDeletionState()));
+    register(
+        ProcessInstanceIntent.DELETED,
+        new ProcessInstanceDeletedApplier(state.getHistoryDeletionState()));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {

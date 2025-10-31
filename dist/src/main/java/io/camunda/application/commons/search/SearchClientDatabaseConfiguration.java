@@ -11,6 +11,9 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.CamundaSearchClients;
+import io.camunda.search.clients.CamundaWriteClients;
+import io.camunda.search.clients.DocumentBasedWriteClient;
+import io.camunda.search.clients.HistoryDeletionWriteClient;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.reader.AuthorizationReader;
@@ -24,6 +27,7 @@ import io.camunda.search.clients.reader.FlowNodeInstanceReader;
 import io.camunda.search.clients.reader.FormReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
 import io.camunda.search.clients.reader.GroupReader;
+import io.camunda.search.clients.reader.HistoryDeletionWriter;
 import io.camunda.search.clients.reader.IncidentReader;
 import io.camunda.search.clients.reader.JobReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
@@ -53,6 +57,7 @@ import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.List;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -117,6 +122,24 @@ public class SearchClientDatabaseConfiguration {
         searchClientReaders,
         new ResourceAccessDelegatingController(resourceAccessControllers),
         null);
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageType(SecondaryStorageType.elasticsearch)
+  public HistoryDeletionWriteClient historyDeletionWriteClient(
+      final DocumentBasedWriteClient documentBasedWriteClient,
+      final IndexDescriptors indexDescriptors) {
+    return new HistoryDeletionWriter(documentBasedWriteClient, indexDescriptors);
+  }
+
+  @Bean
+  @ConditionalOnSecondaryStorageEnabled
+  public CamundaWriteClients writeClients(
+      final HistoryDeletionWriteClient historyDeletionWriteClient,
+      final List<ResourceAccessController> resourceAccessControllers) {
+    return new CamundaWriteClients(
+        historyDeletionWriteClient,
+        new ResourceAccessDelegatingController(resourceAccessControllers));
   }
 
   @Bean

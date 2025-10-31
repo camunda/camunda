@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.HistoryDeletionScheduler;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
@@ -35,6 +37,8 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.historydeletion.ProcessInstanceDeleteCompleteProcessor;
+import io.camunda.zeebe.engine.processing.historydeletion.ProcessInstanceDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
@@ -71,6 +75,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -93,7 +98,8 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final WriteClientsProxy writeClientsProxy) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -353,6 +359,17 @@ public final class EngineProcessors {
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
+
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.DELETE,
+        new ProcessInstanceDeleteProcessor(writers.state(), keyGenerator));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.DELETE_COMPLETE,
+        new ProcessInstanceDeleteCompleteProcessor(writers.state(), keyGenerator));
+    typedRecordProcessors.withListener(
+        new HistoryDeletionScheduler(scheduledTaskStateFactory, writeClientsProxy, config));
 
     return typedRecordProcessors;
   }

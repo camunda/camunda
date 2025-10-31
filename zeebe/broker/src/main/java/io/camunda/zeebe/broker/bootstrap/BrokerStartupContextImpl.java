@@ -13,6 +13,7 @@ import static java.util.Objects.requireNonNull;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
@@ -68,6 +69,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final WriteClientsProxy writeClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   private ConcurrencyControl concurrencyControl;
@@ -102,6 +104,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
+      final WriteClientsProxy writeClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
@@ -120,6 +123,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.writeClientsProxy = writeClientsProxy;
     partitionListeners.addAll(additionalPartitionListeners);
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
@@ -161,6 +165,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         passwordEncoder,
         jwtDecoder,
         searchClientsProxy,
+        null,
         brokerRequestAuthorizationConverter);
   }
 
@@ -211,6 +216,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  @Override
+  public WriteClientsProxy getWriteClientsProxy() {
+    return writeClientsProxy;
   }
 
   @Override

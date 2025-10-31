@@ -13,6 +13,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -102,7 +103,8 @@ public final class PartitionManagerImpl
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfig,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final WriteClientsProxy writeClientsProxy) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -138,6 +140,7 @@ public final class PartitionManagerImpl
             featureFlags,
             securityConfig,
             searchClientsProxy,
+            writeClientsProxy,
             brokerRequestAuthorizationConverter);
     managementService =
         new DefaultPartitionManagementService(

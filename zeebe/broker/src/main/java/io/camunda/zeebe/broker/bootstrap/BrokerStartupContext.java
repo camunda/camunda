@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
@@ -63,6 +64,8 @@ public interface BrokerStartupContext {
   BrokerHealthCheckService getHealthCheckService();
 
   SearchClientsProxy getSearchClientsProxy();
+
+  WriteClientsProxy getWriteClientsProxy();
 
   void addPartitionListener(PartitionListener partitionListener);
 

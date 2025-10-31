@@ -16,4 +16,9 @@ public interface DocumentBasedWriteClient {
   <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest);
 
   SearchWriteResponse delete(final SearchDeleteRequest deleteRequest);
+
+  boolean deleteByFieldValue(
+      final String dependentSourceIdx,
+      final String dependentIdFieldName,
+      final long processInstanceKey);
 }
