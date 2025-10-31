@@ -31,7 +31,7 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {act, useEffect} from 'react';
 import {Paths} from 'modules/Routes';
-import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
+import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -80,7 +80,12 @@ describe('Instances', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockFetchBatchOperations().withSuccess([]);
+    mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
 
@@ -272,12 +277,24 @@ describe('Instances', () => {
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
 
     vi.runOnlyPendingTimers();
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
 
     act(() => {
       vi.runOnlyPendingTimers();
@@ -286,11 +303,23 @@ describe('Instances', () => {
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
 
     vi.runOnlyPendingTimers();
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
 
     mockFetchProcessInstances().withSuccess({
       processInstances: [],

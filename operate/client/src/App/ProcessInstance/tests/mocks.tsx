@@ -14,10 +14,8 @@ import {testData} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createUser,
-  createVariable,
-  createVariableV2,
+  createvariable,
 } from 'modules/testUtils';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -27,7 +25,6 @@ import {
 } from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
 import {waitFor} from '@testing-library/react';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
@@ -48,6 +45,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
@@ -122,14 +120,12 @@ const mockRequests = () => {
       },
     ],
   });
-  mockFetchVariables().withSuccess([createVariable()]);
   mockSearchVariables().withSuccess({
-    items: [createVariableV2()],
+    items: [createvariable()],
     page: {
       totalItems: 1,
     },
   });
-  mockFetchVariables().withSuccess([createVariable()]);
   mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
@@ -137,6 +133,10 @@ const mockRequests = () => {
   mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
+  });
+  mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
+    items: [],
+    page: {totalItems: 0},
   });
   mockFetchProcess().withSuccess(mockProcess);
   mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
@@ -226,7 +226,6 @@ function getWrapper(options?: {
 
 const waitForPollingsToBeComplete = async () => {
   await waitFor(() => {
-    expect(variablesStore.isPollRequestRunning).toBe(false);
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
     expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
     expect(incidentsStore.isPollRequestRunning).toBe(false);

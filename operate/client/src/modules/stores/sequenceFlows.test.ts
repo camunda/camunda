@@ -197,6 +197,14 @@ describe('stores/sequenceFlows', () => {
       ]),
     );
 
+    mockFetchSequenceFlows().withSuccess([
+      ...mockSequenceFlows,
+      {
+        processInstanceId: '2251799813693731',
+        activityId: 'SequenceFlow_1sz6737',
+      },
+    ]);
+
     eventListeners.online();
   });
 });

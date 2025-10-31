@@ -14,18 +14,15 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariable,
-  createVariableV2,
+  createvariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {useEffect, act} from 'react';
@@ -56,7 +53,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -136,9 +132,6 @@ describe('VariablePanel spinner', () => {
       items: statistics,
     });
 
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
-
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -157,7 +150,7 @@ describe('VariablePanel spinner', () => {
 
   it('should display spinner for variables tab when switching between tabs', async () => {
     mockSearchVariables().withDelay({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -172,9 +165,8 @@ describe('VariablePanel spinner', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
     mockSearchVariables().withDelay({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -193,8 +185,6 @@ describe('VariablePanel spinner', () => {
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
-    mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
-
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
   });
@@ -202,11 +192,11 @@ describe('VariablePanel spinner', () => {
   it('should display spinner on second variable fetch', async () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withDelay({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {totalItems: 1},
     });
     mockSearchVariables().withDelay({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {totalItems: 1},
     });
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
@@ -215,7 +205,6 @@ describe('VariablePanel spinner', () => {
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
-    mockFetchVariables().withDelay([createVariable()]);
 
     act(() => {
       flowNodeSelectionStore.setSelection({
@@ -234,13 +223,13 @@ describe('VariablePanel spinner', () => {
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },

@@ -14,12 +14,10 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariable,
-  createVariableV2,
+  createvariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {useEffect, act} from 'react';
@@ -120,17 +118,14 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -206,7 +201,6 @@ describe('VariablePanel', () => {
         await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
-      mockFetchVariables().withServerError();
       mockSearchVariables().withServerError();
       mockSearchVariables().withServerError();
 
@@ -241,7 +235,6 @@ describe('VariablePanel', () => {
         await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
-      mockFetchVariables().withNetworkError();
       mockSearchVariables().withNetworkError();
 
       act(() => {

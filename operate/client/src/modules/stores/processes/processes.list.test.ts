@@ -25,7 +25,9 @@ describe('stores/processes/processes.list', () => {
       },
     );
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock, {
+      expectPolling: false,
+    });
 
     processesStore.fetchProcesses();
 
@@ -41,7 +43,9 @@ describe('stores/processes/processes.list', () => {
     const firstGroupedProcess = groupedProcessesMock[0]!;
     const newGroupedProcessesResponse = [firstGroupedProcess];
 
-    mockFetchGroupedProcesses().withSuccess(newGroupedProcessesResponse);
+    mockFetchGroupedProcesses().withSuccess(newGroupedProcessesResponse, {
+      expectPolling: false,
+    });
 
     eventListeners.online();
 
@@ -53,6 +57,10 @@ describe('stores/processes/processes.list', () => {
         }),
       ).toEqual(newGroupedProcessesResponse),
     );
+
+    mockFetchGroupedProcesses().withSuccess(newGroupedProcessesResponse, {
+      expectPolling: false,
+    });
 
     eventListeners.online();
   });
