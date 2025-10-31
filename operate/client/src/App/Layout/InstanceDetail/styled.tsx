@@ -7,14 +7,26 @@
  */
 
 import styled, {css} from 'styled-components';
+import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 
 type Props = {
   $hasFooter?: boolean;
   $hasBreadcrumb?: boolean;
+  $hasRightOverlay?: boolean;
+  $hasRightPanel?: boolean;
+};
+
+type PanelContainerProps = {
+  $hasRightOverlay?: boolean;
 };
 
 const Container = styled.div<Props>`
-  ${({$hasBreadcrumb = false, $hasFooter = false}) => {
+  ${({
+    $hasBreadcrumb = false,
+    $hasFooter = false,
+    $hasRightOverlay = false,
+    $hasRightPanel = false,
+  }) => {
     return css`
       display: grid;
       height: 100%;
@@ -23,11 +35,21 @@ const Container = styled.div<Props>`
           $hasBreadcrumb ? 'var(--cds-spacing-07)' : ''
         } var(--cds-spacing-09) 1fr ${$hasFooter ? 'var(--cds-spacing-09)' : ''}
       `};
+
+      ${$hasRightOverlay
+        ? css`
+            padding-right: 420px;
+          `
+        : $hasRightPanel
+          ? css`
+              padding-right: ${COLLAPSABLE_PANEL_MIN_WIDTH};
+            `
+          : ''}
     `;
   }}
 `;
 
-const PanelContainer = styled.div`
+const PanelContainer = styled.div<PanelContainerProps>`
   overflow: auto;
 `;
 

@@ -101,10 +101,9 @@ const InstancesTable: React.FC = observer(() => {
 
   return (
     <Container>
-      <PanelHeader
-        title="Decision Instances"
-        count={filteredDecisionInstancesCount}
-      />
+      <PanelHeader title="Decision Instances">
+        <span>{filteredDecisionInstancesCount}</span>
+      </PanelHeader>
       <SortableTable
         state={getTableState()}
         emptyMessage={getEmptyListMessage()}

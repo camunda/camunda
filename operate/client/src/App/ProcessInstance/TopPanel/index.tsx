@@ -12,11 +12,9 @@ import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {incidentsStore} from 'modules/stores/incidents';
-import {IncidentsBanner} from './IncidentsBanner';
-import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
-import {IncidentsWrapper} from '../IncidentsWrapper';
+import {tracking} from 'modules/tracking';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
@@ -29,7 +27,7 @@ import {
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-import {Diagram} from 'modules/components/Diagram';
+import {Diagram} from 'modules/components/Diagram/v2';
 import {MetadataPopover} from './MetadataPopover/v2';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
@@ -68,10 +66,6 @@ import {
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
 import type {FlowNodeState} from 'modules/types/operate';
-import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-import {isRequestError} from 'modules/request';
-import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -94,11 +88,8 @@ const TopPanel: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const currentSelection = flowNodeSelectionStore.state.selection;
-  const {
-    sourceFlowNodeIdForMoveOperation,
-    sourceFlowNodeInstanceKeyForMoveOperation,
-  } = modificationsStore.state;
-  const [isInTransition, setIsInTransition] = useState(false);
+  const {sourceFlowNodeIdForMoveOperation} = modificationsStore.state;
+  const [_isInTransition] = useState(false);
   const {data: flowNodeInstancesStatistics} = useFlownodeInstancesStatistics();
   const {data: statistics} = useFlownodeStatistics();
   const {data: selectableFlowNodes} = useSelectableFlowNodes();
@@ -117,13 +108,9 @@ const TopPanel: React.FC = observer(() => {
     );
   const {data: processInstance} = useProcessInstance();
   const modificationsByFlowNode = useModificationsByFlowNode();
-  const affectedTokenCount = sourceFlowNodeInstanceKeyForMoveOperation
-    ? 1
-    : totalMoveOperationRunningInstances || 1;
-  const visibleAffectedTokenCount = sourceFlowNodeInstanceKeyForMoveOperation
-    ? 1
-    : totalMoveOperationRunningInstancesVisible || 1;
-
+  const affectedTokenCount = totalMoveOperationRunningInstances || 1;
+  const visibleAffectedTokenCount =
+    totalMoveOperationRunningInstancesVisible || 1;
   const {data: processedSequenceFlowsFromHook} =
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
@@ -132,9 +119,8 @@ const TopPanel: React.FC = observer(() => {
 
   const {
     data: processDefinitionData,
-    isPending: isXmlFetching,
+    isFetching: isXmlFetching,
     isError: isXmlError,
-    error: xmlError,
   } = useProcessInstanceXml({
     processDefinitionKey,
   });
@@ -230,13 +216,7 @@ const TopPanel: React.FC = observer(() => {
 
   const modifiableFlowNodes = useModifiableFlowNodes();
 
-  // Conditional hook call, but the condition is static during runtime.
-  const incidentsCount = IS_INCIDENTS_PANEL_V2
-    ? useProcessInstanceIncidentsCount(processInstanceId)
-    : incidentsStore.incidentsCount;
-
   const {
-    setIncidentBarOpen,
     state: {isIncidentBarOpen},
   } = incidentsStore;
 
@@ -260,12 +240,6 @@ const TopPanel: React.FC = observer(() => {
     if (isXmlFetching) {
       return 'loading';
     }
-    if (
-      isRequestError(xmlError) &&
-      xmlError?.response?.status === HTTP_STATUS_FORBIDDEN
-    ) {
-      return 'forbidden';
-    }
     if (isXmlError) {
       return 'error';
     }
@@ -274,26 +248,6 @@ const TopPanel: React.FC = observer(() => {
 
   return (
     <Container>
-      {incidentsCount > 0 && (
-        <IncidentsBanner
-          processInstanceKey={processInstanceId}
-          incidentsCount={incidentsCount}
-          onClick={() => {
-            if (isInTransition) {
-              return;
-            }
-
-            tracking.track({
-              eventName: isIncidentBarOpen
-                ? 'incidents-panel-closed'
-                : 'incidents-panel-opened',
-            });
-
-            setIncidentBarOpen(!isIncidentBarOpen);
-          }}
-          isOpen={incidentsStore.state.isIncidentBarOpen}
-        />
-      )}
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -335,7 +289,6 @@ const TopPanel: React.FC = observer(() => {
             processInstance && (
               <Diagram
                 xml={processDefinitionData?.xml}
-                processDefinitionKey={processDefinitionKey}
                 selectableFlowNodes={
                   isModificationModeEnabled
                     ? modifiableFlowNodes
@@ -430,12 +383,7 @@ const TopPanel: React.FC = observer(() => {
               </Diagram>
             )}
         </DiagramShell>
-        {processInstance?.hasIncident && (
-          <IncidentsWrapper
-            setIsInTransition={setIsInTransition}
-            processInstance={processInstance}
-          />
-        )}
+        {/* Incidents panel is rendered as page rightPanel to ensure proper overlay layering */}
       </DiagramPanel>
     </Container>
   );

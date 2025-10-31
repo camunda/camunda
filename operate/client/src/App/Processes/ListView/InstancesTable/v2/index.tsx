@@ -24,14 +24,14 @@ import {
 } from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processesStore} from 'modules/stores/processes/processes.list';
-
+import {notificationsStore} from 'modules/stores/notifications';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
 import {getProcessName} from 'modules/utils/instance';
 import {Toolbar} from '../Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation} from 'react-router-dom';
-import {InstanceOperations} from './InstanceOperations';
+import {Operations} from 'modules/components/Operations';
 import {BatchModificationFooter} from '../BatchModificationFooter';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 
@@ -94,10 +94,10 @@ const InstancesTable: React.FC = observer(() => {
 
   return (
     <Container aria-label="Process Instances Panel">
-      <PanelHeader
-        title="Process Instances"
-        count={filteredProcessInstancesCount}
-      />
+      <PanelHeader title="Process Instances">
+        <span>{filteredProcessInstancesCount}</span>
+      </PanelHeader>
+
       <Toolbar
         selectedInstancesCount={
           processInstancesSelectionStore.selectedProcessInstanceCount
@@ -216,17 +216,44 @@ const InstancesTable: React.FC = observer(() => {
               </>
             ),
             operations: (
-              <InstanceOperations
-                processInstanceKey={instance.id}
-                isInstanceActive={['ACTIVE', 'INCIDENT'].includes(
-                  instance.state,
-                )}
-                hasIncident={instance.state === 'INCIDENT'}
-                activeOperations={instance.operations
-                  ?.filter((operation) =>
-                    ['SENT', 'SCHEDULED', 'LOCKED'].includes(operation.state),
+              <Operations
+                instance={instance}
+                onOperation={(operationType) =>
+                  processInstancesStore.markProcessInstancesWithActiveOperations(
+                    {
+                      ids: [instance.id],
+                      operationType,
+                    },
                   )
-                  .map((operation) => operation.type)}
+                }
+                onError={({operationType, statusCode}) => {
+                  processInstancesStore.unmarkProcessInstancesWithActiveOperations(
+                    {
+                      instanceIds: [instance.id],
+                      operationType,
+                    },
+                  );
+                  notificationsStore.displayNotification({
+                    kind: 'error',
+                    title: 'Operation could not be created',
+                    subtitle:
+                      statusCode === 403
+                        ? 'You do not have permission'
+                        : undefined,
+                    isDismissable: true,
+                  });
+                }}
+                onSuccess={(operationType) => {
+                  tracking.track({
+                    eventName: 'single-operation',
+                    operationType,
+                    source: 'instances-list',
+                  });
+                }}
+                permissions={processesStore.getPermissions(
+                  instance.bpmnProcessId,
+                  instance.tenantId,
+                )}
               />
             ),
           };
