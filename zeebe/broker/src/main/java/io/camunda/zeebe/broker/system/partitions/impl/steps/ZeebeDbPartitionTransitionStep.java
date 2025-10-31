@@ -27,14 +27,25 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
     if (context.getZeebeDb() != null
         && (currentRole == Role.LEADER || targetRole == Role.INACTIVE)) {
       try {
-        context.getStateController().closeDb();
-        context.setZeebeDb(null);
+        return context
+            .getStateController()
+            .closeDb()
+            .andThen(
+                (unused, err) -> {
+                  context.setZeebeDb(null);
+                  if (err != null) {
+                    return CompletableActorFuture.completedExceptionally(err);
+                  } else {
+                    return CompletableActorFuture.completed();
+                  }
+                },
+                context.getConcurrencyControl());
       } catch (final Exception e) {
         return CompletableActorFuture.completedExceptionally(e);
       }
+    } else {
+      return CompletableActorFuture.completed();
     }
-
-    return CompletableActorFuture.completed(null);
   }
 
   @Override

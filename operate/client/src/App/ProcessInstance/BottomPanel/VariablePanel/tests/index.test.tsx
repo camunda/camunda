@@ -20,12 +20,10 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createVariable,
-  createVariableV2,
+  createvariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {useEffect, act} from 'react';
@@ -137,9 +135,8 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -165,9 +162,8 @@ describe('VariablePanel', () => {
   });
 
   it('should render variables', async () => {
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
@@ -236,8 +232,8 @@ describe('VariablePanel', () => {
 
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2(),
-        createVariableV2({
+        createvariable(),
+        createvariable({
           variableKey: '2251799813725337-foo',
           name: 'foo',
           value: '"bar"',
@@ -247,8 +243,8 @@ describe('VariablePanel', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2(),
-        createVariableV2({
+        createvariable(),
+        createvariable({
           variableKey: '2251799813725337-foo',
           name: 'foo',
           value: '"bar"',
@@ -343,7 +339,6 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockUpdateElementInstanceVariables(':instance_id').withSuccess(null);
@@ -368,7 +363,6 @@ describe('VariablePanel', () => {
 
     expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
@@ -400,9 +394,8 @@ describe('VariablePanel', () => {
   it('should display validation error if backend validation fails while adding variable', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {totalItems: 1},
     });
 
@@ -473,9 +466,8 @@ describe('VariablePanel', () => {
 
   it('should select correct tab when navigating between flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {totalItems: 1},
     });
 
@@ -488,9 +480,8 @@ describe('VariablePanel', () => {
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2({name: 'test2'})],
+      items: [createvariable({name: 'test2'})],
       page: {totalItems: 1},
     });
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
@@ -509,9 +500,8 @@ describe('VariablePanel', () => {
 
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2({name: 'test2'})],
+      items: [createvariable({name: 'test2'})],
       page: {totalItems: 1},
     });
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -530,9 +520,8 @@ describe('VariablePanel', () => {
 
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2({name: 'test2'})],
+      items: [createvariable({name: 'test2'})],
       page: {totalItems: 1},
     });
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
@@ -553,7 +542,6 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 

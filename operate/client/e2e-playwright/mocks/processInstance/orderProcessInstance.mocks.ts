@@ -313,26 +313,6 @@ const orderProcessInstance: {
     },
     variables: [
       {
-        id: '2251799813725328-orderId',
-        name: 'orderId',
-        value: '"1234"',
-        isPreview: false,
-        hasActiveOperation: false,
-        isFirst: true,
-        sortValues: [''],
-      },
-      {
-        id: '2251799813725328-orderValue',
-        name: 'orderValue',
-        value: '"99"',
-        isPreview: false,
-        hasActiveOperation: false,
-        isFirst: false,
-        sortValues: [''],
-      },
-    ],
-    variablesV2: [
-      {
         variableKey: '2251799813725328-orderId',
         name: 'orderId',
         value: '"1234"',
@@ -590,26 +570,6 @@ const orderProcessInstance: {
       ],
     },
     variables: [
-      {
-        id: '2251799813725328-orderId',
-        name: 'orderId',
-        value: '"1234"',
-        isPreview: false,
-        hasActiveOperation: false,
-        isFirst: true,
-        sortValues: [''],
-      },
-      {
-        id: '2251799813725328-orderValue',
-        name: 'orderValue',
-        value: '99',
-        isPreview: false,
-        hasActiveOperation: false,
-        isFirst: false,
-        sortValues: [''],
-      },
-    ],
-    variablesV2: [
       {
         variableKey: '2251799813725328-orderId',
         name: 'orderId',
@@ -889,26 +849,6 @@ const orderProcessInstance: {
       ],
     },
     variables: [
-      {
-        id: '2251799813725328-orderId',
-        name: 'orderId',
-        value: '"1234"',
-        isPreview: false,
-        hasActiveOperation: false,
-        isFirst: true,
-        sortValues: [''],
-      },
-      {
-        id: '2251799813725328-orderValue',
-        name: 'orderValue',
-        value: '99',
-        isPreview: false,
-        hasActiveOperation: false,
-        isFirst: false,
-        sortValues: [''],
-      },
-    ],
-    variablesV2: [
       {
         variableKey: '2251799813725328-orderId',
         name: 'orderId',

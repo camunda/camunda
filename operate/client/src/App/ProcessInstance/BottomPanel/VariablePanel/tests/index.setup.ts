@@ -7,39 +7,8 @@
  */
 
 import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
-import type {VariableEntity} from 'modules/types/operate';
 
-const mockVariables: VariableEntity[] = [
-  {
-    id: '2251799813686037-clientNo',
-    name: 'clientNo',
-    value: '"CNT-1211132-0223222"',
-    hasActiveOperation: false,
-    isFirst: true,
-    isPreview: false,
-    sortValues: ['clientNo'],
-  },
-  {
-    id: '2251799813686037-mwst',
-    name: 'mwst',
-    value: '124.26',
-    hasActiveOperation: false,
-    isFirst: false,
-    isPreview: false,
-    sortValues: ['mwst'],
-  },
-  {
-    id: '2251799813686037-mwst',
-    name: 'active-operation-variable',
-    value: '1',
-    hasActiveOperation: true,
-    isFirst: false,
-    isPreview: false,
-    sortValues: ['active-operation-variable'],
-  },
-];
-
-const mockVariablesV2: QueryVariablesResponseBody = {
+const mockvariables: QueryVariablesResponseBody = {
   items: [
     {
       value: '"CNT-1211132-0223222"',
@@ -74,4 +43,4 @@ const mockVariablesV2: QueryVariablesResponseBody = {
   },
 };
 
-export {mockVariables, mockVariablesV2};
+export {mockvariables};

@@ -12,11 +12,10 @@ import {createWrapper} from './mocks';
 import {
   groupedProcessesMock,
   mockProcessXML,
-  operations,
   createUser,
 } from 'modules/testUtils';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
+import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
@@ -34,7 +33,12 @@ describe('<ListView /> - operations', () => {
     });
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockFetchBatchOperations().withSuccess(operations);
+    mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });

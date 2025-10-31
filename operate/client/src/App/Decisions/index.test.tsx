@@ -24,7 +24,7 @@ import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefin
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 import {useEffect} from 'react';
-import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
+import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -66,7 +66,7 @@ describe('<Decisions />', () => {
       decisionInstances: [],
       totalCount: 0,
     });
-    mockFetchBatchOperations().withSuccess([]);
+    mockQueryBatchOperations().withSuccess({items: [], page: {totalItems: 0}});
     mockFetchGroupedDecisions().withSuccess([]);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockMe().withSuccess(createUser());
@@ -94,7 +94,7 @@ describe('<Decisions />', () => {
       search: queryString,
     });
 
-    mockFetchBatchOperations().withSuccess([]);
+    mockQueryBatchOperations().withSuccess({items: [], page: {totalItems: 0}});
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     mockFetchDecisionInstances().withSuccess({
       decisionInstances: [],

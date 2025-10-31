@@ -68,7 +68,7 @@ jobs:
         with:
           project-url: https://github.com/orgs/camunda/projects/209
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: component/identity
+          labeled: component/identity, component/management-identity
       - id: add-to-distribution
         name: Add to Distribution Team project
         uses: actions/add-to-project@v1.0.2

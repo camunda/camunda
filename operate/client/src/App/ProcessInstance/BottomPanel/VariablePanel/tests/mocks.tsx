@@ -10,7 +10,6 @@ import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaDa
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {useEffect} from 'react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Paths} from 'modules/Routes';
@@ -19,7 +18,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {createInstance} from 'modules/testUtils';
-import type {VariableEntity} from 'modules/types/operate';
 
 const mockProcessInstance: ProcessInstance = {
   processInstanceKey: '1',
@@ -44,7 +42,6 @@ const getWrapper = (
 
       return () => {
         processInstanceDetailsStore.reset();
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         modificationsStore.reset();
       };
@@ -65,36 +62,6 @@ const getWrapper = (
   return Wrapper;
 };
 
-const mockVariables: VariableEntity[] = [
-  {
-    id: '2251799813686037-clientNo',
-    name: 'clientNo',
-    value: '"CNT-1211132-0223222"',
-    hasActiveOperation: false,
-    isFirst: true,
-    isPreview: false,
-    sortValues: ['clientNo'],
-  },
-  {
-    id: '2251799813686037-mwst',
-    name: 'mwst',
-    value: '124.26',
-    hasActiveOperation: false,
-    isFirst: false,
-    isPreview: false,
-    sortValues: ['mwst'],
-  },
-  {
-    id: '2251799813686037-mwst',
-    name: 'active-operation-variable',
-    value: '1',
-    hasActiveOperation: true,
-    isFirst: false,
-    isPreview: false,
-    sortValues: ['active-operation-variable'],
-  },
-];
-
 const mockMetaData: MetaDataDto = {
   flowNodeId: null,
   flowNodeInstanceId: '123',
@@ -109,7 +76,6 @@ const mockProcessInstanceDeprecated = createInstance();
 
 export {
   getWrapper,
-  mockVariables,
   mockMetaData,
   mockProcessInstance,
   mockProcessInstanceDeprecated,

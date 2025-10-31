@@ -26,7 +26,7 @@ public class RocksDBSnapshotCopy implements SnapshotCopy {
       final Path fromPath, final Path toPath, final Set<ColumnFamilyScope> scopes) {
     try (final var fromDB =
             (SnapshotOnlyDb<ZbColumnFamilies>) factory.openSnapshotOnlyDb(fromPath.toFile());
-        final var toDB = factory.createDb(toPath.toFile())) {
+        final var toDB = factory.createDb(toPath.toFile(), false)) {
       fromDB.copySnapshot(toDB, scopes);
     }
   }

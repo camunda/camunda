@@ -14,6 +14,8 @@ component/feel-scala:
   '(Feel-)'
 component/identity:
   '(Identity-)'
+component/management-identity:
+  '(Management Identity-)'
 component/operate:
   '(Operate-)'
 component/optimize:

@@ -67,7 +67,7 @@ test.describe('process instance page', () => {
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variablesV2: runningInstance.variablesV2,
+        variables: runningInstance.variables,
         xml: runningInstance.xml,
         incidents: runningInstance.incidents,
       }),
@@ -94,7 +94,7 @@ test.describe('process instance page', () => {
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variablesV2: runningInstance.variablesV2,
+        variables: runningInstance.variables,
         xml: runningInstance.xml,
       }),
     );
@@ -122,7 +122,7 @@ test.describe('process instance page', () => {
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variablesV2: runningInstance.variablesV2,
+        variables: runningInstance.variables,
         xml: runningInstance.xml,
       }),
     );
@@ -154,7 +154,7 @@ test.describe('process instance page', () => {
         statisticsV2: instanceWithIncident.statisticsV2,
         sequenceFlows: instanceWithIncident.sequenceFlows,
         sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
-        variablesV2: instanceWithIncident.variablesV2,
+        variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
       }),
@@ -188,7 +188,7 @@ test.describe('process instance page', () => {
         statisticsV2: completedInstance.statisticsV2,
         sequenceFlows: completedInstance.sequenceFlows,
         sequenceFlowsV2: completedInstance.sequenceFlowsV2,
-        variablesV2: completedInstance.variablesV2,
+        variables: completedInstance.variables,
         xml: completedInstance.xml,
       }),
     );
@@ -219,7 +219,7 @@ test.describe('process instance page', () => {
         statisticsV2: compensationProcessInstance.statisticsV2,
         sequenceFlows: compensationProcessInstance.sequenceFlows,
         sequenceFlowsV2: compensationProcessInstance.sequenceFlowsV2,
-        variablesV2: compensationProcessInstance.variablesV2,
+        variables: compensationProcessInstance.variables,
         xml: compensationProcessInstance.xml,
       }),
     );

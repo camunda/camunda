@@ -85,7 +85,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // Disable flushes to reduce test runtime - we don't need perfect durability in tests, if the
     // machine crashes the test fails anyway.
     config.getCluster().getRaft().setFlush(new FlushConfig(false, Duration.ZERO));
-
+    config.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
+    config.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
+    config.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
     config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
 

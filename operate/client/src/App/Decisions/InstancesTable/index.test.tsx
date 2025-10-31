@@ -61,6 +61,10 @@ describe('<InstancesTable />', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
+    mockFetchDecisionInstances().withSuccess({
+      totalCount: 0,
+      decisionInstances: [],
+    });
   });
 
   it('should initially render skeleton', async () => {

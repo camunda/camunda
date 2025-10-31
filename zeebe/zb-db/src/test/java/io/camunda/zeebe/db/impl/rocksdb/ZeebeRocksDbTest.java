@@ -57,7 +57,7 @@ final class ZeebeRocksDbTest {
   void shouldReopenDb(final @TempDir File pathName) throws Exception {
     // given
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-    ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
+    ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName, false);
 
     final DbString key = new DbString();
     key.wrapString("foo");

@@ -7,9 +7,8 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {getWrapper, mockProcessInstance, mockVariables} from './mocks';
+import {getWrapper, mockProcessInstance} from './mocks';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {
@@ -17,7 +16,6 @@ import {
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {act} from 'react';
@@ -27,8 +25,8 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {mockVariablesV2} from '../index.setup';
-import {VariablePanel} from '../../VariablePanel';
+import {mockvariables} from './index.setup';
+import {VariablePanel} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const instanceMock = createInstance({id: '1'});
@@ -82,22 +80,14 @@ describe('Footer', () => {
     act(() => {
       flowNodeSelectionStore.reset();
       flowNodeMetaDataStore.reset();
-      variablesStore.reset();
       processInstanceDetailsStore.reset();
     });
   });
 
   it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchVariables().withSuccess(mockVariables);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -134,7 +124,6 @@ describe('Footer', () => {
 
   it('should disable add variable button when selected flow node is not running', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchVariables().withSuccess([]);
     const mockSearchVariablesPayload = {
       items: [],
       page: {
@@ -161,11 +150,6 @@ describe('Footer', () => {
 
     init('process-instance', []);
 
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'start',
       flowNodeInstanceId: '2',
@@ -206,15 +190,8 @@ describe('Footer', () => {
   it('should disable add variable button when loading', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-    mockFetchVariables().withSuccess(mockVariables);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
@@ -234,15 +211,8 @@ describe('Footer', () => {
       ...mockProcessInstance,
       state: 'TERMINATED',
     });
-    mockFetchVariables().withSuccess(mockVariables);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),

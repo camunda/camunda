@@ -20,7 +20,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
-  VariableEntity,
   OperationEntity,
   InstanceOperationEntity,
 } from 'modules/types/operate';
@@ -174,23 +173,7 @@ const createProcessInstance = (
   };
 };
 
-const createVariable = (
-  options: Partial<VariableEntity> = {},
-): VariableEntity => {
-  const name = options.name ?? 'testVariableName';
-  return {
-    id: `2251799813725337-${name}`,
-    name,
-    value: '1',
-    isPreview: false,
-    hasActiveOperation: false,
-    isFirst: false,
-    sortValues: [name],
-    ...options,
-  };
-};
-
-const createVariableV2 = (options: Partial<Variable> = {}): Variable => {
+const createvariable = (options: Partial<Variable> = {}): Variable => {
   const name = options.name ?? 'testVariableName';
   return {
     variableKey: `2251799813725337-${name}`,
@@ -1276,8 +1259,7 @@ export {
   eventSubProcess,
   createMultiInstanceFlowNodeInstances,
   createEventSubProcessFlowNodeInstances,
-  createVariable,
-  createVariableV2,
+  createvariable,
   createBatchOperation,
   createUser,
   createProcessInstance,

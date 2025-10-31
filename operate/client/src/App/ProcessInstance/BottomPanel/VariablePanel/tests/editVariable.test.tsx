@@ -6,33 +6,32 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, within, waitFor} from 'modules/testing-library';
-import {variablesStore} from 'modules/stores/variables';
+import {
+  render,
+  screen,
+  within,
+  waitFor,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from '../index';
 import {
   getWrapper,
   mockProcessInstance,
   mockProcessInstanceDeprecated,
-  mockVariables,
 } from './mocks';
-import {
-  createInstance,
-  createVariable,
-  createVariableV2,
-} from 'modules/testUtils';
+import {createInstance, createvariable} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {mockVariablesV2} from '../index.setup';
+import {mockvariables} from './index.setup';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
-import {VariablePanel} from '../../VariablePanel';
+import {VariablePanel} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
+import {act} from 'react';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -50,64 +49,110 @@ describe('Edit variable', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockvariables);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
   });
 
-  it.skip('should show/hide edit button next to variable according to it having an active operation', async () => {
+  it('should disable edit buttons while a variable update is being submitted', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    const mockVariables = {
+      items: [
+        createvariable({
+          name: 'firstVariable',
+          value: '"initial-value"',
+          isTruncated: false,
+        }),
+        createvariable({
+          name: 'secondVariable',
+          value: '"another-value"',
+          isTruncated: false,
+        }),
+      ],
+      page: {
+        totalItems: 2,
+      },
+    };
+
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-    mockFetchVariables().withSuccess(mockVariables);
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
 
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    render(<Variables />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
 
-    const [activeOperationVariable] = variablesStore.state.items.filter(
-      ({hasActiveOperation}) => hasActiveOperation,
+    const firstVariableContainer = screen.getByTestId('variable-firstVariable');
+    const secondVariableContainer = screen.getByTestId(
+      'variable-secondVariable',
     );
 
-    expect(
-      within(
-        screen.getByTestId(`variable-${activeOperationVariable!.name}`),
-      ).queryByRole('button', {name: /edit variable/i}),
-    ).not.toBeInTheDocument();
-
-    const [inactiveOperationVariable] = variablesStore.state.items.filter(
-      ({hasActiveOperation}) => !hasActiveOperation,
+    const firstEditButton = within(firstVariableContainer).getByRole('button', {
+      name: /edit variable/i,
+    });
+    const secondEditButton = within(secondVariableContainer).getByRole(
+      'button',
+      {name: /edit variable/i},
     );
 
-    expect(inactiveOperationVariable).toBeDefined();
+    expect(firstEditButton).toBeEnabled();
+    expect(secondEditButton).toBeEnabled();
+
+    mockFetchProcessDefinitionXml().withSuccess('');
+    await user.click(firstEditButton);
+
+    const editInput = await within(firstVariableContainer).findByTestId(
+      'edit-variable-value',
+    );
+    await user.clear(editInput);
+    await user.type(editInput, '"updated-value"');
+
+    vi.runOnlyPendingTimers();
+
+    const saveButton = within(firstVariableContainer).getByRole('button', {
+      name: /save variable/i,
+    });
+    await waitFor(() => {
+      expect(saveButton).toBeEnabled();
+    });
+
+    mockUpdateElementInstanceVariables('1').withDelay(null as unknown as never);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+
+    await user.click(saveButton);
+
     expect(
-      await screen.findByTestId(`variable-${inactiveOperationVariable!.name}`),
+      within(firstVariableContainer).getByTestId('full-variable-loader'),
     ).toBeInTheDocument();
-    expect(
-      within(
-        screen.getByTestId(`variable-${inactiveOperationVariable!.name}`),
-      ).getByRole('button', {name: /edit variable/i}),
-    ).toBeInTheDocument();
+    expect(secondEditButton).toBeDisabled();
+
+    await waitForElementToBeRemoved(
+      within(firstVariableContainer).queryByTestId('full-variable-loader'),
+    );
+
+    expect(secondEditButton).toBeEnabled();
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should show/hide edit variable inputs', async () => {
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -151,19 +196,11 @@ describe('Edit variable', () => {
   });
 
   it('should disable save button when nothing is changed', async () => {
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -194,10 +231,11 @@ describe('Edit variable', () => {
   });
 
   it('should validate when editing variables', async () => {
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
-    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockvariables);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
@@ -208,13 +246,6 @@ describe('Edit variable', () => {
 
     vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -269,12 +300,12 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           name: 'clientNo',
           value: '"value-preview"',
           isTruncated: true,
         }),
-        createVariableV2({
+        createvariable({
           name: 'mwst',
           value: '"124.26"',
         }),
@@ -285,12 +316,12 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           name: 'clientNo',
           value: '"value-preview"',
           isTruncated: true,
         }),
-        createVariableV2({
+        createvariable({
           name: 'mwst',
           value: '"124.26"',
         }),
@@ -300,20 +331,6 @@ describe('Edit variable', () => {
       },
     });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchVariables().withSuccess([
-      createVariable({
-        name: 'clientNo',
-        value: '"value-preview"',
-        isPreview: true,
-      }),
-      createVariable({name: 'mwst', value: '124.26'}),
-    ]);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -327,7 +344,7 @@ describe('Edit variable', () => {
     });
 
     mockGetVariable().withSuccess(
-      createVariableV2({
+      createvariable({
         name: 'clientNo',
         value: '"full-value"',
         isTruncated: false,
@@ -361,7 +378,7 @@ describe('Edit variable', () => {
   it('should display notification if error occurs when getting single variable details', async () => {
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '"value-preview"',
           isTruncated: true,
         }),
@@ -372,7 +389,7 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '"value-preview"',
           isTruncated: true,
         }),
@@ -382,15 +399,6 @@ describe('Edit variable', () => {
       },
     });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchVariables().withSuccess([
-      createVariable({isPreview: true, value: '"value-preview"'}),
-    ]);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -404,7 +412,6 @@ describe('Edit variable', () => {
       expect(screen.getByText('"value-preview"')).toBeInTheDocument();
     });
 
-    mockFetchVariable().withDelayedServerError();
     mockGetVariable().withServerError();
 
     expect(
@@ -432,7 +439,7 @@ describe('Edit variable', () => {
   it('should not get variable details on edit button click if the variables value was not a preview', async () => {
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '"full-value"',
           isTruncated: false,
         }),
@@ -443,7 +450,7 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '"full-value"',
           isTruncated: false,
         }),
@@ -454,14 +461,6 @@ describe('Edit variable', () => {
     });
 
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-
-    mockFetchVariables().withSuccess([createVariable({value: '"full-value"'})]);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -499,12 +498,11 @@ describe('Edit variable', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess('');
 
-    modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '123',
           isTruncated: true,
         }),
@@ -515,7 +513,7 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '123',
           isTruncated: true,
         }),
@@ -524,18 +522,8 @@ describe('Edit variable', () => {
         totalItems: 1,
       },
     });
-    mockFetchVariables().withSuccess([
-      createVariable({isPreview: true, value: '123'}),
-    ]);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
     mockGetVariable().withSuccess(
-      createVariableV2({
+      createvariable({
         value: '123456',
         isTruncated: false,
       }),
@@ -549,6 +537,9 @@ describe('Edit variable', () => {
     );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+    act(() => {
+      modificationsStore.enableModificationMode();
     });
     await waitFor(() => {
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
@@ -557,18 +548,15 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByTestId('edit-variable-value'));
 
-    expect(await screen.findByTestId('edit-variable-value')).toHaveValue(
-      '123456',
-    );
+    expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
   });
 
   it('should load full value on json viewer click during modification mode if it was truncated', async () => {
-    modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '123',
           isTruncated: true,
         }),
@@ -579,7 +567,7 @@ describe('Edit variable', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createVariableV2({
+        createvariable({
           value: '123',
           isTruncated: true,
         }),
@@ -588,21 +576,12 @@ describe('Edit variable', () => {
         totalItems: 1,
       },
     });
-    mockFetchVariables().withSuccess([
-      createVariable({isPreview: true, value: '123'}),
-    ]);
     mockGetVariable().withSuccess(
-      createVariableV2({
+      createvariable({
         value: '123456',
         isTruncated: false,
       }),
     );
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -613,12 +592,15 @@ describe('Edit variable', () => {
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
+    act(() => {
+      modificationsStore.enableModificationMode();
+    });
     await waitFor(() => {
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
     });
 
     mockGetVariable().withSuccess(
-      createVariableV2({
+      createvariable({
         value: '123456',
         isTruncated: false,
       }),
@@ -638,24 +620,16 @@ describe('Edit variable', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
-    });
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariable().withSuccess(mockVariables[0]!);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
     });
 
     const {user} = render(
@@ -695,17 +669,10 @@ describe('Edit variable', () => {
     });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
+      items: [createvariable()],
       page: {
         totalItems: 1,
       },
-    });
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
     });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {

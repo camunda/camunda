@@ -39,17 +39,6 @@ const runningOrderProcessInstance: InstanceMock = {
   },
   variables: [
     {
-      id: '2251799813687144-signalNumber',
-      name: 'orderNumber',
-      value: '47',
-      isPreview: false,
-      hasActiveOperation: false,
-      isFirst: true,
-      sortValues: [''],
-    },
-  ],
-  variablesV2: [
-    {
       variableKey: '2251799813687144-signalNumber',
       name: 'orderNumber',
       value: '47',

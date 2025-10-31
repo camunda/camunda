@@ -109,16 +109,6 @@ type ProcessInstancesDto = {
   totalCount: number;
 };
 
-interface VariableEntity {
-  isFirst: boolean;
-  hasActiveOperation: boolean;
-  id?: string;
-  name: string;
-  value: string;
-  sortValues: [string] | null;
-  isPreview: boolean;
-}
-
 type FlowNodeInstanceDto = {
   id: string;
   type: string;
@@ -304,7 +294,6 @@ export type {
   InstanceOperationEntity,
   ProcessInstancesDto,
   ProcessInstanceEntity,
-  VariableEntity,
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
   InstanceMetaDataDto,

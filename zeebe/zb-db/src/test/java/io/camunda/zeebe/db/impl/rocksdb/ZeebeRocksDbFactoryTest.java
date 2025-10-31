@@ -192,7 +192,7 @@ final class ZeebeRocksDbFactoryTest {
     key.wrapString("foo");
     value.wrapString("bar");
 
-    try (final var db = factory.createDb(path)) {
+    try (final var db = factory.createDb(path, false)) {
       final var column =
           db.createColumnFamily(
               DefaultColumnFamily.DEFAULT, db.createContext(), new DbString(), new DbString());

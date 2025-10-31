@@ -14,7 +14,6 @@ import get from 'lodash/get';
 import {getNewVariablePrefix} from './getNewVariablePrefix';
 import {type VariableFormValues} from 'modules/types/variables';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
-import {variablesStore} from 'modules/stores/variables';
 
 const validateNameCharacters: FieldValidator<string | undefined> = (
   variableName = '',
@@ -37,45 +36,6 @@ const validateModifiedNameComplete: FieldValidator<string | undefined> = (
   if (variableValue.trim() !== '' && variableName === '') {
     return ERRORS.EMPTY_NAME;
   }
-};
-
-const validateModifiedNameNotDuplicateDeprecated: FieldValidator<
-  string | undefined
-> = (
-  variableName = '',
-  allValues:
-    | {value?: string; newVariables?: Array<VariableFormValues>}
-    | undefined,
-  meta,
-) => {
-  if (allValues?.newVariables === undefined) {
-    return;
-  }
-
-  const isVariableDuplicate = variablesStore.state.items.some(
-    ({name}) => name === variableName,
-  );
-
-  if (meta?.dirty && isVariableDuplicate) {
-    return ERRORS.DUPLICATE_NAME;
-  }
-
-  if (
-    allValues.newVariables.filter((variable) => variable?.name === variableName)
-      .length <= 1
-  ) {
-    return;
-  }
-
-  if (
-    meta?.active ||
-    meta?.error === ERRORS.DUPLICATE_NAME ||
-    meta?.validating
-  ) {
-    return ERRORS.DUPLICATE_NAME;
-  }
-
-  return;
 };
 
 const validateModifiedNameNotDuplicate =
@@ -117,26 +77,6 @@ const validateModifiedNameNotDuplicate =
 
     return;
   };
-
-const validateNameCompleteDeprecated: FieldValidator<string | undefined> =
-  promisifyValidator(
-    (variableName = '', allValues: {value?: string} | undefined, meta) => {
-      const variableValue = allValues?.value ?? '';
-
-      if (variableValue.trim() !== '' && variableName === '') {
-        return ERRORS.EMPTY_NAME;
-      }
-
-      const isVariableDuplicate = variablesStore.state.items.some(
-        ({name}) => name === variableName,
-      );
-
-      if (meta?.dirty && isVariableDuplicate) {
-        return ERRORS.DUPLICATE_NAME;
-      }
-    },
-    VALIDATION_DELAY,
-  );
 
 const validateNameComplete =
   (allVariables: Variable[]): FieldValidator<string | undefined> =>
@@ -237,7 +177,6 @@ const validateValueNotEmpty = (variableValue = '') => {
 export {
   validateNameCharacters,
   validateNameComplete,
-  validateNameCompleteDeprecated,
   validateNameNotDuplicate,
   validateValueComplete,
   validateValueValid,
@@ -245,6 +184,5 @@ export {
   validateModifiedValueComplete,
   validateModifiedValueValid,
   validateModifiedNameNotDuplicate,
-  validateModifiedNameNotDuplicateDeprecated,
   validateValueNotEmpty,
 };

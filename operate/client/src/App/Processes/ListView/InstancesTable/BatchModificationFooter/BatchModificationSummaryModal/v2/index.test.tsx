@@ -175,6 +175,10 @@ describe('BatchModificationSummaryModal', () => {
 
   it('should handle batch operation error', async () => {
     mockModifyProcessInstancesBatchOperation().withServerError(403);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,

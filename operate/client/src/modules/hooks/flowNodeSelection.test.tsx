@@ -15,8 +15,12 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {
+  mockProcessWithInputOutputMappingsXML,
+  createProcessInstance,
+} from 'modules/testUtils';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const getWrapper = () => {
@@ -39,6 +43,7 @@ const getWrapper = () => {
 describe('useWillAllFlowNodesBeCanceled', () => {
   beforeEach(() => {
     modificationsStore.reset();
+    mockFetchProcessInstance().withSuccess(createProcessInstance());
   });
 
   it('should return true if all flow nodes are canceled', async () => {
