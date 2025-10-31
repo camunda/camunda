@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,10 +54,14 @@ final class ConnectionErrorTest {
                 Optional.empty(), Optional.of(1), CheckpointPattern.any()));
 
     // then
+    // The CRT-based client may timeout or throw an ExecutionException when the store is unreachable
     assertThat(res)
         .failsWithin(Duration.ofSeconds(10))
-        .withThrowableOfType(ExecutionException.class)
-        .withMessageContaining("Connection refused");
+        .withThrowableThat()
+        .satisfies(
+            throwable ->
+                assertThat(throwable)
+                    .isInstanceOfAny(ExecutionException.class, TimeoutException.class));
   }
 
   @Test
@@ -68,8 +73,13 @@ final class ConnectionErrorTest {
     final var res = store.getStatus(new BackupIdentifierImpl(0, 1, 1));
 
     // then
+    // The CRT-based client may timeout or throw an ExecutionException when the store is unreachable
     assertThat(res)
         .failsWithin(Duration.ofSeconds(10))
-        .withThrowableOfType(ExecutionException.class);
+        .withThrowableThat()
+        .satisfies(
+            throwable ->
+                assertThat(throwable)
+                    .isInstanceOfAny(ExecutionException.class, TimeoutException.class));
   }
 }

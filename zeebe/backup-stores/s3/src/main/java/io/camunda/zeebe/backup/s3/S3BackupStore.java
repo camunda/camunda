@@ -42,14 +42,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.core.async.SdkPublisher;
-import software.amazon.awssdk.core.retry.RetryMode;
-import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
@@ -387,29 +383,34 @@ public final class S3BackupStore implements BackupStore {
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
-    final var builder = S3AsyncClient.builder();
+    final var builder = S3AsyncClient.crtBuilder();
 
-    // Enable auto-tuning of various parameters based on the environment
-    builder.defaultsMode(DefaultsMode.AUTO);
+    // Note: The CRT-based client has a different configuration API than the standard client.
+    // The CRT client automatically optimizes for large file transfers.
 
-    // Enable legacy MD5 plugin if configured, as it is required for compatibility with S3
-    // compatible storage systems that expect MD5 checksums in the request.
-    if (config.supportLegacyMd5()) {
-      builder.addPlugin(LegacyMd5Plugin.create());
-    }
+    // Configure minimum part size for multipart uploads (in MB)
+    // CRT client uses multipart uploads for better performance with large files
+    builder.minimumPartSizeInBytes(8L * 1024 * 1024); // 8 MB as mentioned in the issue
 
-    builder.httpClient(
-        NettyNioAsyncHttpClient.builder()
-            .maxConcurrency(config.maxConcurrentConnections())
-            // We'd rather wait longer for a connection than have a failed backup. This helps in
-            // smoothing out spikes when taking a backup.
-            .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout())
-            .build());
+    // Configure max concurrency
+    builder.maxConcurrency(config.maxConcurrentConnections());
 
-    builder.overrideConfiguration(cfg -> cfg.retryStrategy(RetryMode.ADAPTIVE_V2));
+    // Configure target throughput in Gbps - CRT client will auto-tune based on this
+    builder.targetThroughputInGbps(10.0);
+
+    // Disable checksum validation for compatibility with S3-compatible storage like MinIO
+    builder.checksumValidationEnabled(false);
+
+    // Configure path style access
     builder.forcePathStyle(config.forcePathStyleAccess());
+
+    // Configure endpoint if provided
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
+
+    // Configure region if provided
     config.region().ifPresent(region -> builder.region(Region.of(region)));
+
+    // Configure credentials if provided
     config
         .credentials()
         .ifPresent(
@@ -418,9 +419,10 @@ public final class S3BackupStore implements BackupStore {
                     StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(
                             credentials.accessKey(), credentials.secretKey()))));
-    config
-        .apiCallTimeout()
-        .ifPresent(timeout -> builder.overrideConfiguration(cfg -> cfg.apiCallTimeout(timeout)));
+
+    // Note: apiCallTimeout, retryStrategy, and plugins like LegacyMd5Plugin are not available
+    // on the CRT builder. The CRT client has its own optimized retry and timeout handling.
+
     return builder.build();
   }
 }
