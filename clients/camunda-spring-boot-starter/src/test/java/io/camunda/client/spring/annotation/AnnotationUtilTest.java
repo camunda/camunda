@@ -24,11 +24,11 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.AnnotationUtil;
-import io.camunda.client.annotation.VariablesAsType;
 import io.camunda.client.annotation.ElementInstanceKey;
 import io.camunda.client.annotation.JobKey;
 import io.camunda.client.annotation.ProcessDefinitionKey;
 import io.camunda.client.annotation.ProcessInstanceKey;
+import io.camunda.client.annotation.VariablesAsType;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
