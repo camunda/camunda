@@ -23,7 +23,7 @@ const isProcessOrSubProcessEndEvent = (businessObject: BusinessObject) => {
     businessObject?.$parent !== undefined &&
     hasType({
       businessObject: businessObject?.$parent,
-      types: ['bpmn:Process', 'bpmn:SubProcess'],
+      types: ['bpmn:Process', 'bpmn:SubProcess', 'bpmn:AdHocSubProcess'],
     })
   );
 };

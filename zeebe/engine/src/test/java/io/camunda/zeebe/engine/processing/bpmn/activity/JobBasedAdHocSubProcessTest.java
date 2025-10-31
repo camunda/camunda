@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
@@ -499,7 +500,7 @@ public class JobBasedAdHocSubProcessTest {
                 .limit(r -> r.getIntent() == SignalIntent.BROADCASTED)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .filter(v -> !v.getValue().getName().equals("adHocSubProcessElements")))
+                .filter(v -> !v.getValue().getName().equals(AD_HOC_SUB_PROCESS_ELEMENTS)))
         .extracting(
             r -> r.getValue().getName(),
             r -> r.getValue().getValue(),

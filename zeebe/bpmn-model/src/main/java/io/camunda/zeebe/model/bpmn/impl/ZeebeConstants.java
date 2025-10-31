@@ -129,4 +129,5 @@ public class ZeebeConstants {
    * AD_HOC_SUB_PROCESS_ID#innerInstance)
    */
   public static final String AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX = "#innerInstance";
+  public static final String AD_HOC_SUB_PROCESS_ELEMENTS = "adHocSubProcessElements";
 }
