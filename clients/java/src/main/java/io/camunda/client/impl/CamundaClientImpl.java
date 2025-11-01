@@ -333,6 +333,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -507,14 +508,24 @@ public final class CamundaClientImpl implements CamundaClient {
 
   private static ExecutorResource buildExecutorService(
       final CamundaClientConfiguration configuration) {
-    if (configuration.jobWorkerExecutor() != null) {
-      return new ExecutorResource(
-          configuration.jobWorkerExecutor(), configuration.ownsJobWorkerExecutor());
-    }
 
-    final int threadCount = configuration.getNumJobWorkerExecutionThreads();
-    final ScheduledExecutorService executor = Executors.newScheduledThreadPool(threadCount);
-    return new ExecutorResource(executor, true);
+    final ExecutorService jobHandlingExecutor = configuration.jobHandlingExecutor();
+    final boolean ownsJobHandlingExecutor = configuration.ownsJobHandlingExecutor();
+
+    final ScheduledExecutorService scheduledExecutor;
+    final boolean ownsScheduledExecutor;
+
+    if (configuration.jobWorkerExecutor() != null) {
+      scheduledExecutor = configuration.jobWorkerExecutor();
+      ownsScheduledExecutor = configuration.ownsJobWorkerExecutor();
+    } else {
+      final int threadCount =
+          jobHandlingExecutor != null ? 1 : configuration.getNumJobWorkerExecutionThreads();
+      scheduledExecutor = Executors.newScheduledThreadPool(threadCount);
+      ownsScheduledExecutor = true;
+    }
+    return new ExecutorResource(
+        scheduledExecutor, ownsScheduledExecutor, jobHandlingExecutor, ownsJobHandlingExecutor);
   }
 
   @Override
@@ -726,7 +737,12 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public JobWorkerBuilderStep1 newWorker() {
-    return new JobWorkerBuilderImpl(config, jobClient, executorResource.executor(), closeables);
+    return new JobWorkerBuilderImpl(
+        config,
+        jobClient,
+        executorResource.scheduledExecutor(),
+        executorResource.jobHandlingExecutor(),
+        closeables);
   }
 
   @Override

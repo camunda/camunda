@@ -21,6 +21,7 @@ import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
@@ -140,6 +141,10 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
    */
   boolean ownsJobWorkerExecutor();
+
+  ExecutorService jobHandlingExecutor();
+
+  boolean ownsJobHandlingExecutor();
 
   /**
    * @see CamundaClientBuilder#defaultJobWorkerStreamEnabled(boolean)

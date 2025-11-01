@@ -67,6 +67,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -114,6 +115,8 @@ public final class CamundaClientTest {
       assertThat(configuration.getDefaultJobWorkerTenantIds())
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.preferRestOverGrpc()).isTrue();
+      assertThat(configuration.jobHandlingExecutor()).isNull();
+      assertThat(configuration.jobWorkerExecutor()).isNull();
     }
   }
 
@@ -555,35 +558,46 @@ public final class CamundaClientTest {
   @Test
   public void shouldCloseOwnedExecutorOnClose() {
     // given
-    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobExecutor = Executors.newSingleThreadExecutor();
+
     try (final CamundaClient client =
-        CamundaClient.newClientBuilder().jobWorkerExecutor(executor, true).build()) {
+        CamundaClient.newClientBuilder()
+            .jobWorkerExecutor(scheduler, true)
+            .jobHandlingExecutor(jobExecutor, true)
+            .build()) {
       // when
       client.close();
 
       // then
-      assertThat(executor.isShutdown()).isTrue();
+      assertThat(scheduler.isShutdown()).isTrue();
+      assertThat(jobExecutor.isShutdown()).isTrue();
     }
   }
 
   @Test
   public void shouldNotCloseNotOwnedExecutor() {
     // given
-    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobExecutor = Executors.newSingleThreadExecutor();
     try (final CamundaClient client =
-        CamundaClient.newClientBuilder().jobWorkerExecutor(executor, false).build()) {
+        CamundaClient.newClientBuilder()
+            .jobWorkerExecutor(scheduler, false)
+            .jobHandlingExecutor(jobExecutor, false)
+            .build()) {
       // when
       client.close();
 
       // then
-      assertThat(executor.isShutdown()).isFalse();
+      assertThat(scheduler.isShutdown()).isFalse();
+      assertThat(jobExecutor.isShutdown()).isFalse();
     }
 
-    executor.shutdownNow();
+    scheduler.shutdownNow();
   }
 
   @Test
-  public void shouldUseCustomExecutorWithJobWorker() {
+  public void shouldUseCustomScheduledExecutorWithJobWorker() {
     // given
     final ScheduledThreadPoolExecutor executor = spy(new ScheduledThreadPoolExecutor(1));
     final Duration pollInterval = Duration.ZERO;
