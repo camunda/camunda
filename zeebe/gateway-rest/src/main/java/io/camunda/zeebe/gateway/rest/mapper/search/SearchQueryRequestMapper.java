@@ -557,6 +557,24 @@ public final class SearchQueryRequestMapper {
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
   }
 
+  public static Either<
+          ProblemDetail,
+          io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery>
+      toMessageSubscriptionProcessDefinitionStatisticsQuery(
+          final ProcessDefinitionMessageSubscriptionStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(
+          SearchQueryBuilders.messageSubscriptionProcessDefinitionStatisticsQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
+    return buildSearchQuery(
+        filter,
+        Either.right(null),
+        page,
+        SearchQueryBuilders::messageSubscriptionProcessDefinitionStatisticsQuery);
+  }
+
   public static Either<ProblemDetail, CorrelatedMessageSubscriptionQuery>
       toCorrelatedMessageSubscriptionQuery(final CorrelatedMessageSubscriptionSearchQuery request) {
     if (request == null) {

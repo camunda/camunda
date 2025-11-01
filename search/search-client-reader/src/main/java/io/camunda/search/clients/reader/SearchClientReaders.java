@@ -23,6 +23,8 @@ public record SearchClientReaders(
     JobReader jobReader,
     MappingRuleReader mappingRuleReader,
     MessageSubscriptionReader messageSubscriptionReader,
+    ProcessDefinitionMessageSubscriptionStatisticsReader
+        processDefinitionMessageSubscriptionStatisticsReader,
     ProcessDefinitionReader processDefinitionReader,
     ProcessDefinitionStatisticsReader processDefinitionStatisticsReader,
     ProcessInstanceReader processInstanceReader,

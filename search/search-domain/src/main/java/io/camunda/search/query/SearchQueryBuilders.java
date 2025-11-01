@@ -226,6 +226,11 @@ public final class SearchQueryBuilders {
     return new MessageSubscriptionQuery.Builder();
   }
 
+  public static ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder
+      messageSubscriptionProcessDefinitionStatisticsQuery() {
+    return new ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder();
+  }
+
   public static CorrelatedMessageSubscriptionQuery.Builder
       correlatedMessageSubscriptionSearchQuery() {
     return new CorrelatedMessageSubscriptionQuery.Builder();
