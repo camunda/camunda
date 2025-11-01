@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="63fd423" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="call-level-2-process" name="Call Level 2 Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_Level2" name="Start Level 2">
+      <bpmn:outgoing>Flow_Level2_Start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_Level2_Start" sourceRef="StartEvent_Level2" targetRef="CallActivity_Level3" />
+    <bpmn:callActivity id="CallActivity_Level3" name="Call Level 3 Process">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="call-level-3-process" propagateAllChildVariables="true" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Level2_Start</bpmn:incoming>
+      <bpmn:outgoing>Flow_Level2_ToPost</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_Level2_ToPost" sourceRef="CallActivity_Level3" targetRef="Level2_PostProcessing" />
+    <bpmn:serviceTask id="Level2_PostProcessing" name="Level 2 Post-Processing">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="level2PostProcessing" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Level2_ToPost</bpmn:incoming>
+      <bpmn:outgoing>Flow_Level2_End</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_Level2" name="End Level 2">
+      <bpmn:incoming>Flow_Level2_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Level2_End" sourceRef="Level2_PostProcessing" targetRef="EndEvent_Level2" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="call-level-2-process">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_Level2">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="164" y="142" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CallLevel3_di" bpmnElement="CallActivity_Level3">
+        <dc:Bounds x="260" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Level2Post_di" bpmnElement="Level2_PostProcessing">
+        <dc:Bounds x="410" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_Level2End_di" bpmnElement="EndEvent_Level2">
+        <dc:Bounds x="572" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="561" y="142" width="59" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Level2_Start_di" bpmnElement="Flow_Level2_Start">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="260" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Level2_ToPost_di" bpmnElement="Flow_Level2_ToPost">
+        <di:waypoint x="360" y="117" />
+        <di:waypoint x="410" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Level2_End_di" bpmnElement="Flow_Level2_End">
+        <di:waypoint x="510" y="117" />
+        <di:waypoint x="572" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
