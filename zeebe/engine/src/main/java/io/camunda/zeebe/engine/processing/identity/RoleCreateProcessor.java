@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -74,7 +75,11 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     final long key = keyGenerator.nextKey();
     record.setRoleKey(key);
 
-    stateWriter.appendFollowUpEvent(key, RoleIntent.CREATED, record);
+    stateWriter.appendFollowUpEvent(
+        key,
+        RoleIntent.CREATED,
+        record,
+        FollowUpEventMetadata.of(b -> b.claims(command.getAuthorizations())));
     responseWriter.writeEventOnCommand(key, RoleIntent.CREATED, record, command);
 
     commandDistributionBehavior

@@ -63,6 +63,8 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogHandler;
+import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
@@ -83,6 +85,7 @@ import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandl
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.AuditLogIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
@@ -316,7 +319,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
-                    .getFullQualifiedName())));
+                    .getFullQualifiedName()),
+            new ProcessInstanceModificationAuditLogHandler(
+                (indexDescriptors.get(AuditLogIndex.class).getFullQualifiedName()),
+                configuration.getAuditLog(),
+                objectMapper),
+            new BatchOperationLifecycleManagementAuditLogHandler(
+                (indexDescriptors.get(AuditLogIndex.class).getFullQualifiedName()),
+                configuration.getAuditLog(),
+                objectMapper)));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation

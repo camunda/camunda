@@ -80,7 +80,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   @Override
   public void deleteResource(final long resourceKey, final String operationId) {
-    executeCamundaServiceAnonymously(
+    executeCamundaServiceAuthenticated(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -94,7 +94,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   @Override
   public void migrateProcessInstance(
       final long processInstanceKey, final MigrationPlan migrationPlan, final String operationId) {
-    executeCamundaServiceAnonymously(
+    executeCamundaServiceAuthenticated(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -122,7 +122,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       final long processInstanceKey,
       final List<Modification> modifications,
       final String operationId) {
-    executeCamundaServiceAnonymously(
+    executeCamundaServiceAuthenticated(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -136,7 +136,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   @Override
   public void cancelProcessInstance(final long processInstanceKey, final String operationId) {
-    executeCamundaServiceAnonymously(
+    executeCamundaServiceAuthenticated(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -150,7 +150,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   @Override
   public void updateJobRetries(final long jobKey, final int retries, final String operationId) {
-    executeCamundaServiceAnonymously(
+    executeCamundaServiceAuthenticated(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -163,7 +163,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   @Override
   public void resolveIncident(final long incidentKey, final String operationId) {
-    executeCamundaServiceAnonymously(
+    executeCamundaServiceAuthenticated(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -180,7 +180,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       final boolean local,
       final String operationId) {
     final var variableDocumentRecord =
-        executeCamundaServiceAnonymously(
+        executeCamundaServiceAuthenticated(
             (authentication) ->
                 withOperationReference(
                     operationReference ->
@@ -229,10 +229,9 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
     return null;
   }
 
-  private <T> T executeCamundaServiceAnonymously(
+  private <T> T executeCamundaServiceAuthenticated(
       final Function<CamundaAuthentication, CompletableFuture<T>> method) {
-    return executeCamundaService(
-        method, authenticationProvider.getAnonymousCamundaAuthentication());
+    return executeCamundaService(method, authenticationProvider.getCamundaAuthentication());
   }
 
   private <T> T executeCamundaService(
