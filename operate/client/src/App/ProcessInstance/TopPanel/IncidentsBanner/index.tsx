@@ -7,46 +7,16 @@
  */
 
 import React from 'react';
-import pluralSuffix from 'modules/utils/pluralSuffix';
-import {
-  IncidentBanner as StyledIncidentBanner,
-  Stack,
-  WarningFilled,
-} from './styled';
+import {observer} from 'mobx-react';
 
 type Props = {
-  processInstanceKey: string;
-  incidentsCount: number;
   onClick: () => void;
   isOpen: boolean;
 };
 
-const IncidentsBanner: React.FC<Props> = ({
-  onClick,
-  isOpen,
-  incidentsCount,
-  processInstanceKey,
-}) => {
-  const errorMessage = `${pluralSuffix(incidentsCount, 'Incident')} occurred`;
-  const title = `View ${pluralSuffix(
-    incidentsCount,
-    'Incident',
-  )} in Instance ${processInstanceKey}`;
-
-  return (
-    <StyledIncidentBanner
-      data-testid="incidents-banner"
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-    >
-      <Stack orientation="horizontal" gap={5}>
-        <WarningFilled size={24} />
-        {errorMessage}
-        <span className="cds--link">{isOpen ? 'Hide' : 'View'}</span>
-      </Stack>
-    </StyledIncidentBanner>
-  );
-};
+const IncidentsBanner: React.FC<Props> = observer((_props: Props) => {
+  // Replaced by CTA in header
+  return null;
+});
 
 export {IncidentsBanner};

@@ -9,11 +9,9 @@
 import {Header} from './styled';
 import {Title} from '../PanelTitle';
 import {forwardRef} from 'react';
-import pluralSuffix from 'modules/utils/pluralSuffix';
 
 type Props = {
   title?: string;
-  count?: number;
   children?: React.ReactNode;
   className?: string;
   hasTopBorder?: boolean;
@@ -21,20 +19,10 @@ type Props = {
 };
 
 const PanelHeader = forwardRef<HTMLElement, Props>(
-  ({title, count = 0, children, className, size = 'md'}, ref) => {
+  ({title, children, className, size = 'md'}, ref) => {
     return (
       <Header className={className} ref={ref} $size={size}>
-        {title !== undefined && (
-          <Title>
-            {title}
-            {count > 0 && (
-              <>
-                &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;
-                {pluralSuffix(count, 'result')}
-              </>
-            )}
-          </Title>
-        )}
+        {title !== undefined && <Title>{title}</Title>}
         {children}
       </Header>
     );

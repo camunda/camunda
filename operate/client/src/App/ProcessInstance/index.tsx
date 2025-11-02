@@ -38,6 +38,7 @@ import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {startPolling as startPollingIncidents} from 'modules/utils/incidents';
+import {IncidentsWrapper} from './IncidentsWrapper';
 import {
   init as initFlowNodeInstance,
   startPolling as startPollingFlowNodeInstance,
@@ -198,6 +199,7 @@ const ProcessInstance: React.FC = observer(() => {
       >
         {processInstance && (
           <InstanceDetail
+            type="process"
             hasLoadingOverlay={modificationStatus === 'applying-modifications'}
             breadcrumb={
               isBreadcrumbVisible && callHierarchy ? (
@@ -216,6 +218,15 @@ const ProcessInstance: React.FC = observer(() => {
                   setListenerTabVisibility={setListenerTabVisibility}
                 />
               </BottomPanel>
+            }
+            rightPanel={
+              processInstance?.hasIncident ? (
+                <IncidentsWrapper processInstance={processInstance} />
+              ) : undefined
+            }
+            hasRightOverlay={
+              processInstance?.hasIncident && 
+              incidentsStore.state.isIncidentBarOpen
             }
             footer={
               isModificationModeEnabled ? (
@@ -296,7 +307,6 @@ const ProcessInstance: React.FC = observer(() => {
                 </ModificationFooter>
               ) : undefined
             }
-            type="process"
           />
         )}
       </Frame>

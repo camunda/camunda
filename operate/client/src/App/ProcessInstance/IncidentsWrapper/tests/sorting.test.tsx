@@ -35,10 +35,7 @@ describe('Sorting', () => {
 
   it('should sort by incident type', async () => {
     const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },
@@ -79,10 +76,7 @@ describe('Sorting', () => {
 
   it('should sort by flow node', async () => {
     const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },
@@ -123,10 +117,7 @@ describe('Sorting', () => {
 
   it('should sort by creation time', async () => {
     const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
+      <IncidentsWrapper processInstance={mockProcessInstance} />,
       {
         wrapper: Wrapper,
       },

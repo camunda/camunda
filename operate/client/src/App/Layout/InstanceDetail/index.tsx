@@ -25,6 +25,7 @@ type Props = {
   rightPanel?: React.ReactNode;
   type: 'process' | 'decision';
   hasLoadingOverlay?: boolean;
+  hasRightOverlay?: boolean;
 };
 const InstanceDetail: React.FC<Props> = observer(
   ({
@@ -36,6 +37,7 @@ const InstanceDetail: React.FC<Props> = observer(
     bottomPanel,
     rightPanel,
     hasLoadingOverlay,
+    hasRightOverlay,
   }) => {
     const [clientHeight, setClientHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -50,11 +52,13 @@ const InstanceDetail: React.FC<Props> = observer(
       <Container
         $hasBreadcrumb={breadcrumb !== undefined}
         $hasFooter={footer !== undefined}
+        $hasRightOverlay={hasRightOverlay}
+        $hasRightPanel={rightPanel !== undefined}
       >
         {hasLoadingOverlay && <Loading data-testid="loading-overlay" />}
         {breadcrumb}
         {header}
-        <PanelContainer ref={containerRef}>
+        <PanelContainer ref={containerRef} $hasRightOverlay={hasRightOverlay}>
           <ResizablePanel
             panelId={`${type}-detail-vertical-panel`}
             direction={SplitDirection.Vertical}
