@@ -37,6 +37,8 @@ public class AuthorizationEntityChecker {
       "Expected to %s authorization with matcher '%s', but both resource ID and resource property name were provided. Resource property names are only valid for matcher 'PROPERTY'.";
   public static final String UNSPECIFIED_MATCHER_ERROR_MESSAGE =
       "Expected to %s authorization, but resource matcher is UNSPECIFIED. Please specify a valid resource matcher (ID, ANY or PROPERTY).";
+  public static final String MATCHER_NOT_SUPPORTED_ERROR_MESSAGE =
+      "Expected to %s authorization, but resource matcher '%s' is not supported.";
   public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
   public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
 
@@ -196,6 +198,12 @@ public class AuthorizationEntityChecker {
                 RejectionType.INVALID_ARGUMENT,
                 UNSPECIFIED_MATCHER_ERROR_MESSAGE.formatted(operation)));
       }
+      default ->
+          Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  MATCHER_NOT_SUPPORTED_ERROR_MESSAGE.formatted(
+                      operation, record.getResourceMatcher())));
     }
 
     return Either.right(record);
