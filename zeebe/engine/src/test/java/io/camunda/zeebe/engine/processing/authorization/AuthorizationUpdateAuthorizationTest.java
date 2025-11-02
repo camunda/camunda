@@ -74,7 +74,8 @@ public class AuthorizationUpdateAuthorizationTest {
     engine
         .authorization()
         .updateAuthorization(authorizationKey)
-        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .withPermissions(PermissionType.DELETE_FORM)
         .update(DEFAULT_USER.getUsername());
 
@@ -110,7 +111,8 @@ public class AuthorizationUpdateAuthorizationTest {
         .authorization()
         .updateAuthorization(authorizationKey)
         .withPermissions(PermissionType.DELETE_FORM)
-        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
+        .withResourceId("form-123")
         .update(user.getUsername());
 
     // then
@@ -145,7 +147,8 @@ public class AuthorizationUpdateAuthorizationTest {
             .authorization()
             .updateAuthorization(authorizationKey)
             .withPermissions(PermissionType.DELETE_FORM)
-            .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+            .withResourceMatcher(WILDCARD.getMatcher())
+            .withResourceId(WILDCARD.getResourceId())
             .expectRejection()
             .update(user.getUsername());
 

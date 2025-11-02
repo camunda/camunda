@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.authorization;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -85,7 +86,8 @@ public class UpdateAuthorizationTest {
         engine
             .authorization()
             .updateAuthorization(1L)
-            .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+            .withResourceMatcher(WILDCARD.getMatcher())
+            .withResourceId(WILDCARD.getResourceId())
             .expectRejection()
             .update();
 
