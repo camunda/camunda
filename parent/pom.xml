@@ -122,7 +122,7 @@
     <version.archunit>1.3.2</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
-    <version.jnr-ffi>2.2.17</version.jnr-ffi>
+    <version.jnr-ffi>2.2.18</version.jnr-ffi>
     <version.jnr-posix>3.1.21</version.jnr-posix>
     <version.zpt>8.5.25</version.zpt>
     <version.feign>13.5</version.feign>
