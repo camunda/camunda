@@ -27,6 +27,14 @@ public class AuthorizationEntityChecker {
       "Expected to create or update authorization with ownerId or resourceId '%s', but a user with this ID does not exist.";
   public static final String GROUP_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to create or update authorization with ownerId or resourceId '%s', but a group with this ID does not exist.";
+  public static final String PROPERTY_MATCHER_MISSING_PROPERTY_NAME_ERROR_MESSAGE =
+      "Expected to %s authorization with matcher 'PROPERTY', but no resource property name was provided. Please provide a resource property name.";
+  public static final String PROPERTY_MATCHER_HAS_BOTH_FIELDS_ERROR_MESSAGE =
+      "Expected to %s authorization with matcher 'PROPERTY', but both resource property name and resource ID were provided. Please provide only a resource property name.";
+  public static final String MATCHER_MISSING_RESOURCE_ID_ERROR_MESSAGE =
+      "Expected to %s authorization with matcher '%s', but no resource ID was provided. Please provide a resource ID.";
+  public static final String MATCHER_HAS_PROPERTY_NAME_ERROR_MESSAGE =
+      "Expected to %s authorization with matcher '%s', but both resource ID and resource property name were provided. Resource property names are only valid for matcher 'PROPERTY'.";
   public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
   public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
 
@@ -123,6 +131,67 @@ public class AuthorizationEntityChecker {
           break;
       }
     }
+    return Either.right(record);
+  }
+
+  /**
+   * Validates that authorization record is correctly configured with either a resource ID or
+   * resource property name based on the matcher type.
+   *
+   * <p>Validation rules:
+   *
+   * <ul>
+   *   <li>PROPERTY matcher: requires resourcePropertyName, resourceId must be empty
+   *   <li>ID or ANY matcher: requires resourceId, resourcePropertyName must be empty
+   * </ul>
+   *
+   * @param record the authorization record to validate
+   * @param operation the operation being performed (e.g., "create", "update") for error messages
+   * @return Either a Rejection with error details or the validated AuthorizationRecord
+   */
+  public Either<Rejection, AuthorizationRecord> validateResourceMatcher(
+      final AuthorizationRecord record, final String operation) {
+    final var matcher = record.getResourceMatcher();
+    final var resourceId = record.getResourceId();
+    final var resourcePropertyName = record.getResourcePropertyName();
+
+    final boolean hasResourceId = !resourceId.isEmpty();
+    final boolean hasPropertyName = !resourcePropertyName.isEmpty();
+
+    switch (matcher) {
+      case PROPERTY -> {
+        if (!hasPropertyName) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  PROPERTY_MATCHER_MISSING_PROPERTY_NAME_ERROR_MESSAGE.formatted(operation)));
+        }
+        if (hasResourceId) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  PROPERTY_MATCHER_HAS_BOTH_FIELDS_ERROR_MESSAGE.formatted(operation)));
+        }
+      }
+      case ID, ANY -> {
+        if (!hasResourceId) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  MATCHER_MISSING_RESOURCE_ID_ERROR_MESSAGE.formatted(operation, matcher)));
+        }
+        if (hasPropertyName) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  MATCHER_HAS_PROPERTY_NAME_ERROR_MESSAGE.formatted(operation, matcher)));
+        }
+      }
+      default -> {
+        // No additional validation for other matchers to keep backward compatibility
+      }
+    }
+
     return Either.right(record);
   }
 }

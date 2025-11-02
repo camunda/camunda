@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE;
 
-import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -20,11 +19,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.Either;
 
 public class AuthorizationUpdateProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
@@ -71,7 +68,7 @@ public class AuthorizationUpdateProcessor
                     command.getValue().getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
-        .flatMap(this::validateResourceIdOrPropertyName)
+        .flatMap(record -> authorizationEntityChecker.validateResourceMatcher(record, "update"))
         .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
@@ -126,57 +123,5 @@ public class AuthorizationUpdateProcessor
           authorizationCheckBehavior.clearAuthorizationsCache();
           return true;
         });
-  }
-
-  private Either<Rejection, AuthorizationRecord> validateResourceIdOrPropertyName(
-      final AuthorizationRecord record) {
-    final var matcher = record.getResourceMatcher();
-    final var resourceId = record.getResourceId();
-    final var resourcePropertyName = record.getResourcePropertyName();
-
-    final boolean hasResourceId = !resourceId.isEmpty();
-    final boolean hasPropertyName = !resourcePropertyName.isEmpty();
-
-    switch (matcher) {
-      case PROPERTY -> {
-        // For PROPERTY matcher, propertyName must be provided and resourceId should be empty
-        if (!hasPropertyName) {
-          return Either.left(
-              new Rejection(
-                  RejectionType.INVALID_ARGUMENT,
-                  "Expected to update authorization with matcher 'PROPERTY', but no resource property name was provided. Please provide a resource property name."));
-        }
-        if (hasResourceId) {
-          return Either.left(
-              new Rejection(
-                  RejectionType.INVALID_ARGUMENT,
-                  "Expected to update authorization with matcher 'PROPERTY', but both resource property name and resource ID were provided. Please provide only a resource property name."));
-        }
-      }
-      case ID, ANY -> {
-        // For ID and ANY matchers, resourceId should be provided and propertyName should be empty
-        if (hasPropertyName) {
-          return Either.left(
-              new Rejection(
-                  RejectionType.INVALID_ARGUMENT,
-                  String.format(
-                      "Expected to update authorization with matcher '%s', but a resource property name was provided. Resource property names are only valid for matcher 'PROPERTY'.",
-                      matcher)));
-        }
-        if (!hasResourceId) {
-          return Either.left(
-              new Rejection(
-                  RejectionType.INVALID_ARGUMENT,
-                  String.format(
-                      "Expected to update authorization with matcher '%s', but no resource ID was provided. Please provide a resource ID.",
-                      matcher)));
-        }
-      }
-      default -> {
-        // No additional validation for other matchers to keep backward compatibility
-      }
-    }
-
-    return Either.right(record);
   }
 }
