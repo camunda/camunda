@@ -119,4 +119,9 @@ public class ZeebeClientBasedAdapter implements TasklistServicesAdapter {
     return new ProcessInstanceCreationRecord()
         .setProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
   }
+
+  @Override
+  public boolean supportAuthenticatedRequests() {
+    return false;
+  }
 }

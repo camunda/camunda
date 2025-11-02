@@ -29,4 +29,6 @@ public interface TasklistServicesAdapter {
   default boolean isJobBasedUserTask(final TaskEntity task) {
     return task.getImplementation().equals(TaskImplementation.JOB_WORKER);
   }
+
+  boolean supportAuthenticatedRequests();
 }

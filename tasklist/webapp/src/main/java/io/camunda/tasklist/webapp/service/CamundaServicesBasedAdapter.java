@@ -199,4 +199,9 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
     return new TasklistRuntimeException(
         String.format("Failed to execute request with %s", exception.getMessage()), exception);
   }
+
+  @Override
+  public boolean supportAuthenticatedRequests() {
+    return true;
+  }
 }

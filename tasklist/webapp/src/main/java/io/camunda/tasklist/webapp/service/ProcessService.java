@@ -83,8 +83,13 @@ public class ProcessService {
       final List<VariableInputDTO> variables,
       final String tenantId,
       final boolean executeWithAuthentication) {
+    // either this is from the public start forms, in which case this is anonymous, or the service
+    // adapter does not support impersonating the user; in either case, we should verify we are
+    // authorized to start this process here
+    final boolean shouldVerifyAuthorizationHere =
+        !executeWithAuthentication || !tasklistServicesAdapter.supportAuthenticatedRequests();
 
-    if (!executeWithAuthentication
+    if (shouldVerifyAuthorizationHere
         && !identityAuthorizationService.isAllowedToStartProcess(processDefinitionKey)) {
       throw new ForbiddenActionException(
           "User does not have the permission to start this process.");

@@ -27,6 +27,7 @@ import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -49,6 +50,11 @@ public class ProcessServiceTest {
       new IdentityAuthorizationServiceImpl();
 
   @InjectMocks private ProcessService instance;
+
+  @BeforeEach
+  void beforeEach() {
+    doReturn(true).when(tasklistServicesAdapter).supportAuthenticatedRequests();
+  }
 
   @Test
   void startProcessInstanceInvalidTenant() {
@@ -151,6 +157,7 @@ public class ProcessServiceTest {
     doReturn(List.of("processDefinitionKey"))
         .when(identityAuthorizationService)
         .getProcessDefinitionsFromAuthorization();
+    doReturn(false).when(tasklistServicesAdapter).supportAuthenticatedRequests();
 
     final ProcessInstanceCreationRecord processInstanceEvent =
         mockCreateProcessInstance(processDefinitionKey);
@@ -159,6 +166,23 @@ public class ProcessServiceTest {
         instance.startProcessInstance(processDefinitionKey, variableInputDTOList, "");
     assertThat(response).isInstanceOf(ProcessInstanceDTO.class);
     assertThat(response.getId()).isEqualTo(processInstanceEvent.getProcessInstanceKey());
+  }
+
+  @Test
+  void doNotStartProcessInstanceWithResourceBasedAuth() {
+    final String processDefinitionKey = "processDefinitionKey";
+    final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
+    doReturn(List.of(""))
+        .when(identityAuthorizationService)
+        .getProcessDefinitionsFromAuthorization();
+    doReturn(false).when(tasklistServicesAdapter).supportAuthenticatedRequests();
+
+    final ProcessInstanceCreationRecord processInstanceEvent =
+        mockCreateProcessInstance(processDefinitionKey);
+
+    assertThatThrownBy(
+            () -> instance.startProcessInstance(processDefinitionKey, variableInputDTOList, ""))
+        .isInstanceOf(ForbiddenActionException.class);
   }
 
   @Test
