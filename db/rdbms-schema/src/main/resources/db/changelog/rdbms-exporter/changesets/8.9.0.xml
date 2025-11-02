@@ -537,6 +537,12 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="add_resource_property_name_to_authorizations_table" author="camunda">
+    <addColumn tableName="${prefix}AUTHORIZATIONS">
+      <column name="RESOURCE_PROPERTY_NAME" type="VARCHAR(${userCharColumnSize})" defaultValue=""/>
+    </addColumn>
+  </changeSet>
+
   <changeSet id="create_batch_operation_table" author="camunda">
     <createTable tableName="${prefix}BATCH_OPERATION">
       <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
