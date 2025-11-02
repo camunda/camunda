@@ -81,6 +81,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       AuthorizationResourceMatcher.ID.value(),
                       "2",
+                      "",
                       Set.of(PermissionType.CREATE))))
           .startCursor("f")
           .endCursor("v")
@@ -108,6 +109,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
             AuthorizationResourceMatcher.ID.value(),
             "resourceId",
+            "",
             Set.of(PermissionType.CREATE));
 
     final Long authorizationKey = authorizationEntity.authorizationKey();
