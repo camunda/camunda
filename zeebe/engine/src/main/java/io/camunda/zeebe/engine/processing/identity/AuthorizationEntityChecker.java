@@ -35,6 +35,8 @@ public class AuthorizationEntityChecker {
       "Expected to %s authorization with matcher '%s', but no resource ID was provided. Please provide a resource ID.";
   public static final String MATCHER_HAS_PROPERTY_NAME_ERROR_MESSAGE =
       "Expected to %s authorization with matcher '%s', but both resource ID and resource property name were provided. Resource property names are only valid for matcher 'PROPERTY'.";
+  public static final String UNSPECIFIED_MATCHER_ERROR_MESSAGE =
+      "Expected to %s authorization, but resource matcher is UNSPECIFIED. Please specify a valid resource matcher (ID, ANY or PROPERTY).";
   public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
   public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
 
@@ -143,6 +145,7 @@ public class AuthorizationEntityChecker {
    * <ul>
    *   <li>PROPERTY matcher: requires resourcePropertyName, resourceId must be empty
    *   <li>ID or ANY matcher: requires resourceId, resourcePropertyName must be empty
+   *   <li>UNSPECIFIED matcher: not allowed, must be rejected
    * </ul>
    *
    * @param record the authorization record to validate
@@ -187,8 +190,11 @@ public class AuthorizationEntityChecker {
                   MATCHER_HAS_PROPERTY_NAME_ERROR_MESSAGE.formatted(operation, matcher)));
         }
       }
-      default -> {
-        // No additional validation for other matchers to keep backward compatibility
+      case UNSPECIFIED -> {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                UNSPECIFIED_MATCHER_ERROR_MESSAGE.formatted(operation)));
       }
     }
 

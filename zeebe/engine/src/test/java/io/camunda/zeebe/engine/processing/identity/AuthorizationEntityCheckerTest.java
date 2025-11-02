@@ -403,7 +403,14 @@ class AuthorizationEntityCheckerTest {
             "*",
             "candidateUsers",
             "create",
-            "Expected to create authorization with matcher 'ANY', but both resource ID and resource property name were provided."));
+            "Expected to create authorization with matcher 'ANY', but both resource ID and resource property name were provided."),
+        Arguments.of(
+            "UNSPECIFIED matcher",
+            AuthorizationResourceMatcher.UNSPECIFIED,
+            "doesn't-matter",
+            "doesn't-matter",
+            "create/update",
+            "Expected to create/update authorization, but resource matcher is UNSPECIFIED."));
   }
 
   private AuthorizationRecord createAuthorizationRecord(
