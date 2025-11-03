@@ -144,8 +144,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     final boolean localGroupEnabled =
         (boolean) authorizations.getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, false);
     return switch (entityType) {
-      case GROUP -> localGroupEnabled && groupState.get(entityId).isPresent();
-      case USER -> localUserEnabled && userState.getUser(entityId).isPresent();
+      case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
+      case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
       case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       default -> false;

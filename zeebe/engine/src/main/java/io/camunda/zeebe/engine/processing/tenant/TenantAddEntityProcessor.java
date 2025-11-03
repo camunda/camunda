@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -161,8 +162,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     final boolean localGroupEnabled =
         (boolean) authorizations.getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, false);
     return switch (entityType) {
-      case GROUP -> localGroupEnabled && groupState.get(entityId).isEmpty();
-      case USER -> localUserEnabled && userState.getUser(entityId).isEmpty();
+      case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
+      case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
       case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
