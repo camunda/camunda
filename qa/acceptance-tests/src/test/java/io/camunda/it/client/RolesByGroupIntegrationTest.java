@@ -183,20 +183,24 @@ public class RolesByGroupIntegrationTest {
   }
 
   @Test
-  void shouldAssigningRoleToGroupIfGroupDoesNotExist() {
+  void shouldRejectAssigningRoleToGroupIfGroupDoesNotExist() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
 
-    // when
-    camundaClient
-        .newAssignRoleToGroupCommand()
-        .roleId(EXISTING_ROLE_ID)
-        .groupId(groupId)
-        .send()
-        .join();
-
-    // then
-    assertRoleAssignedToGroup(EXISTING_ROLE_ID, groupId);
+    // when/then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToGroupCommand()
+                    .roleId(EXISTING_ROLE_ID)
+                    .groupId(groupId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            String.format(
+                "Expected to add an entity with ID '%s' and type 'GROUP' to role with ID '%s', but the entity doesn't exist.",
+                groupId, EXISTING_ROLE_ID));
   }
 
   @Test
