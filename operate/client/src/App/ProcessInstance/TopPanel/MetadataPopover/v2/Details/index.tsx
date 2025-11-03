@@ -6,19 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useState} from 'react';
 import {Stack} from '@carbon/react';
+import {useState} from 'react';
 import isNil from 'lodash/isNil';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {Header} from '../../Header';
 import {SummaryDataKey, SummaryDataValue} from '../../styled';
 import {getExecutionDuration} from '../../Details/getExecutionDuration';
-import {buildMetadata} from './buildMetadata';
 import {type V2MetaDataDto} from '../types';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {DetailsModal} from './DetailsModal';
 
 type Props = {
   metaData: V2MetaDataDto;
@@ -43,7 +42,7 @@ const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
 
   const elementName = businessObject?.name || elementId;
 
-  const {instanceMetadata, incident} = metaData;
+  const {instanceMetadata} = metaData;
   const {
     elementInstanceKey,
     startDate,
@@ -144,13 +143,15 @@ const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
           </Stack>
         )}
       </Stack>
-      <JSONEditorModal
-        isVisible={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        title={`Element "${elementName}" ${elementInstanceKey} Metadata`}
-        value={buildMetadata(instanceMetadata, incident)}
-        readOnly
-      />
+      {elementInstanceKey !== null && instanceMetadata !== null && (
+        <DetailsModal
+          elementInstanceKey={elementInstanceKey}
+          elementName={elementName}
+          instanceMetadata={instanceMetadata}
+          isVisible={isModalVisible}
+          setIsVisible={setIsModalVisible}
+        />
+      )}
     </>
   );
 };

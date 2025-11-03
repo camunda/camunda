@@ -12,6 +12,25 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {baseMetaData, TestWrapper} from './mocks';
 import {Details} from './index';
 import {getExecutionDuration} from '../../Details/getExecutionDuration';
+import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
+import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
+import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
+
+const mockSingleIncident: Incident = {
+  incidentKey: '2251799813696584',
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  processDefinitionKey: '2222222222222222',
+  processDefinitionId: 'testProcess',
+  errorType: 'EXTRACT_VALUE_ERROR',
+  errorMessage:
+    "Expected result of the expression 'approverGroups' to be 'ARRAY', but was 'NULL'.",
+  elementId: 'Activity_0zqism7',
+  elementInstanceKey: '222222222222222',
+  jobKey: '33333333333333333',
+  creationTime: '2024-10-28T10:00:00.000Z',
+  state: 'ACTIVE',
+  tenantId: '<default>',
+};
 
 describe('MetadataPopover <Details />', () => {
   beforeEach(() => {
@@ -72,7 +91,6 @@ describe('MetadataPopover <Details />', () => {
       flowNodeType: null,
       instanceCount: null,
       instanceMetadata: null,
-      incident: null,
       incidentCount: 0,
     };
 
@@ -274,35 +292,29 @@ describe('MetadataPopover <Details />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should display incident fields for when incident is occured', async () => {
-    const incidentMetaData: V2MetaDataDto = {
+  it('should display incident fields for when incident is occurred', async () => {
+    const incidentMetadata: V2MetaDataDto = {
       ...baseMetaData,
       instanceMetadata: {
         ...baseMetaData.instanceMetadata!,
-        incidentKey: '2251799813696584',
-      },
-      incident: {
-        errorType: {
-          id: 'EXTRACT_VALUE_ERROR',
-          name: 'Extract value error',
-        },
-        errorMessage:
-          "Expected result of the expression 'approverGroups' to be 'ARRAY', but was 'NULL'.",
+        hasIncident: true,
       },
     };
 
+    mockSearchIncidentsByElementInstance('123456789').withSuccess({
+      items: [mockSingleIncident],
+      page: {totalItems: 1},
+    });
+
     const {user} = render(
-      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      <Details metaData={incidentMetadata} elementId="Activity_11ptrz9" />,
       {wrapper: TestWrapper},
     );
 
     await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
 
     expect(
-      screen.getByText(/"incidentKey": "2251799813696584"/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/"incidentErrorType": "Extract value error"/),
+      await screen.findByText(/"incidentErrorType": "Extract value error."/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(

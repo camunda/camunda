@@ -45,7 +45,6 @@ const baseMetaData: V2MetaDataDto = {
     jobCustomHeaders: {timeout: '30s'},
     jobKey: '555666777',
   },
-  incident: null,
   incidentCount: 0,
 };
 
