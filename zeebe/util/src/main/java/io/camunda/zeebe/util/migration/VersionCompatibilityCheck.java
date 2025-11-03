@@ -5,15 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.migration;
+package io.camunda.zeebe.util.migration;
 
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 
 /** Checks the compatibility of the current version with the version that ran state migrations. */
-final class VersionCompatibilityCheck {
+public final class VersionCompatibilityCheck {
   private VersionCompatibilityCheck() {}
 
   /**
@@ -77,7 +77,7 @@ final class VersionCompatibilityCheck {
     }
   }
 
-  sealed interface CheckResult {
+  public sealed interface CheckResult {
     sealed interface Indeterminate extends CheckResult {
       record PreviousVersionUnknown(String currentVersion) implements Indeterminate {}
 
