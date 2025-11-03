@@ -339,6 +339,7 @@ public class RolesByGroupIntegrationTest {
   void shouldUnassigningRoleFromGroupIfGroupDoesNotExist() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
+    camundaClient.newCreateGroupCommand().groupId(groupId).name(groupId).send().join();
 
     camundaClient
         .newAssignRoleToGroupCommand()
