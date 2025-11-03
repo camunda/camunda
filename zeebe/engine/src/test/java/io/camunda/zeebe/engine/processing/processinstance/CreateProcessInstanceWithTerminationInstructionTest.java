@@ -282,8 +282,7 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .scriptTask()
-                .id(multiInstanceTaskId)
+                .scriptTask(multiInstanceTaskId)
                 .zeebeExpression("i + 2")
                 .zeebeResultVariable("j")
                 .multiInstance(
