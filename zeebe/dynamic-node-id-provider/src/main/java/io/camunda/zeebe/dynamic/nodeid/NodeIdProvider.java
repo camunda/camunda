@@ -11,9 +11,9 @@ import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Initialized;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Uninitialized;
+import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,7 +31,8 @@ public class NodeIdProvider implements AutoCloseable {
   private final Duration leaseDuration;
   private final String taskId;
   private final ScheduledExecutorService executor;
-  private final Random random = new Random();
+  private final ExponentialBackoff backoff;
+  private long currentDelay;
 
   public NodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -44,6 +45,8 @@ public class NodeIdProvider implements AutoCloseable {
     this.clock = clock;
     leaseDuration = expiryDuration;
     this.taskId = taskId;
+    backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseDuration.dividedBy(2));
+    currentDelay = 0L;
     executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
     CompletableFuture.runAsync(this::acquireInitialLease, executor);
   }
@@ -87,7 +90,8 @@ public class NodeIdProvider implements AutoCloseable {
         // wait a bit before retrying on all leases again.
         if (retryRound > 1) {
           try {
-            Thread.sleep(random.nextInt(1000, 2000));
+            currentDelay = backoff.supplyRetryDelay(currentDelay);
+            Thread.sleep(currentDelay);
           } catch (final InterruptedException e) {
             break;
           }
