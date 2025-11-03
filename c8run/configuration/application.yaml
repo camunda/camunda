@@ -5,9 +5,6 @@ camunda:
     url: http://localhost:9200
     index:
       numberOfReplicas: 0
-  backup:
-    webapps:
-      enabled: false
   data:
     secondary-storage:
       type: elasticsearch
