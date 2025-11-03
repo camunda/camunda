@@ -11,7 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -74,5 +78,50 @@ public final class MessageCorrelationRejectionTest {
                 .withCorrelationKey(correlationKey)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldRejectMessageIfMessageIdTooLong() {
+    // given - a process instance on partition 1 that waits for a message published on 2
+    final var correlationKey = "correlationKey2";
+
+    final var messageName = "message-" + UUID.randomUUID();
+    final var process =
+        Bpmn.createExecutableProcess("process2")
+            .startEvent()
+            .intermediateCatchEvent("receive-message")
+            .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
+            .endEvent("end")
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("process2")
+            .withVariable("key", correlationKey)
+            .create();
+
+    // Wait for the process message subscription to be created
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when - A message correlate command is sent with an id that's too long
+    final var rejectedRecord =
+        engine
+            .message()
+            .withId("x".repeat(33 * 1024))
+            .withName(messageName)
+            .withCorrelationKey(correlationKey)
+            .expectRejection()
+            .publish();
+    // then
+    Assertions.assertThat(rejectedRecord)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(MessageIntent.PUBLISH)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedRecord.getRejectionReason())
+        .contains("Attribute validation errors: Property messageId exceeding max size of 32768B.");
   }
 }

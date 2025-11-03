@@ -55,7 +55,7 @@ public class DeploymentRejectionTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfIdTooLong() {
+  public void shouldRejectDeploymentIfProcessIdTooLong() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("x".repeat(33 * 1024)).startEvent().endEvent().done();
@@ -65,8 +65,13 @@ public class DeploymentRejectionTest {
         ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
 
     // then
-    Assertions.assertThat(rejectedDeployment.getRecordType())
-        .isEqualTo(RecordType.COMMAND_REJECTION);
+    Assertions.assertThat(rejectedDeployment)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(
+            "Attribute validation errors: Property bpmnProcessId exceeding max size of 32768B.");
   }
 
   @Test
