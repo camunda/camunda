@@ -120,7 +120,8 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 		filepath.Join("c8run", ".env"),
 		filepath.Join("c8run", composeExtractionPath),
 		filepath.Join("c8run", "configuration", "application.yaml"),
-	}
+        filepath.Join("c8run", "sql"),
+    }
 
 	switch osType {
 	case "windows":
@@ -188,6 +189,8 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 	camundaUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-zeebe/" + camundaVersion + "/camunda-zeebe-" + camundaVersion + pkgName
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
+    sqlZipFilePath := "camunda-db-rdbms-schema-" + camundaVersion + ".zip"
+    sqlZipUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-db-rdbms-schema/" + camundaVersion + "/" + "camunda-db-rdbms-schema-" + camundaVersion + ".zip"
 
 	composeUrl := "https://github.com/camunda/camunda-distributions/releases/download/docker-compose-" + composeTag + "/docker-compose-" + composeTag + ".zip"
 	composeFilePath := "docker-compose-" + composeTag + ".zip"
@@ -229,6 +232,11 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
+
+    err = downloadAndExtract(sqlZipFilePath, sqlZipUrl, "camunda-db-rdbms-schema-"+camundaVersion, ".", javaArtifactsToken, archive.UnzipSource)
+    if err != nil {
+        return fmt.Errorf("Package "+osType+": failed to download camunda-db-rdbms-schema %w\n%s", err, debug.Stack())
+    }
 
 	err = os.Chdir("..")
 	if err != nil {
