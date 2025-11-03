@@ -114,7 +114,7 @@ public class SecondaryStorageOpensearchTest {
       assertThat(args).isNotNull();
 
       final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
@@ -237,7 +237,7 @@ public class SecondaryStorageOpensearchTest {
       assertThat(args).isNotNull();
 
       final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
