@@ -106,12 +106,14 @@ class UnassignGroupFromTenantTest {
   void shouldUnassignIfGroupDoesNotExist() {
     // given
     final String nonExistentGroupId = Strings.newRandomValidIdentityId();
+    client.newCreateGroupCommand().groupId(nonExistentGroupId).name("group").send().join();
     client
         .newAssignGroupToTenantCommand()
         .groupId(nonExistentGroupId)
         .tenantId(tenantId)
         .send()
         .join();
+    client.newDeleteGroupCommand(nonExistentGroupId).send().join();
 
     // when
     client
