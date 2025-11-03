@@ -23,15 +23,28 @@ import {
   TabsTitle,
 } from "./components";
 import AuthorizationList from "./AuthorizationsList";
-import { isTenantsApiEnabled } from "src/configuration";
+import {
+  isTenantsApiEnabled,
+  isUserTaskAuthorizationEnabled,
+} from "src/configuration";
 
 const List: FC = () => {
   const { t } = useTranslate("authorizations");
 
   const allResourceTypes = Object.values(ResourceType);
-  const authorizationTabs = isTenantsApiEnabled
-    ? allResourceTypes
-    : allResourceTypes.filter((type) => type !== ResourceType.TENANT);
+  let authorizationTabs = allResourceTypes;
+
+  if (!isTenantsApiEnabled) {
+    authorizationTabs = authorizationTabs.filter(
+      (type) => type !== ResourceType.TENANT,
+    );
+  }
+
+  if (!isUserTaskAuthorizationEnabled) {
+    authorizationTabs = authorizationTabs.filter(
+      (type) => type !== ResourceType.USER_TASK,
+    );
+  }
 
   const [activeTab, setActiveTab] = useState<string>(authorizationTabs[0]);
 

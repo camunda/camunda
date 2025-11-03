@@ -43,6 +43,8 @@ export enum PermissionType {
   CANCEL_PROCESS_INSTANCE = "CANCEL_PROCESS_INSTANCE",
   MODIFY_PROCESS_INSTANCE = "MODIFY_PROCESS_INSTANCE",
   READ_USAGE_METRIC = "READ_USAGE_METRIC",
+  COMPLETE = "COMPLETE",
+  CLAIM = "CLAIM",
 }
 
 export type PermissionTypes = keyof typeof PermissionType;
@@ -65,6 +67,7 @@ export enum ResourceType {
   GROUP = "GROUP",
   MAPPING_RULE = "MAPPING_RULE",
   MESSAGE = "MESSAGE",
+  USER_TASK = "USER_TASK",
   PROCESS_DEFINITION = "PROCESS_DEFINITION",
   RESOURCE = "RESOURCE",
   ROLE = "ROLE",
@@ -73,14 +76,30 @@ export enum ResourceType {
   USER = "USER",
 }
 
-export type Authorization = {
+type BaseAuthorization = {
   authorizationKey: string;
   ownerId: string;
-  ownerType: keyof typeof OwnerType;
-  resourceId: string;
-  resourceType: string;
+  ownerType: OwnerType;
   permissionTypes: readonly PermissionTypes[];
 };
+
+export enum ResourcePropertyName {
+  assignee = "assignee",
+  candidateGroups = "candidateGroups",
+  candidateUsers = "candidateUsers",
+}
+
+export type TaskAuthorization = BaseAuthorization & {
+  resourceType: ResourceType.USER_TASK;
+  resourcePropertyName: ResourcePropertyName;
+};
+
+export type GeneralAuthorization = BaseAuthorization & {
+  resourceType: Exclude<keyof typeof ResourceType, "USER_TASK">;
+  resourceId: string;
+};
+
+export type Authorization = TaskAuthorization | GeneralAuthorization;
 
 export enum PatchAuthorizationAction {
   ADD = "ADD",
