@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.13
+
+### 🩹 Fixes
+
+- add missing element instance type ([#40368](https://github.com/camunda/camunda/pull/40368))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.12
 
 ### 🩹 Fixes
