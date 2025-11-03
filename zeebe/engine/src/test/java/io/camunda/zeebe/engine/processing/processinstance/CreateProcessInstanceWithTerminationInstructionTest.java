@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -311,15 +312,19 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
                         || record.getValue().getElementId().equals(multiInstanceTaskId));
 
     assertThat(result)
-        .extracting(Record::getIntent, record -> record.getValue().getElementId())
+        .extracting(Record::getIntent, r -> r.getValue().getBpmnElementType())
         .containsSubsequence(
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, multiInstanceTaskId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, multiInstanceTaskId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, multiInstanceTaskId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, multiInstanceTaskId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, multiInstanceTaskId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, multiInstanceTaskId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, processId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, processId));
+            Tuple.tuple(
+                ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.MULTI_INSTANCE_BODY),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SCRIPT_TASK),
+            Tuple.tuple(
+                ProcessInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.MULTI_INSTANCE_BODY),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, BpmnElementType.PROCESS),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, BpmnElementType.PROCESS));
   }
 }
