@@ -7,7 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.*;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.GROUP_DOES_NOT_EXIST_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.IS_CAMUNDA_GROUPS_ENABLED;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.IS_CAMUNDA_USERS_ENABLED;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.USER_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -26,6 +31,7 @@ import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -70,7 +76,7 @@ class AuthorizationEntityCheckerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideValidTestCases")
+  @MethodSource("provideValidOwnerAndResourceTestCases")
   void shouldSucceedWhenOwnerAndResourceExist(
       final String testCase,
       final AuthorizationOwnerType ownerType,
@@ -114,7 +120,7 @@ class AuthorizationEntityCheckerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideInvalidTestCases")
+  @MethodSource("provideInvalidOwnerAndResourceTestCases")
   void shouldFailWhenOwnerOrResourceNotExist(
       final String testCase,
       final AuthorizationOwnerType ownerType,
@@ -148,7 +154,7 @@ class AuthorizationEntityCheckerTest {
     assertThat(rejection.reason()).isEqualTo(expectedErrorMessage);
   }
 
-  private static Stream<Arguments> provideValidTestCases() {
+  private static Stream<Arguments> provideValidOwnerAndResourceTestCases() {
     return Stream.of(
         Arguments.of(
             "User owner with role resource - both exist",
@@ -224,7 +230,7 @@ class AuthorizationEntityCheckerTest {
             false));
   }
 
-  private static Stream<Arguments> provideInvalidTestCases() {
+  private static Stream<Arguments> provideInvalidOwnerAndResourceTestCases() {
     return Stream.of(
         Arguments.of(
             "User owner does not exist - local user enabled",
@@ -300,5 +306,121 @@ class AuthorizationEntityCheckerTest {
             false,
             false,
             ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentRole")));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideValidResourceMatcherTestCases")
+  void shouldSucceedWithValidResourceMatcherConfiguration(
+      final String testCase,
+      final AuthorizationResourceMatcher matcher,
+      final String resourceId,
+      final String resourcePropertyName) {
+    // given
+    final var record = createAuthorizationRecord(matcher, resourceId, resourcePropertyName);
+
+    // when
+    final var result = checker.validateResourceMatcher(record, "operation");
+
+    // then
+    assertThat(result.isRight()).as(testCase).isTrue();
+    assertThat(result.get()).isEqualTo(record);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidResourceMatcherTestCases")
+  void shouldFailWithInvalidResourceMatcherConfiguration(
+      final String testCase,
+      final AuthorizationResourceMatcher matcher,
+      final String resourceId,
+      final String resourcePropertyName,
+      final String operation,
+      final String expectedErrorMessageFragment) {
+    // given
+    final var record = createAuthorizationRecord(matcher, resourceId, resourcePropertyName);
+
+    // when
+    final var result = checker.validateResourceMatcher(record, operation);
+
+    // then
+    assertThat(result.isLeft()).as(testCase).isTrue();
+    final Rejection rejection = result.getLeft();
+    assertThat(rejection.type()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.reason()).contains(expectedErrorMessageFragment);
+  }
+
+  private static Stream<Arguments> provideValidResourceMatcherTestCases() {
+    return Stream.of(
+        Arguments.of(
+            "PROPERTY matcher with propertyName only",
+            AuthorizationResourceMatcher.PROPERTY,
+            "",
+            "candidateUsers"),
+        Arguments.of(
+            "ID matcher with resourceId only", AuthorizationResourceMatcher.ID, "process-123", ""),
+        Arguments.of("ANY matcher with resourceId", AuthorizationResourceMatcher.ANY, "*", ""));
+  }
+
+  private static Stream<Arguments> provideInvalidResourceMatcherTestCases() {
+    return Stream.of(
+        Arguments.of(
+            "PROPERTY matcher without propertyName",
+            AuthorizationResourceMatcher.PROPERTY,
+            "",
+            "",
+            "create",
+            "Expected to create authorization with matcher 'PROPERTY', but no resource property name was provided."),
+        Arguments.of(
+            "PROPERTY matcher with both propertyName and resourceId",
+            AuthorizationResourceMatcher.PROPERTY,
+            "process-123",
+            "candidateUsers",
+            "update",
+            "Expected to update authorization with matcher 'PROPERTY', but both resource property name and resource ID were provided."),
+        Arguments.of(
+            "ID matcher without resourceId",
+            AuthorizationResourceMatcher.ID,
+            "",
+            "",
+            "create",
+            "Expected to create authorization with matcher 'ID', but no resource ID was provided"),
+        Arguments.of(
+            "ID matcher with both resourceId and propertyName",
+            AuthorizationResourceMatcher.ID,
+            "resource-1",
+            "candidateUsers",
+            "update",
+            "Expected to update authorization with matcher 'ID', but both resource ID and resource property name were provided."),
+        Arguments.of(
+            "ANY matcher without resourceId",
+            AuthorizationResourceMatcher.ANY,
+            "",
+            "",
+            "update",
+            "Expected to update authorization with matcher 'ANY', but no resource ID was provided"),
+        Arguments.of(
+            "ANY matcher with both resourceId and propertyName",
+            AuthorizationResourceMatcher.ANY,
+            "*",
+            "candidateUsers",
+            "create",
+            "Expected to create authorization with matcher 'ANY', but both resource ID and resource property name were provided."),
+        Arguments.of(
+            "UNSPECIFIED matcher",
+            AuthorizationResourceMatcher.UNSPECIFIED,
+            "doesn't-matter",
+            "doesn't-matter",
+            "create/update",
+            "Expected to create/update authorization, but resource matcher is UNSPECIFIED."));
+  }
+
+  private AuthorizationRecord createAuthorizationRecord(
+      final AuthorizationResourceMatcher matcher,
+      final String resourceId,
+      final String resourcePropertyName) {
+    final AuthorizationRecord record = new AuthorizationRecord();
+    record.setResourceMatcher(matcher);
+    record.setResourceId(resourceId);
+    record.setResourcePropertyName(resourcePropertyName);
+    return record;
   }
 }

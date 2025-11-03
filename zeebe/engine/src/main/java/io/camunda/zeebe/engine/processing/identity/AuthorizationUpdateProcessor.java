@@ -68,6 +68,7 @@ public class AuthorizationUpdateProcessor
                     command.getValue().getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
+        .flatMap(record -> authorizationEntityChecker.validateResourceMatcher(record, "update"))
         .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),

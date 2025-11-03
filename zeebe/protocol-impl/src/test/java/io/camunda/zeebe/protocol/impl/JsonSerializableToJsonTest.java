@@ -2869,7 +2869,7 @@ final class JsonSerializableToJsonTest {
       //////////////////////////////////// AuthorizationRecord ////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Authorization record",
+        "Authorization record (ID-based)",
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
@@ -2887,9 +2887,37 @@ final class JsonSerializableToJsonTest {
           "ownerType": "USER",
           "resourceMatcher": "ID",
           "resourceId": "resourceId",
+          "resourcePropertyName": "",
           "resourceType": "RESOURCE",
           "permissionTypes": [
             "CREATE"
+          ]
+        }
+        """
+      },
+      {
+        "Authorization record (property-based)",
+        (Supplier<AuthorizationRecord>)
+            () ->
+                new AuthorizationRecord()
+                    .setAuthorizationKey(2L)
+                    .setOwnerId("ownerId")
+                    .setOwnerType(AuthorizationOwnerType.USER)
+                    .setResourceMatcher(AuthorizationResourceMatcher.PROPERTY)
+                    .setResourcePropertyName("candidateUsers")
+                    .setResourceType(AuthorizationResourceType.USER_TASK)
+                    .setPermissionTypes(Set.of(PermissionType.COMPLETE)),
+        """
+        {
+          "authorizationKey": 2,
+          "ownerId": "ownerId",
+          "ownerType": "USER",
+          "resourceMatcher": "PROPERTY",
+          "resourceId": "",
+          "resourcePropertyName": "candidateUsers",
+          "resourceType": "USER_TASK",
+          "permissionTypes": [
+             "COMPLETE"
           ]
         }
         """
@@ -2910,6 +2938,7 @@ final class JsonSerializableToJsonTest {
           "ownerType": "UNSPECIFIED",
           "resourceMatcher": "UNSPECIFIED",
           "resourceId": "",
+          "resourcePropertyName": "",
           "resourceType": "UNSPECIFIED",
           "permissionTypes": []
         }
@@ -3303,6 +3332,7 @@ final class JsonSerializableToJsonTest {
             "ownerType": "MAPPING_RULE",
             "resourceMatcher": "ID",
             "resourceId": "resource-id",
+            "resourcePropertyName": "",
             "resourceType": "RESOURCE",
             "permissionTypes": ["CREATE"]
           }

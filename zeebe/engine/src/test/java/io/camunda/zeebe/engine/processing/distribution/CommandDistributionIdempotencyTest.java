@@ -240,7 +240,8 @@ public class CommandDistributionIdempotencyTest {
                   return ENGINE
                       .authorization()
                       .updateAuthorization(key)
-                      .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                      .withResourceMatcher(AuthorizationResourceMatcher.ID)
+                      .withResourceId("user-id")
                       .update();
                 }),
             AuthorizationUpdateProcessor.class

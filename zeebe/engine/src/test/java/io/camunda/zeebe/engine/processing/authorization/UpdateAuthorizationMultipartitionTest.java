@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.authorization;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -58,7 +59,8 @@ public class UpdateAuthorizationMultipartitionTest {
     engine
         .authorization()
         .updateAuthorization(key)
-        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .update();
 
     RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
@@ -132,7 +134,8 @@ public class UpdateAuthorizationMultipartitionTest {
     engine
         .authorization()
         .updateAuthorization(key)
-        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .update();
 
     // then
@@ -167,7 +170,8 @@ public class UpdateAuthorizationMultipartitionTest {
     engine
         .authorization()
         .updateAuthorization(key)
-        .withResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
         .update();
 
     // Increase time to trigger a redistribution

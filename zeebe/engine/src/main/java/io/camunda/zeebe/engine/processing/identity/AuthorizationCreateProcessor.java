@@ -63,6 +63,7 @@ public class AuthorizationCreateProcessor
                     record.getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
+        .flatMap(record -> authorizationEntityChecker.validateResourceMatcher(record, "create"))
         .flatMap(permissionsBehavior::permissionsAlreadyExist)
         .flatMap(authorizationRecord -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
