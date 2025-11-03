@@ -93,10 +93,6 @@ public final class ClusterCfg implements ConfigurationEntry {
       LOG.warn(REPLICATION_FACTOR_WARN_MSG, replicationFactor, (replicationFactor / 2) + 1);
     }
 
-    if (clusterSize > 1 && (initialContactPoints == null || initialContactPoints.isEmpty())) {
-      throw new IllegalArgumentException(INITIAL_CONTACT_POINTS_ERROR_MSG);
-    }
-
     if (heartbeatInterval.toMillis() < 1) {
       throw new IllegalArgumentException(
           String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
@@ -226,6 +222,13 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setConfigManager(final ConfigManagerCfg configManagerCfg) {
     configManager = configManagerCfg;
+  }
+
+  public String initialContactPointsValid() {
+    if (clusterSize > 1 && (initialContactPoints == null || initialContactPoints.isEmpty())) {
+      return INITIAL_CONTACT_POINTS_ERROR_MSG;
+    }
+    return null;
   }
 
   @Override

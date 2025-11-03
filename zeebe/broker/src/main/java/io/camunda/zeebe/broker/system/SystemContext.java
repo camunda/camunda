@@ -171,6 +171,7 @@ public final class SystemContext {
     final var gossiper = cluster.getConfigManager().gossip();
 
     final var errors = new ArrayList<String>(0);
+    Optional.ofNullable(cluster.initialContactPointsValid()).ifPresent(errors::add);
 
     if (!gossiper.syncDelay().isPositive()) {
       errors.add(
