@@ -28,7 +28,8 @@ public interface NodeIdRepository extends AutoCloseable {
   StoredLease getLease(int nodeId);
 
   /**
-   * Acquire a lease, if it matches the provided {@param previousETag}.
+   * Acquire a lease, if it matches the provided {@param previousETag}. This method can be used both
+   * for the initial acquire and for renewing an existing lease.
    *
    * @param lease the lease to store
    * @param previousETag the eTag of the current lease in the store
