@@ -14,8 +14,8 @@ import {observer} from 'mobx-react';
 import {flip, offset} from '@floating-ui/react-dom';
 import {Header} from '../Header';
 import {Loading, Stack} from '@carbon/react';
-import {Incident} from './Incident';
-import {MultiIncidents} from '../MultiIncidents';
+import {SingleIncident} from './Incidents/singleIncident';
+import {MultiIncidents} from './Incidents/multiIncidents';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useElementInstancesSearch} from 'modules/queries/elementInstances/useElementInstancesSearch';
 import {useElementInstance} from 'modules/queries/elementInstances/useElementInstance';
@@ -26,7 +26,7 @@ import {createV2InstanceMetadata} from './types';
 import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
 import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
-import {resolveIncidentErrorType} from './Incident/resolveIncidentErrorType';
+import {resolveIncidentErrorType} from './Incidents/resolveIncidentErrorType';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
@@ -305,7 +305,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
         ) : singleIncident ? (
           <>
             <Divider />
-            <Incident
+            <SingleIncident
               processInstanceId={processInstance?.processInstanceKey}
               incidentV2={singleIncident}
               incident={incident}

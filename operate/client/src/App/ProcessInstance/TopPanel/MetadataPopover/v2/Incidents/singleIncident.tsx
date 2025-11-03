@@ -22,7 +22,7 @@ type Props = {
   onButtonClick: () => void;
 };
 
-const Incident: React.FC<Props> = ({
+const SingleIncident: React.FC<Props> = ({
   incidentV2,
   incident,
   processInstanceId,
@@ -99,4 +99,4 @@ const Incident: React.FC<Props> = ({
   );
 };
 
-export {Incident};
+export {SingleIncident};

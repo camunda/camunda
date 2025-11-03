@@ -17,7 +17,7 @@ import {Header} from './Header';
 import {Stack} from '@carbon/react';
 import {Details} from './Details';
 import {Incident} from './Incident';
-import {MultiIncidents} from './MultiIncidents';
+import {MultiIncidents} from './v2/Incidents/multiIncidents';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;

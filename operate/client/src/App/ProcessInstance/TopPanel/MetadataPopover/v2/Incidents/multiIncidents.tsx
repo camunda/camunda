@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Header} from '../Header';
-import {SummaryDataValue} from '../styled';
+import {Header} from '../../Header';
+import {SummaryDataValue} from '../../styled';
 
 type Props = {count: number; onButtonClick: () => void};
 
