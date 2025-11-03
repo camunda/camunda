@@ -115,7 +115,9 @@ class BackupPrioritiesTest {
     // PRIO 1
     assertThat(indices.get(0).allIndices())
         .containsExactlyInAnyOrder(
-            "operate-import-position-8.3.0_", "tasklist-import-position-8.2.0_");
+            "operate-metadata-8.8.0_",
+            "operate-import-position-8.3.0_",
+            "tasklist-import-position-8.2.0_");
     // PRIO 2
     assertThat(indices.get(1).allIndices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.8.0_");

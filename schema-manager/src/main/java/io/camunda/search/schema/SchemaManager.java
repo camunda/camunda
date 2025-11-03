@@ -13,13 +13,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.search.schema.utils.TasklistLegacyTaskTemplate;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,6 +51,7 @@ import org.slf4j.LoggerFactory;
 public class SchemaManager implements CloseableSilently {
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
   public static final String PI_ARCHIVING_BLOCKED_META_KEY = "processInstanceArchivingBlocked";
+
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
@@ -52,6 +63,8 @@ public class SchemaManager implements CloseableSilently {
   private final RetryDecorator retryDecorator;
   private final SchemaManagerMetrics schemaManagerMetrics;
   private boolean shouldDisableArchiver = false;
+  private final SchemaMetadataStore schemaMetadataStore;
+  private final String currentVersion;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -65,15 +78,18 @@ public class SchemaManager implements CloseableSilently {
         indexTemplateDescriptors,
         config,
         new IndexSchemaValidator(objectMapper),
+        VersionUtil.getVersion(),
         null);
   }
 
-  private SchemaManager(
+  @VisibleForTesting
+  SchemaManager(
       final SearchEngineClient searchEngineClient,
       final Collection<IndexDescriptor> indexOnlyDescriptors,
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final SearchEngineConfiguration config,
       final IndexSchemaValidator schemaValidator,
+      final String currentVersion,
       final SchemaManagerMetrics schemaManagerMetrics) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
@@ -83,8 +99,18 @@ public class SchemaManager implements CloseableSilently {
         Stream.concat(indexOnlyDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
     this.config = config;
     this.schemaValidator = schemaValidator;
-    retryDecorator = new RetryDecorator(config.schemaManager().getRetry());
+    retryDecorator =
+        new RetryDecorator(config.schemaManager().getRetry())
+            .withRetryOnException(e -> !(e instanceof IncompatibleVersionException));
     this.schemaManagerMetrics = schemaManagerMetrics;
+    schemaMetadataStore =
+        new SchemaMetadataStore(
+            searchEngineClient,
+            new MetadataIndex(
+                config.connect().getIndexPrefix(),
+                config.connect().getTypeEnum().isElasticSearch()),
+            LOG);
+    this.currentVersion = currentVersion;
   }
 
   public SchemaManager withMetrics(final SchemaManagerMetrics schemaManagerMetrics) {
@@ -94,6 +120,7 @@ public class SchemaManager implements CloseableSilently {
         indexTemplateDescriptors,
         config,
         schemaValidator,
+        currentVersion,
         schemaManagerMetrics);
   }
 
@@ -122,19 +149,91 @@ public class SchemaManager implements CloseableSilently {
 
   private void initializeSchema() {
     LOG.info("Schema creation is enabled. Start Schema management.");
-    final var newIndexProperties = validateIndices(allIndexDescriptors);
-    //  used to create any indices/templates which don't exist
-    initialiseResources();
+    final boolean upgradeSchema;
+    final var previousSchemaVersion = schemaMetadataStore.getSchemaVersion();
+    final var checkResult = checkVersionCompatibility(previousSchemaVersion, currentVersion);
+    switch (checkResult) {
+      case final Compatible.SameVersion ignored:
+        upgradeSchema = "SNAPSHOT".equals(SemanticVersion.parse(currentVersion).get().preRelease());
+        break;
+      case final Incompatible.PatchDowngrade ignored:
+        return; // no upgrade, no settings update
+      case final Incompatible.MinorDowngrade ignored:
+        return; // no upgrade, no settings update
+      default:
+        LOG.info("Triggering schema upgrade for: {}", checkResult);
+        upgradeSchema = true;
+        break;
+    }
+    if (upgradeSchema) {
+      final var newIndexProperties = validateIndices(allIndexDescriptors);
+      //  used to create any indices/templates which don't exist
+      initialiseResources();
 
-    //  used to update existing indices/templates
-    if (!newIndexProperties.isEmpty()) {
-      LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
-      updateSchemaMappings(newIndexProperties);
+      //  used to update existing indices/templates
+      if (!newIndexProperties.isEmpty()) {
+        LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
+        updateSchemaMappings(newIndexProperties);
+      }
+      // Store the current version as schema version after successful initialization
+      schemaMetadataStore.storeSchemaVersion(currentVersion);
     }
     updateSchemaSettings();
     createLifecyclePolicies();
-
     LOG.info("Schema management completed.");
+  }
+
+  private CheckResult checkVersionCompatibility(
+      final String previousVersion, final String currentVersion) {
+    final var checkResult = VersionCompatibilityCheck.check(previousVersion, currentVersion);
+    final boolean versionCheckRestrictionEnabled =
+        config.schemaManager().isVersionCheckRestrictionEnabled();
+    switch (checkResult) {
+      case final Indeterminate.PreviousVersionUnknown previousVersionUnknown ->
+          LOG.trace(
+              "Schema is from an unknown version, not checking compatibility with current version: {}",
+              previousVersionUnknown);
+      case final Indeterminate indeterminate ->
+          LOG.warn(
+              "Could not check compatibility of schema with current version: {}", indeterminate);
+      case final Incompatible.UseOfPreReleaseVersion preRelease -> {
+        final String errorMsg =
+            "Cannot upgrade to or from a pre-release version: %s".formatted(preRelease);
+        if (versionCheckRestrictionEnabled) {
+          throw new IncompatibleVersionException(errorMsg);
+        } else {
+          LOG.warn(
+              "Detected issue with schema migration, but ignoring as configured. Details: '{}'",
+              errorMsg);
+        }
+      }
+      case final Incompatible.MinorDowngrade downgrade -> {
+        LOG.debug(
+            "Schema version is higher than app version: {}. This may happen during rolling updates.",
+            downgrade);
+      }
+      case final Incompatible.PatchDowngrade downgrade -> {
+        LOG.debug(
+            "Schema version is higher than app version: {}. This may happen during rolling updates.",
+            downgrade);
+      }
+      case final Incompatible incompatible -> {
+        final String errorMsg =
+            "Schema is not compatible with current version: %s".formatted(incompatible);
+        if (versionCheckRestrictionEnabled) {
+          throw new IncompatibleVersionException(errorMsg);
+        } else {
+          LOG.warn(
+              "Detected issue with schema migration, but ignoring as configured. Details: '{}'",
+              errorMsg);
+        }
+      }
+      case final Compatible.SameVersion sameVersion ->
+          LOG.trace("Schema is from the same version as the current version: {}", sameVersion);
+      case final Compatible compatible ->
+          LOG.debug("Schema is compatible with current version: {}", compatible);
+    }
+    return checkResult;
   }
 
   private void createLifecyclePolicies() {

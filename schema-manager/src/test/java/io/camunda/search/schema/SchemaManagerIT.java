@@ -45,6 +45,7 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -62,6 +63,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
 @DisabledIfSystemProperty(
@@ -73,10 +75,12 @@ public class SchemaManagerIT {
 
   private TestIndexDescriptor index;
   private TestTemplateDescriptor indexTemplate;
+  private MetadataIndex metadataIndex;
   private ObjectMapper objectMapper;
 
   @BeforeEach
   public void refresh() throws IOException {
+    metadataIndex = new MetadataIndex(CONFIG_PREFIX, true);
     objectMapper = TestObjectMapper.objectMapper();
     indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
     index = createTestIndexDescriptor("index_name", "/mappings.json");
@@ -89,7 +93,11 @@ public class SchemaManagerIT {
     // given
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper);
+            searchEngineClientFromConfig(config),
+            Set.of(index, metadataIndex),
+            Set.of(),
+            config,
+            objectMapper);
 
     schemaManager.initialiseResources();
 
@@ -121,7 +129,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(index),
+            Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -149,7 +157,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(index),
+            Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -172,7 +180,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -204,7 +212,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(index),
+            Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -233,7 +241,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(index),
+            Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -269,6 +277,7 @@ public class SchemaManagerIT {
     final var indices = new HashSet<IndexDescriptor>();
     final var indexTemplates = new HashSet<IndexTemplateDescriptor>();
 
+    indices.add(metadataIndex);
     indices.add(index);
     indexTemplates.add(indexTemplate);
 
@@ -314,7 +323,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(index),
+            Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -341,7 +350,11 @@ public class SchemaManagerIT {
 
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(), Set.of(), config, objectMapper);
+            searchEngineClientFromConfig(config),
+            Set.of(metadataIndex),
+            Set.of(),
+            config,
+            objectMapper);
     // when
     schemaManager.startup();
 
@@ -372,7 +385,11 @@ public class SchemaManagerIT {
 
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(), Set.of(), config, objectMapper);
+            searchEngineClientFromConfig(config),
+            Set.of(metadataIndex),
+            Set.of(),
+            config,
+            objectMapper);
     // when
     schemaManager.startup();
 
@@ -397,7 +414,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -424,7 +441,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -456,7 +473,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -499,7 +516,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -536,7 +553,11 @@ public class SchemaManagerIT {
     // given
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper);
+            searchEngineClientFromConfig(config),
+            Set.of(index, metadataIndex),
+            Set.of(),
+            config,
+            objectMapper);
 
     schemaManager.startup();
 
@@ -576,7 +597,11 @@ public class SchemaManagerIT {
 
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config), Set.of(), Set.of(), config, objectMapper);
+            searchEngineClientFromConfig(config),
+            Set.of(metadataIndex),
+            Set.of(),
+            config,
+            objectMapper);
     // when
     schemaManager.startup();
 
@@ -614,7 +639,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(index),
+            Set.of(index, metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -632,7 +657,11 @@ public class SchemaManagerIT {
     final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
     final var schemaManager =
         new SchemaManager(
-            searchEngineClient, Set.of(index), Set.of(indexTemplate), config, objectMapper);
+            searchEngineClient,
+            Set.of(index, metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
 
     schemaManager.startup();
 
@@ -650,7 +679,7 @@ public class SchemaManagerIT {
     final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
     final var schemaManager =
         new SchemaManager(
-            searchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+            searchEngineClient, Set.of(metadataIndex), Set.of(indexTemplate), config, objectMapper);
 
     schemaManager.startup();
 
@@ -668,7 +697,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -713,7 +742,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -763,7 +792,7 @@ public class SchemaManagerIT {
     final var schemaManager1 =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -771,7 +800,7 @@ public class SchemaManagerIT {
     final var schemaManager2 =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -799,8 +828,10 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
     // given
-    final var schemaManager1 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
-    final var schemaManager2 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
+    final var schemaManager1 =
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
+    final var schemaManager2 =
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
 
     index.setMappingsClasspathFilename("/mappings-added-property.json");
     indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
@@ -832,8 +863,10 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
     // given
-    final var schemaManager1 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
-    final var schemaManager2 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
+    final var schemaManager1 =
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
+    final var schemaManager2 =
+        createSchemaManager(Set.of(index, metadataIndex), Set.of(indexTemplate), config);
 
     index.setMappingsClasspathFilename("/mappings-added-property.json");
     indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
@@ -864,7 +897,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -902,7 +935,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -987,6 +1020,7 @@ public class SchemaManagerIT {
             newPrefix + "-operate-import-position-8.3.0_",
             newPrefix + "-operate-incident-8.3.1_",
             newPrefix + "-operate-list-view-8.3.0_",
+            newPrefix + "-operate-metadata-8.8.0_",
             newPrefix + "-operate-metric-8.3.0_",
             newPrefix + "-operate-message-8.5.0_",
             newPrefix + "-operate-operation-8.4.1_",
@@ -1010,7 +1044,11 @@ public class SchemaManagerIT {
     final var registry = new SimpleMeterRegistry();
     final var schemaManager =
         new SchemaManager(
-                searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper)
+                searchEngineClientFromConfig(config),
+                Set.of(index, metadataIndex),
+                Set.of(),
+                config,
+                objectMapper)
             .withMetrics(new SchemaManagerMetrics(registry));
 
     // when
@@ -1032,7 +1070,11 @@ public class SchemaManagerIT {
     config.schemaManager().getRetry().setMaxRetries(1);
     final var schemaManager =
         new SchemaManager(
-                searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper)
+                searchEngineClientFromConfig(config),
+                Set.of(index, metadataIndex),
+                Set.of(),
+                config,
+                objectMapper)
             .withMetrics(new SchemaManagerMetrics(registry));
 
     // when
@@ -1060,7 +1102,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1130,7 +1172,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1156,7 +1198,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1183,7 +1225,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1233,7 +1275,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1267,7 +1309,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1313,7 +1355,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1348,7 +1390,7 @@ public class SchemaManagerIT {
     final SearchEngineClient searchEngineClient = spy(searchEngineClientFromConfig(config));
     final var firstSchemaManager =
         new SchemaManager(
-            searchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+            searchEngineClient, Set.of(metadataIndex), Set.of(indexTemplate), config, objectMapper);
 
     firstSchemaManager.initialiseResources();
 
@@ -1368,7 +1410,7 @@ public class SchemaManagerIT {
     final var secondSchemaManager =
         new SchemaManager(
             searchEngineClient,
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate, secondIndexTemplate),
             config,
             objectMapper);
@@ -1398,7 +1440,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             searchEngineClientFromConfig(config),
-            Set.of(),
+            Set.of(metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1427,7 +1469,7 @@ public class SchemaManagerIT {
     final SearchEngineClient searchEngineClient = spy(searchEngineClientFromConfig(config));
     final var newSchemaManager =
         new SchemaManager(
-            searchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+            searchEngineClient, Set.of(metadataIndex), Set.of(indexTemplate), config, objectMapper);
 
     newSchemaManager.startup();
 
@@ -1473,7 +1515,11 @@ public class SchemaManagerIT {
     final SearchEngineClient spySearchEngineClient = spy(searchEngineClientFromConfig(config));
     final var schemaManager =
         new SchemaManager(
-            spySearchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+            spySearchEngineClient,
+            Set.of(metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
 
     schemaManager.startup();
 
@@ -1488,7 +1534,10 @@ public class SchemaManagerIT {
 
     // verify that schema manager DID create the index (since template existed but index was
     // missing)
-    verify(spySearchEngineClient, times(1)).createIndex(any(), any());
+    final var captor = ArgumentCaptor.forClass(IndexDescriptor.class);
+    verify(spySearchEngineClient, times(2)).createIndex(captor.capture(), any());
+    assertThat(captor.getAllValues().stream().map(IndexDescriptor::getIndexName))
+        .containsExactlyInAnyOrder(indexTemplate.getIndexName(), metadataIndex.getIndexName());
 
     // verify template has correct mappings
     assertThat(
@@ -1515,7 +1564,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             spySearchEngineClient,
-            Set.of(tasklistImportPositionIndex),
+            Set.of(tasklistImportPositionIndex, metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);
@@ -1529,8 +1578,14 @@ public class SchemaManagerIT {
     // verify that schema manager did create the template
     verify(spySearchEngineClient).createIndexTemplate(any(), any(), eq(true));
 
-    // verify that schema manager did create the index
-    verify(spySearchEngineClient, times(2)).createIndex(any(), any());
+    // verify that schema manager did create the indices
+    final var captor = ArgumentCaptor.forClass(IndexDescriptor.class);
+    verify(spySearchEngineClient, times(3)).createIndex(captor.capture(), any());
+    assertThat(captor.getAllValues().stream().map(IndexDescriptor::getIndexName))
+        .containsExactlyInAnyOrder(
+            tasklistImportPositionIndex.getIndexName(),
+            metadataIndex.getIndexName(),
+            indexTemplate.getIndexName());
 
     // verify _meta property is not added
     assertThat(indexNode.get("mappings").get("_meta")).isNull();
@@ -1596,7 +1651,7 @@ public class SchemaManagerIT {
     final var schemaManager =
         new SchemaManager(
             spySearchEngineClient,
-            Set.of(tasklistImportPositionIndex),
+            Set.of(tasklistImportPositionIndex, metadataIndex),
             Set.of(indexTemplate),
             config,
             objectMapper);

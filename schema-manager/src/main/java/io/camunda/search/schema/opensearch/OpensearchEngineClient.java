@@ -54,6 +54,9 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
@@ -359,6 +362,50 @@ public class OpensearchEngineClient implements SearchEngineClient {
               "Couldn't connect to OpenSearch due to %s. Return unhealthy state.", e.getMessage()),
           e);
       return false;
+    }
+  }
+
+  @Override
+  public boolean indexExists(final String indexName) {
+    try {
+      return client.indices().exists(req -> req.index(indexName)).value();
+    } catch (final IOException | OpenSearchException ex) {
+      final var errMsg = String.format("Failed to check if index [%s] exists", indexName);
+      throw new SearchEngineException(errMsg, ex);
+    }
+  }
+
+  @Override
+  public Map<String, Object> getDocument(final String indexName, final String documentId) {
+    final GetRequest request = GetRequest.of(g -> g.index(indexName).id(documentId));
+    try {
+      final GetResponse<Map> response = client.get(request, Map.class);
+      if (response.found()) {
+        return response.source();
+      } else {
+        LOG.debug("Document with ID [{}] not found in index [{}]", documentId, indexName);
+        return null;
+      }
+    } catch (final IOException | OpenSearchException ex) {
+      final var errMsg =
+          String.format("Failed to get document [%s] from index [%s]", documentId, indexName);
+      throw new SearchEngineException(errMsg, ex);
+    }
+  }
+
+  @Override
+  public void upsertDocument(
+      final String indexName, final String documentId, final Map<String, Object> document) {
+    final IndexRequest<Map<String, Object>> request =
+        IndexRequest.of(i -> i.index(indexName).id(documentId).document(document));
+
+    try {
+      client.index(request);
+      LOG.debug("Document [{}] was successfully upserted in index [{}]", documentId, indexName);
+    } catch (final IOException | OpenSearchException ex) {
+      final var errMsg =
+          String.format("Failed to upsert document [%s] in index [%s]", documentId, indexName);
+      throw new SearchEngineException(errMsg, ex);
     }
   }
 
