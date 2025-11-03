@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -157,11 +158,14 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   public static S3Client buildClient(final S3ClientConfig config) {
-    final var builder =
-        S3Client.builder()
-            .region(config.region())
-            .credentialsProvider(
-                () -> AwsBasicCredentials.create(config.accessKey(), config.secretKey()));
+    final var builder = S3Client.builder();
+
+    config.region.ifPresent(builder::region);
+    config.credentials.ifPresent(
+        credentials ->
+            builder.credentialsProvider(
+                StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(credentials.accessKey(), credentials.secretKey()))));
 
     builder.defaultsMode(config.defaultsMode.orElse(DefaultsMode.AUTO));
     builder.httpClientBuilder(
@@ -190,22 +194,20 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   public record S3ClientConfig(
-      String accessKey,
-      String secretKey,
-      Region region,
+      Optional<Credentials> credentials,
+      Optional<Region> region,
       Optional<URI> endpoint,
       Optional<RetryMode> retryStrategy,
       Optional<DefaultsMode> defaultsMode,
       Optional<Duration> connectionAcquisitionTimeout,
       Optional<Duration> apiCallTimeout) {
+
     public S3ClientConfig(
-        final String accessKey,
-        final String secretKey,
-        final Region region,
+        final Optional<Credentials> credentials,
+        final Optional<Region> region,
         final Optional<URI> endpoint) {
       this(
-          accessKey,
-          secretKey,
+          credentials,
           region,
           endpoint,
           Optional.empty(),
@@ -215,14 +217,22 @@ public class S3NodeIdRepository implements NodeIdRepository {
     }
 
     public S3ClientConfig {
-      if (accessKey == null || accessKey.isEmpty()) {
-        throw new IllegalArgumentException("accessKey cannot be null or empty");
+      if (region.isEmpty()) {
+        LOG.warn(
+            "region is not configured, Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
       }
-      if (secretKey == null || secretKey.isEmpty()) {
-        throw new IllegalArgumentException("secretKey cannot be null or empty");
-      }
-      if (region == null) {
-        throw new IllegalArgumentException("region cannot be null");
+    }
+
+    public record Credentials(String accessKey, String secretKey) {
+      public Credentials {
+        if (accessKey == null || accessKey.isEmpty()) {
+          LOG.warn(
+              "accessKey is not configured, Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
+        }
+        if (secretKey == null || secretKey.isEmpty()) {
+          LOG.warn(
+              "secretKey is not configured, Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
+        }
       }
     }
   }

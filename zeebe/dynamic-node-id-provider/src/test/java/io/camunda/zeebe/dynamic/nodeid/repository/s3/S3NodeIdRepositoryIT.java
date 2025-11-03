@@ -56,9 +56,8 @@ public class S3NodeIdRepositoryIT {
     client =
         S3NodeIdRepository.buildClient(
             new S3ClientConfig(
-                S3.getAccessKey(),
-                S3.getSecretKey(),
-                Region.of(S3.getRegion()),
+                Optional.of(new Credentials(S3.getAccessKey(), S3.getSecretKey())),
+                Optional.of(Region.of(S3.getRegion())),
                 Optional.of(S3.getEndpoint())));
   }
 
