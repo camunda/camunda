@@ -1306,7 +1306,6 @@ final class JsonSerializableToJsonTest {
               return new MessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey)
-                  .setMessageKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setMessageKey(messageKey)
                   .setMessageName(wrapString(messageName))
