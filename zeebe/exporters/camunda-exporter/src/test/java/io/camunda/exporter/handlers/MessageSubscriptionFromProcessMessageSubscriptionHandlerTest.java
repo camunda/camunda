@@ -210,6 +210,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     final int position = 9999;
     final int processInstanceKey = 123;
     final int elementInstanceKey = 456;
+    final int processDefinitionKey = 555;
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
     final String tenantId = "tenantId";
@@ -220,6 +221,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
         ImmutableProcessMessageSubscriptionRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
+            .withProcessDefinitionKey(processDefinitionKey)
             .withElementId(elementId)
             .withBpmnProcessId(bpmnProcessId)
             .withTenantId(tenantId)
@@ -252,6 +254,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
     assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getPositionProcessMessageSubscription()).isEqualTo(position);
     assertThat(entity.getMetadata().getMessageName()).isEqualTo(messageName);
