@@ -66,6 +66,7 @@ public class MessageSubscriptionExportHandler
         .processInstanceKey(value.getProcessInstanceKey())
         .flowNodeId(value.getElementId())
         .flowNodeInstanceKey(value.getElementInstanceKey())
+        .processDefinitionKey(value.getProcessDefinitionKey())
         .messageSubscriptionState(MessageSubscriptionState.valueOf(record.getIntent().name()))
         .dateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .messageName(value.getMessageName())

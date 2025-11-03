@@ -81,6 +81,11 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
       entity.setProcessInstanceKey(processInstanceKey);
     }
 
+    final long processDefinitionKey = recordValue.getProcessDefinitionKey();
+    if (processDefinitionKey > 0) {
+      entity.setProcessDefinitionKey(processDefinitionKey);
+    }
+
     entity
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
