@@ -18,6 +18,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TestUser;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -84,9 +86,13 @@ public class ProcessDefinitionSearchMultiTenantsTest {
 
   private static CamundaClient camundaClient;
 
+  @UserDefinition
+  private static final TestUser USER_1 = new TestUser(USERNAME_1, "password", List.of());
+
   @BeforeAll
   public static void beforeAll(@Authenticated final CamundaClient adminClient)
       throws InterruptedException {
+
     createTenant(
         adminClient,
         TENANT_ID_1,
