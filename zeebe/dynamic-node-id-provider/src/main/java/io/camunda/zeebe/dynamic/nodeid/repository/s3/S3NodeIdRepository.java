@@ -72,10 +72,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
       final var lease = bytes.length > 0 ? Lease.fromJsonBytes(OBJECT_MAPPER, bytes) : null;
       final var metadata = Metadata.fromMap(response.response().metadata());
       final var eTag = response.response().eTag();
-      final var storedLease =
-          (lease != null && metadata != null)
-              ? new StoredLease.Initialized(metadata, lease, eTag)
-              : new StoredLease.Uninitialized(eTag);
+      final var storedLease = StoredLease.of(nodeId, lease, metadata, eTag);
       LOG.trace("Lease for object {} is {}", nodeId, storedLease);
       return storedLease;
     } catch (final IOException e) {
