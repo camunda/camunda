@@ -16,12 +16,14 @@ import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
+import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig.Credentials;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,6 +84,32 @@ public class S3NodeIdRepositoryIT {
       final var lease = repository.getLease(i);
       assertThat(lease).isInstanceOf(StoredLease.Uninitialized.class);
       assertThat(lease.eTag()).isNotEmpty();
+    }
+  }
+
+  @Test
+  public void shouldNotInitializeAcquiredLease() {
+    // given
+    final var clusterSize = 2;
+    final var millis = Clock.systemUTC().millis();
+    repository = fixed(millis);
+    repository.initialize(clusterSize);
+    final var initial = repository.getLease(0);
+    final var acquired =
+        repository.acquire(
+            new Lease(config.taskId(), millis + 2000L, new NodeInstance(0)), initial.eTag());
+    assertThat(acquired).isInstanceOf(StoredLease.Initialized.class);
+
+    // when
+    // if the reposiotry is initialized again
+    final var leases = IntStream.range(0, clusterSize).mapToObj(repository::getLease).toList();
+    repository.initialize(clusterSize);
+
+    // then
+    // lease are unchanged
+    for (int i = 0; i < clusterSize; i++) {
+      final var lease = repository.getLease(i);
+      assertThat(lease).isEqualTo(leases.get(i));
     }
   }
 
