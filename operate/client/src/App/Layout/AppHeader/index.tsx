@@ -19,6 +19,7 @@ import {licenseTagStore} from 'modules/stores/licenseTag';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
+import {IS_AUDIT_LOG_ENABLED} from 'modules/feature-flags';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -185,6 +186,25 @@ const AppHeader: React.FC = observer(() => {
                   },
                 },
               },
+              ...(IS_AUDIT_LOG_ENABLED
+                ? [
+                    {
+                      key: 'audit-log',
+                      label: 'Audit log',
+                      isCurrentPage: currentPage === 'audit-log',
+                      routeProps: {
+                        to: Locations.auditLog(),
+                        onClick: () => {
+                          tracking.track({
+                            eventName: 'navigation',
+                            link: 'header-audit-log',
+                            currentPage,
+                          });
+                        },
+                      },
+                    },
+                  ]
+                : []),
             ],
         licenseTag: {
           show: licenseTagStore.state.isTagVisible,

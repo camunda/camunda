@@ -6,12 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_INCIDENTS_PANEL_V2 = false;
-const IS_AUDIT_LOG_ENABLED = true;
+// Export the timeline view as the default
+export {OperationsLogTimeline as OperationsLog} from './TimelineView';
 
-export {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_INCIDENTS_PANEL_V2,
-  IS_AUDIT_LOG_ENABLED,
-};
+// Also export the table view for reference
+export {OperationsLogTable} from './TableView';
