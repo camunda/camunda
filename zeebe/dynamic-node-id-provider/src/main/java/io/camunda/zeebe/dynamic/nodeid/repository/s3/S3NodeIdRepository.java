@@ -97,7 +97,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
       LOG.debug("Lease acquired successfully {}", storedLease);
       return storedLease;
     } catch (final Exception e) {
-      LOG.warn("Failed to acquire the lease gracefully {}", lease, e);
+      LOG.warn("Failed to acquire the lease {}", lease, e);
       throw e;
     }
   }
