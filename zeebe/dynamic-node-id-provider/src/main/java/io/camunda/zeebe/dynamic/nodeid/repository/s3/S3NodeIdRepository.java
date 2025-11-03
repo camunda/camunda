@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
@@ -36,13 +37,13 @@ public class S3NodeIdRepository implements NodeIdRepository {
   private static final Logger LOG = LoggerFactory.getLogger(S3NodeIdRepository.class);
   private final S3Client client;
   private final Config config;
-  private final Clock clock;
+  private final InstantSource clock;
   private final boolean closeClient;
 
-  S3NodeIdRepository(
+  public S3NodeIdRepository(
       final S3Client s3AsyncClient,
       final Config config,
-      final Clock clock,
+      final InstantSource clock,
       final boolean closeClient) {
     client = s3AsyncClient;
     this.config = config;

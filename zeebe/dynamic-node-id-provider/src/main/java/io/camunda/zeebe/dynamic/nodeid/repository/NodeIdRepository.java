@@ -73,12 +73,12 @@ public interface NodeIdRepository extends AutoCloseable {
     String eTag();
 
     record Uninitialized(NodeInstance node, String eTag) implements StoredLease {
-     public Uninitialized{
-       Objects.requireNonNull(eTag, "ETag cannot be null");
-       if (eTag.isEmpty()) {
-         throw new IllegalArgumentException("eTag cannot be empty");
-       }
-     }
+      public Uninitialized {
+        Objects.requireNonNull(eTag, "ETag cannot be null");
+        if (eTag.isEmpty()) {
+          throw new IllegalArgumentException("eTag cannot be empty");
+        }
+      }
     }
 
     record Initialized(Metadata metadata, Lease lease, String eTag) implements StoredLease {
