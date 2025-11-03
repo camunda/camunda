@@ -286,11 +286,7 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
                 .zeebeExpression("i + 2")
                 .zeebeResultVariable("j")
                 .multiInstance(
-                    b ->
-                        b.zeebeInputCollectionExpression("[1,2,3]")
-                            .zeebeInputElement("i")
-                            .zeebeOutputCollection("out")
-                            .zeebeOutputElementExpression("j + 2"))
+                    b -> b.zeebeInputCollectionExpression("[1,2,3]").zeebeInputElement("i"))
                 .endEvent()
                 .done())
         .deploy();
