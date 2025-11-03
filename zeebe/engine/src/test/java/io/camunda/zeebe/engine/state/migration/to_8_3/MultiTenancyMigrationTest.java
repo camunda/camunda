@@ -727,6 +727,7 @@ public class MultiTenancyMigrationTest {
           new MessageSubscriptionRecord()
               .setProcessInstanceKey(123)
               .setElementInstanceKey(456)
+              .setProcessDefinitionKey(789)
               .setBpmnProcessId(wrapString("processId"))
               .setMessageKey(789)
               .setMessageName(wrapString("messageName"))
@@ -806,6 +807,7 @@ public class MultiTenancyMigrationTest {
               .setSubscriptionPartitionId(8)
               .setProcessInstanceKey(123)
               .setElementInstanceKey(456)
+              .setProcessDefinitionKey(555)
               .setBpmnProcessId(wrapString("processId"))
               .setMessageKey(789)
               .setMessageName(wrapString("messageName"))
@@ -832,6 +834,7 @@ public class MultiTenancyMigrationTest {
               ProcessMessageSubscriptionRecord::getSubscriptionPartitionId,
               ProcessMessageSubscriptionRecord::getProcessInstanceKey,
               ProcessMessageSubscriptionRecord::getElementInstanceKey,
+              ProcessMessageSubscriptionRecord::getProcessDefinitionKey,
               ProcessMessageSubscriptionRecord::getBpmnProcessId,
               ProcessMessageSubscriptionRecord::getMessageKey,
               ProcessMessageSubscriptionRecord::getMessageName,
@@ -844,6 +847,7 @@ public class MultiTenancyMigrationTest {
               record.getSubscriptionPartitionId(),
               record.getProcessInstanceKey(),
               record.getElementInstanceKey(),
+              record.getProcessDefinitionKey(),
               record.getBpmnProcessId(),
               record.getMessageKey(),
               record.getMessageName(),

@@ -146,7 +146,10 @@ final class InterPartitionCommandReceiverTest {
 
     // initialize to make debugging easier in case this test breaks.
     final var recordValue =
-        new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1);
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(1)
+            .setElementInstanceKey(1)
+            .setProcessDefinitionKey(1);
     final var sentMessage =
         sendCommand(
             receiverBrokerId,

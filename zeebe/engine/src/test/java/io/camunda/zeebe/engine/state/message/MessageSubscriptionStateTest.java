@@ -95,17 +95,19 @@ public final class MessageSubscriptionStateTest {
 
     // then
     assertThat(subscriptions).hasSize(1);
-    assertThat(subscriptions.get(0).getRecord().getProcessInstanceKey())
-        .isEqualTo(subscription.getProcessInstanceKey());
-    assertThat(subscriptions.get(0).getRecord().getElementInstanceKey())
-        .isEqualTo(subscription.getElementInstanceKey());
-    assertThat(subscriptions.get(0).getRecord().getMessageName())
-        .isEqualTo(subscription.getMessageName());
-    assertThat(subscriptions.get(0).getRecord().getCorrelationKey())
-        .isEqualTo(subscription.getCorrelationKey());
-    assertThat(subscriptions.get(0).getRecord().getVariables())
-        .isEqualTo(subscription.getVariables());
-    assertThat(subscriptions.get(0).isCorrelating()).isFalse();
+    final var expectedSubscription = subscriptions.getFirst().getRecord();
+    assertThat(expectedSubscription.getProcessInstanceKey())
+        .isEqualTo(expectedSubscription.getProcessInstanceKey());
+    assertThat(expectedSubscription.getElementInstanceKey())
+        .isEqualTo(expectedSubscription.getElementInstanceKey());
+    assertThat(expectedSubscription.getProcessDefinitionKey())
+        .isEqualTo(expectedSubscription.getProcessDefinitionKey());
+    assertThat(expectedSubscription.getMessageName())
+        .isEqualTo(expectedSubscription.getMessageName());
+    assertThat(expectedSubscription.getCorrelationKey())
+        .isEqualTo(expectedSubscription.getCorrelationKey());
+    assertThat(expectedSubscription.getVariables()).isEqualTo(expectedSubscription.getVariables());
+    assertThat(subscriptions.getFirst().isCorrelating()).isFalse();
   }
 
   @Test
@@ -194,6 +196,7 @@ public final class MessageSubscriptionStateTest {
     return new MessageSubscriptionRecord()
         .setProcessInstanceKey(1L)
         .setElementInstanceKey(elementInstanceKey)
+        .setProcessDefinitionKey(2L)
         .setBpmnProcessId(wrapString("process"))
         .setMessageName(wrapString(name))
         .setCorrelationKey(wrapString(correlationKey))
