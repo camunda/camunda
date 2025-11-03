@@ -92,14 +92,14 @@ public class S3NodeIdRepository implements NodeIdRepository {
       if (!lease.isStillValid(clock.millis(), config.expiryDuration)) {
         throw new IllegalArgumentException("The provided lease is not valid anymore: " + lease);
       }
-      LOG.info("Acquiring lease {}, previous ETag {}", lease, previousETag);
+      LOG.debug("Acquiring lease {}, previous ETag {}", lease, previousETag);
       final var response =
           client.putObject(putRequest, RequestBody.fromBytes(lease.toJsonBytes(OBJECT_MAPPER)));
       final var storedLease = new StoredLease.Initialized(metadata, lease, response.eTag());
       LOG.debug("Lease acquired successfully {}", storedLease);
       return storedLease;
     } catch (final Exception e) {
-      LOG.warn("Failed to release the lease gracefully {}", lease, e);
+      LOG.warn("Failed to acquire the lease gracefully {}", lease, e);
       throw e;
     }
   }
@@ -122,7 +122,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
     final PutObjectRequest putRequest =
         createPutObjectRequest(nodeId, Optional.empty(), Optional.empty()).ifNoneMatch("*").build();
     try {
-      LOG.info("Creating file for node {}", nodeId);
+      LOG.debug("Creating file for node {}", nodeId);
       final var res = client.putObject(putRequest, RequestBody.empty());
       LOG.debug("File created for nodeId {}: {}", nodeId, res.eTag());
     } catch (final Exception e) {
