@@ -4,7 +4,7 @@
 
 ### 🩹 Fixes
 
-- add missing element instance type ([9597991](https://github.com/camunda/camunda/commit/9597991))
+- add missing element instance type ([#40368](https://github.com/camunda/camunda/pull/40368))
 
 ### ❤️ Contributors
 
