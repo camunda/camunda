@@ -198,6 +198,8 @@ final class SystemContextTest {
     final var nodes = List.of(new NodeCfg(), new NodeCfg());
     brokerCfg.getCluster().getRaft().setEnablePriorityElection(true);
     brokerCfg.getCluster().setClusterSize(2);
+    // required when clusterSize > 1
+    brokerCfg.getCluster().setInitialContactPoints(List.of("ContactPoints"));
     config.setScheme(Scheme.FIXED);
     config.setFixed(List.of(fixedPartition));
     fixedPartition.setNodes(nodes);
@@ -224,6 +226,8 @@ final class SystemContextTest {
     final var nodes = List.of(new NodeCfg(), new NodeCfg());
     brokerCfg.getCluster().getRaft().setEnablePriorityElection(false);
     brokerCfg.getCluster().setClusterSize(2);
+    // required when clusterSize > 1
+    brokerCfg.getCluster().setInitialContactPoints(List.of("ContactPoints"));
     config.setScheme(Scheme.FIXED);
     config.setFixed(List.of(fixedPartition));
     fixedPartition.setNodes(nodes);
