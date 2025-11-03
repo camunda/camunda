@@ -190,7 +190,7 @@ final class StandaloneBackupManagerIT {
     backupManager.withBackupId(BACKUP_ID).start();
 
     // Wait for snapshots to be completed
-    final List<String> snapshots = waitForSnapshotsToBeCompleted(SNAPSHOT_NAME_PREFIX, 6);
+    final List<String> snapshots = waitForSnapshotsToBeCompleted(SNAPSHOT_NAME_PREFIX, 7);
     // Update the current state by completing the user task and the process instance
     completeUserTask(userTaskKey);
     // Assert that the state is updated: process instance is completed

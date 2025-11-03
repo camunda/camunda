@@ -111,9 +111,10 @@ class BackupPrioritiesTest {
 
     final var indices = priorities.indicesSplitBySnapshot().toList();
 
-    assertThat(indices.size()).isEqualTo(6);
+    assertThat(indices.size()).isEqualTo(7);
     final var iterator = indices.iterator();
     // PRIO 1
+    assertThat(iterator.next().allIndices()).containsExactlyInAnyOrder("operate-metadata-8.8.0_");
     // PRIO 2
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.8.0_");
