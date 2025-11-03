@@ -13,7 +13,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
-import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
+import io.camunda.zeebe.engine.processing.identity.initialize.PlatformDefaultEntities;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -90,8 +90,8 @@ final class IdentitySetupInitializerIT {
     final var createdTenant =
         RecordingExporter.tenantRecords(TenantIntent.CREATED).getFirst().getValue();
     Assertions.assertThat(createdTenant)
-        .hasTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
-        .hasName(IdentitySetupInitializer.DEFAULT_TENANT_NAME);
+        .hasTenantId(PlatformDefaultEntities.DEFAULT_TENANT_ID)
+        .hasName(PlatformDefaultEntities.DEFAULT_TENANT_NAME);
   }
 
   @Test
