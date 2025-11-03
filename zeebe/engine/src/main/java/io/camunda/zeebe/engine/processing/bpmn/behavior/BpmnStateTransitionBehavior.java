@@ -485,11 +485,9 @@ public final class BpmnStateTransitionBehavior {
 
     // if an element is part of a multi-instance, we skip runtime instructions as they are applied
     // to the multi-instance container element
-
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     final var isMultiInstanceActivity =
-        flowScopeInstance != null && flowScopeInstance.getMultiInstanceLoopCounter() > 0;
-
+        element.getFlowScope() != null
+            && element.getFlowScope().getElementType() == BpmnElementType.MULTI_INSTANCE_BODY;
     if (isMultiInstanceActivity) {
       return Either.right(context);
     }
