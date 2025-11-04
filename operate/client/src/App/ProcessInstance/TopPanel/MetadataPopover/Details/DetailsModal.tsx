@@ -9,13 +9,13 @@
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
 import {buildMetadata} from './buildMetadata';
-import type {V2InstanceMetadata} from '../types';
+import type {InstanceMetadata} from '../types';
 import {resolveIncidentErrorType} from '../Incidents/resolveIncidentErrorType';
 
 type Props = {
   elementName: string;
   elementInstanceKey: string;
-  instanceMetadata: V2InstanceMetadata;
+  instanceMetadata: InstanceMetadata;
   isVisible: boolean;
   onClose: () => void;
 };

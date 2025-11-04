@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type V2InstanceMetadata} from '../types';
+import {type InstanceMetadata} from '../types';
 
 export const buildMetadata = (
-  metadata: V2InstanceMetadata | null,
+  metadata: InstanceMetadata | null,
   incident: {
     errorType: {id: string; name: string};
     errorMessage: string;

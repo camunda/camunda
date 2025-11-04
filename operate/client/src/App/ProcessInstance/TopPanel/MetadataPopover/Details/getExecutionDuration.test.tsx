@@ -22,7 +22,7 @@ vi.mock('date-fns', async () => {
 
 describe('getExecutionDuration', () => {
   it('should return a duration for open periods', () => {
-    expect(getExecutionDuration(MOCK_START_DATE, null)).toBe(
+    expect(getExecutionDuration(MOCK_START_DATE, undefined)).toBe(
       `${MOCK_EXECUTION_DATE} (running)`,
     );
   });

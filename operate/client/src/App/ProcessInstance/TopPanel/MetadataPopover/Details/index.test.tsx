@@ -7,14 +7,25 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {type V2MetaDataDto} from '../types';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {baseMetaData, TestWrapper} from './mocks';
+import {
+  mockElementInstance,
+  mockJob,
+  mockCalledProcessInstance,
+  mockBusinessObject,
+  TestWrapper,
+} from './mocks';
 import {Details} from './index';
 import {getExecutionDuration} from './getExecutionDuration';
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
-import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  Incident,
+  ElementInstance,
+  UserTask,
+  MessageSubscription,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 const mockSingleIncident: Incident = {
   incidentKey: '2251799813696584',
@@ -38,9 +49,16 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should render element instance details', () => {
-    render(<Details metaData={baseMetaData} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(screen.getByText('Details')).toBeInTheDocument();
     expect(screen.getByText('Element Instance Key')).toBeInTheDocument();
@@ -48,55 +66,75 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display job retries when available', () => {
-    render(<Details metaData={baseMetaData} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(screen.getByText('Retries Left')).toBeInTheDocument();
     expect(screen.getByTestId('retries-left-count')).toHaveTextContent('3');
   });
 
-  it('should hide job retries when null', () => {
-    const meta = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        jobRetries: null,
+  it('should hide job retries when when there is no job', () => {
+    render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+      />,
+      {
+        wrapper: TestWrapper,
       },
-    };
-
-    render(<Details metaData={meta} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    );
 
     expect(screen.queryByText('Retries Left')).not.toBeInTheDocument();
   });
 
   it('should show metadata dialog when "Show more metadata" is clicked', async () => {
     const {user} = render(
-      <Details metaData={baseMetaData} elementId="Task_1" />,
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
       {wrapper: TestWrapper},
     );
 
     await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
     expect(
-      screen.getByText(/Element "Task_1" 123456789 Metadata/),
+      screen.getByText(/Element "Service Task" 123456789 Metadata/),
     ).toBeInTheDocument();
   });
 
   it('should handle null instance metadata gracefully', () => {
-    const meta: V2MetaDataDto = {
-      flowNodeInstanceId: null,
-      flowNodeId: null,
-      flowNodeType: null,
-      instanceCount: null,
-      instanceMetadata: null,
-      incidentCount: 0,
+    const minimalElementInstance: ElementInstance = {
+      elementInstanceKey: '999',
+      elementId: 'Task_1',
+      elementName: 'Task 1',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '',
+      processDefinitionId: 'test',
+      processInstanceKey: '111',
+      processDefinitionKey: '222',
+      hasIncident: false,
+      tenantId: '<default>',
     };
 
-    render(<Details metaData={meta} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        elementInstance={minimalElementInstance}
+        businessObject={mockBusinessObject}
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(screen.getByText('Element Instance Key')).toBeInTheDocument();
     expect(screen.getByText('Execution Duration')).toBeInTheDocument();
@@ -113,17 +151,21 @@ describe('MetadataPopover <Details />', () => {
     const tasklistUrl = 'https://tasklist.example.com';
     vi.stubGlobal('clientConfig', {tasklistUrl});
 
-    const meta: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'USER_TASK',
-      },
+    const userTaskInstance: ElementInstance = {
+      ...mockElementInstance,
+      type: 'USER_TASK',
     };
 
-    render(<Details metaData={meta} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        elementInstance={userTaskInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     const link = screen.getByRole('link', {name: 'Open Tasklist'});
     expect(link).toBeInTheDocument();
@@ -134,9 +176,16 @@ describe('MetadataPopover <Details />', () => {
     const tasklistUrl = 'https://tasklist.example.com';
     vi.stubGlobal('clientConfig', {tasklistUrl});
 
-    render(<Details metaData={baseMetaData} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(
       screen.queryByRole('link', {name: 'Open Tasklist'}),
@@ -144,13 +193,20 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display execution duration info', () => {
-    render(<Details metaData={baseMetaData} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     const calculatedExecutionDuration = getExecutionDuration(
-      baseMetaData!.instanceMetadata!.startDate,
-      baseMetaData!.instanceMetadata!.endDate,
+      mockElementInstance.startDate,
+      mockElementInstance.endDate,
     );
 
     expect(screen.getByText('Execution Duration')).toBeInTheDocument();
@@ -158,35 +214,47 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display user task metadata in modal when available', async () => {
-    const userTaskMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'USER_TASK',
-        assignee: 'john.doe',
-        dueDate: '2023-12-31T23:59:59.000Z',
-        followUpDate: '2023-12-30T12:00:00.000Z',
-        formKey: 'user-form-key',
-        userTaskKey: 'ut-123456',
-        candidateGroups: ['managers', 'admins'],
-        candidateUsers: ['user1', 'user2'],
-        externalFormReference: 'external-form-ref-123',
-        creationDate: '2023-12-01T09:00:00.000Z',
-        completionDate: '2023-12-31T18:00:00.000Z',
-        customHeaders: {custom1: 'value1', custom2: 2},
-        priority: 10,
-      },
+    const userTaskInstance: ElementInstance = {
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    };
+
+    const userTask: UserTask = {
+      userTaskKey: 'ut-123456',
+      processInstanceKey: '111222333',
+      processDefinitionKey: '444555666',
+      processDefinitionId: 'process-def-1',
+      elementId: 'Task_1',
+      elementInstanceKey: '123456789',
+      assignee: 'john.doe',
+      state: 'CREATED',
+      creationDate: '2023-12-01T09:00:00.000Z',
+      completionDate: '2023-12-31T18:00:00.000Z',
+      dueDate: '2023-12-31T23:59:59.000Z',
+      followUpDate: '2023-12-30T12:00:00.000Z',
+      tenantId: '<default>',
+      formKey: 'user-form-key',
+      candidateGroups: ['managers', 'admins'],
+      candidateUsers: ['user1', 'user2'],
+      externalFormReference: 'external-form-ref-123',
+      customHeaders: {custom1: 'value1', custom2: 2},
+      priority: 10,
+      processDefinitionVersion: 1,
     };
 
     const {user} = render(
-      <Details metaData={userTaskMetaData} elementId="UserTask_1" />,
+      <Details
+        elementInstance={userTaskInstance}
+        businessObject={mockBusinessObject}
+        userTask={userTask}
+      />,
       {wrapper: TestWrapper},
     );
 
     await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
 
     expect(
-      screen.getByText(/Element "UserTask_1" 123456789 Metadata/),
+      screen.getByText(/Element "Service Task" 123456789 Metadata/),
     ).toBeInTheDocument();
 
     expect(screen.getByText(/"assignee": "john.doe"/)).toBeInTheDocument();
@@ -236,24 +304,35 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display partial user task metadata when some fields are missing', async () => {
-    const partialUserTaskMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'USER_TASK',
-        assignee: 'jane.smith',
-        formKey: 'simple-form',
-        userTaskKey: 'ut-789',
-        dueDate: undefined,
-        followUpDate: undefined,
-        candidateGroups: undefined,
-        candidateUsers: undefined,
-        externalFormReference: undefined,
-      },
+    const userTaskInstance: ElementInstance = {
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    };
+
+    const partialUserTask: UserTask = {
+      userTaskKey: 'ut-789',
+      processInstanceKey: '111222333',
+      processDefinitionKey: '444555666',
+      processDefinitionId: 'process-def-1',
+      elementId: 'Task_1',
+      elementInstanceKey: '123456789',
+      assignee: 'jane.smith',
+      state: 'CREATED',
+      creationDate: '2023-12-01T09:00:00.000Z',
+      tenantId: '<default>',
+      formKey: 'simple-form',
+      processDefinitionVersion: 1,
+      candidateGroups: [],
+      candidateUsers: [],
+      priority: 0,
     };
 
     const {user} = render(
-      <Details metaData={partialUserTaskMetaData} elementId="UserTask_2" />,
+      <Details
+        elementInstance={userTaskInstance}
+        businessObject={mockBusinessObject}
+        userTask={partialUserTask}
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -265,16 +344,12 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should not display user task fields for non-user task types', async () => {
-    const serviceTaskMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'SERVICE_TASK',
-      },
-    };
-
     const {user} = render(
-      <Details metaData={serviceTaskMetaData} elementId="ServiceTask_1" />,
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -293,12 +368,9 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display incident fields for when incident has occurred', async () => {
-    const incidentMetadata: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        hasIncident: true,
-      },
+    const incidentElementInstance: ElementInstance = {
+      ...mockElementInstance,
+      hasIncident: true,
     };
 
     mockSearchIncidentsByElementInstance('123456789').withSuccess({
@@ -307,7 +379,10 @@ describe('MetadataPopover <Details />', () => {
     });
 
     const {user} = render(
-      <Details metaData={incidentMetadata} elementId="Activity_11ptrz9" />,
+      <Details
+        elementInstance={incidentElementInstance}
+        businessObject={mockBusinessObject}
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -324,17 +399,17 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display called process fields for called instances', async () => {
-    const incidentMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        calledProcessInstanceId: '229843728748927482',
-        calledProcessDefinitionName: 'Called Process',
-      },
+    const callActivityBusinessObject: BusinessObject = {
+      ...mockBusinessObject,
+      $type: 'bpmn:CallActivity',
     };
 
     const {user} = render(
-      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={callActivityBusinessObject}
+        calledProcessInstance={mockCalledProcessInstance}
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -347,20 +422,12 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display job data fields', async () => {
-    const incidentMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        jobType: 'httpService',
-        jobWorker: 'worker-1',
-        jobDeadline: '2023-01-15T10:10:00.000Z',
-        jobCustomHeaders: {timeout: '30s'},
-        jobKey: '555666777',
-      },
-    };
-
     const {user} = render(
-      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -374,20 +441,25 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display message name and correlation key for service task with message subscription data', async () => {
-    const messageSubscriptionMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'SERVICE_TASK',
-        messageName: 'orderReceived',
-        correlationKey: 'order-123',
-      },
+    const messageSubscription: MessageSubscription = {
+      messageSubscriptionKey: 'msg-sub-123',
+      messageName: 'orderReceived',
+      correlationKey: 'order-123',
+      processInstanceKey: '111222333',
+      processDefinitionKey: '444555666',
+      processDefinitionId: 'process-def-1',
+      elementId: 'Task_1',
+      elementInstanceKey: '123456789',
+      messageSubscriptionState: 'CREATED',
+      lastUpdatedDate: '2023-01-15T10:00:00.000Z',
+      tenantId: '<default>',
     };
 
     const {user} = render(
       <Details
-        metaData={messageSubscriptionMetaData}
-        elementId="ServiceTask_1"
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        messageSubscription={messageSubscription}
       />,
       {wrapper: TestWrapper},
     );
@@ -395,7 +467,7 @@ describe('MetadataPopover <Details />', () => {
     await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
 
     expect(
-      screen.getByText(/Element "ServiceTask_1" 123456789 Metadata/),
+      screen.getByText(/Element "Service Task" 123456789 Metadata/),
     ).toBeInTheDocument();
 
     expect(
@@ -407,16 +479,12 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should not display message fields when message name and correlation key are absent', async () => {
-    const serviceTaskMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'SERVICE_TASK',
-      },
-    };
-
     const {user} = render(
-      <Details metaData={serviceTaskMetaData} elementId="ServiceTask_3" />,
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockBusinessObject}
+        job={mockJob}
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -427,25 +495,38 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display message subscription data for message events', async () => {
-    const messageEventMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'INTERMEDIATE_CATCH_EVENT',
-        messageName: 'clientMessage',
-        correlationKey: 'client-456',
-      },
+    const eventElementInstance: ElementInstance = {
+      ...mockElementInstance,
+      type: 'INTERMEDIATE_CATCH_EVENT',
+    };
+
+    const messageSubscription: MessageSubscription = {
+      messageSubscriptionKey: 'msg-sub-456',
+      messageName: 'clientMessage',
+      correlationKey: 'client-456',
+      processInstanceKey: '111222333',
+      processDefinitionKey: '444555666',
+      processDefinitionId: 'process-def-1',
+      elementId: 'Task_1',
+      elementInstanceKey: '123456789',
+      messageSubscriptionState: 'CREATED',
+      lastUpdatedDate: '2023-01-15T10:00:00.000Z',
+      tenantId: '<default>',
     };
 
     const {user} = render(
-      <Details metaData={messageEventMetaData} elementId="MessageEvent_1" />,
+      <Details
+        elementInstance={eventElementInstance}
+        businessObject={mockBusinessObject}
+        messageSubscription={messageSubscription}
+      />,
       {wrapper: TestWrapper},
     );
 
     await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
 
     expect(
-      screen.getByText(/Element "MessageEvent_1" 123456789 Metadata/),
+      screen.getByText(/Element "Service Task" 123456789 Metadata/),
     ).toBeInTheDocument();
 
     expect(
