@@ -30,6 +30,7 @@ class OperateProcessesPage {
   readonly parentInstanceIdCell: Locator;
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
+  readonly processInstanceKeyCell: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
   constructor(page: Page) {
@@ -76,6 +77,10 @@ class OperateProcessesPage {
       name: 'sort by name',
     });
     this.processInstancesTable = page.getByTestId('data-list').getByRole('row');
+    this.processInstanceKeyCell = page
+      .getByTestId('data-list')
+      .getByTestId('cell-processInstanceKey')
+      .first();
     this.parentInstanceIdCell = page
       .getByTestId('data-list')
       .getByTestId('cell-parentInstanceId')

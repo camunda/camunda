@@ -54,7 +54,7 @@ test.beforeAll(async () => {
     ),
   };
 
-  // for variable filtering test
+  // for variable filter test
   await deploy(['./resources/Variable_Process.bpmn']);
   variableProcessInstance = {
     processInstanceKey: Number(
@@ -77,7 +77,7 @@ test.describe('Process Instances Filters', () => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
-  test('Filter process instances by parent key, date range, and error message', async ({
+  test('Filter process instances by parent key, date range, variable, instance key and error message', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
@@ -181,28 +181,69 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
 
-    await test.step('Variable filter test', async ({ }) => {
-      await test.step('Filter by variable and assert results', async () => {
-        await operateFiltersPanelPage.displayOptionalFilter('Variable');
-        await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
-        await operateFiltersPanelPage.fillVariableValueFilter('604');
+    await test.step('Filter by variable and assert results', async ({ }) => {
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
+      await operateFiltersPanelPage.fillVariableValueFilter('604');
 
-        const variableProcessInstanceKey =
-          variableProcessInstance.processInstanceKey.toString();
-          
-        await waitForAssertion({
-          assertion: async () => {
-            await expect(page.getByText('1 result')).toBeVisible();
-          },
-          onFailure: async () => {
-            await page.reload();
-          }
-        });
-
-        expect(await operateProcessesPage.processInstancesTable.count()).toBe(1)
-
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+        
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(variableProcessInstanceKey);
+        },
+        onFailure: async () => {
+          await page.reload();
+        }
       });
     })
+
+    await test.step('Filter by process instance key and assert results', async ({ }) => {
+      // await operateFiltersPanelPage.resetFiltersButton.click();
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+      const callActivityProcessInstanceKey =
+        callActivityProcessInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+
+      // test with one key
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(variableProcessInstanceKey);
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(variableProcessInstanceKey);
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        }
+      });
+      
+      // test with multiple keys
+      await operateFiltersPanelPage.resetFiltersButton.click();
+      await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+      await expect(operateFiltersPanelPage.finishedInstancesCheckbox).toBeVisible();
+      await expect(operateFiltersPanelPage.finishedInstancesCheckbox).toBeEnabled();
+      
+
+      // TODO: discuss problem about checkbox/label
+      // await operateFiltersPanelPage.finishedInstancesCheckbox.check();
+      await page.locator('label[for="Finished Instances"]').click()
+      // await operateFiltersPanelPage.completedCheckbox.click({timeout: 5000});
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 results')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        }
+      });
+    });
 
   });
 
