@@ -11,6 +11,7 @@ import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -19,6 +20,9 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.util.Either;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,12 +42,16 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
   private final SecurityConfiguration securityConfig;
   private final boolean enableIdentitySetup;
+  private final AuthorizationConfigurer authorizationConfigurer;
   private final PasswordEncoder passwordEncoder;
 
   public IdentitySetupInitializer(
-      final SecurityConfiguration securityConfig, final boolean enableIdentitySetup) {
+      final SecurityConfiguration securityConfig,
+      final boolean enableIdentitySetup,
+      final AuthorizationConfigurer authorizationConfigurer) {
     this.securityConfig = securityConfig;
     this.enableIdentitySetup = enableIdentitySetup;
+    this.authorizationConfigurer = authorizationConfigurer;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
@@ -83,6 +91,20 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
     PlatformDefaultEntities.setupDefaultTenant(setupRecord);
     PlatformDefaultEntities.setupDefaultRoles(setupRecord);
+
+    final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
+        authorizationConfigurer.configureEntities(initialization.getAuthorizations());
+
+    configuredAuthorizations.ifRight(auths -> auths.forEach(setupRecord::addAuthorization));
+
+    // TODO: after adding more entity types, change this, so it accounts for all violations all
+    //   together.
+    configuredAuthorizations.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Cannot initialize configured entities: \n- %s"
+                  .formatted(StringUtils.join(violations, "\n- ")));
+        });
 
     initialization
         .getUsers()
