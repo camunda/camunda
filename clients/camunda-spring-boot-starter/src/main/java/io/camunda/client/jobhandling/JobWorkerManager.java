@@ -19,13 +19,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.CloseChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.CreateChangeSet;
-import io.camunda.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.ResetChangeSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ public class JobWorkerManager {
   private final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers;
   private final JobWorkerFactory jobWorkerFactory;
 
-  private final Map<String, InternalManagedJobWorker> managedJobWorkers = new HashMap<>();
+  private final Map<String, InternalManagedJobWorker> managedJobWorkers = new ConcurrentHashMap<>();
 
   public JobWorkerManager(
       final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers,
@@ -97,7 +97,8 @@ public class JobWorkerManager {
 
   public void closeJobWorker(final String type) {
     final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
-    upsertWorker(internalManagedJobWorker, new EnabledChangeSet(false), false);
+    upsertWorker(internalManagedJobWorker, new CloseChangeSet(), false);
+    managedJobWorkers.remove(type);
   }
 
   private InternalManagedJobWorker findManagedJobWorker(final String type) {
@@ -135,7 +136,8 @@ public class JobWorkerManager {
           customizer -> customizer.customize(internalManagedJobWorker.getCurrent()));
     }
     final boolean enabled = internalManagedJobWorker.getCurrent().getEnabled().value();
-    if (enabled) {
+    final boolean closed = changeSet instanceof CloseChangeSet;
+    if (!closed && enabled) {
       internalManagedJobWorker.setJobWorker(
           jobWorkerFactory.createJobWorker(
               internalManagedJobWorker.getCamundaClient(),
