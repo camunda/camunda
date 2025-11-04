@@ -9,8 +9,7 @@ package io.camunda.application.commons.configuration;
 
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
-import io.atomix.cluster.NodeConfig;
-import io.atomix.cluster.discovery.BootstrapDiscoveryConfig;
+import io.atomix.cluster.discovery.DynamicDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
@@ -30,7 +29,6 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.context.annotation.Bean;
@@ -131,13 +129,8 @@ public final class GatewayBasedConfiguration {
         .setSyncInterval(config.getSyncInterval());
   }
 
-  private BootstrapDiscoveryConfig discoveryConfig(final Collection<String> contactPoints) {
-    final var nodes =
-        contactPoints.stream()
-            .map(Address::from)
-            .map(address -> new NodeConfig().setAddress(address))
-            .collect(Collectors.toSet());
-    return new BootstrapDiscoveryConfig().setNodes(nodes);
+  private DynamicDiscoveryConfig discoveryConfig(final Collection<String> contactPoints) {
+    return new DynamicDiscoveryConfig().setAddresses(contactPoints);
   }
 
   private MessagingConfig messagingConfig(final GatewayCfg config) {
