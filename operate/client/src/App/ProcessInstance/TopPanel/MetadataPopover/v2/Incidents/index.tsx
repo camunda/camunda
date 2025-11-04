@@ -11,9 +11,9 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
 import {MultiIncidents} from './multiIncidents';
 import {SingleIncident} from './singleIncident';
-import {Divider} from '../../styled';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {Divider} from '../styled';
 
 type Props = {
   elementInstanceKey: string;

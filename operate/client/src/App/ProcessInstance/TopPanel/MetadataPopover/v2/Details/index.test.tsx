@@ -11,7 +11,7 @@ import {type V2MetaDataDto} from '../types';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {baseMetaData, TestWrapper} from './mocks';
 import {Details} from './index';
-import {getExecutionDuration} from '../../Details/getExecutionDuration';
+import {getExecutionDuration} from './getExecutionDuration';
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
 import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
 import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';

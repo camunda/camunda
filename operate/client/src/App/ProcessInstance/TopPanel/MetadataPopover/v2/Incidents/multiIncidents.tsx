@@ -7,7 +7,7 @@
  */
 
 import {Header} from '../../Header';
-import {SummaryDataValue} from '../../styled';
+import {SummaryDataValue} from '../styled';
 
 type Props = {count: number; onButtonClick: () => void};
 

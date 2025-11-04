@@ -8,9 +8,6 @@
 
 import {screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {createInstance} from 'modules/testUtils';
 import {incidentsStore} from 'modules/stores/incidents';
 import {
   calledInstanceMetadata,
@@ -184,22 +181,13 @@ describe('MetadataPopover', () => {
   });
 
   afterEach(() => {
-    processInstanceDetailsStore.reset();
     flowNodeSelectionStore.reset();
-    flowNodeMetaDataStore.reset();
     incidentsStore.reset();
   });
 
   it('should not show unrelated data', async () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    flowNodeMetaDataStore.setMetaData(singleInstanceMetadata);
 
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
     selectFlowNode(
       {},
       {
@@ -248,14 +236,6 @@ describe('MetadataPopover', () => {
       items: [mockSingleIncident],
       page: {totalItems: 1},
     });
-    flowNodeMetaDataStore.setMetaData(incidentFlowNodeMetaData);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'INCIDENT',
-      }),
-    );
 
     selectFlowNode(
       {},
@@ -285,7 +265,6 @@ describe('MetadataPopover', () => {
       endDate: '2018-12-12 00:00:00',
       type: 'CALL_ACTIVITY',
     });
-    flowNodeMetaDataStore.setMetaData(calledInstanceMetadata);
 
     mockSearchProcessInstances().withSuccess({
       items: [
@@ -305,12 +284,6 @@ describe('MetadataPopover', () => {
       },
     });
 
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
     selectFlowNode(
       {},
       {
@@ -382,7 +355,6 @@ describe('MetadataPopover', () => {
       ...mockElementInstance,
       hasIncident: true,
     });
-    flowNodeMetaDataStore.setMetaData(multiInstancesMetadata);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -443,12 +415,6 @@ describe('MetadataPopover', () => {
       page: {totalItems: 3},
     });
 
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
     selectFlowNode(
       {},
       {
@@ -482,14 +448,6 @@ describe('MetadataPopover', () => {
     mockFetchFlowNodeMetadata().withSuccess(multiInstanceCallActivityMetadata);
     mockFetchFlowNodeMetadata().withSuccess(multiInstanceCallActivityMetadata);
 
-    flowNodeMetaDataStore.setMetaData(multiInstanceCallActivityMetadata);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
     selectFlowNode(
       {},
       {
@@ -515,15 +473,6 @@ describe('MetadataPopover', () => {
     mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
     mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
 
-    flowNodeMetaDataStore.setMetaData(userTaskFlowNodeMetaData);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-
     selectFlowNode(
       {},
       {
@@ -546,15 +495,6 @@ describe('MetadataPopover', () => {
   it('should render retries left', async () => {
     mockFetchFlowNodeMetadata().withSuccess(retriesLeftFlowNodeMetaData);
     mockFetchFlowNodeMetadata().withSuccess(retriesLeftFlowNodeMetaData);
-
-    flowNodeMetaDataStore.setMetaData(retriesLeftFlowNodeMetaData);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
 
     selectFlowNode(
       {},
@@ -581,13 +521,6 @@ describe('MetadataPopover', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('2251799813699889').withSuccess(
       mockElementInstance,
-    );
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
     );
 
     selectFlowNode(
@@ -624,13 +557,6 @@ describe('MetadataPopover', () => {
       page: {totalItems: 1},
     });
 
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-
     selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
 
     renderPopover();
@@ -645,13 +571,6 @@ describe('MetadataPopover', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchElementInstances().withNetworkError();
 
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-
     selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
 
     renderPopover();
@@ -664,13 +583,6 @@ describe('MetadataPopover', () => {
   it('should handle failed single element instance fetch gracefully', async () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('invalid-key').withNetworkError();
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
 
     selectFlowNode(
       {},
@@ -704,13 +616,6 @@ describe('MetadataPopover', () => {
       page: {totalItems: 1},
     });
 
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-
     selectFlowNode(
       {},
       {flowNodeId: 'BusinessRuleTask', flowNodeInstanceId: '2251799813699889'},
@@ -736,13 +641,6 @@ describe('MetadataPopover', () => {
       ...mockElementInstance,
       type: 'SERVICE_TASK',
     });
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
 
     selectFlowNode(
       {},
@@ -774,13 +672,6 @@ describe('MetadataPopover', () => {
       page: {totalItems: 0},
     });
 
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-
     selectFlowNode(
       {},
       {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
@@ -807,13 +698,6 @@ describe('MetadataPopover', () => {
     });
 
     mockSearchDecisionInstances().withNetworkError();
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
 
     selectFlowNode(
       {},

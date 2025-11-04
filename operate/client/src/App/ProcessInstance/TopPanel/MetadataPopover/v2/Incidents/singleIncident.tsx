@@ -11,7 +11,7 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {Header} from '../../Header';
 import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
-import {SummaryDataKey, SummaryDataValue} from '../../styled';
+import {SummaryDataKey, SummaryDataValue} from '../styled';
 import {resolveIncidentErrorType} from './resolveIncidentErrorType';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
