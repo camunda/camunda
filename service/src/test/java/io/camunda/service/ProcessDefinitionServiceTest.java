@@ -9,13 +9,16 @@ package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -83,5 +86,44 @@ public class ProcessDefinitionServiceTest {
     // then
     assertThat(result).isEqualTo(statsResult);
     verify(processDefinitionSearchClient).processDefinitionInstanceStatistics(query);
+  }
+
+  @Test
+  public void shouldReturnProcessDefinitionInstanceVersionStatistics() {
+    // given
+    final var statsEntity =
+        new ProcessDefinitionInstanceVersionStatisticsEntity(
+            "complexProcess", 1L, 2, "Complex process", 3L, 4L);
+    final var statsResult =
+        new SearchQueryResult.Builder<ProcessDefinitionInstanceVersionStatisticsEntity>()
+            .total(1L)
+            .items(List.of(statsEntity))
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+
+    when(processDefinitionSearchClient.processDefinitionInstanceVersionStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var originalQuery = new ProcessDefinitionInstanceVersionStatisticsQuery.Builder().build();
+
+    // when
+    final var result =
+        services.searchProcessDefinitionInstanceVersionStatistics("complexProcess", originalQuery);
+
+    // then
+    assertThat(result).isEqualTo(statsResult);
+
+    // verify that the invoked query contains the processDefinitionId regardless of operator type
+    verify(processDefinitionSearchClient)
+        .processDefinitionInstanceVersionStatistics(
+            argThat(
+                q ->
+                    q != null
+                        && q.filter() != null
+                        && q.filter().processDefinitionIdOperations().stream()
+                            .anyMatch(op -> op.values().contains("complexProcess"))
+                        && q.page().equals(originalQuery.page())
+                        && q.sort().equals(originalQuery.sort())));
   }
 }

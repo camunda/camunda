@@ -24,6 +24,7 @@ import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionInstanceStatisticsSort;
+import io.camunda.search.sort.ProcessDefinitionInstanceVersionStatisticsSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleMemberSort;
@@ -211,6 +212,14 @@ public class SearchQuerySortRequestMapper {
           SearchQuerySortRequest<ProcessDefinitionInstanceStatisticsQuerySortRequest.FieldEnum>>
       fromProcessDefinitionInstanceStatisticsQuerySortRequest(
           final List<ProcessDefinitionInstanceStatisticsQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  public static List<
+          SearchQuerySortRequest<
+              ProcessDefinitionInstanceVersionStatisticsQuerySortRequest.FieldEnum>>
+      fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(
+          final List<ProcessDefinitionInstanceVersionStatisticsQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -764,8 +773,30 @@ public class SearchQuerySortRequestMapper {
     } else {
       switch (field) {
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
-        case ACTIVE_INSTANCES_WITH_INCIDENT -> builder.activeInstancesWithIncident();
-        case ACTIVE_INSTANCES_WITHOUT_INCIDENT -> builder.activeInstancesWithoutIncident();
+        case ACTIVE_INSTANCES_WITH_INCIDENT_COUNT -> builder.activeInstancesWithIncidentCount();
+        case ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT ->
+            builder.activeInstancesWithoutIncidentCount();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  public static List<String> applyProcessDefinitionInstanceVersionStatisticsSortField(
+      final ProcessDefinitionInstanceVersionStatisticsQuerySortRequest.FieldEnum field,
+      final ProcessDefinitionInstanceVersionStatisticsSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
+        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
+        case ACTIVE_INSTANCES_WITH_INCIDENT_COUNT -> builder.activeInstancesWithIncidentCount();
+        case ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT ->
+            builder.activeInstancesWithoutIncidentCount();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

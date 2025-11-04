@@ -35,6 +35,7 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -106,6 +107,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatistics
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
@@ -252,12 +255,36 @@ public final class SearchQueryResponseMapper {
                 .toList());
   }
 
+  public static ProcessDefinitionInstanceVersionStatisticsQueryResult
+      toProcessInstanceVersionStatisticsQueryResult(
+          final SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> result) {
+    final var page = toProcessDefinitionInstanceStatisticsPageResponse(result);
+    return new ProcessDefinitionInstanceVersionStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toProcessInstanceVersionStatisticsResult)
+                .toList());
+  }
+
   private static ProcessDefinitionInstanceStatisticsResult toProcessInstanceStatisticsResult(
       final ProcessDefinitionInstanceStatisticsEntity result) {
     return new ProcessDefinitionInstanceStatisticsResult()
         .processDefinitionId(result.processDefinitionId())
         .latestProcessDefinitionName(result.latestProcessDefinitionName())
         .hasMultipleVersions(result.hasMultipleVersions())
+        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
+        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
+  }
+
+  private static ProcessDefinitionInstanceVersionStatisticsResult
+      toProcessInstanceVersionStatisticsResult(
+          final ProcessDefinitionInstanceVersionStatisticsEntity result) {
+    return new ProcessDefinitionInstanceVersionStatisticsResult()
+        .processDefinitionId(result.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionName(result.processDefinitionName())
+        .processDefinitionVersion(result.processDefinitionVersion())
         .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
         .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
   }

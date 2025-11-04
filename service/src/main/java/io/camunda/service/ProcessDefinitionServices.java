@@ -15,9 +15,12 @@ import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -109,6 +112,28 @@ public class ProcessDefinitionServices
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .processDefinitionInstanceStatistics(query));
+  }
+
+  public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
+      searchProcessDefinitionInstanceVersionStatistics(
+          final String processDefinitionId,
+          final ProcessDefinitionInstanceVersionStatisticsQuery query) {
+
+    final var filter =
+        query.filter().toBuilder()
+            .processDefinitionIds(processDefinitionId)
+            .states(ProcessInstanceState.ACTIVE.name())
+            .build();
+    final var updatedQuery =
+        ProcessDefinitionInstanceVersionStatisticsQuery.of(
+            b -> b.filter(filter).sort(query.sort()).page(query.page()));
+    return executeSearchRequest(
+        () ->
+            processDefinitionSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .processDefinitionInstanceVersionStatistics(updatedQuery));
   }
 
   public Optional<FormEntity> getProcessDefinitionStartForm(final long processDefinitionKey) {

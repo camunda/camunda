@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record ProcessDefinitionInstanceStatisticsSort(List<FieldSorting> orderings)
+public record ProcessDefinitionInstanceVersionStatisticsSort(List<FieldSorting> orderings)
     implements SortOption {
 
   @Override
@@ -19,17 +19,32 @@ public record ProcessDefinitionInstanceStatisticsSort(List<FieldSorting> orderin
     return orderings;
   }
 
-  public static ProcessDefinitionInstanceStatisticsSort of(
-      final Function<Builder, ObjectBuilder<ProcessDefinitionInstanceStatisticsSort>> fn) {
-    return SortOptionBuilders.processDefinitionInstanceStatistics(fn);
+  public static ProcessDefinitionInstanceVersionStatisticsSort of(
+      final Function<Builder, ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsSort>> fn) {
+    return SortOptionBuilders.processDefinitionInstanceVersionStatistics(fn);
   }
 
   public static final class Builder
-      extends SortOption.AbstractBuilder<ProcessDefinitionInstanceStatisticsSort.Builder>
-      implements ObjectBuilder<ProcessDefinitionInstanceStatisticsSort> {
+      extends SortOption.AbstractBuilder<ProcessDefinitionInstanceVersionStatisticsSort.Builder>
+      implements ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsSort> {
 
     public Builder processDefinitionId() {
       currentOrdering = new FieldSorting("processDefinitionId", null);
+      return this;
+    }
+
+    public Builder processDefinitionKey() {
+      currentOrdering = new FieldSorting("processDefinitionKey", null);
+      return this;
+    }
+
+    public Builder processDefinitionName() {
+      currentOrdering = new FieldSorting("processDefinitionName", null);
+      return this;
+    }
+
+    public Builder processDefinitionVersion() {
+      currentOrdering = new FieldSorting("processDefinitionVersion", null);
       return this;
     }
 
@@ -49,8 +64,8 @@ public record ProcessDefinitionInstanceStatisticsSort(List<FieldSorting> orderin
     }
 
     @Override
-    public ProcessDefinitionInstanceStatisticsSort build() {
-      return new ProcessDefinitionInstanceStatisticsSort(orderings);
+    public ProcessDefinitionInstanceVersionStatisticsSort build() {
+      return new ProcessDefinitionInstanceVersionStatisticsSort(orderings);
     }
   }
 }

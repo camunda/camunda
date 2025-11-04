@@ -243,4 +243,9 @@ public final class SearchQueryBuilders {
       processDefinitionInstanceStatisticsQuery() {
     return new ProcessDefinitionInstanceStatisticsQuery.Builder();
   }
+
+  public static ProcessDefinitionInstanceVersionStatisticsQuery.Builder
+      processDefinitionInstanceVersionStatisticsQuery() {
+    return new ProcessDefinitionInstanceVersionStatisticsQuery.Builder();
+  }
 }
