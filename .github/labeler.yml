@@ -10,7 +10,7 @@ component/build-pipeline:
 component/c8-api:
   - changed-files:
       - any-glob-to-any-file:
-          - 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml'
+          - 'zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml'
           - 'zeebe/gateway-rest/**'
 # hint on changes done to the deprecated java client, and that might need to applied to the supported client
 deprecated-client:

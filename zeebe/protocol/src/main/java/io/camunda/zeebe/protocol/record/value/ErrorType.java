@@ -43,7 +43,7 @@ package io.camunda.zeebe.protocol.record.value;
  *     </tr>
  *     <tr>
  *       <td><b>Gateway Protocol</b></td>
- *       <td>Add the new type in <code>src/main/proto/rest-api.yaml</code> for <code>IncidentFilterRequestBase</code> and <code>IncidentItemBase</code> documents</td>
+ *       <td>Add the new type in <code>src/main/proto/v2/rest-api.yaml</code> for <code>IncidentFilterRequestBase</code> and <code>IncidentItemBase</code> documents</td>
  *     </tr>
  *   </tbody>
  * </table>

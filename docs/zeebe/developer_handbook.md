@@ -168,7 +168,7 @@ If you cannot find an existing authorization check that fits your needs, follow 
 
 3. **Expose them through the REST API**
 
-- In `camunda/zeebe/gateway-protocol/src/main/proto/rest-api.yaml`, under
+- In `camunda/zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml`, under
   - `PermissionTypeEnum`
   - `ResourceTypeEnum`
 - Add your new entries to the `enum` lists so the OpenAPI spec (and generated clients) know about them.
