@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
@@ -16,7 +17,6 @@ import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3Client
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig.Credentials;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.InstantSource;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -48,7 +48,7 @@ public class NodeIdProviderIT {
   S3NodeIdRepository.Config config;
   @AutoClose private S3NodeIdRepository repository;
   @AutoClose private NodeIdProvider nodeIdProvider;
-  private InstantSource clock;
+  private ControlledInstantSource clock;
   private int clusterSize;
   private String taskId;
 
@@ -89,6 +89,36 @@ public class NodeIdProviderIT {
     final var nodeId = acquiredLease.lease().nodeInstance().id();
     assertThat(nodeId).isEqualTo(0);
     assertThat(repository.getLease(nodeId)).isEqualTo(acquiredLease);
+  }
+
+  @Test
+  public void shouldAcquireAnExpiredLease() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    // acquire a lease in the past
+    final var previousEtag = repository.getLease(0).eTag();
+    final var expiredLeaseTimestamp = clock.millis();
+    final var expiredLease =
+        repository.acquire(
+            new Lease(taskId + "old", expiredLeaseTimestamp, new NodeInstance(0)), previousEtag);
+    clock.advance(EXPIRY_DURATION.plusSeconds(1));
+
+    // when
+    nodeIdProvider = ofSize(clusterSize);
+
+    // then
+    assertLeaseIsReady();
+
+    final var acquiredLease = nodeIdProvider.getCurrentLease();
+    final var nodeId = acquiredLease.lease().nodeInstance().id();
+    assertThat(nodeId).isEqualTo(0);
+    final var currentLease = repository.getLease(nodeId);
+    assertThat(currentLease)
+        .asInstanceOf(type(StoredLease.Initialized.class))
+        .isEqualTo(acquiredLease)
+        .isNotEqualTo(expiredLease)
+        .satisfies(l -> assertThat(l.metadata().expiry()).isGreaterThan(expiredLeaseTimestamp));
   }
 
   @Test

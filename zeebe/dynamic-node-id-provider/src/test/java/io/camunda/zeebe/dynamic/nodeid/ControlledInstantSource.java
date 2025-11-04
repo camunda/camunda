@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 
@@ -20,6 +21,10 @@ public class ControlledInstantSource implements InstantSource {
 
   public void setInstant(final Instant instant) {
     this.instant = instant;
+  }
+
+  public void advance(final Duration duration) {
+    instant = instant.plus(duration);
   }
 
   @Override

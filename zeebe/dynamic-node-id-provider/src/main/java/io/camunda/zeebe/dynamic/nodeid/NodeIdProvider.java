@@ -117,8 +117,15 @@ public class NodeIdProvider implements AutoCloseable {
             LOG.debug("Lease {} is is held by another process, skipping it", initialized);
             return null;
           } else {
-            return nodeIdRepository.acquire(
-                initialized.lease().renew(clock.millis(), leaseDuration), initialized.eTag());
+            LOG.debug("Trying to acquire an expired lease {}", initialized);
+            final var newLease =
+                (initialized.metadata().task().equals(taskId))
+                    ? initialized.lease().renew(clock.millis(), leaseDuration)
+                    : new Lease(
+                        taskId,
+                        clock.millis() + leaseDuration.toMillis(),
+                        initialized.lease().nodeInstance());
+            return nodeIdRepository.acquire(newLease, initialized.eTag());
           }
         }
         case final Uninitialized uninitialized -> {
