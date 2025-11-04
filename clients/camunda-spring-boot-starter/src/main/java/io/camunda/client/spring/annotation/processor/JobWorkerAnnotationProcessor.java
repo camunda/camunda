@@ -32,7 +32,10 @@ import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.metrics.MetricsRecorder;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ReflectionUtils;
@@ -54,7 +57,7 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
   private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
-  private final List<ManagedJobWorker> managedJobWorkers = new ArrayList<>();
+  private final Map<String, List<ManagedJobWorker>> managedJobWorkers = new HashMap<>();
 
   public JobWorkerAnnotationProcessor(
       final JobWorkerManager jobWorkerManager,
@@ -78,6 +81,10 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
 
   @Override
   public void configureFor(final BeanInfo beanInfo) {
+    if (managedJobWorkers.containsKey(beanInfo.getBeanName())) {
+      LOGGER.debug("Bean {} has already been configured", beanInfo.getBeanName());
+      return;
+    }
     final List<ManagedJobWorker> newManagedJobWorkers = new ArrayList<>();
 
     doWithMethods(
@@ -105,15 +112,17 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
         newManagedJobWorkers.size(),
         beanInfo.getBeanName(),
         newManagedJobWorkers);
-    managedJobWorkers.addAll(newManagedJobWorkers);
+    managedJobWorkers.put(beanInfo.getBeanName(), newManagedJobWorkers);
   }
 
   @Override
   public void start(final CamundaClient client) {
-    managedJobWorkers.forEach(
-        managedJobWorker -> {
-          jobWorkerManager.createJobWorker(client, managedJobWorker, this);
-        });
+    managedJobWorkers.values().stream()
+        .flatMap(Collection::stream)
+        .forEach(
+            managedJobWorker -> {
+              jobWorkerManager.createJobWorker(client, managedJobWorker, this);
+            });
   }
 
   @Override
