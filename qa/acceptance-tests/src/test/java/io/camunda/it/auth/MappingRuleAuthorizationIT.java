@@ -15,32 +15,26 @@ import static io.camunda.client.api.search.enums.ResourceType.MAPPING_RULE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.UpdateMappingRuleResponse;
+import io.camunda.client.api.search.response.MappingRule;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.Base64;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -52,14 +46,11 @@ class MappingRuleAuthorizationIT {
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
 
-  private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String UNAUTHORIZED = "unauthorizedUser";
   private static final String UPDATER = "updateUser";
   private static final String DEFAULT_PASSWORD = "password";
-  private static final String MAPPING_RULE_SEARCH_ENDPOINT = "v2/mapping-rules/search";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -86,125 +77,112 @@ class MappingRuleAuthorizationIT {
       new TestUser(
           UPDATER, DEFAULT_PASSWORD, List.of(new Permissions(MAPPING_RULE, UPDATE, List.of("*"))));
 
-  @MappingRuleDefinition
-  private static final TestMappingRule MAPPING_RULE_1 =
-      new TestMappingRule("mappingRule1", "test-name", "test-value");
-
-  @MappingRuleDefinition
-  private static final TestMappingRule MAPPING_RULE_2 =
-      new TestMappingRule("mappingRule2", "test-name2", "test-value2");
-
-  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
-
   @Test
   void searchShouldReturnAuthorizedMappingRules(
-      @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
-    final var mappingRuleSearchResponse =
-        searchMappingRules(userClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
+      @Authenticated(RESTRICTED) final CamundaClient userClient,
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final var id = createRandomMappingRule(adminClient);
 
-    assertThat(mappingRuleSearchResponse.items())
-        .hasSizeGreaterThanOrEqualTo(2)
-        .map(MappingRuleResponse::name)
-        .contains("mappingRule1", "mappingRule2");
+    // when
+    final Future<SearchResponse<MappingRule>> response =
+        userClient.newMappingRulesSearchRequest().send();
+
+    // then
+    assertThat(response)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting(SearchResponse::items, InstanceOfAssertFactories.list(MappingRule.class))
+        .isNotEmpty()
+        .map(MappingRule::getMappingRuleId)
+        .contains(id);
   }
 
   @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
-      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
-    final var mappingRuleSearchResponse =
-        searchMappingRules(userClient.getConfiguration().getRestAddress().toString(), UNAUTHORIZED);
+      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
+    // when
+    final var response = userClient.newMappingRulesSearchRequest().send();
 
-    assertThat(mappingRuleSearchResponse.items()).isEmpty();
+    // then
+    assertThat((Future<SearchResponse<MappingRule>>) response)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .extracting(SearchResponse::items, InstanceOfAssertFactories.list(MappingRule.class))
+        .isEmpty();
   }
 
   @Test
   void deleteMappingRuleShouldReturnForbiddenIfUnauthorized(
-      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    assertThatThrownBy(
-            () -> camundaClient.newDeleteMappingRuleCommand("mappingRule1").send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("403: 'Forbidden'");
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient,
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final var id = createRandomMappingRule(adminClient);
+
+    // when / then
+    assertThat((Future<?>) camundaClient.newDeleteMappingRuleCommand(id).send())
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(ProblemException.class)
+        .withMessageContaining("403: 'Forbidden'");
   }
 
   @Test
   void getMappingRuleShouldReturnForbiddenIfUnauthorized(
-      @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newMappingRuleGetRequest("mappingRule1").send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("403: 'Forbidden'");
+      @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient,
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final var id = createRandomMappingRule(adminClient);
+
+    // when / then
+    assertThat((Future<?>) camundaClient.newMappingRuleGetRequest(id).send())
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(ProblemException.class)
+        .withMessageContaining("403: 'Forbidden'");
   }
 
   @Test
   void getMappingRuleShouldReturnMappingRuleIfAuthorized(
-      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    // when - get the mapping rule (this should not throw an exception)
-    final var mappingRule = camundaClient.newMappingRuleGetRequest("mappingRule1").send().join();
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient,
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final var id = createRandomMappingRule(adminClient);
+
+    // when
+    final Future<MappingRule> response = camundaClient.newMappingRuleGetRequest(id).send();
 
     // then
-    assertThat(mappingRule.getMappingRuleId()).isEqualTo("mappingRule1");
-    assertThat(mappingRule.getClaimName()).isEqualTo("test-name");
-    assertThat(mappingRule.getClaimValue()).isEqualTo("test-value");
+    assertThat(response)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .satisfies(mappingRule -> assertThat(mappingRule.getMappingRuleId()).isEqualTo(id));
   }
 
   @Test
   void deleteMappingRuleShouldDeleteMappingRuleIfAuthorized(
-      @Authenticated(ADMIN) final CamundaClient camundaClient) throws Exception {
-    // given - create a mapping rule specifically for deletion in this test
-    final String mappingRuleId = "testMappingRuleToDelete";
-    camundaClient
-        .newCreateMappingRuleCommand()
-        .mappingRuleId(mappingRuleId)
-        .claimName("testClaimName")
-        .claimValue("testClaimValue")
-        .name("testMappingRule")
-        .send()
-        .join();
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // given
+    final var mappingRuleId = createRandomMappingRule(camundaClient);
 
-    // wait for the mapping rule to be created and indexed
-    Awaitility.await("Mapping rule is created")
-        .ignoreExceptionsInstanceOf(IOException.class)
-        .untilAsserted(
-            () -> {
-              final var searchResponse =
-                  searchMappingRules(
-                      camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
-              assertThat(searchResponse.items())
-                  .map(MappingRuleResponse::name)
-                  .contains("testMappingRule");
-            });
+    // when
+    final Future<?> deleted = camundaClient.newDeleteMappingRuleCommand(mappingRuleId).send();
 
-    final var searchResponseBefore =
-        searchMappingRules(camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
-    final int initialCount = searchResponseBefore.items().size();
-
-    // when - delete the mapping rule (this should not throw an exception)
-    camundaClient.newDeleteMappingRuleCommand(mappingRuleId).send().join();
-
-    // then - wait until the mapping rule is deleted
-    Awaitility.await("Mapping rule is deleted")
-        .ignoreExceptionsInstanceOf(IOException.class)
-        .untilAsserted(
-            () -> {
-              final var searchResponseAfter =
-                  searchMappingRules(
-                      camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
-              assertThat(searchResponseAfter.items())
-                  .map(MappingRuleResponse::name)
-                  .doesNotContain("testMappingRule")
-                  .hasSize(initialCount - 1);
-            });
+    // then - correctness is asserted in MappingRuleIT, here we just check that it was authorized
+    assertThat(deleted).succeedsWithin(Duration.ofSeconds(5));
   }
 
   @Test
   void updateMappingRuleShouldReturnForbiddenIfUnauthorized(
-      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient,
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final var id = createRandomMappingRule(adminClient);
+
     // when / then
     // the actual values don't really matter at the moment because we don't support fine grained
     // permissions on mapping rules, just coarse (e.g. UPDATE on all mapping rules)
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUpdateMappingRuleCommand(MAPPING_RULE_1.id())
+                    .newUpdateMappingRuleCommand(id)
                     .name("name")
                     .claimName("claim")
                     .claimValue("value")
@@ -216,45 +194,44 @@ class MappingRuleAuthorizationIT {
 
   @Test
   void shouldUpdateMappingRuleIfAuthorized(
-      @Authenticated(UPDATER) final CamundaClient camundaClient) {
+      @Authenticated(UPDATER) final CamundaClient camundaClient,
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var claimName = UUID.randomUUID().toString();
-    final var claimValue = UUID.randomUUID().toString();
+    final var id = createRandomMappingRule(adminClient);
 
     // when
     final Future<UpdateMappingRuleResponse> result =
         camundaClient
-            .newUpdateMappingRuleCommand(MAPPING_RULE_1.id())
-            .name(name)
-            .claimName(claimName)
-            .claimValue(claimValue)
+            .newUpdateMappingRuleCommand(id)
+            .name(UUID.randomUUID().toString())
+            .claimName(UUID.randomUUID().toString())
+            .claimValue(UUID.randomUUID().toString())
             .send();
 
     // then - only check if it's successful, correctness tests are found in MappingRuleIT
     assertThat(result).succeedsWithin(5, java.util.concurrent.TimeUnit.SECONDS);
   }
 
-  // TODO once available, this test should use the client to make the request
-  private MappingRuleSearchResponse searchMappingRules(
-      final String restAddress, final String username)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, MAPPING_RULE_SEARCH_ENDPOINT)))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
+  private String createRandomMappingRule(final CamundaClient client) {
+    final var id = Strings.newRandomValidIdentityId();
+    client
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(id)
+        .name(UUID.randomUUID().toString())
+        .claimName(UUID.randomUUID().toString())
+        .claimValue(UUID.randomUUID().toString())
+        .send()
+        .join();
 
-    final HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), MappingRuleSearchResponse.class);
+    // make sure it's available for get/search afterwards
+    Awaitility.await("Mapping rule exists in secondary storage")
+        .ignoreExceptionsInstanceOf(IOException.class)
+        .untilAsserted(
+            () ->
+                assertThat((Future<MappingRule>) client.newMappingRuleGetRequest(id).send())
+                    .succeedsWithin(5, java.util.concurrent.TimeUnit.SECONDS)
+                    .returns(id, MappingRule::getMappingRuleId));
+
+    return id;
   }
-
-  private record MappingRuleSearchResponse(List<MappingRuleResponse> items) {}
-
-  private record MappingRuleResponse(String name) {}
 }
