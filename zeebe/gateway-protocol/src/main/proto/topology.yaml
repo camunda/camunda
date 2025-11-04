@@ -1,0 +1,58 @@
+getTopology:
+  get:
+    tags:
+      - Cluster
+    operationId: getTopology
+    summary: Get cluster topology
+    description: Obtains the current topology of the cluster the gateway is part of.
+    responses:
+      "200":
+        description: Obtains the current topology of the cluster the gateway is part of.
+        content:
+          application/json:
+            schema:
+              $ref: "topology.yaml#/schemas/TopologyResponse"
+schemas:
+  TopologyResponse:
+    description: The response of a topology request.
+    type: object
+    required:
+      - brokers
+      - clusterSize
+      - partitionsCount
+      - replicationFactor
+      - gatewayVersion
+      - lastCompletedChangeId
+    properties:
+      brokers:
+        description: A list of brokers that are part of this cluster.
+        type: array
+        items:
+          $ref: "common.yaml#/schemas/BrokerInfo"
+      clusterId:
+        description: The cluster Id.
+        type: string
+        nullable: true
+      clusterSize:
+        description: The number of brokers in the cluster.
+        type: integer
+        format: int32
+        example: 3
+      partitionsCount:
+        description: The number of partitions are spread across the cluster.
+        type: integer
+        format: int32
+        example: 3
+      replicationFactor:
+        description: The configured replication factor for this cluster.
+        type: integer
+        format: int32
+        example: 3
+      gatewayVersion:
+        description: The version of the Zeebe Gateway.
+        type: string
+        example: 8.8.0
+      lastCompletedChangeId:
+        description: ID of the last completed change
+        type: string
+        example: "-1"

@@ -1,0 +1,32 @@
+openapi: "3.0.3"
+info:
+  title: Orchestration Cluster API
+  version: "0.1"
+  contact:
+    name: Camunda Engineering
+    url: https://github.com/camunda/camunda/issues
+  description: API for communicating with a Camunda 8 cluster.
+  license:
+    name: Camunda License Version 1.0
+    url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
+externalDocs:
+  description: Find out more
+  url: https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/orchestration-cluster-api-rest-overview/
+servers:
+  - url: "{schema}://{host}:{port}/v2"
+    variables:
+      host:
+        default: localhost
+        description: The hostname of the Orchestration Cluster REST Gateway.
+      port:
+        default: "8080"
+        description: The port of the Orchestration Cluster REST API server.
+      schema:
+        default: http
+        description: The schema of the Orchestration Cluster REST API server.
+tags:
+  - name: Cluster
+
+paths:
+  /topology:
+    $ref: "topology.yaml#/getTopology"
