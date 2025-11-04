@@ -1,14 +1,16 @@
 ---
 # This workflow validates that pull request commits are not
-# (co-)authored by GitHub Copilot. According to Camunda's Copilot
+# authored by GitHub Copilot. According to Camunda's Copilot
 # policies (https://confluence.camunda.com/x/MoegDg),
 # commits must be properly attributed to human developers
 # to ensure accountability and maintain clean git history. This check
 # helps prevent future history rewrites.
 #
-# The workflow will fail if any commits in the PR are (co-)authored by
+# The workflow will fail if any commits in the PR are authored by
 # GitHub Copilot, requiring the developer to recreate those commits
 # with proper attribution.
+#
+# owner: @camunda/monorepo-devops-team
 name: Check Copilot Commits
 
 on:
