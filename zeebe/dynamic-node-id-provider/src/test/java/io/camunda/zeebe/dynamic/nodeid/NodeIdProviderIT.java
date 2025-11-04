@@ -8,6 +8,11 @@
 package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
@@ -16,7 +21,9 @@ import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig.Credentials;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -70,7 +77,9 @@ public class NodeIdProviderIT {
     taskId = UUID.randomUUID().toString();
     config = new Config(bucketName, EXPIRY_DURATION);
     client.createBucket(b -> b.bucket(config.bucketName()));
-    clock = new ControlledInstantSource(Instant.now());
+    final var initialInstant =
+        LocalDateTime.of(2025, 11, 1, 13, 46, 22).atZone(ZoneId.of("UTC")).toInstant();
+    clock = new ControlledInstantSource(initialInstant);
     repository = new S3NodeIdRepository(client, config, clock, false);
   }
 
@@ -89,6 +98,9 @@ public class NodeIdProviderIT {
     final var acquiredLease = nodeIdProvider.getCurrentLease();
     final var nodeId = acquiredLease.lease().nodeInstance().id();
     assertThat(nodeId).isEqualTo(0);
+    assertThat(acquiredLease.metadata().task()).isEqualTo(taskId);
+    assertThat(acquiredLease.metadata().expiry())
+        .isEqualTo(clock.instant().plus(EXPIRY_DURATION).toEpochMilli());
     assertThat(repository.getLease(nodeId)).isEqualTo(acquiredLease);
   }
 
@@ -162,10 +174,18 @@ public class NodeIdProviderIT {
     // when
     nodeIdProvider = ofSize(clusterSize);
     assertLeaseIsReady();
+    final var firstLease = nodeIdProvider.getCurrentLease();
+    // move the clock forward
+    clock.setInstant(clock.instant().plusSeconds(2));
 
     // then
     verify(repository, timeout(EXPIRY_DURATION.toMillis()).atLeast(2))
         .acquire(argThat(lease -> lease.nodeInstance().id() == 0), any());
+    Awaitility.await("until lease is renewed")
+        .untilAsserted(() -> assertThat(nodeIdProvider.getCurrentLease()).isNotEqualTo(firstLease));
+    final var renewedLease = nodeIdProvider.getCurrentLease();
+    assertThat(renewedLease).isNotEqualTo(firstLease);
+    assertThat(renewedLease.lease().timestamp()).isGreaterThan(firstLease.lease().timestamp());
   }
 
   @Test

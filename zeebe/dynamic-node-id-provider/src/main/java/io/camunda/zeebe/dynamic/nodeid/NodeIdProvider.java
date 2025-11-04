@@ -89,9 +89,9 @@ public class NodeIdProvider implements AutoCloseable {
 
   private void renew() {
     try {
-      currentLease =
-          nodeIdRepository.acquire(
-              currentLease.lease().renew(clock.millis(), leaseDuration), currentLease.eTag());
+      final var newLease = currentLease.lease().renew(clock.millis(), leaseDuration);
+      LOG.trace("Renewing lease with {}", newLease);
+      currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
     } catch (final Exception e) {
       LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
       onLeaseFailure.run();
