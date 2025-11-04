@@ -58,6 +58,7 @@ test.describe('HTO User Flow Tests', () => {
     taskDetailsPage,
     taskPanelPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
     page,
     operateLoginPage,
     taskListLoginPage,
@@ -87,7 +88,7 @@ test.describe('HTO User Flow Tests', () => {
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 120000});
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.filterByProcessName('Job_Worker_Process');
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(10000);
       await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();
@@ -162,6 +163,7 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
     page,
     taskListLoginPage,
     operateLoginPage,
@@ -189,8 +191,8 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'operate');
       await operateLoginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
-      await operateProcessesPage.clickProcessActiveCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await operateFiltersPanelPage.clickActiveInstancesCheckbox();
       await sleep(1000);
       await operateProcessesPage.filterByProcessName('Form_User_Task');
       await operateProcessesPage.clickProcessInstanceLink();
@@ -203,6 +205,7 @@ test.describe('HTO User Flow Tests', () => {
     operateProcessesPage,
     operateProcessInstancePage,
     operateLoginPage,
+    operateFiltersPanelPage,
     page,
   }) => {
     await test.step('View Process Instance in Operate and check if process is complete', async () => {
@@ -210,7 +213,7 @@ test.describe('HTO User Flow Tests', () => {
       await operateLoginPage.login('demo', 'demo');
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(1000);
       await operateProcessesPage.filterByProcessName('Start_Form_Process');
       await operateProcessesPage.clickProcessInstanceLink();
@@ -223,6 +226,7 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
     taskDetailsPage,
     taskPanelPage,
     taskListLoginPage,
@@ -269,7 +273,7 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'operate');
       await operateLoginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(1000);
       await operateProcessesPage.filterByProcessName(
         'Zeebe_Priority_User_Task_Process',
@@ -288,6 +292,7 @@ test.describe('HTO User Flow Tests', () => {
     taskListLoginPage,
     taskDetailsPage,
     taskPanelPage,
+    operateFiltersPanelPage,
   }) => {
     await test.step('View Process Instance in Operate, complete User Task in Tasklist', async () => {
       await navigateToApp(page, 'operate');
@@ -312,7 +317,7 @@ test.describe('HTO User Flow Tests', () => {
       await operateLoginPage.login('demo', 'demo');
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 120000});
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(1000);
       await operateProcessesPage.filterByProcessName('Zeebe_User_Task_Process');
       await operateProcessesPage.clickProcessInstanceLink();
