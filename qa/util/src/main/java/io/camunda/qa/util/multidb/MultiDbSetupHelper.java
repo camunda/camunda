@@ -7,6 +7,10 @@
  */
 package io.camunda.qa.util.multidb;
 
+import java.time.Duration;
+import java.util.concurrent.Callable;
+import org.slf4j.Logger;
+
 /**
  * Helper used in {@link CamundaMultiDBExtension} to manage the multi database setup.
  *
@@ -21,6 +25,15 @@ public interface MultiDbSetupHelper extends AutoCloseable {
    * @return true if connection can be established, false otherwise
    */
   boolean validateConnection();
+
+  /**
+   * Set a custom index policies poll interval, primarily used for ElasticSearch & OpenSearch. This
+   * is used to speed up tests which depends on an index lifecycle being applied to an index, for
+   * example delete data past minAge. This is a cluster wide setting.
+   *
+   * @param pollInterval the poll interval duration
+   */
+  void applyIndexPoliciesPollInterval(final Duration pollInterval);
 
   /**
    * To validate schema creation, used to store related test data, which can be identified under
@@ -40,4 +53,41 @@ public interface MultiDbSetupHelper extends AutoCloseable {
    * @param prefix prefix used to identify related test data
    */
   void cleanup(final String prefix);
+
+  /**
+   * Run given callable with retry. Callable should return true, if operation succeeded, to stop
+   * retrying.
+   *
+   * @param operation operation to be executed with retry, returning true will indicate success and
+   *     stop retrying
+   * @param maxAttempt the maximum attempts to retry given operation
+   */
+  default void withRetry(
+      final Callable<Boolean> operation, final int maxAttempt, final Logger logger) {
+    int attempt = 0;
+    boolean shouldRetry = true;
+    while (shouldRetry) {
+      try {
+        // if we succeed we don't want to retry
+        shouldRetry = !operation.call();
+      } catch (final Exception ex) {
+        logger.debug(
+            "Failed to execute {}. Attempts: [{}/{}]", operation, attempt + 1, maxAttempt, ex);
+      } finally {
+        // if we reached the max attempt we stop
+        if (++attempt >= maxAttempt) {
+          shouldRetry = false;
+        }
+      }
+
+      if (shouldRetry) {
+        try {
+          // wait a little between retries
+          Thread.sleep(100);
+        } catch (final InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+  }
 }
