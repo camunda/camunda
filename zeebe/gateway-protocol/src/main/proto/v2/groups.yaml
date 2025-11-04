@@ -697,7 +697,8 @@ GroupSearchQueryRequest:
       items:
         $ref: '#/GroupSearchQuerySortRequest'
     filter:
-      $ref: '#/GroupFilter'
+      allOf:
+        - $ref: '#/GroupFilter'
       description: The group search filters.
 
 GroupFilter:

@@ -462,7 +462,8 @@ JobSearchQuery:
       items:
         $ref: '#/JobSearchQuerySortRequest'
     filter:
-      $ref: '#/JobFilter'
+      allOf:
+        - $ref: '#/JobFilter'
       description: The job search filters.
 
 JobSearchQuerySortRequest:
@@ -867,7 +868,8 @@ JobResultActivateElement:
   type: object
   properties:
     elementId:
-      $ref: 'identifiers.yaml#/ElementId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ElementId'
       description: The element ID to activate.
     variables:
       type: object
@@ -916,10 +918,12 @@ AdvancedJobKindFilter:
   properties:
     $eq:
       description: Checks for equality with the provided value.
-      $ref: 'enums.yaml#/JobKindEnum'
+      allOf:
+        - $ref: 'enums.yaml#/JobKindEnum'
     $neq:
       description: Checks for inequality with the provided value.
-      $ref: 'enums.yaml#/JobKindEnum'
+      allOf:
+        - $ref: 'enums.yaml#/JobKindEnum'
     $exists:
       description: Checks if the current property exists.
       type: boolean
@@ -949,10 +953,12 @@ AdvancedJobListenerEventTypeFilter:
   properties:
     $eq:
       description: Checks for equality with the provided value.
-      $ref: 'enums.yaml#/JobListenerEventTypeEnum'
+      allOf:
+        - $ref: 'enums.yaml#/JobListenerEventTypeEnum'
     $neq:
       description: Checks for inequality with the provided value.
-      $ref: 'enums.yaml#/JobListenerEventTypeEnum'
+      allOf:
+        - $ref: 'enums.yaml#/JobListenerEventTypeEnum'
     $exists:
       description: Checks if the current property exists.
       type: boolean
@@ -983,10 +989,12 @@ AdvancedJobStateFilter:
   properties:
     $eq:
       description: Checks for equality with the provided value.
-      $ref: 'enums.yaml#/JobStateEnum'
+      allOf:
+        - $ref: 'enums.yaml#/JobStateEnum'
     $neq:
       description: Checks for inequality with the provided value.
-      $ref: 'enums.yaml#/JobStateEnum'
+      allOf:
+        - $ref: 'enums.yaml#/JobStateEnum'
     $exists:
       description: Checks if the current property exists.
       type: boolean

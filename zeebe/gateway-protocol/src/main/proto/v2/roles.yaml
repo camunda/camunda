@@ -771,7 +771,8 @@ RoleSearchQueryRequest:
       items:
         $ref: '#/RoleSearchQuerySortRequest'
     filter:
-      $ref: '#/RoleFilter'
+      allOf:
+        - $ref: '#/RoleFilter'
       description: The role search filters.
 
 RoleFilter:

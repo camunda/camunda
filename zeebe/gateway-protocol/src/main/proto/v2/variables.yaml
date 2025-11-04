@@ -69,7 +69,6 @@
 
 ## Schema definitions
 
-# Variable domain schemas
 VariableSearchQuerySortRequest:
   type: object
   properties:
@@ -101,34 +100,41 @@ VariableSearchQuery:
       items:
         $ref: '#/VariableSearchQuerySortRequest'
     filter:
-      $ref: '#/VariableFilter'
       description: The variable search filters.
+      allOf:
+        - $ref: "#/VariableFilter"
 
 VariableFilter:
   description: Variable filter request.
   type: object
   properties:
     name:
-      $ref: 'filters.yaml#/StringFilterProperty'
       description: Name of the variable.
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
     value:
-      $ref: 'filters.yaml#/StringFilterProperty'
       description: The value of the variable.
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
     tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
       description: Tenant ID of this variable.
+      allOf:
+        - $ref: 'identifiers.yaml#/TenantId'
     isTruncated:
       description: Whether the value is truncated or not.
       type: boolean
     variableKey:
-      $ref: 'filters.yaml#/VariableKeyFilterProperty'
       description: The key for this variable.
+      allOf:
+        - $ref: 'filters.yaml#/VariableKeyFilterProperty'
     scopeKey:
-      $ref: 'filters.yaml#/ScopeKeyFilterProperty'
       description: The key of the scope of this variable.
+      allOf:
+        - $ref: 'filters.yaml#/ScopeKeyFilterProperty'
     processInstanceKey:
-      $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
       description: The key of the process instance of this variable.
+      allOf:
+      - $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
 
 VariableSearchQueryResult:
   description: Variable search query response.
@@ -173,7 +179,8 @@ VariableResultBase:
       description: Name of this variable.
       type: string
     tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
+      allOf:
+        - $ref: 'identifiers.yaml#/TenantId'
       description: Tenant ID of this variable.
     variableKey:
       allOf:

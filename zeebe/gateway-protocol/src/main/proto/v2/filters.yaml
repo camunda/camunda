@@ -182,10 +182,12 @@ AdvancedBatchOperationTypeFilter:
   properties:
     $eq:
       description: Checks for equality with the provided value.
-      $ref: 'enums.yaml#/BatchOperationTypeEnum'
+      allOf:
+        - $ref: 'enums.yaml#/BatchOperationTypeEnum'
     $neq:
       description: Checks for inequality with the provided value.
-      $ref: 'enums.yaml#/BatchOperationTypeEnum'
+      allOf:
+        - $ref: 'enums.yaml#/BatchOperationTypeEnum'
     $exists:
       description: Checks if the current property exists.
       type: boolean
@@ -215,10 +217,12 @@ AdvancedBatchOperationStateFilter:
   properties:
     $eq:
       description: Checks for equality with the provided value.
-      $ref: 'enums.yaml#/BatchOperationStateEnum'
+      allOf:
+        - $ref: 'enums.yaml#/BatchOperationStateEnum'
     $neq:
       description: Checks for inequality with the provided value.
-      $ref: 'enums.yaml#/BatchOperationStateEnum'
+      allOf:
+        - $ref: 'enums.yaml#/BatchOperationStateEnum'
     $exists:
       description: Checks if the current property exists.
       type: boolean
@@ -248,10 +252,12 @@ AdvancedBatchOperationItemStateFilter:
   properties:
     $eq:
       description: Checks for equality with the provided value.
-      $ref: 'enums.yaml#/BatchOperationItemStateEnum'
+      allOf:
+        - $ref: 'enums.yaml#/BatchOperationItemStateEnum'
     $neq:
       description: Checks for inequality with the provided value.
-      $ref: 'enums.yaml#/BatchOperationItemStateEnum'
+      allOf:
+        - $ref: 'enums.yaml#/BatchOperationItemStateEnum'
     $exists:
       description: Checks if the current property exists.
       type: boolean
@@ -613,10 +619,12 @@ AdvancedJobKeyFilter:
   properties:
     $eq:
       description: Checks for equality with the provided value.
-      $ref: 'keys.yaml#/JobKey'
+      allOf:
+        - $ref: 'keys.yaml#/JobKey'
     $neq:
       description: Checks for inequality with the provided value.
-      $ref: 'keys.yaml#/JobKey'
+      allOf:
+        - $ref: 'keys.yaml#/JobKey'
     $exists:
       description: Checks if the current property exists.
       type: boolean

@@ -258,7 +258,8 @@ BatchOperationSearchQuery:
       items:
         $ref: '#/BatchOperationSearchQuerySortRequest'
     filter:
-      $ref: '#/BatchOperationFilter'
+      allOf:
+        - $ref: '#/BatchOperationFilter'
       description: The batch operation search filters.
 
 BatchOperationFilter:
@@ -373,7 +374,8 @@ BatchOperationItemSearchQuery:
       items:
         $ref: '#/BatchOperationItemSearchQuerySortRequest'
     filter:
-      $ref: '#/BatchOperationItemFilter'
+      allOf:
+        - $ref: '#/BatchOperationItemFilter'
       description: The batch operation item search filters.
 
 BatchOperationItemFilter:
@@ -448,7 +450,8 @@ ProcessInstanceCancellationBatchOperationRequest:
   description: The process instance filter that defines which process instances should be canceled.
   properties:
     filter:
-      $ref: 'process-instances.yaml#/ProcessInstanceFilter'
+      allOf:
+        - $ref: 'process-instances.yaml#/ProcessInstanceFilter'
       description: The process instance filter.
     operationReference:
       $ref: 'keys.yaml#/OperationReference'
@@ -461,7 +464,8 @@ ProcessInstanceIncidentResolutionBatchOperationRequest:
   description: The process instance filter that defines which process instances should have their incidents resolved.
   properties:
     filter:
-      $ref: 'process-instances.yaml#/ProcessInstanceFilter'
+      allOf:
+        - $ref: 'process-instances.yaml#/ProcessInstanceFilter'
       description: The process instance filter.
     operationReference:
       $ref: 'keys.yaml#/OperationReference'
@@ -473,10 +477,12 @@ ProcessInstanceMigrationBatchOperationRequest:
   additionalProperties: false
   properties:
     filter:
-      $ref: 'process-instances.yaml#/ProcessInstanceFilter'
+      allOf:
+        - $ref: 'process-instances.yaml#/ProcessInstanceFilter'
       description: The process instance filter.
     migrationPlan:
-      $ref: '#/ProcessInstanceMigrationBatchOperationPlan'
+      allOf:
+        - $ref: '#/ProcessInstanceMigrationBatchOperationPlan'
       description: The migration plan.
     operationReference:
       $ref: 'keys.yaml#/OperationReference'
@@ -490,7 +496,8 @@ ProcessInstanceMigrationBatchOperationPlan:
     The migration instructions describe how to migrate a process instance from one process definition to another.
   properties:
     targetProcessDefinitionKey:
-      $ref: 'keys.yaml#/ProcessDefinitionKey'
+      allOf:
+        - $ref: 'keys.yaml#/ProcessDefinitionKey'
       description: The target process definition key.
     mappingInstructions:
       type: array
@@ -509,7 +516,8 @@ ProcessInstanceModificationBatchOperationRequest:
     and new element instances should be activated or terminated.
   properties:
     filter:
-      $ref: 'process-instances.yaml#/ProcessInstanceFilter'
+      allOf:
+        - $ref: 'process-instances.yaml#/ProcessInstanceFilter'
       description: The process instance filter.
     moveInstructions:
       type: array
@@ -529,10 +537,12 @@ ProcessInstanceModificationMoveBatchOperationInstruction:
   type: object
   properties:
     sourceElementId:
-      $ref: 'identifiers.yaml#/ElementId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ElementId'
       description: The source element ID.
     targetElementId:
-      $ref: 'identifiers.yaml#/ElementId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ElementId'
       description: The target element ID.
   required:
     - sourceElementId

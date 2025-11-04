@@ -222,7 +222,8 @@ AuthorizationSearchQuery:
       items:
         $ref: '#/AuthorizationSearchQuerySortRequest'
     filter:
-      $ref: '#/AuthorizationFilter'
+      allOf:
+        - $ref: '#/AuthorizationFilter'
       description: The authorization search filters.
 
 AuthorizationFilter:

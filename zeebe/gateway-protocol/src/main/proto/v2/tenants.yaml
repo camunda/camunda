@@ -831,7 +831,8 @@ TenantSearchQueryRequest:
       items:
         $ref: '#/TenantSearchQuerySortRequest'
     filter:
-      $ref: '#/TenantFilter'
+      allOf:
+        - $ref: '#/TenantFilter'
       description: The tenant search filters.
 
 TenantFilter:

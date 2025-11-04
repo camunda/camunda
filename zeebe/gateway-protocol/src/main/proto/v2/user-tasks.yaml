@@ -348,7 +348,8 @@ UserTaskSearchQuery:
       items:
         $ref: '#/UserTaskSearchQuerySortRequest'
     filter:
-      $ref: '#/UserTaskFilter'
+      allOf:
+        - $ref: '#/UserTaskFilter'
       description: The user task search filters.
 
 UserTaskFilter:
@@ -356,16 +357,20 @@ UserTaskFilter:
   type: object
   properties:
     state:
-      $ref: '#/UserTaskStateFilterProperty'
+      allOf:
+        - $ref: '#/UserTaskStateFilterProperty'
       description: The user task state.
     assignee:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The assignee of the user task.
     priority:
-      $ref: 'filters.yaml#/IntegerFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/IntegerFilterProperty'
       description: The priority of the user task.
     elementId:
-      $ref: 'identifiers.yaml#/ElementId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ElementId'
       description: The element ID of the user task.
     name:
       type: string
@@ -373,10 +378,12 @@ UserTaskFilter:
         The task name. This only works for data created with 8.8 and onwards.
         Instances from prior versions don't contain this data and cannot be found.
     candidateGroup:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The candidate group for this user task.
     candidateUser:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The candidate user for this user task.
     tenantId:
       allOf:
@@ -387,16 +394,20 @@ UserTaskFilter:
         - $ref: 'identifiers.yaml#/ProcessDefinitionId'
       description: The ID of the process definition.
     creationDate:
-      $ref: 'filters.yaml#/DateTimeFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/DateTimeFilterProperty'
       description: The user task creation date.
     completionDate:
-      $ref: 'filters.yaml#/DateTimeFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/DateTimeFilterProperty'
       description: The user task completion date.
     followUpDate:
-      $ref: 'filters.yaml#/DateTimeFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/DateTimeFilterProperty'
       description: The user task follow-up date.
     dueDate:
-      $ref: 'filters.yaml#/DateTimeFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/DateTimeFilterProperty'
       description: The user task due date.
     processInstanceVariables:
       type: array
@@ -658,7 +669,8 @@ UserTaskVariableSearchQueryRequest:
       items:
         $ref: '#/UserTaskVariableSearchQuerySortRequest'
     filter:
-      $ref: '#/UserTaskVariableFilter'
+      allOf:
+        - $ref: '#/UserTaskVariableFilter'
       description: The user task variable search filters.
 
 UserTaskVariableFilter:
@@ -666,7 +678,8 @@ UserTaskVariableFilter:
   type: object
   properties:
     name:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: Name of the variable.
 
 UserTaskStateFilterProperty:

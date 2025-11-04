@@ -844,7 +844,8 @@ ProcessInstanceSearchQuery:
       items:
         $ref: '#/ProcessInstanceSearchQuerySortRequest'
     filter:
-      $ref: '#/ProcessInstanceFilter'
+      allOf:
+        - $ref: '#/ProcessInstanceFilter'
       description: The process instance search filters.
 
 ProcessInstanceIncidentSearchQuery:
@@ -864,19 +865,23 @@ BaseProcessInstanceFilterFields:
   type: object
   properties:
     startDate:
-      $ref: 'filters.yaml#/DateTimeFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/DateTimeFilterProperty'
       description: The start date.
     endDate:
-      $ref: 'filters.yaml#/DateTimeFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/DateTimeFilterProperty'
       description: The end date.
     state:
-      $ref: 'filters.yaml#/ProcessInstanceStateFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ProcessInstanceStateFilterProperty'
       description: The process instance state.
     hasIncident:
       type: boolean
       description: Whether this process instance has a related incident or not.
     tenantId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The tenant ID.
     variables:
       description: The process instance variables.
@@ -884,34 +889,42 @@ BaseProcessInstanceFilterFields:
       items:
         $ref: 'variables.yaml#/VariableValueFilterProperty'
     processInstanceKey:
-      $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
       description: The key of this process instance.
     parentProcessInstanceKey:
-      $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
       description: The parent process instance key.
     parentElementInstanceKey:
-      $ref: 'filters.yaml#/ElementInstanceKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ElementInstanceKeyFilterProperty'
       description: The parent element instance key.
     batchOperationId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The batch operation ID.
     errorMessage:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The error message related to the process.
     hasRetriesLeft:
       description: Whether the process has failed jobs with retries left.
       type: boolean
     elementInstanceState:
-      $ref: 'filters.yaml#/ElementInstanceStateFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ElementInstanceStateFilterProperty'
       description: The state of the element instances associated with the process instance.
     elementId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The element ID associated with the process instance.
     hasElementInstanceIncident:
       description: Whether the element instance has an incident or not.
       type: boolean
     incidentErrorHashCode:
-      $ref: 'filters.yaml#/IntegerFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/IntegerFilterProperty'
       description: The incident error hash code, associated with this process.
     tags:
       $ref: 'identifiers.yaml#/TagSet'
@@ -965,19 +978,24 @@ ProcessInstanceFilterFields:
     - $ref: '#/BaseProcessInstanceFilterFields'
   properties:
     processDefinitionId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The process definition ID.
     processDefinitionName:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The process definition name.
     processDefinitionVersion:
-      $ref: 'filters.yaml#/IntegerFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/IntegerFilterProperty'
       description: The process definition version.
     processDefinitionVersionTag:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The process definition version tag.
     processDefinitionKey:
-      $ref: 'filters.yaml#/ProcessDefinitionKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ProcessDefinitionKeyFilterProperty'
       description: The process definition key.
 
 ProcessInstanceFilter:
@@ -1150,7 +1168,8 @@ ProcessInstanceSequenceFlowResult:
         - $ref: 'identifiers.yaml#/ProcessDefinitionId'
       description: The process definition ID.
     elementId:
-      $ref: 'identifiers.yaml#/ElementId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ElementId'
       description: The element ID for this sequence flow, as provided in the BPMN process.
     tenantId:
       $ref: 'identifiers.yaml#/TenantId'

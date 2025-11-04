@@ -110,8 +110,9 @@ DecisionInstanceSearchQuery:
       items:
         $ref: '#/DecisionInstanceSearchQuerySortRequest'
     filter:
-      $ref: '#/DecisionInstanceFilter'
       description: The decision instance search filters.
+      allOf:
+        - $ref: "#/DecisionInstanceFilter"
 
 DecisionInstanceFilter:
   description: Decision instance search filter.

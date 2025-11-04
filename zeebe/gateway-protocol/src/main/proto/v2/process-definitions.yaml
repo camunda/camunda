@@ -262,7 +262,8 @@ ProcessDefinitionSearchQuery:
       items:
         $ref: '#/ProcessDefinitionSearchQuerySortRequest'
     filter:
-      $ref: '#/ProcessDefinitionFilter'
+      allOf:
+        - $ref: '#/ProcessDefinitionFilter'
       description: The process definition search filters.
 
 ProcessDefinitionFilter:
@@ -270,7 +271,8 @@ ProcessDefinitionFilter:
   type: object
   properties:
     name:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: Name of this process definition.
     isLatestVersion:
       description: |
@@ -289,10 +291,12 @@ ProcessDefinitionFilter:
       description: Version tag of this process definition.
       type: string
     processDefinitionId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: Process definition ID of this process definition.
     tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
+      allOf:
+        - $ref: 'identifiers.yaml#/TenantId'
       description: Tenant ID of this process definition.
     processDefinitionKey:
       allOf:
@@ -330,10 +334,12 @@ ProcessDefinitionResult:
       description: Version tag of this process definition.
       type: string
     processDefinitionId:
-      $ref: 'identifiers.yaml#/ProcessDefinitionId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
       description: Process definition ID of this process definition.
     tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
+      allOf:
+        - $ref: 'identifiers.yaml#/TenantId'
       description: Tenant ID of this process definition.
     processDefinitionKey:
       allOf:
@@ -349,7 +355,8 @@ ProcessDefinitionElementStatisticsQuery:
   additionalProperties: false
   properties:
     filter:
-      $ref: 'process-instances.yaml#/ProcessDefinitionStatisticsFilter'
+      allOf:
+        - $ref: 'process-instances.yaml#/ProcessDefinitionStatisticsFilter'
       description: The process definition statistics search filters.
 
 ProcessDefinitionElementStatisticsQueryResult:
@@ -367,7 +374,8 @@ ProcessElementStatisticsResult:
   type: object
   properties:
     elementId:
-      $ref: 'identifiers.yaml#/ElementId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ElementId'
       description: The element ID for which the results are aggregated.
     active:
       description: The total number of active instances of the element.
@@ -413,7 +421,8 @@ ProcessDefinitionInstanceStatisticsQueryResult:
       items:
         $ref: '#/ProcessDefinitionInstanceStatisticsResult'
     page:
-      $ref: '#/ProcessDefinitionInstanceStatisticsPageResponse'
+      allOf:
+        - $ref: '#/ProcessDefinitionInstanceStatisticsPageResponse'
       description: Pagination information about the search results.
 
 ProcessDefinitionInstanceStatisticsResult:

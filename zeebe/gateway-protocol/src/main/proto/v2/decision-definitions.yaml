@@ -186,7 +186,8 @@ DecisionDefinitionSearchQuery:
       items:
         $ref: '#/DecisionDefinitionSearchQuerySortRequest'
     filter:
-      $ref: '#/DecisionDefinitionFilter'
+      allOf:
+        - $ref: '#/DecisionDefinitionFilter'
       description: The decision definition search filters.
 
 DecisionDefinitionFilter:
@@ -207,7 +208,8 @@ DecisionDefinitionFilter:
       type: string
       description: the DMN ID of the decision requirements graph that the decision definition is part of.
     tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
+      allOf:
+        - $ref: 'identifiers.yaml#/TenantId'
       description: The tenant ID of the decision definition.
     decisionDefinitionKey:
       allOf:
@@ -246,7 +248,8 @@ DecisionDefinitionResult:
       type: string
       description: the DMN ID of the decision requirements graph that the decision definition is part of.
     tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
+      allOf:
+        - $ref: 'identifiers.yaml#/TenantId'
       description: The tenant ID of the decision definition.
     decisionDefinitionKey:
       allOf:

@@ -122,8 +122,9 @@ IncidentSearchQuery:
       items:
         $ref: '#/IncidentSearchQuerySortRequest'
     filter:
-      $ref: '#/IncidentFilter'
       description: The incident search filters.
+      allOf:
+        - $ref: "#/IncidentFilter"
 
 IncidentFilter:
   description: Incident search filter.
@@ -141,7 +142,8 @@ IncidentFilter:
       allOf:
         - $ref: 'filters.yaml#/StringFilterProperty'
     elementId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The element ID associated to this incident.
     creationTime:
       allOf:
@@ -152,8 +154,9 @@ IncidentFilter:
       allOf:
         - $ref: "#/IncidentStateFilterProperty"
     tenantId:
-      $ref: 'filters.yaml#/StringFilterProperty'
       description: The tenant ID of the incident.
+      allOf:
+        - $ref: "filters.yaml#/StringFilterProperty"
     incidentKey:
       allOf:
         - $ref: 'filters.yaml#/BasicStringFilterProperty'
@@ -298,20 +301,24 @@ IncidentResult:
         - $ref: 'identifiers.yaml#/ProcessDefinitionId'
       description: The process definition ID associated to this incident.
     errorType:
-      $ref: "enums.yaml#/IncidentErrorTypeEnum"
+      allOf:
+        - $ref: "enums.yaml#/IncidentErrorTypeEnum"
     errorMessage:
       type: string
       description: Error message which describes the error in more detail.
     elementId:
-      $ref: 'identifiers.yaml#/ElementId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ElementId'
       description: The element ID associated to this incident.
     creationTime:
       type: string
       format: date-time
     state:
-      $ref: "enums.yaml#/IncidentStateEnum"
+      allOf:
+        - $ref: "enums.yaml#/IncidentStateEnum"
     tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
+      allOf:
+        - $ref: 'identifiers.yaml#/TenantId'
       description: The tenant ID of the incident.
     incidentKey:
       allOf:

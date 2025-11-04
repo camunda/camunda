@@ -239,7 +239,8 @@ MessageSubscriptionResult:
         - $ref: 'keys.yaml#/MessageSubscriptionKey'
       description: The message subscription key associated with this message subscription.
     processDefinitionId:
-      $ref: 'identifiers.yaml#/ProcessDefinitionId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
       description: The process definition ID associated with this message subscription.
     processDefinitionKey:
       allOf:
@@ -250,7 +251,8 @@ MessageSubscriptionResult:
         - $ref: 'keys.yaml#/ProcessInstanceKey'
       description: The process instance key associated with this message subscription.
     elementId:
-      $ref: 'identifiers.yaml#/ElementId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ElementId'
       description: The element ID associated with this message subscription.
     elementInstanceKey:
       allOf:
@@ -306,7 +308,8 @@ MessageSubscriptionSearchQuery:
       items:
         $ref: '#/MessageSubscriptionSearchQuerySortRequest'
     filter:
-      $ref: '#/MessageSubscriptionFilter'
+      allOf:
+        - $ref: '#/MessageSubscriptionFilter'
       description: The incident search filters.
 
 MessageSubscriptionFilter:
@@ -314,34 +317,44 @@ MessageSubscriptionFilter:
   type: object
   properties:
     messageSubscriptionKey:
-      $ref: 'filters.yaml#/MessageSubscriptionKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/MessageSubscriptionKeyFilterProperty'
       description: The message subscription key associated with this message subscription.
     processDefinitionId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The process definition ID associated with this message subscription.
     processInstanceKey:
-      $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
       description: The process instance key associated with this message subscription.
     elementId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The element ID associated with this message subscription.
     elementInstanceKey:
-      $ref: 'filters.yaml#/ElementInstanceKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ElementInstanceKeyFilterProperty'
       description: The element instance key associated with this message subscription.
     messageSubscriptionState:
-      $ref: '#/MessageSubscriptionStateFilterProperty'
+      allOf:
+        - $ref: '#/MessageSubscriptionStateFilterProperty'
       description: The message subscription state.
     lastUpdatedDate:
-      $ref: 'filters.yaml#/DateTimeFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/DateTimeFilterProperty'
       description: The last updated date of the message subscription.
     messageName:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The name of the message associated with the message subscription.
     correlationKey:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The correlation key of the message subscription.
     tenantId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The unique external tenant ID.
 
 CorrelatedMessageSubscriptionSearchQueryResult:
@@ -369,10 +382,12 @@ CorrelatedMessageSubscriptionResult:
       description: The element ID that received the message.
       type: string
     elementInstanceKey:
-      $ref: 'keys.yaml#/ElementInstanceKey'
+      allOf:
+        - $ref: 'keys.yaml#/ElementInstanceKey'
       description: The element instance key that received the message.
     messageKey:
-      $ref: 'keys.yaml#/MessageKey'
+      allOf:
+        - $ref: 'keys.yaml#/MessageKey'
       description: The message key.
     messageName:
       description: The name of the message.
@@ -382,19 +397,24 @@ CorrelatedMessageSubscriptionResult:
       type: integer
       format: int32
     processDefinitionId:
-      $ref: 'identifiers.yaml#/ProcessDefinitionId'
+      allOf:
+        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
       description: The process definition ID associated with this correlated message subscription.
     processDefinitionKey:
-      $ref: 'keys.yaml#/ProcessDefinitionKey'
+      allOf:
+        - $ref: 'keys.yaml#/ProcessDefinitionKey'
       description: The process definition key associated with this correlated message subscription.
     processInstanceKey:
-      $ref: 'keys.yaml#/ProcessInstanceKey'
+      allOf:
+        - $ref: 'keys.yaml#/ProcessInstanceKey'
       description: The process instance key associated with this correlated message subscription.
     subscriptionKey:
-      $ref: 'keys.yaml#/MessageSubscriptionKey'
+      allOf:
+        - $ref: 'keys.yaml#/MessageSubscriptionKey'
       description: The subscription key that received the message.
     tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
+      allOf:
+        - $ref: 'identifiers.yaml#/TenantId'
       description: The tenant ID associated with this correlated message subscription.
   required:
     - correlationKey
@@ -420,7 +440,8 @@ CorrelatedMessageSubscriptionSearchQuery:
       items:
         $ref: '#/CorrelatedMessageSubscriptionSearchQuerySortRequest'
     filter:
-      $ref: '#/CorrelatedMessageSubscriptionFilter'
+      allOf:
+        - $ref: '#/CorrelatedMessageSubscriptionFilter'
       description: The correlated message subscriptions search filters.
 
 CorrelatedMessageSubscriptionSearchQuerySortRequest:
@@ -452,40 +473,52 @@ CorrelatedMessageSubscriptionFilter:
   type: object
   properties:
     correlationKey:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The correlation key of the message.
     correlationTime:
-      $ref: 'filters.yaml#/DateTimeFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/DateTimeFilterProperty'
       description: The time when the message was correlated.
     elementId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The element ID that received the message.
     elementInstanceKey:
-      $ref: 'filters.yaml#/ElementInstanceKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ElementInstanceKeyFilterProperty'
       description: The element instance key that received the message.
     messageKey:
-      $ref: 'filters.yaml#/BasicStringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/BasicStringFilterProperty'
       description: The message key.
     messageName:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The name of the message.
     partitionId:
-      $ref: 'filters.yaml#/IntegerFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/IntegerFilterProperty'
       description: The partition ID that correlated the message.
     processDefinitionId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The process definition ID associated with this correlated message subscription.
     processDefinitionKey:
-      $ref: 'filters.yaml#/ProcessDefinitionKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ProcessDefinitionKeyFilterProperty'
       description: The process definition key associated with this correlated message subscription.
     processInstanceKey:
-      $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
       description: The process instance key associated with this correlated message subscription.
     subscriptionKey:
-      $ref: 'filters.yaml#/MessageSubscriptionKeyFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/MessageSubscriptionKeyFilterProperty'
       description: The subscription key that received the message.
     tenantId:
-      $ref: 'filters.yaml#/StringFilterProperty'
+      allOf:
+        - $ref: 'filters.yaml#/StringFilterProperty'
       description: The tenant ID associated with this correlated message subscription.
 
 MessageSubscriptionStateFilterProperty:

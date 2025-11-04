@@ -274,7 +274,8 @@ UserSearchQueryRequest:
       items:
         $ref: '#/UserSearchQuerySortRequest'
     filter:
-      $ref: '#/UserFilter'
+      allOf:
+        - $ref: '#/UserFilter'
       description: The user search filters.
 
 UserFilter:

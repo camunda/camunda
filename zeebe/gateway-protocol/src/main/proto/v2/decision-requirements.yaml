@@ -139,8 +139,9 @@ DecisionRequirementsSearchQuery:
       items:
         $ref: '#/DecisionRequirementsSearchQuerySortRequest'
     filter:
-      $ref: '#/DecisionRequirementsFilter'
-      description: The decision requirements search filters.
+      description: The decision definition search filters.
+      allOf:
+        - $ref: "#/DecisionRequirementsFilter"
 
 DecisionRequirementsFilter:
   description: Decision requirements search filter.
