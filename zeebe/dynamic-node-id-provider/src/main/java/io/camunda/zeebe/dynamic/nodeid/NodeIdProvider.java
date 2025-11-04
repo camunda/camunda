@@ -33,6 +33,7 @@ public class NodeIdProvider implements AutoCloseable {
   private final ScheduledExecutorService executor;
   private final ExponentialBackoff backoff;
   private long currentDelay;
+  private final Duration renewalDelay;
 
   public NodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -46,9 +47,16 @@ public class NodeIdProvider implements AutoCloseable {
     leaseDuration = expiryDuration;
     this.taskId = taskId;
     backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseDuration.dividedBy(2));
+    renewalDelay = leaseDuration.dividedBy(3);
     currentDelay = 0L;
     executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
-    CompletableFuture.runAsync(this::acquireInitialLease, executor);
+    CompletableFuture.runAsync(this::acquireInitialLease, executor)
+        .thenRun(this::startRenewalTimer);
+  }
+
+  private void startRenewalTimer() {
+    executor.scheduleAtFixedRate(
+        this::renew, renewalDelay.toMillis(), renewalDelay.toMillis(), TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -74,6 +82,17 @@ public class NodeIdProvider implements AutoCloseable {
 
   public Initialized getCurrentLease() {
     return currentLease;
+  }
+
+  private void renew() {
+    try {
+      currentLease =
+          nodeIdRepository.acquire(
+              currentLease.lease().renew(clock.millis(), leaseDuration), currentLease.eTag());
+    } catch (final Exception e) {
+      LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
+      System.exit(1);
+    }
   }
 
   /**
