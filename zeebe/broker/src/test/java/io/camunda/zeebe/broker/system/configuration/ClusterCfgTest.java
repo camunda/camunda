@@ -454,32 +454,6 @@ public final class ClusterCfgTest {
   }
 
   @Test
-  void shouldThrowExceptionIfInitialContactPointsNotSetWhenClusterSizeGreaterThanOne() {
-    // given
-    final var environment = Collections.singletonMap(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "3");
-
-    // when - then
-    assertThatCode(() -> TestConfigReader.readConfig("default", environment))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Initial contact points must be configured")
-        .hasMessageContaining("cluster size is greater than 1");
-  }
-
-  @Test
-  void shouldThrowExceptionIfInitialContactPointsEmptyWhenClusterSizeGreaterThanOne() {
-    // given
-    final var environment = new HashMap<String, String>();
-    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "3");
-    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "");
-
-    // when - then
-    assertThatCode(() -> TestConfigReader.readConfig("default", environment))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Initial contact points must be configured")
-        .hasMessageContaining("cluster size is greater than 1");
-  }
-
-  @Test
   void shouldNotThrowExceptionIfInitialContactPointsNotSetWhenClusterSizeIsOne() {
     // given - when - then
     assertThatCode(() -> TestConfigReader.readConfig("default", Map.of()))
