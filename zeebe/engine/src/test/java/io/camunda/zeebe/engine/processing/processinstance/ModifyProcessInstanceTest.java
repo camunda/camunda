@@ -1380,6 +1380,23 @@ public class ModifyProcessInstanceTest {
         .deploy();
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var subprocessBodyInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("SubProcess")
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst();
+
+    final var miInstances =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .withFlowScopeKey(subprocessBodyInstance.getKey())
+            .limit(3)
+            .toList();
+    assertThat(miInstances).hasSize(3);
+
     final var aTasks =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("A")
@@ -1393,9 +1410,9 @@ public class ModifyProcessInstanceTest {
         .withInstanceKey(processInstanceKey)
         .modification()
         .terminateElement(aTasks.get(0).getKey())
-        .activateElement("B", aTasks.get(0).getValue().getFlowScopeKey())
+        .activateElement("B", miInstances.getFirst().getKey())
         .terminateElement(aTasks.get(2).getKey())
-        .activateElement("B", aTasks.get(2).getValue().getFlowScopeKey())
+        .activateElement("B", miInstances.getLast().getKey())
         .modify();
 
     // then
@@ -1420,8 +1437,7 @@ public class ModifyProcessInstanceTest {
         .extracting(Record::getValue)
         .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
         .describedAs("Expect each B Task to be activated inside specific flow scopes")
-        .containsExactlyInAnyOrder(
-            aTasks.get(0).getValue().getFlowScopeKey(), aTasks.get(2).getValue().getFlowScopeKey());
+        .containsExactlyInAnyOrder(miInstances.getFirst().getKey(), miInstances.getLast().getKey());
   }
 
   @Test
