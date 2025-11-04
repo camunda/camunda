@@ -238,7 +238,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
             new MessageSubscriptionFromProcessMessageSubscriptionHandler(
-                indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
+                exporterMetadata),
             new UserTaskHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
