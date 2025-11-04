@@ -11,10 +11,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.lang3.StringUtils;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest;
+import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest.Builder;
+import org.opensearch.client.opensearch.cluster.PutClusterSettingsResponse;
 import org.opensearch.client.opensearch.core.InfoResponse;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexTemplateRequest;
@@ -32,7 +39,9 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(AWSOpenSearchSetupHelper.class);
+  private static final Duration DEFAULT_INDICES_LIFECYCLE_POLL_INTERVAL = Duration.ofMinutes(5);
 
+  private final AtomicBoolean hasClusterSettingsChanged = new AtomicBoolean(false);
   private final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
   private final OpenSearchClient client;
 
@@ -63,6 +72,12 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
       LOGGER.debug("Exception on validating exception", e);
     }
     return false;
+  }
+
+  @Override
+  public void applyIndexPoliciesPollInterval(final Duration pollInterval) {
+    applyIndicesLifecyclePollInterval(pollInterval);
+    hasClusterSettingsChanged.set(true); // mark cluster settings changed to reset after the test
   }
 
   @Override
@@ -97,6 +112,9 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
 
   @Override
   public void cleanup(final String prefix) {
+    // reset cluster settings if changed
+    resetIndicesLifecyclePollInterval();
+
     try {
       client.indices().delete(new DeleteIndexRequest.Builder().index(prefix + "*").build());
     } catch (final IOException e) {
@@ -133,5 +151,43 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
         .getIndexTemplate(new GetIndexTemplateRequest.Builder().name(testPrefix + "*").build())
         .indexTemplates()
         .size();
+  }
+
+  private void resetIndicesLifecyclePollInterval() {
+    if (hasClusterSettingsChanged.getAndSet(false)) {
+      applyIndicesLifecyclePollInterval(DEFAULT_INDICES_LIFECYCLE_POLL_INTERVAL);
+    }
+  }
+
+  private void applyIndicesLifecyclePollInterval(final Duration pollInterval) {
+    final Map<String, JsonData> settings =
+        Map.of(
+            "persistent",
+            JsonData.of(
+                Map.of(
+                    "plugins.index_state_management.job_interval",
+                    String.format("%d", pollInterval.toMinutes()))));
+
+    applyClusterSettings(settings);
+  }
+
+  private void applyClusterSettings(final Map<String, JsonData> settings) {
+    withRetry(
+        () -> {
+          final PutClusterSettingsRequest build = new Builder().persistent(settings).build();
+
+          final PutClusterSettingsResponse putSettingsResponse =
+              client.cluster().putSettings(build);
+
+          if (putSettingsResponse.acknowledged()) {
+            LOGGER.info("Applied cluster settings successfully");
+          } else {
+            LOGGER.warn("Failed to apply cluster settings, retrying...");
+          }
+
+          return putSettingsResponse.acknowledged();
+        },
+        5,
+        LOGGER);
   }
 }

@@ -308,7 +308,7 @@ public class CamundaMultiDBExtension
             isHistoryRelatedTest,
             false);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
-        setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
+        setupHelper = new OpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
       case RDBMS -> multiDbConfigurator.configureRDBMSSupport(isHistoryRelatedTest);
       case AWS_OS -> {
@@ -319,6 +319,15 @@ public class CamundaMultiDBExtension
         setupHelper = new AWSOpenSearchSetupHelper(awsOSUrl, expectedDescriptors);
       }
       default -> throw new RuntimeException("Unknown exporter type");
+    }
+
+    if (isHistoryRelatedTest) {
+      // make sure history clean up policies are applied more often
+      final Duration pollInterval =
+          getDatabaseType(context) == DatabaseType.ES
+              ? Duration.ofSeconds(5)
+              : Duration.ofMinutes(1);
+      setupHelper.applyIndexPoliciesPollInterval(pollInterval);
     }
 
     // we need to close the test application before cleaning up
@@ -650,6 +659,11 @@ public class CamundaMultiDBExtension
     @Override
     public boolean validateConnection() {
       return true;
+    }
+
+    @Override
+    public void applyIndexPoliciesPollInterval(final Duration pollInterval) {
+      // do nothing
     }
 
     @Override

@@ -35,6 +35,11 @@ public class HistoryCleanupIT {
 
   @Test
   void shouldDeleteProcessesWhichAreMarkedForCleanup() {
+    // this will deploy resource, start two process instances and complete user tasks for one that
+    // will end one instance
+    // that will get picked up by the archiver and they get moved to dated indices
+    // the dated indices have ILM/ISM deletion policy with `minAge=0` that will delete those records
+
     // given
     deployResource(camundaClient, RESOURCE_NAME).getProcesses().getFirst();
     waitForProcessesToBeDeployed(camundaClient, 1);
@@ -64,6 +69,8 @@ public class HistoryCleanupIT {
     // and soon it should be gone
     Awaitility.await("should wait until process and tasks are deleted")
         .atMost(Duration.ofMinutes(5))
+        .pollDelay(Duration.ofMillis(500))
+        .pollInterval(Duration.ofSeconds(10))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
