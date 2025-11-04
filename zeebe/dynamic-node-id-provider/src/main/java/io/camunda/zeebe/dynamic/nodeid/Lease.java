@@ -50,7 +50,10 @@ public record Lease(String taskId, long timestamp, NodeInstance nodeInstance) {
   public Lease renew(final long now, final Duration leaseDuration) {
     if (!isStillValid(now, leaseDuration)) {
       throw new IllegalStateException(
-          "Lease is not valid anymore, it expired at " + Instant.ofEpochMilli(timestamp));
+          "Lease is not valid anymore("
+              + Instant.ofEpochMilli(now)
+              + "), it expired at "
+              + Instant.ofEpochMilli(timestamp));
     }
     final var millis = leaseDuration.toMillis();
     return new Lease(taskId, now + millis, nodeInstance);
