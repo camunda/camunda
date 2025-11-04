@@ -242,7 +242,7 @@ jobs:
       - name: Camunda Download Center - C8Run artifacts in own release
         if: inputs.publishToCamundaDownloadCenter
         run: |
-          c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaVersion }}/"
+          c8run_release_url_dc="https://developers.camunda.com/install-camunda-8/"
           cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ⭐ Camunda Download Center - C8Run artifacts in own release ⭐
           - Release URL: ${c8run_release_url_dc}
@@ -251,7 +251,7 @@ jobs:
       - name: Camunda Download Center - C8Run artifacts in Camunda apps release
         if: inputs.publishToCamundaDownloadCenter
         run: |
-          c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaAppsRelease }}/"
+          c8run_release_url_dc="https://developers.camunda.com/install-camunda-8/"
           cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ⭐ Camunda Download Center - C8Run artifacts ⭐
           - Release URL: ${c8run_release_url_dc}
