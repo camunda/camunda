@@ -17,9 +17,6 @@
 
   <properties>
     <version.java>8</version.java>
-    <openapi.output.dir>${project.build.directory}/generated-openapi</openapi.output.dir>
-    <openapi.bundled.file>${openapi.output.dir}/rest-api-bundled.yaml</openapi.bundled.file>
-    <npm.version>11.4.2</npm.version>
   </properties>
 
   <build>
@@ -28,46 +25,9 @@
         <directory>src/main/proto</directory>
         <includes>
           <include>**/*.proto</include>
-          <include>rest-api.yaml</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${openapi.output.dir}</directory>
-        <includes>
-          <include>rest-api-bundled.yaml</include>
+          <include>v2/rest-api.yaml</include>
         </includes>
       </resource>
     </resources>
-
-    <plugins>
-      <!-- Download and install Node.js and npm locally -->
-      <plugin>
-        <groupId>com.github.eirslett</groupId>
-        <artifactId>frontend-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>install-node-and-npm</id>
-            <goals>
-              <goal>install-node-and-npm</goal>
-            </goals>
-            <phase>generate-sources</phase>
-            <configuration>
-              <nodeVersion>${version.node}</nodeVersion>
-              <npmVersion>${npm.version}</npmVersion>
-            </configuration>
-          </execution>
-          <execution>
-            <id>bundle-openapi</id>
-            <goals>
-              <goal>npx</goal>
-            </goals>
-            <phase>generate-sources</phase>
-            <configuration>
-              <arguments>--yes @redocly/cli@latest bundle ${project.basedir}/src/main/proto/rest-api.yaml --output ${openapi.bundled.file} --ext yaml</arguments>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
   </build>
 </project>

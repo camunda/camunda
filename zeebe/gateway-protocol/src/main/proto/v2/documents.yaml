@@ -1,0 +1,376 @@
+## Endpoint definitions
+
+/documents:
+  post:
+    tags:
+      - Document
+    operationId: createDocument
+    summary: Upload document
+    description: |
+      Upload a document to the Camunda 8 cluster.
+
+      Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
+    parameters:
+      - name: storeId
+        in: query
+        required: false
+        description: The ID of the document store to upload the documents to. Currently, only a single document store is supported per cluster. However, this attribute is included to allow for potential future support of multiple document stores.
+        schema:
+          type: string
+      - name: documentId
+        in: query
+        required: false
+        description: >
+            The ID of the document to upload. If not provided, a new ID will be generated.
+            Specifying an existing ID will result in an error if the document already exists.
+        schema:
+          $ref: 'identifiers.yaml#/DocumentId'
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            additionalProperties: false
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+              metadata:
+                $ref: "#/DocumentMetadata"
+            required:
+              - file
+          encoding:
+            metadata:
+              contentType: application/json
+    responses:
+      "201":
+        description: The document was uploaded successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '#/DocumentReference'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "415":
+        $ref: 'common-responses.yaml#/UnsupportedMediaType'
+    x-eventually-consistent: false
+
+/documents/batch:
+  post:
+    tags:
+      - Document
+    operationId: createDocuments
+    summary: Upload multiple documents
+    description: |
+      Upload multiple documents to the Camunda 8 cluster.
+
+      The caller must provide a file name for each document, which will be used in case of a multi-status response
+      to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
+      of the file part or in the `fileName` field of the metadata. You can add a parallel array of metadata objects. These
+      are matched with the files based on index, and must have the same length as the files array.
+      To pass homogenous metadata for all files, spread the metadata over the metadata array.
+      A filename value provided explicitly via the metadata array in the request overrides the `Content-Disposition` header
+      of the file part.
+
+      In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
+      each of which contains the file name of the document that failed to upload and the reason for the failure.
+      The client can choose to retry the whole batch or individual documents based on the response.
+
+      Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
+    parameters:
+      - name: storeId
+        in: query
+        required: false
+        description: The ID of the document store to upload the documents to. Currently, only a single document store is supported per cluster. However, this attribute is included to allow for potential future support of multiple document stores.
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            additionalProperties: false
+            type: object
+            properties:
+              files:
+                type: array
+                description: The documents to upload.
+                items:
+                  type: string
+                  format: binary
+                minItems: 1
+              metadataList:
+                description: >
+                  Optional JSON array of metadata object whose index aligns with each file entry.
+                  The metadata array must have the same length as the files array.
+                type: array
+                items:
+                  $ref: '#/DocumentMetadata'
+            required:
+              - files
+          encoding:
+            files:
+              headers:
+                X-Document-Metadata:
+                  description: DEPRECATED - prefer metadataList.
+                  schema:
+                    $ref: '#/DocumentMetadata'
+    responses:
+      "201":
+        description: All documents were uploaded successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '#/DocumentCreationBatchResponse'
+      "207":
+        description: Some documents were uploaded successfully, others failed.
+        content:
+          application/json:
+            schema:
+              $ref: '#/DocumentCreationBatchResponse'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "415":
+        $ref: 'common-responses.yaml#/UnsupportedMediaType'
+    x-eventually-consistent: false
+
+/documents/{documentId}:
+  get:
+    tags:
+      - Document
+    operationId: getDocument
+    summary: Download document
+    description: |
+      Download a document from the Camunda 8 cluster.
+
+      Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        description: The ID of the document to download.
+        schema:
+          $ref: 'identifiers.yaml#/DocumentId'
+      - name: storeId
+        in: query
+        required: false
+        description: The ID of the document store to download the document from.
+        schema:
+          type: string
+      - name: contentHash
+        in: query
+        required: false
+        description: >
+          The hash of the document content that was computed by the document store during upload.
+          The hash is part of the document reference that is returned when uploading a document.
+          If the client fails to provide the correct hash, the request will be rejected.
+        schema:
+          type: string
+    responses:
+      "200":
+        description: The document was downloaded successfully.
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      "404":
+        description: The document with the given ID was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: false
+
+  delete:
+    tags:
+      - Document
+    operationId: deleteDocument
+    summary: Delete document
+    description: |
+      Delete a document from the Camunda 8 cluster.
+
+      Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        description: The ID of the document to delete.
+        schema:
+          $ref: 'identifiers.yaml#/DocumentId'
+      - name: storeId
+        in: query
+        required: false
+        description: The ID of the document store to delete the document from.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The document was deleted successfully.
+      "404":
+        description: The document with the given ID was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: false
+
+/documents/{documentId}/links:
+  post:
+    tags:
+      - Document
+    operationId: createDocumentLink
+    summary: Create document link
+    description: |
+      Create a link to a document in the Camunda 8 cluster.
+
+      Note that this is currently supported for document stores of type: AWS, GCP
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        description: The ID of the document to link.
+        schema:
+          $ref: 'identifiers.yaml#/DocumentId'
+      - name: storeId
+        in: query
+        required: false
+        description: The ID of the document store where the document is located.
+        schema:
+          type: string
+      - name: contentHash
+        in: query
+        required: false
+        description: >
+          The hash of the document content that was computed by the document store during upload.
+          The hash is part of the document reference that is returned when uploading a document.
+          If the client fails to provide the correct hash, the request will be rejected.
+        schema:
+          type: string
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '#/DocumentLinkRequest'
+    responses:
+      "201":
+        description: The document link was created successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '#/DocumentLink'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+    x-eventually-consistent: false
+
+## Schema definitions
+
+DocumentReference:
+  type: object
+  properties:
+    camunda.document.type:
+      type: string
+      description: Document discriminator. Always set to "camunda".
+      enum:
+        - camunda
+    storeId:
+      type: string
+      description: The ID of the document store.
+    documentId:
+      allOf:
+        - $ref: 'identifiers.yaml#/DocumentId'
+      description: The ID of the document.
+    contentHash:
+      type: string
+      description: The hash of the document.
+    metadata:
+      $ref: "#/DocumentMetadata"
+
+DocumentCreationFailureDetail:
+  type: object
+  properties:
+    fileName:
+      type: string
+      description: The name of the file that failed to upload.
+    status:
+      type: integer
+      format: int32
+      description: The HTTP status code of the failure.
+    title:
+      type: string
+      description: A short, human-readable summary of the problem type.
+    detail:
+      type: string
+      description: A human-readable explanation specific to this occurrence of the problem.
+
+DocumentCreationBatchResponse:
+  allOf:
+    - type: object
+      properties:
+        failedDocuments:
+          type: array
+          description: Documents that were successfully created.
+          items:
+            $ref: '#/DocumentCreationFailureDetail'
+        createdDocuments:
+          type: array
+          description: Documents that failed creation.
+          items:
+            $ref: '#/DocumentReference'
+
+DocumentMetadata:
+  description: Information about the document.
+  type: object
+  properties:
+    contentType:
+      type: string
+      description: The content type of the document.
+    fileName:
+      type: string
+      description: The name of the file.
+    expiresAt:
+      type: string
+      format: date-time
+      description: The date and time when the document expires.
+    size:
+      type: integer
+      format: int64
+      description: The size of the document in bytes.
+    processDefinitionId:
+      allOf:
+        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
+      description: The ID of the process definition that created the document.
+    processInstanceKey:
+      allOf:
+        - $ref: 'keys.yaml#/ProcessInstanceKey'
+      description: The key of the process instance that created the document.
+    customProperties:
+      type: object
+      description: Custom properties of the document.
+      additionalProperties: true
+
+DocumentLinkRequest:
+  type: object
+  properties:
+    timeToLive:
+      type: integer
+      format: int64
+      description: The time-to-live of the document link in ms.
+      default: 3600000 # 1 hour
+
+DocumentLink:
+  type: object
+  properties:
+    url:
+      type: string
+      description: The link to the document.
+    expiresAt:
+      type: string
+      format: date-time
+      description: The date and time when the link expires.

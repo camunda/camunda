@@ -1,0 +1,987 @@
+## Endpoint definitions
+
+/tenants:
+  post:
+    tags:
+      - Tenant
+    operationId: createTenant
+    summary: Create tenant
+    description: Creates a new tenant.
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/TenantCreateRequest'
+      required: true
+    responses:
+      "201":
+        description: The tenant was created successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '#/TenantCreateResult'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The resource was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "409":
+        description: Tenant with this id already exists.
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/tenants/search:
+  post:
+    tags:
+      - Tenant
+    operationId: searchTenants
+    summary: Search tenants
+    description: Retrieves a filtered and sorted list of tenants.
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '#/TenantSearchQueryRequest'
+    responses:
+      "200":
+        description: The tenants search result
+        content:
+          application/json:
+            schema:
+              $ref: '#/TenantSearchQueryResult'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "401":
+        $ref: 'common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/tenants/{tenantId}:
+  get:
+    tags:
+      - Tenant
+    operationId: getTenant
+    summary: Get tenant
+    description: Retrieves a single tenant by tenant ID.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+    responses:
+      "200":
+        description: The tenant was retrieved successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '#/TenantResult'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "401":
+        $ref: 'common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Tenant not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+  put:
+    tags:
+      - Tenant
+    operationId: updateTenant
+    summary: Update tenant
+    description: Updates an existing tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/TenantUpdateRequest'
+      required: true
+    responses:
+      "200":
+        description: The tenant was updated successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '#/TenantUpdateResult'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+  delete:
+    tags:
+      - Tenant
+    operationId: deleteTenant
+    summary: Delete tenant
+    description: Deletes an existing tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+    responses:
+      "204":
+        description: The tenant was deleted successfully.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/tenants/{tenantId}/users/{username}:
+  put:
+    tags:
+      - Tenant
+    operationId: assignUserToTenant
+    summary: Assign a user to a tenant
+    description: Assign a single user to a specified tenant. The user can then access tenant data and perform authorized actions.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: username
+        in: path
+        required: true
+        description: The unique identifier of the user.
+        schema:
+          $ref: 'identifiers.yaml#/Username'
+    responses:
+      "204":
+        description: The user was successfully assigned to the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant or user was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+  delete:
+    tags:
+      - Tenant
+    operationId: unassignUserFromTenant
+    summary: Unassign a user from a tenant
+    description: |
+      Unassigns the user from the specified tenant.
+      The user can no longer access tenant data.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: username
+        in: path
+        required: true
+        description: The unique identifier of the user.
+        schema:
+          $ref: 'identifiers.yaml#/Username'
+    responses:
+      "204":
+        description: The user was successfully unassigned from the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant or user was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/tenants/{tenantId}/users/search:
+  post:
+    tags:
+      - Tenant
+    operationId: searchUsersForTenant
+    summary: Search users for tenant
+    description: Retrieves a filtered and sorted list of users for a specified tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '#/TenantUserSearchQueryRequest'
+    responses:
+      "200":
+        description: The search result of users for the tenant.
+        content:
+          application/json:
+            schema:
+              $ref: '#/TenantUserSearchResult'
+    x-eventually-consistent: true
+
+/tenants/{tenantId}/clients/{clientId}:
+  put:
+    tags:
+      - Tenant
+    operationId: assignClientToTenant
+    summary: Assign a client to a tenant
+    description: |
+      Assign the client to the specified tenant.
+      The client can then access tenant data and perform authorized actions.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: clientId
+        in: path
+        required: true
+        description: The unique identifier of the application.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The client was successfully assigned to the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: The tenant was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+  delete:
+    tags:
+      - Tenant
+    operationId: unassignClientFromTenant
+    summary: Unassign a client from a tenant
+    description: |
+      Unassigns the client from the specified tenant.
+      The client can no longer access tenant data.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: clientId
+        in: path
+        required: true
+        description: The unique identifier of the application.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The client was successfully unassigned from the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: The tenant does not exist or the client was not assigned to it.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/tenants/{tenantId}/clients/search:
+  post:
+    tags:
+      - Tenant
+    operationId: searchClientsForTenant
+    summary: Search clients for tenant
+    description: Retrieves a filtered and sorted list of clients for a specified tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '#/TenantClientSearchQueryRequest'
+    responses:
+      "200":
+        description: The search result of users for the tenant.
+        content:
+          application/json:
+            schema:
+              $ref: '#/TenantClientSearchResult'
+    x-eventually-consistent: true
+
+/tenants/{tenantId}/groups/{groupId}:
+  put:
+    tags:
+      - Tenant
+    operationId: assignGroupToTenant
+    summary: Assign a group to a tenant
+    description: |
+      Assigns a group to a specified tenant.
+      Group members (users, clients) can then access tenant data and perform authorized actions.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: groupId
+        in: path
+        required: true
+        description: The unique identifier of the group.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The group was successfully assigned to the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant or group was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+  delete:
+    tags:
+      - Tenant
+    operationId: unassignGroupFromTenant
+    summary: Unassign a group from a tenant
+    description: |
+      Unassigns a group from a specified tenant.
+      Members of the group (users, clients) will no longer have access to the tenant's data - except they are assigned directly to the tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: groupId
+        in: path
+        required: true
+        description: The unique identifier of the group.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The group was successfully unassigned from the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant or group was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/tenants/{tenantId}/groups/search:
+  post:
+    tags:
+      - Tenant
+    operationId: searchGroupIdsForTenant
+    summary: Search groups for tenant
+    description: Retrieves a filtered and sorted list of groups for a specified tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: '#/TenantGroupSearchQueryRequest'
+    responses:
+      "200":
+        description: The search result of groups for the tenant.
+        content:
+          application/json:
+            schema:
+              $ref: '#/TenantGroupSearchResult'
+    x-eventually-consistent: true
+
+/tenants/{tenantId}/roles/search:
+  post:
+    tags:
+      - Tenant
+    operationId: searchRolesForTenant
+    summary: Search roles for tenant
+    description: Retrieves a filtered and sorted list of roles for a specified tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: 'search-models.yaml#/SearchQueryRequest'
+    responses:
+      "200":
+        description: The search result of roles for the tenant.
+        content:
+          application/json:
+            schema:
+              $ref: 'search-models.yaml#/SearchQueryResponse'
+    x-eventually-consistent: true
+
+/tenants/{tenantId}/roles/{roleId}:
+  put:
+    tags:
+      - Tenant
+    operationId: assignRoleToTenant
+    summary: Assign a role to a tenant
+    description: |
+      Assigns a role to a specified tenant.
+      Users, Clients or Groups, that have the role assigned, will get access to the tenant's data and can perform actions according to their authorizations.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: roleId
+        in: path
+        required: true
+        description: The unique identifier of the role.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The role was successfully assigned to the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant or role was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+  delete:
+    tags:
+      - Tenant
+    operationId: unassignRoleFromTenant
+    summary: Unassign a role from a tenant
+    description: |
+      Unassigns a role from a specified tenant.
+      Users, Clients or Groups, that have the role assigned, will no longer have access to the
+      tenant's data - unless they are assigned directly to the tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: roleId
+        in: path
+        required: true
+        description: The unique identifier of the role.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The role was successfully unassigned from the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant or role was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/tenants/{tenantId}/mapping-rules/{mappingRuleId}:
+  put:
+    tags:
+      - Tenant
+    operationId: assignMappingRuleToTenant
+    summary: Assign a mapping rule to a tenant
+    description: Assign a single mapping rule to a specified tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: mappingRuleId
+        in: path
+        required: true
+        description: The unique identifier of the mapping rule.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The mapping rule was successfully assigned to the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant or mapping rule was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+  delete:
+    tags:
+      - Tenant
+    operationId: unassignMappingRuleFromTenant
+    summary: Unassign a mapping rule from a tenant
+    description: Unassigns a single mapping rule from a specified tenant without deleting the rule.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+      - name: mappingRuleId
+        in: path
+        required: true
+        description: The unique identifier of the mapping rule.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The mapping rule was successfully unassigned from the tenant.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: Not found. The tenant or mapping rule was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: false
+
+/tenants/{tenantId}/mapping-rules/search:
+  post:
+    tags:
+      - Tenant
+    operationId: searchMappingRulesForTenant
+    summary: Search mapping rules for tenant
+    description: Retrieves a filtered and sorted list of MappingRules for a specified tenant.
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        description: The unique identifier of the tenant.
+        schema:
+          $ref: 'identifiers.yaml#/TenantId'
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            $ref: 'search-models.yaml#/SearchQueryRequest'
+    responses:
+      "200":
+        description: The search result of MappingRules for the tenant.
+        content:
+          application/json:
+            schema:
+              $ref: 'search-models.yaml#/SearchQueryResponse'
+    x-eventually-consistent: true
+
+## Schema definitions
+
+TenantCreateRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    tenantId:
+      type: string
+      description: The unique ID for the tenant. Must be 255 characters or less. Can contain letters, numbers, [`_`, `-`, `+`, `.`, `@`].
+      minLength: 1
+      maxLength: 256
+      pattern: ^[A-Za-z0-9_@.+-]+$
+    name:
+      type: string
+      description: The name of the tenant.
+    description:
+      type: string
+      description: The description of the tenant.
+  required:
+    - tenantId
+    - name
+
+TenantCreateResult:
+  type: object
+  x-semantic-provider:
+    - tenantId
+  properties:
+    tenantId:
+      $ref: 'identifiers.yaml#/TenantId'
+    name:
+      type: string
+      example: Customer Service Department
+    description:
+      type: string
+      example: Customer Service department business processes
+
+TenantUpdateRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    name:
+      type: string
+      description: The new name of the tenant.
+    description:
+      type: string
+      description: The new description of the tenant.
+  required:
+    - name
+    - description
+
+TenantUpdateResult:
+  type: object
+  properties:
+    tenantId:
+      $ref: 'identifiers.yaml#/TenantId'
+    name:
+      type: string
+      description: The name of the tenant.
+    description:
+      type: string
+      description: The description of the tenant.
+
+TenantResult:
+  description: Tenant search response item.
+  type: object
+  properties:
+    name:
+      type: string
+      description: The tenant name.
+      example: Customer Service department
+    tenantId:
+      $ref: 'identifiers.yaml#/TenantId'
+    description:
+      type: string
+      description: The tenant description.
+      example: Customer Service department business processes
+
+TenantSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - key
+        - name
+        - tenantId
+    order:
+      $ref: 'enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+TenantSearchQueryRequest:
+  description: Tenant search request
+  additionalProperties: false
+  type: object
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryRequest'
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/TenantSearchQuerySortRequest'
+    filter:
+      $ref: '#/TenantFilter'
+      description: The tenant search filters.
+
+TenantFilter:
+  description: Tenant filter request
+  type: object
+  properties:
+    tenantId:
+      $ref: 'identifiers.yaml#/TenantId'
+    name:
+      type: string
+      description: The name of the tenant.
+
+TenantSearchQueryResult:
+  description: Tenant search response.
+  type: object
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching tenants.
+      type: array
+      items:
+        $ref: '#/TenantResult'
+
+# Tenant-related association results
+TenantUserResult:
+  type: object
+  properties:
+    username:
+      $ref: 'identifiers.yaml#/Username'
+
+TenantUserSearchResult:
+  type: object
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching users.
+      type: array
+      items:
+        $ref: '#/TenantUserResult'
+
+TenantUserSearchQueryRequest:
+  additionalProperties: false
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryRequest'
+  type: object
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/TenantUserSearchQuerySortRequest'
+
+TenantUserSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - username
+    order:
+      $ref: 'enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+TenantClientResult:
+  type: object
+  properties:
+    clientId:
+      description: The ID of the client.
+      type: string
+
+TenantClientSearchResult:
+  type: object
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching clients.
+      type: array
+      items:
+        $ref: '#/TenantClientResult'
+
+TenantClientSearchQueryRequest:
+  additionalProperties: false
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryRequest'
+  type: object
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/TenantClientSearchQuerySortRequest'
+
+TenantClientSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - clientId
+    order:
+      $ref: 'enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+TenantGroupResult:
+  type: object
+  properties:
+    groupId:
+      description: The groupId of the group.
+      type: string
+
+TenantGroupSearchResult:
+  type: object
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryResponse'
+  properties:
+    items:
+      description: The matching groups.
+      type: array
+      items:
+        $ref: '#/TenantGroupResult'
+
+TenantGroupSearchQueryRequest:
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryRequest'
+  type: object
+  additionalProperties: false
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/TenantGroupSearchQuerySortRequest'
+
+TenantGroupSearchQuerySortRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - groupId
+    order:
+      $ref: 'enums.yaml#/SortOrderEnum'
+  required:
+    - field

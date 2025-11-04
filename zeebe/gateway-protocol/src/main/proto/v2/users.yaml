@@ -1,0 +1,308 @@
+## Endpoint definitions
+
+/users:
+  post:
+    tags:
+      - User
+    operationId: createUser
+    summary: Create user
+    description: Create a new user.
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/UserRequest'
+      required: true
+    responses:
+      "201":
+        description: The user was created successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '#/UserCreateResult'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "401":
+        $ref: 'common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "409":
+        description: A user with this username already exists.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: true
+
+/users/search:
+  post:
+    tags:
+      - User
+    operationId: searchUsers
+    summary: Search users
+    description: Search for users based on given criteria.
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/UserSearchQueryRequest'
+    responses:
+      "200":
+        description: The user search result.
+        content:
+          application/json:
+            schema:
+              $ref: '#/UserSearchResult'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "401":
+        $ref: 'common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+/users/{username}:
+  get:
+    tags:
+      - User
+    operationId: getUser
+    summary: Get user
+    description: Get a user by its username.
+    parameters:
+      - name: username
+        in: path
+        required: true
+        description: The username of the user.
+        schema:
+          $ref: 'identifiers.yaml#/Username'
+    responses:
+      "200":
+        description: The user is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: '#/UserResult'
+      "401":
+        $ref: 'common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: The user with the given username was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: true
+
+  put:
+    x-eventually-consistent: true
+    tags:
+      - User
+    operationId: updateUser
+    summary: Update user
+    description: Updates a user.
+    parameters:
+      - name: username
+        in: path
+        required: true
+        description: The username of the user to update.
+        schema:
+          $ref: 'identifiers.yaml#/Username'
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '#/UserUpdateRequest'
+      required: true
+    responses:
+      "200":
+        description: The user was updated successfully.
+        content:
+          application/json:
+            schema:
+              $ref: '#/UserUpdateResult'
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "404":
+        description: The user was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+
+  delete:
+    tags:
+      - User
+    operationId: deleteUser
+    summary: Delete user
+    description: Deletes a user.
+    parameters:
+      - name: username
+        in: path
+        required: true
+        description: The username of the user to delete.
+        schema:
+          $ref: 'identifiers.yaml#/Username'
+    responses:
+      "204":
+        description: The user was deleted successfully.
+      "400":
+        $ref: 'common-responses.yaml#/InvalidData'
+      "404":
+        description: The user is not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+      "503":
+        $ref: 'common-responses.yaml#/ServiceUnavailable'
+    x-eventually-consistent: true
+
+## Schema definitions
+
+UserRequest:
+  type: object
+  additionalProperties: false
+  properties:
+    password:
+      description: The password of the user.
+      type: string
+    username:
+      description: The username of the user.
+      type: string
+    name:
+      description: The name of the user.
+      type: string
+    email:
+      description: The email of the user.
+      type: string
+  required:
+    - username
+    - password
+
+UserCreateResult:
+  type: object
+  x-semantic-provider:
+    - username
+  properties:
+    username:
+      $ref: 'identifiers.yaml#/Username'
+    name:
+      description: The name of the user.
+      type: string
+    email:
+      description: The email of the user.
+      type: string
+
+UserUpdateRequest:
+  type: object
+  properties:
+    password:
+      description: The password of the user. If blank, the password is unchanged.
+      type: string
+    name:
+      description: The name of the user.
+      type: string
+    email:
+      description: The email of the user.
+      type: string
+
+UserUpdateResult:
+  type: object
+  properties:
+    username:
+      $ref: 'identifiers.yaml#/Username'
+    name:
+      description: The name of the user.
+      type: string
+    email:
+      description: The email of the user.
+      type: string
+
+UserResult:
+  type: object
+  properties:
+    username:
+      $ref: 'identifiers.yaml#/Username'
+    name:
+      description: The name of the user.
+      type: string
+    email:
+      description: The email of the user.
+      type: string
+
+UserSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - username
+        - name
+        - email
+    order:
+      $ref: 'enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+UserSearchQueryRequest:
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryRequest'
+  type: object
+  additionalProperties: false
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: '#/UserSearchQuerySortRequest'
+    filter:
+      $ref: '#/UserFilter'
+      description: The user search filters.
+
+UserFilter:
+  description: User search filter.
+  type: object
+  properties:
+    username:
+      description: The username of the user.
+      allOf:
+        - $ref: "filters.yaml#/StringFilterProperty"
+    name:
+      description: The name of the user.
+      allOf:
+        - $ref: "filters.yaml#/StringFilterProperty"
+    email:
+      description: The email of the user.
+      allOf:
+        - $ref: "filters.yaml#/StringFilterProperty"
+
+UserSearchResult:
+  type: object
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryResponse'
+  required:
+    - items
+  properties:
+    items:
+      description: The matching users.
+      type: array
+      items:
+        $ref: '#/UserResult'

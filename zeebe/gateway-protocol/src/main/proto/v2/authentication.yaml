@@ -1,0 +1,91 @@
+## Endpoint definitions
+/authentication/me:
+  get:
+    tags:
+      - Authentication
+    operationId: getAuthentication
+    summary: Get current user
+    description: Retrieves the current authenticated user.
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: The current user is successfully returned.
+        content:
+          application/json:
+            schema:
+              $ref: "#/CamundaUserResult"
+      "401":
+        $ref: 'common-responses.yaml#/Unauthorized'
+      "403":
+        $ref: 'common-responses.yaml#/Forbidden'
+      "500":
+        $ref: 'common-responses.yaml#/InternalServerError'
+    x-eventually-consistent: false
+
+## Schema definitions
+
+CamundaUserResult:
+  type: object
+  required:
+    - tenants
+    - groups
+    - roles
+    - salesPlanType
+    - c8Links
+    - canLogout
+  properties:
+    username:
+      description: The username of the user.
+      allOf:
+        - $ref: "identifiers.yaml#/Username"
+      nullable: true
+    displayName:
+      description: The display name of the user.
+      type: string
+      example: Samantha Willis
+      nullable: true
+    email:
+      description: The email of the user.
+      type: string
+      example: swillis@acme.com
+      nullable: true
+    authorizedComponents:
+      description: The web components the user is authorized to use.
+      type: array
+      example:
+        - "*"
+      items:
+        type: string
+    tenants:
+      description: The tenants the user is a member of.
+      type: array
+      items:
+        $ref: 'tenants.yaml#/TenantResult'
+    groups:
+      description: The groups assigned to the user.
+      type: array
+      example:
+        - customer-service
+      items:
+        type: string
+    roles:
+      description: The roles assigned to the user.
+      type: array
+      example:
+        - frontline-support
+      items:
+        type: string
+    salesPlanType:
+      description: The plan of the user.
+      type: string
+      example: ""
+    c8Links:
+      description: The links to the components in the C8 stack.
+      type: object
+      example: {}
+      additionalProperties:
+        type: string
+    canLogout:
+      description: Flag for understanding if the user is able to perform logout.
+      type: boolean

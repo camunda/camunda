@@ -20,7 +20,7 @@
   <name>Zeebe Gateway REST API server</name>
 
   <properties>
-    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/target/generated-openapi</openapi.dir>
+    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
   </properties>
 
   <dependencies>
@@ -447,7 +447,7 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>spring</generatorName>
-              <inputSpec>${openapi.dir}/rest-api-bundled.yaml</inputSpec>
+              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
               <typeMappings>OffsetDateTime=String,Permission=io.camunda.identity.automation.permissions.PermissionEnum,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty,ElementInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceKeyFilterProperty=BasicStringFilterProperty,ScopeKeyFilterProperty=StringFilterProperty,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty,MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty,JobKeyFilterProperty=BasicStringFilterProperty,JobKindFilterProperty=StringFilterProperty,VariableKeyFilterProperty=BasicStringFilterProperty</typeMappings>
               <generateApis>false</generateApis>

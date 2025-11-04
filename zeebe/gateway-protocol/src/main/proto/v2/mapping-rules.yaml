@@ -1,0 +1,318 @@
+## Endpoint definitions
+
+/mapping-rules:
+  post:
+    tags:
+      - Mapping rule
+    operationId: createMappingRule
+    summary: Create mapping rule
+    description: |
+      Create a new mapping rule
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/MappingRuleCreateRequest"
+    responses:
+      "201":
+        description: The mapping rule was created successfully.
+        content:
+          application/json:
+            schema:
+              $ref: "#/MappingRuleCreateResult"
+      "400":
+        $ref: "common-responses.yaml#/InvalidData"
+      "403":
+        description: |
+          The request to create a mapping rule was denied.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "404":
+        description: The request to create a mapping rule was denied.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: "common-responses.yaml#/InternalServerError"
+    x-eventually-consistent: false
+/mapping-rules/{mappingRuleId}:
+  put:
+    tags:
+      - Mapping rule
+    operationId: updateMappingRule
+    summary: Update mapping rule
+    description: |
+      Update a mapping rule.
+    parameters:
+      - name: mappingRuleId
+        in: path
+        required: true
+        description: The ID of the mapping rule to update.
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/MappingRuleUpdateRequest"
+    responses:
+      "200":
+        description: The mapping rule was updated successfully.
+        content:
+          application/json:
+            schema:
+              $ref: "#/MappingRuleUpdateResult"
+      "400":
+        $ref: "common-responses.yaml#/InvalidData"
+      "403":
+        description: |
+          The request to update a mapping rule was denied.
+          More details are provided in the response body.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "404":
+        description: The request to update a mapping rule was denied.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: "common-responses.yaml#/InternalServerError"
+      "503":
+        $ref: "common-responses.yaml#/ServiceUnavailable"
+    x-eventually-consistent: false
+  delete:
+    tags:
+      - Mapping rule
+    operationId: deleteMappingRule
+    summary: Delete a mapping rule
+    description: |
+      Deletes the mapping rule with the given ID.
+    parameters:
+      - name: mappingRuleId
+        in: path
+        required: true
+        description: The ID of the mapping rule to delete.
+        schema:
+          type: string
+    responses:
+      "204":
+        description: The mapping rule was deleted successfully.
+      "401":
+        $ref: "common-responses.yaml#/Unauthorized"
+      "404":
+        description: The mapping rule with the mappingRuleId was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: "common-responses.yaml#/InternalServerError"
+      "503":
+        $ref: "common-responses.yaml#/ServiceUnavailable"
+    x-eventually-consistent: false
+  get:
+    tags:
+      - Mapping rule
+    operationId: getMappingRule
+    summary: Get a mapping rule
+    description: |
+      Gets the mapping rule with the given ID.
+    parameters:
+      - name: mappingRuleId
+        in: path
+        required: true
+        description: The ID of the mapping rule to get.
+        schema:
+          type: string
+    responses:
+      "200":
+        description: The mapping rule was returned successfully.
+        content:
+          application/json:
+            schema:
+              $ref: "#/MappingRuleResult"
+      "401":
+        $ref: "common-responses.yaml#/Unauthorized"
+      "404":
+        description: The mapping rule with the mappingRuleId was not found.
+        content:
+          application/problem+json:
+            schema:
+              $ref: "problem-detail.yaml#/ProblemDetail"
+      "500":
+        $ref: "common-responses.yaml#/InternalServerError"
+    x-eventually-consistent: true
+/mapping-rules/search:
+  post:
+    tags:
+      - Mapping rule
+    operationId: searchMappingRule
+    summary: Search mapping rules
+    description: |
+      Search for mapping rules based on given criteria.
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/MappingRuleSearchQueryRequest"
+    responses:
+      "200":
+        description: The mapping rule search result.
+        content:
+          application/json:
+            schema:
+              $ref: "#/MappingRuleSearchQueryResult"
+      "400":
+        $ref: "common-responses.yaml#/InvalidData"
+      "401":
+        $ref: "common-responses.yaml#/Unauthorized"
+      "403":
+        $ref: "common-responses.yaml#/Forbidden"
+      "500":
+        $ref: "common-responses.yaml#/InternalServerError"
+    x-eventually-consistent: true
+
+## Schema definitions
+
+MappingRuleCreateUpdateRequest:
+  type: object
+  properties:
+    claimName:
+      type: string
+      description: The name of the claim to map.
+    claimValue:
+      type: string
+      description: The value of the claim to map.
+    name:
+      type: string
+      description: The name of the mapping rule.
+  required:
+    - claimName
+    - claimValue
+    - name
+
+MappingRuleCreateRequest:
+  type: object
+  additionalProperties: false
+  allOf:
+    - $ref: "#/MappingRuleCreateUpdateRequest"
+  properties:
+    mappingRuleId:
+      type: string
+      description: The unique ID of the mapping rule.
+  required:
+    - mappingRuleId
+
+MappingRuleUpdateRequest:
+  type: object
+  allOf:
+    - $ref: "#/MappingRuleCreateUpdateRequest"
+
+MappingRuleCreateUpdateResult:
+  type: object
+  properties:
+    claimName:
+      type: string
+      description: The name of the claim to map.
+    claimValue:
+      type: string
+      description: The value of the claim to map.
+    name:
+      type: string
+      description: The name of the mapping rule.
+    mappingRuleId:
+      type: string
+      description: The unique ID of the mapping rule.
+
+MappingRuleCreateResult:
+  type: object
+  allOf:
+    - $ref: "#/MappingRuleCreateUpdateResult"
+
+MappingRuleUpdateResult:
+  type: object
+  allOf:
+    - $ref: "#/MappingRuleCreateUpdateResult"
+
+MappingRuleSearchQueryResult:
+  type: object
+  allOf:
+    - $ref: "search-models.yaml#/SearchQueryResponse"
+  properties:
+    items:
+      description: The matching mapping rules.
+      type: array
+      items:
+        $ref: "#/MappingRuleResult"
+
+MappingRuleResult:
+  type: object
+  properties:
+    claimName:
+      type: string
+      description: The name of the claim to map.
+    claimValue:
+      type: string
+      description: The value of the claim to map.
+    name:
+      type: string
+      description: The name of the mapping rule.
+    mappingRuleId:
+      type: string
+      description: The ID of the mapping rule.
+
+MappingRuleSearchQuerySortRequest:
+  type: object
+  properties:
+    field:
+      description: The field to sort by.
+      type: string
+      enum:
+        - mappingRuleId
+        - claimName
+        - claimValue
+        - name
+    order:
+      $ref: 'enums.yaml#/SortOrderEnum'
+  required:
+    - field
+
+MappingRuleSearchQueryRequest:
+  additionalProperties: false
+  allOf:
+    - $ref: 'search-models.yaml#/SearchQueryRequest'
+  type: object
+  properties:
+    sort:
+      description: Sort field criteria.
+      type: array
+      items:
+        $ref: "#/MappingRuleSearchQuerySortRequest"
+    filter:
+      description: The mapping rule search filters.
+      allOf:
+        - $ref: "#/MappingRuleFilter"
+
+MappingRuleFilter:
+  description: Mapping rule search filter.
+  type: object
+  properties:
+    claimName:
+      type: string
+      description: The claim name to match against a token.
+    claimValue:
+      type: string
+      description: The value of the claim to match.
+    name:
+      type: string
+      description: The name of the mapping rule.
+    mappingRuleId:
+      type: string
+      description: The ID of the mapping rule.
