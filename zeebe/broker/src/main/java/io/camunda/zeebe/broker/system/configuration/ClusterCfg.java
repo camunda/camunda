@@ -21,11 +21,6 @@ import java.util.stream.IntStream;
 
 public final class ClusterCfg implements ConfigurationEntry {
 
-  public static final String LEGACY_INITIAL_CONTACT_POINTS_PROPERTY =
-      "zeebe.broker.cluster.initialContactPoints";
-  public static final String UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY =
-      "camunda.cluster.initial-contact-points";
-
   public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
   public static final int DEFAULT_NODE_ID = 0;
   public static final int DEFAULT_PARTITIONS_COUNT = 1;
@@ -45,14 +40,6 @@ public final class ClusterCfg implements ConfigurationEntry {
           + " quorum = floor(replication factor / 2) + 1. In this current case the quorum will be"
           + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
           + " make sure to use an odd replication factor.";
-
-  private static final String INITIAL_CONTACT_POINTS_ERROR_MSG =
-      "Initial contact points must be configured when cluster size is greater than 1. "
-          + "Please configure '"
-          + LEGACY_INITIAL_CONTACT_POINTS_PROPERTY
-          + "' or '"
-          + UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY
-          + "'.";
 
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
 
@@ -222,13 +209,6 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   public void setConfigManager(final ConfigManagerCfg configManagerCfg) {
     configManager = configManagerCfg;
-  }
-
-  public String initialContactPointsValid() {
-    if (clusterSize > 1 && (initialContactPoints == null || initialContactPoints.isEmpty())) {
-      return INITIAL_CONTACT_POINTS_ERROR_MSG;
-    }
-    return null;
   }
 
   @Override

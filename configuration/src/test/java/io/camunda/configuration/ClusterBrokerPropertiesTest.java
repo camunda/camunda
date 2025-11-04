@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import java.util.Collections;
 import java.util.List;
@@ -37,9 +38,9 @@ public class ClusterBrokerPropertiesTest {
      * this simple test is enough to prevent any mistake.
      */
     assertThat(Cluster.LEGACY_INITIAL_CONTACT_POINTS_PROPERTY)
-        .isEqualTo(ClusterCfg.LEGACY_INITIAL_CONTACT_POINTS_PROPERTY);
+        .isEqualTo(SystemContext.LEGACY_INITIAL_CONTACT_POINTS_PROPERTY);
     assertThat(Cluster.UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY)
-        .isEqualTo(ClusterCfg.UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY);
+        .isEqualTo(SystemContext.UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY);
   }
 
   @Nested
