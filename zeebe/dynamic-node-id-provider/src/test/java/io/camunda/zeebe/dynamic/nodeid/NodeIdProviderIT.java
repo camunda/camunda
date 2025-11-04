@@ -8,8 +8,8 @@
 package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.junit.jupiter.Container;
@@ -51,6 +52,7 @@ public class NodeIdProviderIT {
   private ControlledInstantSource clock;
   private int clusterSize;
   private String taskId;
+  private volatile boolean leaseFailed = false;
 
   @BeforeAll
   public static void setUpAll() {
@@ -150,6 +152,41 @@ public class NodeIdProviderIT {
     assertThat(acquiredLeases).isEqualTo(currentLeases);
   }
 
+  @Test
+  public void shouldRenewTheLeaseBeforeExpiration() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    repository = Mockito.spy(repository);
+
+    // when
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+
+    // then
+    verify(repository, timeout(EXPIRY_DURATION.toMillis()).atLeast(2))
+        .acquire(argThat(lease -> lease.nodeInstance().id() == 0), any());
+  }
+
+  @Test
+  public void shouldInvokeFailureListenerWhenFailsToRenew() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    repository = Mockito.spy(repository);
+
+    // Inject failure: first call succeeds, subsequent calls throw exception
+
+    // when
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+
+    // then
+    doThrow(new IllegalStateException("Injected failure")).when(repository).acquire(any(), any());
+    Awaitility.await("Until failure listener has been invoked")
+        .untilAsserted(() -> assertThat(leaseFailed).isTrue());
+  }
+
   public void assertLeaseIsReady() {
     assertLeaseIs(true);
   }
@@ -168,6 +205,7 @@ public class NodeIdProviderIT {
   }
 
   NodeIdProvider ofSize(final int clusterSize) {
-    return new NodeIdProvider(repository, clusterSize, clock, EXPIRY_DURATION, taskId);
+    return new NodeIdProvider(
+        repository, clusterSize, clock, EXPIRY_DURATION, taskId, () -> leaseFailed = true);
   }
 }
