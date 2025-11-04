@@ -66,7 +66,7 @@ public class NodeIdProviderIT {
   public void setUp() {
     final var bucketName = UUID.randomUUID().toString();
     taskId = UUID.randomUUID().toString();
-    config = new Config(bucketName, taskId, EXPIRY_DURATION);
+    config = new Config(bucketName, EXPIRY_DURATION);
     client.createBucket(b -> b.bucket(config.bucketName()));
     clock = new ControlledInstantSource(Instant.now());
     repository = new S3NodeIdRepository(client, config, clock, false);

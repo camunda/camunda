@@ -84,7 +84,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
   @Override
   public StoredLease.Initialized acquire(final Lease lease, final String previousETag) {
     final var nodeId = lease.nodeInstance().id();
-    final var metadata = new Metadata(config.taskId, lease.timestamp());
+    final var metadata = Metadata.fromLease(lease);
     final PutObjectRequest putRequest =
         createPutObjectRequest(nodeId, Optional.of(metadata), Optional.of(previousETag)).build();
     try {
@@ -177,11 +177,8 @@ public class S3NodeIdRepository implements NodeIdRepository {
     return builder.build();
   }
 
-  public record Config(String bucketName, String taskId, Duration expiryDuration) {
+  public record Config(String bucketName, Duration expiryDuration) {
     public Config {
-      if (taskId == null || taskId.isEmpty()) {
-        throw new IllegalArgumentException("taskId cannot be null or empty");
-      }
       if (expiryDuration.toMillis() <= 0) {
         throw new IllegalArgumentException("expiryDuration must be greater than 0");
       }
