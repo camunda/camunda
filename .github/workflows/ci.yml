@@ -38,6 +38,7 @@ jobs:
   detect-changes:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
+      check-copilot-commits: ${{ steps.filter.outputs.check-copilot-commits }}
       commitlint: ${{ steps.filter.outputs.commitlint }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
@@ -101,6 +102,59 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  check-copilot-commits:
+    if: needs.detect-changes.outputs.check-copilot-commits == 'true'
+    name: "Check for Copilot Authorship in Commits"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+    - name: Check for Copilot commits
+      id: copilot-check
+      uses: camunda/infra-global-github-actions/check-copilot-commits@main
+      with:
+        repository: ${{ github.repository }}
+        branch: ${{ github.event.pull_request.head.ref }}
+        base-branch: ${{ github.event.pull_request.base.ref }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Fail if Copilot commits found
+      if: steps.copilot-check.outputs.copilot-commits-found == 'true'
+      run: |
+        # Create clickable links for each commit hash
+        commit_hashes="${{ steps.copilot-check.outputs.copilot-commits-hashes }}"
+        repo_url="https://github.com/${{ github.repository }}"
+        commit_links=""
+
+        for hash in ${commit_hashes}; do
+          if [ -n "${commit_links}" ]; then
+            commit_links="${commit_links} "
+          fi
+          commit_links="${commit_links}${repo_url}/commit/${hash}"
+        done
+
+        echo "::error title=Copilot commits detected::Commits authored by GitHub Copilot found: ${commit_links}"
+        echo "❌ Copilot commits detected in this PR!"
+        echo "Commit hashes: ${{ steps.copilot-check.outputs.copilot-commits-hashes }}"
+        echo ""
+        echo "According to Camunda's Copilot policies, commits authored by GitHub Copilot are not allowed."
+        echo "Please review and recreate these commits without Copilot authorship."
+        echo ""
+        echo "For more information, see: https://confluence.camunda.com/spaces/HAN/pages/245401394/GitHub+Copilot+-+AI+for+Code+and+Text+Generation"
+        exit 1
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
@@ -1420,6 +1474,7 @@ jobs:
       - actionlint
       - archunit-tests
       - build-platform-frontend
+      - check-copilot-commits
       - client-components
       - commitlint
       - detect-changes
