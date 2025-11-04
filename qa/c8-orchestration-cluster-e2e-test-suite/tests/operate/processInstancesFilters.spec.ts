@@ -17,6 +17,7 @@ type ProcessInstance = {processInstanceKey: number};
 
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
+let variableProcessInstance: ProcessInstance;
 
 test.beforeAll(async () => {
   await deploy([
@@ -52,6 +53,16 @@ test.beforeAll(async () => {
         .processInstanceKey,
     ),
   };
+
+  // for variable filtering test
+  await deploy(['./resources/Variable_Process.bpmn']);
+  variableProcessInstance = {
+    processInstanceKey: Number(
+      (await createSingleInstance('Variable_Process', 1, {filtersTest: 604}))
+        .processInstanceKey,
+    ),
+  };
+
 });
 
 test.describe('Process Instances Filters', () => {
@@ -169,6 +180,30 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.errorMessageFilter).toBeHidden();
       await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
+
+    await test.step('Variable filter test', async ({ }) => {
+      await test.step('Filter by variable and assert results', async () => {
+        await operateFiltersPanelPage.displayOptionalFilter('Variable');
+        await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
+        await operateFiltersPanelPage.fillVariableValueFilter('604');
+
+        const variableProcessInstanceKey =
+          variableProcessInstance.processInstanceKey.toString();
+          
+        await waitForAssertion({
+          assertion: async () => {
+            await expect(page.getByText('1 result')).toBeVisible();
+          },
+          onFailure: async () => {
+            await page.reload();
+          }
+        });
+
+        expect(await operateProcessesPage.processInstancesTable.count()).toBe(1)
+
+      });
+    })
+
   });
 
   test('Interaction between diagram and filters', async ({
