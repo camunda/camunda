@@ -94,6 +94,7 @@ public class NodeIdProvider implements AutoCloseable {
       currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
     } catch (final Exception e) {
       LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
+      currentLease = null;
       onLeaseFailure.run();
     }
   }
@@ -169,11 +170,21 @@ public class NodeIdProvider implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    // release is already submitted to the executor, we can shut it down gracefully.
-    executor.shutdown();
-    // shutdown is taking too much time, let's shut it down by interrupting running tasks.
-    if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-      executor.shutdownNow();
+    // use the executor status to avoid closing multiple times
+    if (!executor.isShutdown()) {
+      try {
+        if (currentLease != null) {
+          nodeIdRepository.release(currentLease);
+        }
+      } finally {
+        currentLease = null;
+        // release is already submitted to the executor, we can shut it down gracefully.
+        executor.shutdown();
+        // shutdown is taking too much time, let's shut it down by interrupting running tasks.
+        if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+          executor.shutdownNow();
+        }
+      }
     }
   }
 }
