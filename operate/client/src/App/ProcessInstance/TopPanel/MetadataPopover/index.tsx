@@ -11,7 +11,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {flip, offset} from '@floating-ui/react-dom';
-import {Header} from '../Header';
+import {Header} from './Header';
 import {Stack} from '@carbon/react';
 import {MultiIncidents} from './Incidents/multiIncidents';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';

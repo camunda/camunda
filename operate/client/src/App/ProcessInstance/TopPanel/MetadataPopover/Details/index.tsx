@@ -12,7 +12,7 @@ import isNil from 'lodash/isNil';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {Header} from '../../Header';
+import {Header} from '../Header';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
 import {type V2MetaDataDto} from '../types';
