@@ -8,13 +8,13 @@
 package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
@@ -22,7 +22,6 @@ import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3Client
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig.Credentials;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
@@ -115,6 +114,7 @@ public class NodeIdProviderIT {
     final var expiredLease =
         repository.acquire(
             new Lease(taskId + "old", expiredLeaseTimestamp, new NodeInstance(0)), previousEtag);
+    assertThat(expiredLease).isNotNull();
     clock.advance(EXPIRY_DURATION.plusSeconds(1));
 
     // when
