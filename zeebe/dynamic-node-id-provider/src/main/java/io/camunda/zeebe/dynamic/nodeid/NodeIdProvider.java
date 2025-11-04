@@ -91,6 +91,9 @@ public class NodeIdProvider implements AutoCloseable {
         if (retryRound > 1) {
           try {
             currentDelay = backoff.supplyRetryDelay(currentDelay);
+            LOG.debug(
+                "Attempt to acquire the lease failed for all nodeIds, sleeping {} and retrying again",
+                currentDelay);
             Thread.sleep(currentDelay);
           } catch (final InterruptedException e) {
             break;
@@ -114,7 +117,7 @@ public class NodeIdProvider implements AutoCloseable {
       switch (lease) {
         case final Initialized initialized -> {
           if (initialized.lease().isStillValid(clock.millis(), leaseDuration)) {
-            LOG.debug("Lease {} is is held by another process, skipping it", initialized);
+            LOG.debug("Lease {} is held by another process, skipping it", initialized);
             return null;
           } else {
             LOG.debug("Trying to acquire an expired lease {}", initialized);
