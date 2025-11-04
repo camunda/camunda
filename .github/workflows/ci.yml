@@ -690,7 +690,7 @@ jobs:
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 10
-    runs-on: aws-arm-core-2-default
+    runs-on: aws-core-8-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions: { }  # no GITHUB_TOKEN is needed
