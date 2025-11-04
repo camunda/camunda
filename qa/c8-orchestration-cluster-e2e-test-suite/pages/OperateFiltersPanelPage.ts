@@ -66,9 +66,7 @@ export class OperateFiltersPanelPage {
     this.canceledCheckbox = this.page.getByRole('checkbox', {
       name: 'Canceled',
     });
-    this.finishedInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Finished Instances',
-    });
+    this.finishedInstancesCheckbox = this.page.locator('label[for="Finished Instances"]');
     this.processNameFilter = this.page.getByRole('combobox', {
       name: 'Name',
     });

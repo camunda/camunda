@@ -181,6 +181,7 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
 
+    // TODO discuss problem with parallel test execution and variable/process instance keys
     await test.step('Filter by variable and assert results', async ({ }) => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
@@ -200,7 +201,6 @@ test.describe('Process Instances Filters', () => {
     })
 
     await test.step('Filter by process instance key and assert results', async ({ }) => {
-      // await operateFiltersPanelPage.resetFiltersButton.click();
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
       const callActivityProcessInstanceKey =
@@ -223,14 +223,11 @@ test.describe('Process Instances Filters', () => {
       // test with multiple keys
       await operateFiltersPanelPage.resetFiltersButton.click();
       await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+
       await expect(operateFiltersPanelPage.finishedInstancesCheckbox).toBeVisible();
       await expect(operateFiltersPanelPage.finishedInstancesCheckbox).toBeEnabled();
-      
+      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
 
-      // TODO: discuss problem about checkbox/label
-      // await operateFiltersPanelPage.finishedInstancesCheckbox.check();
-      await page.locator('label[for="Finished Instances"]').click()
-      // await operateFiltersPanelPage.completedCheckbox.click({timeout: 5000});
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`
       );
