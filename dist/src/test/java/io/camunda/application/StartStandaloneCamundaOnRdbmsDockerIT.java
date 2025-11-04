@@ -40,6 +40,19 @@ public class StartStandaloneCamundaOnRdbmsDockerIT extends AbstractCamundaDocker
   }
 
   @Test
+  public void testStartStandaloneCamundaOnMysqlWithoutMountedDriver() {
+    createContainer(this::createMysqlContainer).start();
+
+    final GenericContainer<?> camundaContainer =
+        createContainer(() -> createUnauthenticatedUnifiedConfigCamundaContainerWithMysql())
+            .waitingFor(
+                Wait.forLogMessage(
+                    ".*Failed to load driver class com.mysql.cj.jdbc.Driver.*\\s", 1));
+
+    startContainer(camundaContainer);
+  }
+
+  @Test
   public void testStartStandaloneCamundaOnOracleWithMountedDriver() throws ClassNotFoundException {
     createContainer(this::createOracleContainer).start();
 
@@ -50,6 +63,21 @@ public class StartStandaloneCamundaOnRdbmsDockerIT extends AbstractCamundaDocker
     final GenericContainer<?> camundaContainer =
         createContainer(() -> createUnauthenticatedUnifiedConfigCamundaContainerWithOracle())
             .withFileSystemBind(jarPath, "/driver-lib/ojdbc.jar", BindMode.READ_ONLY);
+
+    startContainer(camundaContainer);
+  }
+
+  @Test
+  public void testStartStandaloneCamundaOnMysqlWithMountedDriver() throws ClassNotFoundException {
+    createContainer(this::createMysqlContainer).start();
+
+    final Class<?> driverClass = Class.forName("com.mysql.cj.jdbc.Driver");
+    final String jarPath =
+        driverClass.getProtectionDomain().getCodeSource().getLocation().getPath();
+
+    final GenericContainer<?> camundaContainer =
+        createContainer(() -> createUnauthenticatedUnifiedConfigCamundaContainerWithMysql())
+            .withFileSystemBind(jarPath, "/driver-lib/mysqljdbc.jar", BindMode.READ_ONLY);
 
     startContainer(camundaContainer);
   }

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -38,6 +39,7 @@ public abstract class AbstractCamundaDockerIT {
   protected static final String ELASTICSEARCH_NETWORK_ALIAS = "elasticsearch";
   protected static final String POSTGRES_NETWORK_ALIAS = "postgresql";
   protected static final String ORACLE_NETWORK_ALIAS = "oracle";
+  protected static final String MYSQL_NETWORK_ALIAS = "mysql";
   protected static final String DATABASE_TYPE = "elasticsearch";
   protected static final String CAMUNDA_TEST_DOCKER_IMAGE =
       System.getProperty("camunda.docker.test.image", "camunda/camunda:SNAPSHOT");
@@ -100,6 +102,13 @@ public abstract class AbstractCamundaDockerIT {
         .withExposedPorts(1521);
   }
 
+  protected MySQLContainer<?> createMysqlContainer() {
+    return TestSearchContainers.createDefaultMySQLContainer()
+        .withNetwork(network)
+        .withNetworkAliases(MYSQL_NETWORK_ALIAS)
+        .withExposedPorts(3306);
+  }
+
   protected GenericContainer<?> createUnauthenticatedUnifiedConfigCamundaContainer() {
     return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
         .withLogConsumer(new Slf4jLogConsumer(LOGGER))
@@ -155,6 +164,11 @@ public abstract class AbstractCamundaDockerIT {
   protected GenericContainer<?> createUnauthenticatedUnifiedConfigCamundaContainerWithOracle() {
     return createUnauthenticatedUnifiedConfigCamundaContainerWithRdbms(
         "jdbc:oracle:thin:@//oracle:1521/camunda", "oracle", "rdbmsOracle,broker,insecure");
+  }
+
+  protected GenericContainer<?> createUnauthenticatedUnifiedConfigCamundaContainerWithMysql() {
+    return createUnauthenticatedUnifiedConfigCamundaContainerWithRdbms(
+        "jdbc:mysql://mysql:3306/camunda", "mysql", "rdbmsMysql,broker,insecure");
   }
 
   protected GenericContainer<?> createCamundaContainer() {
