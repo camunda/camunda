@@ -51,6 +51,16 @@ public class PostImporterQueueFromIncidentHandlerTest {
   }
 
   @Test
+  void shouldNotHandleResolveIntentRecords() {
+    // given
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVE));
+
+    // when - then
+    assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
+  }
+
+  @Test
   void shouldGenerateIdsForCreated() {
     // given
     final long expectedId = 123;
