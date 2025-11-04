@@ -18,12 +18,15 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public class IncidentFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.IncidentFilter>
@@ -85,7 +88,14 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter creationTime(final OffsetDateTime creationTime) {
-    filter.setCreationTime(creationTime == null ? null : creationTime.toString());
+    return creationTime(b -> b.eq(creationTime));
+  }
+
+  @Override
+  public IncidentFilter creationTime(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setCreationTime(provideSearchRequestProperty(property));
     return this;
   }
 

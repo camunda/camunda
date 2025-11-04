@@ -17,8 +17,10 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public interface IncidentFilter extends SearchRequestFilter {
 
@@ -93,6 +95,14 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   IncidentFilter creationTime(final OffsetDateTime creationTime);
+
+  /**
+   * Filters incidents by creation times using {@link DateTimeProperty} consumer.
+   *
+   * @param fn the creation times {@link DateTimeProperty} consumer of the incidents
+   * @return the updated filter
+   */
+  IncidentFilter creationTime(final Consumer<DateTimeProperty> fn);
 
   /**
    * Filters incidents by the state of incident.
