@@ -203,10 +203,7 @@ paths:
       operationId: getProcessDefinitionInstanceStatistics
       summary: Get statistics for process instances by process definition
       description: |
-        Get statistics about process instances, grouped by process definition. For each process
-        definition, the response includes the latest deployed instance name, total counts of active
-        instances without incident, total counts of active instances with incident and whether the
-        instance has more than one version.
+        Get statistics about process instances, grouped by process definition.
       requestBody:
         required: false
         content:
@@ -228,6 +225,45 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-definitions/{processDefinitionId}/statistics/process-instances:
+    post:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionInstanceVersionStatistics
+      summary: Get process instance statistics by version
+      description: |
+        Get statistics about process instances, grouped by version for a given process definition.
+      parameters:
+        - name: processDefinitionId
+          in: path
+          required: true
+          description: The ID of the process definition.
+          schema:
+            $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionInstanceVersionStatisticsQuery"
+      responses:
+        "200":
+          description: The process definition instance version statistic result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDefinitionInstanceVersionStatisticsQueryResult"
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -456,8 +492,8 @@ components:
           type: string
           enum:
             - processDefinitionId
-            - activeInstancesWithIncident
-            - activeInstancesWithoutIncident
+            - activeInstancesWithIncidentCount
+            - activeInstancesWithoutIncidentCount
         order:
           $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
@@ -486,3 +522,76 @@ components:
         hasMoreTotalItems:
           description: Indicates whether there are more items matching the criteria.
           type: boolean
+
+    ProcessDefinitionInstanceVersionStatisticsQuery:
+      type: object
+      properties:
+        page:
+          description: Pagination criteria.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageRequest'
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionInstanceVersionStatisticsQuerySortRequest'
+
+    ProcessDefinitionInstanceVersionStatisticsQueryResult:
+      type: object
+      description: Process definition instance version statistics query response.
+      properties:
+        items:
+          description: The process definition instance version statistics result.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionInstanceVersionStatisticsResult'
+        page:
+          description: Pagination information about the search results.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageResponse'
+
+    ProcessDefinitionInstanceVersionStatisticsResult:
+      description: Process definition instance version statistics response.
+      type: object
+      properties:
+        processDefinitionId:
+          description: The ID associated with the process definition.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionKey:
+          description: The unique key of the process definition.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+        processDefinitionName:
+          description: The name of the process definition.
+          type: string
+        processDefinitionVersion:
+          description: The version number of the process definition.
+          type: integer
+          format: int32
+        activeInstancesWithIncidentCount:
+          description: The number of active process instances for this version that currently have incidents.
+          type: integer
+          format: int64
+        activeInstancesWithoutIncidentCount:
+          description: The number of active process instances for this version that do not have any incidents.
+          type: integer
+          format: int64
+
+    ProcessDefinitionInstanceVersionStatisticsQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - processDefinitionId
+            - processDefinitionKey
+            - processDefinitionName
+            - processDefinitionVersion
+            - activeInstancesWithIncidentCount
+            - activeInstancesWithoutIncidentCount
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field

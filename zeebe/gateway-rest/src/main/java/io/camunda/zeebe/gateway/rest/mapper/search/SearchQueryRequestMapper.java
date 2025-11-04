@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
+import static io.camunda.search.filter.FilterBuilders.processInstance;
 import static io.camunda.zeebe.gateway.rest.mapper.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toIncidentFilter;
 import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toProcessInstanceFilter;
@@ -593,6 +594,27 @@ public final class SearchQueryRequestMapper {
     final var filter = toProcessInstanceFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceStatisticsQuery);
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery>
+      toProcessDefinitionInstanceVersionStatisticsQuery(
+          final ProcessDefinitionInstanceVersionStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(
+          SearchQueryBuilders.processDefinitionInstanceVersionStatisticsQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper
+                .fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(request.getSort()),
+            SortOptionBuilders::processDefinitionInstanceVersionStatistics,
+            SearchQuerySortRequestMapper::applyProcessDefinitionInstanceVersionStatisticsSortField);
+    final var filter = processInstance().build();
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::processDefinitionInstanceVersionStatisticsQuery);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

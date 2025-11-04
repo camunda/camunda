@@ -250,4 +250,18 @@ public final class SortOptionBuilders {
           fn) {
     return fn.apply(processDefinitionInstanceStatistics()).build();
   }
+
+  public static ProcessDefinitionInstanceVersionStatisticsSort.Builder
+      processDefinitionInstanceVersionStatistics() {
+    return new ProcessDefinitionInstanceVersionStatisticsSort.Builder();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsSort
+      processDefinitionInstanceVersionStatistics(
+          final Function<
+                  ProcessDefinitionInstanceVersionStatisticsSort.Builder,
+                  ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsSort>>
+              fn) {
+    return fn.apply(new ProcessDefinitionInstanceVersionStatisticsSort.Builder()).build();
+  }
 }

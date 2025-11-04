@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,10 +17,12 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -134,6 +137,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @Captor
   ArgumentCaptor<io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
       instanceStatsQueryCaptor;
+
+  @Captor
+  ArgumentCaptor<io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery>
+      instanceVersionStatsQueryCaptor;
 
   @BeforeEach
   void setupProcessDefinitionServices() {
@@ -724,5 +731,79 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     final var filter = capturedQuery.filter();
     assertThat(filter).isNotNull();
     assertThat(filter.orFilters() == null || filter.orFilters().isEmpty()).isTrue();
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionInstanceVersionStatistics() {
+    // given
+    final String processDefinitionId = "process_definition_id";
+    final var statsEntity =
+        new ProcessDefinitionInstanceVersionStatisticsEntity(
+            "process_definition_id", 2L, 3, "process_definition_name", 4L, 0L);
+    final var statsResult =
+        new Builder<ProcessDefinitionInstanceVersionStatisticsEntity>()
+            .total(1L)
+            .items(List.of(statsEntity))
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.searchProcessDefinitionInstanceVersionStatistics(
+            eq(processDefinitionId), any(ProcessDefinitionInstanceVersionStatisticsQuery.class)))
+        .thenReturn(statsResult);
+    final var request =
+        """
+            {
+              "sort": [
+                {
+                  "field": "activeInstancesWithoutIncidentCount",
+                  "order": "DESC"
+                }
+              ]
+            }""";
+    final var response =
+        """
+            {"items":[
+              {
+                "processDefinitionId": "process_definition_id",
+                "processDefinitionKey": "2",
+                "processDefinitionName": "process_definition_name",
+                "processDefinitionVersion": 3,
+                "activeInstancesWithoutIncidentCount": 4,
+                "activeInstancesWithIncidentCount": 0
+              }
+            ],
+            "page": {
+              "totalItems": 1,
+              "hasMoreTotalItems": false
+              }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + processDefinitionId + "/statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices)
+        .searchProcessDefinitionInstanceVersionStatistics(
+            eq(processDefinitionId), instanceVersionStatsQueryCaptor.capture());
+    final var capturedQuery = instanceVersionStatsQueryCaptor.getValue();
+    assertThat(capturedQuery).isNotNull();
+    final var sort = capturedQuery.sort();
+    assertThat(sort).isNotNull();
+    assertThat(sort.getFieldSortings().size()).isEqualTo(1);
+    assertThat("activeInstancesWithoutIncidentCount")
+        .isEqualTo(sort.getFieldSortings().getFirst().field());
+    assertThat(io.camunda.search.sort.SortOrder.DESC)
+        .isEqualTo(sort.orderings().getFirst().order());
   }
 }

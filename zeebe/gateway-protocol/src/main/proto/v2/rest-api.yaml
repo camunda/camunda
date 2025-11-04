@@ -165,6 +165,8 @@ paths:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1statistics~1element-instances'
   /process-definitions/statistics/process-instances:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1statistics~1process-instances'
+  /process-definitions/{processDefinitionId}/statistics/process-instances:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionId}~1statistics~1process-instances'
 
   # Process instance endpoints
   /process-instances:
