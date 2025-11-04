@@ -231,7 +231,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
         {instanceCount !== null && instanceCount > 1 && !elementInstanceKey && (
           <>
             <Header
-              title={`This Element instance triggered ${instanceCount} times`}
+              title={`This element instance triggered ${instanceCount} times`}
             />
             <Content>
               To view details for any of these, select one Instance in the
