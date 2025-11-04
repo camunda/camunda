@@ -25,7 +25,8 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
  */
 public enum AsyncTaskGroup {
   ASYNC_PROCESSING("AsyncProcessingScheduleActor", SchedulingHints.cpuBound()),
-  BATCH_OPERATIONS("BatchOperationActor", SchedulingHints.ioBound());
+  BATCH_OPERATIONS("BatchOperationActor", SchedulingHints.ioBound()),
+  HISTORY_DELETION("HistoryDeletionActor", SchedulingHints.ioBound());
   private final String name;
   private final SchedulingHints schedulingHints;
 

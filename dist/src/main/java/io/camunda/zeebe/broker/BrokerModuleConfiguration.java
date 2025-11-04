@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.WriteClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
@@ -61,6 +62,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final WriteClientsProxy writeClientsProxy;
 
   private Broker broker;
 
@@ -79,7 +81,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
-      @Autowired(required = false) final SearchClientsProxy searchClientsProxy) {
+      @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
+      @Autowired(required = false) final WriteClientsProxy writeClientsProxy) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -93,6 +96,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.writeClientsProxy = writeClientsProxy;
   }
 
   @Bean
@@ -122,6 +126,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             passwordEncoder,
             jwtDecoder,
             searchClientsProxy,
+            writeClientsProxy,
             new BrokerRequestAuthorizationConverter(securityConfiguration));
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));

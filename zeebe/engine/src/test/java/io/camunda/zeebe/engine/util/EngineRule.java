@@ -349,7 +349,8 @@ public final class EngineRule extends ExternalResource {
                         featureFlags,
                         jobStreamer,
                         searchClientsProxy,
-                        brokerRequestAuthorizationConverter)
+                        brokerRequestAuthorizationConverter,
+                        null)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

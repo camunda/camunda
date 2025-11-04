@@ -38,7 +38,10 @@ public class ListViewFromChunkItemHandler
 
   @Override
   public boolean handlesRecord(final Record<BatchOperationChunkRecordValue> record) {
-    return record.getIntent().equals(BatchOperationChunkIntent.CREATED);
+    // TODO updating list view always looks into the non-dated indices. For deletion that's not
+    //  always where the index is. We also don't have to do this as it should get deleted. Let's
+    //  disable this for the POC.
+    return false && record.getIntent().equals(BatchOperationChunkIntent.CREATED);
   }
 
   @Override
