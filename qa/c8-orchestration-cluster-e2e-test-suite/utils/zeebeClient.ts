@@ -104,6 +104,9 @@ const createWorker = (
   });
 };
 
+async function searchByProcessInstanceKey(processInstanceKey: string) {
+  return zeebe.searchProcessInstances({filter: {processInstanceKey}});
+}
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
@@ -127,4 +130,5 @@ export {
   createSingleInstance,
   cancelProcessInstance,
   createWorker,
+  searchByProcessInstanceKey,
 };

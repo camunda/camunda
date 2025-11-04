@@ -26,6 +26,7 @@ export class OperateFiltersPanelPage {
   readonly completedInstancesCheckbox: Locator;
   readonly canceledInstancesCheckbox: Locator;
   readonly finishedInstancesCheckbox: Locator;
+
   readonly processNameFilter: Locator;
   readonly processVersionFilter: Locator;
   readonly processInstanceKeysFilter: Locator;
