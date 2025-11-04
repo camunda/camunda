@@ -1523,6 +1523,111 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldModifyNestedMultiInstanceAdHocSubprocess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "outer_subprocess",
+                    outer ->
+                        outer
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("[1,2]")
+                                        .zeebeInputElement("outer_index")
+                                        .parallel())
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .adHocSubProcess(
+                                "inner_adhoc",
+                                adHocSubProcess -> {
+                                  adHocSubProcess
+                                      .multiInstance()
+                                      .zeebeInputCollectionExpression("inner_elements")
+                                      .zeebeInputElement("inner_element");
+                                  adHocSubProcess.zeebeActiveElementsCollectionExpression(
+                                      "[inner_element]");
+                                  adHocSubProcess.userTask("A");
+                                  adHocSubProcess.userTask("B");
+                                })
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("inner_elements", List.of("A", "A")))
+            .create();
+
+    // Wait for outer multi-instance subprocesses to be activated
+    final var outerSubprocesses =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("outer_subprocess")
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .limit(2)
+            .toList();
+    assertThat(outerSubprocesses).hasSize(2);
+
+    // Wait for inner ad-hoc subprocess bodies to be activated
+    final var innerAdhocInstances =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .limit(4)
+            .toList();
+    assertThat(innerAdhocInstances).hasSize(4);
+
+    // Wait for A tasks to be activated
+    final var aTasks =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .limit(2)
+            .toList();
+    assertThat(aTasks).hasSize(2);
+
+    final var firstInnerAdhocInstance = innerAdhocInstances.getFirst();
+
+    final var aTask = aTasks.getFirst();
+
+    // when
+    // terminate A and activate B in the specific nested ad-hoc instance
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(aTask.getKey())
+        .activateElement("B", firstInnerAdhocInstance.getKey())
+        .modify();
+
+    // then
+    assertThat(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withRecordKey(aTask.getKey())
+            .exists())
+        .describedAs("Expect A Task to be terminated")
+        .isTrue();
+    assertThat(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .limit(1))
+        .describedAs("Expect B Task to be activated in the specific nested ad-hoc instance")
+        .hasSize(1)
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .describedAs("Expect B Task to be in the same ad-hoc instance as the terminated A Task")
+        .containsOnly(firstInnerAdhocInstance.getKey());
+  }
+
+  @Test
   public void shouldReActivateElementAndUpdateTreePath() {
     // given
     ENGINE
