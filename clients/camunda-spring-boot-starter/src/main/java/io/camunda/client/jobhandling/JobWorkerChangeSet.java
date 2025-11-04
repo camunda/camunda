@@ -100,6 +100,14 @@ public sealed interface JobWorkerChangeSet {
     }
   }
 
+  record CloseChangeSet() implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      new ResetChangeSet().applyChanges(jobWorkerValue);
+      return true;
+    }
+  }
+
   record ResetChangeSet() implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
