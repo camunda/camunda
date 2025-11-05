@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker;
 
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.system.InvalidConfigurationException;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,11 @@ public class NodeIdProviderConfiguration {
 
   @Bean
   public NodeIdProvider staticNodeIdProvider() {
-    return NodeIdProvider.staticProvider(properties.getCluster().getNodeId());
+    final var nodeId = properties.getCluster().getNodeId();
+    if (nodeId == null) {
+      // FIXME rephrase better
+      throw new InvalidConfigurationException("Expecting nodeId to be set, but is null", null);
+    }
+    return NodeIdProvider.staticProvider(nodeId);
   }
 }

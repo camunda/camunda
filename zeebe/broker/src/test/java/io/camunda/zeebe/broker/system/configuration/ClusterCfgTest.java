@@ -250,7 +250,7 @@ public final class ClusterCfgTest {
     // when - then
     assertThatCode(() -> TestConfigReader.readConfig("default", environment))
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("to int"); // spring related exception
+        .hasMessageContaining("to java.lang.Integer"); // spring related exception
   }
 
   @Test

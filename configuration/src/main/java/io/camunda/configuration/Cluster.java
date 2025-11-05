@@ -78,7 +78,7 @@ public class Cluster implements Cloneable {
    * Specifies the unique id of this broker node in a cluster. The id should be between 0 and number
    * of nodes in the cluster (exclusive).
    */
-  private int nodeId = 0;
+  private Integer nodeId;
 
   /** The number of partitions in the cluster. */
   private int partitionCount = 1;
@@ -151,7 +151,7 @@ public class Cluster implements Cloneable {
     this.initialContactPoints = initialContactPoints;
   }
 
-  public int getNodeId() {
+  public Integer getNodeId() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".node-id",
         nodeId,
