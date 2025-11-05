@@ -9,8 +9,7 @@ package io.camunda.zeebe.broker.clustering;
 
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
-import io.atomix.cluster.NodeConfig;
-import io.atomix.cluster.discovery.BootstrapDiscoveryConfig;
+import io.atomix.cluster.discovery.DynamicDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.stream.Collectors;
 
 // TODO: move this to BrokerClusterConfiguration in the dist module
 public final class ClusterConfigFactory {
@@ -64,14 +62,8 @@ public final class ClusterConfigFactory {
         .setSyncInterval(config.getSyncInterval());
   }
 
-  private BootstrapDiscoveryConfig discoveryConfig(final Collection<String> contactPoints) {
-    final var nodes =
-        contactPoints.stream()
-            .map(Address::from)
-            .map(address -> new NodeConfig().setAddress(address))
-            .collect(Collectors.toSet());
-
-    return new BootstrapDiscoveryConfig().setNodes(nodes);
+  private DynamicDiscoveryConfig discoveryConfig(final Collection<String> contactPoints) {
+    return new DynamicDiscoveryConfig().setAddresses(contactPoints);
   }
 
   private MessagingConfig messagingConfig(final ClusterCfg cluster, final NetworkCfg network) {
