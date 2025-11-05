@@ -25,9 +25,10 @@ public class GroupIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String JOIN = "join";
   public static final String MEMBER_TYPE = "memberType";
 
-  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
-      new EntityJoinRelationFactory(
-          IdentityJoinRelationshipType.GROUP, IdentityJoinRelationshipType.MEMBER);
+  public static final EntityJoinRelationFactory<IdentityJoinRelationshipType>
+      JOIN_RELATION_FACTORY =
+          new EntityJoinRelationFactory<>(
+              IdentityJoinRelationshipType.GROUP, IdentityJoinRelationshipType.MEMBER);
 
   public GroupIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
