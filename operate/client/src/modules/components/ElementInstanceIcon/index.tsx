@@ -179,18 +179,6 @@ const getSVGComponent = (
     return FlowNodeTaskSubProcess;
   }
 
-  if (elementInstanceType === 'START_EVENT') {
-    return FlowNodeEventStart;
-  }
-
-  if (elementInstanceType === 'END_EVENT') {
-    return FlowNodeEventEnd;
-  }
-
-  if (elementInstanceType === 'INTERMEDIATE_THROW_EVENT') {
-    return FlowNodeEventIntermediateThrow;
-  }
-
   if (businessObject === undefined) {
     return FlowNodeTask;
   }
@@ -320,6 +308,18 @@ const getSVGComponent = (
         case 'bpmn:EndEvent':
           return FlowNodeEventCompensationEnd;
       }
+  }
+
+  if (elementInstanceType === 'START_EVENT') {
+    return FlowNodeEventStart;
+  }
+
+  if (elementInstanceType === 'END_EVENT') {
+    return FlowNodeEventEnd;
+  }
+
+  if (elementInstanceType === 'INTERMEDIATE_THROW_EVENT') {
+    return FlowNodeEventIntermediateThrow;
   }
 
   return FlowNodeTask;
