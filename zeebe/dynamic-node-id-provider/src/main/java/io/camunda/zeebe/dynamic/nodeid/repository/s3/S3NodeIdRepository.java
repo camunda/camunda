@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
@@ -36,13 +37,13 @@ public class S3NodeIdRepository implements NodeIdRepository {
   private static final Logger LOG = LoggerFactory.getLogger(S3NodeIdRepository.class);
   private final S3Client client;
   private final Config config;
-  private final Clock clock;
+  private final InstantSource clock;
   private final boolean closeClient;
 
-  S3NodeIdRepository(
+  public S3NodeIdRepository(
       final S3Client s3AsyncClient,
       final Config config,
-      final Clock clock,
+      final InstantSource clock,
       final boolean closeClient) {
     client = s3AsyncClient;
     this.config = config;
@@ -72,10 +73,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
       final var lease = bytes.length > 0 ? Lease.fromJsonBytes(OBJECT_MAPPER, bytes) : null;
       final var metadata = Metadata.fromMap(response.response().metadata());
       final var eTag = response.response().eTag();
-      final var storedLease =
-          (lease != null && metadata != null)
-              ? new StoredLease.Initialized(metadata, lease, eTag)
-              : new StoredLease.Uninitialized(eTag);
+      final var storedLease = StoredLease.of(nodeId, lease, metadata, eTag);
       LOG.trace("Lease for object {} is {}", nodeId, storedLease);
       return storedLease;
     } catch (final IOException e) {
@@ -86,7 +84,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
   @Override
   public StoredLease.Initialized acquire(final Lease lease, final String previousETag) {
     final var nodeId = lease.nodeInstance().id();
-    final var metadata = new Metadata(config.taskId, lease.timestamp());
+    final var metadata = Metadata.fromLease(lease);
     final PutObjectRequest putRequest =
         createPutObjectRequest(nodeId, Optional.of(metadata), Optional.of(previousETag)).build();
     try {
@@ -100,7 +98,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
       LOG.debug("Lease acquired successfully {}", storedLease);
       return storedLease;
     } catch (final Exception e) {
-      LOG.warn("Failed to acquire the lease gracefully {}", lease, e);
+      LOG.warn("Failed to acquire the lease {}", lease, e);
       throw e;
     }
   }
@@ -179,11 +177,8 @@ public class S3NodeIdRepository implements NodeIdRepository {
     return builder.build();
   }
 
-  public record Config(String bucketName, String taskId, Duration expiryDuration) {
+  public record Config(String bucketName, Duration expiryDuration) {
     public Config {
-      if (taskId == null || taskId.isEmpty()) {
-        throw new IllegalArgumentException("taskId cannot be null or empty");
-      }
       if (expiryDuration.toMillis() <= 0) {
         throw new IllegalArgumentException("expiryDuration must be greater than 0");
       }

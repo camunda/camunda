@@ -8,6 +8,8 @@
 package io.camunda.zeebe.dynamic.nodeid.repository;
 
 import io.camunda.zeebe.dynamic.nodeid.Lease;
+import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
+import java.util.Objects;
 
 public interface NodeIdRepository extends AutoCloseable {
 
@@ -56,10 +58,38 @@ public interface NodeIdRepository extends AutoCloseable {
       };
     }
 
+    static StoredLease of(
+        final int nodeId, final Lease lease, final Metadata metadata, final String eTag) {
+      if (eTag == null || eTag.isEmpty()) {
+        throw new IllegalArgumentException("eTag cannot be null or empty:" + eTag);
+      }
+      if (lease == null || metadata == null) {
+        return new StoredLease.Uninitialized(new NodeInstance(nodeId), eTag);
+      } else {
+        return new StoredLease.Initialized(metadata, lease, eTag);
+      }
+    }
+
     String eTag();
 
-    record Uninitialized(String eTag) implements StoredLease {}
+    record Uninitialized(NodeInstance node, String eTag) implements StoredLease {
+      public Uninitialized {
+        Objects.requireNonNull(eTag, "ETag cannot be null");
+        if (eTag.isEmpty()) {
+          throw new IllegalArgumentException("eTag cannot be empty");
+        }
+      }
+    }
 
-    record Initialized(Metadata metadata, Lease lease, String eTag) implements StoredLease {}
+    record Initialized(Metadata metadata, Lease lease, String eTag) implements StoredLease {
+      public Initialized {
+        Objects.requireNonNull(metadata, "Metadata cannot be null");
+        Objects.requireNonNull(lease, "Lease cannot be null");
+        Objects.requireNonNull(eTag, "ETag cannot be null");
+        if (eTag.isEmpty()) {
+          throw new IllegalArgumentException("eTag cannot be empty");
+        }
+      }
+    }
   }
 }

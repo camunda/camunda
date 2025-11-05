@@ -52,6 +52,7 @@ public class S3NodeIdRepositoryIT {
   @AutoClose private static S3Client client;
   S3NodeIdRepository.Config config;
   @AutoClose private S3NodeIdRepository repository;
+  private String taskId;
 
   @BeforeAll
   public static void setUpAll() {
@@ -66,8 +67,8 @@ public class S3NodeIdRepositoryIT {
   @BeforeEach
   public void setUp() {
     final var bucketName = UUID.randomUUID().toString();
-    final var taskId = UUID.randomUUID().toString();
-    config = new Config(bucketName, taskId, EXPIRY_DURATION);
+    taskId = UUID.randomUUID().toString();
+    config = new Config(bucketName, EXPIRY_DURATION);
     client.createBucket(b -> b.bucket(config.bucketName()));
   }
 
@@ -96,8 +97,7 @@ public class S3NodeIdRepositoryIT {
     repository.initialize(clusterSize);
     final var initial = repository.getLease(0);
     final var acquired =
-        repository.acquire(
-            new Lease(config.taskId(), millis + 2000L, new NodeInstance(0)), initial.eTag());
+        repository.acquire(new Lease(taskId, millis + 2000L, new NodeInstance(0)), initial.eTag());
     assertThat(acquired).isInstanceOf(StoredLease.Initialized.class);
 
     // when
@@ -124,7 +124,7 @@ public class S3NodeIdRepositoryIT {
     // when
     final var lease = repository.getLease(nodeInstance.id());
 
-    final var toAcquire = new Lease(config.taskId(), now + 1000L, nodeInstance);
+    final var toAcquire = new Lease(taskId, now + 1000L, nodeInstance);
     final var acquired = repository.acquire(toAcquire, lease.eTag());
     final var fromGet = repository.getLease(nodeInstance.id());
 
@@ -135,7 +135,7 @@ public class S3NodeIdRepositoryIT {
     final var metadata = acquired.metadata();
     assertThat(metadata.asMap()).isNotEmpty();
     assertThat(metadata.expiry()).isEqualTo(toAcquire.timestamp());
-    assertThat(metadata.task()).isEqualTo(config.taskId());
+    assertThat(metadata.task()).isEqualTo(taskId);
   }
 
   @Test
@@ -149,7 +149,7 @@ public class S3NodeIdRepositoryIT {
     // when
     final var lease = repository.getLease(nodeInstance.id());
 
-    final var toAcquire = new Lease(config.taskId(), now - 10000L, nodeInstance);
+    final var toAcquire = new Lease(taskId, now - 10000L, nodeInstance);
     assertThatThrownBy(() -> repository.acquire(toAcquire, lease.eTag()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("not valid anymore");
@@ -166,7 +166,7 @@ public class S3NodeIdRepositoryIT {
     // when
     final var lease = repository.getLease(nodeInstance.id());
 
-    final var toAcquire = new Lease(config.taskId(), now + 1000L, nodeInstance);
+    final var toAcquire = new Lease(taskId, now + 1000L, nodeInstance);
 
     // then
     assertThatThrownBy(() -> repository.acquire(toAcquire, "10298301928309128"))
@@ -182,7 +182,7 @@ public class S3NodeIdRepositoryIT {
     repository.initialize(3);
     final var nodeInstance = new NodeInstance(2);
     final var lease = repository.getLease(nodeInstance.id());
-    final var toAcquire = new Lease(config.taskId(), now + 1000L, nodeInstance);
+    final var toAcquire = new Lease(taskId, now + 1000L, nodeInstance);
     final var acquired = repository.acquire(toAcquire, lease.eTag());
 
     // when

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util;
 
+import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.DoubleSupplier;
 import java.util.function.LongUnaryOperator;
@@ -42,6 +43,10 @@ public final class ExponentialBackoff implements LongUnaryOperator {
         DEFAULT_MIN_RETRY_DELAY_MS,
         DEFAULT_BACKOFF_FACTOR,
         DEFAULT_JITTER_FACTOR);
+  }
+
+  public ExponentialBackoff(final Duration maxDelay, final Duration minDelay) {
+    this(maxDelay.toMillis(), minDelay.toMillis());
   }
 
   public ExponentialBackoff(final long maxDelay, final long minDelay) {

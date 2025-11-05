@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.nodeid.repository;
 
+import io.camunda.zeebe.dynamic.nodeid.Lease;
 import java.util.Map;
 
 public record Metadata(String task, long expiry) {
@@ -16,6 +17,10 @@ public record Metadata(String task, long expiry) {
   private static final String EXPIRY_KEY = "expiry";
 
   //    private static final String NODE_VERSIONKEY = "nodeversion";
+
+  public static Metadata fromLease(final Lease lease) {
+    return new Metadata(lease.taskId(), lease.timestamp());
+  }
 
   public Map<String, String> asMap() {
     return Map.of(TASK_ID_KEY, task, EXPIRY_KEY, String.valueOf(expiry));
