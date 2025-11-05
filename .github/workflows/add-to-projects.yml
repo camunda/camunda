@@ -13,41 +13,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: add-to-zdp
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/zeebe'
         name: Add to ZDP project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/92
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/zeebe
+
       - id: add-operate-to-core-features
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/operate'
         name: Add Operate issues to Core Features project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/operate
+
       - id: add-tasklist-to-core-features
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/tasklist'
         name: Add Tasklist issues to Core Features project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/tasklist
+
       - id: add-optimize-to-core-features
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/optimize'
         name: Add Optimize issues to Core Features project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/optimize
+
       - id: add-to-data-layer
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/data-layer'
         name: Add to Data Layer project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/184
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/data-layer
+
       - id: add-to-api
+        if: >
+          github.event.action != 'labeled' ||
+            (github.event.label.name == 'component/c8-api'
+              && github.event.label.name == 'kind/proposal')
         name: Add to C8 Rest API Proposals
         uses: actions/add-to-project@v1.0.2
         with:
@@ -55,14 +69,21 @@ jobs:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/c8-api, kind/proposal
           label-operator: AND
+
       - id: add-to-connectors
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/connectors'
         name: Add to Connectors project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/23
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/connectors
+
       - id: add-to-identity
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/identity'
+            || github.event.label.name == 'component/management-identity'
         name: Add to Identity project
         uses: actions/add-to-project@v1.0.2
         with:
@@ -70,28 +91,43 @@ jobs:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/identity, component/management-identity
       - id: add-to-distribution
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/c8run'
         name: Add to Distribution Team project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/c8run
+
       - id: add-to-feel
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/feel-js'
         name: Add to Feel Team project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/79
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/feel-js
+
       - id: add-to-devops
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/build-pipeline'
+            || github.event.label.name == 'component/release'
         name: Add to Monorepo DevOps Team project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/115
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
-          labeled: component/build-pipeline, component/release, area/build
+          labeled: component/build-pipeline, component/release
+
       - id: add-to-camunda-ex
+        if: >
+          github.event.action != 'labeled'
+            || github.event.label.name == 'component/clients'
+            || github.event.label.name == 'component/spring-boot-starter'
+            || github.event.label.name == 'component/camunda-process-test'
+            || github.event.label.name == 'component/c8-api'
         name: Add to CamundaEx Team project
         uses: actions/add-to-project@v1.0.2
         with:
@@ -99,10 +135,12 @@ jobs:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
           labeled: component/clients, component/spring-boot-starter, component/camunda-process-test, component/c8-api
+
       - id: add-bug-to-quality-board
+        if: github.event.action != 'labeled' || github.event.label.name == 'kind/bug'
         name: Add issue to Quality Board
         uses: camunda/infra-global-github-actions/add-bug-to-quality-board@main
         with:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           project-number: "187"
-        if: contains(github.event.issue.labels.*.name, 'kind/bug')
+          labeled: kind/bug
