@@ -15,9 +15,16 @@
  */
 package io.camunda.client.jobhandling;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Wrapper bean for {@link ScheduledExecutorService} required in Spring Zeebe for Job Handling,
@@ -28,6 +35,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class CamundaClientExecutorService {
 
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaClientExecutorService.class);
+
   private final ScheduledExecutorService scheduledExecutorService;
   private final boolean scheduledExecutorOwnedByCamundaClient;
 
@@ -36,10 +45,12 @@ public class CamundaClientExecutorService {
 
   public CamundaClientExecutorService(
       final ScheduledExecutorService scheduledExecutorService, final boolean ownedByCamundaClient) {
-    this.scheduledExecutorService = scheduledExecutorService;
-    scheduledExecutorOwnedByCamundaClient = ownedByCamundaClient;
-    jobHandlingExecutor = null;
-    jobHandlingExecutorOwnedByCamundaClient = false;
+    this(
+        scheduledExecutorService,
+        ownedByCamundaClient,
+        scheduledExecutorService,
+        ownedByCamundaClient,
+        null);
   }
 
   public CamundaClientExecutorService(
@@ -47,9 +58,36 @@ public class CamundaClientExecutorService {
       final boolean scheduledExecutorOwnedByCamundaClient,
       final ExecutorService executorService,
       final boolean jobHandlingExecutorOwnedByCamundaClient) {
+    this(
+        scheduledExecutorService,
+        scheduledExecutorOwnedByCamundaClient,
+        executorService,
+        jobHandlingExecutorOwnedByCamundaClient,
+        null);
+  }
+
+  public CamundaClientExecutorService(
+      final ScheduledExecutorService scheduledExecutorService,
+      final boolean scheduledExecutorOwnedByCamundaClient,
+      final ExecutorService executorService,
+      final boolean jobHandlingExecutorOwnedByCamundaClient,
+      @Nullable final MeterRegistry meterRegistry) {
     this.scheduledExecutorService = scheduledExecutorService;
     this.scheduledExecutorOwnedByCamundaClient = scheduledExecutorOwnedByCamundaClient;
-    jobHandlingExecutor = executorService;
+
+    if (meterRegistry != null) {
+      LOG.debug("Registering ExecutorService metrics with MeterRegistry");
+      jobHandlingExecutor =
+          ExecutorServiceMetrics.monitor(
+              meterRegistry,
+              executorService,
+              "camundaClientExecutor",
+              Collections.singleton(Tag.of("name", "zeebe_client_thread_pool")));
+    } else {
+      LOG.debug("MeterRegistry is null, not registering ExecutorService metrics");
+      jobHandlingExecutor = executorService;
+    }
+
     this.jobHandlingExecutorOwnedByCamundaClient = jobHandlingExecutorOwnedByCamundaClient;
   }
 
@@ -69,12 +107,9 @@ public class CamundaClientExecutorService {
     return jobHandlingExecutor;
   }
 
-  public static CamundaClientExecutorService createDefault() {
-    return createDefault(1);
-  }
-
-  public static CamundaClientExecutorService createDefault(final int threads) {
+  public static CamundaClientExecutorService createDefault(
+      final int threads, @Nullable final MeterRegistry meterRegistry) {
     final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(threads);
-    return new CamundaClientExecutorService(threadPool, true);
+    return new CamundaClientExecutorService(threadPool, true, threadPool, true, meterRegistry);
   }
 }

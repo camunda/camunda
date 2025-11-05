@@ -202,7 +202,7 @@ public class JobHandlerInvokingBeansTest {
   private static CommandExceptionHandlingStrategy commandExceptionHandlingStrategy() {
     return new DefaultCommandExceptionHandlingStrategy(
         BackoffSupplier.newBackoffBuilder().build(),
-        CamundaClientExecutorService.createDefault().getScheduledExecutor());
+        CamundaClientExecutorService.createDefault(1, null).getScheduledExecutor());
   }
 
   private static MetricsRecorder metricsRecorder() {

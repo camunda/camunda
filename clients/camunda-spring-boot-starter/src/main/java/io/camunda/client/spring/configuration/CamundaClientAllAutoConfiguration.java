@@ -36,6 +36,7 @@ import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClie
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.PropertyBasedJobWorkerValueCustomizer;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -60,9 +61,10 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public CamundaClientExecutorService camundaClientExecutorService() {
+  public CamundaClientExecutorService camundaClientExecutorService(
+      @Autowired(required = false) final MeterRegistry meterRegistry) {
     return CamundaClientExecutorService.createDefault(
-        camundaClientProperties.getExecutionThreads());
+        camundaClientProperties.getExecutionThreads(), meterRegistry);
   }
 
   @Bean
