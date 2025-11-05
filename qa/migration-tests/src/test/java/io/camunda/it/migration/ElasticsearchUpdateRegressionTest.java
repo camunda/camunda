@@ -88,6 +88,9 @@ public class ElasticsearchUpdateRegressionTest {
     final TestStandaloneBroker testStandaloneBroker = new TestStandaloneBroker();
     final MultiDbConfigurator multiDbConfigurator = new MultiDbConfigurator(testStandaloneBroker);
     multiDbConfigurator.configureElasticsearchSupport(httpHostAddress, "");
+    // to allow migration from 8.7-SNAPSHOT to 8.8-SNAPSHOT
+    testStandaloneBroker.withProperty(
+        "camunda.database.schema-manager.version-check-restriction-enabled", "false");
 
     // when
     testStandaloneBroker.start();
