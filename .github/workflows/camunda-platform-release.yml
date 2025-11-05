@@ -462,13 +462,18 @@ jobs:
           version: ${{ inputs.releaseVersion }}
           platforms: ${{ env.PLATFORMS }}
       - name: Sync Docker Image to DockerHub
-        id: push-docker
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-zeebe-docker.outputs.image }}
+      - name: Sync Latest Docker Image to DockerHub
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:latest \
             ${{ steps.build-zeebe-docker.outputs.image }}
       - name: Observe build status
         if: always()
@@ -544,13 +549,18 @@ jobs:
           dockerfile: operate.Dockerfile
           goldenfile: operate-docker-labels.golden.json
       - name: Sync Operate Docker Image to DockerHub
-        id: push-docker
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-operate-docker.outputs.image }}
+      - name: Sync Latest Operate Docker Image to DockerHub
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:latest \
             ${{ steps.build-operate-docker.outputs.image }}
       - name: Observe build status
         if: always()
@@ -626,13 +636,18 @@ jobs:
           dockerfile: tasklist.Dockerfile
           goldenfile: tasklist-docker-labels.golden.json
       - name: Sync Tasklist Docker Image to DockerHub
-        id: push-docker
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-tasklist-docker.outputs.image }}
+      - name: Sync Latest Tasklist Docker Image to DockerHub
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:latest \
             ${{ steps.build-tasklist-docker.outputs.image }}
       - name: Observe build status
         if: always()
@@ -715,13 +730,18 @@ jobs:
           dockerfile: camunda.Dockerfile
           goldenfile: camunda-docker-labels.golden.json
       - name: Sync Camunda Docker Image to DockerHub
-        id: push-docker
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
           docker buildx imagetools create \
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-camunda-docker.outputs.image }}
+      - name: Sync Latest Camunda Docker Image to DockerHub
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:latest \
             ${{ steps.build-camunda-docker.outputs.image }}
       - name: Observe build status
         if: always()
