@@ -7,6 +7,7 @@
  */
 
 import {
+  Button,
   Column,
   Dropdown,
   Grid,
@@ -24,7 +25,7 @@ import {
   useMatch,
   useSearchParams,
 } from 'react-router-dom';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
 import {newProcessInstance} from 'common/processes/newProcessInstance';
@@ -44,7 +45,7 @@ import EmptyMessageImage from 'common/processes/empty-message-image.svg';
 import {ProcessTile} from 'common/processes/ProcessTile';
 import {getMultiModeProcessDisplayName} from 'common/processes/getMultiModeProcessDisplayName';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
-import {Pagination} from './Pagination';
+
 import {
   START_FORM_FILTER_OPTIONS,
   type FilterOption,
@@ -57,8 +58,6 @@ import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
 import {useProcessStartForm} from 'v2/api/useProcessStartForm.query';
 import {useIsMultitenancyEnabled} from 'common/multitenancy/useIsMultitenancyEnabled';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
-
-const PAGE_SIZE = 12;
 
 const FilterDropdown: React.FC<{
   items: FilterOption[];
@@ -137,14 +136,15 @@ const ProcessesTab: React.FC = observer(() => {
             searchParamValue === startFormFilterSearchParam,
         )
       : undefined) ?? START_FORM_FILTER_OPTIONS[0];
-  const [paginationParams, setPaginationParams] = useState<{
-    currentPage: number;
-    after?: string;
-    before?: string;
-  }>({currentPage: 1});
-
   const searchParam = searchParams.get('search');
-  const {data, error, isLoading} = useProcessDefinitions(
+  const {
+    data,
+    error,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useProcessDefinitions(
     {
       filter: {
         tenantId: selectedTenantId,
@@ -155,11 +155,7 @@ const ProcessesTab: React.FC = observer(() => {
               }
             : undefined,
         hasStartForm: getIsStartedByForm(startFormFilter.searchParamValue),
-      },
-      page: {
-        limit: PAGE_SIZE,
-        after: paginationParams.after,
-        before: paginationParams.before,
+        isLatestVersion: true,
       },
     },
     {
@@ -242,15 +238,17 @@ const ProcessesTab: React.FC = observer(() => {
       .filter((tenantId) => tenantId !== undefined)
       .includes(tenantId),
   );
-  const processes = data?.items ?? [];
-  const totalItems = data?.page.totalItems ?? 0;
+  const processes = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  );
   const {isMultitenancyEnabled} = useIsMultitenancyEnabled();
 
   useEffect(() => {
     if (match !== null) {
       setSelectedProcess((currentProcess) => {
         return (
-          data?.items.find(
+          processes.find(
             (process) =>
               process.processDefinitionKey ===
               match.params.processDefinitionKey,
@@ -258,7 +256,7 @@ const ProcessesTab: React.FC = observer(() => {
         );
       });
     }
-  }, [match, data]);
+  }, [match, processes]);
 
   useEffect(() => {
     if (match === null || isLoading) {
@@ -268,7 +266,7 @@ const ProcessesTab: React.FC = observer(() => {
     const {processDefinitionKey = null} = match.params;
 
     if (
-      data?.items.find(
+      processes.find(
         (process) => process.processDefinitionKey === processDefinitionKey,
       ) === undefined
     ) {
@@ -287,7 +285,7 @@ const ProcessesTab: React.FC = observer(() => {
         pathname: `/${pages.processes()}`,
       });
     }
-  }, [match, data, isLoading, navigate, location, t]);
+  }, [match, processes, isLoading, navigate, location, t]);
 
   useEffect(() => {
     if (
@@ -324,29 +322,6 @@ const ProcessesTab: React.FC = observer(() => {
       logger.error(error);
     }
   }, [error, t]);
-
-  const handleNextPage = () => {
-    if (data?.page.endCursor === undefined) {
-      return;
-    }
-    const {endCursor} = data.page;
-
-    setPaginationParams(({currentPage}) => ({
-      currentPage: currentPage + 1,
-      after: endCursor,
-    }));
-  };
-
-  const handlePreviousPage = () => {
-    if (data?.page.startCursor === undefined) {
-      return;
-    }
-    const {startCursor} = data.page;
-    setPaginationParams(({currentPage}) => ({
-      currentPage: currentPage - 1,
-      before: startCursor,
-    }));
-  };
 
   return (
     <main className={cn('cds--content', styles.splitPane)}>
@@ -563,15 +538,18 @@ const ProcessesTab: React.FC = observer(() => {
                       ))}
                 </Grid>
               )}
-              {isLoading || totalItems <= PAGE_SIZE ? null : (
-                <Pagination
-                  totalPages={Math.ceil(totalItems / PAGE_SIZE)}
-                  currentPage={paginationParams.currentPage}
-                  onNextPage={handleNextPage}
-                  onPreviousPage={handlePreviousPage}
-                  className={styles.pagination}
-                />
-              )}
+              {hasNextPage && processes.length > 0 ? (
+                <Button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  kind="ghost"
+                  className={styles.loadMoreButton}
+                >
+                  {isFetchingNextPage
+                    ? t('processesLoadingMore')
+                    : t('processesLoadMore')}
+                </Button>
+              ) : null}
             </div>
           </div>
         </Stack>

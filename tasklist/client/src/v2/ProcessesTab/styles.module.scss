@@ -63,6 +63,7 @@
   height: layout.to-rem(132px);
 }
 
-.pagination {
-  padding: 0 var(--cds-spacing-06);
+.loadMoreButton {
+  display: block;
+  margin: var(--cds-spacing-05) auto;
 }

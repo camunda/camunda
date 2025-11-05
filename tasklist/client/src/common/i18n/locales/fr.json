@@ -345,9 +345,8 @@
     "relativeDateYearsFmt_speech": "d MMMM, yyyy",
     "relativeDateYearsFmt_time_speech": "d MMMM, yyyy 'à' p",
     "relativeDateUnknown": "'Inconnu'",
-    "processesTabPreviousPageButtonLabel": "Page précédente",
-    "processesTabNextPageButtonLabel": "Page suivante",
-    "processesTabPaginationOfLabel": "{{currentPage}} de {{totalPages}}",
+    "processesLoadMore": "Charger plus",
+    "processesLoadingMore": "Chargement...",
     "deniedReason": "La tâche {{type}} a été rejetée par le système."
   }
 }
