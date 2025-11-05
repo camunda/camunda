@@ -1183,6 +1183,12 @@
         <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-annotations-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
