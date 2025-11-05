@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
@@ -46,7 +47,6 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnCamundaClientEnabled
 @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class)
 @ImportAutoConfiguration({
-  ExecutorServiceConfiguration.class,
   CamundaActuatorConfiguration.class,
   JsonMapperConfiguration.class,
   CredentialsProviderConfiguration.class
@@ -81,12 +81,18 @@ public class CamundaClientProdAutoConfiguration {
   public CamundaClient camundaClient(final CamundaClientConfiguration configuration) {
     LOG.debug("Creating camundaClient using {}", configuration);
     final ScheduledExecutorService jobWorkerExecutor = configuration.jobWorkerExecutor();
+    final ExecutorService jobHandlingExecutor = configuration.jobHandlingExecutor();
+
     if (jobWorkerExecutor != null) {
       final ManagedChannel managedChannel = CamundaClientImpl.buildChannel(configuration);
       final GatewayGrpc.GatewayStub gatewayStub =
           CamundaClientImpl.buildGatewayStub(managedChannel, configuration);
       final ExecutorResource executorResource =
-          new ExecutorResource(jobWorkerExecutor, configuration.ownsJobWorkerExecutor());
+          new ExecutorResource(
+              jobWorkerExecutor,
+              configuration.ownsJobWorkerExecutor(),
+              jobHandlingExecutor == null ? jobWorkerExecutor : jobHandlingExecutor,
+              configuration.ownsJobHandlingExecutor());
       return new CamundaClientImpl(configuration, managedChannel, gatewayStub, executorResource);
     } else {
       return new CamundaClientImpl(configuration);
