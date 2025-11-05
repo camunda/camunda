@@ -42,7 +42,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Testcontainers
-public class NodeIdProviderIT {
+public class RepositoryNodeIdProviderIT {
 
   private static final Duration EXPIRY_DURATION = Duration.ofSeconds(5);
 
@@ -55,7 +55,7 @@ public class NodeIdProviderIT {
   @AutoClose private static S3Client client;
   S3NodeIdRepository.Config config;
   @AutoClose private S3NodeIdRepository repository;
-  @AutoClose private NodeIdProvider nodeIdProvider;
+  @AutoClose private RepositoryNodeIdProvider nodeIdProvider;
   private ControlledInstantSource clock;
   private int clusterSize;
   private String taskId;
@@ -243,13 +243,13 @@ public class NodeIdProviderIT {
     Awaitility.await("Until the lease is acquired")
         .untilAsserted(
             () ->
-                assertThat(nodeIdProvider.isLeaseValid())
+                assertThat(nodeIdProvider.isValid())
                     .succeedsWithin(Duration.ofSeconds(1))
                     .isEqualTo(status));
   }
 
-  NodeIdProvider ofSize(final int clusterSize) {
-    return new NodeIdProvider(
+  RepositoryNodeIdProvider ofSize(final int clusterSize) {
+    return new RepositoryNodeIdProvider(
         repository, clusterSize, clock, EXPIRY_DURATION, taskId, () -> leaseFailed = true);
   }
 }

@@ -41,11 +41,11 @@ public class S3NodeIdRepository implements NodeIdRepository {
   private final boolean closeClient;
 
   public S3NodeIdRepository(
-      final S3Client s3AsyncClient,
+      final S3Client s3Client,
       final Config config,
       final InstantSource clock,
       final boolean closeClient) {
-    client = s3AsyncClient;
+    client = s3Client;
     this.config = config;
     this.clock = clock;
     this.closeClient = closeClient;
