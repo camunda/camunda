@@ -720,7 +720,7 @@ jobs:
             secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_PASSWORD;
             secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_USERNAME;
       - name: Set up database
-        run: ./actions/rdbms/create-aurora-database.sh
+        run: ./.github/actions/rdbms/create-aurora-database.sh
         env:
           PGDATABASE: db-camunda-aurora-postgresql
           # PGDATABASE: db-${{ github.sha }}
@@ -744,7 +744,7 @@ jobs:
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Tear down database
         if: always()
-        run: ./actions/rdbms/drop-aurora-database.sh
+        run: ./.github/actions/rdbms/drop-aurora-database.sh
         env:
           PGDATABASE: db-camunda-aurora-postgresql
           # PGDATABASE: db-${{ github.sha }}
