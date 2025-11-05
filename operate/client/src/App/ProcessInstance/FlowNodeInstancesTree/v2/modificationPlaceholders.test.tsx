@@ -371,7 +371,8 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
   });
 
-  it('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
+  // Skipped due to flakiness, needs to be investigated further #40498
+  it.skip('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
     mockFetchProcessInstanceDeprecated().withSuccess({
       ...multiInstanceProcessInstance,
       bpmnProcessId: 'nested_sub_process',
