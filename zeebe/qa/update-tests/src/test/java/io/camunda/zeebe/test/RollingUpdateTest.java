@@ -18,6 +18,8 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.testcontainers.EnabledForDockerImageCondition;
+import io.camunda.zeebe.qa.util.testcontainers.EnabledIfDockerImageExists;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.junit.CachedTestResultsExtension;
@@ -41,7 +43,9 @@ import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,6 +60,9 @@ import org.testcontainers.utility.DockerImageName;
  * <p>The important part is that we should be aware whether rolling update is possible between
  * versions.
  */
+// TODO: we probably want to also allow specifying fetching the image name via environment variable
+// or system property
+@EnabledIfDockerImageExists("camunda/zeebe:current-test")
 final class RollingUpdateTest {
 
   private static final BpmnModelInstance PROCESS =
@@ -108,6 +115,8 @@ final class RollingUpdateTest {
   @ParameterizedTest(name = "from {0} to {1}")
   @MethodSource("io.camunda.zeebe.test.VersionCompatibilityMatrix#auto")
   void shouldBeAbleToRestartContainerWithNewVersion(final String from, final String to) {
+    Assumptions.assumeTrue(new EnabledForDockerImageCondition("camunda/zeebe:" + from));
+
     // given
     updateAllBrokers(from);
 
