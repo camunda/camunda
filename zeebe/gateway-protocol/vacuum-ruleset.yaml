@@ -113,4 +113,3 @@ rules:
     then:
       function: verifyKeyTypesSchemas
     severity: warn
-  no-ambiguous-paths: warn
