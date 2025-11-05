@@ -108,6 +108,7 @@
 /zeebe/snapshot @camunda/zeebe-distributed-platform
 /zeebe/stream-platform @camunda/zeebe-distributed-platform
 /zeebe/transport @camunda/zeebe-distributed-platform
+/zeebe/dynamic-node-id-provider @camunda/zeebe-distributed-platform
 
 # Broker packages
 /zeebe/broker/src/test/java/io/camunda/zeebe/broker/backup @camunda/zeebe-distributed-platform
