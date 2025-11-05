@@ -105,7 +105,7 @@ services:
       - opensearch
   keycloak:
     container_name: keycloak
-    image: camunda/keycloak:quay-26@sha256:0310f6762ac0b64f04212de656ded64b98c2c73e31238eb96bad80c7be5ecd54
+    image: camunda/keycloak:quay-26@sha256:b45bfd19868b1b7f7d4e57ba14b11b243c5526e60c7d5a8638d2271122e08aa5
     profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
     command: [start]
     ports:
