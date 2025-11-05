@@ -72,6 +72,7 @@ import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
+import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -234,11 +235,9 @@ const TopPanel: React.FC = observer(() => {
   const incidentsCount = IS_INCIDENTS_PANEL_V2
     ? useProcessInstanceIncidentsCount(processInstanceId)
     : incidentsStore.incidentsCount;
-
-  const {
-    setIncidentBarOpen,
-    state: {isIncidentBarOpen},
-  } = incidentsStore;
+  const isIncidentBarOpen = IS_INCIDENTS_PANEL_V2
+    ? incidentsPanelStore.state.isPanelVisible
+    : incidentsStore.state.isIncidentBarOpen;
 
   const {isModificationModeEnabled} = modificationsStore;
 
@@ -289,9 +288,13 @@ const TopPanel: React.FC = observer(() => {
                 : 'incidents-panel-opened',
             });
 
-            setIncidentBarOpen(!isIncidentBarOpen);
+            if (IS_INCIDENTS_PANEL_V2) {
+              incidentsPanelStore.setPanelOpen(!isIncidentBarOpen);
+            } else {
+              incidentsStore.setIncidentBarOpen(!isIncidentBarOpen);
+            }
           }}
-          isOpen={incidentsStore.state.isIncidentBarOpen}
+          isOpen={isIncidentBarOpen}
         />
       )}
       {modificationsStore.state.status === 'moving-token' &&

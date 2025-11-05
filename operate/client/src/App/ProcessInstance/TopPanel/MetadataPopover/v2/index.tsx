@@ -34,6 +34,8 @@ import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useSearchMessageSubscriptions} from 'modules/queries/messageSubscriptions/useSearchMessageSubscriptions';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {useDecisionDefinition} from 'modules/queries/decisionDefinitions/useDecisionDefinition';
+import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -308,6 +310,12 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               incidentV2={singleIncident}
               incident={incident}
               onButtonClick={() => {
+                if (IS_INCIDENTS_PANEL_V2 && elementInstanceMetadata) {
+                  return incidentsPanelStore.showIncidentsForElementInstance(
+                    elementInstanceMetadata.elementInstanceKey,
+                    elementInstanceMetadata.elementName,
+                  );
+                }
                 incidentsStore.clearSelection();
                 incidentsStore.toggleFlowNodeSelection(elementId);
                 incidentsStore.toggleErrorTypeSelection(
@@ -324,6 +332,12 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             <MultiIncidents
               count={elementInstancesIncidentsSearchResult?.length}
               onButtonClick={() => {
+                if (IS_INCIDENTS_PANEL_V2 && elementInstanceMetadata) {
+                  return incidentsPanelStore.showIncidentsForElementInstance(
+                    elementInstanceMetadata.elementInstanceKey,
+                    elementInstanceMetadata.elementName,
+                  );
+                }
                 incidentsStore.clearSelection();
                 incidentsStore.toggleFlowNodeSelection(elementId);
                 incidentsStore.setIncidentBarOpen(true);

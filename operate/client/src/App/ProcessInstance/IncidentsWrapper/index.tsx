@@ -19,12 +19,18 @@ import {
   getFilteredIncidentsV2,
   init,
 } from 'modules/utils/incidents';
-import {useIncidents, useIncidentsV2} from 'modules/hooks/incidents';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useIncidents, useEnhancedIncidents} from 'modules/hooks/incidents';
+import {
+  type Incident,
+  type ProcessInstance,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useEffect} from 'react';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
+import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
+import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
+import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -91,48 +97,131 @@ const IncidentsWrapper: React.FC<Props> = observer(
 
 const IncidentsWrapperV2: React.FC<Props> = observer(
   ({setIsInTransition, processInstance}) => {
-    const incidents = useIncidentsV2(processInstance.processInstanceKey, {
-      enablePeriodicRefetch:
-        isInstanceRunning(processInstance) &&
-        !modificationsStore.isModificationModeEnabled,
-    });
-    const filteredIncidents = getFilteredIncidentsV2(incidents);
+    const enablePeriodicRefetch =
+      isInstanceRunning(processInstance) &&
+      !modificationsStore.isModificationModeEnabled;
+    const selectedElementInstance =
+      incidentsPanelStore.state.selectedElementInstance;
 
-    if (incidents.length === 0) {
-      return null;
+    if (selectedElementInstance !== null) {
+      return (
+        <IncidentsByElementInstance
+          elementInstanceKey={selectedElementInstance.elementInstanceKey}
+          enablePeriodicRefetch={enablePeriodicRefetch}
+        >
+          {(incidents) => (
+            <IncidentsWrapperContent
+              incidents={incidents}
+              processInstanceKey={processInstance.processInstanceKey}
+              setIsInTransition={setIsInTransition}
+            />
+          )}
+        </IncidentsByElementInstance>
+      );
     }
 
     return (
-      <>
-        <Transition
-          in={incidentsStore.state.isIncidentBarOpen}
-          onEnter={() => setIsInTransition(true)}
-          onEntered={() => setIsInTransition(false)}
-          onExit={() => setIsInTransition(true)}
-          onExited={() => setIsInTransition(false)}
-          mountOnEnter
-          unmountOnExit
-          timeout={400}
-        >
-          <IncidentsOverlay>
-            <PanelHeader
-              title="Incidents View"
-              count={filteredIncidents.length}
-              size="sm"
-            >
-              <IncidentsFilter
-                processInstanceKey={processInstance.processInstanceKey}
-              />
-            </PanelHeader>
-            <IncidentsTableV2
-              processInstanceKey={processInstance.processInstanceKey}
-              incidents={filteredIncidents}
-            />
-          </IncidentsOverlay>
-        </Transition>
-      </>
+      <IncidentsByProcessInstance
+        processInstanceKey={processInstance.processInstanceKey}
+        enablePeriodicRefetch={enablePeriodicRefetch}
+      >
+        {(incidents) => (
+          <IncidentsWrapperContent
+            incidents={incidents}
+            processInstanceKey={processInstance.processInstanceKey}
+            setIsInTransition={setIsInTransition}
+          />
+        )}
+      </IncidentsByProcessInstance>
     );
   },
 );
+
+type IncidentsWrapperContentProps = {
+  incidents: Incident[];
+  processInstanceKey: string;
+  setIsInTransition: Props['setIsInTransition'];
+};
+
+const IncidentsWrapperContent: React.FC<IncidentsWrapperContentProps> =
+  observer((props) => {
+    const enhancedIncidents = useEnhancedIncidents(props.incidents ?? []);
+    const filteredIncidents = getFilteredIncidentsV2(enhancedIncidents);
+    const selectedElementInstance =
+      incidentsPanelStore.state.selectedElementInstance;
+
+    const headerTitle =
+      selectedElementInstance !== null
+        ? `Incidents - Filtered by "${selectedElementInstance.elementName}"`
+        : 'Incidents';
+
+    return (
+      <Transition
+        in={incidentsPanelStore.state.isPanelVisible}
+        onEnter={() => props.setIsInTransition(true)}
+        onEntered={() => props.setIsInTransition(false)}
+        onExit={() => props.setIsInTransition(true)}
+        onExited={() => props.setIsInTransition(false)}
+        mountOnEnter
+        unmountOnExit
+        timeout={400}
+      >
+        <IncidentsOverlay>
+          <PanelHeader
+            title={headerTitle}
+            count={filteredIncidents.length}
+            size="sm"
+          >
+            <IncidentsFilter processInstanceKey={props.processInstanceKey} />
+          </PanelHeader>
+          <IncidentsTableV2
+            processInstanceKey={props.processInstanceKey}
+            incidents={filteredIncidents}
+          />
+        </IncidentsOverlay>
+      </Transition>
+    );
+  });
+
+type IncidentsSourceProps<Source> = Source & {
+  enablePeriodicRefetch: boolean;
+  children: (incidents: Incident[]) => React.ReactNode;
+};
+
+const IncidentsByProcessInstance: React.FC<
+  IncidentsSourceProps<{processInstanceKey: string}>
+> = (props) => {
+  const {data: incidents} = useGetIncidentsByProcessInstance(
+    props.processInstanceKey,
+    {
+      enablePeriodicRefetch: props.enablePeriodicRefetch,
+      select: (res) => res.items,
+    },
+  );
+
+  if (!incidents || incidents.length === 0) {
+    return null;
+  }
+
+  return props.children(incidents);
+};
+
+const IncidentsByElementInstance: React.FC<
+  IncidentsSourceProps<{elementInstanceKey: string}>
+> = (props) => {
+  const {data: incidents} = useGetIncidentsByElementInstance(
+    props.elementInstanceKey,
+    {
+      enablePeriodicRefetch: props.enablePeriodicRefetch,
+      select: (res) => res.items,
+    },
+  );
+
+  if (!incidents || incidents.length === 0) {
+    return null;
+  }
+
+  return props.children(incidents);
+};
 
 export {IncidentsWrapper, IncidentsWrapperV2};
