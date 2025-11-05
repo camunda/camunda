@@ -17,6 +17,7 @@ import java.time.InstantSource;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ public class NodeIdProvider implements AutoCloseable {
   private final ExponentialBackoff backoff;
   private long currentDelay;
   private final Duration renewalDelay;
+  private ScheduledFuture<?> renewalTask;
 
   public NodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -58,8 +60,9 @@ public class NodeIdProvider implements AutoCloseable {
   }
 
   private void startRenewalTimer() {
-    executor.scheduleAtFixedRate(
-        this::renew, renewalDelay.toMillis(), renewalDelay.toMillis(), TimeUnit.MILLISECONDS);
+    renewalTask =
+        executor.scheduleAtFixedRate(
+            this::renew, renewalDelay.toMillis(), renewalDelay.toMillis(), TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -173,6 +176,9 @@ public class NodeIdProvider implements AutoCloseable {
     // use the executor status to avoid closing multiple times
     if (!executor.isShutdown()) {
       try {
+        if (renewalTask != null) {
+          renewalTask.cancel(true);
+        }
         if (currentLease != null) {
           nodeIdRepository.release(currentLease);
         }
