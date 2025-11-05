@@ -657,7 +657,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D test.integration.camunda.database.type=rdbms
+          -D test.integration.camunda.database.type=rdbms_h2
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -672,6 +672,421 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[IT] RDBMS - H2"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-postgres-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+#   TODO: replace with schedule-only trigger before merge:
+#   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    needs: [ detect-changes ]
+    name: "General / Integration / RDBMS - Postgres ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up a postgres service container
+      postgres:
+        image: postgres:18-alpine
+        # Provide the password for postgres
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+        env:
+          POSTGRES_USER: camunda
+          POSTGRES_DB: camunda
+          POSTGRES_PASSWORD: camunda
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd "pg_isready"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-rdbms-postgres
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run specific integration tests with H2 inmemory database
+      #
+      # To communicate to the IT what database to expect and run against:
+      # -Dcamunda.it.database.type=rdbms
+      #
+      - name: Run integration test with Postgres RDBMS
+        shell: bash
+        timeout-minutes: 10
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=3
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=rdbms_postgres
+          -D camunda.secondary-storage.rdbms.url=rdbms
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS - Postgres"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-mysql-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    #   TODO: replace with schedule-only trigger before merge:
+    #   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    needs: [ detect-changes ]
+    name: "General / Integration / RDBMS - MySQL ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up a mysql service container
+      mysql:
+        image: mysql:9.4
+        # Provide the password for mysql
+        ports:
+          # Maps tcp port 3306 on service container to the host
+          - 3306:3306
+        env:
+          MYSQL_USER: camunda
+          MYSQL_PASSWORD: camunda
+          MYSQL_DATABASE: camunda
+          MYSQL_RANDOM_ROOT_PASSWORD: 1
+        # Set health checks to wait until mysql has started
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-rdbms-postgres
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Run integration test with MySQL RDBMS
+        shell: bash
+        timeout-minutes: 10
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=3
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=rdbms_mysql
+          -D camunda.secondary-storage.rdbms.url=rdbms
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS - MySQL"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-mariadb-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    #   TODO: replace with schedule-only trigger before merge:
+    #   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    needs: [ detect-changes ]
+    name: "General / Integration / RDBMS - MariaDB ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up a mariadb service container
+      mariadb:
+        image: mariadb:12.0
+        # Provide the password for mariadb
+        ports:
+          # Maps tcp port 3306 on service container to the host
+          - 3306:3306
+        env:
+          MARIADB_USER: camunda
+          MARIADB_PASSWORD: camunda
+          MARIADB_DATABASE: camunda
+          MARIADB_RANDOM_ROOT_PASSWORD: 1
+        # Set health checks to wait until mariadb has started
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-rdbms-mariadb
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Run integration test with MariaDB RDBMS
+        shell: bash
+        timeout-minutes: 10
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=3
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=rdbms_mariadb
+          -D camunda.secondary-storage.rdbms.url=rdbms
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS - MariaDB"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-mssql-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    #   TODO: replace with schedule-only trigger before merge:
+    #   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    needs: [ detect-changes ]
+    name: "General / Integration / RDBMS - MSSQL ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up a mssql service container
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        # Provide the password for mssql
+        ports:
+          # Maps tcp port 1433 on service container to the host
+          - 1433:1433
+        env:
+          ACCEPT_EULA: y
+          MSSQL_SA_PASSWORD: Camunda#8_demo
+        # Set health checks to wait until mssql has started
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-rdbms-mssql
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Run integration test with MSSQL RDBMS
+        shell: bash
+        timeout-minutes: 10
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=3
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=rdbms_mssql
+          -D camunda.secondary-storage.rdbms.url=rdbms
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS - MSSQL"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-oracle-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    #   TODO: replace with schedule-only trigger before merge:
+    #   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    needs: [ detect-changes ]
+    name: "General / Integration / RDBMS - Oracle ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up a oracle service container
+      oracle:
+        image: gvenzl/oracle-free:23-slim-faststart
+        ports:
+          # Maps database port on service container to the host
+          - 1521:1521
+        env:
+          ORACLE_PASSWORD: sys_user_password
+          APP_USER: camunda
+          APP_USER_PASSWORD: camunda
+        # Set health checks to wait until db has started
+        options: >-
+          --health-cmd "healthcheck.sh"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-rdbms-oracle
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Run integration test with Oracle RDBMS
+        shell: bash
+        timeout-minutes: 10
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=3
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=rdbms_oracle
+          -D camunda.secondary-storage.rdbms.url=rdbms
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS - Oracle"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1436,6 +1851,11 @@ jobs:
       - optimize-ci
       - protobuf-checks
       - rdbms-h2-integration-tests
+      - rdbms-postgres-integration-tests
+      - rdbms-mysql-integration-tests
+      - rdbms-mariadb-integration-tests
+      - rdbms-oracle-integration-tests
+      - rdbms-mssql-integration-tests
       - rdbms-integration-tests
       - renovatelint
       - setup-unit-tests

@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.assertSortedFlexible;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForStartFormsBeingExported;
@@ -706,15 +707,9 @@ public class ProcessDefinitionSearchTest {
             .send()
             .join();
 
-    final var all = resultAsc.items().stream().map(ProcessDefinition::getResourceName).toList();
-    final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
-    final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(ProcessDefinition::getResourceName).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(ProcessDefinition::getResourceName).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    // depending on the database vendor, we have two different sort algorithms here... either
+    // case-insensitive or normal ascending/descending
+    assertSortedFlexible(resultAsc, resultDesc, ProcessDefinition::getResourceName);
   }
 
   @Test
