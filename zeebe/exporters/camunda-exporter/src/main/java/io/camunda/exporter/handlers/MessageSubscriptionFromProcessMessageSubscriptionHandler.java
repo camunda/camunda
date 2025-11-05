@@ -55,8 +55,7 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
     if (record.getIntent().equals(ProcessMessageSubscriptionIntent.CREATED)) {
       exporterMetadata.setFirstProcessMessageSubscriptionKey(record.getKey());
     }
-
-    if (refersToPreviousVersionRecord(record.getKey())) {
+    if (exporterMetadata.keyIsBeforeFirstProcessMessageSubscriptionKey(record.getKey())) {
       return List.of(
           String.format(
               ID_PATTERN,
@@ -73,17 +72,7 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
 
     final ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
 
-    // Set ID based on version
-    final String entityId;
-    if (refersToPreviousVersionRecord(record.getKey())) {
-      entityId =
-          String.format(
-              ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey());
-    } else {
-      entityId = String.valueOf(record.getKey());
-    }
-
-    entity.setId(entityId).setPositionProcessMessageSubscription(record.getPosition());
+    entity.setPositionProcessMessageSubscription(record.getPosition());
 
     loadEventGeneralData(record, entity);
 
@@ -117,10 +106,5 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
         MessageSubscriptionTemplate.POSITION_MESSAGE,
         entity.getPositionProcessMessageSubscription(),
         batchRequest);
-  }
-
-  private boolean refersToPreviousVersionRecord(final long key) {
-    return exporterMetadata.getFirstProcessMessageSubscriptionKey() == -1
-        || key < exporterMetadata.getFirstProcessMessageSubscriptionKey();
   }
 }

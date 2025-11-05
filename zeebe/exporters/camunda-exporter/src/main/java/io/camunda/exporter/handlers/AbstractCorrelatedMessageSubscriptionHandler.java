@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -18,6 +19,12 @@ import java.util.List;
 
 public abstract class AbstractCorrelatedMessageSubscriptionHandler<T extends RecordValue>
     implements ExportHandler<CorrelatedMessageSubscriptionEntity, T> {
+
+  protected final ExporterMetadata exporterMetadata;
+
+  protected AbstractCorrelatedMessageSubscriptionHandler(final ExporterMetadata exporterMetadata) {
+    this.exporterMetadata = exporterMetadata;
+  }
 
   protected abstract long getMessageKey(T value);
 
@@ -31,9 +38,13 @@ public abstract class AbstractCorrelatedMessageSubscriptionHandler<T extends Rec
 
   @Override
   public List<String> generateIds(final Record<T> record) {
-    final var value = record.getValue();
-    // composite id: messageKey_subscriptionKey
-    return List.of("%s_%s".formatted(getMessageKey(record.getValue()), record.getKey()));
+    exporterMetadata.setFirstCorrelatedMessageSubscriptionKey(record.getKey());
+
+    if (exporterMetadata.keyIsBeforeFirstCorrelatedMessageSubscriptionKey(record.getKey())) {
+      // composite id: messageKey_subscriptionKey
+      return List.of("%s_%s".formatted(getMessageKey(record.getValue()), record.getKey()));
+    }
+    return List.of(String.valueOf(record.getKey()));
   }
 
   @Override

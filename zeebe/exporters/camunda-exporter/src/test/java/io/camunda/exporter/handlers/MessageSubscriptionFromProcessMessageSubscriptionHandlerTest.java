@@ -91,8 +91,8 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   @Test
   void testGenerateIds() {
     // given
-    final int processInstanceKey = 123;
-    final int elementInstanceKey = 456;
+    final long processInstanceKey = 123L;
+    final long elementInstanceKey = 456L;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
@@ -113,16 +113,12 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   @Test
   void shouldGenerateIdForNewVersionRecord() {
     // given
-    /* For new version records, the recordKey has to be greater than or equal to the first recorded key */
-    final long firstRecordedKey = 100;
-    final long recordKey = 110;
-    final int processInstanceKey = 123;
-    final int elementInstanceKey = 456;
-    exporterMetadata.setFirstProcessMessageSubscriptionKey(firstRecordedKey);
+    final long recordKey = 110L;
+    exporterMetadata.setFirstProcessMessageSubscriptionKey(recordKey - 1);
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementInstanceKey(elementInstanceKey)
+            .withProcessInstanceKey(123L)
+            .withElementInstanceKey(456L)
             .build();
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -137,17 +133,16 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
 
     // then
     assertThat(ids).containsExactly(String.valueOf(recordKey));
+    assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey - 1);
   }
 
   @Test
-  void shouldGenerateIdForPreviousVersionRecord() {
+  void shouldGenerateIdForOldVersionRecord() {
     // given
-    /* For previous version records, the recordKey has to be less than the first recorded key */
-    final long firstRecordedKey = 100;
-    final long recordKey = 90;
+    final long recordKey = 90L;
     final int processInstanceKey = 123;
     final int elementInstanceKey = 456;
-    exporterMetadata.setFirstProcessMessageSubscriptionKey(firstRecordedKey);
+    exporterMetadata.setFirstProcessMessageSubscriptionKey(recordKey + 1);
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
@@ -167,17 +162,17 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     // then
     assertThat(ids)
         .containsExactly(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
+    assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey + 1);
   }
 
   @Test
   void shouldSetFirstProcessMessageSubscriptionKeyOnCreatedIntent() {
     // given
-    final long recordKey = 100;
-    exporterMetadata.setFirstProcessMessageSubscriptionKey(-1); // Reset to unset
+    final long recordKey = 100L;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
-            .withProcessInstanceKey(123)
-            .withElementInstanceKey(456)
+            .withProcessInstanceKey(123L)
+            .withElementInstanceKey(456L)
             .build();
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -188,9 +183,10 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    underTest.generateIds(record);
+    final var ids = underTest.generateIds(record);
 
     // then
+    assertThat(ids).containsExactly(String.valueOf(recordKey));
     assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey);
   }
 
@@ -241,70 +237,11 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
+    final var ids = underTest.generateIds(record);
+    final MessageSubscriptionEntity entity = underTest.createNewEntity(ids.getFirst());
     underTest.updateEntity(record, entity);
 
-    // then - should use old ID format since no first key is set
-    assertThat(entity.getId())
-        .isEqualTo(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
-    assertThat(entity.getKey()).isEqualTo(recordKey);
-    assertThat(entity.getPartitionId()).isEqualTo(partitionId);
-    assertThat(entity.getEventSourceType()).isEqualTo(EventSourceType.PROCESS_MESSAGE_SUBSCRIPTION);
-    assertThat(entity.getEventType())
-        .isEqualTo(MessageSubscriptionState.fromZeebeIntent(intent.name()));
-    assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(elementInstanceKey);
-    assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
-    assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
-    assertThat(entity.getTenantId()).isEqualTo(tenantId);
-    assertThat(entity.getPositionProcessMessageSubscription()).isEqualTo(position);
-    assertThat(entity.getMetadata().getMessageName()).isEqualTo(messageName);
-    assertThat(entity.getMetadata().getCorrelationKey()).isEqualTo(correlationKey);
-  }
-
-  @Test
-  public void testUpdateEntityForNewVersionRecord() {
-    // given
-    final long firstRecordedKey = 100;
-    final long recordKey = 110;
-    final int partitionId = 10;
-    final int position = 9999;
-    final int processInstanceKey = 123;
-    final int elementInstanceKey = 456;
-    final String elementId = "elementId";
-    final String bpmnProcessId = "bpmnProcessId";
-    final String tenantId = "tenantId";
-    final String messageName = "messageName";
-    final String correlationKey = "correlationKey";
-    final Intent intent = ProcessMessageSubscriptionIntent.CREATED;
-
-    exporterMetadata.setFirstProcessMessageSubscriptionKey(firstRecordedKey);
-
-    final var recordValue =
-        ImmutableProcessMessageSubscriptionRecordValue.builder()
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementInstanceKey(elementInstanceKey)
-            .withElementId(elementId)
-            .withBpmnProcessId(bpmnProcessId)
-            .withTenantId(tenantId)
-            .withMessageName(messageName)
-            .withCorrelationKey(correlationKey)
-            .build();
-    final Record<ProcessMessageSubscriptionRecordValue> record =
-        factory.generateRecord(
-            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            r ->
-                r.withIntent(intent)
-                    .withKey(recordKey)
-                    .withPartitionId(partitionId)
-                    .withPosition(position)
-                    .withValue(recordValue));
-
-    // when
-    final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
-    underTest.updateEntity(record, entity);
-
-    // then - should use new ID format (record key)
+    // then
     assertThat(entity.getId()).isEqualTo(String.valueOf(recordKey));
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);

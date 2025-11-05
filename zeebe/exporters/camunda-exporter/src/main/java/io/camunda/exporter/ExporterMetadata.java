@@ -44,6 +44,7 @@ public final class ExporterMetadata {
         }
       };
   private long firstProcessMessageSubscriptionKey = UNSET_POSITION;
+  private long firstCorrelatedMessageSubscriptionKey = UNSET_POSITION;
 
   public ExporterMetadata(final ObjectMapper objectMapper) {
     // Specialized reader/writer for this class for efficiency
@@ -89,6 +90,27 @@ public final class ExporterMetadata {
     }
   }
 
+  public boolean keyIsBeforeFirstProcessMessageSubscriptionKey(final long key) {
+    return getFirstProcessMessageSubscriptionKey() == UNSET_POSITION
+        || key < getFirstProcessMessageSubscriptionKey();
+  }
+
+  public long getFirstCorrelatedMessageSubscriptionKey() {
+    return firstCorrelatedMessageSubscriptionKey;
+  }
+
+  public void setFirstCorrelatedMessageSubscriptionKey(
+      final long correlatedMessageSubscriptionKey) {
+    if (firstCorrelatedMessageSubscriptionKey == UNSET_POSITION) {
+      firstCorrelatedMessageSubscriptionKey = correlatedMessageSubscriptionKey;
+    }
+  }
+
+  public boolean keyIsBeforeFirstCorrelatedMessageSubscriptionKey(final long key) {
+    return firstCorrelatedMessageSubscriptionKey == UNSET_POSITION
+        || key < getFirstCorrelatedMessageSubscriptionKey();
+  }
+
   public void deserialize(final byte[] bytes) {
     try {
       objectReader.readValue(bytes);
@@ -109,7 +131,10 @@ public final class ExporterMetadata {
   @Override
   public int hashCode() {
     return Objects.hash(
-        lastIncidentUpdatePosition, firstUserTaskKeys, firstProcessMessageSubscriptionKey);
+        lastIncidentUpdatePosition,
+        firstUserTaskKeys,
+        firstProcessMessageSubscriptionKey,
+        firstCorrelatedMessageSubscriptionKey);
   }
 
   @Override
@@ -123,7 +148,8 @@ public final class ExporterMetadata {
     final ExporterMetadata that = (ExporterMetadata) o;
     return lastIncidentUpdatePosition == that.lastIncidentUpdatePosition
         && firstUserTaskKeys == that.firstUserTaskKeys
-        && firstProcessMessageSubscriptionKey == that.firstProcessMessageSubscriptionKey;
+        && firstProcessMessageSubscriptionKey == that.firstProcessMessageSubscriptionKey
+        && firstCorrelatedMessageSubscriptionKey == that.firstCorrelatedMessageSubscriptionKey;
   }
 
   @Override
@@ -135,6 +161,8 @@ public final class ExporterMetadata {
         + firstUserTaskKeys
         + ", firstProcessMessageSubscriptionKey="
         + firstProcessMessageSubscriptionKey
+        + ", firstCorrelatedMessageSubscriptionKey="
+        + firstCorrelatedMessageSubscriptionKey
         + '}';
   }
 
