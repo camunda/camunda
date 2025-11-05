@@ -38,7 +38,7 @@ public class CamundaRdbmsInvocationContextProviderExtension
           //          "camundaWithPostgresSQL",
           //          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
           //              .withRdbms()
-          //              .withDatabaseContainer(createDefaultPostgresContainer()),
+          //              .withDatabaseContainer(createDefaultPostgresContainer())
           //          "camundaWithMariaDB",
           //          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
           //              .withRdbms()
