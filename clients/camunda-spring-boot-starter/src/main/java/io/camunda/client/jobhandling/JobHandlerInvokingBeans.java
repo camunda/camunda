@@ -35,7 +35,7 @@ public class JobHandlerInvokingBeans implements JobHandler {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
   private final String jobWorkerName;
-  private final ThrowingFunction<Object[], Object> method;
+  private final BeanMethod method;
   private final boolean autoComplete;
   private final int maxRetries;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
@@ -45,7 +45,7 @@ public class JobHandlerInvokingBeans implements JobHandler {
 
   public JobHandlerInvokingBeans(
       final String jobWorkerName,
-      final ThrowingFunction<Object[], Object> method,
+      final BeanMethod method,
       final boolean autoComplete,
       final int maxRetries,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
@@ -68,7 +68,7 @@ public class JobHandlerInvokingBeans implements JobHandler {
     LOG.trace("Handle {} and invoke worker {}", job, workerValue);
     metricsRecorder.increase(
         MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
-      final Object methodInvocationResult = method.apply(args.toArray());
+      final Object methodInvocationResult = method.invoke(args.toArray());
       final Object result =
           resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
       if (autoComplete) {
