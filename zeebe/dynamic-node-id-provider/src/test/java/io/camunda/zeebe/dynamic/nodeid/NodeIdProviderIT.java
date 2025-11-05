@@ -9,6 +9,11 @@ package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
@@ -16,7 +21,8 @@ import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.Config;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig.Credentials;
 import java.time.Duration;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -25,6 +31,7 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.junit.jupiter.Container;
@@ -51,6 +58,7 @@ public class NodeIdProviderIT {
   private ControlledInstantSource clock;
   private int clusterSize;
   private String taskId;
+  private volatile boolean leaseFailed = false;
 
   @BeforeAll
   public static void setUpAll() {
@@ -68,7 +76,9 @@ public class NodeIdProviderIT {
     taskId = UUID.randomUUID().toString();
     config = new Config(bucketName, EXPIRY_DURATION);
     client.createBucket(b -> b.bucket(config.bucketName()));
-    clock = new ControlledInstantSource(Instant.now());
+    final var initialInstant =
+        LocalDateTime.of(2025, 11, 1, 13, 46, 22).atZone(ZoneId.of("UTC")).toInstant();
+    clock = new ControlledInstantSource(initialInstant);
     repository = new S3NodeIdRepository(client, config, clock, false);
   }
 
@@ -87,6 +97,9 @@ public class NodeIdProviderIT {
     final var acquiredLease = nodeIdProvider.getCurrentLease();
     final var nodeId = acquiredLease.lease().nodeInstance().id();
     assertThat(nodeId).isEqualTo(0);
+    assertThat(acquiredLease.metadata().task()).isEqualTo(taskId);
+    assertThat(acquiredLease.metadata().expiry())
+        .isEqualTo(clock.instant().plus(EXPIRY_DURATION).toEpochMilli());
     assertThat(repository.getLease(nodeId)).isEqualTo(acquiredLease);
   }
 
@@ -101,6 +114,7 @@ public class NodeIdProviderIT {
     final var expiredLease =
         repository.acquire(
             new Lease(taskId + "old", expiredLeaseTimestamp, new NodeInstance(0)), previousEtag);
+    assertThat(expiredLease).isNotNull();
     clock.advance(EXPIRY_DURATION.plusSeconds(1));
 
     // when
@@ -150,6 +164,49 @@ public class NodeIdProviderIT {
     assertThat(acquiredLeases).isEqualTo(currentLeases);
   }
 
+  @Test
+  public void shouldRenewTheLeaseBeforeExpiration() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    repository = Mockito.spy(repository);
+
+    // when
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+    final var firstLease = nodeIdProvider.getCurrentLease();
+    // move the clock forward
+    clock.setInstant(clock.instant().plusSeconds(2));
+
+    // then
+    verify(repository, timeout(EXPIRY_DURATION.toMillis()).atLeast(2))
+        .acquire(argThat(lease -> lease.nodeInstance().id() == 0), any());
+    Awaitility.await("until lease is renewed")
+        .untilAsserted(() -> assertThat(nodeIdProvider.getCurrentLease()).isNotEqualTo(firstLease));
+    final var renewedLease = nodeIdProvider.getCurrentLease();
+    assertThat(renewedLease).isNotEqualTo(firstLease);
+    assertThat(renewedLease.lease().timestamp()).isGreaterThan(firstLease.lease().timestamp());
+  }
+
+  @Test
+  public void shouldInvokeFailureListenerWhenFailsToRenew() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    repository = Mockito.spy(repository);
+
+    // Inject failure: first call succeeds, subsequent calls throw exception
+
+    // when
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+
+    // then
+    doThrow(new IllegalStateException("Injected failure")).when(repository).acquire(any(), any());
+    Awaitility.await("Until failure listener has been invoked")
+        .untilAsserted(() -> assertThat(leaseFailed).isTrue());
+  }
+
   public void assertLeaseIsReady() {
     assertLeaseIs(true);
   }
@@ -168,6 +225,7 @@ public class NodeIdProviderIT {
   }
 
   NodeIdProvider ofSize(final int clusterSize) {
-    return new NodeIdProvider(repository, clusterSize, clock, EXPIRY_DURATION, taskId);
+    return new NodeIdProvider(
+        repository, clusterSize, clock, EXPIRY_DURATION, taskId, () -> leaseFailed = true);
   }
 }

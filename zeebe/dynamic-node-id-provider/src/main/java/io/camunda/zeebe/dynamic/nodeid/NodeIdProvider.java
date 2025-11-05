@@ -30,25 +30,36 @@ public class NodeIdProvider implements AutoCloseable {
   private volatile StoredLease.Initialized currentLease;
   private final Duration leaseDuration;
   private final String taskId;
+  private final Runnable onLeaseFailure;
   private final ScheduledExecutorService executor;
   private final ExponentialBackoff backoff;
   private long currentDelay;
+  private final Duration renewalDelay;
 
   public NodeIdProvider(
       final NodeIdRepository nodeIdRepository,
       final int clusterSize,
       final InstantSource clock,
       final Duration expiryDuration,
-      final String taskId) {
+      final String taskId,
+      final Runnable onLeaseFailure) {
     this.nodeIdRepository = nodeIdRepository;
     this.clusterSize = clusterSize;
     this.clock = clock;
     leaseDuration = expiryDuration;
     this.taskId = taskId;
+    this.onLeaseFailure = onLeaseFailure;
     backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseDuration.dividedBy(2));
+    renewalDelay = leaseDuration.dividedBy(3);
     currentDelay = 0L;
     executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
-    CompletableFuture.runAsync(this::acquireInitialLease, executor);
+    CompletableFuture.runAsync(this::acquireInitialLease, executor)
+        .thenRun(this::startRenewalTimer);
+  }
+
+  private void startRenewalTimer() {
+    executor.scheduleAtFixedRate(
+        this::renew, renewalDelay.toMillis(), renewalDelay.toMillis(), TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -74,6 +85,17 @@ public class NodeIdProvider implements AutoCloseable {
 
   public Initialized getCurrentLease() {
     return currentLease;
+  }
+
+  private void renew() {
+    try {
+      final var newLease = currentLease.lease().renew(clock.millis(), leaseDuration);
+      LOG.trace("Renewing lease with {}", newLease);
+      currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
+    } catch (final Exception e) {
+      LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
+      onLeaseFailure.run();
+    }
   }
 
   /**
