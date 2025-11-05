@@ -1,0 +1,2 @@
+This is a test file to verify the copilot-authorship checker.
+The workflow should detect this commit as being authored by Copilot.
