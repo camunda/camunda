@@ -131,7 +131,7 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 	return nil
 }
 
-func createTarGzArchive(filesToArchive []string, outputPath string) error {
+func createTarGzArchive(filesToArchive []string, outputPath, sourceRoot, targetRoot string) error {
 	outputArchive, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create empty archive file: %w\n%s", err, debug.Stack())
@@ -142,14 +142,14 @@ func createTarGzArchive(filesToArchive []string, outputPath string) error {
 		}
 	}()
 
-	if err := archive.CreateTarGzArchive(filesToArchive, outputArchive); err != nil {
+	if err := archive.CreateTarGzArchive(filesToArchive, outputArchive, sourceRoot, targetRoot); err != nil {
 		return fmt.Errorf("failed to fill camunda archive: %w\n%s", err, debug.Stack())
 	}
 	return nil
 }
 
-func createZipArchive(filesToArchive []string, outputPath string) error {
-	if err := archive.ZipSource(filesToArchive, outputPath); err != nil {
+func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoot string) error {
+	if err := archive.ZipSource(filesToArchive, outputPath, sourceRoot, targetRoot); err != nil {
 		return fmt.Errorf("failed to create c8run package: %w\n%s", err, debug.Stack())
 	}
 	return nil
@@ -235,16 +235,19 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 		return fmt.Errorf("Package "+osType+": failed to chdir %w", err)
 	}
 
+	sourceRoot := "c8run"
+	archiveRoot := "c8run-" + camundaVersion
+
 	filesToArchive := getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath)
 	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + finalOutputExtension
-	outputPath := filepath.Join("c8run", outputFileName)
+	outputPath := filepath.Join(sourceRoot, outputFileName)
 
 	if osType == "linux" {
-		if err := createTarGzArchive(filesToArchive, outputPath); err != nil {
+		if err := createTarGzArchive(filesToArchive, outputPath, sourceRoot, archiveRoot); err != nil {
 			return fmt.Errorf("package %s: %w", osType, err)
 		}
 	} else {
-		if err := createZipArchive(filesToArchive, outputPath); err != nil {
+		if err := createZipArchive(filesToArchive, outputPath, sourceRoot, archiveRoot); err != nil {
 			return fmt.Errorf("package %s: %w", osType, err)
 		}
 	}
