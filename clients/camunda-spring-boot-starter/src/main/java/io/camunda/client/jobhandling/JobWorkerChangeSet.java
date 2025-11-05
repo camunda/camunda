@@ -40,7 +40,7 @@ public sealed interface JobWorkerChangeSet {
   static <T> boolean updateIfChanged(
       final SourceAware<T> original, final T updated, final Consumer<SourceAware<T>> setter) {
     if (!Objects.equals(original.value(), updated)) {
-      setter.accept(new FromActuator<>(updated, original));
+      setter.accept(new FromRuntimeOverride<>(updated, original));
       return true;
     }
     return false;
@@ -62,7 +62,8 @@ public sealed interface JobWorkerChangeSet {
       }
       setter.accept(
           IntStream.range(0, listSize)
-              .mapToObj(i -> (SourceAware<T>) new FromActuator<>(updated.get(i), original.get(i)))
+              .mapToObj(
+                  i -> (SourceAware<T>) new FromRuntimeOverride<>(updated.get(i), original.get(i)))
               .toList());
       return true;
     }
@@ -71,8 +72,8 @@ public sealed interface JobWorkerChangeSet {
 
   private static <T> boolean reset(
       final SourceAware<T> field, final Consumer<SourceAware<T>> setter) {
-    if (field instanceof final FromActuator<T> fromActuator) {
-      setter.accept(fromActuator.original());
+    if (field instanceof final SourceAware.FromRuntimeOverride<T> fromRuntimeOverride) {
+      setter.accept(fromRuntimeOverride.original());
       return true;
     }
     return false;
@@ -80,12 +81,12 @@ public sealed interface JobWorkerChangeSet {
 
   private static <T> boolean resetList(
       final List<SourceAware<T>> field, final Consumer<List<SourceAware<T>>> setter) {
-    final boolean changed = field.stream().anyMatch(FromActuator.class::isInstance);
+    final boolean changed = field.stream().anyMatch(FromRuntimeOverride.class::isInstance);
     setter.accept(
         field.stream()
-            .filter(FromActuator.class::isInstance)
-            .map(fromActuator -> (FromActuator<T>) fromActuator)
-            .map(FromActuator::original)
+            .filter(FromRuntimeOverride.class::isInstance)
+            .map(fromActuator -> (FromRuntimeOverride<T>) fromActuator)
+            .map(FromRuntimeOverride::original)
             .filter(not(Empty.class::isInstance))
             .toList());
     return changed;

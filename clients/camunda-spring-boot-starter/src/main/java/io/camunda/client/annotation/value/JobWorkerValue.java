@@ -364,7 +364,7 @@ public class JobWorkerValue {
       }
     }
 
-    record FromActuator<T>(T value, SourceAware<T> original) implements SourceAware<T> {
+    record FromRuntimeOverride<T>(T value, SourceAware<T> original) implements SourceAware<T> {
       @Override
       public int priority() {
         return 5;
