@@ -113,14 +113,13 @@ jobs:
           github.event.action != 'labeled'
             || github.event.label.name == 'component/build-pipeline'
             || github.event.label.name == 'component/release'
-            || github.event.label.name == 'area/build'
         name: Add to Monorepo DevOps Team project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/115
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
-          labeled: component/build-pipeline, component/release, area/build
+          labeled: component/build-pipeline, component/release
 
       - id: add-to-camunda-ex
         if: >
