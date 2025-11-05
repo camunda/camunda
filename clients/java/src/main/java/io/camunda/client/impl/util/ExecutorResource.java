@@ -19,12 +19,16 @@ import io.camunda.client.api.command.ClientException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
 
 /**
  * Represents a shared executor service which may or may not be owned by whoever created it. If it
  * is owned, then close will shut down the service. Otherwise it's a no-op.
  */
 public final class ExecutorResource implements AutoCloseable {
+
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ExecutorResource.class);
+
   private final ScheduledExecutorService scheduledExecutor;
   private final boolean ownsScheduledExecutorResource;
 
@@ -32,10 +36,7 @@ public final class ExecutorResource implements AutoCloseable {
   private final boolean ownsJobHandlingExecutor;
 
   public ExecutorResource(final ScheduledExecutorService executor, final boolean ownsResource) {
-    scheduledExecutor = executor;
-    ownsScheduledExecutorResource = ownsResource;
-    jobHandlingExecutor = executor;
-    ownsJobHandlingExecutor = ownsResource;
+    this(executor, ownsResource, null, false);
   }
 
   public ExecutorResource(
@@ -47,8 +48,10 @@ public final class ExecutorResource implements AutoCloseable {
     ownsScheduledExecutorResource = ownsResource;
 
     if (jobHandlingExecutor == null) {
+      LOG.debug("No job handling executor provided, using scheduled executor instead.");
       this.jobHandlingExecutor = scheduledExecutor;
     } else {
+      LOG.debug("Using a dedicated job handling executor.");
       this.jobHandlingExecutor = jobHandlingExecutor;
     }
 
