@@ -12,6 +12,7 @@ import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
 public class TenantIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
@@ -25,10 +26,11 @@ public class TenantIndex extends AbstractIndexDescriptor implements Prio5Backup 
   public static final String MEMBER_TYPE = "memberType";
   public static final String MEMBER_ID = "memberId";
 
-  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
-      new EntityJoinRelationFactory(
-          EntityJoinRelation.IdentityJoinRelationshipType.TENANT,
-          EntityJoinRelation.IdentityJoinRelationshipType.MEMBER);
+  public static final EntityJoinRelationFactory<IdentityJoinRelationshipType>
+      JOIN_RELATION_FACTORY =
+          new EntityJoinRelationFactory<>(
+              EntityJoinRelation.IdentityJoinRelationshipType.TENANT,
+              EntityJoinRelation.IdentityJoinRelationshipType.MEMBER);
 
   public TenantIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
