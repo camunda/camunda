@@ -9,9 +9,11 @@ package io.camunda.zeebe.engine.processing.job.behaviour;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
@@ -30,12 +32,16 @@ public class JobUpdateBehaviour {
   private final JobState jobState;
   private final TypedRejectionWriter rejectionWriter;
   private final InstantSource clock;
+  private final StateWriter stateWriter;
 
   public JobUpdateBehaviour(
-      final JobState jobState, final Writers writers, final InstantSource clock) {
+      final JobState jobState,
+      final InstantSource clock,
+      final Writers writers) {
     this.jobState = jobState;
     rejectionWriter = writers.rejection();
     this.clock = clock;
+    stateWriter = writers.state();
   }
 
   public Either<String, JobRecord> getJob(final long jobKey, final TypedRecord<JobRecord> command) {
@@ -56,6 +62,7 @@ public class JobUpdateBehaviour {
     }
     // update retries for response sent to client
     jobRecord.setRetries(retries);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
     return Optional.empty();
   }
 
@@ -68,6 +75,7 @@ public class JobUpdateBehaviour {
     }
     final long newDeadline = clock.millis() + timeout;
     jobRecord.setDeadline(newDeadline);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
     return Optional.empty();
   }
 }
