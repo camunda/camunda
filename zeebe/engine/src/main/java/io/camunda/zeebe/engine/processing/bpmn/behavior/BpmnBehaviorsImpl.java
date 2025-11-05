@@ -204,7 +204,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
 
     jobUpdateBehaviour =
-        new JobUpdateBehaviour(processingState.getJobState(), clock, authCheckBehavior);
+        new JobUpdateBehaviour(processingState.getJobState(), clock, authCheckBehavior, writers);
 
     adHocSubProcessBehavior =
         new BpmnAdHocSubProcessBehavior(

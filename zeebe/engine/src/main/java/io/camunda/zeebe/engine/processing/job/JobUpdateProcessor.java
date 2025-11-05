@@ -47,7 +47,6 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
             job -> {
               final List<String> errors = new ArrayList<>();
               final Set<String> changeset = command.getValue().getChangedAttributes();
-              job.setChangedAttributes(changeset);
               jobChange(
                   changeset,
                   JobRecord.RETRIES,
