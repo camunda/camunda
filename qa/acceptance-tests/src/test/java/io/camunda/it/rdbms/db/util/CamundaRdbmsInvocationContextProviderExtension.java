@@ -53,7 +53,11 @@ public class CamundaRdbmsInvocationContextProviderExtension
           "camundaWithMssqlDB",
           new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
               .withRdbms()
-              .withDatabaseContainer(createDefaultMSSQLServerContainer()));
+              .withDatabaseContainer(createDefaultMSSQLServerContainer()),
+          "camundaWithAuroraPostgreSQL",
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withAuroraPostgreSQL());
 
   private final Set<String> useTestApplications;
 

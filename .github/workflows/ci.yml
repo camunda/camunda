@@ -689,7 +689,7 @@ jobs:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS ITs"
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: aws-core-8-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -708,6 +708,27 @@ jobs:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Import secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: secrets
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_PASSWORD;
+            secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_USERNAME;
+      - name: Set up database
+        run: ./actions/rdbms/create-aurora-database.sh
+        env:
+          PGDATABASE: db-camunda-aurora-postgresql
+          # PGDATABASE: db-${{ github.sha }}
+          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
+          PGPORT: 5432
+          PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
+          PGUSER_IRSA: web-modeler-irsa
       # Run integration tests with RDBMS database
       - name: Maven Test Build DataLayer
         shell: bash
@@ -721,6 +742,16 @@ jobs:
           -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Tear down database
+        if: always()
+        run: ./actions/rdbms/drop-aurora-database.sh
+        env:
+          PGDATABASE: db-camunda-aurora-postgresql
+          # PGDATABASE: db-${{ github.sha }}
+          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
+          PGPORT: 5432
+          PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
