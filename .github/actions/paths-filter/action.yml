@@ -17,6 +17,13 @@ outputs:
         github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
+  check-copilot-commits:
+    description: Output whether `check-copilot-commits` should be run based on GitHub events
+    value: >-
+      ${{
+        github.event_name == 'pull_request' ||
+        github.event_name == 'push'
+      }}
   commitlint:
     description: Output whether commit messages should be linted based on GitHub event and files changed
     value: >-
