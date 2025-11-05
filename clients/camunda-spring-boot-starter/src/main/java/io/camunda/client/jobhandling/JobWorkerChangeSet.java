@@ -21,6 +21,7 @@ import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -50,11 +51,12 @@ public sealed interface JobWorkerChangeSet {
       final List<SourceAware<T>> original,
       final List<T> updated,
       final Consumer<List<SourceAware<T>>> setter) {
-    if (!Objects.equals(original.stream().map(SourceAware::value).toList(), updated)) {
-      final int listSize = Math.max(original.size(), updated.size());
-      while (original.size() < listSize || updated.size() < listSize) {
-        if (original.size() < listSize) {
-          original.add(new Empty<>());
+    final List<SourceAware<T>> originalModifiable = new ArrayList<>(original);
+    if (!Objects.equals(originalModifiable.stream().map(SourceAware::value).toList(), updated)) {
+      final int listSize = Math.max(originalModifiable.size(), updated.size());
+      while (originalModifiable.size() < listSize || updated.size() < listSize) {
+        if (originalModifiable.size() < listSize) {
+          originalModifiable.add(new Empty<>());
         }
         if (updated.size() < listSize) {
           updated.add(null);
@@ -63,7 +65,9 @@ public sealed interface JobWorkerChangeSet {
       setter.accept(
           IntStream.range(0, listSize)
               .mapToObj(
-                  i -> (SourceAware<T>) new FromRuntimeOverride<>(updated.get(i), original.get(i)))
+                  i ->
+                      (SourceAware<T>)
+                          new FromRuntimeOverride<>(updated.get(i), originalModifiable.get(i)))
               .toList());
       return true;
     }
