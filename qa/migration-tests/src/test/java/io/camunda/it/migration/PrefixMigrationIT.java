@@ -80,7 +80,12 @@ public class PrefixMigrationIT {
 
   @MultiDbTestApplication(managedLifecycle = false)
   private static final TestCamundaApplication STANDALONE_CAMUNDA =
-      new TestCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
+      new TestCamundaApplication()
+          .withBasicAuth()
+          .withAuthorizationsEnabled()
+          // to allow migration from 8.7-SNAPSHOT to 8.8-SNAPSHOT
+          .withProperty(
+              "camunda.database.schema-manager.version-check-restriction-enabled", "false");
 
   @BeforeAll
   public static void beforeAll() {
