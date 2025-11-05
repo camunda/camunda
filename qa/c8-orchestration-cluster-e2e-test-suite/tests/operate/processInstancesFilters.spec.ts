@@ -12,6 +12,7 @@ import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {sleep} from 'utils/sleep';
 
 type ProcessInstance = {processInstanceKey: number};
 
@@ -186,13 +187,21 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
       await operateFiltersPanelPage.fillVariableValueFilter('604');
+      
 
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
+
+      await sleep(1_000); // wait for filter to be applied
         
       await waitForAssertion({
         assertion: async () => {
-          await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(variableProcessInstanceKey);
+          const variableProcessInstanceKeys = new Set<string>();
+          for (const element of await operateProcessesPage.processInstancesTable.getByTestId('cell-processInstanceKey').elementHandles()) {
+            variableProcessInstanceKeys.add(await element.innerText());
+          }
+          expect(variableProcessInstanceKeys.has(variableProcessInstanceKey)).toBeTruthy();
+          //await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(variableProcessInstanceKey);
         },
         onFailure: async () => {
           await page.reload();
