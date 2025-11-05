@@ -80,6 +80,9 @@ public class Cluster implements Cloneable {
    */
   private Integer nodeId;
 
+  @NestedConfigurationProperty
+  private DynamicNodeIdConfig dynamicNodeId = new DynamicNodeIdConfig();
+
   /** The number of partitions in the cluster. */
   private int partitionCount = 1;
 
@@ -121,6 +124,14 @@ public class Cluster implements Cloneable {
    */
   @NestedConfigurationProperty
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
+
+  public DynamicNodeIdConfig getDynamicNodeId() {
+    return dynamicNodeId;
+  }
+
+  public void setDynamicNodeId(final DynamicNodeIdConfig dynamicNodeId) {
+    this.dynamicNodeId = dynamicNodeId;
+  }
 
   public Metadata getMetadata() {
     return metadata;
@@ -260,6 +271,41 @@ public class Cluster implements Cloneable {
     } catch (final CloneNotSupportedException e) {
       throw new AssertionError("Unexpected: Class must implement Cloneable", e);
     }
+  }
+
+  @Override
+  public String toString() {
+    return "Cluster{"
+        + "legacyPropertiesMap="
+        + legacyPropertiesMap
+        + ", metadata="
+        + metadata
+        + ", network="
+        + network
+        + ", initialContactPoints="
+        + initialContactPoints
+        + ", nodeId="
+        + nodeId
+        + ", nodeIdProviderConfig="
+        + dynamicNodeId
+        + ", partitionCount="
+        + partitionCount
+        + ", replicationFactor="
+        + replicationFactor
+        + ", size="
+        + size
+        + ", membership="
+        + membership
+        + ", name='"
+        + name
+        + '\''
+        + ", raft="
+        + raft
+        + ", compressionAlgorithm="
+        + compressionAlgorithm
+        + ", globalListeners="
+        + globalListeners
+        + '}';
   }
 
   public Cluster withBrokerProperties() {
