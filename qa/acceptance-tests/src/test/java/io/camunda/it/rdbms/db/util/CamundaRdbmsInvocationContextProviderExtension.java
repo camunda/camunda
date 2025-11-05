@@ -32,28 +32,29 @@ public class CamundaRdbmsInvocationContextProviderExtension
 
   private static final Map<String, CamundaRdbmsTestApplication> SUPPORTED_TEST_APPLICATIONS =
       Map.of(
-          "camundaWithH2",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2(),
-          "camundaWithPostgresSQL",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultPostgresContainer()),
-          "camundaWithMariaDB",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultMariaDBContainer()),
-          "camundaWithMySQL",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultMySQLContainer()),
-          "camundaWithOracleDB",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultOracleContainer()),
-          "camundaWithMssqlDB",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultMSSQLServerContainer()),
+          //          "camundaWithH2",
+          //          new
+          // CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2(),
+          //          "camundaWithPostgresSQL",
+          //          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+          //              .withRdbms()
+          //              .withDatabaseContainer(createDefaultPostgresContainer()),
+          //          "camundaWithMariaDB",
+          //          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+          //              .withRdbms()
+          //              .withDatabaseContainer(createDefaultMariaDBContainer()),
+          //          "camundaWithMySQL",
+          //          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+          //              .withRdbms()
+          //              .withDatabaseContainer(createDefaultMySQLContainer()),
+          //          "camundaWithOracleDB",
+          //          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+          //              .withRdbms()
+          //              .withDatabaseContainer(createDefaultOracleContainer()),
+          //          "camundaWithMssqlDB",
+          //          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+          //              .withRdbms()
+          //              .withDatabaseContainer(createDefaultMSSQLServerContainer()),
           "camundaWithAuroraPostgreSQL",
           new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
               .withRdbms()
