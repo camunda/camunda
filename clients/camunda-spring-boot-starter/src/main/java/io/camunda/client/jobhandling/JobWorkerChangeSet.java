@@ -88,9 +88,11 @@ public sealed interface JobWorkerChangeSet {
     final boolean changed = field.stream().anyMatch(FromRuntimeOverride.class::isInstance);
     setter.accept(
         field.stream()
-            .filter(FromRuntimeOverride.class::isInstance)
-            .map(fromActuator -> (FromRuntimeOverride<T>) fromActuator)
-            .map(FromRuntimeOverride::original)
+            .map(
+                sourceAware ->
+                    sourceAware instanceof final SourceAware.FromRuntimeOverride<T> runtimeOverride
+                        ? runtimeOverride.original()
+                        : sourceAware)
             .filter(not(Empty.class::isInstance))
             .toList());
     return changed;
