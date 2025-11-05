@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type InlineLoadingProps, Stack, Tag, Tooltip} from '@carbon/react';
+import {type InlineLoadingProps, Stack} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import {useTranslation} from 'react-i18next';
@@ -121,13 +121,6 @@ const ProcessTile: React.FC<Props> = ({
         <Stack className={styles.titleWrapper}>
           <div className={styles.titleRow}>
             <h4 className={styles.title}>{displayName}</h4>
-            {isV2(process) ? (
-              <Tooltip label={t('processVersionTooltip')}>
-                <Tag size="sm" type="cyan">
-                  v{process.version}
-                </Tag>
-              </Tooltip>
-            ) : null}
           </div>
           <span className={styles.subtitle}>
             {displayName === bpmnProcessId ? '' : bpmnProcessId}
