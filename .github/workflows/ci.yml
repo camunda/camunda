@@ -719,6 +719,9 @@ jobs:
           secrets: |
             secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_PASSWORD;
             secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_USERNAME;
+      # The self-hosted runner doesn't provide a postgres client, so we need to install them manually
+      - name: Install required packages
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Set up database
         run: ./.github/actions/rdbms/create-aurora-database.sh
         env:
