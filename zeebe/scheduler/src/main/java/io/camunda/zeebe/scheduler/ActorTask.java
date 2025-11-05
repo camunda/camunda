@@ -119,6 +119,7 @@ public class ActorTask {
 
   public boolean execute(final ActorThread runner) {
     schedulingState.set(TaskSchedulingState.ACTIVE);
+    actor.threadId = Thread.currentThread().threadId();
 
     boolean resubmit = false;
     while (!resubmit && (currentJob != null || poll())) {
@@ -165,6 +166,7 @@ public class ActorTask {
       resubmit = onAllJobsDone();
     }
 
+    actor.threadId = 0;
     return resubmit;
   }
 
@@ -508,21 +510,37 @@ public class ActorTask {
   public void addSubscription(final ActorSubscription subscription) {
     ensureCalledFromActorThread("addSubscription(ActorSubscription)");
     LOG.info(
-        "FINDME: adding subscription {} from actor {}: thread {}",
+        "FINDME: adding subscription {} from actor {} : thread {}, {}",
         subscription,
         actor.getName(),
-        ActorThread.current());
+        ActorThread.current(),
+        Thread.currentThread().threadId());
 
+    if (actor.threadId == 0 || actor.threadId != Thread.currentThread().threadId()) {
+      throw new IllegalStateException(
+          "addSubscription(ActorSubscription) must be called from the actor thread, called from "
+              + Thread.currentThread().threadId()
+              + " expected "
+              + actor.threadId);
+    }
     subscriptions.add(subscription);
   }
 
   private void removeSubscription(final ActorSubscription subscription) {
-    ensureCalledFromActorThread("removeSubscription(ActorSubscription)");
     LOG.info(
-        "FINDME: removing subscription {} from actor {} : thread {}",
+        "FINDME: removing subscription {} from actor {} : thread {}, {}",
         subscription,
         actor.getName(),
-        ActorThread.current());
+        ActorThread.current(),
+        Thread.currentThread().threadId());
+
+    if (actor.threadId == 0 || actor.threadId != Thread.currentThread().threadId()) {
+      throw new IllegalStateException(
+          "removeSubscription(ActorSubscription) must be called from the actor thread, called from "
+              + Thread.currentThread().threadId()
+              + " expected "
+              + actor.threadId);
+    }
     subscriptions.remove(subscription);
   }
 

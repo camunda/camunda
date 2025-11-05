@@ -25,6 +25,7 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   public static final String ACTOR_PROP_PARTITION_ID = "partitionId";
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
+  public volatile long threadId;
   protected final ActorControl actor = new ActorControl(this);
   private Map<String, String> context;
 
