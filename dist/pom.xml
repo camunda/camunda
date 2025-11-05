@@ -76,6 +76,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>dynamic-node-id-provider</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
 

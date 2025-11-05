@@ -199,5 +199,4 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
               return false;
             });
   }
-
 }

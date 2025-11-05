@@ -9,10 +9,20 @@ package io.camunda.zeebe.dynamic.nodeid;
 
 import java.util.concurrent.CompletableFuture;
 
-public interface NodeIdProvider {
+public interface NodeIdProvider extends AutoCloseable {
+
+  /**
+   * @return the node instance. Null cna be returned when the provider is shutting down
+   */
   NodeInstance currentNodeInstance();
 
-  // FIXME rename
+  /**
+   * Verify that the NodeIdProvider is currently active and that the node instance acquired is still
+   * valid.
+   *
+   * @return A CompletableFuture with true if it's valid, false otherwise. The future always returns
+   *     within a predefined time.
+   */
   CompletableFuture<Boolean> isValid();
 
   /**
@@ -25,6 +35,9 @@ public interface NodeIdProvider {
       throw new IllegalArgumentException("Invalid nodeId: " + nodeId);
     }
     return new NodeIdProvider() {
+
+      @Override
+      public void close() throws Exception {}
 
       @Override
       public NodeInstance currentNodeInstance() {
