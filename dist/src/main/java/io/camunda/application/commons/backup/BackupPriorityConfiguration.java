@@ -34,6 +34,7 @@ import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -138,6 +139,8 @@ public class BackupPriorityConfiguration {
             // USAGE METRICS
             new UsageMetricTemplate(indexPrefix, isElasticsearch),
             new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
+            // AUDIT LOG
+            new AuditLogTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
             new ClusterVariableIndex(indexPrefix, isElasticsearch));
 

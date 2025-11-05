@@ -22,6 +22,7 @@ import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -84,7 +85,8 @@ public class IndexDescriptors {
                 new ClusterVariableIndex(indexPrefix, isElasticsearch),
                 new MessageTemplate(indexPrefix, isElasticsearch),
                 new UsageMetricTemplate(indexPrefix, isElasticsearch),
-                new UsageMetricTUTemplate(indexPrefix, isElasticsearch))
+                new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
+                new AuditLogTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 
