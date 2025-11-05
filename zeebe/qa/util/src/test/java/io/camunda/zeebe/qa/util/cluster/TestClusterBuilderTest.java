@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collections;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.assertj.core.api.Condition;
@@ -25,8 +26,8 @@ final class TestClusterBuilderTest {
     final var builder = new TestClusterBuilder();
 
     // when
-    builder.withBrokersCount(2);
-    final var cluster = builder.build();
+    builder.withBrokersCount(2).withReplicationFactor(2);
+    final var cluster = builder.build().start();
 
     // then
     assertThat(cluster.brokers())
@@ -41,7 +42,7 @@ final class TestClusterBuilderTest {
 
     // when
     builder.withPartitionsCount(2);
-    final var cluster = builder.build();
+    final var cluster = builder.build().start();
 
     // then
     final var brokers = cluster.brokers();
@@ -58,7 +59,7 @@ final class TestClusterBuilderTest {
 
     // when
     builder.withBrokersCount(2).withReplicationFactor(2);
-    final var cluster = builder.build();
+    final var cluster = builder.build().start();
 
     // then
     final var brokers = cluster.brokers();
@@ -80,8 +81,9 @@ final class TestClusterBuilderTest {
         .withName("test-cluster")
         .withEmbeddedGateway(false)
         .withBrokersCount(2)
-        .withGatewaysCount(2);
-    final var cluster = builder.build();
+        .withGatewaysCount(2)
+        .withReplicationFactor(2);
+    final var cluster = builder.build().start();
 
     // then
     assertThat(cluster.brokers())
@@ -142,8 +144,8 @@ final class TestClusterBuilderTest {
     final var builder = new TestClusterBuilder();
 
     // when
-    builder.withEmbeddedGateway(false).withBrokersCount(2);
-    final var cluster = builder.build();
+    builder.withEmbeddedGateway(false).withBrokersCount(2).withReplicationFactor(2);
+    final var cluster = builder.build().start();
 
     // then
     final var expectedValue =
@@ -188,7 +190,7 @@ final class TestClusterBuilderTest {
 
     // when
     builder.withEmbeddedGateway(true).withBrokersCount(1);
-    final var cluster = builder.build();
+    final var cluster = builder.build().start();
 
     // then
     final var brokerId = MemberId.from("0");
@@ -207,7 +209,7 @@ final class TestClusterBuilderTest {
 
     // when
     builder.withEmbeddedGateway(false).withBrokersCount(1);
-    final var cluster = builder.build();
+    final var cluster = builder.build().start();
 
     // then
     final var brokerId = MemberId.from("0");
@@ -219,6 +221,27 @@ final class TestClusterBuilderTest {
                 b -> b.brokerConfig().getGateway().isEnable(),
                 false));
     assertThat(broker.isGateway()).isFalse();
+  }
+
+  @Test
+  void shouldSetBrokerProperties() {
+    // given
+    final var builder = new TestClusterBuilder();
+
+    // when
+    builder
+        .withEmbeddedGateway(false)
+        .withBrokersCount(1)
+        .withBrokerProperties(Map.of("camunda.cluster.name", "test"));
+    final var cluster = builder.build().start();
+
+    // then
+    final var brokerId = MemberId.from("0");
+    final var broker = cluster.brokers().get(brokerId);
+    assertThat(broker)
+        .has(
+            hasProperty(
+                "cluster name", b -> b.brokerConfig().getCluster().getClusterName(), "test"));
   }
 
   private <T extends TestApplication<T>, U> Condition<T> hasProperty(

@@ -15,8 +15,11 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.configuration.Exporter;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
@@ -29,7 +32,6 @@ import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -37,7 +39,6 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +57,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   public static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final BrokerBasedProperties config;
   private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
@@ -67,32 +67,45 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         UnifiedConfiguration.class,
         GatewayRestPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class);
+        SearchEngineIndexPropertiesOverride.class,
+        BrokerBasedPropertiesOverride.class,
+        GatewayBasedPropertiesOverride.class);
 
-    config = new BrokerBasedProperties();
-
-    config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
-    config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
-    config.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
+    withProperty("camunda.cluster.network.command-api.port", SocketUtil.getNextAddress().getPort());
+    withProperty(
+        "camunda.cluster.network.internal-api.port", SocketUtil.getNextAddress().getPort());
+    withProperty("camunda.api.grpc.port", SocketUtil.getNextAddress().getPort());
 
     // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
     // for local development; also lower the watermarks for local testing
-    config.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
-    config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
-    config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
+    withProperty(
+        "camunda.data.primary-storage.log-stream.log-segment-size", DataSize.ofMegabytes(16));
+    withProperty(
+        "camunda.data.primary-storage.disk.free-space.processing", DataSize.ofMegabytes(128));
+    withProperty(
+        "camunda.data.primary-storage.disk.free-space.replication", DataSize.ofMegabytes(64));
     // Disable pre-allocation of segment files - many tests won't even fill up their first segment
-    config.getExperimental().getRaft().setPreallocateSegmentFiles(false);
+    withProperty("camunda.cluster.raft.preallocate-segment-files", false);
     // Disable flushes to reduce test runtime - we don't need perfect durability in tests, if the
     // machine crashes the test fails anyway.
-    config.getCluster().getRaft().setFlush(new FlushConfig(false, Duration.ZERO));
-    config.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
-    config.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
-    config.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
-    config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
-    config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
+    withProperty("camunda.cluster.raft.flush-enabled", false);
+    withProperty("camunda.cluster.raft.flush-delay", "0s");
+    withProperty("camunda.cluster.membership.failure-timeout", "5s");
+    withProperty("camunda.cluster.membership.probe-interval", "100ms");
+    withProperty("camunda.cluster.membership.sync-interval", "500ms");
+    withProperty("camunda.processing.enable-foreign-key-checks", true);
+
+    withProperty("camunda.cluster.node-id", 0);
+    withProperty("camunda.cluster.network.host", "0.0.0.0");
+
+    // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
+    // we need to hook in at the last minute and set the property as it won't resolve from the
+    // config bean
+    // TODO KPO check - property is not part of the unified configuration, add?
+    withProperty("zeebe.broker.gateway.enable", true);
 
     //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
+    withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
@@ -139,9 +152,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public int mappedPort(final TestZeebePort port) {
     return switch (port) {
-      case COMMAND -> config.getNetwork().getCommandApi().getPort();
-      case GATEWAY -> config.getGateway().getNetwork().getPort();
-      case CLUSTER -> config.getNetwork().getInternalApi().getPort();
+      case COMMAND -> property("camunda.cluster.network.command-api.port", Integer.class, null);
+      case GATEWAY -> property("camunda.api.grpc.port", Integer.class, null);
+      case CLUSTER -> property("camunda.cluster.network.internal-api.port", Integer.class, null);
       default -> super.mappedPort(port);
     };
   }
@@ -168,10 +181,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
-    // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
-    // we need to hook in at the last minute and set the property as it won't resolve from the
-    // config bean
-    withProperty("zeebe.broker.gateway.enable", config.getGateway().isEnable());
     return super.createSpringBuilder();
   }
 
@@ -194,12 +203,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
+    final var nodeId = property("camunda.cluster.node-id", Integer.class, null);
+    return MemberId.from(String.valueOf(nodeId));
   }
 
   @Override
   public String host() {
-    return config.getNetwork().getHost();
+    return property("camunda.cluster.network.host", String.class, null);
   }
 
   @Override
@@ -209,7 +219,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public boolean isGateway() {
-    return config.getGateway().isEnable();
+    return property("zeebe.broker.gateway.enable", Boolean.class, null);
   }
 
   @Override
@@ -229,13 +239,19 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public TestStandaloneBroker withGatewayConfig(final Consumer<GatewayCfg> modifier) {
-    modifier.accept(config.getGateway());
-    return this;
+    // TODO KPO implement add test
+    // modifier.accept(config.getGateway());
+    // return this;
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
   }
 
   @Override
   public GatewayCfg gatewayConfig() {
-    return config.getGateway();
+    // TODO KPO check whether bean can returned without isStarted, not sure who calls this, add test
+    if (isStarted()) {
+      return bean(BrokerBasedProperties.class).getGateway();
+    }
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
   }
 
   /** Enables multi-tenancy in the security configuration. */
@@ -262,12 +278,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    */
   public TestStandaloneBroker withRecordingExporter(final boolean useRecordingExporter) {
     if (!useRecordingExporter) {
-      config.getExporters().remove(RECORDING_EXPORTER_ID);
+      removeProperty(String.format("camunda.data.exporters.%s.class-name", RECORDING_EXPORTER_ID));
       return this;
     }
 
-    return withExporter(
-        RECORDING_EXPORTER_ID, cfg -> cfg.setClassName(RecordingExporter.class.getName()));
+    final var recordingExporter = new Exporter();
+    recordingExporter.setClassName(RecordingExporter.class.getName());
+
+    return withExporter(RECORDING_EXPORTER_ID, recordingExporter);
   }
 
   /**
@@ -280,11 +298,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    */
   @Override
   public TestStandaloneBroker withExporter(final String id, final Consumer<ExporterCfg> modifier) {
-    final var exporterConfig =
-        config.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
-    modifier.accept(exporterConfig);
+    // TODO KPO replace by setting the property
+    //     final var exporterConfig =
+    //         config.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
+    //     modifier.accept(exporterConfig);
 
-    return this;
+    // return this;
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
   }
 
   /**
@@ -293,8 +313,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    */
   @Override
   public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    modifier.accept(config);
-    return this;
+    // TODO KPO replace by property
+    // modifier.accept(config);
+    // return this;
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
   }
 
   /**
@@ -311,12 +333,29 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   /** Returns the broker configuration */
   @Override
   public BrokerBasedProperties brokerConfig() {
-    return config;
+    // TODO KPO check whether bean can returned without isStarted, not sure who calls this
+    if (isStarted()) {
+      return bean(BrokerBasedProperties.class);
+    }
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
   }
 
   @Override
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
+  }
+
+  // TODO KPO replaces withExporter
+  public TestStandaloneBroker withExporter(final String id, final Exporter exporter) {
+    withProperty("camunda.data.exporters." + id + ".class-name", exporter.getClassName());
+    withProperty("camunda.data.exporters." + id + ".jar-path", exporter.getJarPath());
+    Optional.ofNullable(exporter.getArgs())
+        .ifPresent(
+            args ->
+                args.forEach(
+                    (key, value) ->
+                        withProperty("camunda.data.exporters." + id + ".args." + key, value)));
+    return this;
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {

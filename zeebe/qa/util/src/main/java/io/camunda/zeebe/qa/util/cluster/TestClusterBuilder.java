@@ -8,7 +8,6 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +42,8 @@ public final class TestClusterBuilder {
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
+
+  private Map<String, Object> brokerProperties = new HashMap<>();
 
   /**
    * If true, the brokers created by this cluster will use embedded gateways. By default this is
@@ -244,6 +245,12 @@ public final class TestClusterBuilder {
     return this;
   }
 
+  // TODO KPO add java doc
+  public TestClusterBuilder withBrokerProperties(final Map<String, Object> brokerProperties) {
+    this.brokerProperties = brokerProperties;
+    return this;
+  }
+
   /**
    * If true, registers the {@link RecordingExporter} for each broker. Defaults to true.
    *
@@ -334,33 +341,28 @@ public final class TestClusterBuilder {
     // since initial contact points has to contain all known brokers, we can only configure it
     // AFTER the base broker configuration
     final var contactPoints = getInitialContactPoints();
-    brokers.values().stream()
-        .map(TestStandaloneBroker::brokerConfig)
-        .map(BrokerCfg::getCluster)
-        .forEach(cfg -> cfg.setInitialContactPoints(contactPoints));
+    brokers
+        .values()
+        .forEach(
+            broker ->
+                broker.withProperty(
+                    "camunda.cluster.initial-contact-points", String.join(",", contactPoints)));
   }
 
   private TestStandaloneBroker createBroker(final int index) {
-    final TestStandaloneBroker broker =
-        new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg -> {
-                  final var cluster = cfg.getCluster();
-                  cluster.setNodeId(index);
-                  cluster.setPartitionsCount(partitionsCount);
-                  cluster.setReplicationFactor(replicationFactor);
-                  cluster.setClusterSize(brokersCount);
-                  cluster.setClusterName(name);
-                })
-            .withBrokerConfig(
-                cfg -> {
-                  final var replicas = (partitionsCount * replicationFactor) / brokersCount;
-                  cfg.getThreads().setIoThreadCount(replicas);
-                  cfg.getThreads().setCpuThreadCount(replicas);
-                })
-            .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
-            .withRecordingExporter(useRecordingExporter);
-    return broker;
+    final var replicas = (partitionsCount * replicationFactor) / brokersCount;
+
+    return new TestStandaloneBroker()
+        .withProperty("camunda.cluster.node-id", index)
+        .withProperty("camunda.cluster.partition-count", partitionsCount)
+        .withProperty("camunda.cluster.replication-factor", replicationFactor)
+        .withProperty("camunda.cluster.size", brokersCount)
+        .withProperty("camunda.cluster.name", name)
+        .withProperty("camunda.system.io-thread-count", replicas)
+        .withProperty("camunda.system.cpu-thread-count", replicas)
+        .withProperty("zeebe.broker.gateway.enable", useEmbeddedGateway)
+        .withRecordingExporter(useRecordingExporter)
+        .withAdditionalProperties(brokerProperties);
   }
 
   private void createGateways() {
