@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InstancesList} from '../../Layout/InstancesList';
+import {InstancesList} from '../../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
-import {Filters} from './Filters';
-import {InstancesTable} from './v2/InstancesTable';
-import {DiagramPanel} from './v2/DiagramPanel';
+import {Filters} from '../Filters';
+import {InstancesTable} from './InstancesTable';
+import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
@@ -26,7 +26,7 @@ import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
+import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};

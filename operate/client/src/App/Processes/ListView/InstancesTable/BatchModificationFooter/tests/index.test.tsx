@@ -25,11 +25,14 @@ vi.mock('modules/hooks/useCallbackPrompt', () => {
   };
 });
 
-vi.mock('../BatchModificationSummaryModal/v2', () => ({
-  BatchModificationSummaryModal: () => (
-    <div>MockedBatchModificationSummaryModal</div>
-  ),
-}));
+vi.mock(
+  '../../../v2/InstancesTable/BatchModificationFooter/BatchModificationSummaryModal',
+  () => ({
+    BatchModificationSummaryModal: () => (
+      <div>MockedBatchModificationSummaryModal</div>
+    ),
+  }),
+);
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
   ({children}) => {

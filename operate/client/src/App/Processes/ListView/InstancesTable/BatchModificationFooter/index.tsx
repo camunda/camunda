@@ -11,7 +11,7 @@ import {observer} from 'mobx-react';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {BatchModificationSummaryModal} from './BatchModificationSummaryModal/v2';
+import {BatchModificationSummaryModal} from '../../v2/InstancesTable/BatchModificationFooter/BatchModificationSummaryModal';
 import {Stack} from './styled';
 import {tracking} from 'modules/tracking';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';

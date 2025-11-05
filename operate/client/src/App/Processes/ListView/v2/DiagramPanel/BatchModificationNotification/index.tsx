@@ -9,7 +9,7 @@
 import {observer} from 'mobx-react';
 import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {Container, InlineNotification, Button} from '../styled';
+import {Container, InlineNotification, Button} from './styled.tsx';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
