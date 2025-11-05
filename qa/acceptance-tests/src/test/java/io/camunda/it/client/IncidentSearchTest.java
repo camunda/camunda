@@ -26,6 +26,7 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -580,5 +581,22 @@ class IncidentSearchTest {
     // then
     assertThat(resultSearchFrom.items().stream().findFirst().get().getIncidentKey())
         .isEqualTo(thirdKey);
+  }
+
+  @Test
+  void shouldGetStatisticsAndFilterByStartDateFilterGteLte() {
+    // given
+    final var now = OffsetDateTime.now();
+
+    // when
+    final var actual =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.creationTime(b -> b.gte(now.minusMinutes(1)).lte(now.plusMinutes(1))))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual.items()).hasSize(3);
   }
 }

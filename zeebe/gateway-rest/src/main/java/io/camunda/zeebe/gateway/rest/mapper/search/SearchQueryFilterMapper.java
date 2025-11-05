@@ -719,7 +719,8 @@ public class SearchQueryFilterMapper {
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::flowNodeInstanceKeys);
       ofNullable(filter.getCreationTime())
-          .ifPresent(t -> builder.creationTime(toOffsetDateTime(t)));
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::creationTimeOperations);
       ofNullable(filter.getState()).ifPresent(s -> builder.states(s.getValue()));
       ofNullable(filter.getJobKey()).map(KeyUtil::keyToLong).ifPresent(builder::jobKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);

@@ -7771,9 +7771,9 @@ components:
           allOf:
             - $ref: "#/components/schemas/ElementId"
         creationTime:
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
           description: Date of incident creation.
-          format: date-time
         state:
           type: string
           description: State of this incident with a defined set of values.
