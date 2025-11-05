@@ -251,6 +251,21 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
+    await test.step('Filter by op ID and assert results', async ({ }) => {
+      await operateFiltersPanelPage.resetFiltersButton.click();
+
+      await operateFiltersPanelPage.selectProcess('Process With Multiple Versions');
+      await operateProcessesPage.processInstancesTable.getByTestId('cell-processName').first().click();
+      // await operateFiltersPanelPage.processVersionFilter.click();
+      // await operateFiltersPanelPage.processVersionFilter.first().click();
+
+      //await operateFiltersPanelPage.selectVersion('2');
+
+      // const currentVersion = await operateFiltersPanelPage.processVersionFilter.innerText();
+
+
+    })
+
   });
 
   test('Interaction between diagram and filters', async ({
