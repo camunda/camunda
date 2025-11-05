@@ -99,7 +99,7 @@ public class ElementTreePathBuilderTest {
 
     // when
     assertThatThrownBy(builder::build)
-        .hasMessageContaining("Expected to find element instance")
+        .hasMessageContaining("but couldn't find element instance")
         .isInstanceOf(IllegalStateException.class);
   }
 
