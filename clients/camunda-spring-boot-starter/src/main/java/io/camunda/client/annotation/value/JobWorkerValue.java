@@ -202,12 +202,12 @@ public class JobWorkerValue {
   }
 
 
-  @Deprecated(forRemoval = true)
+  @Deprecated(forRemoval = true, since = "8.9")
   public MethodInfo getMethodInfo() {
     return methodInfo;
   }
 
-  @Deprecated(forRemoval = true)
+  @Deprecated(forRemoval = true, since = "8.9")
   public void setMethodInfo(final MethodInfo methodInfo) {
     this.methodInfo = methodInfo;
   }

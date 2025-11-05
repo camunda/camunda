@@ -58,7 +58,6 @@ public class ReadJobWorkerValueTest {
     assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(new Empty<>());
     assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new FromAnnotation<>(false));
     assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of());
-    assertThat(jobWorkerValue.get().getMethodInfo()).isEqualTo(methodInfo);
     assertThat(jobWorkerValue.get().getStreamTimeout()).isEqualTo(new Empty<>());
   }
 
@@ -107,7 +106,6 @@ public class ReadJobWorkerValueTest {
     assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new Empty<>());
     assertThat(jobWorkerValue.get().getFetchVariables())
         .isEqualTo(List.of(new FromAnnotation<>("foo")));
-    assertThat(jobWorkerValue.get().getMethodInfo()).isEqualTo(methodInfo);
   }
 
   @Test
@@ -116,7 +114,6 @@ public class ReadJobWorkerValueTest {
     final MethodInfo methodInfo = extract(NoPropertiesSet.class);
     // when
     final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
-    // then
     // then
     assertThat(jobWorkerValue.isPresent()).isTrue();
     assertThat(jobWorkerValue.get().getType()).isEqualTo(new GeneratedFromMethodInfo<>("handle"));
@@ -128,7 +125,6 @@ public class ReadJobWorkerValueTest {
     assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(new Empty<>());
     assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new Empty<>());
     assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of());
-    assertThat(jobWorkerValue.get().getMethodInfo()).isEqualTo(methodInfo);
     assertThat(jobWorkerValue.get().getStreamTimeout()).isEqualTo(new Empty<>());
   }
 

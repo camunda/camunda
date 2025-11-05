@@ -157,10 +157,12 @@ public class ZeebeWorkerValue {
     jobWorkerValue.setEnabled(new FromLegacy<>(enabled));
   }
 
+  @Deprecated
   public MethodInfo getMethodInfo() {
     return jobWorkerValue.getMethodInfo();
   }
 
+  @Deprecated
   public void setMethodInfo(final MethodInfo methodInfo) {
     jobWorkerValue.setMethodInfo(methodInfo);
   }
@@ -208,6 +210,7 @@ public class ZeebeWorkerValue {
     jobWorkerValue.setMaxRetries(new FromLegacy<>(maxRetries));
   }
 
+  @Deprecated
   public MethodInfo getBeanInfo() {
     return jobWorkerValue.getMethodInfo();
   }
