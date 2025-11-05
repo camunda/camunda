@@ -88,7 +88,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
     final PutObjectRequest putRequest =
         createPutObjectRequest(nodeId, Optional.of(metadata), Optional.of(previousETag)).build();
     try {
-      if (!lease.isStillValid(clock.millis(), config.expiryDuration)) {
+      if (!lease.isStillValid(clock.millis(), config.leaseDuration)) {
         throw new IllegalArgumentException("The provided lease is not valid anymore: " + lease);
       }
       LOG.debug("Acquiring lease {}, previous ETag {}", lease, previousETag);
@@ -177,10 +177,10 @@ public class S3NodeIdRepository implements NodeIdRepository {
     return builder.build();
   }
 
-  public record Config(String bucketName, Duration expiryDuration) {
+  public record Config(String bucketName, Duration leaseDuration) {
     public Config {
-      if (expiryDuration.toMillis() <= 0) {
-        throw new IllegalArgumentException("expiryDuration must be greater than 0");
+      if (leaseDuration.toMillis() <= 0) {
+        throw new IllegalArgumentException("leaseDuration must be greater than 0");
       }
       if (bucketName == null || bucketName.isEmpty()) {
         throw new IllegalArgumentException("bucketName cannot be null or empty");
