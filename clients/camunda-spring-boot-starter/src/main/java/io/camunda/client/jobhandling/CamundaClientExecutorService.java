@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +70,7 @@ public class CamundaClientExecutorService {
       final boolean scheduledExecutorOwnedByCamundaClient,
       final ExecutorService executorService,
       final boolean jobHandlingExecutorOwnedByCamundaClient,
-      @Nullable final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry) {
     this.scheduledExecutorService = scheduledExecutorService;
     this.scheduledExecutorOwnedByCamundaClient = scheduledExecutorOwnedByCamundaClient;
 
@@ -108,7 +107,7 @@ public class CamundaClientExecutorService {
   }
 
   public static CamundaClientExecutorService createDefault(
-      final int threads, @Nullable final MeterRegistry meterRegistry) {
+      final int threads, final MeterRegistry meterRegistry) {
     final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(threads);
     return new CamundaClientExecutorService(threadPool, true, threadPool, true, meterRegistry);
   }
