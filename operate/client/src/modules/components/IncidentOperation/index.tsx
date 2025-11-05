@@ -17,6 +17,7 @@ import {tracking} from 'modules/tracking';
 import {InlineLoading} from '@carbon/react';
 import {Container} from './styled';
 import {notificationsStore} from 'modules/stores/notifications';
+import {useResolveIncident} from 'modules/mutations/incidents/useResolveIncident';
 
 type Props = {
   incidentKey: string;
@@ -79,4 +80,54 @@ const IncidentOperation: React.FC<Props> = observer(
   },
 );
 
-export {IncidentOperation};
+type IncidentOperationProps = {
+  incidentKey: string;
+  jobKey?: string;
+};
+
+const IncidentOperationV2: React.FC<IncidentOperationProps> = (props) => {
+  const {isPending, mutate} = useResolveIncident(
+    props.incidentKey,
+    props.jobKey,
+  );
+
+  const handleClick: React.MouseEventHandler<HTMLButtonElement> = (e) => {
+    e.stopPropagation();
+    mutate(undefined, {
+      onError: (error) => {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Incident could not be resolved',
+          subtitle:
+            error.status === 403 ? 'You do not have permission' : undefined,
+          isDismissable: true,
+        });
+      },
+      onSuccess: () => {
+        tracking.track({
+          eventName: 'single-operation',
+          operationType: 'RESOLVE_INCIDENT',
+          source: 'incident-table',
+        });
+      },
+    });
+  };
+
+  return (
+    <Container orientation="horizontal">
+      {isPending && <InlineLoading data-testid="operation-spinner" />}
+      <OperationItems>
+        <OperationItem
+          type="RESOLVE_INCIDENT"
+          onClick={handleClick}
+          data-testid="retry-incident"
+          title="Retry Incident"
+          disabled={isPending}
+          size="sm"
+        />
+      </OperationItems>
+    </Container>
+  );
+};
+
+export {IncidentOperation, IncidentOperationV2};
