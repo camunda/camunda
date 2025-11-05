@@ -17,6 +17,7 @@ import java.time.InstantSource;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ public class NodeIdProvider implements AutoCloseable {
   private final ExponentialBackoff backoff;
   private long currentDelay;
   private final Duration renewalDelay;
+  private ScheduledFuture<?> renewalTask;
 
   public NodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -58,8 +60,9 @@ public class NodeIdProvider implements AutoCloseable {
   }
 
   private void startRenewalTimer() {
-    executor.scheduleAtFixedRate(
-        this::renew, renewalDelay.toMillis(), renewalDelay.toMillis(), TimeUnit.MILLISECONDS);
+    renewalTask =
+        executor.scheduleAtFixedRate(
+            this::renew, renewalDelay.toMillis(), renewalDelay.toMillis(), TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -94,6 +97,7 @@ public class NodeIdProvider implements AutoCloseable {
       currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
     } catch (final Exception e) {
       LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
+      currentLease = null;
       onLeaseFailure.run();
     }
   }
@@ -169,11 +173,24 @@ public class NodeIdProvider implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    // release is already submitted to the executor, we can shut it down gracefully.
-    executor.shutdown();
-    // shutdown is taking too much time, let's shut it down by interrupting running tasks.
-    if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-      executor.shutdownNow();
+    // use the executor status to avoid closing multiple times
+    if (!executor.isShutdown()) {
+      try {
+        if (renewalTask != null) {
+          renewalTask.cancel(true);
+        }
+        if (currentLease != null) {
+          nodeIdRepository.release(currentLease);
+        }
+      } finally {
+        currentLease = null;
+        // release is already submitted to the executor, we can shut it down gracefully.
+        executor.shutdown();
+        // shutdown is taking too much time, let's shut it down by interrupting running tasks.
+        if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+          executor.shutdownNow();
+        }
+      }
     }
   }
 }

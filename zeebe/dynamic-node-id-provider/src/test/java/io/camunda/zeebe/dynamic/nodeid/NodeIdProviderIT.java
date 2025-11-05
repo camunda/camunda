@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -205,6 +206,29 @@ public class NodeIdProviderIT {
     doThrow(new IllegalStateException("Injected failure")).when(repository).acquire(any(), any());
     Awaitility.await("Until failure listener has been invoked")
         .untilAsserted(() -> assertThat(leaseFailed).isTrue());
+    assertThat(nodeIdProvider.getCurrentLease()).isNull();
+  }
+
+  @Test
+  public void shouldReleaseGracefullyWhenClosed() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+    final var lease = nodeIdProvider.getCurrentLease();
+
+    // when
+    assertThatNoException().isThrownBy(() -> nodeIdProvider.close());
+
+    // then
+    // clock is not moved, so the lease can only be acquired if released
+    final var releasedLease = repository.getLease(lease.lease().nodeInstance().id());
+    assertThat(releasedLease).isInstanceOf(StoredLease.Uninitialized.class);
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+    assertThat(nodeIdProvider.getCurrentLease().lease().nodeInstance().id())
+        .isEqualTo(lease.lease().nodeInstance().id());
   }
 
   public void assertLeaseIsReady() {
