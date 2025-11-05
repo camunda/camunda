@@ -157,6 +157,9 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
                 })
             .withProperty("camunda.operate.importer-enabled", "true")
             .withProperty("camunda.tasklist.importer-enabled", "true")
+            // to allow migration from 8.7-SNAPSHOT to 8.8-SNAPSHOT
+            .withProperty(
+                "camunda.database.schema-manager.version-check-restriction-enabled", "false")
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
 
     if (!authenticationEnabled) {
