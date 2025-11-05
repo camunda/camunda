@@ -13,6 +13,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
@@ -43,7 +44,8 @@ public class CamundaSecurityConfigurationTest {
                       CommonsModuleConfiguration.class,
                       UnifiedConfiguration.class,
                       UnifiedConfigurationHelper.class,
-                      GatewayBasedPropertiesOverride.class);
+                      GatewayBasedPropertiesOverride.class,
+                      SearchEngineConnectProperties.class);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)
@@ -67,7 +69,8 @@ public class CamundaSecurityConfigurationTest {
                       CommonsModuleConfiguration.class,
                       UnifiedConfigurationHelper.class,
                       UnifiedConfiguration.class,
-                      GatewayBasedPropertiesOverride.class);
+                      GatewayBasedPropertiesOverride.class,
+                      SearchEngineConnectProperties.class);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)
@@ -91,7 +94,8 @@ public class CamundaSecurityConfigurationTest {
                       CommonsModuleConfiguration.class,
                       UnifiedConfigurationHelper.class,
                       UnifiedConfiguration.class,
-                      GatewayBasedPropertiesOverride.class);
+                      GatewayBasedPropertiesOverride.class,
+                      SearchEngineConnectProperties.class);
               app.run();
             })
         .isInstanceOf(BeanCreationException.class)

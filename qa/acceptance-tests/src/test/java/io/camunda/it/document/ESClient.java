@@ -7,6 +7,7 @@
  */
 package io.camunda.it.document;
 
+import static io.camunda.webapps.backup.repository.BackupRepositoryProps.defaultIncompleteCheckTimeoutInSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -78,7 +79,10 @@ public class ESClient implements DocumentClient {
   public BackupRepository zeebeBackupRepository(
       final String repositoryName, final SnapshotNameProvider snapshotNameProvider) {
     return new ElasticsearchBackupRepository(
-        esClient, new BackupRepositoryPropsRecord("current", ""), snapshotNameProvider, executor);
+        esClient,
+        new BackupRepositoryPropsRecord("current", "", 0, defaultIncompleteCheckTimeoutInSeconds()),
+        snapshotNameProvider,
+        executor);
   }
 
   @Override

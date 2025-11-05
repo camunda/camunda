@@ -7,6 +7,10 @@
  */
 package io.camunda.application.commons.backup;
 
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
+
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
@@ -20,7 +24,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@ConditionalOnBackupWebappsEnabled
+@ConditionalOnSecondaryStorageType({elasticsearch, opensearch})
 public class HistoryBackupComponent {
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;

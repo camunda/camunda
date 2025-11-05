@@ -93,5 +93,17 @@ public class SecondaryStorage {
     opensearch,
     rdbms,
     none;
+
+    public boolean isElasticSearch() {
+      return this == elasticsearch;
+    }
+
+    public boolean isOpenSearch() {
+      return this == opensearch;
+    }
+
+    public boolean isRdbms() {
+      return this == rdbms;
+    }
   }
 }

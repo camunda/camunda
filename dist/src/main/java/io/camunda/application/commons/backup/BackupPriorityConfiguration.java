@@ -7,12 +7,12 @@
  */
 package io.camunda.application.commons.backup;
 
-import static io.camunda.application.commons.backup.ConfigValidation.allMatch;
-import static io.camunda.application.commons.backup.ConfigValidation.skipEmptyOptional;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.webapps.profiles.ProfileWebApp;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
@@ -51,64 +51,34 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 
 @Configuration
-@ConditionalOnBackupWebappsEnabled
-@ProfileWebApp
+@ConditionalOnSecondaryStorageType({elasticsearch, opensearch})
 public class BackupPriorityConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupPriorityConfiguration.class);
-  private static final String NO_CONFIG_ERROR_MESSAGE =
-      "Expected operate or tasklist to be configured, but neither of them are.";
+  private final SecondaryStorage secondaryStorage;
 
-  final String[] profiles;
-  // all nullable
-  final OperateProperties operateProperties;
-  final TasklistProperties tasklistProperties;
-
-  public BackupPriorityConfiguration(
-      @Autowired(required = false) final OperateProperties operateProperties,
-      @Autowired(required = false) final TasklistProperties tasklistProperties,
-      @Autowired final Environment environment) {
-    profiles = environment.getActiveProfiles();
-    if (environment.matchesProfiles("operate")) {
-      this.operateProperties = operateProperties;
-    } else {
-      this.operateProperties = null;
-    }
-    if (environment.matchesProfiles("tasklist")) {
-      this.tasklistProperties = tasklistProperties;
-    } else {
-      this.tasklistProperties = null;
-    }
-  }
-
-  private <A> Function<Map<String, A>, String> differentConfigFor(final String field) {
-    return values ->
-        String.format(
-            "Expected %s to be configured with the same value in operate and tasklist. Got %s. Active profiles: %s",
-            field, values, Arrays.asList(profiles));
+  public BackupPriorityConfiguration(final Camunda configuration) {
+    secondaryStorage = configuration.getData().getSecondaryStorage();
   }
 
   @Bean
   public BackupPriorities backupPriorities() {
-    final var indexPrefix = getIndexPrefix();
-    final boolean isElasticsearch = getIsElasticsearch();
+    final boolean isElasticsearch = secondaryStorage.getType().isElasticSearch();
+    final var indexPrefix =
+        isElasticsearch
+            ? secondaryStorage.getElasticsearch().getIndexPrefix()
+            : secondaryStorage.getOpensearch().getIndexPrefix();
     return getBackupPriorities(indexPrefix, isElasticsearch);
   }
 
-  public static BackupPriorities getBackupPriorities(
+  private BackupPriorities getBackupPriorities(
       final String indexPrefix, final boolean isElasticsearch) {
     final List<Prio1Backup> prio1 =
         List.of(
@@ -174,40 +144,5 @@ public class BackupPriorityConfiguration {
     LOG.debug("Prio4 are {}", prio4);
     LOG.debug("Prio5 are {}", prio5);
     return new BackupPriorities(prio1, prio2, prio3, prio4, prio5);
-  }
-
-  private boolean getIsElasticsearch() {
-    final Optional<Boolean> result =
-        allMatch(
-            Optional::empty,
-            differentConfigFor("database.type"),
-            Map.of(
-                "operate",
-                Optional.ofNullable(operateProperties).map(OperateProperties::isElasticsearchDB),
-                "tasklist",
-                Optional.ofNullable(tasklistProperties)
-                    .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH))),
-            skipEmptyOptional());
-    if (result.isEmpty()) {
-      throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);
-    }
-    return result.get();
-  }
-
-  private String getIndexPrefix() {
-    final var indexOptional =
-        allMatch(
-            Optional::empty,
-            differentConfigFor("indexPrefix"),
-            Map.of(
-                "operate",
-                Optional.ofNullable(operateProperties).map(OperateProperties::getIndexPrefix),
-                "tasklist",
-                Optional.ofNullable(tasklistProperties).map(TasklistProperties::getIndexPrefix)),
-            skipEmptyOptional());
-    if (indexOptional.isEmpty()) {
-      throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);
-    }
-    return indexOptional.get();
   }
 }

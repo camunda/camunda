@@ -55,7 +55,7 @@ public class OperatePropertiesOverride {
     final OperateProperties override = new OperateProperties();
     BeanUtils.copyProperties(legacyOperateProperties, override);
 
-    pouplateFromBackup(override);
+    populateFromBackup(override);
 
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
@@ -69,7 +69,7 @@ public class OperatePropertiesOverride {
     return override;
   }
 
-  private void pouplateFromBackup(final OperateProperties override) {
+  private void populateFromBackup(final OperateProperties override) {
     final Backup operateBackup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupProperties backupProperties = override.getBackup();
     backupProperties.setRepositoryName(operateBackup.getRepositoryName());
