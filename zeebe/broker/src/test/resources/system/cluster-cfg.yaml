@@ -5,3 +5,5 @@ zeebe:
       clusterSize: 5
       nodeId: 2
       replicationFactor: 4
+      initialContactPoints:
+        - localhost:26502

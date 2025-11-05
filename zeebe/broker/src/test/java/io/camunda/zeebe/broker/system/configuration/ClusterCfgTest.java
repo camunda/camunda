@@ -77,6 +77,7 @@ public final class ClusterCfgTest {
     environment.put(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "3");
     environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "2");
     environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_ID, "cluster-id");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "localhost:26502");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -124,6 +125,7 @@ public final class ClusterCfgTest {
     environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "2");
     // cluster size must be larger than node id
     environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "6");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "localhost:26502");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -152,6 +154,7 @@ public final class ClusterCfgTest {
     environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "2");
     // cluster size must be larger than node id
     environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "6");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "localhost:26502");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("specific-node-id", environment);
@@ -349,7 +352,9 @@ public final class ClusterCfgTest {
   @Test
   public void shouldOverrideClusterSizeViaEnvironment() {
     // given
-    final var environment = Collections.singletonMap(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "8");
+    final var environment = new HashMap<String, String>();
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "8");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "localhost:26502");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -446,5 +451,24 @@ public final class ClusterCfgTest {
 
     // then
     assertThat(contactPointsCfg.getInitialContactPoints()).containsExactlyElementsOf(List.of());
+  }
+
+  @Test
+  void shouldNotThrowExceptionIfInitialContactPointsNotSetWhenClusterSizeIsOne() {
+    // given - when - then
+    assertThatCode(() -> TestConfigReader.readConfig("default", Map.of()))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldNotThrowExceptionIfInitialContactPointsSetWhenClusterSizeGreaterThanOne() {
+    // given
+    final var environment = new HashMap<String, String>();
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "3");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "localhost:26502");
+
+    // when - then
+    assertThatCode(() -> TestConfigReader.readConfig("default", environment))
+        .doesNotThrowAnyException();
   }
 }

@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
@@ -35,6 +36,18 @@ import org.junit.jupiter.api.io.TempDir;
 final class PartitionLeaveTest {
   private static final MeterRegistry METER_REGISTRY = new SimpleMeterRegistry();
 
+  private void initializeClusterCfg(
+      final ClusterCfg clusterCfg,
+      final int nodeId,
+      final int partitionCount,
+      final String contactPoint) {
+    clusterCfg.setClusterSize(2);
+    clusterCfg.setInitialContactPoints(List.of(contactPoint));
+    clusterCfg.setNodeId(nodeId);
+    clusterCfg.setPartitionsCount(partitionCount);
+    clusterCfg.setReplicationFactor(2);
+  }
+
   @Test
   void canStillProcessAfterLeaving(@TempDir final Path tmp) {
     // given -- two brokers replicating partition 1
@@ -42,11 +55,7 @@ final class PartitionLeaveTest {
         buildBroker(
             tmp.resolve("broker-0"),
             brokerCfg -> {
-              final var clusterCfg = brokerCfg.getCluster();
-              clusterCfg.setClusterSize(2);
-              clusterCfg.setNodeId(0);
-              clusterCfg.setPartitionsCount(1);
-              clusterCfg.setReplicationFactor(2);
+              initializeClusterCfg(brokerCfg.getCluster(), 0, 1, "empty");
             });
     final var initialContactPoint =
         broker0.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
@@ -56,13 +65,11 @@ final class PartitionLeaveTest {
             tmp.resolve("broker-1"),
             brokerCfg -> {
               final var clusterCfg = brokerCfg.getCluster();
-              clusterCfg.setInitialContactPoints(
-                  List.of(initialContactPoint.getHostName() + ":" + initialContactPoint.getPort()));
-
-              clusterCfg.setClusterSize(2);
-              clusterCfg.setNodeId(1);
-              clusterCfg.setPartitionsCount(1);
-              clusterCfg.setReplicationFactor(2);
+              initializeClusterCfg(
+                  clusterCfg,
+                  1,
+                  1,
+                  initialContactPoint.getHostName() + ":" + initialContactPoint.getPort());
             });
     CompletableFuture.allOf(
             CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
@@ -100,10 +107,7 @@ final class PartitionLeaveTest {
             tmp.resolve("broker-0"),
             brokerCfg -> {
               final var clusterCfg = brokerCfg.getCluster();
-              clusterCfg.setClusterSize(2);
-              clusterCfg.setNodeId(0);
-              clusterCfg.setPartitionsCount(2);
-              clusterCfg.setReplicationFactor(2);
+              initializeClusterCfg(clusterCfg, 0, 2, "empty");
             });
     final var initialContactPoint =
         broker0.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
@@ -113,13 +117,11 @@ final class PartitionLeaveTest {
             tmp.resolve("broker-1"),
             brokerCfg -> {
               final var clusterCfg = brokerCfg.getCluster();
-              clusterCfg.setInitialContactPoints(
-                  List.of(initialContactPoint.getHostName() + ":" + initialContactPoint.getPort()));
-
-              clusterCfg.setClusterSize(2);
-              clusterCfg.setNodeId(1);
-              clusterCfg.setPartitionsCount(2);
-              clusterCfg.setReplicationFactor(2);
+              initializeClusterCfg(
+                  clusterCfg,
+                  1,
+                  2,
+                  initialContactPoint.getHostName() + ":" + initialContactPoint.getPort());
             });
     CompletableFuture.allOf(
             CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
@@ -161,10 +163,7 @@ final class PartitionLeaveTest {
             tmp.resolve("broker-0"),
             brokerCfg -> {
               final var clusterCfg = brokerCfg.getCluster();
-              clusterCfg.setClusterSize(2);
-              clusterCfg.setNodeId(0);
-              clusterCfg.setPartitionsCount(2);
-              clusterCfg.setReplicationFactor(2);
+              initializeClusterCfg(clusterCfg, 0, 2, "empty");
             });
     final var initialContactPoint =
         broker0.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
@@ -174,13 +173,11 @@ final class PartitionLeaveTest {
             tmp.resolve("broker-1"),
             brokerCfg -> {
               final var clusterCfg = brokerCfg.getCluster();
-              clusterCfg.setInitialContactPoints(
-                  List.of(initialContactPoint.getHostName() + ":" + initialContactPoint.getPort()));
-
-              clusterCfg.setClusterSize(2);
-              clusterCfg.setNodeId(1);
-              clusterCfg.setPartitionsCount(2);
-              clusterCfg.setReplicationFactor(2);
+              initializeClusterCfg(
+                  clusterCfg,
+                  1,
+                  2,
+                  initialContactPoint.getHostName() + ":" + initialContactPoint.getPort());
             });
     CompletableFuture.allOf(
             CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))

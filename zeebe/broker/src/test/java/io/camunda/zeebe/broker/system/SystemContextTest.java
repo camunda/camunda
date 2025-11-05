@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
@@ -196,6 +198,8 @@ final class SystemContextTest {
     final var nodes = List.of(new NodeCfg(), new NodeCfg());
     brokerCfg.getCluster().getRaft().setEnablePriorityElection(true);
     brokerCfg.getCluster().setClusterSize(2);
+    // required when clusterSize > 1
+    brokerCfg.getCluster().setInitialContactPoints(List.of("ContactPoints"));
     config.setScheme(Scheme.FIXED);
     config.setFixed(List.of(fixedPartition));
     fixedPartition.setNodes(nodes);
@@ -222,6 +226,8 @@ final class SystemContextTest {
     final var nodes = List.of(new NodeCfg(), new NodeCfg());
     brokerCfg.getCluster().getRaft().setEnablePriorityElection(false);
     brokerCfg.getCluster().setClusterSize(2);
+    // required when clusterSize > 1
+    brokerCfg.getCluster().setInitialContactPoints(List.of("ContactPoints"));
     config.setScheme(Scheme.FIXED);
     config.setFixed(List.of(fixedPartition));
     fixedPartition.setNodes(nodes);
@@ -766,6 +772,35 @@ final class SystemContextTest {
         brokerCfg.getExperimental().getEngine().getGlobalListeners().getUserTask().getFirst();
     assertThat(listenerConfig.getType()).isEqualTo("test");
     assertThat(listenerConfig.getEventTypes()).containsExactly("creating", "updating");
+  }
+
+  @Test
+  void shouldNotThrowValidationErrorWhenInitialContactPointsIsNotInACluster() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var clusterCfg = brokerCfg.getCluster();
+    clusterCfg.setClusterSize(1);
+    clusterCfg.setPartitionsCount(1);
+    clusterCfg.setInitialContactPoints(List.of());
+
+    // when/then
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
+  }
+
+  @Test
+  void shouldThrowValidationErrorWhenInitialContactPointsIsNotSetWHenClustering() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var clusterCfg = brokerCfg.getCluster();
+    clusterCfg.setClusterSize(2);
+    clusterCfg.setPartitionsCount(1);
+    clusterCfg.setInitialContactPoints(List.of());
+
+    // when/then
+    assertThatThrownBy(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "Initial contact points must be configured when cluster size is greater than 1.");
   }
 
   private GlobalListenerCfg createListenerCfg(final String type, final List<String> eventTypes) {

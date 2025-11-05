@@ -48,8 +48,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
-import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
@@ -148,6 +146,7 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
+  private List<InetSocketAddress> internalApiAddresses;
 
   public ClusteringRule() {
     this(3);
@@ -243,24 +242,15 @@ public class ClusteringRule extends ExternalResource {
   protected void before() throws IOException {
     LOG.debug("Starting ClusteringRule...");
     partitionLatch = new CountDownLatch(partitionCount);
+    internalApiAddresses =
+        IntStream.range(0, clusterSize).mapToObj(i -> SocketUtil.getNextAddress()).toList();
     // create brokers
     for (int nodeId = 0; nodeId < clusterSize; nodeId++) {
       getBroker(nodeId);
     }
 
-    final var contactPoints =
-        brokerCfgs.values().stream()
-            .map(BrokerCfg::getNetwork)
-            .map(NetworkCfg::getInternalApi)
-            .map(SocketBindingCfg::getAddress)
-            .map(NetUtil::toSocketAddressString)
-            .toArray(String[]::new);
-
-    for (int nodeId = 0; nodeId < clusterSize; nodeId++) {
-      final var brokerCfg = getBrokerCfg(nodeId);
-      setInitialContactPoints(contactPoints).accept(brokerCfg);
-    }
-
+    // create the brokers
+    IntStream.range(0, clusterSize).forEach(this::createBroker);
     // start brokers
     final var brokersStarted = startBrokers();
 
@@ -341,6 +331,13 @@ public class ClusteringRule extends ExternalResource {
   private Broker createBroker(final int nodeId) {
     final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
+    // set the initial contact points before validating the config
+    final var contactPoints =
+        internalApiAddresses.stream().map(NetUtil::toSocketAddressString).toList();
+    // configure the internal api to use the generated port
+    brokerCfg.getNetwork().getInternalApi().setPort(internalApiAddresses.get(nodeId).getPort());
+    brokerCfg.getCluster().setInitialContactPoints(contactPoints);
+
     final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
     final var meterRegistry = new SimpleMeterRegistry();
     brokerCfg.init(brokerBase.getAbsolutePath());
@@ -393,7 +390,6 @@ public class ClusteringRule extends ExternalResource {
             getSpringBrokerBridge(nodeId),
             Collections.singletonList(new LeaderListener(partitionLatch, nodeId)));
 
-    CompletableFuture.runAsync(broker::start);
     return broker;
   }
 

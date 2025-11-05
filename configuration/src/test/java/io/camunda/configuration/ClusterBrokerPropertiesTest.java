@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +30,19 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 @ActiveProfiles("broker")
 public class ClusterBrokerPropertiesTest {
+  @Test
+  public void shouldMatchThePropertyNamesInClusterCfg() {
+    /*
+     * The same property names are defined twice: broker does not depend on configuration, but we
+     * would like to log them to provide a better user feedback. Considering they should not change,
+     * this simple test is enough to prevent any mistake.
+     */
+    assertThat(Cluster.LEGACY_INITIAL_CONTACT_POINTS_PROPERTY)
+        .isEqualTo(SystemContext.LEGACY_INITIAL_CONTACT_POINTS_PROPERTY);
+    assertThat(Cluster.UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY)
+        .isEqualTo(SystemContext.UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY);
+  }
+
   @Nested
   @TestPropertySource(
       properties = {

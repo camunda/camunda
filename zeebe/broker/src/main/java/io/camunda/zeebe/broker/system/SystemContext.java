@@ -63,11 +63,22 @@ public final class SystemContext {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   public static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
+  public static final String LEGACY_INITIAL_CONTACT_POINTS_PROPERTY =
+      "zeebe.broker.cluster.initialContactPoints";
+  public static final String UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY =
+      "camunda.cluster.initial-contact-points";
   private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
   private static final String SNAPSHOT_PERIOD_ERROR_MSG =
       "Snapshot period %s needs to be larger then or equals to one minute.";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
       "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
+  private static final String INITIAL_CONTACT_POINTS_ERROR_MSG =
+      "Initial contact points must be configured when cluster size is greater than 1. "
+          + "Please configure '"
+          + UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY
+          + "' or the legacy property '"
+          + LEGACY_INITIAL_CONTACT_POINTS_PROPERTY
+          + "'.";
 
   private final Duration shutdownTimeout;
   private final BrokerCfg brokerCfg;
@@ -171,6 +182,12 @@ public final class SystemContext {
     final var gossiper = cluster.getConfigManager().gossip();
 
     final var errors = new ArrayList<String>(0);
+
+    if (cluster.getClusterSize() > 1
+        && (cluster.getInitialContactPoints() == null
+            || cluster.getInitialContactPoints().isEmpty())) {
+      errors.add(INITIAL_CONTACT_POINTS_ERROR_MSG);
+    }
 
     if (!gossiper.syncDelay().isPositive()) {
       errors.add(

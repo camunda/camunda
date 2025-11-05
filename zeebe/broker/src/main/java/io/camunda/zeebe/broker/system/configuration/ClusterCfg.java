@@ -40,6 +40,7 @@ public final class ClusterCfg implements ConfigurationEntry {
           + " quorum = floor(replication factor / 2) + 1. In this current case the quorum will be"
           + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
           + " make sure to use an odd replication factor.";
+
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
