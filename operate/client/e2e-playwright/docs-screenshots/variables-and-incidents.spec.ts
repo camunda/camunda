@@ -113,6 +113,7 @@ test.describe('variables and incidents', () => {
         sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentState.variables,
         incidents: orderProcessInstance.incidentState.incidents,
+        incidentsV2: orderProcessInstance.incidentState.incidentsV2,
         xml: orderProcessInstance.incidentState.xml,
       }),
     );
@@ -194,6 +195,7 @@ test.describe('variables and incidents', () => {
         sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentResolvedState.variables,
         incidents: orderProcessInstance.incidentState.incidents,
+        incidentsV2: orderProcessInstance.incidentState.incidentsV2,
         xml: orderProcessInstance.incidentState.xml,
       }),
     );

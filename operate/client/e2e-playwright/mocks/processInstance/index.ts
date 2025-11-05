@@ -13,6 +13,7 @@ import type {
   GetProcessInstanceCallHierarchyResponseBody,
   GetProcessInstanceSequenceFlowsResponseBody,
   ProcessInstance,
+  QueryProcessInstanceIncidentsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
@@ -34,6 +35,7 @@ type InstanceMock = {
   sequenceFlowsV2: GetProcessInstanceSequenceFlowsResponseBody;
   variables: Variable[];
   incidents?: ProcessInstanceIncidentsDto;
+  incidentsV2?: QueryProcessInstanceIncidentsResponseBody;
   metaData?: MetaDataDto;
 };
 
@@ -48,6 +50,7 @@ function mockResponses({
   variables,
   xml,
   incidents,
+  incidentsV2,
   metaData,
 }: {
   processInstanceDetail?: ProcessInstanceEntity;
@@ -60,6 +63,7 @@ function mockResponses({
   variables?: Variable[];
   xml?: string;
   incidents?: ProcessInstanceIncidentsDto;
+  incidentsV2?: QueryProcessInstanceIncidentsResponseBody;
   metaData?: MetaDataDto;
 }) {
   return (route: Route) => {
@@ -153,6 +157,21 @@ function mockResponses({
       return route.fulfill({
         status: xml === undefined ? 400 : 200,
         body: JSON.stringify(xml),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route
+        .request()
+        .url()
+        .match(/\/v2\/process-instances\/\d+\/incidents\/search/)
+    ) {
+      return route.fulfill({
+        status: incidentsV2 === undefined ? 400 : 200,
+        body: JSON.stringify(incidentsV2),
         headers: {
           'content-type': 'application/json',
         },

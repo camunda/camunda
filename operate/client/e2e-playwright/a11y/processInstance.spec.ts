@@ -87,6 +87,7 @@ test.describe('process detail', () => {
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
+        incidentsV2: instanceWithIncident.incidentsV2,
         metaData: instanceWithIncident.metaData,
       }),
     );

@@ -70,6 +70,7 @@ test.describe('process instance page', () => {
         variables: runningInstance.variables,
         xml: runningInstance.xml,
         incidents: runningInstance.incidents,
+        incidentsV2: runningInstance.incidentsV2,
       }),
     );
 
@@ -157,6 +158,7 @@ test.describe('process instance page', () => {
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
+        incidentsV2: instanceWithIncident.incidentsV2,
       }),
     );
 

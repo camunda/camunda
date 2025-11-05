@@ -369,6 +369,23 @@ const orderProcessInstance: {
         },
       ],
     },
+    incidentsV2: {
+      page: {totalItems: 1},
+      items: [{
+                errorMessage:
+          "failed to evaluate expression 'orderValue >= 100': ValString(99) can not be compared to ValNumber(100)",
+        errorType: 'EXTRACT_VALUE_ERROR',
+        incidentKey: '2251799813725375',
+        elementId: 'Gateway_1qlqb7o',
+        elementInstanceKey: '2251799813725374',
+        creationTime: '2023-09-29T07:16:57.379+0000',
+        processInstanceKey: '2251799813725328',
+        processDefinitionId: 'order-process',
+        processDefinitionKey: '2251799813688192',
+        tenantId: '<default>',
+        state: 'ACTIVE',
+      }]
+    }
   },
   incidentResolvedState: {
     xml: orderProcessXml,
