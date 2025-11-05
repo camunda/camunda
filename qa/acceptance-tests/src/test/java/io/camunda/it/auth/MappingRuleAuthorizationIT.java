@@ -77,24 +77,25 @@ class MappingRuleAuthorizationIT {
       new TestUser(
           UPDATER, DEFAULT_PASSWORD, List.of(new Permissions(MAPPING_RULE, UPDATE, List.of("*"))));
 
-  @Test
   void searchShouldReturnAuthorizedMappingRules(
       @Authenticated(RESTRICTED) final CamundaClient userClient,
       @Authenticated(ADMIN) final CamundaClient adminClient) {
     // given
     final var id = createRandomMappingRule(adminClient);
 
-    // when
-    final Future<SearchResponse<MappingRule>> response =
-        userClient.newMappingRulesSearchRequest().send();
-
-    // then
-    assertThat(response)
-        .succeedsWithin(Duration.ofSeconds(5))
-        .extracting(SearchResponse::items, InstanceOfAssertFactories.list(MappingRule.class))
-        .isNotEmpty()
-        .map(MappingRule::getMappingRuleId)
-        .contains(id);
+    // when / then
+    Awaitility.await("until the rule is visible in the search results")
+        .untilAsserted(
+            () ->
+                assertThat(
+                        (Future<SearchResponse<MappingRule>>)
+                            userClient.newMappingRulesSearchRequest().send())
+                    .succeedsWithin(Duration.ofSeconds(5))
+                    .extracting(
+                        SearchResponse::items, InstanceOfAssertFactories.list(MappingRule.class))
+                    .isNotEmpty()
+                    .map(MappingRule::getMappingRuleId)
+                    .contains(id));
   }
 
   @Test
