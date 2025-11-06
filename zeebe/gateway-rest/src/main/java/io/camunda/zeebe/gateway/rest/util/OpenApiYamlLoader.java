@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.util;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +37,28 @@ public final class OpenApiYamlLoader {
    */
   public static OpenAPI loadOpenApiFromYaml(final String yamlPath) {
     try {
-      final String yamlContent = loadYamlContent(yamlPath);
-      final SwaggerParseResult result = new OpenAPIV3Parser().readContents(yamlContent);
+      final ParseOptions options = new ParseOptions();
+      options.setResolve(true);
+      options.setResolveFully(true);
+
+      final Path absolutePath = Path.of(yamlPath);
+      final SwaggerParseResult result;
+
+      if (absolutePath.isAbsolute() && Files.exists(absolutePath)) {
+        // Load from absolute file path - convert to file:// URL
+        LOG.debug("Loading OpenAPI from absolute path: {}", yamlPath);
+        final String fileUrl = absolutePath.toUri().toString();
+        result = new OpenAPIV3Parser().readLocation(fileUrl, null, options);
+      } else {
+        // Load from classpath - need to resolve references using classpath resources
+        LOG.debug("Loading OpenAPI from classpath: {}", yamlPath);
+        final ClassPathResource resource = new ClassPathResource(yamlPath);
+
+        // Get the URL of the resource to use as base for reference resolution
+        final String resourceUrl = resource.getURL().toString();
+
+        result = new OpenAPIV3Parser().readLocation(resourceUrl, null, options);
+      }
 
       if (result.getOpenAPI() == null) {
         final String errorMsg = "Failed to parse OpenAPI YAML: " + yamlPath;
