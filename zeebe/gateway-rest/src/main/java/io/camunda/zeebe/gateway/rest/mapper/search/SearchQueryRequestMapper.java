@@ -599,11 +599,11 @@ public final class SearchQueryRequestMapper {
   public static Either<
           ProblemDetail,
           io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery>
-      toMessageSubscriptionProcessDefinitionStatisticsQuery(
+      toProcessDefinitionMessageSubscriptionStatisticsQuery(
           final ProcessDefinitionMessageSubscriptionStatisticsQuery request) {
     if (request == null) {
       return Either.right(
-          SearchQueryBuilders.messageSubscriptionProcessDefinitionStatisticsQuery().build());
+          SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
@@ -611,7 +611,7 @@ public final class SearchQueryRequestMapper {
         filter,
         Either.right(null),
         page,
-        SearchQueryBuilders::messageSubscriptionProcessDefinitionStatisticsQuery);
+        SearchQueryBuilders::processDefinitionMessageSubscriptionStatisticsQuery);
   }
 
   public static Either<ProblemDetail, CorrelatedMessageSubscriptionQuery>
@@ -710,6 +710,16 @@ public final class SearchQueryRequestMapper {
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final ProcessDefinitionInstanceStatisticsPageRequest requestedPage) {
+    if (requestedPage == null) {
+      return Either.right(null);
+    }
+
+    return Either.right(
+        SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom())));
+  }
+
+  private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
+      final ProcessDefinitionMessageSubscriptionStatisticsPageRequest requestedPage) {
     if (requestedPage == null) {
       return Either.right(null);
     }

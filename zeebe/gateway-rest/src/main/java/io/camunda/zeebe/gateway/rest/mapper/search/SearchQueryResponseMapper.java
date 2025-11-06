@@ -1399,7 +1399,7 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<ProcessDefinitionMessageSubscriptionStatisticsResult>
-      toMessageSubscriptionProcessDefinitionStatisticsQueryResponse(
+      toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
           final List<ProcessDefinitionMessageSubscriptionStatisticsEntity> entities) {
     return entities.stream()
         .map(
@@ -1414,7 +1414,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessDefinitionMessageSubscriptionStatisticsQueryResult
-      toMessageSubscriptionProcessDefinitionStatisticsQueryResponse(
+      toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
           final SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new ProcessDefinitionMessageSubscriptionStatisticsQueryResult()
@@ -1423,7 +1423,7 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items())
                 .map(
                     SearchQueryResponseMapper
-                        ::toMessageSubscriptionProcessDefinitionStatisticsQueryResponse)
+                        ::toProcessDefinitionMessageSubscriptionStatisticsQueryResponse)
                 .orElseGet(Collections::emptyList));
   }
 
