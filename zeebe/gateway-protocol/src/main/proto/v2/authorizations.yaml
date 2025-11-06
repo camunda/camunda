@@ -51,7 +51,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+            $ref: '#/components/schemas/AuthorizationKey'
       requestBody:
         content:
           application/json:
@@ -87,7 +87,7 @@ paths:
           required: true
           description: The key of the authorization to get.
           schema:
-            $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+            $ref: '#/components/schemas/AuthorizationKey'
       responses:
         "200":
           description: The authorization was successfully returned.
@@ -121,7 +121,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+            $ref: '#/components/schemas/AuthorizationKey'
       responses:
         "204":
           description: The authorization was deleted successfully.
@@ -266,7 +266,7 @@ components:
             $ref: '#/components/schemas/PermissionTypeEnum'
         authorizationKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+            - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the authorization.
 
     AuthorizationSearchResult:
@@ -285,7 +285,7 @@ components:
       properties:
         authorizationKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+            - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the created authorization.
 
     PermissionTypeEnum:
@@ -357,3 +357,12 @@ components:
         - GROUP
         - MAPPING_RULE
         - UNSPECIFIED
+
+    AuthorizationKey:
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+      description: System-generated key for an authorization.
+      format: AuthorizationKey
+      x-semantic-type: AuthorizationKey
+      example: "2251799813684332"
+      type: string

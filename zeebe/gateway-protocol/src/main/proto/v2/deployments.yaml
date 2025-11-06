@@ -59,7 +59,7 @@ paths:
           required: true
           description: The unique key identifying the resource.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ResourceKey'
+            $ref: '#/components/schemas/ResourceKey'
       responses:
         "200":
           description: The resource is successfully returned.
@@ -94,7 +94,7 @@ paths:
           required: true
           description: The unique key identifying the resource.
           schema:
-            $ref: 'keys.yaml#/components/schemas/ResourceKey'
+            $ref: '#/components/schemas/ResourceKey'
       responses:
         "200":
           description: The resource content is successfully returned.
@@ -132,7 +132,7 @@ paths:
             This can be the key of a process definition, the key of a decision requirements
             definition or the key of a form definition
           schema:
-            $ref: 'keys.yaml#/components/schemas/ResourceKey'
+            $ref: '#/components/schemas/ResourceKey'
       requestBody:
         required: false
         content:
@@ -169,7 +169,7 @@ components:
       properties:
         deploymentKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/DeploymentKey'
+            - $ref: '#/components/schemas/DeploymentKey'
           description: The unique key identifying the deployment.
         tenantId:
           description: The tenant ID associated with the deployment.
@@ -323,7 +323,7 @@ components:
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         resourceKey:
-          $ref: 'keys.yaml#/components/schemas/ResourceKey'
+          $ref: '#/components/schemas/ResourceKey'
 
     DeleteResourceRequest:
       type: object
@@ -355,5 +355,23 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         resourceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ResourceKey'
+            - $ref: '#/components/schemas/ResourceKey'
           description: The unique key of this resource.
+
+    DeploymentKey:
+      description: Key for a deployment.
+      format: DeploymentKey
+      x-semantic-type: DeploymentKey
+      type: string
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+
+    ResourceKey:
+      type: string
+      oneOf:
+        - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+        - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+        - $ref: 'keys.yaml#/components/schemas/FormKey'
+        - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+      description: The system-assigned key for this resource.
+      format: ResourceKey

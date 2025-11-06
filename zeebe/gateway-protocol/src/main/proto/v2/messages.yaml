@@ -172,7 +172,7 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         messageKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageKey'
+            - $ref: '#/components/schemas/MessageKey'
           description: The key of the correlated message.
         processInstanceKey:
           allOf:
@@ -220,7 +220,7 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         messageKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageKey'
+            - $ref: '#/components/schemas/MessageKey'
           description: The key of the published message.
 
     MessageSubscriptionSearchQueryResult:
@@ -239,7 +239,7 @@ components:
       properties:
         messageSubscriptionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageSubscriptionKey'
+            - $ref: '#/components/schemas/MessageSubscriptionKey'
           description: The message subscription key associated with this message subscription.
         processDefinitionId:
           allOf:
@@ -272,7 +272,7 @@ components:
           type: string
         correlationKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageCorrelationKey'
+            - $ref: '#/components/schemas/MessageCorrelationKey'
           description: The correlation key of the message subscription.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -390,7 +390,7 @@ components:
           description: The element instance key that received the message.
         messageKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageKey'
+            - $ref: '#/components/schemas/MessageKey'
           description: The message key.
         messageName:
           description: The name of the message.
@@ -413,7 +413,7 @@ components:
           description: The process instance key associated with this correlated message subscription.
         subscriptionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageSubscriptionKey'
+            - $ref: '#/components/schemas/MessageSubscriptionKey'
           description: The subscription key that received the message.
         tenantId:
           allOf:
@@ -576,11 +576,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
         $neq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -588,12 +588,12 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+            $ref: "#/components/schemas/MessageSubscriptionKey"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
-            $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+            $ref: "#/components/schemas/MessageSubscriptionKey"
 
     MessageSubscriptionKeyFilterProperty:
       description: MessageSubscriptionKey property with full advanced search capabilities.
@@ -603,5 +603,32 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
         - $ref: '#/components/schemas/AdvancedMessageSubscriptionKeyFilter'
+
+    MessageSubscriptionKey:
+      description: System-generated key for a message subscription.
+      format: MessageSubscriptionKey
+      x-semantic-type: MessageSubscriptionKey
+      example: "2251799813632456"
+      type: string
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+
+    MessageCorrelationKey:
+      description: System-generated key for a message correlation.
+      format: MessageCorrelationKey
+      x-semantic-type: MessageCorrelationKey
+      example: "2251799813634265"
+      type: string
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+
+    MessageKey:
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+      description: System-generated key for an message.
+      format: MessageKey
+      x-semantic-type: MessageKey
+      example: "2251799813683467"
+      type: string

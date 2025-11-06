@@ -69,5 +69,14 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         signalKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/SignalKey'
+            - $ref: '#/components/schemas/SignalKey'
           description: The key of the broadcasted signal.
+
+    SignalKey:
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+      description: System-generated key for an signal.
+      format: SignalKey
+      x-semantic-type: SignalKey
+      example: "22517998136987467"
+      type: string
