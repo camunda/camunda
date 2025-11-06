@@ -62,7 +62,8 @@
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.54.0 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "cross-env VITE_VERSION=0.0.0-SNAPSHOT vite build --mode visual-regression",
-    "extract-sbom": "vite build --mode sbom"
+    "extract-sbom": "vite build --mode sbom",
+    "knip": "knip --tsConfig tsconfig.app.json"
   },
   "devDependencies": {
     "@camunda8/sdk": "8.7.18",
@@ -99,6 +100,7 @@
     "eslint-plugin-testing-library": "7.13.3",
     "globals": "16.4.0",
     "jsdom": "26.1.0",
+    "knip": "5.67.1",
     "monaco-editor": "0.52.2",
     "msw": "2.10.3",
     "playwright": "1.54.0",
