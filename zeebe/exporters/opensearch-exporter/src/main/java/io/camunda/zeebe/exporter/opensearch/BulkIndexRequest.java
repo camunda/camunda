@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -42,6 +43,7 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
+          .addMixIn(CheckpointRecordValue.class, CheckpointRecordMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -50,6 +52,8 @@ final class BulkIndexRequest implements ContentProducer {
   private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
       "decisionEvaluationInstanceKey";
   private static final String AUTH_INFO_PROPERTY = "authInfo";
+  private static final String CHECKPOINT_TIMESTAMP_PROPERTY = "checkpointTimestamp";
+  private static final String CHECKPOINT_TYPE_PROPERTY = "checkpointType";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -178,4 +182,7 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
+
+  @JsonIgnoreProperties({CHECKPOINT_TYPE_PROPERTY, CHECKPOINT_TIMESTAMP_PROPERTY})
+  private static final class CheckpointRecordMixin {}
 }
