@@ -84,7 +84,10 @@ final class RollingUpdateTest {
               node ->
                   node.withEnv(CREATE_SCHEMA_ENV_VAR, "false")
                       .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false"))
+                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
+                      .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "none")
+                      .withEnv("CAMUNDA_REST_QUERY_ENABLED", "false")
+                      .withEnv("CAMUNDA_PERSISTENT_SESSIONS_ENABLED", "false"))
           .build();
 
   @SuppressWarnings("unused")
