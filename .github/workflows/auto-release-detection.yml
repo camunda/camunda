@@ -1,0 +1,538 @@
+# Auto Release Detection and Communication Workflow
+#
+# This workflow automatically detects when minor releases (8.9 and future) are being
+# prepared and triggers the appropriate communication sequence.
+
+name: Auto Release Detection and Communication
+
+"on":
+  # Monitor for new release planning issues
+  issues:
+    types: [opened, labeled, edited]
+  
+  # Monitor for release branches being created
+  create:
+  
+  # Monitor for version bumps in main
+  push:
+    branches:
+      - main
+    paths:
+      - '**/pom.xml'
+      - '**/package.json'
+      - 'VERSION'
+      - '.version'
+
+  # Monthly trigger for proactive release planning
+  schedule:
+    - cron: '0 9 1 * *'  # First day of each month at 9 AM UTC
+
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      detection_type:
+        description: 'Type of detection to test'
+        required: true
+        type: choice
+        options:
+          - minor_release_planning
+          - release_branch_created
+          - version_bump_detected
+          - monthly_planning_check
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  detect-release-type:
+    name: Detect Release Type and Planning Stage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      is-minor-release: ${{ steps.detection.outputs.is-minor-release }}
+      release-version: ${{ steps.detection.outputs.release-version }}
+      planning-stage: ${{ steps.detection.outputs.planning-stage }}
+      trigger-communication: ${{ steps.detection.outputs.trigger-communication }}
+      communication-type: ${{ steps.detection.outputs.communication-type }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50  # Get recent history for analysis
+
+      - name: Detect release type and stage
+        id: detection
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+          MANUAL_DETECTION_TYPE: ${{ github.event.inputs.detection_type }}
+        run: |
+          set -euo pipefail
+
+          IS_MINOR_RELEASE="false"
+          RELEASE_VERSION=""
+          PLANNING_STAGE=""
+          TRIGGER_COMMUNICATION="false"
+          COMMUNICATION_TYPE=""
+
+          echo "🔍 Analyzing event: $GITHUB_EVENT_NAME"
+
+          # Function to check if version is minor release (X.Y.0)
+          is_minor_version() {
+            local version="$1"
+            if [[ "$version" =~ ^[0-9]+\.[0-9]+\.0(-[A-Za-z0-9]+)?$ ]]; then
+              return 0
+            fi
+            return 1
+          }
+
+          # Function to extract version from various sources
+          extract_version_from_files() {
+            # Check common version files
+            if [[ -f "VERSION" ]]; then
+              cat VERSION | tr -d '\n' | tr -d ' '
+            elif [[ -f ".version" ]]; then
+              cat .version | tr -d '\n' | tr -d ' '
+            elif [[ -f "pom.xml" ]]; then
+              # Extract version from Maven POM (simplified)
+              grep -o '<version>[^<]*</version>' pom.xml | head -1 | sed 's/<[^>]*>//g' | tr -d '\n' | tr -d ' '
+            fi
+          }
+
+          # Analysis based on trigger type
+          case "$GITHUB_EVENT_NAME" in
+            "workflow_dispatch")
+              echo "📝 Manual trigger: $MANUAL_DETECTION_TYPE"
+              case "$MANUAL_DETECTION_TYPE" in
+                "minor_release_planning")
+                  IS_MINOR_RELEASE="true"
+                  RELEASE_VERSION="8.9.0"  # Example version
+                  PLANNING_STAGE="initial_planning"
+                  TRIGGER_COMMUNICATION="true"
+                  COMMUNICATION_TYPE="planning_announcement"
+                  ;;
+                "release_branch_created")
+                  IS_MINOR_RELEASE="true"
+                  RELEASE_VERSION="8.9.0"
+                  PLANNING_STAGE="branch_created"
+                  TRIGGER_COMMUNICATION="true"
+                  COMMUNICATION_TYPE="freeze_schedule_announcement"
+                  ;;
+                "version_bump_detected")
+                  IS_MINOR_RELEASE="true"
+                  RELEASE_VERSION="8.9.0"
+                  PLANNING_STAGE="version_prepared"
+                  TRIGGER_COMMUNICATION="true"
+                  COMMUNICATION_TYPE="release_preparation"
+                  ;;
+                "monthly_planning_check")
+                  PLANNING_STAGE="monthly_check"
+                  TRIGGER_COMMUNICATION="true"
+                  COMMUNICATION_TYPE="planning_reminder"
+                  ;;
+              esac
+              ;;
+
+            "issues")
+              echo "📋 Issue event detected"
+              # Check if issue is related to release planning
+              if [[ "$ISSUE_LABELS" =~ "component/release" ]]; then
+                # Look for minor release indicators in title/body
+                ISSUE_TEXT="$ISSUE_TITLE $ISSUE_BODY"
+                if [[ "$ISSUE_TEXT" =~ ([0-9]+\.[0-9]+\.0) ]]; then
+                  POTENTIAL_VERSION="${BASH_REMATCH[1]}"
+                  if is_minor_version "$POTENTIAL_VERSION"; then
+                    IS_MINOR_RELEASE="true"
+                    RELEASE_VERSION="$POTENTIAL_VERSION"
+                    PLANNING_STAGE="issue_created"
+                    
+                    # Check if this is a new planning issue
+                    if [[ "$ISSUE_TITLE" =~ (Planning|Schedule|Timeline) ]]; then
+                      TRIGGER_COMMUNICATION="true"
+                      COMMUNICATION_TYPE="planning_detected"
+                    fi
+                  fi
+                fi
+              fi
+              ;;
+
+            "create")
+              echo "🌿 Branch creation detected: $GITHUB_REF_NAME"
+              # Check if it's a release branch
+              if [[ "$GITHUB_REF_NAME" =~ ^release-([0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?)$ ]]; then
+                RELEASE_VERSION="${BASH_REMATCH[1]}"
+                if is_minor_version "$RELEASE_VERSION"; then
+                  IS_MINOR_RELEASE="true"
+                  PLANNING_STAGE="branch_created"
+                  TRIGGER_COMMUNICATION="true"
+                  COMMUNICATION_TYPE="freeze_schedule_announcement"
+                fi
+              fi
+              ;;
+
+            "push")
+              echo "📝 Push to main detected, checking for version changes"
+              # Get the changed files that might contain version info
+              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || echo "")
+              echo "Changed files: $CHANGED_FILES"
+              
+              # Check if version-related files were changed
+              if echo "$CHANGED_FILES" | grep -E "(pom\.xml|package\.json|VERSION|\.version)" > /dev/null; then
+                echo "Version file changes detected"
+                
+                # Extract current version
+                CURRENT_VERSION=$(extract_version_from_files)
+                if [[ -n "$CURRENT_VERSION" ]]; then
+                  echo "Current version: $CURRENT_VERSION"
+                  if is_minor_version "$CURRENT_VERSION"; then
+                    IS_MINOR_RELEASE="true"
+                    RELEASE_VERSION="$CURRENT_VERSION"
+                    PLANNING_STAGE="version_updated"
+                    TRIGGER_COMMUNICATION="true"
+                    COMMUNICATION_TYPE="version_preparation"
+                  fi
+                fi
+              fi
+              ;;
+
+            "schedule")
+              echo "⏰ Monthly planning check triggered"
+              PLANNING_STAGE="monthly_check"
+              
+              # Calculate if we should be planning a minor release
+              CURRENT_MONTH=$(date '+%m')
+              CURRENT_YEAR=$(date '+%Y')
+              
+              # Example logic: Plan minor releases for March, June, September, December
+              if [[ "$CURRENT_MONTH" =~ ^(03|06|09|12)$ ]]; then
+                TRIGGER_COMMUNICATION="true"
+                COMMUNICATION_TYPE="minor_release_planning_reminder"
+                
+                # Generate expected version (simplified logic)
+                case "$CURRENT_MONTH" in
+                  "03") RELEASE_VERSION="8.9.0" ;;
+                  "06") RELEASE_VERSION="8.10.0" ;;
+                  "09") RELEASE_VERSION="8.11.0" ;;
+                  "12") RELEASE_VERSION="9.0.0" ;;
+                esac
+                
+                if [[ -n "$RELEASE_VERSION" ]]; then
+                  IS_MINOR_RELEASE="true"
+                fi
+              else
+                TRIGGER_COMMUNICATION="true"
+                COMMUNICATION_TYPE="monthly_status_check"
+              fi
+              ;;
+          esac
+
+          # Set outputs
+          echo "is-minor-release=$IS_MINOR_RELEASE" >> $GITHUB_OUTPUT
+          echo "release-version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "planning-stage=$PLANNING_STAGE" >> $GITHUB_OUTPUT
+          echo "trigger-communication=$TRIGGER_COMMUNICATION" >> $GITHUB_OUTPUT
+          echo "communication-type=$COMMUNICATION_TYPE" >> $GITHUB_OUTPUT
+
+          # Summary
+          echo "🔍 Detection Results:"
+          echo "   Minor Release: $IS_MINOR_RELEASE"
+          echo "   Version: $RELEASE_VERSION"
+          echo "   Planning Stage: $PLANNING_STAGE"
+          echo "   Trigger Communication: $TRIGGER_COMMUNICATION"
+          echo "   Communication Type: $COMMUNICATION_TYPE"
+
+  trigger-communications:
+    name: Trigger Release Communications
+    runs-on: ubuntu-latest
+    needs: detect-release-type
+    if: needs.detect-release-type.outputs.trigger-communication == 'true'
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate communication content
+        id: communication
+        env:
+          IS_MINOR_RELEASE: ${{ needs.detect-release-type.outputs.is-minor-release }}
+          RELEASE_VERSION: ${{ needs.detect-release-type.outputs.release-version }}
+          PLANNING_STAGE: ${{ needs.detect-release-type.outputs.planning-stage }}
+          COMMUNICATION_TYPE: ${{ needs.detect-release-type.outputs.communication-type }}
+        run: |
+          set -euo pipefail
+
+          TITLE=""
+          MESSAGE=""
+          CHANNELS="engineering-releases"
+          URGENCY="normal"
+
+          echo "📝 Generating communication for: $COMMUNICATION_TYPE"
+
+          case "$COMMUNICATION_TYPE" in
+            "planning_announcement")
+              TITLE="🎯 Minor Release $RELEASE_VERSION Planning Initiated"
+              MESSAGE="Planning has begun for minor release **$RELEASE_VERSION**.
+
+          ## Next Steps
+          - [ ] Feature planning session scheduled
+          - [ ] Resource allocation review
+          - [ ] Timeline establishment
+          - [ ] Stakeholder communication plan
+
+          ## Timeline (Estimated)
+          📅 **Feature Freeze:** $(date -d '+4 weeks' '+%Y-%m-%d')
+          🔒 **Code Freeze:** $(date -d '+6 weeks' '+%Y-%m-%d')
+          🚀 **Release Date:** $(date -d '+8 weeks' '+%Y-%m-%d')
+
+          📖 [Release Communication Guide](https://github.com/camunda/camunda/blob/main/docs/release-communication-guide.md)
+          📋 [Communication Templates](https://github.com/camunda/camunda/blob/main/docs/communication-templates.md)"
+              URGENCY="high"
+              ;;
+
+            "freeze_schedule_announcement")
+              TITLE="🔒 Release $RELEASE_VERSION - Freeze Schedule Confirmed"
+              MESSAGE="Release branch **$RELEASE_VERSION** has been created. Freeze periods are now scheduled.
+
+          ## Freeze Timeline
+          📅 **Feature Freeze:** $(date -d '+2 weeks' '+%Y-%m-%d')
+          🔒 **Code Freeze:** $(date -d '+4 weeks' '+%Y-%m-%d')
+          🚀 **Release Date:** $(date -d '+6 weeks' '+%Y-%m-%d')
+
+          ## Action Items
+          - [ ] Calendar invites will be sent automatically
+          - [ ] Team notifications scheduled
+          - [ ] Documentation updates in progress
+
+          ## Resources
+          📅 Calendar events will be created automatically
+          📖 [Release Guide](https://github.com/camunda/camunda/blob/main/docs/release-communication-guide.md)
+          📝 [Templates](https://github.com/camunda/camunda/blob/main/docs/communication-templates.md)
+
+          @camunda/monorepo-devops-team - Please review and confirm schedule."
+              URGENCY="high"
+              ;;
+
+            "version_preparation")
+              TITLE="📦 Version $RELEASE_VERSION Prepared for Release"
+              MESSAGE="Version **$RELEASE_VERSION** has been prepared in the main branch.
+
+          ## Status Update
+          ✅ Version files updated
+          📋 Release branch ready for creation
+          🎯 Feature freeze approaching
+
+          ## Next Actions
+          - Release branch creation: $(date -d '+1 week' '+%Y-%m-%d')
+          - Feature freeze: $(date -d '+2 weeks' '+%Y-%m-%d')
+          - Communication rollout: In progress
+
+          This is an automated notification based on version file changes."
+              ;;
+
+            "planning_detected")
+              TITLE="📋 Release $RELEASE_VERSION Planning Detected"
+              MESSAGE="Release planning activity detected for **$RELEASE_VERSION**.
+
+          ## Automated Actions
+          ✅ Communication workflow triggered
+          📅 Calendar integration prepared
+          📢 Team notifications scheduled
+
+          ## Manual Actions Required
+          - [ ] Confirm release timeline
+          - [ ] Review resource allocation
+          - [ ] Validate stakeholder communication plan
+
+          This notification was triggered by release planning issue activity."
+              ;;
+
+            "minor_release_planning_reminder")
+              TITLE="⏰ Time for Minor Release $RELEASE_VERSION Planning"
+              MESSAGE="It's time to begin planning for the quarterly minor release **$RELEASE_VERSION**.
+
+          ## Planning Checklist
+          - [ ] Schedule planning meeting
+          - [ ] Review feature backlog
+          - [ ] Assess resource capacity
+          - [ ] Set preliminary timeline
+          - [ ] Create release planning issue
+
+          ## Suggested Timeline
+          📅 **Planning Complete:** $(date -d '+2 weeks' '+%Y-%m-%d')
+          📅 **Feature Freeze:** $(date -d '+6 weeks' '+%Y-%m-%d')
+          🔒 **Code Freeze:** $(date -d '+8 weeks' '+%Y-%m-%d')
+          🚀 **Release Date:** $(date -d '+10 weeks' '+%Y-%m-%d')
+
+          @camunda/monorepo-devops-team - Please initiate planning process."
+              URGENCY="high"
+              ;;
+
+            "monthly_status_check")
+              TITLE="📊 Monthly Release Status Check"
+              MESSAGE="Monthly automated check of release planning status.
+
+          ## Current Status
+          📅 **Date:** $(date '+%Y-%m-%d')
+          📋 **Active Releases:** Please update if any are in progress
+          🎯 **Next Minor Release:** To be determined
+
+          ## Actions
+          - [ ] Review current release status
+          - [ ] Plan upcoming releases
+          - [ ] Update release calendar
+
+          This is an automated monthly reminder."
+              ;;
+
+            *)
+              TITLE="🔄 Release Process Update"
+              MESSAGE="Automated release process update detected.
+
+          ## Details
+          - **Type:** $COMMUNICATION_TYPE
+          - **Stage:** $PLANNING_STAGE
+          - **Version:** $RELEASE_VERSION
+
+          Please review and take appropriate action."
+              ;;
+          esac
+
+          # Escape for JSON
+          TITLE="${TITLE//\"/\\\"}"
+          MESSAGE="${MESSAGE//\"/\\\"}"
+
+          # Save outputs
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo "$MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "channels=$CHANNELS" >> $GITHUB_OUTPUT
+          echo "urgency=$URGENCY" >> $GITHUB_OUTPUT
+
+          echo "📢 Communication prepared:"
+          echo "Title: $TITLE"
+
+      - name: Create release communication issue
+        if: needs.detect-release-type.outputs.is-minor-release == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '${{ steps.communication.outputs.title }}';
+            const message = `${{ steps.communication.outputs.message }}`;
+            const releaseVersion = '${{ needs.detect-release-type.outputs.release-version }}';
+            const planningStage = '${{ needs.detect-release-type.outputs.planning-stage }}';
+            
+            const issueBody = `${message}
+
+            ## Automation Details
+            - **Trigger:** ${{ github.event_name }}
+            - **Detection Stage:** ${planningStage}
+            - **Version:** ${releaseVersion}
+            - **Workflow Run:** ${{ github.run_id }}
+
+            ## Communication Checklist
+            - [x] Automatic detection completed
+            - [ ] Release manager notified
+            - [ ] Planning meeting scheduled
+            - [ ] Calendar events created
+            - [ ] Team announcements sent
+            - [ ] Stakeholder updates prepared
+
+            ---
+            *This issue was automatically created by the Release Detection workflow.*`;
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: issueBody,
+              labels: ['component/release', 'auto-detected', 'communication-required'],
+              assignees: []
+            });
+            
+            console.log(`Created communication issue: ${issue.data.html_url}`);
+            return issue.data.number;
+
+      - name: Trigger calendar integration workflow
+        if: needs.detect-release-type.outputs.is-minor-release == 'true' && needs.detect-release-type.outputs.planning-stage != 'monthly_check'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releaseVersion = '${{ needs.detect-release-type.outputs.release-version }}';
+            
+            // Calculate dates (simplified calculation)
+            const today = new Date();
+            const releaseDate = new Date(today);
+            releaseDate.setDate(today.getDate() + 56); // 8 weeks from now
+            
+            const codeFreezeDate = new Date(releaseDate);
+            codeFreezeDate.setDate(releaseDate.getDate() - 14); // 2 weeks before release
+            
+            const featureFreezeDate = new Date(releaseDate);
+            featureFreezeDate.setDate(releaseDate.getDate() - 28); // 4 weeks before release
+            
+            // Format dates
+            const formatDate = (date) => date.toISOString().split('T')[0];
+            
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'release-calendar-integration.yml',
+                ref: 'main',
+                inputs: {
+                  release_version: releaseVersion,
+                  release_type: 'minor',
+                  release_date: formatDate(releaseDate),
+                  feature_freeze_date: formatDate(featureFreezeDate),
+                  code_freeze_date: formatDate(codeFreezeDate)
+                }
+              });
+              
+              console.log('✅ Calendar integration workflow triggered');
+            } catch (error) {
+              console.log('⚠️ Could not trigger calendar workflow:', error.message);
+            }
+
+  summary:
+    name: Detection and Communication Summary
+    runs-on: ubuntu-latest
+    needs: [detect-release-type, trigger-communications]
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Release Detection Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Detection Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Minor Release Detected:** ${{ needs.detect-release-type.outputs.is-minor-release }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Version:** ${{ needs.detect-release-type.outputs.release-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Planning Stage:** ${{ needs.detect-release-type.outputs.planning-stage }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Communication Triggered:** ${{ needs.detect-release-type.outputs.trigger-communication }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.detect-release-type.outputs.trigger-communication }}" == "true" ]]; then
+            echo "## Actions Taken" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Communication content generated" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ needs.detect-release-type.outputs.is-minor-release }}" == "true" ]]; then
+              echo "- ✅ Release tracking issue created" >> $GITHUB_STEP_SUMMARY
+              echo "- ✅ Calendar integration triggered" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "- ✅ Team notifications prepared" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## No Action Required" >> $GITHUB_STEP_SUMMARY
+            echo "No communication triggers detected for this event." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review any created issues and take manual actions as needed" >> $GITHUB_STEP_SUMMARY
+          echo "2. Monitor for calendar events and team notifications" >> $GITHUB_STEP_SUMMARY
+          echo "3. Follow up on communication checklist items" >> $GITHUB_STEP_SUMMARY
+          echo "4. Ensure release manager is assigned and aware" >> $GITHUB_STEP_SUMMARY

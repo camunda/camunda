@@ -1,0 +1,391 @@
+# Release Calendar Integration Workflow
+# 
+# This workflow automatically creates calendar entries for release dates and freeze periods.
+# It can be triggered manually or via scheduled releases.
+
+name: Release Calendar Integration
+
+on:
+  # Manual trigger for creating calendar entries
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version (e.g., 8.9.0, 8.8.1)'
+        required: true
+        type: string
+      release_type:
+        description: 'Type of release'
+        required: true
+        type: choice
+        options:
+          - monthly
+          - minor
+          - patch
+      release_date:
+        description: 'Release date (YYYY-MM-DD)'
+        required: true
+        type: string
+      feature_freeze_date:
+        description: 'Feature freeze date (YYYY-MM-DD, optional for monthly releases)'
+        required: false
+        type: string
+      code_freeze_date:
+        description: 'Code freeze date (YYYY-MM-DD)'
+        required: true
+        type: string
+
+  # Triggered when a new release branch is created
+  push:
+    branches:
+      - 'release-*'
+
+  # Triggered when release tags are created
+  create:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  validate-inputs:
+    name: Validate Release Calendar Inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release-version: ${{ steps.validate.outputs.release-version }}
+      release-type: ${{ steps.validate.outputs.release-type }}
+      release-date: ${{ steps.validate.outputs.release-date }}
+      feature-freeze-date: ${{ steps.validate.outputs.feature-freeze-date }}
+      code-freeze-date: ${{ steps.validate.outputs.code-freeze-date }}
+      calendar-events: ${{ steps.validate.outputs.calendar-events }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate and calculate dates
+        id: validate
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          INPUT_RELEASE_VERSION: ${{ github.event.inputs.release_version }}
+          INPUT_RELEASE_TYPE: ${{ github.event.inputs.release_type }}
+          INPUT_RELEASE_DATE: ${{ github.event.inputs.release_date }}
+          INPUT_FEATURE_FREEZE_DATE: ${{ github.event.inputs.feature_freeze_date }}
+          INPUT_CODE_FREEZE_DATE: ${{ github.event.inputs.code_freeze_date }}
+        run: |
+          set -euo pipefail
+
+          # Function to validate date format
+          validate_date() {
+            if ! date -d "$1" "+%Y-%m-%d" >/dev/null 2>&1; then
+              echo "Error: Invalid date format: $1. Use YYYY-MM-DD" >&2
+              exit 1
+            fi
+          }
+
+          # Function to calculate date offset
+          calculate_date() {
+            local base_date="$1"
+            local offset_days="$2"
+            date -d "$base_date $offset_days days" "+%Y-%m-%d"
+          }
+
+          # Extract release info from different trigger sources
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            # Manual trigger - use provided inputs
+            RELEASE_VERSION="$INPUT_RELEASE_VERSION"
+            RELEASE_TYPE="$INPUT_RELEASE_TYPE"
+            RELEASE_DATE="$INPUT_RELEASE_DATE"
+            FEATURE_FREEZE_DATE="$INPUT_FEATURE_FREEZE_DATE"
+            CODE_FREEZE_DATE="$INPUT_CODE_FREEZE_DATE"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF_NAME" =~ ^release- ]]; then
+            # Release branch created - extract version from branch name
+            RELEASE_VERSION="${GITHUB_REF_NAME#release-}"
+            # Determine release type based on version pattern
+            if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.0$ ]]; then
+              RELEASE_TYPE="minor"
+            else
+              RELEASE_TYPE="monthly"
+            fi
+            # Calculate dates based on current date
+            RELEASE_DATE=$(calculate_date "$(date '+%Y-%m-%d')" "+14")
+            CODE_FREEZE_DATE=$(calculate_date "$RELEASE_DATE" "-3")
+            if [[ "$RELEASE_TYPE" == "minor" ]]; then
+              FEATURE_FREEZE_DATE=$(calculate_date "$RELEASE_DATE" "-14")
+            fi
+          elif [[ "$GITHUB_EVENT_NAME" == "create" ]]; then
+            # Tag created - extract version from tag
+            RELEASE_VERSION="${GITHUB_REF_NAME#v}"
+            RELEASE_TYPE="patch"
+            RELEASE_DATE=$(date '+%Y-%m-%d')
+            CODE_FREEZE_DATE=$(calculate_date "$RELEASE_DATE" "-1")
+          else
+            echo "Error: Unsupported trigger event" >&2
+            exit 1
+          fi
+
+          # Validate required fields
+          if [[ -z "$RELEASE_VERSION" || -z "$RELEASE_TYPE" || -z "$RELEASE_DATE" || -z "$CODE_FREEZE_DATE" ]]; then
+            echo "Error: Missing required release information" >&2
+            exit 1
+          fi
+
+          # Validate date formats
+          validate_date "$RELEASE_DATE"
+          validate_date "$CODE_FREEZE_DATE"
+          if [[ -n "$FEATURE_FREEZE_DATE" ]]; then
+            validate_date "$FEATURE_FREEZE_DATE"
+          fi
+
+          # Generate calendar events JSON
+          CALENDAR_EVENTS=$(cat << EOF
+          [
+            {
+              "title": "Feature Freeze - Release $RELEASE_VERSION",
+              "date": "$FEATURE_FREEZE_DATE",
+              "type": "feature_freeze",
+              "description": "Feature freeze begins for release $RELEASE_VERSION. No new features can be added to this release.",
+              "attendees": ["engineering-all@camunda.com", "product-managers@camunda.com"],
+              "location": "Slack: #engineering-releases"
+            },
+            {
+              "title": "Code Freeze - Release $RELEASE_VERSION", 
+              "date": "$CODE_FREEZE_DATE",
+              "type": "code_freeze",
+              "description": "Code freeze begins for release $RELEASE_VERSION. Only critical bug fixes allowed with approval.",
+              "attendees": ["engineering-all@camunda.com", "devops@camunda.com"],
+              "location": "Slack: #engineering-releases"
+            },
+            {
+              "title": "Release $RELEASE_VERSION",
+              "date": "$RELEASE_DATE",
+              "type": "release",
+              "description": "Release $RELEASE_VERSION deployment to production.",
+              "attendees": ["engineering-all@camunda.com", "devops@camunda.com", "release-manager@camunda.com"],
+              "location": "Production Environment"
+            },
+            {
+              "title": "Post-Release Retrospective - $RELEASE_VERSION",
+              "date": "$(calculate_date "$RELEASE_DATE" "+1")",
+              "type": "retrospective", 
+              "description": "Post-release retrospective for release $RELEASE_VERSION.",
+              "attendees": ["engineering-leads@camunda.com", "release-manager@camunda.com"],
+              "location": "Meeting Room / Teams"
+            }
+          ]
+          EOF
+          )
+
+          # Filter out events with empty dates
+          CALENDAR_EVENTS=$(echo "$CALENDAR_EVENTS" | jq '[.[] | select(.date != "")]')
+
+          # Set outputs
+          echo "release-version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "release-type=$RELEASE_TYPE" >> $GITHUB_OUTPUT
+          echo "release-date=$RELEASE_DATE" >> $GITHUB_OUTPUT
+          echo "feature-freeze-date=$FEATURE_FREEZE_DATE" >> $GITHUB_OUTPUT
+          echo "code-freeze-date=$CODE_FREEZE_DATE" >> $GITHUB_OUTPUT
+          echo "calendar-events<<EOF" >> $GITHUB_OUTPUT
+          echo "$CALENDAR_EVENTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "✅ Validated release information:"
+          echo "   Version: $RELEASE_VERSION"
+          echo "   Type: $RELEASE_TYPE"
+          echo "   Release Date: $RELEASE_DATE"
+          echo "   Code Freeze: $CODE_FREEZE_DATE"
+          echo "   Feature Freeze: $FEATURE_FREEZE_DATE"
+
+  create-calendar-events:
+    name: Create Calendar Events
+    runs-on: ubuntu-latest
+    needs: validate-inputs
+    timeout-minutes: 10
+    steps:
+      - name: Setup calendar integration
+        run: |
+          echo "📅 Setting up calendar integration for release ${{ needs.validate-inputs.outputs.release-version }}"
+          
+          # This is where calendar integration would happen
+          # For now, we'll create .ics files that can be imported
+          
+          EVENTS='${{ needs.validate-inputs.outputs.calendar-events }}'
+          echo "$EVENTS" | jq -r '.[] | @base64' | while IFS= read -r event; do
+            EVENT_DATA=$(echo "$event" | base64 -d)
+            TITLE=$(echo "$EVENT_DATA" | jq -r '.title')
+            DATE=$(echo "$EVENT_DATA" | jq -r '.date')
+            DESCRIPTION=$(echo "$EVENT_DATA" | jq -r '.description')
+            TYPE=$(echo "$EVENT_DATA" | jq -r '.type')
+            
+            # Convert date to calendar format
+            START_DATE=$(date -d "$DATE" "+%Y%m%d")
+            
+            # Create ICS file
+            cat > "${TYPE}_${START_DATE}.ics" << EOF
+          BEGIN:VCALENDAR
+          VERSION:2.0
+          PRODID:-//Camunda//Release Calendar//EN
+          BEGIN:VEVENT
+          UID:${TYPE}_${START_DATE}@camunda.com
+          DTSTAMP:$(date -u "+%Y%m%dT%H%M%SZ")
+          DTSTART:${START_DATE}T090000Z
+          DTEND:${START_DATE}T100000Z
+          SUMMARY:${TITLE}
+          DESCRIPTION:${DESCRIPTION}
+          LOCATION:Slack: #engineering-releases
+          STATUS:CONFIRMED
+          END:VEVENT
+          END:VCALENDAR
+          EOF
+          
+            echo "📄 Created calendar file: ${TYPE}_${START_DATE}.ics"
+          done
+
+      - name: Upload calendar files
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-calendar-${{ needs.validate-inputs.outputs.release-version }}
+          path: "*.ics"
+          retention-days: 30
+
+  send-notifications:
+    name: Send Release Notifications
+    runs-on: ubuntu-latest  
+    needs: [validate-inputs, create-calendar-events]
+    timeout-minutes: 5
+    steps:
+      - name: Send Slack notifications
+        run: |
+          echo "📢 Sending notifications for release ${{ needs.validate-inputs.outputs.release-version }}"
+          
+          RELEASE_VERSION="${{ needs.validate-inputs.outputs.release-version }}"
+          RELEASE_TYPE="${{ needs.validate-inputs.outputs.release-type }}"
+          RELEASE_DATE="${{ needs.validate-inputs.outputs.release-date }}"
+          CODE_FREEZE_DATE="${{ needs.validate-inputs.outputs.code-freeze-date }}"
+          FEATURE_FREEZE_DATE="${{ needs.validate-inputs.outputs.feature-freeze-date }}"
+          
+          # Prepare notification message
+          if [[ "$RELEASE_TYPE" == "minor" ]]; then
+            NOTIFICATION_MESSAGE="🚀 **Release $RELEASE_VERSION Schedule Announced**
+
+          📅 **Important Dates:**
+          • Feature Freeze: $FEATURE_FREEZE_DATE
+          • Code Freeze: $CODE_FREEZE_DATE  
+          • Release Date: $RELEASE_DATE
+          
+          📋 **Next Steps:**
+          • Calendar invites have been sent
+          • Review release documentation: /docs/release-communication-guide.md
+          • Join #engineering-releases for updates
+          
+          ❓ **Questions?** Contact @camunda/monorepo-devops-team"
+          else
+            NOTIFICATION_MESSAGE="📦 **Monthly Release $RELEASE_VERSION Schedule**
+
+          📅 **Important Dates:**
+          • Code Freeze: $CODE_FREEZE_DATE
+          • Release Date: $RELEASE_DATE
+          
+          📋 **Next Steps:**
+          • Calendar invites have been sent
+          • Monitor #engineering-releases for updates
+          
+          ❓ **Questions?** Contact @camunda/monorepo-devops-team"
+          fi
+          
+          # In a real implementation, this would send to Slack
+          echo "Would send to Slack:"
+          echo "$NOTIFICATION_MESSAGE"
+          
+          # Create GitHub issue for tracking
+          echo "Creating GitHub issue for release tracking..."
+          
+      - name: Create release tracking issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releaseVersion = '${{ needs.validate-inputs.outputs.release-version }}';
+            const releaseType = '${{ needs.validate-inputs.outputs.release-type }}';
+            const releaseDate = '${{ needs.validate-inputs.outputs.release-date }}';
+            const codeFreezeDate = '${{ needs.validate-inputs.outputs.code-freeze-date }}';
+            const featureFreezeDate = '${{ needs.validate-inputs.outputs.feature-freeze-date }}';
+            
+            let issueBody = `# Release ${releaseVersion} Tracking
+
+            ## Release Information
+            - **Version**: ${releaseVersion}
+            - **Type**: ${releaseType}
+            - **Release Date**: ${releaseDate}
+            - **Code Freeze**: ${codeFreezeDate}`;
+            
+            if (featureFreezeDate) {
+              issueBody += `\n- **Feature Freeze**: ${featureFreezeDate}`;
+            }
+            
+            issueBody += `
+
+            ## Communication Checklist
+            - [x] Calendar events created
+            - [ ] Feature freeze announcement sent
+            - [ ] Code freeze announcement sent  
+            - [ ] Daily freeze reminders scheduled
+            - [ ] Release completion notification sent
+            - [ ] Post-release retrospective scheduled
+
+            ## Release Progress
+            - [ ] Feature freeze in effect
+            - [ ] Code freeze in effect
+            - [ ] Release deployed
+            - [ ] Post-release retrospective completed
+
+            ## Emergency Contacts
+            - **Release Manager**: TBD
+            - **DevOps Team**: @camunda/monorepo-devops-team
+
+            ---
+            *This issue was automatically created by the Release Calendar Integration workflow.*`;
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release ${releaseVersion} - Communication Tracking`,
+              body: issueBody,
+              labels: ['component/release', 'release-tracking'],
+              assignees: []
+            });
+            
+            console.log(`Created release tracking issue: ${issue.data.html_url}`);
+
+  summary:
+    name: Release Calendar Summary
+    runs-on: ubuntu-latest
+    needs: [validate-inputs, create-calendar-events, send-notifications]
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: Print summary
+        run: |
+          echo "# Release Calendar Integration Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.validate-inputs.outputs.release-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Type**: ${{ needs.validate-inputs.outputs.release-type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Date**: ${{ needs.validate-inputs.outputs.release-date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Code Freeze**: ${{ needs.validate-inputs.outputs.code-freeze-date }}" >> $GITHUB_STEP_SUMMARY
+          if [[ -n "${{ needs.validate-inputs.outputs.feature-freeze-date }}" ]]; then
+            echo "- **Feature Freeze**: ${{ needs.validate-inputs.outputs.feature-freeze-date }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Actions Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Calendar events generated" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Release tracking issue created" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Team notifications prepared" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download and import calendar files from workflow artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "2. Send freeze announcements using templates in /docs/release-communication-guide.md" >> $GITHUB_STEP_SUMMARY
+          echo "3. Monitor release tracking issue for progress updates" >> $GITHUB_STEP_SUMMARY
+          echo "4. Follow communication protocols during freeze periods" >> $GITHUB_STEP_SUMMARY

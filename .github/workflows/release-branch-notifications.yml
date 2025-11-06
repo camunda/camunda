@@ -96,8 +96,24 @@ jobs:
           AUTHOR=""
           LINK_TEXT=""
           LINK_URL=""
+          FREEZE_STATUS=""
+          RELEASE_VERSION=""
 
           echo "🔍 Processing event: $GITHUB_EVENT_NAME - $GITHUB_EVENT_ACTION"
+
+          # Extract release version from branch name if it's a release branch
+          RELEASE_REGEX="^release-([0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?)$"
+          if [[ "$GITHUB_REF_NAME" =~ $RELEASE_REGEX ]] || [[ "$PR_BASE_REF" =~ $RELEASE_REGEX ]]; then
+            RELEASE_VERSION="${BASH_REMATCH[1]}"
+            
+            # Check if this is likely in a freeze period
+            # Minor releases (X.Y.0) typically have longer freeze periods
+            if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.0$ ]]; then
+              FREEZE_STATUS="⚠️ MINOR RELEASE - Extended freeze periods may apply"
+            else
+              FREEZE_STATUS="📦 MONTHLY RELEASE - Standard freeze periods apply"
+            fi
+          fi
 
           # Determine event type and extract data
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
@@ -167,6 +183,7 @@ jobs:
           # Escape quotes using Bash string replacement
           ACTION_TYPE="${ACTION_TYPE//\"/\\\"}"
           LINK_TEXT="${LINK_TEXT//\"/\\\"}"
+          FREEZE_STATUS="${FREEZE_STATUS//\"/\\\"}"
 
           # Output variables to GitHub Actions in a single block
           {
@@ -175,6 +192,8 @@ jobs:
             echo "author=$AUTHOR"
             echo "link_text=$LINK_TEXT"
             echo "link_url=$LINK_URL"
+            echo "freeze_status=$FREEZE_STATUS"
+            echo "release_version=$RELEASE_VERSION"
           } >> "$GITHUB_OUTPUT"
 
           # Debug output
@@ -183,6 +202,45 @@ jobs:
           echo "🌿 Branch: $BRANCH_NAME"
           echo "👤 Author: $AUTHOR"
           echo "🔗 Link: $LINK_TEXT"
+          echo "🚦 Freeze Status: $FREEZE_STATUS"
+          echo "🔖 Release Version: $RELEASE_VERSION"
+
+      - name: Check freeze period status
+        id: freeze-check
+        env:
+          RELEASE_VERSION: ${{ steps.extract-data.outputs.release_version }}
+          BRANCH_NAME: ${{ steps.extract-data.outputs.branch_name }}
+        run: |
+          set -euo pipefail
+          
+          FREEZE_WARNING=""
+          FREEZE_REMINDER=""
+          
+          if [[ -n "$RELEASE_VERSION" ]]; then
+            echo "🔍 Checking freeze status for release $RELEASE_VERSION"
+            
+            # For release branches, we should remind about freeze policies
+            if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.0$ ]]; then
+              # Minor release
+              FREEZE_WARNING="🔒 **REMINDER**: This is a minor release branch. Feature freeze and code freeze periods apply. Please ensure all changes follow the freeze policy documented in [Release Communication Guide](https://github.com/camunda/camunda/blob/main/docs/release-communication-guide.md)."
+              FREEZE_REMINDER="• Feature Freeze: ~4 weeks before release\n• Code Freeze: ~2 weeks before release\n• Emergency changes require approval"
+            else
+              # Monthly/patch release
+              FREEZE_WARNING="📦 **REMINDER**: This is a monthly release branch. Code freeze periods apply. Please follow the emergency change process for any critical fixes."
+              FREEZE_REMINDER="• Code Freeze: ~3 days before release\n• Emergency changes require approval"
+            fi
+          fi
+          
+          # Escape for JSON
+          FREEZE_WARNING="${FREEZE_WARNING//\"/\\\"}"
+          FREEZE_REMINDER="${FREEZE_REMINDER//\"/\\\"}"
+          
+          {
+            echo "freeze_warning=$FREEZE_WARNING"
+            echo "freeze_reminder=$FREEZE_REMINDER"
+          } >> "$GITHUB_OUTPUT"
+          
+          echo "🚦 Freeze Warning: $FREEZE_WARNING"
       - name: Get Slack webhook from Vault
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -198,6 +256,9 @@ jobs:
         id: slack-notification
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         continue-on-error: true # Don't fail the workflow if Slack is down
+        env:
+          FREEZE_WARNING: ${{ steps.freeze-check.outputs.freeze_warning }}
+          FREEZE_REMINDER: ${{ steps.freeze-check.outputs.freeze_reminder }}
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -238,6 +299,36 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "🔗 <${{ steps.extract-data.outputs.link_url }}|${{ steps.extract-data.outputs.link_text }}>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.extract-data.outputs.freeze_status }}"
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "Release Guide",
+                      "emoji": true
+                    },
+                    "url": "https://github.com/camunda/camunda/blob/main/docs/release-communication-guide.md"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ env.FREEZE_WARNING }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Freeze Timeline:*\n${{ env.FREEZE_REMINDER }}"
                   }
                 },
                 {
