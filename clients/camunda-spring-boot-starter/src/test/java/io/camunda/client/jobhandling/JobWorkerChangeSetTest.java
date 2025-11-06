@@ -22,6 +22,7 @@ import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.Empty;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromAnnotation;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromOverrideProperty;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromRuntimeOverride;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.FetchVariablesChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.ForceFetchAllVariablesChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.MaxJobsActiveChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.ResetChangeSet;
@@ -115,6 +116,15 @@ public class JobWorkerChangeSetTest {
     changeSet.applyChanges(jobWorkerValue);
     assertThat(jobWorkerValue.getFetchVariables())
         .isEqualTo(List.of(new FromRuntimeOverride<>(null, new FromAnnotation<>("abc"))));
+  }
+
+  @Test
+  void shouldNotApplyFetchVariablesIfForceFetchAllVariables() {
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setForceFetchAllVariables(new FromAnnotation<>(true));
+    final FetchVariablesChangeSet changeSet = new FetchVariablesChangeSet(List.of("foo", "bar"));
+    changeSet.applyChanges(jobWorkerValue);
+    assertThat(jobWorkerValue.getFetchVariables()).isEqualTo(List.of());
   }
 
   @Test
