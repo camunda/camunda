@@ -182,11 +182,16 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   }
 
   @Override
+<<<<<<< HEAD
   public String toString() {
     return "ZeebeClientConfigurationImpl{"
         + "camundaClientConfiguration="
         + camundaClientConfiguration
         + '}';
+=======
+  public int getMaxHttpConnections() {
+    return camundaClientConfiguration.getMaxHttpConnections();
+>>>>>>> c54bf8e4 (fix: allow configuration of max concurrent HTTP Connections in zeebe client)
   }
 
   private static class CredentialsProviderCompat implements CredentialsProvider {

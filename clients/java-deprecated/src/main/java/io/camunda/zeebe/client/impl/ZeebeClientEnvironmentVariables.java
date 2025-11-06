@@ -29,6 +29,7 @@ public final class ZeebeClientEnvironmentVariables {
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
+  public static final String MAX_HTTP_CONNECTIONS = "ZEEBE_MAX_HTTP_CONNECTIONS";
 
   /** OAuth Environment Variables */
   public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";

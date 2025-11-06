@@ -174,4 +174,9 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
    */
   boolean preferRestOverGrpc();
+
+  /**
+   * @see ZeebeClientBuilder#maxHttpConnections(int)
+   */
+  int getMaxHttpConnections();
 }
