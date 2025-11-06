@@ -21,6 +21,7 @@ import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
 import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.client.ClientProperties.GRPC_ADDRESS;
+import static io.camunda.client.ClientProperties.MAX_HTTP_CONNECTIONS;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
@@ -28,6 +29,7 @@ import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
@@ -54,6 +56,7 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
+import io.camunda.client.impl.CamundaClientEnvironmentVariables;
 import io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
@@ -114,6 +117,7 @@ public final class CamundaClientTest {
       assertThat(configuration.getDefaultJobWorkerTenantIds())
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.preferRestOverGrpc()).isTrue();
+      assertThat(configuration.getMaxHttpConnections()).isEqualTo(DEFAULT_MAX_HTTP_CONNECTIONS);
     }
   }
 
@@ -1193,5 +1197,48 @@ public final class CamundaClientTest {
 
     // then
     assertThat(builder.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofMillis(100));
+  }
+
+  @Test
+  public void shouldSetMaxHttpConnections() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.maxHttpConnections(1234);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {MAX_HTTP_CONNECTIONS})
+  public void shouldSetMaxHttpConnectionsWithProperty(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    properties.setProperty(propertyName, "1234");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS})
+  public void shouldSetMaxHttpConnectionsWithEnv(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    Environment.system().put(envName, "1234");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
   }
 }

@@ -40,6 +40,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_J
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
@@ -53,6 +54,7 @@ import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.ClientProperties;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.JsonMapper;
@@ -95,6 +97,7 @@ public final class CamundaClientBuilderImpl
   public static final int DEFAULT_MAX_JOBS_ACTIVE = 32;
   public static final Duration DEFAULT_JOB_POLL_INTERVAL = Duration.ofMillis(100);
   public static final boolean DEFAULT_STREAM_ENABLED = false;
+  public static final int DEFAULT_MAX_HTTP_CONNECTIONS = 100;
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -125,6 +128,7 @@ public final class CamundaClientBuilderImpl
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
+  private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
 
   @Override
   public URI getRestAddress() {
@@ -256,6 +260,11 @@ public final class CamundaClientBuilderImpl
     return preferRestOverGrpc;
   }
 
+  @Override
+  public int getMaxHttpConnections() {
+    return maxHttpConnections;
+  }
+
   private void gatewayAddress(final String gatewayAddress) {
     // we apply the legacy behaviour here, the plaintext parameter can still be changed as the
     // plaintext is checked AFTER the gateway address
@@ -290,6 +299,11 @@ public final class CamundaClientBuilderImpl
         value -> preferRestOverGrpc(Boolean.parseBoolean(value)),
         PREFER_REST_OVER_GRPC,
         LegacyZeebeClientProperties.PREFER_REST_OVER_GRPC);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> maxHttpConnections(Integer.parseInt(value)),
+        ClientProperties.MAX_HTTP_CONNECTIONS);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
@@ -575,6 +589,12 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder maxHttpConnections(final int maxConnections) {
+    maxHttpConnections = maxConnections;
+    return this;
+  }
+
+  @Override
   public CamundaClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
@@ -623,6 +643,8 @@ public final class CamundaClientBuilderImpl
         value -> preferRestOverGrpc(Boolean.parseBoolean(value)),
         PREFER_REST_VAR,
         LegacyZeebeClientEnvironmentVariables.PREFER_REST_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> maxHttpConnections(Integer.parseInt(value)), MAX_HTTP_CONNECTIONS);
     applyEnvironmentValueIfNotNull(
         this::defaultTenantId,
         DEFAULT_TENANT_ID_VAR,

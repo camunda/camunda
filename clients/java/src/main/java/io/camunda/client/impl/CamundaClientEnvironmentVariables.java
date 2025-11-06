@@ -24,6 +24,7 @@ public final class CamundaClientEnvironmentVariables {
   public static final String REST_ADDRESS_VAR = "CAMUNDA_REST_ADDRESS";
   public static final String GRPC_ADDRESS_VAR = "CAMUNDA_GRPC_ADDRESS";
   public static final String PREFER_REST_VAR = "CAMUNDA_PREFER_REST";
+  public static final String MAX_HTTP_CONNECTIONS = "CAMUNDA_MAX_HTTP_CONNECTIONS";
   public static final String DEFAULT_TENANT_ID_VAR = "CAMUNDA_DEFAULT_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "CAMUNDA_DEFAULT_JOB_WORKER_TENANT_IDS";

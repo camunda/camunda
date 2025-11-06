@@ -38,6 +38,11 @@ public final class ClientProperties {
   public static final String PREFER_REST_OVER_GRPC = "camunda.client.gateway.preferRestOverGrpc";
 
   /**
+   * @see CamundaClientBuilder#maxHttpConnections(int)
+   */
+  public static final String MAX_HTTP_CONNECTIONS = "camunda.client.gateway.maxHttpConnections";
+
+  /**
    * @see CamundaClientBuilder#restAddress(URI)
    */
   public static final String REST_ADDRESS = "camunda.client.gateway.rest.address";
