@@ -240,6 +240,8 @@ components:
       required:
         - variables
 
+    ## Filters
+
     AdvancedScopeKeyFilter:
       title: Advanced filter
       description: Advanced ScopeKey filter.

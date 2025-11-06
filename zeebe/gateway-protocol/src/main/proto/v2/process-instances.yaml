@@ -1290,6 +1290,18 @@ components:
       required:
         - elementInstanceKey
 
+    ## Enums
+
+    ProcessInstanceStateEnum:
+      description: Process instance states
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - TERMINATED
+
+    ## Filters
+
     AdvancedProcessInstanceStateFilter:
       title: Advanced filter
       description: Advanced ProcessInstanceStateEnum filter.
@@ -1324,11 +1336,3 @@ components:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceStateEnum"
         - $ref: '#/components/schemas/AdvancedProcessInstanceStateFilter'
-
-    ProcessInstanceStateEnum:
-      description: Process instance states
-      type: string
-      enum:
-        - ACTIVE
-        - COMPLETED
-        - TERMINATED

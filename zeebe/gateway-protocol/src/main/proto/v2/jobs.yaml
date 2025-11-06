@@ -903,6 +903,47 @@ components:
           format: int64
           description: The new timeout for the job in milliseconds.
 
+    ## Enums
+
+    JobStateEnum:
+      description: The state of the job.
+      type: string
+      enum:
+        - CANCELED
+        - COMPLETED
+        - CREATED
+        - ERROR_THROWN
+        - FAILED
+        - MIGRATED
+        - RETRIES_UPDATED
+        - TIMED_OUT
+
+    JobKindEnum:
+      description: The job kind.
+      example: BPMN_ELEMENT
+      type: string
+      enum:
+        - BPMN_ELEMENT
+        - EXECUTION_LISTENER
+        - TASK_LISTENER
+        - AD_HOC_SUB_PROCESS
+
+    JobListenerEventTypeEnum:
+      example: UNSPECIFIED
+      description: The listener event type of the job.
+      type: string
+      enum:
+        - ASSIGNING
+        - CANCELING
+        - COMPLETING
+        - CREATING
+        - END
+        - START
+        - UNSPECIFIED
+        - UPDATING
+
+    ## Filters
+
     JobKindFilterProperty:
       description: JobKindEnum property with full advanced search capabilities.
       type: object
@@ -1008,40 +1049,3 @@ components:
             $ref: '#/components/schemas/JobStateEnum'
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
-
-    JobStateEnum:
-      description: The state of the job.
-      type: string
-      enum:
-        - CANCELED
-        - COMPLETED
-        - CREATED
-        - ERROR_THROWN
-        - FAILED
-        - MIGRATED
-        - RETRIES_UPDATED
-        - TIMED_OUT
-
-    JobKindEnum:
-      description: The job kind.
-      example: BPMN_ELEMENT
-      type: string
-      enum:
-        - BPMN_ELEMENT
-        - EXECUTION_LISTENER
-        - TASK_LISTENER
-        - AD_HOC_SUB_PROCESS
-
-    JobListenerEventTypeEnum:
-      example: UNSPECIFIED
-      description: The listener event type of the job.
-      type: string
-      enum:
-        - ASSIGNING
-        - CANCELING
-        - COMPLETING
-        - CREATING
-        - END
-        - START
-        - UNSPECIFIED
-        - UPDATING

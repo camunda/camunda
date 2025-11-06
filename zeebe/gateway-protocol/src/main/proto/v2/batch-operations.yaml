@@ -551,6 +551,45 @@ components:
         - sourceElementId
         - targetElementId
 
+    ## Enums
+
+    BatchOperationItemStateEnum:
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - CANCELED
+        - FAILED
+
+    BatchOperationStateEnum:
+      description: The batch operation state.
+      type: string
+      enum:
+        - ACTIVE
+        - CANCELED
+        - COMPLETED
+        - CREATED
+        - FAILED
+        - PARTIALLY_COMPLETED
+        - SUSPENDED
+
+    BatchOperationTypeEnum:
+      description: The type of the batch operation.
+      type: string
+      enum:
+        - CANCEL_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - MIGRATE_PROCESS_INSTANCE
+        - MODIFY_PROCESS_INSTANCE
+        - DELETE_PROCESS_INSTANCE
+        - ADD_VARIABLE
+        - UPDATE_VARIABLE
+        - DELETE_DECISION_DEFINITION
+        - DELETE_PROCESS_DEFINITION
+
+    ## Filters
+
     BatchOperationTypeFilterProperty:
       description: BatchOperationTypeEnum property with full advanced search capabilities.
       type: object
@@ -585,20 +624,6 @@ components:
             $ref: '#/components/schemas/BatchOperationTypeEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
-
-    BatchOperationTypeEnum:
-      description: The type of the batch operation.
-      type: string
-      enum:
-        - CANCEL_PROCESS_INSTANCE
-        - RESOLVE_INCIDENT
-        - MIGRATE_PROCESS_INSTANCE
-        - MODIFY_PROCESS_INSTANCE
-        - DELETE_PROCESS_INSTANCE
-        - ADD_VARIABLE
-        - UPDATE_VARIABLE
-        - DELETE_DECISION_DEFINITION
-        - DELETE_PROCESS_DEFINITION
 
     BatchOperationStateFilterProperty:
       description: BatchOperationStateEnum property with full advanced search capabilities.
@@ -635,18 +660,6 @@ components:
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
 
-    BatchOperationStateEnum:
-      description: The batch operation state.
-      type: string
-      enum:
-        - ACTIVE
-        - CANCELED
-        - COMPLETED
-        - CREATED
-        - FAILED
-        - PARTIALLY_COMPLETED
-        - SUSPENDED
-
     BatchOperationItemStateFilterProperty:
       description: BatchOperationItemStateEnum property with full advanced search capabilities.
       type: object
@@ -681,12 +694,3 @@ components:
             $ref: '#/components/schemas/BatchOperationItemStateEnum'
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
-
-    BatchOperationItemStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
-      type: string
-      enum:
-        - ACTIVE
-        - COMPLETED
-        - CANCELED
-        - FAILED

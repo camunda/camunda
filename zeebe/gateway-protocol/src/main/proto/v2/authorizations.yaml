@@ -288,6 +288,8 @@ components:
             - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the created authorization.
 
+    ## Enums
+
     PermissionTypeEnum:
       description: Specifies the type of permissions.
       type: string
@@ -357,6 +359,8 @@ components:
         - GROUP
         - MAPPING_RULE
         - UNSPECIFIED
+
+    ## Keys
 
     AuthorizationKey:
       allOf:

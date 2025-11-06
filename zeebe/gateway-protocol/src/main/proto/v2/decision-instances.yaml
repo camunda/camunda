@@ -309,6 +309,8 @@ components:
           items:
             $ref: '#/components/schemas/EvaluatedDecisionOutputItem'
 
+    ## Enums
+
     DecisionDefinitionTypeEnum:
       description: The type of the decision.
       type: string
@@ -324,6 +326,8 @@ components:
         - EVALUATED
         - FAILED
         - UNSPECIFIED
+
+    ## Filters
 
     AdvancedDecisionDefinitionKeyFilter:
       title: Advanced filter

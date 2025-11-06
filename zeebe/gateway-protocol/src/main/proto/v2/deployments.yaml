@@ -358,6 +358,8 @@ components:
             - $ref: '#/components/schemas/ResourceKey'
           description: The unique key of this resource.
 
+    ## Keys
+
     DeploymentKey:
       description: Key for a deployment.
       format: DeploymentKey

@@ -378,6 +378,8 @@ components:
           format: date-time
           description: The date and time when the link expires.
 
+    ## Identifiers
+
     DocumentId:
       description: Document Id that uniquely identifies a document.
       format: DocumentId

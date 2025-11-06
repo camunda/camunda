@@ -471,6 +471,19 @@ components:
       required:
         - field
 
+    ## Enums
+
+    MessageSubscriptionStateEnum:
+      description: The state of message subscription.
+      type: string
+      enum:
+        - CORRELATED
+        - CREATED
+        - DELETED
+        - MIGRATED
+
+    ## Filters
+
     CorrelatedMessageSubscriptionFilter:
       description: Correlated message subscriptions search filter.
       type: object
@@ -559,15 +572,6 @@ components:
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
 
-    MessageSubscriptionStateEnum:
-      description: The state of message subscription.
-      type: string
-      enum:
-        - CORRELATED
-        - CREATED
-        - DELETED
-        - MIGRATED
-
     AdvancedMessageSubscriptionKeyFilter:
       title: Advanced filter
       description: Advanced MessageSubscriptionKey filter.
@@ -605,6 +609,8 @@ components:
           allOf:
             - $ref: "#/components/schemas/MessageSubscriptionKey"
         - $ref: '#/components/schemas/AdvancedMessageSubscriptionKeyFilter'
+
+    ## Keys
 
     MessageSubscriptionKey:
       description: System-generated key for a message subscription.

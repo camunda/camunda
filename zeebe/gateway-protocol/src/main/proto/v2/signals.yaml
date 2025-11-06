@@ -72,6 +72,8 @@ components:
             - $ref: '#/components/schemas/SignalKey'
           description: The key of the broadcasted signal.
 
+    ## Keys
+
     SignalKey:
       allOf:
         - $ref: 'keys.yaml#/components/schemas/LongKey'
