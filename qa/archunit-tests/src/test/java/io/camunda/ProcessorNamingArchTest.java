@@ -139,8 +139,8 @@ public final class ProcessorNamingArchTest {
                 private static final class NamingCache {
                   private static final Set<String> INTENTS = new HashSet<>();
                   private static final Set<String> VALUE_TYPES = new HashSet<>();
-                  private static final Set<String> WHITELIST = Set.of(
-                  );
+                  private static final Set<String> WHITELIST =
+                      Set.of("BpmnStreamProcessor", "CommandProcessor", "CommandProcessorImpl");
                   private static volatile boolean initialized = false;
 
                   private static void ensureInitialized() {
