@@ -217,7 +217,7 @@ public final class JobWorkerImplTest {
             new CamundaClientBuilderImpl(),
             channel,
             GatewayGrpc.newStub(channel),
-            new ExecutorResource(executor, false))) {
+            new ExecutorResource(executor, true))) {
       try (final JobWorker jobWorker =
           client
               .newWorker()
@@ -257,7 +257,7 @@ public final class JobWorkerImplTest {
             new CamundaClientBuilderImpl(),
             channel,
             GatewayGrpc.newStub(channel),
-            new ExecutorResource(closedExecutor, false))) {
+            new ExecutorResource(closedExecutor, true))) {
 
       final JobWorker jobWorker =
           client
@@ -288,7 +288,7 @@ public final class JobWorkerImplTest {
     final ExecutorService jobHandlingExecutor =
         Mockito.spy(Executors.newSingleThreadExecutor(r -> new Thread(r, "test-executor-")));
     final ExecutorResource executorResource =
-        new ExecutorResource(scheduler, false, jobHandlingExecutor, false);
+        new ExecutorResource(scheduler, true, jobHandlingExecutor, true);
 
     try (final CamundaClient client =
         new CamundaClientImpl(
