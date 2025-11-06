@@ -106,6 +106,14 @@ public class CamundaClientExecutorService {
     return jobHandlingExecutor;
   }
 
+  public static CamundaClientExecutorService createDefault() {
+    return createDefault(1, null);
+  }
+
+  public static CamundaClientExecutorService createDefault(final int threads) {
+    return createDefault(threads, null);
+  }
+
   public static CamundaClientExecutorService createDefault(
       final int threads, final MeterRegistry meterRegistry) {
     final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(threads);

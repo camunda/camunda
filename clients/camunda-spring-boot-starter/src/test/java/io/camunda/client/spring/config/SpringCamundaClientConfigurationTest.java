@@ -58,7 +58,7 @@ public class SpringCamundaClientConfigurationTest {
   }
 
   private static CamundaClientExecutorService executorService() {
-    return CamundaClientExecutorService.createDefault(1, null);
+    return CamundaClientExecutorService.createDefault();
   }
 
   private static CredentialsProvider credentialsProvider() {
