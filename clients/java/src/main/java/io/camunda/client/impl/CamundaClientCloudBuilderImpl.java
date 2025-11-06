@@ -190,6 +190,13 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder jobWorkerSchedulingExecutor(
+      final ScheduledExecutorService executor, final boolean takeOwnership) {
+    innerBuilder.jobWorkerSchedulingExecutor(executor, takeOwnership);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder jobHandlingExecutor(
       final ExecutorService executor, final boolean takeOwnership) {
     innerBuilder.jobHandlingExecutor(executor, takeOwnership);

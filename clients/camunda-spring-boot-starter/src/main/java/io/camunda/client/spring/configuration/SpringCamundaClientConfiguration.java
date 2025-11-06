@@ -177,6 +177,16 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
+  public ScheduledExecutorService jobWorkerSchedulingExecutor() {
+    return zeebeClientExecutorService.getScheduledExecutor();
+  }
+
+  @Override
+  public boolean ownsJobWorkerSchedulingExecutor() {
+    return zeebeClientExecutorService.isScheduledExecutorOwnedByCamundaClient();
+  }
+
+  @Override
   public ExecutorService jobHandlingExecutor() {
     return zeebeClientExecutorService.getJobHandlingExecutor();
   }

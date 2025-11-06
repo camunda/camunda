@@ -120,7 +120,7 @@ public final class CamundaClientTest {
       assertThat(configuration.preferRestOverGrpc()).isTrue();
       assertThat(configuration.getMaxHttpConnections()).isEqualTo(DEFAULT_MAX_HTTP_CONNECTIONS);
       assertThat(configuration.jobHandlingExecutor()).isNull();
-      assertThat(configuration.jobWorkerExecutor()).isNull();
+      assertThat(configuration.jobWorkerSchedulingExecutor()).isNull();
     }
   }
 
@@ -567,7 +567,7 @@ public final class CamundaClientTest {
 
     try (final CamundaClient client =
         CamundaClient.newClientBuilder()
-            .jobWorkerExecutor(scheduler, true)
+            .jobWorkerSchedulingExecutor(scheduler, true)
             .jobHandlingExecutor(jobExecutor, true)
             .build()) {
       // when
@@ -586,7 +586,7 @@ public final class CamundaClientTest {
     final ExecutorService jobExecutor = Executors.newSingleThreadExecutor();
     try (final CamundaClient client =
         CamundaClient.newClientBuilder()
-            .jobWorkerExecutor(scheduler, false)
+            .jobWorkerSchedulingExecutor(scheduler, false)
             .jobHandlingExecutor(jobExecutor, false)
             .build()) {
       // when
@@ -606,7 +606,7 @@ public final class CamundaClientTest {
     final ScheduledThreadPoolExecutor executor = spy(new ScheduledThreadPoolExecutor(1));
     final Duration pollInterval = Duration.ZERO;
     try (final CamundaClient client =
-            CamundaClient.newClientBuilder().jobWorkerExecutor(executor).build();
+            CamundaClient.newClientBuilder().jobWorkerSchedulingExecutor(executor).build();
         final JobWorker ignored =
             client
                 .newWorker()

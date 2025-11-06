@@ -133,17 +133,38 @@ public interface CamundaClientConfiguration {
   int getMaxMetadataSize();
 
   /**
-   * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
+   * @deprecated Use {@link #jobWorkerSchedulingExecutor()} and {@link #jobHandlingExecutor()}
+   *     instead.
+   * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
    */
+  @Deprecated
   ScheduledExecutorService jobWorkerExecutor();
 
   /**
-   * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
+   * @deprecated Use {@link #jobWorkerSchedulingExecutor()} and {@link #jobHandlingExecutor()}
+   *     instead.
    */
+  @Deprecated
   boolean ownsJobWorkerExecutor();
 
+  /**
+   * @see CamundaClientBuilder#jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)
+   */
+  ScheduledExecutorService jobWorkerSchedulingExecutor();
+
+  /**
+   * @see CamundaClientBuilder#jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)
+   */
+  boolean ownsJobWorkerSchedulingExecutor();
+
+  /**
+   * @see CamundaClientBuilder#jobHandlingExecutor(ExecutorService, boolean)
+   */
   ExecutorService jobHandlingExecutor();
 
+  /**
+   * @see CamundaClientBuilder#jobHandlingExecutor(ExecutorService, boolean)
+   */
   boolean ownsJobHandlingExecutor();
 
   /**
