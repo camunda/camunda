@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
@@ -217,11 +218,17 @@ public class JobWorkerController {
         type,
         jobWorkerValue.getType().value(),
         jobWorkerValue.getName().value(),
-        jobWorkerValue.getFetchVariables().stream().map(SourceAware::value).toList(),
+        jobWorkerValue.getFetchVariables().stream()
+            .map(SourceAware::value)
+            .filter(Objects::nonNull)
+            .toList(),
         jobWorkerValue.getTimeout().value(),
         jobWorkerValue.getEnabled().value(),
         jobWorkerValue.getForceFetchAllVariables().value(),
-        jobWorkerValue.getTenantIds().stream().map(SourceAware::value).toList(),
+        jobWorkerValue.getTenantIds().stream()
+            .map(SourceAware::value)
+            .filter(Objects::nonNull)
+            .toList(),
         jobWorkerValue.getMaxJobsActive().value(),
         jobWorkerValue.getRequestTimeout().value(),
         jobWorkerValue.getPollInterval().value(),
