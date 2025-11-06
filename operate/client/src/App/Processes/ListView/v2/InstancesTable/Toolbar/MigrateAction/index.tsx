@@ -17,7 +17,7 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
-import {ListItem} from '../styled';
+import {ListItem} from './styled';
 import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {HelperModal} from 'modules/components/HelperModal';

@@ -10,7 +10,7 @@ import {PanelHeader} from 'modules/components/PanelHeader';
 import {SortableTable} from 'modules/components/SortableTable';
 import {StateIcon} from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
-import {Container, ProcessName} from '../styled';
+import {Container, ProcessName} from '../../InstancesTable/styled';
 import {observer} from 'mobx-react';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
@@ -28,11 +28,11 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
 import {getProcessName} from 'modules/utils/instance';
-import {Toolbar} from '../Toolbar';
+import {Toolbar} from '../../InstancesTable/Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation} from 'react-router-dom';
 import {InstanceOperations} from './InstanceOperations';
-import {BatchModificationFooter} from '../BatchModificationFooter';
+import {BatchModificationFooter} from '../../InstancesTable/BatchModificationFooter';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 
 const ROW_HEIGHT = 34;

@@ -17,7 +17,7 @@ import {
 } from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {Title, DataTable} from '../styled';
+import {Title, DataTable} from './styled';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';

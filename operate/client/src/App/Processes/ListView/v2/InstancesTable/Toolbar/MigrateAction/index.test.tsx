@@ -20,7 +20,10 @@ import {tracking} from 'modules/tracking';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter} from 'react-router-dom';
-import {fetchProcessInstances, getProcessInstance} from '../../mocks';
+import {
+  fetchProcessInstances,
+  getProcessInstance,
+} from '../../../../InstancesTable/Toolbar/mocks';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {useEffect} from 'react';
 import {batchModificationStore} from 'modules/stores/batchModification';
