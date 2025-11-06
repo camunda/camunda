@@ -108,7 +108,7 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.RECUR_AFTER_BACKOFF,
-            new JobRecurProcessor(
+            new JobRecurAfterBackoffProcessor(
                 processingState, writers, bpmnBehaviors.jobActivationBehavior(), clock))
         .onCommand(
             ValueType.JOB_BATCH,

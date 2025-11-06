@@ -63,11 +63,11 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @ExcludeAuthorizationCheck
-public final class BatchOperationExecuteProcessor
+public final class BatchOperationExecutionExecuteProcessor
     implements TypedRecordProcessor<BatchOperationExecutionRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationExecuteProcessor.class);
+      LoggerFactory.getLogger(BatchOperationExecutionExecuteProcessor.class);
 
   private static final int BATCH_SIZE = 10;
   private static final int HEARTBEAT_INTERVAL = 1000;
@@ -81,7 +81,7 @@ public final class BatchOperationExecuteProcessor
 
   private final Map<BatchOperationType, BatchOperationExecutor> handlers;
 
-  public BatchOperationExecuteProcessor(
+  public BatchOperationExecutionExecuteProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,

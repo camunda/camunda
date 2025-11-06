@@ -32,7 +32,7 @@ import io.camunda.zeebe.util.Either.Right;
 import io.camunda.zeebe.util.collection.Tuple;
 
 @ExcludeAuthorizationCheck
-public class MarkPartitionBootstrappedProcessor
+public class ScaleMarkPartitionBootstrappedProcessor
     implements DistributedTypedRecordProcessor<ScaleRecord> {
 
   private final KeyGenerator keyGenerator;
@@ -44,7 +44,7 @@ public class MarkPartitionBootstrappedProcessor
   private final ProcessState processState;
   private final StartEventSubscriptions startEventSubscriptions;
 
-  public MarkPartitionBootstrappedProcessor(
+  public ScaleMarkPartitionBootstrappedProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessingState processingState,
