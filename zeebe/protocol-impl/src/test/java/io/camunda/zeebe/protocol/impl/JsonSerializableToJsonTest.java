@@ -97,6 +97,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
@@ -2144,11 +2145,18 @@ final class JsonSerializableToJsonTest {
       {
         "Checkpoint record",
         (Supplier<UnifiedRecordValue>)
-            () -> new CheckpointRecord().setCheckpointId(1L).setCheckpointPosition(10L),
+            () ->
+                new CheckpointRecord()
+                    .setCheckpointId(1L)
+                    .setCheckpointPosition(10L)
+                    .setCheckpointTimestamp(100L)
+                    .setCheckpointType(CheckpointType.SCHEDULED_BACKUP),
         """
         {
           "checkpointId":1,
-          "checkpointPosition":10
+          "checkpointPosition":10,
+          "checkpointTimestamp":100,
+          "checkpointType":"SCHEDULED_BACKUP"
         }
         """
       },
