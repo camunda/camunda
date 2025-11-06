@@ -601,6 +601,27 @@ public final class CamundaClientTest {
   }
 
   @Test
+  public void shouldCloseWhenDifferentExecutorsOwnedAndNotOwned() {
+    // given
+    final ScheduledExecutorService ownedScheduler = Executors.newSingleThreadScheduledExecutor();
+    final ScheduledExecutorService notOwnedScheduler = Executors.newSingleThreadScheduledExecutor();
+    try (final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .jobWorkerSchedulingExecutor(ownedScheduler, true)
+            .jobHandlingExecutor(notOwnedScheduler, false)
+            .build()) {
+      // when
+      client.close();
+
+      // then
+      assertThat(ownedScheduler.isShutdown()).isTrue();
+      assertThat(notOwnedScheduler.isShutdown()).isFalse();
+    }
+
+    notOwnedScheduler.shutdownNow();
+  }
+
+  @Test
   public void shouldUseCustomScheduledExecutorWithJobWorker() {
     // given
     final ScheduledThreadPoolExecutor executor = spy(new ScheduledThreadPoolExecutor(1));
