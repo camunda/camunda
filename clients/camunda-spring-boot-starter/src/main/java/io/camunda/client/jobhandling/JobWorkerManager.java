@@ -62,7 +62,7 @@ public class JobWorkerManager {
       internalManagedJobWorker.setJobHandlerFactory(managedJobWorker.jobHandlerFactory());
       managedJobWorkers.put(type, internalManagedJobWorker);
     }
-    upsertWorker(internalManagedJobWorker, new CreateChangeSet(), false);
+    upsertWorker(internalManagedJobWorker, new CreateChangeSet());
   }
 
   public Map<String, JobWorkerValue> getJobWorkers() {
@@ -77,18 +77,18 @@ public class JobWorkerManager {
   }
 
   public void updateJobWorker(
-      final String type, final JobWorkerChangeSet changeSet, final boolean applyCustomizers) {
+      final String type, final JobWorkerChangeSet changeSet) {
     final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
-    upsertWorker(internalManagedJobWorker, changeSet, applyCustomizers);
+    upsertWorker(internalManagedJobWorker, changeSet);
   }
 
-  public void updateJobWorkers(final JobWorkerChangeSet changeSet, final boolean applyCustomizers) {
-    managedJobWorkers.keySet().forEach(type -> updateJobWorker(type, changeSet, applyCustomizers));
+  public void updateJobWorkers(final JobWorkerChangeSet changeSet) {
+    managedJobWorkers.keySet().forEach(type -> updateJobWorker(type, changeSet));
   }
 
   public void resetJobWorker(final String type) {
     final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
-    upsertWorker(internalManagedJobWorker, new ResetChangeSet(), false);
+    upsertWorker(internalManagedJobWorker, new ResetChangeSet());
   }
 
   public void resetJobWorkers() {
@@ -97,7 +97,7 @@ public class JobWorkerManager {
 
   public void closeJobWorker(final String type) {
     final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
-    upsertWorker(internalManagedJobWorker, new CloseChangeSet(), false);
+    upsertWorker(internalManagedJobWorker, new CloseChangeSet());
     managedJobWorkers.remove(type);
   }
 
@@ -110,8 +110,7 @@ public class JobWorkerManager {
 
   private void upsertWorker(
       final InternalManagedJobWorker internalManagedJobWorker,
-      final JobWorkerChangeSet changeSet,
-      final boolean applyCustomizers) {
+      final JobWorkerChangeSet changeSet) {
     // apply changes and check whether there was an actual change
     final boolean changed = changeSet.applyChanges(internalManagedJobWorker.getCurrent());
     if (!changed) {
@@ -129,11 +128,6 @@ public class JobWorkerManager {
                   "%s with type %s",
                   internalManagedJobWorker.getCurrent().getName().value(),
                   internalManagedJobWorker.getCurrent().getType().value()));
-    }
-    // apply customizers if required
-    if (applyCustomizers) {
-      jobWorkerValueCustomizers.forEach(
-          customizer -> customizer.customize(internalManagedJobWorker.getCurrent()));
     }
     final boolean enabled = internalManagedJobWorker.getCurrent().getEnabled().value();
     final boolean closed = changeSet instanceof CloseChangeSet;

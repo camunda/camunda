@@ -15,8 +15,6 @@
  */
 package io.camunda.client.spring.actuator;
 
-import static java.util.Optional.ofNullable;
-
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
 import io.camunda.client.jobhandling.JobWorkerChangeSet;
@@ -81,8 +79,7 @@ public class JobWorkerController {
       @Nullable final Boolean streamEnabled,
       @Nullable final Duration streamTimeout,
       @Nullable final Integer maxRetries,
-      @Nullable final Boolean reset,
-      @Nullable final Boolean applyCustomizers) {
+      @Nullable final Boolean reset) {
     if (reset != null && reset) {
       jobWorkerManager.resetJobWorkers();
     } else {
@@ -100,8 +97,7 @@ public class JobWorkerController {
               forceFetchAllVariables,
               streamEnabled,
               streamTimeout,
-              maxRetries),
-          ofNullable(applyCustomizers).orElse(false));
+              maxRetries));
     }
   }
 
@@ -141,8 +137,7 @@ public class JobWorkerController {
               forceFetchAllVariables,
               streamEnabled,
               streamTimeout,
-              maxRetries),
-          ofNullable(applyCustomizers).orElse(false));
+              maxRetries));
     }
   }
 
