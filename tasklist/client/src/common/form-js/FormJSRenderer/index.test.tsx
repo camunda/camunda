@@ -17,15 +17,20 @@ function noop() {
 
 describe('<FormJSRenderer />', () => {
   beforeEach(() => {
-    global.IntersectionObserver = vi.fn(() => ({
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn(),
-      root: null,
-      rootMargin: '',
-      thresholds: [],
-      takeRecords: () => [],
-    }));
+    vi.stubGlobal(
+      'IntersectionObserver',
+      vi.fn(
+        class IntersectionObserver {
+          observe = vi.fn();
+          unobserve = vi.fn();
+          disconnect = vi.fn();
+          root = null;
+          rootMargin = '';
+          thresholds = [];
+          takeRecords = () => [];
+        },
+      ),
+    );
   });
   afterEach(() => {
     vi.restoreAllMocks();
