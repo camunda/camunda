@@ -33,7 +33,6 @@ class OperateProcessesPage {
   readonly processInstanceKeyCell: Locator;
   readonly migrateSelectedProcessesButton: Locator;
   readonly continueMigrationDialogButton: Locator;
-  readonly operationPanelItem: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
   constructor(page: Page) {
@@ -97,7 +96,6 @@ class OperateProcessesPage {
     this.continueMigrationDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Continue',});
-    this.operationPanelItem = page.getByTestId('operation-id').first();
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -183,9 +181,6 @@ class OperateProcessesPage {
     await this.continueMigrationDialogButton.click();
   }
 
-  async selectFirstOperationItem(): Promise<void> {
-    await this.operationPanelItem.click( {timeout: 6000} );
-  }
 }
 
 export {OperateProcessesPage};

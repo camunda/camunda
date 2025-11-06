@@ -85,6 +85,7 @@ test.describe('Process Instances Filters', () => {
     operateProcessesPage,
     operateFiltersPanelPage,
     operateProcessMigrationModePage,
+    operateOperationPanelPage,
   }) => {
     await test.step('Filter by Parent Process Instance Key and assert results', async () => {
       const callActivityProcessInstanceKey =
@@ -253,7 +254,7 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
-    await test.step('Filter by op ID and assert results', async ({ }) => {
+    await test.step('Filter by op ID of migration and assert results', async ({ }) => {
       await operateFiltersPanelPage.resetFiltersButton.click();
 
       // select process with version 2
@@ -275,9 +276,8 @@ test.describe('Process Instances Filters', () => {
       await operateProcessMigrationModePage.clickMigrationConfirmationButton();
 
       // filter by operation id
-      // await page.getByTestId('operation-id').first().click( {timeout: 5000});
-      await operateProcessesPage.selectFirstOperationItem();
-      
+      await operateOperationPanelPage.selectFirstOperationItem();
+
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('1 result')).toBeVisible();
@@ -288,7 +288,41 @@ test.describe('Process Instances Filters', () => {
         }
       });
 
+      await operateOperationPanelPage.collapseOperationIdField();
+    });
 
+    await test.step('Filter by op ID of cancelation and assert results', async ({ }) => {
+      await operateFiltersPanelPage.resetFiltersButton.click();
+
+      await waitForAssertion({
+        assertion: async () => {
+          expect(await operateProcessesPage.processInstancesTable.count()).toBeGreaterThan(1);
+          expect(operateFiltersPanelPage.runningInstancesCheckbox).toBeChecked();
+        },
+        onFailure: async () => {
+          await page.reload();
+        }
+      });
+
+      // select process to work with
+      await operateFiltersPanelPage.selectProcess('Variable_Process');
+      await sleep(1_000); // wait for filter to be applied
+
+      await operateProcessesPage.selectFirstProcessCheckbox();
+
+      // filter by operation id
+      // await page.getByTestId('operation-id').first().click( {timeout: 5000});
+      // await operateProcessesPage.selectFirstOperationItem();
+
+      // await waitForAssertion({
+      //   assertion: async () => {
+      //     await expect(page.getByText('1 result')).toBeVisible();
+      //     await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(processWithMultVerV2Key);
+      //   },
+      //   onFailure: async () => {
+      //     await page.reload();
+      //   }
+      // });
     })
 
   });
