@@ -1,286 +1,289 @@
 ## Endpoint definitions
-/authorizations:
-  post:
-    tags:
-      - Authorization
-    operationId: createAuthorization
-    summary: Create authorization
-    description: Create the authorization.
-    requestBody:
-      content:
-        application/json:
-          schema:
-            $ref: '#/AuthorizationCreateResult'
-      required: true
-    responses:
-      "201":
-        description: The authorization was created successfully.
+paths:
+  /authorizations:
+    post:
+      tags:
+        - Authorization
+      operationId: createAuthorization
+      summary: Create authorization
+      description: Create the authorization.
+      requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/AuthorizationResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The owner was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/authorizations/{authorizationKey}:
-  put:
-    tags:
-      - Authorization
-    operationId: updateAuthorization
-    summary: Update authorization
-    description: Update the authorization with the given key.
-    parameters:
-      - name: authorizationKey
-        in: path
+              $ref: '#/components/schemas/AuthorizationCreateResult'
         required: true
-        description: The key of the authorization to delete.
-        schema:
-          $ref: 'keys.yaml#/AuthorizationKey'
-    requestBody:
-      content:
-        application/json:
+      responses:
+        "201":
+          description: The authorization was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The owner was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /authorizations/{authorizationKey}:
+    put:
+      tags:
+        - Authorization
+      operationId: updateAuthorization
+      summary: Update authorization
+      description: Update the authorization with the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to delete.
           schema:
-            $ref: '#/AuthorizationRequest'
-      required: true
-    responses:
-      "204":
-        description: The authorization was updated successfully.
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "404":
-        description: The authorization with the authorizationKey was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-  get:
-    tags:
-      - Authorization
-    operationId: getAuthorization
-    summary: Get authorization
-    description: Get authorization by the given key.
-    parameters:
-      - name: authorizationKey
-        in: path
-        required: true
-        description: The key of the authorization to get.
-        schema:
-          $ref: 'keys.yaml#/AuthorizationKey'
-    responses:
-      "200":
-        description: The authorization was successfully returned.
+            $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+      requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/AuthorizationResult'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The authorization with the given key was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
-
-  delete:
-    tags:
-      - Authorization
-    operationId: deleteAuthorization
-    summary: Delete authorization
-    description: Deletes the authorization with the given key.
-    parameters:
-      - name: authorizationKey
-        in: path
+              $ref: '#/components/schemas/AuthorizationRequest'
         required: true
-        description: The key of the authorization to delete.
-        schema:
-          $ref: 'keys.yaml#/AuthorizationKey'
-    responses:
-      "204":
-        description: The authorization was deleted successfully.
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "404":
-        description: The authorization with the authorizationKey was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
+      responses:
+        "204":
+          description: The authorization was updated successfully.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The authorization with the authorizationKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
-/authorizations/search:
-  post:
-    tags:
-      - Authorization
-    summary: Search authorizations
-    description: Search for authorizations based on given criteria.
-    operationId: searchAuthorizations
-    requestBody:
-      content:
-        application/json:
+    get:
+      tags:
+        - Authorization
+      operationId: getAuthorization
+      summary: Get authorization
+      description: Get authorization by the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to get.
           schema:
-            $ref: '#/AuthorizationSearchQuery'
-    responses:
-      "200":
-        description: The authorization search result.
+            $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+      responses:
+        "200":
+          description: The authorization was successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationResult'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The authorization with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+    delete:
+      tags:
+        - Authorization
+      operationId: deleteAuthorization
+      summary: Delete authorization
+      description: Deletes the authorization with the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to delete.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+      responses:
+        "204":
+          description: The authorization was deleted successfully.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The authorization with the authorizationKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /authorizations/search:
+    post:
+      tags:
+        - Authorization
+      summary: Search authorizations
+      description: Search for authorizations based on given criteria.
+      operationId: searchAuthorizations
+      requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/AuthorizationSearchResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: '#/components/schemas/AuthorizationSearchQuery'
+      responses:
+        "200":
+          description: The authorization search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationSearchResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
-AuthorizationRequest:
-  type: object
-  additionalProperties: false
-  properties:
-    ownerId:
-      description: The ID of the owner of the permissions.
-      type: string
-    ownerType:
-      $ref: 'enums.yaml#/OwnerTypeEnum'
-    resourceId:
-      description: The ID of the resource to add permissions to.
-      type: string
-    resourceType:
-      $ref: 'enums.yaml#/ResourceTypeEnum'
-    permissionTypes:
-      type: array
-      items:
-        $ref: 'enums.yaml#/PermissionTypeEnum'
-  required:
-    - ownerId
-    - ownerType
-    - resourceId
-    - resourceType
-    - permissionTypes
-
-AuthorizationSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
+components:
+  schemas:
+    AuthorizationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        ownerId:
+          description: The ID of the owner of the permissions.
+          type: string
+        ownerType:
+          $ref: 'enums.yaml#/components/schemas/OwnerTypeEnum'
+        resourceId:
+          description: The ID of the resource to add permissions to.
+          type: string
+        resourceType:
+          $ref: 'enums.yaml#/components/schemas/ResourceTypeEnum'
+        permissionTypes:
+          type: array
+          items:
+            $ref: 'enums.yaml#/components/schemas/PermissionTypeEnum'
+      required:
         - ownerId
         - ownerType
         - resourceId
         - resourceType
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
+        - permissionTypes
 
-AuthorizationSearchQuery:
-  type: object
-  additionalProperties: false
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/AuthorizationSearchQuerySortRequest'
-    filter:
+    AuthorizationSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - ownerId
+            - ownerType
+            - resourceId
+            - resourceType
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    AuthorizationSearchQuery:
+      type: object
+      additionalProperties: false
       allOf:
-        - $ref: '#/AuthorizationFilter'
-      description: The authorization search filters.
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/AuthorizationFilter'
+          description: The authorization search filters.
 
-AuthorizationFilter:
-  description: Authorization search filter.
-  type: object
-  properties:
-    ownerId:
-      description: The ID of the owner of permissions.
-      type: string
-    ownerType:
-      $ref: 'enums.yaml#/OwnerTypeEnum'
-    resourceIds:
-      description: The IDs of the resource to search permissions for.
-      type: array
-      items:
-        type: string
-    resourceType:
-      $ref: 'enums.yaml#/ResourceTypeEnum'
+    AuthorizationFilter:
+      description: Authorization search filter.
+      type: object
+      properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
+        ownerType:
+          $ref: 'enums.yaml#/components/schemas/OwnerTypeEnum'
+        resourceIds:
+          description: The IDs of the resource to search permissions for.
+          type: array
+          items:
+            type: string
+        resourceType:
+          $ref: 'enums.yaml#/components/schemas/ResourceTypeEnum'
 
-AuthorizationResult:
-  type: object
-  properties:
-    ownerId:
-      description: The ID of the owner of permissions.
-      type: string
-    ownerType:
-      $ref: 'enums.yaml#/OwnerTypeEnum'
-    resourceType:
-      $ref: 'enums.yaml#/ResourceTypeEnum'
-    resourceId:
-      description: ID of the resource the permission relates to.
-      type: string
-    permissionTypes:
-      description: Specifies the types of the permissions.
-      type: array
-      items:
-        $ref: 'enums.yaml#/PermissionTypeEnum'
-    authorizationKey:
+    AuthorizationResult:
+      type: object
+      properties:
+        ownerId:
+          description: The ID of the owner of permissions.
+          type: string
+        ownerType:
+          $ref: 'enums.yaml#/components/schemas/OwnerTypeEnum'
+        resourceType:
+          $ref: 'enums.yaml#/components/schemas/ResourceTypeEnum'
+        resourceId:
+          description: ID of the resource the permission relates to.
+          type: string
+        permissionTypes:
+          description: Specifies the types of the permissions.
+          type: array
+          items:
+            $ref: 'enums.yaml#/components/schemas/PermissionTypeEnum'
+        authorizationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+          description: The key of the authorization.
+
+    AuthorizationSearchResult:
+      type: object
       allOf:
-        - $ref: 'keys.yaml#/AuthorizationKey'
-      description: The key of the authorization.
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching authorizations.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationResult'
 
-AuthorizationSearchResult:
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryResponse'
-  properties:
-    items:
-      description: The matching authorizations.
-      type: array
-      items:
-        $ref: '#/AuthorizationResult'
-
-AuthorizationCreateResult:
-  type: object
-  properties:
-    authorizationKey:
-      allOf:
-        - $ref: 'keys.yaml#/AuthorizationKey'
-      description: The key of the created authorization.
+    AuthorizationCreateResult:
+      type: object
+      properties:
+        authorizationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AuthorizationKey'
+          description: The key of the created authorization.

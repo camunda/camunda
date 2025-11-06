@@ -1,115 +1,118 @@
 ## Endpoint definitions
 
-/system/usage-metrics:
-  get:
-    tags:
-      - System
-    operationId: getUsageMetrics
-    summary: Get usage metrics
-    description: Retrieve the usage metrics based on given criteria.
-    parameters:
-      - name: startTime
-        in: query
-        required: true
-        description: The start date for usage metrics, including this date. Value in ISO 8601 format.
-        schema:
-          type: string
-          format: date-time
-          example: "2025-06-07T13:14:15Z"
-      - name: endTime
-        in: query
-        required: true
-        description: The end date for usage metrics, including this date. Value in ISO 8601 format.
-        schema:
-          type: string
-          format: date-time
-          example: "2025-06-07T13:14:15Z"
-      - name: tenantId
-        in: query
-        required: false
-        description: Restrict results to a specific tenant ID. If not provided, results for all tenants are returned.
-        schema:
-          $ref: 'identifiers.yaml#/TenantId'
-      - name: withTenants
-        in: query
-        required: false
-        description: Whether to return tenant metrics in addition to the total metrics or not. Default false.
-        schema:
-          type: boolean
-          default: false
-    responses:
-      "200":
-        description: The usage metrics search result.
-        content:
-          application/json:
-            schema:
-              $ref: '#/UsageMetricsResponse'
-            examples:
-              Response without tenants:
-                value:
-                  processInstances: 5
-                  decisionInstances: 23
-                  activeTenants: 2
-                  assignees: 3
-                  tenants: {}
-              Response with tenants:
-                value:
-                  processInstances: 5
-                  decisionInstances: 23
-                  activeTenants: 2
-                  assignees: 3
-                  tenants:
-                    tenant1:
-                      processInstances: 1
-                      decisionInstances: 2
-                      assignees: 1
-                    tenant2:
-                      processInstances: 4
-                      decisionInstances: 21
-                      assignees: 3
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+paths:
+  /system/usage-metrics:
+    get:
+      tags:
+        - System
+      operationId: getUsageMetrics
+      summary: Get usage metrics
+      description: Retrieve the usage metrics based on given criteria.
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          description: The start date for usage metrics, including this date. Value in ISO 8601 format.
+          schema:
+            type: string
+            format: date-time
+            example: "2025-06-07T13:14:15Z"
+        - name: endTime
+          in: query
+          required: true
+          description: The end date for usage metrics, including this date. Value in ISO 8601 format.
+          schema:
+            type: string
+            format: date-time
+            example: "2025-06-07T13:14:15Z"
+        - name: tenantId
+          in: query
+          required: false
+          description: Restrict results to a specific tenant ID. If not provided, results for all tenants are returned.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        - name: withTenants
+          in: query
+          required: false
+          description: Whether to return tenant metrics in addition to the total metrics or not. Default false.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: The usage metrics search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageMetricsResponse'
+              examples:
+                Response without tenants:
+                  value:
+                    processInstances: 5
+                    decisionInstances: 23
+                    activeTenants: 2
+                    assignees: 3
+                    tenants: {}
+                Response with tenants:
+                  value:
+                    processInstances: 5
+                    decisionInstances: 23
+                    activeTenants: 2
+                    assignees: 3
+                    tenants:
+                      tenant1:
+                        processInstances: 1
+                        decisionInstances: 2
+                        assignees: 1
+                      tenant2:
+                        processInstances: 4
+                        decisionInstances: 21
+                        assignees: 3
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
-UsageMetricsResponse:
-  type: object
-  allOf:
-    - $ref: "#/UsageMetricsResponseItem"
-  properties:
-    activeTenants:
-      description: The amount of active tenants.
-      type: integer
-      format: int64
-    tenants:
-      description: The usage metrics by tenants. Only available if request `withTenants` query parameter was `true`.
+components:
+  schemas:
+    UsageMetricsResponse:
       type: object
-      additionalProperties:
-        type: object
-        title: The tenant ID.
-        description: The usage metrics for the specific tenant.
-        allOf:
-          - $ref: "#/UsageMetricsResponseItem"
+      allOf:
+        - $ref: '#/components/schemas/UsageMetricsResponseItem'
+      properties:
+        activeTenants:
+          description: The amount of active tenants.
+          type: integer
+          format: int64
+        tenants:
+          description: The usage metrics by tenants. Only available if request `withTenants` query parameter was `true`.
+          type: object
+          additionalProperties:
+            type: object
+            title: The tenant ID.
+            description: The usage metrics for the specific tenant.
+            allOf:
+              - $ref: '#/components/schemas/UsageMetricsResponseItem'
 
-UsageMetricsResponseItem:
-  type: object
-  properties:
-    processInstances:
-      description: The amount of created root process instances.
-      type: integer
-      format: int64
-    decisionInstances:
-      description: The amount of executed decision instances.
-      type: integer
-      format: int64
-    assignees:
-      description: The amount of unique active task users.
-      type: integer
-      format: int64
+    UsageMetricsResponseItem:
+      type: object
+      properties:
+        processInstances:
+          description: The amount of created root process instances.
+          type: integer
+          format: int64
+        decisionInstances:
+          description: The amount of executed decision instances.
+          type: integer
+          format: int64
+        assignees:
+          description: The amount of unique active task users.
+          type: integer
+          format: int64

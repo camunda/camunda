@@ -1,924 +1,927 @@
 ## Endpoint definitions
 
-/roles:
-  post:
-    tags:
-      - Role
-    operationId: createRole
-    summary: Create role
-    description: Create a new role.
-    requestBody:
-      content:
-        application/json:
+paths:
+  /roles:
+    post:
+      tags:
+        - Role
+      operationId: createRole
+      summary: Create role
+      description: Create a new role.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreateRequest'
+      responses:
+        "201":
+          description: The role was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleCreateResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /roles/search:
+    post:
+      tags:
+        - Role
+      operationId: searchRoles
+      summary: Search roles
+      description: Search for roles based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleSearchQueryRequest'
+      responses:
+        "200":
+          description: The roles search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          description: An internal error occurred while processing the request.
+      x-eventually-consistent: true
+
+  /roles/{roleId}:
+    get:
+      tags:
+        - Role
+      operationId: getRole
+      summary: Get role
+      description: Get a role by its ID.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
           schema:
-            $ref: '#/RoleCreateRequest'
-    responses:
-      "201":
-        description: The role was created successfully.
-        content:
-          application/json:
-            schema:
-              $ref: '#/RoleCreateResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
+            type: string
+      responses:
+        "200":
+          description: The role is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResult'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
-/roles/search:
-  post:
-    tags:
-      - Role
-    operationId: searchRoles
-    summary: Search roles
-    description: Search for roles based on given criteria.
-    requestBody:
-      required: false
-      content:
-        application/json:
+    put:
+      tags:
+        - Role
+      operationId: updateRole
+      summary: Update role
+      description: Update a role with the given ID.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
           schema:
-            $ref: '#/RoleSearchQueryRequest'
-    responses:
-      "200":
-        description: The roles search result.
+            type: string
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/RoleSearchQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        description: An internal error occurred while processing the request.
-    x-eventually-consistent: true
+              $ref: '#/components/schemas/RoleUpdateRequest'
+      responses:
+        "200":
+          description: The role was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleUpdateResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The role with the ID is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
-/roles/{roleId}:
-  get:
-    tags:
-      - Role
-    operationId: getRole
-    summary: Get role
-    description: Get a role by its ID.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-    responses:
-      "200":
-        description: The role is successfully returned.
-        content:
-          application/json:
-            schema:
-              $ref: '#/RoleResult'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
-
-  put:
-    tags:
-      - Role
-    operationId: updateRole
-    summary: Update role
-    description: Update a role with the given ID.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-    requestBody:
-      required: true
-      content:
-        application/json:
+    delete:
+      tags:
+        - Role
+      operationId: deleteRole
+      summary: Delete role
+      description: Deletes the role with the given ID.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
           schema:
-            $ref: '#/RoleUpdateRequest'
-    responses:
-      "200":
-        description: The role was updated successfully.
-        content:
-          application/json:
-            schema:
-              $ref: '#/RoleUpdateResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "404":
-        description: The role with the ID is not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
+            type: string
+      responses:
+        "204":
+          description: The role was deleted successfully.
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The role with the ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
-  delete:
-    tags:
-      - Role
-    operationId: deleteRole
-    summary: Delete role
-    description: Deletes the role with the given ID.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-    responses:
-      "204":
-        description: The role was deleted successfully.
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "404":
-        description: The role with the ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/roles/{roleId}/users/{username}:
-  put:
-    tags:
-      - Role
-    operationId: assignRoleToUser
-    summary: Assign a role to a user
-    description: Assigns the specified role to the user. The user will inherit the authorizations associated with this role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-      - name: username
-        in: path
-        required: true
-        description: The user username.
-        schema:
-          $ref: 'identifiers.yaml#/Username'
-    responses:
-      "204":
-        description: The role was assigned successfully to the user.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role or user with the given ID or username was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "409":
-        description: The role is already assigned to the user with the given ID.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-  delete:
-    tags:
-      - Role
-    operationId: unassignRoleFromUser
-    summary: Unassign a role from a user
-    description: Unassigns a role from a user. The user will no longer inherit the authorizations associated with this role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-      - name: username
-        in: path
-        required: true
-        description: The user username.
-        schema:
-          $ref: 'identifiers.yaml#/Username'
-    responses:
-      "204":
-        description: The role was unassigned successfully from the user.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role or user with the given ID or username was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/roles/{roleId}/users/search:
-  post:
-    tags:
-      - Role
-    operationId: searchUsersForRole
-    summary: Search role users
-    description: Search users with assigned role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-    requestBody:
-      required: false
-      content:
-        application/json:
+  /roles/{roleId}/users/{username}:
+    put:
+      tags:
+        - Role
+      operationId: assignRoleToUser
+      summary: Assign a role to a user
+      description: Assigns the specified role to the user. The user will inherit the authorizations associated with this role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
           schema:
-            $ref: '#/RoleUserSearchQueryRequest'
-    responses:
-      "200":
-        description: The users with the assigned role.
-        content:
-          application/json:
-            schema:
-              $ref: '#/RoleUserSearchResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
-
-/roles/{roleId}/clients/{clientId}:
-  put:
-    tags:
-      - Role
-    operationId: assignRoleToClient
-    summary: Assign a role to a client
-    description: Assigns the specified role to the client. The client will inherit the authorizations associated with this role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-      - name: clientId
-        in: path
-        required: true
-        description: The client ID.
-        schema:
-          type: string
-    responses:
-      "204":
-        description: The role was assigned successfully to the client.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "409":
-        description: The role was already assigned to the client with the given ID.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-  delete:
-    tags:
-      - Role
-    operationId: unassignRoleFromClient
-    summary: Unassign a role from a client
-    description: Unassigns the specified role from the client. The client will no longer inherit the authorizations associated with this role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-      - name: clientId
-        in: path
-        required: true
-        description: The client ID.
-        schema:
-          type: string
-    responses:
-      "204":
-        description: The role was unassigned successfully from the client.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role or client with the given ID or username was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/roles/{roleId}/clients/search:
-  post:
-    tags:
-      - Role
-    operationId: searchClientsForRole
-    summary: Search role clients
-    description: Search clients with assigned role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-    requestBody:
-      required: false
-      content:
-        application/json:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The user username.
           schema:
-            $ref: '#/RoleClientSearchQueryRequest'
-    responses:
-      "200":
-        description: The clients with the assigned role.
-        content:
-          application/json:
-            schema:
-              $ref: '#/RoleClientSearchResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+            $ref: 'identifiers.yaml#/components/schemas/Username'
+      responses:
+        "204":
+          description: The role was assigned successfully to the user.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role or user with the given ID or username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The role is already assigned to the user with the given ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
-/roles/{roleId}/groups/{groupId}:
-  put:
-    tags:
-      - Role
-    operationId: assignRoleToGroup
-    summary: Assign a role to a group
-    description: Assigns the specified role to the group. Every member of the group (user or client) will inherit the authorizations associated with this role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-      - name: groupId
-        in: path
-        required: true
-        description: The group ID.
-        schema:
-          type: string
-    responses:
-      "204":
-        description: The role was assigned successfully to the group.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role or group with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "409":
-        description: The role is already assigned to the group with the given ID.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-  delete:
-    tags:
-      - Role
-    operationId: unassignRoleFromGroup
-    summary: Unassign a role from a group
-    description: Unassigns the specified role from the group. All group members (user or client) no longer inherit the authorizations associated with this role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-      - name: groupId
-        in: path
-        required: true
-        description: The group ID.
-        schema:
-          type: string
-    responses:
-      "204":
-        description: The role was unassigned successfully from the group.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role or group with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/roles/{roleId}/groups/search:
-  post:
-    tags:
-      - Role
-    operationId: searchGroupsForRole
-    summary: Search role groups
-    description: Search groups with assigned role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-    requestBody:
-      required: false
-      content:
-        application/json:
+    delete:
+      tags:
+        - Role
+      operationId: unassignRoleFromUser
+      summary: Unassign a role from a user
+      description: Unassigns a role from a user. The user will no longer inherit the authorizations associated with this role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
           schema:
-            $ref: '#/RoleGroupSearchQueryRequest'
-    responses:
-      "200":
-        description: The groups with assigned role.
-        content:
-          application/json:
-            schema:
-              $ref: '#/RoleGroupSearchResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
-
-/roles/{roleId}/mapping-rules/{mappingRuleId}:
-  put:
-    tags:
-      - Role
-    operationId: assignRoleToMappingRule
-    summary: Assign a role to a mapping rule
-    description: Assigns a role to a mapping rule.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-      - name: mappingRuleId
-        in: path
-        required: true
-        description: The mapping rule ID.
-        schema:
-          type: string
-    responses:
-      "204":
-        description: The role was assigned successfully to the mapping rule.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role or mapping rule with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "409":
-        description: The role is already assigned to the mapping rule with the given ID.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-  delete:
-    tags:
-      - Role
-    operationId: unassignRoleFromMappingRule
-    summary: Unassign a role from a mapping rule
-    description: Unassigns a role from a mapping rule.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-      - name: mappingRuleId
-        in: path
-        required: true
-        description: The mapping rule ID.
-        schema:
-          type: string
-    responses:
-      "204":
-        description: The role was unassigned successfully from the mapping rule.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role or mapping rule with the given ID was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/roles/{roleId}/mapping-rules/search:
-  post:
-    tags:
-      - Role
-    operationId: searchMappingRulesForRole
-    summary: Search role mapping rules
-    description: Search mapping rules with assigned role.
-    parameters:
-      - name: roleId
-        in: path
-        required: true
-        description: The role ID.
-        schema:
-          type: string
-    requestBody:
-      required: false
-      content:
-        application/json:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The user username.
           schema:
-            $ref: 'mapping-rules.yaml#/MappingRuleSearchQueryRequest'
-    responses:
-      "200":
-        description: The mapping rules with assigned role.
+            $ref: 'identifiers.yaml#/components/schemas/Username'
+      responses:
+        "204":
+          description: The role was unassigned successfully from the user.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role or user with the given ID or username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /roles/{roleId}/users/search:
+    post:
+      tags:
+        - Role
+      operationId: searchUsersForRole
+      summary: Search role users
+      description: Search users with assigned role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+      requestBody:
+        required: false
         content:
           application/json:
             schema:
-              $ref: 'search-models.yaml#/SearchQueryResponse'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The role with the given ID was not found.
+              $ref: '#/components/schemas/RoleUserSearchQueryRequest'
+      responses:
+        "200":
+          description: The users with the assigned role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleUserSearchResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /roles/{roleId}/clients/{clientId}:
+    put:
+      tags:
+        - Role
+      operationId: assignRoleToClient
+      summary: Assign a role to a client
+      description: Assigns the specified role to the client. The client will inherit the authorizations associated with this role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: clientId
+          in: path
+          required: true
+          description: The client ID.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The role was assigned successfully to the client.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The role was already assigned to the client with the given ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+    delete:
+      tags:
+        - Role
+      operationId: unassignRoleFromClient
+      summary: Unassign a role from a client
+      description: Unassigns the specified role from the client. The client will no longer inherit the authorizations associated with this role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: clientId
+          in: path
+          required: true
+          description: The client ID.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The role was unassigned successfully from the client.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role or client with the given ID or username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /roles/{roleId}/clients/search:
+    post:
+      tags:
+        - Role
+      operationId: searchClientsForRole
+      summary: Search role clients
+      description: Search clients with assigned role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+      requestBody:
+        required: false
         content:
-          application/problem+json:
+          application/json:
             schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: '#/components/schemas/RoleClientSearchQueryRequest'
+      responses:
+        "200":
+          description: The clients with the assigned role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleClientSearchResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /roles/{roleId}/groups/{groupId}:
+    put:
+      tags:
+        - Role
+      operationId: assignRoleToGroup
+      summary: Assign a role to a group
+      description: Assigns the specified role to the group. Every member of the group (user or client) will inherit the authorizations associated with this role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The role was assigned successfully to the group.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role or group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The role is already assigned to the group with the given ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+    delete:
+      tags:
+        - Role
+      operationId: unassignRoleFromGroup
+      summary: Unassign a role from a group
+      description: Unassigns the specified role from the group. All group members (user or client) no longer inherit the authorizations associated with this role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The role was unassigned successfully from the group.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role or group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /roles/{roleId}/groups/search:
+    post:
+      tags:
+        - Role
+      operationId: searchGroupsForRole
+      summary: Search role groups
+      description: Search groups with assigned role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleGroupSearchQueryRequest'
+      responses:
+        "200":
+          description: The groups with assigned role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleGroupSearchResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /roles/{roleId}/mapping-rules/{mappingRuleId}:
+    put:
+      tags:
+        - Role
+      operationId: assignRoleToMappingRule
+      summary: Assign a role to a mapping rule
+      description: Assigns a role to a mapping rule.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: mappingRuleId
+          in: path
+          required: true
+          description: The mapping rule ID.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The role was assigned successfully to the mapping rule.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role or mapping rule with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: The role is already assigned to the mapping rule with the given ID.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+    delete:
+      tags:
+        - Role
+      operationId: unassignRoleFromMappingRule
+      summary: Unassign a role from a mapping rule
+      description: Unassigns a role from a mapping rule.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: mappingRuleId
+          in: path
+          required: true
+          description: The mapping rule ID.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The role was unassigned successfully from the mapping rule.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role or mapping rule with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /roles/{roleId}/mapping-rules/search:
+    post:
+      tags:
+        - Role
+      operationId: searchMappingRulesForRole
+      summary: Search role mapping rules
+      description: Search mapping rules with assigned role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleSearchQueryRequest'
+      responses:
+        "200":
+          description: The mapping rules with assigned role.
+          content:
+            application/json:
+              schema:
+                $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The role with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
-RoleCreateRequest:
-  additionalProperties: false
-  type: object
-  properties:
-    roleId:
-      type: string
-      description: The ID of the new role.
-    name:
-      type: string
-      description: The display name of the new role.
-    description:
-      type: string
-      description: The description of the new role.
-  required:
-    - roleId
-    - name
-
-RoleCreateResult:
-  type: object
-  properties:
-    roleId:
-      description: The ID of the created role.
-      type: string
-    name:
-      description: The display name of the created role.
-      type: string
-    description:
-      description: The description of the created role.
-      type: string
-
-RoleUpdateRequest:
-  type: object
-  properties:
-    name:
-      type: string
-      description: The display name of the new role.
-    description:
-      type: string
-      description: The description of the new role.
-  required:
-    - name
-    - description
-
-RoleUpdateResult:
-  type: object
-  properties:
-    name:
-      type: string
-      description: The display name of the updated role.
-    description:
-      type: string
-      description: The description of the updated role.
-    roleId:
-      type: string
-      description: The ID of the updated role.
-
-RoleResult:
-  description: Role search response item.
-  type: object
-  properties:
-    name:
-      type: string
-      description: The role name.
-    roleId:
-      type: string
-      description: The role id.
-    description:
-      type: string
-      description: The description of the role.
-
-RoleSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
-        - name
+components:
+  schemas:
+    RoleCreateRequest:
+      additionalProperties: false
+      type: object
+      properties:
+        roleId:
+          type: string
+          description: The ID of the new role.
+        name:
+          type: string
+          description: The display name of the new role.
+        description:
+          type: string
+          description: The description of the new role.
+      required:
         - roleId
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
+        - name
 
-RoleSearchQueryRequest:
-  description: Role search request.
-  additionalProperties: false
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  type: object
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/RoleSearchQuerySortRequest'
-    filter:
+    RoleCreateResult:
+      type: object
+      properties:
+        roleId:
+          description: The ID of the created role.
+          type: string
+        name:
+          description: The display name of the created role.
+          type: string
+        description:
+          description: The description of the created role.
+          type: string
+
+    RoleUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The display name of the new role.
+        description:
+          type: string
+          description: The description of the new role.
+      required:
+        - name
+        - description
+
+    RoleUpdateResult:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The display name of the updated role.
+        description:
+          type: string
+          description: The description of the updated role.
+        roleId:
+          type: string
+          description: The ID of the updated role.
+
+    RoleResult:
+      description: Role search response item.
+      type: object
+      properties:
+        name:
+          type: string
+          description: The role name.
+        roleId:
+          type: string
+          description: The role id.
+        description:
+          type: string
+          description: The description of the role.
+
+    RoleSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - name
+            - roleId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    RoleSearchQueryRequest:
+      description: Role search request.
+      additionalProperties: false
       allOf:
-        - $ref: '#/RoleFilter'
-      description: The role search filters.
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/RoleFilter'
+          description: The role search filters.
 
-RoleFilter:
-  description: Role filter request
-  type: object
-  properties:
-    roleId:
-      description: The role ID search filters.
-      type: string
-    name:
-      description: The role name search filters.
-      type: string
+    RoleFilter:
+      description: Role filter request
+      type: object
+      properties:
+        roleId:
+          description: The role ID search filters.
+          type: string
+        name:
+          description: The role name search filters.
+          type: string
 
-RoleSearchQueryResult:
-  description: Role search response.
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryResponse'
-  properties:
-    items:
-      description: The matching roles.
-      type: array
-      items:
-        $ref: '#/RoleResult'
+    RoleSearchQueryResult:
+      description: Role search response.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching roles.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleResult'
 
-RoleUserResult:
-  type: object
-  properties:
-    username:
-      $ref: 'identifiers.yaml#/Username'
+    RoleUserResult:
+      type: object
+      properties:
+        username:
+          $ref: 'identifiers.yaml#/components/schemas/Username'
 
-RoleUserSearchResult:
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryResponse'
-  properties:
-    items:
-      description: The matching users.
-      type: array
-      items:
-        $ref: '#/RoleUserResult'
+    RoleUserSearchResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching users.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleUserResult'
 
-RoleUserSearchQueryRequest:
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  type: object
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/RoleUserSearchQuerySortRequest'
+    RoleUserSearchQueryRequest:
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleUserSearchQuerySortRequest'
 
-RoleUserSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
-        - username
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
+    RoleUserSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - username
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
 
-RoleClientResult:
-  type: object
-  properties:
-    clientId:
-      description: The ID of the client.
-      type: string
+    RoleClientResult:
+      type: object
+      properties:
+        clientId:
+          description: The ID of the client.
+          type: string
 
-RoleClientSearchResult:
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryResponse'
-  properties:
-    items:
-      description: The matching clients.
-      type: array
-      items:
-        $ref: '#/RoleClientResult'
+    RoleClientSearchResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching clients.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleClientResult'
 
-RoleClientSearchQueryRequest:
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  type: object
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/RoleClientSearchQuerySortRequest'
+    RoleClientSearchQueryRequest:
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleClientSearchQuerySortRequest'
 
-RoleClientSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
-        - clientId
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
+    RoleClientSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - clientId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
 
-RoleGroupResult:
-  type: object
-  properties:
-    groupId:
-      description: The id of the group.
-      type: string
+    RoleGroupResult:
+      type: object
+      properties:
+        groupId:
+          description: The id of the group.
+          type: string
 
-RoleGroupSearchResult:
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryResponse'
-  properties:
-    items:
-      description: The matching groups.
-      type: array
-      items:
-        $ref: '#/RoleGroupResult'
+    RoleGroupSearchResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching groups.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleGroupResult'
 
-RoleGroupSearchQueryRequest:
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  type: object
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/RoleGroupSearchQuerySortRequest'
+    RoleGroupSearchQueryRequest:
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleGroupSearchQuerySortRequest'
 
-RoleGroupSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
-        - groupId
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
+    RoleGroupSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - groupId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field

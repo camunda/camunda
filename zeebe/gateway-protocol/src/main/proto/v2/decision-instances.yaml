@@ -1,307 +1,310 @@
 ## Endpoint definitions
 
-/decision-instances/search:
-  post:
-    tags:
-      - Decision instance
-    operationId: searchDecisionInstances
-    summary: Search decision instances
-    description: Search for decision instances based on given criteria.
-    requestBody:
-      required: false
-      content:
-        application/json:
-          schema:
-            $ref: '#/DecisionInstanceSearchQuery'
-    responses:
-      "200":
-        description: The decision instance search result.
+paths:
+  /decision-instances/search:
+    post:
+      tags:
+        - Decision instance
+      operationId: searchDecisionInstances
+      summary: Search decision instances
+      description: Search for decision instances based on given criteria.
+      requestBody:
+        required: false
         content:
           application/json:
             schema:
-              $ref: '#/DecisionInstanceSearchQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: '#/components/schemas/DecisionInstanceSearchQuery'
+      responses:
+        "200":
+          description: The decision instance search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionInstanceSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
-/decision-instances/{decisionEvaluationInstanceKey}:
-  get:
-    tags:
-      - Decision instance
-    operationId: getDecisionInstance
-    summary: Get decision instance
-    description: Returns a decision instance.
-    parameters:
-      - name: decisionEvaluationInstanceKey
-        in: path
-        required: true
-        description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
-        schema:
-          $ref: 'keys.yaml#/DecisionInstanceKey'
-    responses:
-      "200":
-        description: The decision instance is successfully returned.
-        content:
-          application/json:
-            schema:
-              $ref: '#/DecisionInstanceGetQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: >
-          The decision instance with the given key was not found.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+  /decision-instances/{decisionEvaluationInstanceKey}:
+    get:
+      tags:
+        - Decision instance
+      operationId: getDecisionInstance
+      summary: Get decision instance
+      description: Returns a decision instance.
+      parameters:
+        - name: decisionEvaluationInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/DecisionInstanceKey'
+      responses:
+        "200":
+          description: The decision instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionInstanceGetQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            The decision instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
-DecisionInstanceSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
-        - decisionDefinitionId
-        - decisionDefinitionKey
-        - decisionDefinitionName
-        - decisionDefinitionType
-        - decisionDefinitionVersion
-        - decisionEvaluationInstanceKey
-        - decisionEvaluationKey
-        - elementInstanceKey
-        - evaluationDate
-        - evaluationFailure
-        - processDefinitionKey
-        - processInstanceKey
-        - rootDecisionDefinitionKey
-        - state
-        - tenantId
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
-
-DecisionInstanceSearchQuery:
-  type: object
-  additionalProperties: false
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/DecisionInstanceSearchQuerySortRequest'
-    filter:
-      description: The decision instance search filters.
-      allOf:
-        - $ref: "#/DecisionInstanceFilter"
-
-DecisionInstanceFilter:
-  description: Decision instance search filter.
-  type: object
-  properties:
-    decisionEvaluationInstanceKey:
-      $ref: 'keys.yaml#/DecisionEvaluationInstanceKey'
-    state:
-      $ref: 'enums.yaml#/DecisionInstanceStateEnum'
-    evaluationFailure:
-      type: string
-      description: The evaluation failure of the decision instance.
-    evaluationDate:
-      description: The evaluation date of the decision instance.
-      allOf:
-        - $ref: 'filters.yaml#/DateTimeFilterProperty'
-    decisionDefinitionId:
-      allOf:
-        - $ref: 'identifiers.yaml#/DecisionDefinitionId'
-      description: The ID of the DMN decision.
-    decisionDefinitionName:
-      type: string
-      description: The name of the DMN decision.
-    decisionDefinitionVersion:
-      type: integer
-      format: int32
-      description: The version of the decision.
-    decisionDefinitionType:
-      $ref: 'enums.yaml#/DecisionDefinitionTypeEnum'
-    tenantId:
-      description: The tenant ID of the decision instance.
-      allOf:
-        - $ref: 'identifiers.yaml#/TenantId'
-    decisionEvaluationKey:
-      allOf:
-        - $ref: 'keys.yaml#/DecisionEvaluationKey'
-      description: >
-        The key of the parent decision evaluation. Note that this is not the identifier of
-        an individual decision instance; the `decisionEvaluationInstanceKey` is the identifier
-        for a decision instance.
-    processDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessDefinitionKey'
-      description: The key of the process definition.
-    processInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: The key of the process instance.
-    decisionDefinitionKey:
-      description: The key of the decision.
-      allOf:
-        - $ref: 'filters.yaml#/DecisionDefinitionKeyFilterProperty'
-    elementInstanceKey:
-      description: The key of the element instance this decision instance is linked to.
-      allOf:
-        - $ref: 'filters.yaml#/ElementInstanceKeyFilterProperty'
-    rootDecisionDefinitionKey:
-      description: The key of the root decision definition.
-      allOf:
-        - $ref: 'filters.yaml#/DecisionDefinitionKeyFilterProperty'
-
-DecisionInstanceSearchQueryResult:
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryResponse'
-  properties:
-    items:
-      description: The matching decision instances.
-      type: array
-      items:
-        $ref: '#/DecisionInstanceResult'
-
-DecisionInstanceResult:
-  type: object
-  properties:
-    decisionEvaluationInstanceKey:
-      $ref: 'keys.yaml#/DecisionEvaluationInstanceKey'
-    state:
-      $ref: 'enums.yaml#/DecisionInstanceStateEnum'
-    evaluationDate:
-      type: string
-      format: date-time
-      description: The evaluation date of the decision instance.
-    evaluationFailure:
-      type: string
-      description: The evaluation failure of the decision instance.
-    decisionDefinitionId:
-      allOf:
-        - $ref: 'identifiers.yaml#/DecisionDefinitionId'
-      description: The ID of the DMN decision.
-    decisionDefinitionName:
-      type: string
-      description: The name of the DMN decision.
-    decisionDefinitionVersion:
-      type: integer
-      format: int32
-      description: The version of the decision.
-    decisionDefinitionType:
-      $ref: 'enums.yaml#/DecisionDefinitionTypeEnum'
-    result:
-      type: string
-      description: The result of the decision instance.
-    tenantId:
-      description: The tenant ID of the decision instance.
-      allOf:
-        - $ref: 'identifiers.yaml#/TenantId'
-    decisionEvaluationKey:
-      allOf:
-        - $ref: 'keys.yaml#/DecisionEvaluationKey'
-      description: The key of the decision evaluation where this instance was created.
-    processDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessDefinitionKey'
-      description: The key of the process definition.
-    processInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: The key of the process instance.
-    decisionDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/DecisionDefinitionKey'
-      description: The key of the decision.
-    elementInstanceKey:
-      description: The key of the element instance this decision instance is linked to.
-      allOf:
-        - $ref: 'keys.yaml#/ElementInstanceKey'
-    rootDecisionDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/DecisionDefinitionKey'
-      description: The key of the root decision definition.
-
-DecisionInstanceGetQueryResult:
-  allOf:
-    - $ref: "#/DecisionInstanceResult"
-    - type: object
+components:
+  schemas:
+    DecisionInstanceSearchQuerySortRequest:
+      type: object
       properties:
-        evaluatedInputs:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - decisionDefinitionId
+            - decisionDefinitionKey
+            - decisionDefinitionName
+            - decisionDefinitionType
+            - decisionDefinitionVersion
+            - decisionEvaluationInstanceKey
+            - decisionEvaluationKey
+            - elementInstanceKey
+            - evaluationDate
+            - evaluationFailure
+            - processDefinitionKey
+            - processInstanceKey
+            - rootDecisionDefinitionKey
+            - state
+            - tenantId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    DecisionInstanceSearchQuery:
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
           type: array
           items:
-            $ref: "#/EvaluatedDecisionInputItem"
-          description: |
-            The evaluated inputs of the decision instance.
-        matchedRules:
+            $ref: '#/components/schemas/DecisionInstanceSearchQuerySortRequest'
+        filter:
+          description: The decision instance search filters.
+          allOf:
+            - $ref: '#/components/schemas/DecisionInstanceFilter'
+
+    DecisionInstanceFilter:
+      description: Decision instance search filter.
+      type: object
+      properties:
+        decisionEvaluationInstanceKey:
+          $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
+        state:
+          $ref: 'enums.yaml#/components/schemas/DecisionInstanceStateEnum'
+        evaluationFailure:
+          type: string
+          description: The evaluation failure of the decision instance.
+        evaluationDate:
+          description: The evaluation date of the decision instance.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        decisionDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: The ID of the DMN decision.
+        decisionDefinitionName:
+          type: string
+          description: The name of the DMN decision.
+        decisionDefinitionVersion:
+          type: integer
+          format: int32
+          description: The version of the decision.
+        decisionDefinitionType:
+          $ref: 'enums.yaml#/components/schemas/DecisionDefinitionTypeEnum'
+        tenantId:
+          description: The tenant ID of the decision instance.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        decisionEvaluationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
+          description: >
+            The key of the parent decision evaluation. Note that this is not the identifier of
+            an individual decision instance; the `decisionEvaluationInstanceKey` is the identifier
+            for a decision instance.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance.
+        decisionDefinitionKey:
+          description: The key of the decision.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+        elementInstanceKey:
+          description: The key of the element instance this decision instance is linked to.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+        rootDecisionDefinitionKey:
+          description: The key of the root decision definition.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+
+    DecisionInstanceSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching decision instances.
           type: array
           items:
-            $ref: "#/MatchedDecisionRuleItem"
-          description: |
-            The matched rules of the decision instance.
+            $ref: '#/components/schemas/DecisionInstanceResult'
 
-EvaluatedDecisionInputItem:
-  type: object
-  description: A decision input that was evaluated within this decision evaluation.
-  properties:
-    inputId:
-      type: string
-    inputName:
-      type: string
-    inputValue:
-      type: string
+    DecisionInstanceResult:
+      type: object
+      properties:
+        decisionEvaluationInstanceKey:
+          $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
+        state:
+          $ref: 'enums.yaml#/components/schemas/DecisionInstanceStateEnum'
+        evaluationDate:
+          type: string
+          format: date-time
+          description: The evaluation date of the decision instance.
+        evaluationFailure:
+          type: string
+          description: The evaluation failure of the decision instance.
+        decisionDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: The ID of the DMN decision.
+        decisionDefinitionName:
+          type: string
+          description: The name of the DMN decision.
+        decisionDefinitionVersion:
+          type: integer
+          format: int32
+          description: The version of the decision.
+        decisionDefinitionType:
+          $ref: 'enums.yaml#/components/schemas/DecisionDefinitionTypeEnum'
+        result:
+          type: string
+          description: The result of the decision instance.
+        tenantId:
+          description: The tenant ID of the decision instance.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        decisionEvaluationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
+          description: The key of the decision evaluation where this instance was created.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance.
+        decisionDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: The key of the decision.
+        elementInstanceKey:
+          description: The key of the element instance this decision instance is linked to.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+        rootDecisionDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: The key of the root decision definition.
 
-EvaluatedDecisionOutputItem:
-  type: object
-  description: The evaluated decision outputs.
-  properties:
-    outputId:
-      type: string
-    outputName:
-      type: string
-    outputValue:
-      type: string
-    ruleId:
-      type: string
-    ruleIndex:
-      type: integer
-      format: int32
+    DecisionInstanceGetQueryResult:
+      allOf:
+        - $ref: '#/components/schemas/DecisionInstanceResult'
+        - type: object
+          properties:
+            evaluatedInputs:
+              type: array
+              items:
+                $ref: '#/components/schemas/EvaluatedDecisionInputItem'
+              description: |
+                The evaluated inputs of the decision instance.
+            matchedRules:
+              type: array
+              items:
+                $ref: '#/components/schemas/MatchedDecisionRuleItem'
+              description: |
+                The matched rules of the decision instance.
 
-MatchedDecisionRuleItem:
-  type: object
-  description: A decision rule that matched within this decision evaluation.
-  properties:
-    ruleId:
-      description: The ID of the matched rule.
-      type: string
-    ruleIndex:
-      description: The index of the matched rule.
-      type: integer
-      format: int32
-    evaluatedOutputs:
+    EvaluatedDecisionInputItem:
+      type: object
+      description: A decision input that was evaluated within this decision evaluation.
+      properties:
+        inputId:
+          type: string
+        inputName:
+          type: string
+        inputValue:
+          type: string
+
+    EvaluatedDecisionOutputItem:
+      type: object
       description: The evaluated decision outputs.
-      type: array
-      items:
-        $ref: '#/EvaluatedDecisionOutputItem'
+      properties:
+        outputId:
+          type: string
+        outputName:
+          type: string
+        outputValue:
+          type: string
+        ruleId:
+          type: string
+        ruleIndex:
+          type: integer
+          format: int32
+
+    MatchedDecisionRuleItem:
+      type: object
+      description: A decision rule that matched within this decision evaluation.
+      properties:
+        ruleId:
+          description: The ID of the matched rule.
+          type: string
+        ruleIndex:
+          description: The index of the matched rule.
+          type: integer
+          format: int32
+        evaluatedOutputs:
+          description: The evaluated decision outputs.
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluatedDecisionOutputItem'

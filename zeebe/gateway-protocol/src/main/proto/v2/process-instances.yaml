@@ -1,1288 +1,1291 @@
 ## Endpoint definitions
 
-/process-instances:
-  post:
-    tags:
-      - Process instance
-    operationId: createProcessInstance
-    summary: Create process instance
-    description: |
-      Creates and starts an instance of the specified process.
-      The process definition to use to create the instance can be specified either using its unique key
-      (as returned by Deploy resources), or using the BPMN process ID and a version.
+paths:
+  /process-instances:
+    post:
+      tags:
+        - Process instance
+      operationId: createProcessInstance
+      summary: Create process instance
+      description: |
+        Creates and starts an instance of the specified process.
+        The process definition to use to create the instance can be specified either using its unique key
+        (as returned by Deploy resources), or using the BPMN process ID and a version.
 
-      Waits for the completion of the process instance before returning a result
-      when awaitCompletion is enabled.
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/ProcessInstanceCreationInstruction'
-          examples:
-            By process definition key:
-              summary: Create a process instance by processDefinitionKey.
-              value:
-                processDefinitionKey: "12345543223453245"
-                variables: {}
-            By process definition ID:
-              summary: Create a process instance by processDefinitionId and version.
-              value:
-                processDefinitionId: my-business-process
-                processDefinitionVersion: 1
-                variables: {}
-    responses:
-      "200":
-        description: The process instance was created.
-        content:
-          application/json:
-            schema:
-              $ref: '#/CreateProcessInstanceResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-      "504":
-        description: |
-          The process instance creation request timed out in the gateway.
-          This can happen if the `awaitCompletion` request parameter is set to `true`
-          and the created process instance did not complete within the defined request timeout.
-          This often happens when the created instance is not fully automated or contains wait states.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-    x-eventually-consistent: false
-
-/process-instances/{processInstanceKey}:
-  get:
-    tags:
-      - Process instance
-    operationId: getProcessInstance
-    summary: Get process instance
-    description: Get the process instance by the process instance key.
-    parameters:
-      - name: processInstanceKey
-        in: path
+        Waits for the completion of the process instance before returning a result
+        when awaitCompletion is enabled.
+      requestBody:
         required: true
-        description: The process instance key.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    responses:
-      "200":
-        description: The process instance is successfully returned.
         content:
           application/json:
             schema:
-              $ref: '#/ProcessInstanceResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The process instance with the given key was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: '#/components/schemas/ProcessInstanceCreationInstruction'
+            examples:
+              By process definition key:
+                summary: Create a process instance by processDefinitionKey.
+                value:
+                  processDefinitionKey: "12345543223453245"
+                  variables: {}
+              By process definition ID:
+                summary: Create a process instance by processDefinitionId and version.
+                value:
+                  processDefinitionId: my-business-process
+                  processDefinitionVersion: 1
+                  variables: {}
+      responses:
+        "200":
+          description: The process instance was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProcessInstanceResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          description: |
+            The process instance creation request timed out in the gateway.
+            This can happen if the `awaitCompletion` request parameter is set to `true`
+            and the created process instance did not complete within the defined request timeout.
+            This often happens when the created instance is not fully automated or contains wait states.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+      x-eventually-consistent: false
 
-/process-instances/{processInstanceKey}/sequence-flows:
-  get:
-    tags:
-      - Process instance
-    operationId: getProcessInstanceSequenceFlows
-    summary: Get process instance sequence flows
-    description: Get sequence flows taken by the process instance.
-    parameters:
-      - name: processInstanceKey
-        in: path
+  /process-instances/{processInstanceKey}:
+    get:
+      tags:
+        - Process instance
+      operationId: getProcessInstance
+      summary: Get process instance
+      description: Get the process instance by the process instance key.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The process instance key.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      responses:
+        "200":
+          description: The process instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstanceResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The process instance with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-instances/{processInstanceKey}/sequence-flows:
+    get:
+      tags:
+        - Process instance
+      operationId: getProcessInstanceSequenceFlows
+      summary: Get process instance sequence flows
+      description: Get sequence flows taken by the process instance.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      responses:
+        "200":
+          description: The process instance sequence flows result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstanceSequenceFlowsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-instances/{processInstanceKey}/statistics/element-instances:
+    get:
+      tags:
+        - Process instance
+      operationId: getProcessInstanceStatistics
+      summary: Get process instance statistics
+      description: Get statistics about elements by the process instance key.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      responses:
+        "200":
+          description: The process instance statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstanceElementStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-instances/search:
+    post:
+      tags:
+        - Process instance
+      operationId: searchProcessInstances
+      summary: Search process instances
+      description: Search for process instances based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessInstanceSearchQuery'
+      responses:
+        "200":
+          description: The process instance search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessInstanceSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-instances/{processInstanceKey}/incidents/search:
+    post:
+      tags:
+        - Process instance
+      operationId: searchProcessInstanceIncidents
+      summary: Search for incidents associated with a process instance
+      description: |
+        Search for incidents caused by the process instance or any of its called process or decision instances.
+
+        Although the `processInstanceKey` is provided as a path parameter to indicate the root process instance,
+        you may also include a `processInstanceKey` within the filter object to narrow results to specific
+        child process instances. This is useful, for example, if you want to isolate incidents associated with
+        subprocesses or called processes under the root instance while excluding incidents directly tied to the root.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessInstanceIncidentSearchQuery'
+      responses:
+        "200":
+          description: The process instance search result.
+          content:
+            application/json:
+              schema:
+                $ref: 'incidents.yaml#/components/schemas/IncidentSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The process instance with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-instances/{processInstanceKey}/incident-resolution:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Process instance
+      operationId: resolveProcessInstanceIncidents
+      summary: Resolve process instance incidents
+      description: Creates a batch operation to resolve multiple incidents of a process instance.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to resolve incidents for.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      responses:
+        "200":
+          description: The batch operation request for incident resolution was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
+  /process-instances/{processInstanceKey}/cancellation:
+    post:
+      tags:
+        - Process instance
+      operationId: cancelProcessInstance
+      summary: Cancel process instance
+      description: Cancels a running process instance. As a cancellation includes more than just the removal of the process instance resource, the cancellation resource must be posted.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to cancel.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelProcessInstanceRequest'
+      responses:
+        "204":
+          description: The process instance is canceled.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /process-instances/cancellation:
+    post:
+      tags:
+        - Process instance
+      operationId: cancelProcessInstancesBatchOperation
+      summary: Create a batch operation to cancel process instances
+      description: |
+        Cancels multiple running process instances.
+        Since only ACTIVE root instances can be cancelled, any given filters for state and
+        parentProcessInstanceKey are ignored and overridden during this batch operation.
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      requestBody:
         required: true
-        description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    responses:
-      "200":
-        description: The process instance sequence flows result.
         content:
           application/json:
             schema:
-              $ref: '#/ProcessInstanceSequenceFlowsQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceCancellationBatchOperationRequest'
+      responses:
+        "200":
+          description: The batch operation request was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
-/process-instances/{processInstanceKey}/statistics/element-instances:
-  get:
-    tags:
-      - Process instance
-    operationId: getProcessInstanceStatistics
-    summary: Get process instance statistics
-    description: Get statistics about elements by the process instance key.
-    parameters:
-      - name: processInstanceKey
-        in: path
+  /process-instances/incident-resolution:
+    post:
+      tags:
+        - Process instance
+      operationId: resolveIncidentsBatchOperation
+      summary: Create a batch operation to resolve incidents of process instances
+      description: |
+        Resolves multiple instances of process instances.
+        Since only process instances with ACTIVE state can have unresolved incidents, any given
+        filters for state are ignored and overridden during this batch operation.
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceIncidentResolutionBatchOperationRequest'
+      responses:
+        "200":
+          description: The batch operation request was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-instances/migration:
+    post:
+      tags:
+        - Process instance
+      operationId: migrateProcessInstancesBatchOperation
+      summary: Create a batch operation to migrate process instances
+      description: |
+        Migrate multiple instances of process instances.
+        Since only process instances with ACTIVE state can be migrated, any given
+        filters for state are ignored and overridden during this batch operation.
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      requestBody:
         required: true
-        description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    responses:
-      "200":
-        description: The process instance statistics result.
         content:
           application/json:
             schema:
-              $ref: '#/ProcessInstanceElementStatisticsQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceMigrationBatchOperationRequest'
+      responses:
+        "200":
+          description: The batch operation request was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
-/process-instances/search:
-  post:
-    tags:
-      - Process instance
-    operationId: searchProcessInstances
-    summary: Search process instances
-    description: Search for process instances based on given criteria.
-    requestBody:
-      required: false
-      content:
-        application/json:
-          schema:
-            $ref: '#/ProcessInstanceSearchQuery'
-    responses:
-      "200":
-        description: The process instance search result.
-        content:
-          application/json:
-            schema:
-              $ref: '#/ProcessInstanceSearchQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
-
-/process-instances/{processInstanceKey}/incidents/search:
-  post:
-    tags:
-      - Process instance
-    operationId: searchProcessInstanceIncidents
-    summary: Search for incidents associated with a process instance
-    description: |
-      Search for incidents caused by the process instance or any of its called process or decision instances.
-
-      Although the `processInstanceKey` is provided as a path parameter to indicate the root process instance,
-      you may also include a `processInstanceKey` within the filter object to narrow results to specific
-      child process instances. This is useful, for example, if you want to isolate incidents associated with
-      subprocesses or called processes under the root instance while excluding incidents directly tied to the root.
-    parameters:
-      - name: processInstanceKey
-        in: path
+  /process-instances/modification:
+    post:
+      tags:
+        - Process instance
+      operationId: modifyProcessInstancesBatchOperation
+      summary: Create a batch operation to modify process instances
+      description: |
+        Modify multiple process instances.
+        Since only process instances with ACTIVE state can be modified, any given
+        filters for state are ignored and overridden during this batch operation.
+        In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
+        It is only possible to use the element id of the source and target.
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
+      requestBody:
         required: true
-        description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    requestBody:
-      required: false
-      content:
-        application/json:
-          schema:
-            $ref: '#/ProcessInstanceIncidentSearchQuery'
-    responses:
-      "200":
-        description: The process instance search result.
         content:
           application/json:
             schema:
-              $ref: 'incidents.yaml#/IncidentSearchQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The process instance with the given key was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: 'batch-operations.yaml#/components/schemas/ProcessInstanceModificationBatchOperationRequest'
+      responses:
+        "200":
+          description: The batch operation request was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
-/process-instances/{processInstanceKey}/incident-resolution:
-  post:
-    x-eventually-consistent: true
-    tags:
-      - Process instance
-    operationId: resolveProcessInstanceIncidents
-    summary: Resolve process instance incidents
-    description: Creates a batch operation to resolve multiple incidents of a process instance.
-    parameters:
-      - name: processInstanceKey
-        in: path
+  /process-instances/{processInstanceKey}/migration:
+    post:
+      tags:
+        - Process instance
+      operationId: migrateProcessInstance
+      summary: Migrate process instance
+      description: |
+        Migrates a process instance to a new process definition.
+        This request can contain multiple mapping instructions to define mapping between the active
+        process instance's elements and target process definition elements.
+
+        Use this to upgrade a process instance to a new version of a process or to
+        a different process definition, e.g. to keep your running instances up-to-date with the
+        latest process improvements.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance that should be migrated.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      requestBody:
         required: true
-        description: The key of the process instance to resolve incidents for.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    responses:
-      "200":
-        description: The batch operation request for incident resolution was created.
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/BatchOperationCreatedResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "404":
-        description: The process instance is not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
+              $ref: '#/components/schemas/ProcessInstanceMigrationInstruction'
+      responses:
+        "204":
+          description: The process instance is migrated.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >
+            The process instance migration failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
-/process-instances/{processInstanceKey}/cancellation:
-  post:
-    tags:
-      - Process instance
-    operationId: cancelProcessInstance
-    summary: Cancel process instance
-    description: Cancels a running process instance. As a cancelation includes more than just the removal of the process instance resource, the cancelation resource must be posted.
-    parameters:
-      - name: processInstanceKey
-        in: path
+  /process-instances/{processInstanceKey}/modification:
+    post:
+      tags:
+        - Process instance
+      operationId: modifyProcessInstance
+      summary: Modify process instance
+      description: |
+        Modifies a running process instance.
+        This request can contain multiple instructions to activate an element of the process or
+        to terminate an active instance of an element.
+
+        Use this to repair a process instance that is stuck on an element or took an unintended path.
+        For example, because an external system is not available or doesn't respond as expected.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance that should be modified.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      requestBody:
         required: true
-        description: The key of the process instance to cancel.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    requestBody:
-      required: false
-      content:
-        application/json:
-          schema:
-            $ref: '#/CancelProcessInstanceRequest'
-    responses:
-      "204":
-        description: The process instance is canceled.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "404":
-        description: The process instance is not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/process-instances/cancellation:
-  post:
-    tags:
-      - Process instance
-    operationId: cancelProcessInstancesBatchOperation
-    summary: Create a batch operation to cancel process instances
-    description: |
-      Cancels multiple running process instances.
-      Since only ACTIVE root instances can be cancelled, any given filters for state and
-      parentProcessInstanceKey are ignored and overridden during this batch operation.
-      This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: 'batch-operations.yaml#/ProcessInstanceCancellationBatchOperationRequest'
-    responses:
-      "200":
-        description: The batch operation request was created.
         content:
           application/json:
             schema:
-              $ref: 'batch-operations.yaml#/BatchOperationCreatedResult'
-      "400":
-        description: >
-          The process instance batch operation failed.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: '#/components/schemas/ProcessInstanceModificationInstruction'
+      responses:
+        "204":
+          description: The process instance is modified.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
-/process-instances/incident-resolution:
-  post:
-    tags:
-      - Process instance
-    operationId: resolveIncidentsBatchOperation
-    summary: Create a batch operation to resolve incidents of process instances
-    description: |
-      Resolves multiple instances of process instances.
-      Since only process instances with ACTIVE state can have unresolved incidents, any given
-      filters for state are ignored and overridden during this batch operation.
-      This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
-    requestBody:
-      required: false
-      content:
-        application/json:
+  /process-instances/{processInstanceKey}/call-hierarchy:
+    get:
+      tags:
+        - Process instance
+      operationId: getProcessInstanceCallHierarchy
+      summary: Get call hierarchy for process instance
+      description: Returns the call hierarchy for a given process instance, showing its ancestry up to the root instance.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to fetch the hierarchy for.
           schema:
-            $ref: 'batch-operations.yaml#/ProcessInstanceIncidentResolutionBatchOperationRequest'
-    responses:
-      "200":
-        description: The batch operation request was created.
-        content:
-          application/json:
-            schema:
-              $ref: 'batch-operations.yaml#/BatchOperationCreatedResult'
-      "400":
-        description: >
-          The process instance batch operation failed.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
-
-/process-instances/migration:
-  post:
-    tags:
-      - Process instance
-    operationId: migrateProcessInstancesBatchOperation
-    summary: Create a batch operation to migrate process instances
-    description: |
-      Migrate multiple instances of process instances.
-      Since only process instances with ACTIVE state can be migrated, any given
-      filters for state are ignored and overridden during this batch operation.
-      This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: 'batch-operations.yaml#/ProcessInstanceMigrationBatchOperationRequest'
-    responses:
-      "200":
-        description: The batch operation request was created.
-        content:
-          application/json:
-            schema:
-              $ref: 'batch-operations.yaml#/BatchOperationCreatedResult'
-      "400":
-        description: >
-          The process instance batch operation failed.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
-
-/process-instances/modification:
-  post:
-    tags:
-      - Process instance
-    operationId: modifyProcessInstancesBatchOperation
-    summary: Create a batch operation to modify process instances
-    description: |
-      Modify multiple process instances.
-      Since only process instances with ACTIVE state can be modified, any given
-      filters for state are ignored and overridden during this batch operation.
-      In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
-      It is only possible to use the element id of the source and target.
-      This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: 'batch-operations.yaml#/ProcessInstanceModificationBatchOperationRequest'
-    responses:
-      "200":
-        description: The batch operation request was created.
-        content:
-          application/json:
-            schema:
-              $ref: 'batch-operations.yaml#/BatchOperationCreatedResult'
-      "400":
-        description: >
-          The process instance batch operation failed.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
-
-/process-instances/{processInstanceKey}/migration:
-  post:
-    tags:
-      - Process instance
-    operationId: migrateProcessInstance
-    summary: Migrate process instance
-    description: |
-      Migrates a process instance to a new process definition.
-      This request can contain multiple mapping instructions to define mapping between the active
-      process instance's elements and target process definition elements.
-
-      Use this to upgrade a process instance to a new version of a process or to
-      a different process definition, e.g. to keep your running instances up-to-date with the
-      latest process improvements.
-    parameters:
-      - name: processInstanceKey
-        in: path
-        required: true
-        description: The key of the process instance that should be migrated.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/ProcessInstanceMigrationInstruction'
-    responses:
-      "204":
-        description: The process instance is migrated.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "404":
-        description: The process instance is not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "409":
-        description: >
-          The process instance migration failed.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/process-instances/{processInstanceKey}/modification:
-  post:
-    tags:
-      - Process instance
-    operationId: modifyProcessInstance
-    summary: Modify process instance
-    description: |
-      Modifies a running process instance.
-      This request can contain multiple instructions to activate an element of the process or
-      to terminate an active instance of an element.
-
-      Use this to repair a process instance that is stuck on an element or took an unintended path.
-      For example, because an external system is not available or doesn't respond as expected.
-    parameters:
-      - name: processInstanceKey
-        in: path
-        required: true
-        description: The key of the process instance that should be modified.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/ProcessInstanceModificationInstruction'
-    responses:
-      "204":
-        description: The process instance is modified.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "404":
-        description: The process instance is not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/process-instances/{processInstanceKey}/call-hierarchy:
-  get:
-    tags:
-      - Process instance
-    operationId: getProcessInstanceCallHierarchy
-    summary: Get call hierarchy for process instance
-    description: Returns the call hierarchy for a given process instance, showing its ancestry up to the root instance.
-    parameters:
-      - name: processInstanceKey
-        in: path
-        required: true
-        description: The key of the process instance to fetch the hierarchy for.
-        schema:
-          $ref: 'keys.yaml#/ProcessInstanceKey'
-    responses:
-      "200":
-        description: The call hierarchy is successfully returned.
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/ProcessInstanceCallHierarchyEntry'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The process instance is not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      responses:
+        "200":
+          description: The call hierarchy is successfully returned.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProcessInstanceCallHierarchyEntry'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
-ProcessInstanceCreationInstruction:
-  x-polymorphic-schema: true
-  description: |
-    Instructions for creating a process instance. The process definition can be specified
-    either by ID or by key.
-  oneOf:
-    - $ref: '#/ProcessInstanceCreationInstructionById'
-    - $ref: '#/ProcessInstanceCreationInstructionByKey'
+components:
+  schemas:
+    ProcessInstanceCreationInstruction:
+      x-polymorphic-schema: true
+      description: |
+        Instructions for creating a process instance. The process definition can be specified
+        either by ID or by key.
+      oneOf:
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByKey'
 
-ProcessInstanceCreationInstructionById:
-  type: object
-  title: Process creation by ID
-  required:
-    - processDefinitionId
-  additionalProperties: false
-  properties:
-    processDefinitionId:
-      description: |
-        The BPMN process ID of the process definition to start an instance of.
-      allOf:
-        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
-    processDefinitionVersion:
-      description: |
-        The version of the process. By default, the latest version of the process is used.
-      type: integer
-      format: int32
-      default: -1
-    variables:
-      description: |
-        JSON object that will instantiate the variables for the root variable scope
-        of the process instance.
+    ProcessInstanceCreationInstructionById:
       type: object
-      additionalProperties: true
-    tenantId:
-      description: The tenant ID of the process definition.
-      allOf:
-        - $ref: 'identifiers.yaml#/TenantId'
-    operationReference:
-      $ref: 'keys.yaml#/OperationReference'
-    startInstructions:
-      description: |
-        List of start instructions. By default, the process instance will start at
-        the start event. If provided, the process instance will apply start instructions
-        after it has been created.
-      type: array
-      items:
-        $ref: '#/ProcessInstanceCreationStartInstruction'
-    runtimeInstructions:
-      description: |
-        Runtime instructions (alpha). List of instructions that affect the runtime behavior of
-        the process instance. Refer to specific instruction types for more details.
+      title: Process creation by ID
+      required:
+        - processDefinitionId
+      additionalProperties: false
+      properties:
+        processDefinitionId:
+          description: |
+            The BPMN process ID of the process definition to start an instance of.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionVersion:
+          description: |
+            The version of the process. By default, the latest version of the process is used.
+          type: integer
+          format: int32
+          default: -1
+        variables:
+          description: |
+            JSON object that will instantiate the variables for the root variable scope
+            of the process instance.
+          type: object
+          additionalProperties: true
+        tenantId:
+          description: The tenant ID of the process definition.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+        startInstructions:
+          description: |
+            List of start instructions. By default, the process instance will start at
+            the start event. If provided, the process instance will apply start instructions
+            after it has been created.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceCreationStartInstruction'
+        runtimeInstructions:
+          description: |
+            Runtime instructions (alpha). List of instructions that affect the runtime behavior of
+            the process instance. Refer to specific instruction types for more details.
 
-        This parameter is an alpha feature and may be subject to change
-        in future releases.
-      type: array
-      items:
-        $ref: '#/ProcessInstanceCreationRuntimeInstruction'
-    awaitCompletion:
-      description: |
-        Wait for the process instance to complete. If the process instance completion does
-        not occur within the requestTimeout, the request will be closed. This can lead to a 504
-        response status. Disabled by default.
-      type: boolean
-      default: false
-    fetchVariables:
-      description: |
-        List of variables by name to be included in the response when awaitCompletion is set to true.
-        If empty, all visible variables in the root scope will be returned.
-      type: array
-      example: [ ]
-      items:
-        type: string
-    requestTimeout:
-      description: |
-        Timeout (in ms) the request waits for the process to complete. By default or
-        when set to 0, the generic request timeout configured in the cluster is applied.
-      type: integer
-      format: int64
-      default: 0
-    tags:
-      $ref: 'identifiers.yaml#/TagSet'
+            This parameter is an alpha feature and may be subject to change
+            in future releases.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
+        awaitCompletion:
+          description: |
+            Wait for the process instance to complete. If the process instance completion does
+            not occur within the requestTimeout, the request will be closed. This can lead to a 504
+            response status. Disabled by default.
+          type: boolean
+          default: false
+        fetchVariables:
+          description: |
+            List of variables by name to be included in the response when awaitCompletion is set to true.
+            If empty, all visible variables in the root scope will be returned.
+          type: array
+          example: [ ]
+          items:
+            type: string
+        requestTimeout:
+          description: |
+            Timeout (in ms) the request waits for the process to complete. By default or
+            when set to 0, the generic request timeout configured in the cluster is applied.
+          type: integer
+          format: int64
+          default: 0
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
-ProcessInstanceCreationInstructionByKey:
-  type: object
-  title: Process creation by key
-  required:
-    - processDefinitionKey
-  additionalProperties: false
-  properties:
-    processDefinitionKey:
-      $ref: 'keys.yaml#/ProcessDefinitionKey'
-    variables:
+    ProcessInstanceCreationInstructionByKey:
       type: object
-      additionalProperties: true
-    startInstructions:
-      type: array
-      items:
-        $ref: '#/ProcessInstanceCreationStartInstruction'
-    runtimeInstructions:
-      type: array
-      items:
-        $ref: '#/ProcessInstanceCreationRuntimeInstruction'
-    tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
-    operationReference:
-      $ref: 'keys.yaml#/OperationReference'
-    awaitCompletion:
-      type: boolean
-      default: false
-    requestTimeout:
-      type: integer
-      format: int64
-      default: 0
-    fetchVariables:
-      type: array
-      items:
-        type: string
-    tags:
-      $ref: 'identifiers.yaml#/TagSet'
+      title: Process creation by key
+      required:
+        - processDefinitionKey
+      additionalProperties: false
+      properties:
+        processDefinitionKey:
+          $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+        variables:
+          type: object
+          additionalProperties: true
+        startInstructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceCreationStartInstruction'
+        runtimeInstructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+        awaitCompletion:
+          type: boolean
+          default: false
+        requestTimeout:
+          type: integer
+          format: int64
+          default: 0
+        fetchVariables:
+          type: array
+          items:
+            type: string
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
-ProcessInstanceCreationStartInstruction:
-  type: object
-  required:
-    - elementId
-  properties:
-    elementId:
-      $ref: 'identifiers.yaml#/ElementId'
-
-ProcessInstanceCreationRuntimeInstruction:
-  discriminator:
-    propertyName: type
-  oneOf:
-    - $ref: '#/ProcessInstanceCreationTerminateInstruction'
-
-ProcessInstanceCreationTerminateInstruction:
-  type: object
-  description: |
-    Terminates the process instance after a specific BPMN element is completed or terminated.
-  required:
-    - afterElementId
-  properties:
-    type:
-      description: The type of the runtime instruction
-      type: string
-      example: TERMINATE_PROCESS_INSTANCE
-    afterElementId:
-      description: |
-        The ID of the element that, once completed or terminated, will cause the process to be terminated.
-      example: Activity_106kosb
-      allOf:
-        - $ref: 'identifiers.yaml#/ElementId'
-
-CreateProcessInstanceResult:
-  x-semantic-provider:
-    - processInstanceKey
-  required:
-    - processDefinitionId
-    - processDefinitionKey
-    - processDefinitionVersion
-    - tenantId
-    - variables
-    - processInstanceKey
-  type: object
-  properties:
-    processDefinitionId:
-      description: |
-        The BPMN process ID of the process definition which was used to create the process.
-        instance
-      allOf:
-        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
-      example: my-process-model-1
-    processDefinitionVersion:
-      description: |
-        The version of the process definition which was used to create the process instance.
-      type: integer
-      format: int32
-      example: 3
-    tenantId:
-      allOf:
-        - $ref: 'identifiers.yaml#/TenantId'
-      description: The tenant ID of the created process instance.
-      example: <default>
-    variables:
-      additionalProperties: true
-      description: All the variables visible in the root scope.
+    ProcessInstanceCreationStartInstruction:
       type: object
-    processDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessDefinitionKey'
-      description: |
-        The key of the process definition which was used to create the process instance.
-    processInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: |
-        The unique identifier of the created process instance; to be used wherever a request
-        needs a process instance key (e.g. CancelProcessInstanceRequest).
-    tags:
-      $ref: 'identifiers.yaml#/TagSet'
+      required:
+        - elementId
+      properties:
+        elementId:
+          $ref: 'identifiers.yaml#/components/schemas/ElementId'
 
-ProcessInstanceSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
+    ProcessInstanceCreationRuntimeInstruction:
+      discriminator:
+        propertyName: type
+      oneOf:
+        - $ref: '#/components/schemas/ProcessInstanceCreationTerminateInstruction'
+
+    ProcessInstanceCreationTerminateInstruction:
+      type: object
+      description: |
+        Terminates the process instance after a specific BPMN element is completed or terminated.
+      required:
+        - afterElementId
+      properties:
+        type:
+          description: The type of the runtime instruction
+          type: string
+          example: TERMINATE_PROCESS_INSTANCE
+        afterElementId:
+          description: |
+            The ID of the element that, once completed or terminated, will cause the process to be terminated.
+          example: Activity_106kb
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+
+    CreateProcessInstanceResult:
+      x-semantic-provider:
         - processInstanceKey
+      required:
+        - processDefinitionId
+        - processDefinitionKey
+        - processDefinitionVersion
+        - tenantId
+        - variables
+        - processInstanceKey
+      type: object
+      properties:
+        processDefinitionId:
+          description: |
+            The BPMN process ID of the process definition which was used to create the process.
+            instance
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          example: my-process-model-1
+        processDefinitionVersion:
+          description: |
+            The version of the process definition which was used to create the process instance.
+          type: integer
+          format: int32
+          example: 3
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the created process instance.
+          example: <default>
+        variables:
+          additionalProperties: true
+          description: All the variables visible in the root scope.
+          type: object
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: |
+            The key of the process definition which was used to create the process instance.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: |
+            The unique identifier of the created process instance; to be used wherever a request
+            needs a process instance key (e.g. CancelProcessInstanceRequest).
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+
+    ProcessInstanceSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - processInstanceKey
+            - processDefinitionId
+            - processDefinitionName
+            - processDefinitionVersion
+            - processDefinitionVersionTag
+            - processDefinitionKey
+            - parentProcessInstanceKey
+            - parentElementInstanceKey
+            - startDate
+            - endDate
+            - state
+            - hasIncident
+            - tenantId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    ProcessInstanceSearchQuery:
+      description: Process instance search request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/ProcessInstanceFilter'
+          description: The process instance search filters.
+
+    ProcessInstanceIncidentSearchQuery:
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: 'incidents.yaml#/components/schemas/IncidentSearchQuerySortRequest'
+
+    BaseProcessInstanceFilterFields:
+      description: Base process instance search filter.
+      type: object
+      properties:
+        startDate:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: The start date.
+        endDate:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: The end date.
+        state:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceStateFilterProperty'
+          description: The process instance state.
+        hasIncident:
+          type: boolean
+          description: Whether this process instance has a related incident or not.
+        tenantId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The tenant ID.
+        variables:
+          description: The process instance variables.
+          type: array
+          items:
+            $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
+        processInstanceKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+          description: The key of this process instance.
+        parentProcessInstanceKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+          description: The parent process instance key.
+        parentElementInstanceKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+          description: The parent element instance key.
+        batchOperationId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The batch operation ID.
+        errorMessage:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The error message related to the process.
+        hasRetriesLeft:
+          description: Whether the process has failed jobs with retries left.
+          type: boolean
+        elementInstanceState:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceStateFilterProperty'
+          description: The state of the element instances associated with the process instance.
+        elementId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The element ID associated with the process instance.
+        hasElementInstanceIncident:
+          description: Whether the element instance has an incident or not.
+          type: boolean
+        incidentErrorHashCode:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: The incident error hash code, associated with this process.
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+
+    ProcessDefinitionStatisticsFilter:
+      description: Process definition statistics search filter.
+      allOf:
+        - $ref: '#/components/schemas/BaseProcessInstanceFilterFields'
+        - type: object
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "state": "ACTIVE",
+                  "tenantId": 123,
+                  "$or": [
+                    { "processDefinitionId": "process_v1" },
+                    { "processDefinitionId": "process_v2", "hasIncident": true }
+                  ]
+                }
+                ```
+                This matches process instances that:
+
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: disc;">are in <em>ACTIVE</em> state</li>
+                  <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
+                  <li style="list-style-type: disc;">and match either:
+                    <ul style="padding-left: 20px; margin-left: 20px;">
+                      <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v1</em>, or</li>
+                      <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
+                    </ul>
+                  </li>
+                </ul>
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: '#/components/schemas/BaseProcessInstanceFilterFields'
+
+    ProcessInstanceFilterFields:
+      description: Process instance search filter.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/BaseProcessInstanceFilterFields'
+      properties:
+        processDefinitionId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The process definition ID.
+        processDefinitionName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The process definition name.
+        processDefinitionVersion:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: The process definition version.
+        processDefinitionVersionTag:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The process definition version tag.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+          description: The process definition key.
+
+    ProcessInstanceFilter:
+      description: Process instance search filter.
+      allOf:
+        - $ref: '#/components/schemas/ProcessInstanceFilterFields'
+        - type: object
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "state": "ACTIVE",
+                  "tenantId": 123,
+                  "$or": [
+                    { "processDefinitionId": "process_v1" },
+                    { "processDefinitionId": "process_v2", "hasIncident": true }
+                  ]
+                }
+                ```
+                This matches process instances that:
+
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: disc;">are in <em>ACTIVE</em> state</li>
+                  <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
+                  <li style="list-style-type: disc;">and match either:
+                    <ul style="padding-left: 20px; margin-left: 20px;">
+                      <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v1</em>, or</li>
+                      <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
+                    </ul>
+                  </li>
+                </ul>
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: '#/components/schemas/ProcessInstanceFilterFields'
+
+    ProcessInstanceSearchQueryResult:
+      description: Process instance search response.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      required:
+        - items
+      properties:
+        items:
+          description: The matching process instances.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceResult'
+
+    ProcessInstanceResult:
+      description: Process instance search response item.
+      type: object
+      required:
         - processDefinitionId
         - processDefinitionName
         - processDefinitionVersion
-        - processDefinitionVersionTag
-        - processDefinitionKey
-        - parentProcessInstanceKey
-        - parentElementInstanceKey
         - startDate
-        - endDate
         - state
         - hasIncident
         - tenantId
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
-
-ProcessInstanceSearchQuery:
-  description: Process instance search request.
-  type: object
-  additionalProperties: false
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/ProcessInstanceSearchQuerySortRequest'
-    filter:
-      allOf:
-        - $ref: '#/ProcessInstanceFilter'
-      description: The process instance search filters.
-
-ProcessInstanceIncidentSearchQuery:
-  type: object
-  additionalProperties: false
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: 'incidents.yaml#/IncidentSearchQuerySortRequest'
-
-BaseProcessInstanceFilterFields:
-  description: Base process instance search filter.
-  type: object
-  properties:
-    startDate:
-      allOf:
-        - $ref: 'filters.yaml#/DateTimeFilterProperty'
-      description: The start date.
-    endDate:
-      allOf:
-        - $ref: 'filters.yaml#/DateTimeFilterProperty'
-      description: The end date.
-    state:
-      allOf:
-        - $ref: 'filters.yaml#/ProcessInstanceStateFilterProperty'
-      description: The process instance state.
-    hasIncident:
-      type: boolean
-      description: Whether this process instance has a related incident or not.
-    tenantId:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The tenant ID.
-    variables:
-      description: The process instance variables.
-      type: array
-      items:
-        $ref: 'variables.yaml#/VariableValueFilterProperty'
-    processInstanceKey:
-      allOf:
-        - $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
-      description: The key of this process instance.
-    parentProcessInstanceKey:
-      allOf:
-        - $ref: 'filters.yaml#/ProcessInstanceKeyFilterProperty'
-      description: The parent process instance key.
-    parentElementInstanceKey:
-      allOf:
-        - $ref: 'filters.yaml#/ElementInstanceKeyFilterProperty'
-      description: The parent element instance key.
-    batchOperationId:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The batch operation ID.
-    errorMessage:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The error message related to the process.
-    hasRetriesLeft:
-      description: Whether the process has failed jobs with retries left.
-      type: boolean
-    elementInstanceState:
-      allOf:
-        - $ref: 'filters.yaml#/ElementInstanceStateFilterProperty'
-      description: The state of the element instances associated with the process instance.
-    elementId:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The element ID associated with the process instance.
-    hasElementInstanceIncident:
-      description: Whether the element instance has an incident or not.
-      type: boolean
-    incidentErrorHashCode:
-      allOf:
-        - $ref: 'filters.yaml#/IntegerFilterProperty'
-      description: The incident error hash code, associated with this process.
-    tags:
-      $ref: 'identifiers.yaml#/TagSet'
-
-ProcessDefinitionStatisticsFilter:
-  description: Process definition statistics search filter.
-  allOf:
-    - $ref: '#/BaseProcessInstanceFilterFields'
-    - type: object
+        - processInstanceKey
+        - processDefinitionKey
       properties:
-        $or:
-          description: |
-            Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+        processDefinitionId:
+          $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionName:
+          type: string
+          description: The process definition name.
+        processDefinitionVersion:
+          type: integer
+          format: int32
+        processDefinitionVersionTag:
+          type: string
+          description: The process definition version tag.
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        state:
+          $ref: 'enums.yaml#/components/schemas/ProcessInstanceStateEnum'
+        hasIncident:
+          type: boolean
+          description: Whether this process instance has a related incident or not.
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of this process instance.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The process definition key.
+        parentProcessInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The parent process instance key.
+        parentElementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The parent element instance key.
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
-            Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
-            <br>
-            <em>Example:</em>
-
-            ```json
-            {
-              "state": "ACTIVE",
-              "tenantId": 123,
-              "$or": [
-                { "processDefinitionId": "process_v1" },
-                { "processDefinitionId": "process_v2", "hasIncident": true }
-              ]
-            }
-            ```
-            This matches process instances that:
-
-            <ul style="padding-left: 20px; margin-left: 20px;">
-              <li style="list-style-type: disc;">are in <em>ACTIVE</em> state</li>
-              <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
-              <li style="list-style-type: disc;">and match either:
-                <ul style="padding-left: 20px; margin-left: 20px;">
-                  <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v1</em>, or</li>
-                  <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
-                </ul>
-              </li>
-            </ul>
-            <br>
-            <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
-          type: array
-          items:
-            $ref: "#/BaseProcessInstanceFilterFields"
-
-ProcessInstanceFilterFields:
-  description: Process instance search filter.
-  type: object
-  allOf:
-    - $ref: '#/BaseProcessInstanceFilterFields'
-  properties:
-    processDefinitionId:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The process definition ID.
-    processDefinitionName:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The process definition name.
-    processDefinitionVersion:
-      allOf:
-        - $ref: 'filters.yaml#/IntegerFilterProperty'
-      description: The process definition version.
-    processDefinitionVersionTag:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The process definition version tag.
-    processDefinitionKey:
-      allOf:
-        - $ref: 'filters.yaml#/ProcessDefinitionKeyFilterProperty'
-      description: The process definition key.
-
-ProcessInstanceFilter:
-  description: Process instance search filter.
-  allOf:
-    - $ref: '#/ProcessInstanceFilterFields'
-    - type: object
-      properties:
-        $or:
-          description: |
-            Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
-
-            Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
-            <br>
-            <em>Example:</em>
-
-            ```json
-            {
-              "state": "ACTIVE",
-              "tenantId": 123,
-              "$or": [
-                { "processDefinitionId": "process_v1" },
-                { "processDefinitionId": "process_v2", "hasIncident": true }
-              ]
-            }
-            ```
-            This matches process instances that:
-
-            <ul style="padding-left: 20px; margin-left: 20px;">
-              <li style="list-style-type: disc;">are in <em>ACTIVE</em> state</li>
-              <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
-              <li style="list-style-type: disc;">and match either:
-                <ul style="padding-left: 20px; margin-left: 20px;">
-                  <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v1</em>, or</li>
-                  <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
-                </ul>
-              </li>
-            </ul>
-            <br>
-            <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
-          type: array
-          items:
-            $ref: "#/ProcessInstanceFilterFields"
-
-ProcessInstanceSearchQueryResult:
-  description: Process instance search response.
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryResponse'
-  required:
-    - items
-  properties:
-    items:
-      description: The matching process instances.
-      type: array
-      items:
-        $ref: '#/ProcessInstanceResult'
-
-ProcessInstanceResult:
-  description: Process instance search response item.
-  type: object
-  required:
-    - processDefinitionId
-    - processDefinitionName
-    - processDefinitionVersion
-    - startDate
-    - state
-    - hasIncident
-    - tenantId
-    - processInstanceKey
-    - processDefinitionKey
-  properties:
-    processDefinitionId:
-      $ref: 'identifiers.yaml#/ProcessDefinitionId'
-    processDefinitionName:
-      type: string
-      description: The process definition name.
-    processDefinitionVersion:
-      type: integer
-      format: int32
-    processDefinitionVersionTag:
-      type: string
-      description: The process definition version tag.
-    startDate:
-      type: string
-      format: date-time
-    endDate:
-      type: string
-      format: date-time
-    state:
-      $ref: 'enums.yaml#/ProcessInstanceStateEnum'
-    hasIncident:
-      type: boolean
-      description: Whether this process instance has a related incident or not.
-    tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
-    processInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: The key of this process instance.
-    processDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessDefinitionKey'
-      description: The process definition key.
-    parentProcessInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: The parent process instance key.
-    parentElementInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ElementInstanceKey'
-      description: The parent element instance key.
-    tags:
-      $ref: 'identifiers.yaml#/TagSet'
-
-CancelProcessInstanceRequest:
-  type: object
-  nullable: true
-  additionalProperties: false
-  properties:
-    operationReference:
-      $ref: 'keys.yaml#/OperationReference'
-
-ProcessInstanceCallHierarchyEntry:
-  type: object
-  required:
-    - processInstanceKey
-    - processDefinitionKey
-    - processDefinitionName
-  properties:
-    processInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: The key of the process instance.
-    processDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessDefinitionKey'
-      description: The key of the process definition.
-    processDefinitionName:
-      type: string
-      description: The name of the process definition (fall backs to the process definition ID if not available).
-
-ProcessInstanceSequenceFlowsQueryResult:
-  description: Process instance sequence flows query response.
-  type: object
-  properties:
-    items:
-      description: The sequence flows.
-      type: array
-      items:
-        $ref: '#/ProcessInstanceSequenceFlowResult'
-
-ProcessInstanceSequenceFlowResult:
-  description: Process instance sequence flow result.
-  type: object
-  properties:
-    sequenceFlowId:
-      type: string
-      description: The sequence flow ID.
-    processInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: The key of this process instance.
-    processDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessDefinitionKey'
-      description: The process definition key.
-    processDefinitionId:
-      allOf:
-        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
-      description: The process definition ID.
-    elementId:
-      allOf:
-        - $ref: 'identifiers.yaml#/ElementId'
-      description: The element ID for this sequence flow, as provided in the BPMN process.
-    tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
-
-ProcessInstanceElementStatisticsQueryResult:
-  description: Process instance element statistics query response.
-  type: object
-  properties:
-    items:
-      description: The element statistics.
-      type: array
-      items:
-        $ref: 'process-definitions.yaml#/ProcessElementStatisticsResult'
-
-ProcessInstanceMigrationInstruction:
-  type: object
-  additionalProperties: false
-  description: |
-    The migration instructions describe how to migrate a process instance from one process definition to another.
-  properties:
-    targetProcessDefinitionKey:
-      $ref: 'keys.yaml#/ProcessDefinitionKey'
-    mappingInstructions:
-      type: array
-      items:
-        $ref: '#/MigrateProcessInstanceMappingInstruction'
-    operationReference:
-      $ref: 'keys.yaml#/OperationReference'
-  required:
-    - targetProcessDefinitionKey
-    - mappingInstructions
-
-MigrateProcessInstanceMappingInstruction:
-  type: object
-  description: |
-    The mapping instructions describe how to map elements from the source process definition to the target process definition.
-  properties:
-    sourceElementId:
-      $ref: 'identifiers.yaml#/ElementId'
-    targetElementId:
-      $ref: 'identifiers.yaml#/ElementId'
-  required:
-    - sourceElementId
-    - targetElementId
-
-ProcessInstanceModificationInstruction:
-  type: object
-  additionalProperties: false
-  properties:
-    operationReference:
-      $ref: 'keys.yaml#/OperationReference'
-    activateInstructions:
-      description: Instructions describing which elements should be activated in which scopes and which variables should be created.
-      type: array
-      items:
-        $ref: '#/ProcessInstanceModificationActivateInstruction'
-    terminateInstructions:
-      description: Instructions describing which elements should be terminated.
-      type: array
-      items:
-        $ref: '#/ProcessInstanceModificationTerminateInstruction'
-
-ProcessInstanceModificationActivateInstruction:
-  description: Instructions describing an element that should be activated.
-  type: object
-  properties:
-    elementId:
-      description: The ID of the element that should be activated.
-      allOf:
-        - $ref: 'identifiers.yaml#/ElementId'
-    variableInstructions:
-      description: Instructions describing which variables should be created.
-      type: array
-      items:
-        $ref: '#/ModifyProcessInstanceVariableInstruction'
-    ancestorElementInstanceKey:
-      description: |
-        The key of the ancestor scope the element instance should be created in.
-        Set to -1 to create the new element instance within an existing element instance of the
-        flow scope.
-      oneOf:
-        - type: string
-          default: "-1"
-        - $ref: 'keys.yaml#/ElementInstanceKey'
-  required:
-    - elementId
-
-ModifyProcessInstanceVariableInstruction:
-  type: object
-  description: Instructions describing which variables should be created.
-  properties:
-    variables:
-      description: |
-        JSON document that will instantiate the variables for the root variable scope of the process instance.
-        It must be a JSON object, as variables will be mapped in a key-value fashion.
-      additionalProperties: true
+    CancelProcessInstanceRequest:
       type: object
-    scopeId:
-      description: |
-        The ID of the element in which scope the variables should be created.
-        Leave empty to create the variables in the global scope of the process instance
-      type: string
-      default: ""
-  required:
-    - variables
+      nullable: true
+      additionalProperties: false
+      properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
 
-ProcessInstanceModificationTerminateInstruction:
-  type: object
-  description: Instructions describing which elements should be terminated.
-  properties:
-    elementInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ElementInstanceKey'
-      description: The ID of the element that should be terminated.
-  required:
-    - elementInstanceKey
+    ProcessInstanceCallHierarchyEntry:
+      type: object
+      required:
+        - processInstanceKey
+        - processDefinitionKey
+        - processDefinitionName
+      properties:
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition.
+        processDefinitionName:
+          type: string
+          description: The name of the process definition (fall backs to the process definition ID if not available).
+
+    ProcessInstanceSequenceFlowsQueryResult:
+      description: Process instance sequence flows query response.
+      type: object
+      properties:
+        items:
+          description: The sequence flows.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceSequenceFlowResult'
+
+    ProcessInstanceSequenceFlowResult:
+      description: Process instance sequence flow result.
+      type: object
+      properties:
+        sequenceFlowId:
+          type: string
+          description: The sequence flow ID.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of this process instance.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The process definition key.
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The process definition ID.
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID for this sequence flow, as provided in the BPMN process.
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+
+    ProcessInstanceElementStatisticsQueryResult:
+      description: Process instance element statistics query response.
+      type: object
+      properties:
+        items:
+          description: The element statistics.
+          type: array
+          items:
+            $ref: 'process-definitions.yaml#/components/schemas/ProcessElementStatisticsResult'
+
+    ProcessInstanceMigrationInstruction:
+      type: object
+      additionalProperties: false
+      description: |
+        The migration instructions describe how to migrate a process instance from one process definition to another.
+      properties:
+        targetProcessDefinitionKey:
+          $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+        mappingInstructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MigrateProcessInstanceMappingInstruction'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - targetProcessDefinitionKey
+        - mappingInstructions
+
+    MigrateProcessInstanceMappingInstruction:
+      type: object
+      description: |
+        The mapping instructions describe how to map elements from the source process definition to the target process definition.
+      properties:
+        sourceElementId:
+          $ref: 'identifiers.yaml#/components/schemas/ElementId'
+        targetElementId:
+          $ref: 'identifiers.yaml#/components/schemas/ElementId'
+      required:
+        - sourceElementId
+        - targetElementId
+
+    ProcessInstanceModificationInstruction:
+      type: object
+      additionalProperties: false
+      properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+        activateInstructions:
+          description: Instructions describing which elements should be activated in which scopes and which variables should be created.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceModificationActivateInstruction'
+        terminateInstructions:
+          description: Instructions describing which elements should be terminated.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceModificationTerminateInstruction'
+
+    ProcessInstanceModificationActivateInstruction:
+      description: Instructions describing an element that should be activated.
+      type: object
+      properties:
+        elementId:
+          description: The ID of the element that should be activated.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+        variableInstructions:
+          description: Instructions describing which variables should be created.
+          type: array
+          items:
+            $ref: '#/components/schemas/ModifyProcessInstanceVariableInstruction'
+        ancestorElementInstanceKey:
+          description: |
+            The key of the ancestor scope the element instance should be created in.
+            Set to -1 to create the new element instance within an existing element instance of the
+            flow scope.
+          oneOf:
+            - type: string
+              default: "-1"
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      required:
+        - elementId
+
+    ModifyProcessInstanceVariableInstruction:
+      type: object
+      description: Instructions describing which variables should be created.
+      properties:
+        variables:
+          description: |
+            JSON document that will instantiate the variables for the root variable scope of the process instance.
+            It must be a JSON object, as variables will be mapped in a key-value fashion.
+          additionalProperties: true
+          type: object
+        scopeId:
+          description: |
+            The ID of the element in which scope the variables should be created.
+            Leave empty to create the variables in the global scope of the process instance
+          type: string
+          default: ""
+      required:
+        - variables
+
+    ProcessInstanceModificationTerminateInstruction:
+      type: object
+      description: Instructions describing which elements should be terminated.
+      properties:
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The ID of the element that should be terminated.
+      required:
+        - elementInstanceKey

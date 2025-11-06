@@ -1,45 +1,49 @@
 ## Endpoint definitions
-/license:
-  get:
-    tags:
-      - License
-    operationId: getLicense
-    summary: Get license status
-    description: Obtains the status of the current Camunda license.
-    responses:
-      "200":
-        description: Obtains the current status of the Camunda license.
-        content:
-          application/json:
-            schema:
-              $ref: "#/LicenseResponse"
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: false
+
+paths:
+  /license:
+    get:
+      tags:
+        - License
+      operationId: getLicense
+      summary: Get license status
+      description: Obtains the status of the current Camunda license.
+      responses:
+        "200":
+          description: Obtains the current status of the Camunda license.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseResponse'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: false
 
 ## Schema definitions
 
-LicenseResponse:
-  description: The response of a license request.
-  type: object
-  required:
-    - validLicense
-    - licenseType
-    - isCommercial
-  properties:
-    validLicense:
-      description: True if the Camunda license is valid, false if otherwise
-      type: boolean
-      example: true
-    licenseType:
-      description: Will return the license type property of the Camunda license
-      type: string
-      example: saas
-    isCommercial:
-      description: Will be false when a license contains a non-commerical=true property
-      type: boolean
-    expiresAt:
-      description: The date when the Camunda license expires
-      type: string
-      format: date-time
-      nullable: true
+components:
+  schemas:
+    LicenseResponse:
+      description: The response of a license request.
+      type: object
+      required:
+        - validLicense
+        - licenseType
+        - isCommercial
+      properties:
+        validLicense:
+          description: True if the Camunda license is valid, false if otherwise
+          type: boolean
+          example: true
+        licenseType:
+          description: Will return the license type property of the Camunda license
+          type: string
+          example: saas
+        isCommercial:
+          description: Will be false when a license contains a non-commerical=true property
+          type: boolean
+        expiresAt:
+          description: The date when the Camunda license expires
+          type: string
+          format: date-time
+          nullable: true

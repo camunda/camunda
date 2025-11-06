@@ -1,718 +1,720 @@
 ## Endpoint definitions
 
-/user-tasks/{userTaskKey}/completion:
-  post:
-    tags:
-      - User task
-    operationId: completeUserTask
-    summary: Complete user task
-    description: Completes a user task with the given key.
-    parameters:
-      - name: userTaskKey
-        in: path
-        required: true
-        description: The key of the user task to complete.
-        schema:
-          $ref: 'keys.yaml#/UserTaskKey'
-    requestBody:
-      required: false
-      content:
-        application/json:
+paths:
+  /user-tasks/{userTaskKey}/completion:
+    post:
+      tags:
+        - User task
+      operationId: completeUserTask
+      summary: Complete user task
+      description: Completes a user task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to complete.
           schema:
-            $ref: '#/UserTaskCompletionRequest'
-    responses:
-      "204":
-        description: The user task was completed successfully.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "404":
-        description: The user task with the given key was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: "problem-detail.yaml#/ProblemDetail"
-      "409":
-        description: >
-          The user task with the given key is in the wrong state currently.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/user-tasks/{userTaskKey}/assignment:
-  post:
-    tags:
-      - User task
-    operationId: assignUserTask
-    summary: Assign user task
-    description: Assigns a user task with the given key to the given assignee.
-    parameters:
-      - name: userTaskKey
-        in: path
-        required: true
-        description: The key of the user task to assign.
-        schema:
-          $ref: 'keys.yaml#/UserTaskKey'
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/UserTaskAssignmentRequest'
-    responses:
-      "204":
-        description: The user task's assignment was adjusted.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "404":
-        description: The user task with the given key was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: "problem-detail.yaml#/ProblemDetail"
-      "409":
-        description: >
-          The user task with the given key is in the wrong state currently.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/user-tasks/{userTaskKey}:
-  get:
-    x-eventually-consistent: true
-    tags:
-      - User task
-    operationId: getUserTask
-    summary: Get user task
-    description: Get the user task by the user task key.
-    parameters:
-      - name: userTaskKey
-        in: path
-        required: true
-        description: The user task key.
-        schema:
-          $ref: 'keys.yaml#/UserTaskKey'
-    responses:
-      "200":
-        description: The user task is successfully returned.
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      requestBody:
+        required: false
         content:
           application/json:
             schema:
-              $ref: '#/UserTaskResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: The user task with the given key was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: "problem-detail.yaml#/ProblemDetail"
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
+              $ref: '#/components/schemas/UserTaskCompletionRequest'
+      responses:
+        "204":
+          description: The user task was completed successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "409":
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        x-eventually-consistent: false
 
-  patch:
-    tags:
-      - User task
-    operationId: updateUserTask
-    summary: Update user task
-    description: Update a user task with the given key.
-    parameters:
-      - name: userTaskKey
-        in: path
-        required: true
-        description: The key of the user task to update.
-        schema:
-          $ref: 'keys.yaml#/UserTaskKey'
-    requestBody:
-      required: false
-      content:
-        application/json:
+  /user-tasks/{userTaskKey}/assignment:
+    post:
+      tags:
+        - User task
+      operationId: assignUserTask
+      summary: Assign user task
+      description: Assigns a user task with the given key to the given assignee.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to assign.
           schema:
-            $ref: '#/UserTaskUpdateRequest'
-    responses:
-      "204":
-        description: The user task was updated successfully.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "404":
-        description: The user task with the given key was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: "problem-detail.yaml#/ProblemDetail"
-      "409":
-        description: >
-          The user task with the given key is in the wrong state currently.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/user-tasks/{userTaskKey}/form:
-  get:
-    x-eventually-consistent: true
-    tags:
-      - User task
-    operationId: getUserTaskForm
-    summary: Get user task form
-    description: |
-      Get the form of a user task.
-
-      Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
-    parameters:
-      - name: userTaskKey
-        in: path
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      requestBody:
         required: true
-        description: The user task key.
-        schema:
-          $ref: 'keys.yaml#/UserTaskKey'
-    responses:
-      "200":
-        description: The form is successfully returned.
         content:
           application/json:
             schema:
-              $ref: 'form-models.yaml#/FormResult'
-      "204":
-        description: The user task was found, but no form is associated with it.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "404":
-        description: Not found
-        content:
-          application/problem+json:
-            schema:
-              $ref: "problem-detail.yaml#/ProblemDetail"
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
+              $ref: '#/components/schemas/UserTaskAssignmentRequest'
+      responses:
+        "204":
+          description: The user task's assignment was adjusted.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "409":
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        x-eventually-consistent: false
 
-/user-tasks/{userTaskKey}/assignee:
-  delete:
-    tags:
-      - User task
-    operationId: unassignUserTask
-    summary: Unassign user task
-    description: Removes the assignee of a task with the given key.
-    parameters:
-      - name: userTaskKey
-        in: path
-        required: true
-        description: The key of the user task.
-        schema:
-          $ref: 'keys.yaml#/UserTaskKey'
-    responses:
-      "204":
-        description: The user task was unassigned successfully.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "404":
-        description: The user task with the given key was not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: "problem-detail.yaml#/ProblemDetail"
-      "409":
-        description: >
-          The user task with the given key is in the wrong state currently.
-          More details are provided in the response body.
-        content:
-          application/problem+json:
-            schema:
-              $ref: 'problem-detail.yaml#/ProblemDetail'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
-
-/user-tasks/search:
-  post:
-    tags:
-      - User task
-    operationId: searchUserTasks
-    summary: Search user tasks
-    description: Search for user tasks based on given criteria.
-    requestBody:
-      required: false
-      content:
-        application/json:
+  /user-tasks/{userTaskKey}:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - User task
+      operationId: getUserTask
+      summary: Get user task
+      description: Get the user task by the user task key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The user task key.
           schema:
-            $ref: '#/UserTaskSearchQuery'
-    responses:
-      "200":
-        description: The user task search result.
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      responses:
+        "200":
+          description: The user task is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserTaskResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+            $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - User task
+      operationId: updateUserTask
+      summary: Update user task
+      description: Update a user task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to update.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      requestBody:
+        required: false
         content:
           application/json:
             schema:
-              $ref: '#/UserTaskSearchQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "401":
-        $ref: 'common-responses.yaml#/Unauthorized'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-    x-eventually-consistent: true
+              $ref: '#/components/schemas/UserTaskUpdateRequest'
+      responses:
+        "204":
+          description: The user task was updated successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "409":
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        x-eventually-consistent: false
 
-/user-tasks/{userTaskKey}/variables/search:
-  post:
-    x-eventually-consistent: true
-    tags:
-      - User task
-    operationId: searchUserTaskVariables
-    summary: Search user task variables
-    description: Search for user task variables based on given criteria.
-    parameters:
-      - name: userTaskKey
-        in: path
-        required: true
-        description: The key of the user task.
-        schema:
-          $ref: 'keys.yaml#/UserTaskKey'
-    requestBody:
-      required: false
-      content:
-        application/json:
+  /user-tasks/{userTaskKey}/form:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - User task
+      operationId: getUserTaskForm
+      summary: Get user task form
+      description: |
+        Get the form of a user task.
+        Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The user task key.
           schema:
-            $ref: '#/UserTaskVariableSearchQueryRequest'
-    responses:
-      "200":
-        description: The user task variable search result.
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      responses:
+        "200":
+          description: The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: 'form-models.yaml#/components/schemas/FormResult'
+        "204":
+          description: The user task was found, but no form is associated with it.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+            $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+  /user-tasks/{userTaskKey}/assignee:
+    delete:
+      tags:
+        - User task
+      operationId: unassignUserTask
+      summary: Unassign user task
+      description: Removes the assignee of a task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      responses:
+        "204":
+          description: The user task was unassigned successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "409":
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        x-eventually-consistent: false
+
+  /user-tasks/search:
+    post:
+      tags:
+        - User task
+      operationId: searchUserTasks
+      summary: Search user tasks
+      description: Search for user tasks based on given criteria.
+      requestBody:
+        required: false
         content:
           application/json:
             schema:
-              $ref: 'variables.yaml#/VariableSearchQueryResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
+              $ref: '#/components/schemas/UserTaskSearchQuery'
+      responses:
+        "200":
+          description: The user task search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserTaskSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        x-eventually-consistent: true
+
+  /user-tasks/{userTaskKey}/variables/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - User task
+      operationId: searchUserTaskVariables
+      summary: Search user task variables
+      description: Search for user task variables based on given criteria.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskVariableSearchQueryRequest'
+      responses:
+        "200":
+          description: The user task variable search result.
+          content:
+            application/json:
+              schema:
+                $ref: 'variables.yaml#/components/schemas/VariableSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
 ## Schema definitions
 
-UserTaskSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
-        - creationDate
-        - completionDate
-        - followUpDate
-        - dueDate
-        - priority
-        - name
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
-
-UserTaskSearchQuery:
-  description: User task search query request.
-  additionalProperties: false
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/UserTaskSearchQuerySortRequest'
-    filter:
-      allOf:
-        - $ref: '#/UserTaskFilter'
-      description: The user task search filters.
-
-UserTaskFilter:
-  description: User task filter request.
-  type: object
-  properties:
-    state:
-      allOf:
-        - $ref: '#/UserTaskStateFilterProperty'
-      description: The user task state.
-    assignee:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The assignee of the user task.
-    priority:
-      allOf:
-        - $ref: 'filters.yaml#/IntegerFilterProperty'
-      description: The priority of the user task.
-    elementId:
-      allOf:
-        - $ref: 'identifiers.yaml#/ElementId'
-      description: The element ID of the user task.
-    name:
-      type: string
-      description: >
-        The task name. This only works for data created with 8.8 and onwards.
-        Instances from prior versions don't contain this data and cannot be found.
-    candidateGroup:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The candidate group for this user task.
-    candidateUser:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: The candidate user for this user task.
-    tenantId:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: Tenant ID of this user task.
-    processDefinitionId:
-      allOf:
-        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
-      description: The ID of the process definition.
-    creationDate:
-      allOf:
-        - $ref: 'filters.yaml#/DateTimeFilterProperty'
-      description: The user task creation date.
-    completionDate:
-      allOf:
-        - $ref: 'filters.yaml#/DateTimeFilterProperty'
-      description: The user task completion date.
-    followUpDate:
-      allOf:
-        - $ref: 'filters.yaml#/DateTimeFilterProperty'
-      description: The user task follow-up date.
-    dueDate:
-      allOf:
-        - $ref: 'filters.yaml#/DateTimeFilterProperty'
-      description: The user task due date.
-    processInstanceVariables:
-      type: array
-      items:
-        $ref: 'variables.yaml#/VariableValueFilterProperty'
-    localVariables:
-      type: array
-      items:
-        $ref: 'variables.yaml#/VariableValueFilterProperty'
-    userTaskKey:
-      allOf:
-        - $ref: 'keys.yaml#/UserTaskKey'
-      description: The key for this user task.
-    processDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessDefinitionKey'
-      description: The key of the process definition.
-    processInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: The key of the process instance.
-    elementInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ElementInstanceKey'
-      description: The key of the element instance.
-
-UserTaskSearchQueryResult:
-  description: User task search query response.
-  type: object
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryResponse'
-  properties:
-    items:
-      description: The matching user tasks.
-      type: array
-      items:
-        $ref: '#/UserTaskResult'
-
-UserTaskResult:
-  type: object
-  properties:
-    name:
-      type: string
-      description: The name for this user task.
-    state:
-      $ref: 'enums.yaml#/UserTaskStateEnum'
-    assignee:
-      description: The assignee of the user task.
-      type: string
-    elementId:
-      description: The element ID of the user task.
-      allOf:
-        - $ref: 'identifiers.yaml#/ElementId'
-    candidateGroups:
-      type: array
-      description: The candidate groups for this user task.
-      items:
-        type: string
-    candidateUsers:
-      type: array
-      description: The candidate users for this user task.
-      items:
-        type: string
-    processDefinitionId:
-      allOf:
-        - $ref: 'identifiers.yaml#/ProcessDefinitionId'
-      description: The ID of the process definition.
-    creationDate:
-      type: string
-      description: The creation date of a user task.
-      format: date-time
-    completionDate:
-      type: string
-      description: The completion date of a user task.
-      format: date-time
-    followUpDate:
-      type: string
-      description: The follow date of a user task.
-      format: date-time
-    dueDate:
-      type: string
-      description: The due date of a user task.
-      format: date-time
-    tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
-    externalFormReference:
-      type: string
-      description: The external form reference.
-    processDefinitionVersion:
-      type: integer
-      description: The version of the process definition.
-      format: int32
-    customHeaders:
+components:
+  schemas:
+    UserTaskSearchQuerySortRequest:
       type: object
-      description: Custom headers for the user task.
-      additionalProperties:
-        type: string
-    priority:
-      type: integer
-      description: The priority of a user task. The higher the value the higher the priority.
-      minimum: 0
-      maximum: 100
-      default: 50
-    userTaskKey:
-      allOf:
-        - $ref: 'keys.yaml#/UserTaskKey'
-      description: The key of the user task.
-    elementInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ElementInstanceKey'
-      description: The key of the element instance.
-    processName:
-      type: string
-      description: The name of the process definition.
-    processDefinitionKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessDefinitionKey'
-      description: The key of the process definition.
-    processInstanceKey:
-      allOf:
-        - $ref: 'keys.yaml#/ProcessInstanceKey'
-      description: The key of the process instance.
-    formKey:
-      allOf:
-        - $ref: 'keys.yaml#/FormKey'
-      description: The key of the form.
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - creationDate
+            - completionDate
+            - followUpDate
+            - dueDate
+            - priority
+            - name
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
 
-UserTaskCompletionRequest:
-  type: object
-  additionalProperties: false
-  properties:
-    variables:
+    UserTaskSearchQuery:
+      description: User task search query request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/UserTaskSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/UserTaskFilter'
+          description: The user task search filters.
+
+    UserTaskFilter:
+      description: User task filter request.
+      type: object
+      properties:
+        state:
+          allOf:
+            - $ref: '#/components/schemas/UserTaskStateFilterProperty'
+          description: The user task state.
+        assignee:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The assignee of the user task.
+        priority:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: The priority of the user task.
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID of the user task.
+        name:
+          type: string
+          description: >
+            The task name. This only works for data created with 8.8 and onwards.
+            Instances from prior versions don't contain this data and cannot be found.
+        candidateGroup:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The candidate group for this user task.
+        candidateUser:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The candidate user for this user task.
+        tenantId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Tenant ID of this user task.
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The ID of the process definition.
+        creationDate:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: The user task creation date.
+        completionDate:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: The user task completion date.
+        followUpDate:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: The user task follow-up date.
+        dueDate:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: The user task due date.
+        processInstanceVariables:
+          type: array
+          items:
+            $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
+        localVariables:
+          type: array
+          items:
+            $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
+        userTaskKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          description: The key for this user task.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The key of the element instance.
+
+    UserTaskSearchQueryResult:
+      description: User task search query response.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching user tasks.
+          type: array
+          items:
+            $ref: '#/components/schemas/UserTaskResult'
+
+    UserTaskResult:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name for this user task.
+        state:
+          $ref: 'enums.yaml#/components/schemas/UserTaskStateEnum'
+        assignee:
+          description: The assignee of the user task.
+          type: string
+        elementId:
+          description: The element ID of the user task.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+        candidateGroups:
+          type: array
+          description: The candidate groups for this user task.
+          items:
+            type: string
+        candidateUsers:
+          type: array
+          description: The candidate users for this user task.
+          items:
+            type: string
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The ID of the process definition.
+        creationDate:
+          type: string
+          description: The creation date of a user task.
+          format: date-time
+        completionDate:
+          type: string
+          description: The completion date of a user task.
+          format: date-time
+        followUpDate:
+          type: string
+          description: The follow date of a user task.
+          format: date-time
+        dueDate:
+          type: string
+          description: The due date of a user task.
+          format: date-time
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        externalFormReference:
+          type: string
+          description: The external form reference.
+        processDefinitionVersion:
+          type: integer
+          description: The version of the process definition.
+          format: int32
+        customHeaders:
+          type: object
+          description: Custom headers for the user task.
+          additionalProperties:
+            type: string
+        priority:
+          type: integer
+          description: The priority of a user task. The higher the value the higher the priority.
+          minimum: 0
+          maximum: 100
+          default: 50
+        userTaskKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          description: The key of the user task.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The key of the element instance.
+        processName:
+          type: string
+          description: The name of the process definition.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance.
+        formKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKey'
+          description: The key of the form.
+
+    UserTaskCompletionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        variables:
+          additionalProperties: true
+          description: The variables to complete the user task with.
+          type: object
+          nullable: true
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "complete".
+          type: string
+          nullable: true
+
+    UserTaskAssignmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        assignee:
+          description: The assignee for the user task. The assignee must not be empty or `null`.
+          type: string
+          nullable: false
+        allowOverride:
+          description: >
+            By default, the task is reassigned if it was already assigned. Set this to `false`
+            to return an error in such cases. The task must then first be unassigned to
+            be assigned again. Use this when you have users picking from group task
+            queues to prevent race conditions.
+          type: boolean
+          nullable: true
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "assign".
+          type: string
+          nullable: true
+
+    UserTaskUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        changeset:
+          $ref: '#/components/schemas/Changeset'
+        action:
+          description: The action performed.
+          type: string
+          nullable: true
+
+    Changeset:
+      description: |
+        JSON object with changed task attribute values.
+
+        The following attributes can be adjusted with this endpoint, additional attributes
+        will be ignored:
+
+        * `candidateGroups` - reset by providing an empty list
+        * `candidateUsers` - reset by providing an empty list
+        * `dueDate` - reset by providing an empty String
+        * `followUpDate` - reset by providing an empty String
+        * `priority` - minimum 0, maximum 100, default 50
+
+        Providing any of those attributes with a `null` value or omitting it preserves
+        the persisted attribute's value.
+
+        The assignee cannot be adjusted with this endpoint, use the Assign task endpoint.
+        This ensures correct event emission for assignee changes.
+      type: object
+      nullable: true
       additionalProperties: true
-      description: The variables to complete the user task with.
+      properties:
+        dueDate:
+          type: string
+          format: date-time
+          description: The due date of the task. Reset by providing an empty String.
+          nullable: true
+        followUpDate:
+          type: string
+          format: date-time
+          description: The follow-up date of the task. Reset by providing an empty String.
+          nullable: true
+        candidateUsers:
+          type: array
+          description: The list of candidate users of the task. Reset by providing an empty list.
+          items:
+            type: string
+          nullable: true
+        candidateGroups:
+          type: array
+          description: The list of candidate groups of the task. Reset by providing an empty list.
+          items:
+            type: string
+          nullable: true
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the task.
+          minimum: 0
+          default: 50
+          maximum: 100
+          nullable: true
+
+    UserTaskVariableSearchQuerySortRequest:
       type: object
-      nullable: true
-    action:
-      description: >
-        A custom action value that will be accessible from user task events resulting
-        from this endpoint invocation. If not provided, it will default to "complete".
-      type: string
-      nullable: true
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - value
+            - name
+            - tenantId
+            - variableKey
+            - scopeKey
+            - processInstanceKey
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
 
-UserTaskAssignmentRequest:
-  type: object
-  additionalProperties: false
-  properties:
-    assignee:
-      description: The assignee for the user task. The assignee must not be empty or `null`.
-      type: string
-      nullable: false
-    allowOverride:
-      description: >
-        By default, the task is reassigned if it was already assigned. Set this to `false`
-        to return an error in such cases. The task must then first be unassigned to
-        be assigned again. Use this when you have users picking from group task
-        queues to prevent race conditions.
-      type: boolean
-      nullable: true
-    action:
-      description: >
-        A custom action value that will be accessible from user task events resulting
-        from this endpoint invocation. If not provided, it will default to "assign".
-      type: string
-      nullable: true
-
-UserTaskUpdateRequest:
-  type: object
-  additionalProperties: false
-  properties:
-    changeset:
-      $ref: '#/Changeset'
-    action:
-      description: The action performed.
-      type: string
-      nullable: true
-
-Changeset:
-  description: |
-    JSON object with changed task attribute values.
-
-    The following attributes can be adjusted with this endpoint, additional attributes
-    will be ignored:
-
-    * `candidateGroups` - reset by providing an empty list
-    * `candidateUsers` - reset by providing an empty list
-    * `dueDate` - reset by providing an empty String
-    * `followUpDate` - reset by providing an empty String
-    * `priority` - minimum 0, maximum 100, default 50
-
-    Providing any of those attributes with a `null` value or omitting it preserves
-    the persisted attribute's value.
-
-    The assignee cannot be adjusted with this endpoint, use the Assign task endpoint.
-    This ensures correct event emission for assignee changes.
-  type: object
-  nullable: true
-  additionalProperties: true
-  properties:
-    dueDate:
-      type: string
-      format: date-time
-      description: The due date of the task. Reset by providing an empty String.
-      nullable: true
-    followUpDate:
-      type: string
-      format: date-time
-      description: The follow-up date of the task. Reset by providing an empty String.
-      nullable: true
-    candidateUsers:
-      type: array
-      description: The list of candidate users of the task. Reset by providing an empty list.
-      items:
-        type: string
-      nullable: true
-    candidateGroups:
-      type: array
-      description: The list of candidate groups of the task. Reset by providing an empty list.
-      items:
-        type: string
-      nullable: true
-    priority:
-      type: integer
-      format: int32
-      description: The priority of the task.
-      minimum: 0
-      default: 50
-      maximum: 100
-      nullable: true
-
-UserTaskVariableSearchQuerySortRequest:
-  type: object
-  properties:
-    field:
-      description: The field to sort by.
-      type: string
-      enum:
-        - value
-        - name
-        - tenantId
-        - variableKey
-        - scopeKey
-        - processInstanceKey
-    order:
-      $ref: 'enums.yaml#/SortOrderEnum'
-  required:
-    - field
-
-UserTaskVariableSearchQueryRequest:
-  allOf:
-    - $ref: 'search-models.yaml#/SearchQueryRequest'
-  description: User task search query request.
-  additionalProperties: false
-  type: object
-  properties:
-    sort:
-      description: Sort field criteria.
-      type: array
-      items:
-        $ref: '#/UserTaskVariableSearchQuerySortRequest'
-    filter:
+    UserTaskVariableSearchQueryRequest:
       allOf:
-        - $ref: '#/UserTaskVariableFilter'
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      description: User task search query request.
+      additionalProperties: false
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/UserTaskVariableSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/UserTaskVariableFilter'
+          description: The user task variable search filters.
+
+    UserTaskVariableFilter:
       description: The user task variable search filters.
+      type: object
+      properties:
+        name:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Name of the variable.
 
-UserTaskVariableFilter:
-  description: The user task variable search filters.
-  type: object
-  properties:
-    name:
-      allOf:
-        - $ref: 'filters.yaml#/StringFilterProperty'
-      description: Name of the variable.
+    UserTaskStateFilterProperty:
+      description: UserTaskStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/UserTaskStateEnum"
+        - $ref: '#/components/schemas/AdvancedUserTaskStateFilter'
 
-UserTaskStateFilterProperty:
-  description: UserTaskStateEnum property with full advanced search capabilities.
-  type: object
-  oneOf:
-    - type: string
-      title: Exact match
-      description: Matches the value exactly.
-      allOf:
-        - $ref: "enums.yaml#/UserTaskStateEnum"
-    - $ref: "#/AdvancedUserTaskStateFilter"
-
-AdvancedUserTaskStateFilter:
-  title: Advanced filter
-  description: Advanced UserTaskStateEnum filter.
-  type: object
-  properties:
-    $eq:
-      description: Checks for equality with the provided value.
-      allOf:
-        - $ref: "enums.yaml#/UserTaskStateEnum"
-    $neq:
-      description: Checks for inequality with the provided value.
-      allOf:
-        - $ref: "enums.yaml#/UserTaskStateEnum"
-    $exists:
-      description: Checks if the current property exists.
-      type: boolean
-    $in:
-      description: Checks if the property matches any of the provided values.
-      type: array
-      items:
-        $ref: "enums.yaml#/UserTaskStateEnum"
-    $like:
-      $ref: "filters.yaml#/LikeFilter"
+    AdvancedUserTaskStateFilter:
+      title: Advanced filter
+      description: Advanced UserTaskStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/UserTaskStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/UserTaskStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/UserTaskStateEnum"
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"

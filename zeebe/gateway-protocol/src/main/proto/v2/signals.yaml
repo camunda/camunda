@@ -1,70 +1,73 @@
 ## Endpoint definitions
 
-/signals/broadcast:
-  post:
-    tags:
-      - Signal
-    operationId: broadcastSignal
-    summary: Broadcast signal
-    description: Broadcasts a signal.
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/SignalBroadcastRequest'
-    responses:
-      "200":
-        description: The signal was broadcast.
+paths:
+  /signals/broadcast:
+    post:
+      tags:
+        - Signal
+      operationId: broadcastSignal
+      summary: Broadcast signal
+      description: Broadcasts a signal.
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/SignalBroadcastResult'
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "404":
-        description: The signal is not found.
-        content:
-          application/problem+json:
-            schema:
-              $ref: "problem-detail.yaml#/ProblemDetail"
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: false
+              $ref: '#/components/schemas/SignalBroadcastRequest'
+      responses:
+        "200":
+          description: The signal was broadcast.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalBroadcastResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The signal is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
 ## Schema definitions
 
-SignalBroadcastRequest:
-  type: object
-  additionalProperties: false
-  properties:
-    signalName:
-      description: The name of the signal to broadcast.
-      type: string
-    variables:
-      additionalProperties: true
-      description: The signal variables as a JSON object.
+components:
+  schemas:
+    SignalBroadcastRequest:
       type: object
-    tenantId:
-      description: The ID of the tenant that owns the signal.
-      allOf:
-        - $ref: 'identifiers.yaml#/TenantId'
-  required:
-    - signalName
+      additionalProperties: false
+      properties:
+        signalName:
+          description: The name of the signal to broadcast.
+          type: string
+        variables:
+          additionalProperties: true
+          description: The signal variables as a JSON object.
+          type: object
+        tenantId:
+          description: The ID of the tenant that owns the signal.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      required:
+          - signalName
 
-SignalBroadcastResult:
-  type: object
-  required:
-    - tenantId
-    - signalKey
-  x-semantic-provider:
-    - signalKey
-  properties:
-    tenantId:
-      $ref: 'identifiers.yaml#/TenantId'
-    signalKey:
-      allOf:
-        - $ref: 'keys.yaml#/SignalKey'
-      description: The key of the broadcasted signal.
+    SignalBroadcastResult:
+      type: object
+      required:
+        - tenantId
+        - signalKey
+      x-semantic-provider:
+        - signalKey
+      properties:
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        signalKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/SignalKey'
+          description: The key of the broadcasted signal.

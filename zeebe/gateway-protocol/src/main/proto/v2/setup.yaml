@@ -1,27 +1,28 @@
 ## Endpoint definitions
 
-/setup/user:
-  post:
-    tags:
-      - Setup
-    operationId: createAdminUser
-    summary: Create admin user
-    description: Creates a new user and assigns the admin role to it. This endpoint is only usable when users are managed in the Orchestration Cluster and while no user is assigned to the admin role.
-    requestBody:
-      content:
-        application/json:
-          schema:
-            $ref: 'users.yaml#/UserRequest'
-      required: true
-    responses:
-      "201":
-        description: The admin user was created successfully.
-      "400":
-        $ref: 'common-responses.yaml#/InvalidData'
-      "403":
-        $ref: 'common-responses.yaml#/Forbidden'
-      "500":
-        $ref: 'common-responses.yaml#/InternalServerError'
-      "503":
-        $ref: 'common-responses.yaml#/ServiceUnavailable'
-    x-eventually-consistent: true
+paths:
+  /setup/user:
+    post:
+      tags:
+        - Setup
+      operationId: createAdminUser
+      summary: Create admin user
+      description: Creates a new user and assigns the admin role to it. This endpoint is only usable when users are managed in the Orchestration Cluster and while no user is assigned to the admin role.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'users.yaml#/components/schemas/UserRequest'
+        required: true
+      responses:
+        "201":
+          description: The admin user was created successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: true
