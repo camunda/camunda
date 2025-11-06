@@ -40,7 +40,6 @@ public class ReadJobWorkerValueTest {
 
   @Test
   public void applyOnWithJobWorker() {
-    //    @JobWorker(type = "bar", timeout = 100L, name = "kermit", autoComplete = false)
     // given
     final MethodInfo methodInfo = extract(WithJobWorker.class);
 
@@ -76,16 +75,6 @@ public class ReadJobWorkerValueTest {
 
   @Test
   public void applyOnWithJobWorkerAllValues() {
-    //    @JobWorker(
-    //        type = "bar",
-    //        timeout = 100L,
-    //        name = "kermit",
-    //        requestTimeout = 500L,
-    //        pollInterval = 1_000L,
-    //        maxJobsActive = 3,
-    //        fetchVariables = {"foo"},
-    //        autoComplete = true,
-    //        enabled = true)
     // given
     final MethodInfo methodInfo = extract(WithJobWorkerAllValues.class);
 
