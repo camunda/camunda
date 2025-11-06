@@ -21,6 +21,7 @@ import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS;
+import static io.camunda.zeebe.client.ClientProperties.MAX_HTTP_CONNECTIONS;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.PREFER_REST_OVER_GRPC;
@@ -32,7 +33,11 @@ import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CAMUNDA_CLIENT
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
+<<<<<<< HEAD:clients/java/src/test/java/io/camunda/zeebe/client/ZeebeClientTest.java
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+=======
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
+>>>>>>> c54bf8e4 (fix: allow configuration of max concurrent HTTP Connections in zeebe client):clients/java-deprecated/src/test/java/io/camunda/zeebe/client/ZeebeClientTest.java
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
@@ -57,6 +62,7 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.client.impl.util.EnvironmentRule;
@@ -113,6 +119,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultJobWorkerTenantIds())
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.preferRestOverGrpc()).isFalse();
+      assertThat(configuration.getMaxHttpConnections()).isEqualTo(DEFAULT_MAX_HTTP_CONNECTIONS);
     }
   }
 
@@ -1014,5 +1021,46 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofMillis(100));
+  }
+
+  @Test
+  public void shouldSetMaxHttpConnections() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.maxHttpConnections(1234);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @Test
+  public void shouldSetMaxHttpConnectionsWithProperty() {
+    // given
+    final Properties properties = new Properties();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    properties.setProperty(MAX_HTTP_CONNECTIONS, "1234");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @Test
+  public void shouldSetMaxHttpConnectionsWithEnv() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    Environment.system().put(ZeebeClientEnvironmentVariables.MAX_HTTP_CONNECTIONS, "1234");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
   }
 }

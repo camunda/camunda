@@ -30,6 +30,7 @@ import static io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.JOB_WORKER_EXECUTION_THREADS;
 import static io.camunda.zeebe.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
 import static io.camunda.zeebe.client.ClientProperties.KEEP_ALIVE;
+import static io.camunda.zeebe.client.ClientProperties.MAX_HTTP_CONNECTIONS;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.OVERRIDE_AUTHORITY;
@@ -83,6 +84,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
   public static final Duration DEFAULT_MESSAGE_TTL = Duration.ofHours(1);
+  public static final int DEFAULT_MAX_HTTP_CONNECTIONS = 100;
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
   private boolean applyEnvironmentVariableOverrides = true;
@@ -117,6 +119,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
+  private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
 
   @Override
   public String getGatewayAddress() {
@@ -259,6 +262,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public int getMaxHttpConnections() {
+    return maxHttpConnections;
+  }
+
+  @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
     BuilderUtils.applyIfNotNull(
         properties,
@@ -277,6 +285,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
         properties,
         PREFER_REST_OVER_GRPC,
         value -> preferRestOverGrpc(Boolean.parseBoolean(value)));
+
+    BuilderUtils.applyIfNotNull(
+        properties, MAX_HTTP_CONNECTIONS, value -> maxHttpConnections(Integer.parseInt(value)));
 
     BuilderUtils.applyIfNotNull(properties, DEFAULT_TENANT_ID, this::defaultTenantId);
 
@@ -570,6 +581,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public ZeebeClientBuilder maxHttpConnections(final int maxConnections) {
+    maxHttpConnections = maxConnections;
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
@@ -607,6 +624,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     BuilderUtils.applyIfNotNull(
         PREFER_REST_VAR, value -> preferRestOverGrpc(Boolean.parseBoolean(value)));
+
+    BuilderUtils.applyIfNotNull(
+        ZeebeClientEnvironmentVariables.MAX_HTTP_CONNECTIONS,
+        value -> maxHttpConnections(Integer.parseInt(value)));
 
     if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
       defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));

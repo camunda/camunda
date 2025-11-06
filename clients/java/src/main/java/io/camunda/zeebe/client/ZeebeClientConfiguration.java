@@ -169,4 +169,9 @@ public interface ZeebeClientConfiguration {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   boolean preferRestOverGrpc();
+
+  /**
+   * @see ZeebeClientBuilder#maxHttpConnections(int)
+   */
+  int getMaxHttpConnections();
 }
