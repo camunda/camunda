@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -24,6 +26,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/yaml.v3"
 )
 
 func getC8RunPlatform() types.C8Run {
@@ -176,7 +179,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
-	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
+	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (disabling will enable H2)")
 	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
@@ -216,6 +219,8 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		os.Exit(1)
 	}
 
+	applySecondaryStorageDefaults(baseDir, &settings)
+
 	if settings.LogLevel != "" {
 		if err := os.Setenv("ZEEBE_LOG_LEVEL", settings.LogLevel); err != nil {
 			log.Error().Err(err).Msg("failed to set ZEEBE_LOG_LEVEL log level")
@@ -254,6 +259,125 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		Settings:    settings,
 		ProcessInfo: processInfo,
 	}
+}
+
+func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings) {
+	configPaths := resolveConfigPaths(baseDir, settings.Config)
+
+	var secondaryType string
+	var configSource string
+	for _, path := range configPaths {
+		// We only expect one active config; use the first file where the type is defined
+		typeFromConfig, err := detectSecondaryStorageType(path)
+		if err != nil {
+			log.Debug().Err(err).Str("config", path).Msg("Unable to read configuration for secondary storage type")
+			continue
+		}
+		if typeFromConfig != "" {
+			secondaryType = typeFromConfig
+			configSource = path
+			break
+		}
+	}
+
+	settings.SecondaryStorageType = strings.TrimSpace(secondaryType)
+	if settings.SecondaryStorageType == "" {
+		// Nothing configured, keep whatever defaults were provided via CLI/env
+		return
+	}
+
+	// Any non-elasticsearch backend means we keep Elasticsearch disabled (default true)
+	if !strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+		settings.DisableElasticsearch = true
+		event := log.Info().
+			Str("secondaryStorage.type", settings.SecondaryStorageType)
+		if configSource != "" {
+			event = event.Str("config", configSource)
+		}
+		event.Msg("Secondary storage type is not Elasticsearch; Elasticsearch processes will be skipped")
+		return
+	}
+	
+	event := log.Debug().
+		Str("secondaryStorage.type", settings.SecondaryStorageType)
+	if configSource != "" {
+		event = event.Str("config", configSource)
+	}
+	event.Msg("Secondary storage type is Elasticsearch; keeping default behavior")
+}
+
+func resolveConfigPaths(baseDir string, userConfig string) []string {
+	var paths []string
+	if userConfig != "" {
+		candidate := filepath.Join(baseDir, userConfig)
+		if info, err := os.Stat(candidate); err == nil {
+			if info.IsDir() {
+				candidate = filepath.Join(candidate, "application.yaml")
+			}
+			paths = append(paths, candidate)
+		}
+	}
+	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
+	paths = append(paths, defaultConfig)
+	return paths
+}
+
+func detectSecondaryStorageType(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+		return "", err
+	}
+	if info.IsDir() {
+		return detectSecondaryStorageType(filepath.Join(path, "application.yaml"))
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	ext := strings.ToLower(filepath.Ext(path))
+	if ext != ".yaml" && ext != ".yml" {
+		return "", nil
+	}
+	return parseSecondaryStorageTypeFromYAML(content)
+}
+
+func parseSecondaryStorageTypeFromYAML(content []byte) (string, error) {
+	if len(bytes.TrimSpace(content)) == 0 {
+		return "", nil
+	}
+
+	var root map[string]any
+	if err := yaml.Unmarshal(content, &root); err != nil {
+		return "", err
+	}
+	return extractSecondaryStorageTypeFromMap(root), nil
+}
+
+func extractSecondaryStorageTypeFromMap(root map[string]any) string {
+	camunda, ok := root["camunda"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	data, ok := camunda["data"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	secondary, ok := data["secondary-storage"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	if typ, ok := secondary["type"].(string); ok {
+		return typ
+	}
+	return ""
 }
 
 func main() {

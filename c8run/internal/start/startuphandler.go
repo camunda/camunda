@@ -18,7 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func printSystemInformation(javaVersion, javaHome, javaOpts string) {
+func printSystemInformation(javaVersion, javaHome, javaOpts string, usingElasticsearch bool) {
 	fmt.Println("")
 	fmt.Println("")
 	fmt.Println("System Version Information")
@@ -32,7 +32,9 @@ func printSystemInformation(javaVersion, javaHome, javaOpts string) {
 	fmt.Printf("  JAVA_OPTS: %s\n", javaOpts)
 	fmt.Println("--------------------------")
 	fmt.Println("Logging Details:")
-	fmt.Println("  Elasticsearch: ./log/elasticsearch.log")
+	if usingElasticsearch {
+		fmt.Println("  Elasticsearch: ./log/elasticsearch.log")
+	}
 	fmt.Println("  Connectors: ./log/connectors.log")
 	fmt.Println("  Camunda: ./log/camunda.log")
 	fmt.Println("--------------------------")
@@ -186,7 +188,10 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	settings := state.Settings
 	processInfo := state.ProcessInfo
 
-	// Rresolve JAVA_HOME and javaBinary
+	// Check if Elasticsearch should be started (only if secondary-storage.type is elasticsearch)
+	shouldStartElasticsearch := !settings.DisableElasticsearch
+
+	// Resolve JAVA_HOME and javaBinary
 	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -198,7 +203,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		os.Exit(1)
 	}
 
-	err = overrides.SetEnvVars(javaHome)
+	err = overrides.SetEnvVars(javaHome, shouldStartElasticsearch)
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
@@ -231,9 +236,16 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
-	printSystemInformation(javaVersion, javaHome, javaOpts)
-	elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
-	if !settings.DisableElasticsearch {
+	if shouldStartElasticsearch && settings.SecondaryStorageType != "" && !strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+		shouldStartElasticsearch = false
+		log.Info().
+			Str("secondaryStorage.type", settings.SecondaryStorageType).
+			Msg("Skipping Elasticsearch startup because configuration selects a different secondary storage backend")
+	}
+
+	printSystemInformation(javaVersion, javaHome, javaOpts, shouldStartElasticsearch)
+	if shouldStartElasticsearch {
+		elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
 		s.ProcessHandler.AttemptToStartProcess(processInfo.Elasticsearch.PidPath, "Elasticsearch", func() {
 			elasticsearchCmd := c8.ElasticsearchCmd(ctx, processInfo.Elasticsearch.Version, parentDir)
 			elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
