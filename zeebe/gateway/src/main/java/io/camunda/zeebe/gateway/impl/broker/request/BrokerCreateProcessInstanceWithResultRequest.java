@@ -42,6 +42,11 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceWithResultRequest setVersionTag(final String versionTag) {
+    requestDto.setVersionTag(versionTag);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceWithResultRequest setTenantId(final String tenantId) {
     requestDto.setTenantId(tenantId);
     return this;
