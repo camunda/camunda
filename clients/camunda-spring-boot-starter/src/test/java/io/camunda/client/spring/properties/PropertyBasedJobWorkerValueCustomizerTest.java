@@ -43,6 +43,19 @@ import org.junit.jupiter.api.TestFactory;
 public class PropertyBasedJobWorkerValueCustomizerTest {
 
   @Test
+  void shouldApplyDefaults() {
+    // given
+    final CamundaClientProperties properties = properties();
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getEnabled()).isEqualTo(new FromDefaultProperty<>(true));
+    assertThat(jobWorkerValue.getAutoComplete()).isEqualTo(new FromDefaultProperty<>(true));
+    assertThat(jobWorkerValue.getMaxRetries()).isEqualTo(new FromDefaultProperty<>(0));
+  }
+
+  @Test
   void shouldApplyAnnotationValueOverDefaultProperty() {
     // given
     final CamundaClientProperties properties = properties();
