@@ -33,7 +33,10 @@ import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CAMUNDA_CLIENT
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
+<<<<<<< HEAD:clients/java/src/test/java/io/camunda/zeebe/client/ZeebeClientTest.java
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+=======
+>>>>>>> c54bf8e4 (fix: allow configuration of max concurrent HTTP Connections in zeebe client):clients/java-deprecated/src/test/java/io/camunda/zeebe/client/ZeebeClientTest.java
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS;
@@ -60,6 +63,7 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.client.impl.util.EnvironmentRule;
@@ -1052,7 +1056,11 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldSetMaxHttpConnectionsWithEnv() {
     // given
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+<<<<<<< HEAD:clients/java/src/test/java/io/camunda/zeebe/client/ZeebeClientTest.java
     Environment.system().put(MAX_HTTP_CONNECTIONS_VAR, "1234");
+=======
+    Environment.system().put(ZeebeClientEnvironmentVariables.MAX_HTTP_CONNECTIONS, "1234");
+>>>>>>> c54bf8e4 (fix: allow configuration of max concurrent HTTP Connections in zeebe client):clients/java-deprecated/src/test/java/io/camunda/zeebe/client/ZeebeClientTest.java
 
     // when
     builder.build();

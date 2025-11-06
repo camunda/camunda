@@ -627,7 +627,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
         PREFER_REST_VAR, value -> preferRestOverGrpc(Boolean.parseBoolean(value)));
 
     BuilderUtils.applyIfNotNull(
+<<<<<<< HEAD:clients/java/src/main/java/io/camunda/zeebe/client/impl/ZeebeClientBuilderImpl.java
         MAX_HTTP_CONNECTIONS_VAR, value -> maxHttpConnections(Integer.parseInt(value)));
+=======
+        ZeebeClientEnvironmentVariables.MAX_HTTP_CONNECTIONS,
+        value -> maxHttpConnections(Integer.parseInt(value)));
+>>>>>>> c54bf8e4 (fix: allow configuration of max concurrent HTTP Connections in zeebe client):clients/java-deprecated/src/main/java/io/camunda/zeebe/client/impl/ZeebeClientBuilderImpl.java
 
     if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
       defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));

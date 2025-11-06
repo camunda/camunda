@@ -239,12 +239,21 @@ public interface ZeebeClientBuilder {
    * REST. Once done, this will also be removed.
    *
    * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
+<<<<<<< HEAD:clients/java/src/main/java/io/camunda/zeebe/client/ZeebeClientBuilder.java
    *
    * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
+=======
+>>>>>>> c54bf8e4 (fix: allow configuration of max concurrent HTTP Connections in zeebe client):clients/java-deprecated/src/main/java/io/camunda/zeebe/client/ZeebeClientBuilder.java
    */
   ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /** Sets the maximum number of concurrent HTTP connections the client can open. */
+  ZeebeClientBuilder maxHttpConnections(int maxConnections);
+
+  /**
+   * Sets the maximum number of HTTP connections to maintain in the connection pool. This affects
+   * the number of concurrent REST API calls that can be made.
+   */
   ZeebeClientBuilder maxHttpConnections(int maxConnections);
 
   /**
