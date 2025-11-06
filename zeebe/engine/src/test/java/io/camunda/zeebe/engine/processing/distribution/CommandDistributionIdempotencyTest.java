@@ -16,12 +16,12 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadPartitionCompleteProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadPartitionFailProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreationCreateProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycleManagementCancelProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycleManagementResumeProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycleManagementSuspendProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleCompletePartitionProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleFailPartitionProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
@@ -44,8 +44,8 @@ import io.camunda.zeebe.engine.processing.identity.RoleRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleUpdateProcessor;
 import io.camunda.zeebe.engine.processing.message.MessageSubscriptionMigrateProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
-import io.camunda.zeebe.engine.processing.scaling.MarkPartitionBootstrappedProcessor;
-import io.camunda.zeebe.engine.processing.scaling.ScaleUpProcessor;
+import io.camunda.zeebe.engine.processing.scaling.ScaleMarkPartitionBootstrappedProcessor;
+import io.camunda.zeebe.engine.processing.scaling.ScaleScaleUpProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.tenant.TenantAddEntityProcessor;
@@ -262,7 +262,7 @@ public class CommandDistributionIdempotencyTest {
                                         .processInstanceKeys(1L, 3L, 8L)
                                         .build())))
                         .create()),
-            BatchOperationCreateProcessor.class
+            BatchOperationCreationCreateProcessor.class
           },
           {
             "BatchOperation.CANCEL is idempotent",
@@ -277,7 +277,7 @@ public class CommandDistributionIdempotencyTest {
                       .withBatchOperationKey(batchOperation.getKey())
                       .cancel();
                 }),
-            BatchOperationCancelProcessor.class
+            BatchOperationLifecycleManagementCancelProcessor.class
           },
           {
             "BatchOperation.SUSPEND is idempotent",
@@ -292,7 +292,7 @@ public class CommandDistributionIdempotencyTest {
                       .withBatchOperationKey(batchOperation.getKey())
                       .suspend();
                 }),
-            BatchOperationSuspendProcessor.class
+            BatchOperationLifecycleManagementSuspendProcessor.class
           },
           {
             "BatchOperation.RESUME is idempotent",
@@ -308,7 +308,7 @@ public class CommandDistributionIdempotencyTest {
                       .withBatchOperationKey(batchOperation.getKey())
                       .resume();
                 }),
-            BatchOperationResumeProcessor.class
+            BatchOperationLifecycleManagementResumeProcessor.class
           },
           {
             "BatchOperation.FAIL_PARTITION is idempotent",
@@ -324,7 +324,7 @@ public class CommandDistributionIdempotencyTest {
                       .withBatchOperationKey(batchOperation.getKey())
                       .fail();
                 }),
-            BatchOperationLeadPartitionFailProcessor.class
+            BatchOperationPartitionLifecycleFailPartitionProcessor.class
           },
           {
             "BatchOperation.COMPLETE_PARTITION is idempotent",
@@ -340,7 +340,7 @@ public class CommandDistributionIdempotencyTest {
                       .withBatchOperationKey(batchOperation.getKey())
                       .execute();
                 }),
-            BatchOperationLeadPartitionCompleteProcessor.class
+            BatchOperationPartitionLifecycleCompletePartitionProcessor.class
           },
           {
             "Clock.RESET is idempotent",
@@ -725,7 +725,7 @@ public class CommandDistributionIdempotencyTest {
                 // distribution of SCALE_UP can't complete because it's only enqueued for partition
                 // 3.
                 false),
-            ScaleUpProcessor.class,
+            ScaleScaleUpProcessor.class,
           },
           {
             "Scale.MARK_PARTITION_BOOTSTRAPPED is idempotent",
@@ -735,7 +735,7 @@ public class CommandDistributionIdempotencyTest {
                 () -> ENGINE.scale().markPartitionBootstrapped().markBootstrapped(3),
                 // EngineRule does not support a dynamic number of partitions
                 false),
-            MarkPartitionBootstrappedProcessor.class
+            ScaleMarkPartitionBootstrappedProcessor.class
           }
         });
   }

@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
-public final class ProcessInstanceCreationCreateWithResultProcessor
+public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
 
   private final ProcessInstanceCreationCreateProcessor createProcessor;
@@ -34,7 +34,7 @@ public final class ProcessInstanceCreationCreateWithResultProcessor
 
   private boolean shouldRespond;
 
-  public ProcessInstanceCreationCreateWithResultProcessor(
+  public ProcessInstanceCreationCreateWithAwaitingResultProcessor(
       final ProcessInstanceCreationCreateProcessor createProcessor,
       final MutableElementInstanceState elementInstanceState) {
     this.createProcessor = createProcessor;

@@ -24,16 +24,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
-public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMetricRecord> {
+public class UsageMetricExportProcessor implements TypedRecordProcessor<UsageMetricRecord> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsExportProcessor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UsageMetricExportProcessor.class);
 
   private final UsageMetricState usageMetricState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
 
-  public UsageMetricsExportProcessor(
+  public UsageMetricExportProcessor(
       final UsageMetricState usageMetricState,
       final Writers writers,
       final KeyGenerator keyGenerator,

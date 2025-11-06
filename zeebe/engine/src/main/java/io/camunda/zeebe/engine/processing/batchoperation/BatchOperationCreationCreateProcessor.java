@@ -38,10 +38,11 @@ import org.slf4j.LoggerFactory;
  * Processes commands to create batch operations. It validates the command and checks for
  * authorization. This command will be distributed to all other existing partitions.
  */
-public final class BatchOperationCreateProcessor
+public final class BatchOperationCreationCreateProcessor
     implements DistributedTypedRecordProcessor<BatchOperationCreationRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationCreateProcessor.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationCreationCreateProcessor.class);
 
   private static final String EMPTY_JSON_OBJECT = "{}";
   private static final String MESSAGE_GIVEN_FILTER_IS_EMPTY = "Given filter is empty";
@@ -55,7 +56,7 @@ public final class BatchOperationCreateProcessor
   private final RoutingInfo routingInfo;
   private final BatchOperationMetrics metrics;
 
-  public BatchOperationCreateProcessor(
+  public BatchOperationCreationCreateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,

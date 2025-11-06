@@ -93,7 +93,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
             BatchOperationIntent.CREATE,
-            new BatchOperationCreateProcessor(
+            new BatchOperationCreationCreateProcessor(
                 writers,
                 keyGenerator,
                 commandDistributionBehavior,
@@ -103,15 +103,16 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.INITIALIZE,
-            new BatchOperationInitializeProcessor(writers))
+            new BatchOperationInitializationInitializeProcessor(writers))
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.FINISH_INITIALIZATION,
-            new BatchOperationFinishInitializationProcessor(writers, batchOperationMetrics))
+            new BatchOperationInitializationFinishInitializationProcessor(
+                writers, batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL,
-            new BatchOperationFailProcessor(
+            new BatchOperationPartitionLifecycleFailProcessor(
                 writers,
                 commandDistributionBehavior,
                 keyGenerator,
@@ -120,11 +121,11 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
-            new BatchOperationCreateChunkProcessor(writers))
+            new BatchOperationChunkCreateProcessor(writers))
         .onCommand(
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationExecutionIntent.EXECUTE,
-            new BatchOperationExecuteProcessor(
+            new BatchOperationExecutionExecuteProcessor(
                 writers,
                 processingState,
                 commandDistributionBehavior,
@@ -134,7 +135,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.CANCEL,
-            new BatchOperationCancelProcessor(
+            new BatchOperationLifecycleManagementCancelProcessor(
                 writers,
                 commandDistributionBehavior,
                 processingState,
@@ -144,7 +145,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.SUSPEND,
-            new BatchOperationSuspendProcessor(
+            new BatchOperationLifecycleManagementSuspendProcessor(
                 writers,
                 commandDistributionBehavior,
                 processingState,
@@ -154,7 +155,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.RESUME,
-            new BatchOperationResumeProcessor(
+            new BatchOperationLifecycleManagementResumeProcessor(
                 writers,
                 commandDistributionBehavior,
                 processingState,
@@ -164,12 +165,12 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.COMPLETE_PARTITION,
-            new BatchOperationLeadPartitionCompleteProcessor(
+            new BatchOperationPartitionLifecycleCompletePartitionProcessor(
                 writers, processingState, commandDistributionBehavior, batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL_PARTITION,
-            new BatchOperationLeadPartitionFailProcessor(
+            new BatchOperationPartitionLifecycleFailPartitionProcessor(
                 writers, processingState, commandDistributionBehavior, batchOperationMetrics))
         .withListener(
             new BatchOperationExecutionScheduler(
