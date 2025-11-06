@@ -123,6 +123,9 @@ public class AlignmentTest {
           entry(
               "camunda.client.worker.defaults.stream-timeout",
               new Getter(p -> p.getWorker().getDefaults().getStreamTimeout(), DURATION_MAPPER)),
+          entry(
+              "camunda.client.max-http-connections",
+              new Getter(CamundaClientProperties::getMaxHttpConnections)),
           entry("camunda.client.worker.defaults.retry-backoff",
               new Getter(p -> p.getWorker().getDefaults().getRetryBackoff(), DURATION_MAPPER)));
 
