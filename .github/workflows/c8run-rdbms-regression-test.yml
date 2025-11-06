@@ -5,27 +5,9 @@
 name: C8Run RDBMS Regression Tests
 
 on:
-  pull_request:
-    types:
-      - assigned
-      - unassigned
-      - labeled
-      - unlabeled
-      - opened
-      - edited
-      - closed
-      - reopened
-      - synchronize
-      - converted_to_draft
-      - ready_for_review
-      - locked
-      - unlocked
-      - review_requested
-      - review_request_removed
-      - auto_merge_enabled
-      - auto_merge_disabled
-      - milestoned
-      - demilestoned
+  push:
+    branches:
+      - '**'
     paths:
       - 'c8run/**'
   workflow_dispatch:
