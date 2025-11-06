@@ -296,6 +296,15 @@ final class RollingUpdateTest {
     cluster.getBrokers().forEach((id, broker) -> updateBroker(broker, version));
   }
 
+  private String dockerImageName(final String version) {
+    final var parsed = SemanticVersion.parse(version).get();
+    if (parsed.minor() >= 8) {
+      return "camunda/camunda";
+    } else {
+      return "camunda/zeebe";
+    }
+  }
+
   private void updateBroker(final ZeebeBrokerNode<?> broker, final String version) {
     if ("CURRENT".equals(version)) {
       broker.setDockerImageName(
@@ -303,7 +312,7 @@ final class RollingUpdateTest {
       broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, currentVersion());
     } else {
       broker.setDockerImageName(
-          DockerImageName.parse("camunda/zeebe").withTag(version).asCanonicalNameString());
+          DockerImageName.parse(dockerImageName(version)).withTag(version).asCanonicalNameString());
     }
   }
 
