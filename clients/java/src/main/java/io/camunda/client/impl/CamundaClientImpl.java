@@ -509,21 +509,29 @@ public final class CamundaClientImpl implements CamundaClient {
   private static ExecutorResource buildExecutorService(
       final CamundaClientConfiguration configuration) {
 
-    final ExecutorService jobHandlingExecutor = configuration.jobHandlingExecutor();
-    final boolean ownsJobHandlingExecutor = configuration.ownsJobHandlingExecutor();
-
     final ScheduledExecutorService scheduledExecutor;
     final boolean ownsScheduledExecutor;
 
-    if (configuration.jobWorkerExecutor() != null) {
-      scheduledExecutor = configuration.jobWorkerExecutor();
-      ownsScheduledExecutor = configuration.ownsJobWorkerExecutor();
+    if (configuration.jobWorkerSchedulingExecutor() != null) {
+      scheduledExecutor = configuration.jobWorkerSchedulingExecutor();
+      ownsScheduledExecutor = configuration.ownsJobWorkerSchedulingExecutor();
     } else {
-      final int threadCount =
-          jobHandlingExecutor != null ? 1 : configuration.getNumJobWorkerExecutionThreads();
-      scheduledExecutor = Executors.newScheduledThreadPool(threadCount);
+      scheduledExecutor = Executors.newScheduledThreadPool(1);
       ownsScheduledExecutor = true;
     }
+
+    final ExecutorService jobHandlingExecutor;
+    final boolean ownsJobHandlingExecutor;
+
+    if (configuration.jobHandlingExecutor() != null) {
+      jobHandlingExecutor = configuration.jobHandlingExecutor();
+      ownsJobHandlingExecutor = configuration.ownsJobHandlingExecutor();
+    } else {
+      final int threadCount = configuration.getNumJobWorkerExecutionThreads();
+      jobHandlingExecutor = Executors.newFixedThreadPool(threadCount);
+      ownsJobHandlingExecutor = true;
+    }
+
     return new ExecutorResource(
         scheduledExecutor, ownsScheduledExecutor, jobHandlingExecutor, ownsJobHandlingExecutor);
   }
