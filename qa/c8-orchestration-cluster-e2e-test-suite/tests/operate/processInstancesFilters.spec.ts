@@ -19,6 +19,7 @@ type ProcessInstance = {processInstanceKey: number};
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 let variableProcessInstance: ProcessInstance;
+let processWithMultVerV2Key: string;
 
 test.beforeAll(async () => {
   await deploy([
@@ -30,7 +31,8 @@ test.beforeAll(async () => {
   await createInstances('processWithAnError', 1, 1);
 
   await deploy(['./resources/processWithMultipleVersions_v_2.bpmn']);
-  await createInstances('processWithMultipleVersions', 2, 1);
+  const [processMulVerV2Instance] = await createInstances('processWithMultipleVersions', 2, 1);
+  processWithMultVerV2Key = processMulVerV2Instance.processInstanceKey.toString();
 
   await deploy(['./resources/orderProcess_v_1.bpmn']);
   orderProcessInstance = {
@@ -82,6 +84,7 @@ test.describe('Process Instances Filters', () => {
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
+    operateProcessMigrationModePage,
   }) => {
     await test.step('Filter by Parent Process Instance Key and assert results', async () => {
       const callActivityProcessInstanceKey =
@@ -253,14 +256,38 @@ test.describe('Process Instances Filters', () => {
     await test.step('Filter by op ID and assert results', async ({ }) => {
       await operateFiltersPanelPage.resetFiltersButton.click();
 
+      // select process with version 2
       await operateFiltersPanelPage.selectProcess('Process With Multiple Versions');
-
-
       await operateFiltersPanelPage.selectVersion('2');
-      // const currentVersion = await operateFiltersPanelPage.processVersionFilter.innerText();
-      
       await sleep(1_000); // wait for filter to be applied
+
+      // enter migration mode
       await operateProcessesPage.selectFirstProcessCheckbox();
+      await operateProcessesPage.clickMigrateSelectedProcessesButton();
+
+      // perform migration to version 1
+      await operateProcessesPage.clickContinueMigrationDialogButton();
+      await operateProcessMigrationModePage.clickTargetVersionCombo();
+      await operateProcessMigrationModePage.selectTargetVersion('1');
+      await operateProcessMigrationModePage.clickNextButton();
+      await operateProcessMigrationModePage.clickConfirmButton();
+      await operateProcessMigrationModePage.fillMigrationConfirmation('MIGRATE');
+      await operateProcessMigrationModePage.clickMigrationConfirmationButton();
+
+      // filter by operation id
+      // await page.getByTestId('operation-id').first().click( {timeout: 5000});
+      await operateProcessesPage.selectFirstOperationItem();
+      
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+          await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(processWithMultVerV2Key);
+        },
+        onFailure: async () => {
+          await page.reload();
+        }
+      });
+
 
     })
 

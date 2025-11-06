@@ -31,6 +31,9 @@ class OperateProcessesPage {
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
   readonly processInstanceKeyCell: Locator;
+  readonly migrateSelectedProcessesButton: Locator;
+  readonly continueMigrationDialogButton: Locator;
+  readonly operationPanelItem: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
   constructor(page: Page) {
@@ -90,6 +93,11 @@ class OperateProcessesPage {
       .getByTestId('cell-endDate')
       .first();
     this.versionCell = page.getByTestId('process-version-select');
+    this.migrateSelectedProcessesButton = page.getByRole('button', {name: 'Migrate',});
+    this.continueMigrationDialogButton = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Continue',});
+    this.operationPanelItem = page.getByTestId('operation-id').first();
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -165,6 +173,18 @@ class OperateProcessesPage {
   async selectFirstProcessCheckbox(): Promise<void> {
     const id = await this.page.getByRole('checkbox', { name: 'Select row' }).first().getAttribute('id');
     await this.page.locator(`label[for="${id}"]`).click();
+  }
+
+  async clickMigrateSelectedProcessesButton(): Promise<void> {
+    await this.migrateSelectedProcessesButton.click();
+  }
+
+  async clickContinueMigrationDialogButton(): Promise<void> {
+    await this.continueMigrationDialogButton.click();
+  }
+
+  async selectFirstOperationItem(): Promise<void> {
+    await this.operationPanelItem.click( {timeout: 6000} );
   }
 }
 
