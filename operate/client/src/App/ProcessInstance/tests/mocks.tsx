@@ -27,7 +27,6 @@ import {useEffect} from 'react';
 import {waitFor} from '@testing-library/react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
-import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockProcess} from 'modules/mocks/api/mocks/process';
@@ -138,6 +137,10 @@ const mockRequests = () => {
     items: [],
     page: {totalItems: 0},
   });
+  mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
+    items: [],
+    page: {totalItems: 0},
+  });
   mockFetchProcess().withSuccess(mockProcess);
   mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 };
@@ -228,7 +231,6 @@ const waitForPollingsToBeComplete = async () => {
   await waitFor(() => {
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
     expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
-    expect(incidentsStore.isPollRequestRunning).toBe(false);
     expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
   });
 };

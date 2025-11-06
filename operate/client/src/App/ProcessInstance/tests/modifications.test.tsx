@@ -20,7 +20,6 @@ import {
   createvariable,
 } from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
-import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import * as flowNodeInstanceUtils from 'modules/utils/flowNodeInstance';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
@@ -40,7 +39,6 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const clearPollingStates = () => {
-  incidentsStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
 
@@ -272,8 +270,6 @@ describe('ProcessInstance - modification mode', () => {
   it('should stop polling during the modification mode', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const handlePollingIncidentsSpy = vi.spyOn(incidentsStore, 'handlePolling');
-
     const initFlowNodeInstanceSpy = vi.spyOn(flowNodeInstanceUtils, 'init');
     const startPollingFlowNodeInstanceSpy = vi.spyOn(
       flowNodeInstanceUtils,
@@ -287,7 +283,6 @@ describe('ProcessInstance - modification mode', () => {
       [`hideModificationHelperModal`]: true,
     });
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
@@ -296,9 +291,6 @@ describe('ProcessInstance - modification mode', () => {
     });
     await act(async () => {
       await vi.runOnlyPendingTimersAsync();
-    });
-    await waitFor(() => {
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     });
     expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
 
@@ -324,16 +316,12 @@ describe('ProcessInstance - modification mode', () => {
       await vi.runOnlyPendingTimersAsync();
     });
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-
     clearPollingStates();
     mockRequests();
 
     await act(async () => {
       await vi.runOnlyPendingTimersAsync();
     });
-
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
 
     mockRequests();
     await user.click(screen.getByTestId('discard-all-button'));
