@@ -25,7 +25,7 @@ paths:
               The ID of the document to upload. If not provided, a new ID will be generated.
               Specifying an existing ID will result in an error if the document already exists.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/DocumentId'
+            $ref: '#/components/schemas/DocumentId'
       requestBody:
         required: true
         content:
@@ -152,7 +152,7 @@ paths:
           required: true
           description: The ID of the document to download.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/DocumentId'
+            $ref: '#/components/schemas/DocumentId'
         - name: storeId
           in: query
           required: false
@@ -201,7 +201,7 @@ paths:
           required: true
           description: The ID of the document to delete.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/DocumentId'
+            $ref: '#/components/schemas/DocumentId'
         - name: storeId
           in: query
           required: false
@@ -237,7 +237,7 @@ paths:
           required: true
           description: The ID of the document to link.
           schema:
-            $ref: 'identifiers.yaml#/components/schemas/DocumentId'
+            $ref: '#/components/schemas/DocumentId'
         - name: storeId
           in: query
           required: false
@@ -287,7 +287,7 @@ components:
           description: The ID of the document store.
         documentId:
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/DocumentId'
+            - $ref: '#/components/schemas/DocumentId'
           description: The ID of the document.
         contentHash:
           type: string
@@ -377,3 +377,9 @@ components:
           type: string
           format: date-time
           description: The date and time when the link expires.
+
+    DocumentId:
+      description: Document Id that uniquely identifies a document.
+      format: DocumentId
+      x-semantic-type: DocumentId
+      type: string
