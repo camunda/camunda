@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import java.io.IOException;
 import java.util.HashSet;
@@ -28,8 +29,12 @@ public class ProcessInstanceCreationInstructionDeserializer
 
   private static final String PROCESS_DEFINITION_KEY_FIELD = "processDefinitionKey";
   private static final String PROCESS_DEFINITION_ID_FIELD = "processDefinitionId";
+  private static final String VERSION_TAG_FIELD = "versionTag";
+  private static final String VERSION_FIELD = "processDefinitionVersion";
   private static final Set<String> SUPPORTED_FIELDS =
       Set.of(PROCESS_DEFINITION_KEY_FIELD, PROCESS_DEFINITION_ID_FIELD);
+  private static final Set<String> MUTUALLY_EXCLUSIVE_QUALIFIER_FIELDS =
+      Set.of(VERSION_TAG_FIELD, VERSION_FIELD);
 
   @Override
   public ProcessInstanceCreationInstruction deserialize(
@@ -38,6 +43,7 @@ public class ProcessInstanceCreationInstructionDeserializer
     final var treeNode = codec.readTree(parser);
 
     final Set<String> presentFields = new HashSet<>();
+    final Set<String> presentQualifierFields = new HashSet<>();
     final var fields = treeNode.fieldNames();
 
     while (fields.hasNext()) {
@@ -45,9 +51,13 @@ public class ProcessInstanceCreationInstructionDeserializer
       if (SUPPORTED_FIELDS.contains(field) && !(treeNode.get(field) instanceof NullNode)) {
         presentFields.add(field);
       }
+      if (MUTUALLY_EXCLUSIVE_QUALIFIER_FIELDS.contains(field)
+          && !(treeNode.get(field) instanceof NullNode)) {
+        presentQualifierFields.add(field);
+      }
     }
 
-    validateFields(presentFields);
+    validateFields(presentFields, presentQualifierFields);
 
     // Remove null fields from the tree to prevent parsing errors
     if (treeNode.get(PROCESS_DEFINITION_KEY_FIELD) instanceof NullNode) {
@@ -56,15 +66,24 @@ public class ProcessInstanceCreationInstructionDeserializer
     if (treeNode.get(PROCESS_DEFINITION_ID_FIELD) instanceof NullNode) {
       ((ObjectNode) treeNode).remove(PROCESS_DEFINITION_ID_FIELD);
     }
+    if (treeNode.get(VERSION_TAG_FIELD) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(VERSION_TAG_FIELD);
+    }
+    if (treeNode.get(VERSION_FIELD) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(VERSION_FIELD);
+    }
 
     if (presentFields.contains(PROCESS_DEFINITION_KEY_FIELD)) {
       return codec.treeToValue(treeNode, ProcessInstanceCreationInstructionByKey.class);
+    } else if (presentQualifierFields.contains(VERSION_TAG_FIELD)) {
+      return codec.treeToValue(treeNode, ProcessInstanceCreationInstructionByVersionTag.class);
     } else {
       return codec.treeToValue(treeNode, ProcessInstanceCreationInstructionById.class);
     }
   }
 
-  private static void validateFields(final Set<String> presentFields) {
+  private static void validateFields(
+      final Set<String> presentFields, final Set<String> presentQualifierFields) {
     if (presentFields.size() > 1) {
       throw new DeserializationException(
           ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(getErrorMessageParam()));
@@ -73,9 +92,17 @@ public class ProcessInstanceCreationInstructionDeserializer
       throw new DeserializationException(
           ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(getErrorMessageParam()));
     }
+    if (presentQualifierFields.size() > 1) {
+      throw new DeserializationException(
+          ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(getQualifierErrorMessageParam()));
+    }
   }
 
   private static String getErrorMessageParam() {
     return "[%s, %s]".formatted(PROCESS_DEFINITION_ID_FIELD, PROCESS_DEFINITION_KEY_FIELD);
+  }
+
+  private static String getQualifierErrorMessageParam() {
+    return "[%s, %s]".formatted(VERSION_FIELD, VERSION_TAG_FIELD);
   }
 }

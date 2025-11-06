@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstr
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
@@ -70,6 +71,23 @@ public class ProcessInstanceRequestValidator {
             violations.add(
                 ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
                     List.of("processDefinitionId", "processDefinitionKey")));
+          }
+          validateOperationReference(request.getOperationReference(), violations);
+          validateTags(request.getTags(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateCreateProcessInstanceByVersionTagRequest(
+      final ProcessInstanceCreationInstructionByVersionTag request) {
+    return validate(
+        violations -> {
+          if (request.getProcessDefinitionId() == null) {
+            violations.add(
+                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
+                    List.of("processDefinitionId", "processDefinitionKey")));
+          }
+          if (request.getVersionTag() == null || request.getVersionTag().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("versionTag"));
           }
           validateOperationReference(request.getOperationReference(), violations);
           validateTags(request.getTags(), violations);

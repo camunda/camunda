@@ -33,6 +33,12 @@ paths:
                   processDefinitionId: my-business-process
                   processDefinitionVersion: 1
                   variables: {}
+              By process definition version tag:
+                summary: Create a process instance by processDefinitionId and versionTag.
+                value:
+                  processDefinitionId: my-business-process
+                  versionTag: "v1.0"
+                  variables: {}
       responses:
         "200":
           description: The process instance was created.
@@ -701,6 +707,7 @@ components:
       oneOf:
         - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
         - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByKey'
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByVersionTag'
 
     ProcessInstanceCreationInstructionById:
       type: object
@@ -840,6 +847,79 @@ components:
           example: []
           items:
             type: string
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+
+    ProcessInstanceCreationInstructionByVersionTag:
+      type: object
+      title: Process creation by version tag
+      required:
+        - processDefinitionId
+        - versionTag
+      additionalProperties: false
+      properties:
+        processDefinitionId:
+          description: |
+            The BPMN process ID of the process definition to start an instance of.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        versionTag:
+          description: |
+            The version tag of the process definition. This defines which version of the process
+            definition to use for creating the process instance.
+          type: string
+        variables:
+          description: |
+            JSON object that will instantiate the variables for the root variable scope
+            of the process instance.
+          type: object
+          additionalProperties: true
+        tenantId:
+          description: The tenant ID of the process definition.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+        startInstructions:
+          description: |
+            List of start instructions. By default, the process instance will start at
+            the start event. If provided, the process instance will apply start instructions
+            after it has been created.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceCreationStartInstruction'
+        runtimeInstructions:
+          description: |
+            Runtime instructions (alpha). List of instructions that affect the runtime behavior of
+            the process instance. Refer to specific instruction types for more details.
+
+            This parameter is an alpha feature and may be subject to change
+            in future releases.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
+        awaitCompletion:
+          description: |
+            Wait for the process instance to complete. If the process instance completion does
+            not occur within the requestTimeout, the request will be closed. This can lead to a 504
+            response status. Disabled by default.
+          type: boolean
+          default: false
+        fetchVariables:
+          description: |
+            List of variables by name to be included in the response when awaitCompletion is set to true.
+            If empty, all visible variables in the root scope will be returned.
+          type: array
+          example: [ ]
+          items:
+            type: string
+        requestTimeout:
+          description: |
+            Timeout (in ms) the request waits for the process to complete. By default or
+            when set to 0, the generic request timeout configured in the cluster is applied.
+          type: integer
+          format: int64
+          default: 0
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
 

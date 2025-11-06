@@ -36,6 +36,13 @@ public interface ProcessInstanceCreationRecordValue
   int getVersion();
 
   /**
+   * @return the version tag of the BPMN process to create a process from
+   */
+  default String getVersionTag() {
+    return "";
+  }
+
+  /**
    * @return the unique key of the BPMN process definition to create a process from
    */
   long getProcessDefinitionKey();

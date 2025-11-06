@@ -214,6 +214,10 @@ public final class ProcessInstanceServices
             .setStartInstructionsFromRecord(request.startInstructions())
             .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
 
+    if (request.versionTag() != null) {
+      brokerRequest.setVersionTag(request.versionTag());
+    }
+
     if (request.tags() != null) {
       brokerRequest.setTags(request.tags());
     }
@@ -236,6 +240,10 @@ public final class ProcessInstanceServices
             .setInstructions(request.startInstructions())
             .setFetchVariables(request.fetchVariables())
             .setTags(request.tags());
+
+    if (request.versionTag() != null) {
+      brokerRequest.setVersionTag(request.versionTag());
+    }
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -395,6 +403,7 @@ public final class ProcessInstanceServices
       Long processDefinitionKey,
       String bpmnProcessId,
       Integer version,
+      String versionTag,
       Map<String, Object> variables,
       String tenantId,
       Boolean awaitCompletion,
