@@ -61,6 +61,13 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  public CamundaClientExecutorService camundaClientExecutorService() {
+    return CamundaClientExecutorService.createDefault(
+        camundaClientProperties.getExecutionThreads());
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
   public CommandExceptionHandlingStrategy commandExceptionHandlingStrategy(
       final BackoffSupplier backoffSupplier,
       final CamundaClientExecutorService scheduledExecutorService) {
