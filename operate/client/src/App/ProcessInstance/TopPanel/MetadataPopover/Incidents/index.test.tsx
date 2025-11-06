@@ -160,7 +160,6 @@ describe('<Incidents />', () => {
       {wrapper: Wrapper},
     );
 
-    // Wait for loading to finish
     expect(
       await screen.findByRole('heading', {name: /^incident$/i}),
     ).toBeInTheDocument();
@@ -189,7 +188,6 @@ describe('<Incidents />', () => {
       {wrapper: Wrapper},
     );
 
-    // Wait for loading to finish
     expect(
       await screen.findByRole('heading', {name: /^incident$/i}),
     ).toBeInTheDocument();
@@ -227,7 +225,6 @@ describe('<Incidents />', () => {
       {wrapper: Wrapper},
     );
 
-    // Wait for loading to finish
     expect(
       await screen.findByRole('heading', {name: /^incident$/i}),
     ).toBeInTheDocument();
@@ -252,7 +249,6 @@ describe('<Incidents />', () => {
       {wrapper: Wrapper},
     );
 
-    // Wait for loading to finish
     expect(
       await screen.findByRole('heading', {name: /^incidents$/i}),
     ).toBeInTheDocument();

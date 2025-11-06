@@ -225,7 +225,6 @@ describe('MetadataPopover', () => {
     expect(screen.queryByText(labels.errorMessage)).not.toBeInTheDocument();
   });
 
-  // more detailed incidents tests in incidents/index.test.tsx
   it('should render meta data for element with incident', async () => {
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
     mockFetchElementInstance('2251799813699889').withSuccess({

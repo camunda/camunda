@@ -292,7 +292,7 @@ describe('MetadataPopover <Details />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should display incident fields for when incident is occurred', async () => {
+  it('should display incident fields for when incident has occurred', async () => {
     const incidentMetadata: V2MetaDataDto = {
       ...baseMetaData,
       instanceMetadata: {
