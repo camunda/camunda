@@ -76,8 +76,7 @@ public class JobWorkerManager {
     return internalManagedJobWorker.getCurrent();
   }
 
-  public void updateJobWorker(
-      final String type, final JobWorkerChangeSet changeSet) {
+  public void updateJobWorker(final String type, final JobWorkerChangeSet changeSet) {
     final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
     upsertWorker(internalManagedJobWorker, changeSet);
   }
@@ -109,8 +108,7 @@ public class JobWorkerManager {
   }
 
   private void upsertWorker(
-      final InternalManagedJobWorker internalManagedJobWorker,
-      final JobWorkerChangeSet changeSet) {
+      final InternalManagedJobWorker internalManagedJobWorker, final JobWorkerChangeSet changeSet) {
     // apply changes and check whether there was an actual change
     final boolean changed = changeSet.applyChanges(internalManagedJobWorker.getCurrent());
     if (!changed) {
