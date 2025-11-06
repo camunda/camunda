@@ -297,9 +297,7 @@ func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings
 		event.Msg("Secondary storage type is not Elasticsearch; Elasticsearch processes will be skipped")
 		return
 	}
-
-	// Explicit elasticsearch configuration flips the flag so ES starts alongside the stack
-	settings.DisableElasticsearch = false
+	
 	event := log.Debug().
 		Str("secondaryStorage.type", settings.SecondaryStorageType)
 	if configSource != "" {
