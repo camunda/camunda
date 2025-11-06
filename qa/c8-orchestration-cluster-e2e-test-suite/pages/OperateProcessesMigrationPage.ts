@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
+import {Page, Locator} from '@playwright/test';
 
 class OperateProcessesMigrationPage {
   private page: Page;
@@ -14,6 +14,8 @@ class OperateProcessesMigrationPage {
   readonly confirmButton: Locator;
   readonly modificationConfirmationInput: Locator;
   readonly confirmSubButton: Locator;
+  readonly targetProcessCombobox: Locator;
+  readonly targetVersionDropdown: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -25,14 +27,20 @@ class OperateProcessesMigrationPage {
     this.confirmSubButton = page
       .getByRole('dialog', {name: 'Migration confirmation'})
       .getByRole('button', {name: 'Confirm'});
+    this.targetProcessCombobox = page.getByRole('combobox', {
+      name: 'Target',
+      exact: true,
+    });
+    this.targetVersionDropdown = page.getByRole('combobox', {
+      name: 'Target Version',
+    });
   }
 
-  async migrateProcessInstance(): Promise<void> {
+  async completeProcessInstanceMigration(): Promise<void> {
     await this.nextButton.click();
     await this.confirmButton.click();
     await this.modificationConfirmationInput.fill('MIGRATE');
     await this.confirmSubButton.click();
-    await expect(this.page).toHaveURL(/.*migrate.*/);
   }
 }
 

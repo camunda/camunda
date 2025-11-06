@@ -26,6 +26,7 @@ class OperateProcessesPage {
   readonly processInstanceKeySortButton: Locator;
   readonly versionSortButton: Locator;
   readonly processNameSortButton: Locator;
+  readonly dataList: Locator;
   readonly processInstancesTable: Locator;
   readonly parentInstanceIdCell: Locator;
   readonly endDateCell: Locator;
@@ -33,6 +34,15 @@ class OperateProcessesPage {
   readonly continueButton: Locator;
   readonly processInstancesPanel: Locator;
   readonly migrateButton: Locator;
+  readonly operationsPanel: Locator;
+  readonly operationsList: Locator;
+  readonly latestOperationEntry: Locator;
+  readonly latestOperationLink: Locator;
+  readonly latestOperationMigrateHeading: Locator;
+  readonly latestOperationProgressBar: Locator;
+  readonly latestOperationEntryBeforeCompletion: Locator;
+  readonly operationSuccessMessage: Locator;
+
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
   constructor(page: Page) {
@@ -78,15 +88,12 @@ class OperateProcessesPage {
     this.processNameSortButton = page.getByRole('button', {
       name: 'sort by name',
     });
-    this.processInstancesTable = page.getByTestId('data-list').getByRole('row');
-    this.parentInstanceIdCell = page
-      .getByTestId('data-list')
+    this.dataList = page.getByTestId('data-list');
+    this.processInstancesTable = this.dataList.getByRole('row');
+    this.parentInstanceIdCell = this.dataList
       .getByTestId('cell-parentInstanceId')
       .first();
-    this.endDateCell = page
-      .getByTestId('data-list')
-      .getByTestId('cell-endDate')
-      .first();
+    this.endDateCell = this.dataList.getByTestId('cell-endDate').first();
     this.versionCell = page.getByTestId('process-version-select');
     this.continueButton = page.getByRole('button', {name: 'continue'});
     this.processInstancesPanel = page.getByRole('region', {
@@ -95,6 +102,24 @@ class OperateProcessesPage {
     this.migrateButton = this.processInstancesPanel.getByRole('button', {
       name: /^migrate$/i,
     });
+    this.operationsPanel = page.getByRole('region', {
+      name: 'Operations',
+    });
+    this.operationsList = page.getByTestId('operations-list');
+    this.latestOperationEntry = this.operationsList
+      .getByRole('listitem')
+      .first();
+    this.latestOperationEntryBeforeCompletion = this.operationsList
+      .getByRole('listitem')
+      .last();
+    this.latestOperationLink = page.getByTestId('operation-id').first();
+    this.latestOperationMigrateHeading = this.latestOperationEntry.getByRole(
+      'heading',
+      {name: 'Migrate'},
+    );
+    this.latestOperationProgressBar =
+      this.latestOperationEntry.getByRole('progressbar');
+    this.operationSuccessMessage = page.getByText(/\d+ operations? succeeded/);
   }
 
   async selectProcessInstances(count: number): Promise<void> {
@@ -180,6 +205,23 @@ class OperateProcessesPage {
 
   async clickMigrateButton(): Promise<void> {
     await this.migrateButton.click();
+  }
+
+  async clickContinueButton(): Promise<void> {
+    await this.continueButton.click();
+  }
+
+  async startMigration(): Promise<void> {
+    await this.clickMigrateButton();
+    await this.clickContinueButton();
+  }
+
+  async clickLatestOperationLink(): Promise<void> {
+    await this.latestOperationLink.click({timeout: 60000});
+  }
+
+  getVersionCells(version: string): Locator {
+    return this.dataList.getByRole('cell', {name: version, exact: true});
   }
 }
 
