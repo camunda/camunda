@@ -13,27 +13,35 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 
+// Test constants
+const PROCESS_INSTANCE_COUNT = 10;
+const AUTO_MIGRATION_INSTANCE_COUNT = 6;
+const MANUAL_MIGRATION_INSTANCE_COUNT = 3;
+
 type ProcessDeployment = {
-  bpmnProcessId: string;
-  version: number;
+  readonly bpmnProcessId: string;
+  readonly version: number;
 };
 
-type SetupData = {
-  processV1: ProcessDeployment;
-  processV2: ProcessDeployment;
-  processV3: ProcessDeployment;
+type TestProcesses = {
+  readonly processV1: ProcessDeployment;
+  readonly processV2: ProcessDeployment;
+  readonly processV3: ProcessDeployment;
 };
 
-let initialData: SetupData;
+let testProcesses: TestProcesses;
 
 test.beforeAll(async () => {
+  // Deploy the first version and create process instances
   await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
   const processV1: ProcessDeployment = {
     bpmnProcessId: 'orderProcessMigration',
     version: 1,
   };
+
+  // Create multiple instances with correlation keys for testing
   await Promise.all(
-    [...new Array(10)].map((_, index) =>
+    [...new Array(PROCESS_INSTANCE_COUNT)].map((_, index) =>
       createInstances(processV1.bpmnProcessId, processV1.version, 1, {
         key1: 'myFirstCorrelationKey',
         key2: 'mySecondCorrelationKey',
@@ -41,18 +49,22 @@ test.beforeAll(async () => {
       }),
     ),
   );
+
+  // Deploy second version (same process ID, different version)
   await deploy(['./resources/orderProcessMigration_v_2.bpmn']);
   const processV2: ProcessDeployment = {
     bpmnProcessId: 'orderProcessMigration',
     version: 2,
   };
+
+  // Deploy third version (different process ID for manual mapping test)
   await deploy(['./resources/orderProcessMigration_v_3.bpmn']);
   const processV3: ProcessDeployment = {
     bpmnProcessId: 'newOrderProcessMigration',
     version: 1,
   };
 
-  initialData = {
+  testProcesses = {
     processV1,
     processV2,
     processV3,
@@ -79,12 +91,10 @@ test.describe.serial('Process Instance Migration', () => {
     operateProcessesPage,
     operateProcessesMigrationPage,
   }) => {
-    test.slow();
-
-    const sourceVersion = initialData.processV1.version.toString();
-    const sourceBpmnProcessId = initialData.processV1.bpmnProcessId;
-    const targetVersion = initialData.processV2.version.toString();
-    const targetBpmnProcessId = initialData.processV2.bpmnProcessId;
+    const sourceVersion = testProcesses.processV1.version.toString();
+    const sourceBpmnProcessId = testProcesses.processV1.bpmnProcessId;
+    const targetVersion = testProcesses.processV2.version.toString();
+    const targetBpmnProcessId = testProcesses.processV2.bpmnProcessId;
 
     await test.step('Filter by process name and version', async () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
@@ -94,7 +104,9 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Select first 6 process instances for migration', async () => {
-      await operateProcessesPage.selectProcessInstances(6);
+      await operateProcessesPage.selectProcessInstances(
+        AUTO_MIGRATION_INSTANCE_COUNT,
+      );
 
       await operateProcessesPage.startMigration();
     });
@@ -146,23 +158,16 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  /**
-   * Test manual mapping migration from ProcessV2 to ProcessV3
-   * ProcessV3 has different bpmn process id and flow node names,
-   * so manual mapping is required
-   */
   test('Manual mapping migration', async ({
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateProcessesMigrationPage,
   }) => {
-    test.slow();
-
-    const sourceVersion = initialData.processV2.version.toString();
-    const sourceBpmnProcessId = initialData.processV2.bpmnProcessId;
-    const targetVersion = initialData.processV3.version.toString();
-    const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
+    const sourceVersion = testProcesses.processV2.version.toString();
+    const sourceBpmnProcessId = testProcesses.processV2.bpmnProcessId;
+    const targetVersion = testProcesses.processV3.version.toString();
+    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
 
     await test.step('Filter by process name and version', async () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
@@ -172,7 +177,9 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Select 3 process instances for migration', async () => {
-      await operateProcessesPage.selectProcessInstances(3);
+      await operateProcessesPage.selectProcessInstances(
+        MANUAL_MIGRATION_INSTANCE_COUNT,
+      );
 
       await operateProcessesPage.startMigration();
     });
@@ -190,19 +197,16 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Manually map flow nodes', async () => {
-      // Map Check payment to Ship Articles 2
       await operateProcessesMigrationPage.mapFlowNode(
         'Check payment',
         'Ship Articles 2',
       );
 
-      // Map Tasks A-D (note cross mapping: A -> C2, C -> A2)
       await operateProcessesMigrationPage.mapFlowNode('Task A', 'Task C2');
       await operateProcessesMigrationPage.mapFlowNode('Task B', 'Task B2');
       await operateProcessesMigrationPage.mapFlowNode('Task C', 'Task A2');
       await operateProcessesMigrationPage.mapFlowNode('Task D', 'Task D2');
 
-      // Map boundary events (cross mapping: interrupting <-> non-interrupting)
       await operateProcessesMigrationPage.mapFlowNode(
         'Message interrupting',
         'Message non-interrupting 2',
@@ -220,7 +224,6 @@ test.describe.serial('Process Instance Migration', () => {
         'Timer non-interrupting 2',
       );
 
-      // Map intermediate catch events
       await operateProcessesMigrationPage.mapFlowNode(
         'Message intermediate catch',
         'Message intermediate catch 2',
@@ -238,7 +241,6 @@ test.describe.serial('Process Instance Migration', () => {
         'Timer intermediate catch B2',
       );
 
-      // Map event sub processes with containing tasks
       await operateProcessesMigrationPage.mapFlowNode(
         'Message event sub process',
         'Message event sub process 2',
@@ -254,7 +256,6 @@ test.describe.serial('Process Instance Migration', () => {
         'Timer start event 2',
       );
 
-      // Map signal elements
       await operateProcessesMigrationPage.mapFlowNode(
         'Signal intermediate catch',
         'Signal intermediate catch 2',
@@ -272,7 +273,6 @@ test.describe.serial('Process Instance Migration', () => {
         'Signal event sub process 2',
       );
 
-      // Map other tasks
       await operateProcessesMigrationPage.mapFlowNode(
         'Message receive task',
         'Message receive task 2',
@@ -290,7 +290,6 @@ test.describe.serial('Process Instance Migration', () => {
         'Send Task 2',
       );
 
-      // Map gateways
       await operateProcessesMigrationPage.mapFlowNode(
         'Event based gateway',
         'Event based gateway 2',
@@ -300,7 +299,6 @@ test.describe.serial('Process Instance Migration', () => {
         'Exclusive gateway 2',
       );
 
-      // Map multi instance elements
       await operateProcessesMigrationPage.mapFlowNode(
         'Multi instance sub process',
         'Multi instance sub process 2',
@@ -342,12 +340,10 @@ test.describe.serial('Process Instance Migration', () => {
 
       await validateURL(page, /operationId=/);
 
-      // Expect 3 process instances to be migrated to target version
       await expect(
         operateProcessesPage.getVersionCells(targetVersion),
       ).toHaveCount(3, {timeout: 30000});
 
-      // Expect no process instances for source version
       await expect(
         operateProcessesPage.getVersionCells(sourceVersion),
       ).toBeHidden();
@@ -356,7 +352,6 @@ test.describe.serial('Process Instance Migration', () => {
     await test.step('Verify remaining instances still at source version', async () => {
       await operateFiltersPanelPage.clickResetFilters();
 
-      // Expect 3 process instances remaining at source version (out of original 6)
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
       await expect(page.getByText(/3 results/i)).toBeVisible({
@@ -365,19 +360,16 @@ test.describe.serial('Process Instance Migration', () => {
     });
   });
 
-  /**
-   * Verify migrated date tag is visible on process instance
-   */
   test('Verify migrated tag on process instance', async ({
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateProcessInstancePage,
   }) => {
-    const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
-    const targetVersion = initialData.processV3.version.toString();
+    const targetBpmnProcessId = testProcesses.processV3.bpmnProcessId;
+    const targetVersion = testProcesses.processV3.version.toString();
 
-    await test.step('Navigate to target process instances and filter', async () => {
+    await test.step('Navigate to target process instances and apply filter to get retrieve processes', async () => {
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
