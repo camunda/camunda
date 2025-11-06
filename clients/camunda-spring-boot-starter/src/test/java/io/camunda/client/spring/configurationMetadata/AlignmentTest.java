@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -143,6 +144,30 @@ public class AlignmentTest {
                     assertThat(value).isEqualTo(transformedDefaultValue);
                   });
             });
+  }
+
+  @Disabled
+  @TestFactory
+  Stream<DynamicTest> libPropertiesAreIgnored() throws IOException {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final JsonNode jsonNode =
+        objectMapper.readTree(
+            ResourceUtils.getFile("classpath:META-INF/spring-configuration-metadata.json"));
+    final ArrayNode properties = (ArrayNode) jsonNode.get("properties");
+    final List<String> ignoredProperties =
+        jsonNode
+            .get("ignored")
+            .get("properties")
+            .valueStream()
+            .map(p -> p.get("name").asText())
+            .toList();
+    return properties
+        .valueStream()
+        .filter(p -> p.get("name").asText().startsWith("lib"))
+        .map(p -> p.get("name").asText())
+        .map(
+            name ->
+                DynamicTest.dynamicTest(name, () -> assertThat(ignoredProperties).contains(name)));
   }
 
   @TestFactory
