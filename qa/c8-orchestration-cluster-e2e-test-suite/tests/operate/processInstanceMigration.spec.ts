@@ -51,7 +51,7 @@ test.beforeAll(async () => {
     bpmnProcessId: 'newOrderProcessMigration',
     version: 1,
   };
-  // await sleep(2000);
+
   initialData = {
     processV1,
     processV2,
@@ -371,14 +371,13 @@ test.describe.serial('Process Instance Migration', () => {
   test('Verify migrated tag on process instance', async ({
     page,
     operateFiltersPanelPage,
+    operateProcessesPage,
+    operateProcessInstancePage,
   }) => {
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
     const targetVersion = initialData.processV3.version.toString();
 
     await test.step('Navigate to target process instances and filter', async () => {
-      await page.goto('/operate/processes?active=true&incidents=true');
-      await sleep(2000);
-
       await operateFiltersPanelPage.selectProcess(targetBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
 
@@ -386,18 +385,11 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Open first migrated instance', async () => {
-      const firstInstanceLink = page
-        .getByRole('link', {name: 'view instance'})
-        .first();
-      await firstInstanceLink.click();
-
-      await expect(page).toHaveURL(/.*instances\/.*/);
+      await operateProcessesPage.clickProcessInstanceLink();
     });
 
     await test.step('Verify migrated tag is visible on the instance', async () => {
-      await expect(page.getByText(/^migrated/i)).toBeVisible({
-        timeout: 10000,
-      });
+      await expect(operateProcessInstancePage.migratedTag).toBeVisible();
     });
   });
 });
