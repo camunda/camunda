@@ -11,10 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
-import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -27,7 +25,6 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -37,17 +34,9 @@ import org.mockito.Mockito;
 final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = CorrelatedMessageSubscriptionTemplate.INDEX_NAME;
-  private final ExporterMetadata exporterMetadata =
-      new ExporterMetadata(TestObjectMapper.objectMapper());
 
   private final CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler underTest =
-      new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
-          indexName, exporterMetadata);
-
-  @BeforeEach
-  void resetMetadata() {
-    exporterMetadata.setFirstCorrelatedMessageSubscriptionKey(-1);
-  }
+      new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(indexName);
 
   @Test
   void shouldReturnExpectedHandledValueType() {
@@ -99,17 +88,15 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
   }
 
   @Test
-  void shouldGenerateCompositeIdForOldVersionRecord() {
+  void shouldGenerateCompositeId() {
     // given
-    final long recordKey = 12345L;
-    exporterMetadata.setFirstCorrelatedMessageSubscriptionKey(recordKey + 1);
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             builder ->
                 builder
                     .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                    .withKey(recordKey)
+                    .withKey(12345L)
                     .withValue(
                         ImmutableProcessMessageSubscriptionRecordValue.builder()
                             .withMessageKey(67890L)
@@ -120,60 +107,6 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
 
     // then
     assertThat(ids).hasSize(1).containsExactly("67890_12345");
-    assertThat(exporterMetadata.getFirstCorrelatedMessageSubscriptionKey())
-        .isEqualTo(recordKey + 1);
-  }
-
-  @Test
-  void shouldGenerateIdForNewVersionRecord() {
-    // given
-    final long recordKey = 110L;
-    final long messageKey = 67890L;
-    exporterMetadata.setFirstCorrelatedMessageSubscriptionKey(recordKey - 1);
-    final Record<ProcessMessageSubscriptionRecordValue> record =
-        factory.generateRecord(
-            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            builder ->
-                builder
-                    .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                    .withKey(recordKey)
-                    .withValue(
-                        ImmutableProcessMessageSubscriptionRecordValue.builder()
-                            .withMessageKey(messageKey)
-                            .build()));
-
-    // when
-    final List<String> ids = underTest.generateIds(record);
-
-    // then
-    assertThat(ids).hasSize(1).containsExactly(String.valueOf(recordKey));
-    assertThat(exporterMetadata.getFirstCorrelatedMessageSubscriptionKey())
-        .isEqualTo(recordKey - 1);
-  }
-
-  @Test
-  void shouldGenerateIdForUnsetMetadataRecord() {
-    // given
-    final long recordKey = 90L;
-    final long messageKey = 67890L;
-    final Record<ProcessMessageSubscriptionRecordValue> record =
-        factory.generateRecord(
-            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-            builder ->
-                builder
-                    .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
-                    .withKey(recordKey)
-                    .withValue(
-                        ImmutableProcessMessageSubscriptionRecordValue.builder()
-                            .withMessageKey(messageKey)
-                            .build()));
-
-    // when
-    final List<String> ids = underTest.generateIds(record);
-
-    // then
-    assertThat(ids).hasSize(1).containsExactly(String.valueOf(recordKey));
-    assertThat(exporterMetadata.getFirstCorrelatedMessageSubscriptionKey()).isEqualTo(recordKey);
   }
 
   @Test
@@ -204,7 +137,6 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
     final Intent intent = ProcessMessageSubscriptionIntent.CORRELATED;
-
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
             .withBpmnProcessId(bpmnProcessId)
@@ -233,7 +165,8 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     // when
     underTest.updateEntity(record, entity);
 
-    assertThat(entity.getId()).isEqualTo(String.valueOf(recordKey));
+    // then
+    assertThat(entity.getId()).isEqualTo(messageKey + "_" + recordKey);
     assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
     assertThat(entity.getCorrelationKey()).isEqualTo(correlationKey);
     assertThat(entity.getCorrelationTime())

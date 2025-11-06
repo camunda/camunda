@@ -34,7 +34,7 @@ public class CorrelatedMessageSubscriptionWriter {
         new QueueItem(
             ContextType.CORRELATED_MESSAGE_SUBSCRIPTION,
             WriteStatementType.INSERT,
-            String.valueOf(correlatedMessageSubscription.subscriptionKey()),
+            getCompositeId(correlatedMessageSubscription),
             "io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.insert",
             correlatedMessageSubscription));
   }
@@ -70,5 +70,12 @@ public class CorrelatedMessageSubscriptionWriter {
             .cleanupDate(cleanupDate)
             .limit(rowsToRemove)
             .build());
+  }
+
+  private static String getCompositeId(
+      final CorrelatedMessageSubscriptionDbModel correlatedMessageSubscription) {
+    return correlatedMessageSubscription.messageKey()
+        + "_"
+        + correlatedMessageSubscription.subscriptionKey();
   }
 }

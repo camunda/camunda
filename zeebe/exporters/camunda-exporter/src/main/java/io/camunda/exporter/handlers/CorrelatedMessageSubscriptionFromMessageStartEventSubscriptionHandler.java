@@ -9,7 +9,6 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
-import io.camunda.exporter.ExporterMetadata;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -27,8 +26,7 @@ public class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandl
   private final String indexName;
 
   public CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(
-      final String indexName, final ExporterMetadata exporterMetadata) {
-    super(exporterMetadata);
+      final String indexName) {
     this.indexName = indexName;
   }
 
