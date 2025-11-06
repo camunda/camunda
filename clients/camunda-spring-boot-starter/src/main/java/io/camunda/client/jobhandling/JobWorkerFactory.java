@@ -105,10 +105,6 @@ public class JobWorkerFactory {
     return duration != null && !duration.isNegative();
   }
 
-  private boolean isValidLong(final Long number) {
-    return number != null && number >= 0;
-  }
-
   private boolean isValidInteger(final Integer number) {
     return number != null && number >= 0;
   }
