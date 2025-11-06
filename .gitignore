@@ -64,6 +64,8 @@ c8run/camunda-zeebe*
 c8run/elasticsearch*
 c8run/c8run
 c8run/*.class
+c8run/rdbms-schema/
+c8run/camunda-db*
 
 /camunda.mv.db
 /camunda.trace.db
