@@ -47,6 +47,7 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnCamundaClientEnabled
 @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class)
 @ImportAutoConfiguration({
+  ExecutorServiceConfiguration.class,
   CamundaActuatorConfiguration.class,
   JsonMapperConfiguration.class,
   CredentialsProviderConfiguration.class
