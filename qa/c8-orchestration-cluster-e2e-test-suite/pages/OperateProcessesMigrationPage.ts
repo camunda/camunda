@@ -42,6 +42,15 @@ class OperateProcessesMigrationPage {
     await this.modificationConfirmationInput.fill('MIGRATE');
     await this.confirmSubButton.click();
   }
+
+  async mapFlowNode(
+    sourceFlowNodeName: string,
+    targetFlowNodeName: string,
+  ): Promise<void> {
+    await this.page
+      .getByLabel(`Target element for ${sourceFlowNodeName}`, {exact: true})
+      .selectOption(targetFlowNodeName);
+  }
 }
 
 export {OperateProcessesMigrationPage};
