@@ -33,12 +33,12 @@ import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class UsageMetricsExportProcessorTest {
+class UsageMetricExportProcessorTest {
   private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
   private static final String TENANT_1 = "tenant1";
   private MutableUsageMetricState state;
   private StateWriter stateWriter;
-  private UsageMetricsExportProcessor processor;
+  private UsageMetricExportProcessor processor;
   private TypedRecord<UsageMetricRecord> record;
   private InstantSource clock;
 
@@ -58,7 +58,7 @@ class UsageMetricsExportProcessorTest {
     when(record.getValue()).thenReturn(recordValue);
     when(clock.millis()).thenReturn(2L);
 
-    processor = new UsageMetricsExportProcessor(state, writers, keyGenerator, clock);
+    processor = new UsageMetricExportProcessor(state, writers, keyGenerator, clock);
   }
 
   private DirectBuffer toDirectBuffer(final Object data) {

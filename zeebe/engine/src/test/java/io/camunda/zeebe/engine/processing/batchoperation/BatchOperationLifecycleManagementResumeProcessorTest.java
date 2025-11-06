@@ -26,11 +26,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /** This test class only covers cases not covered by the LifecycleBatchOperationTest engine test */
-class BatchOperationResumeProcessorTest {
+class BatchOperationLifecycleManagementResumeProcessorTest {
 
   private StateWriter stateWriter;
   private TypedCommandWriter commandWriter;
-  private BatchOperationResumeProcessor processor;
+  private BatchOperationLifecycleManagementResumeProcessor processor;
 
   @BeforeEach
   void setUp() {
@@ -47,7 +47,7 @@ class BatchOperationResumeProcessorTest {
 
     // Inject mocked writers
     processor =
-        new BatchOperationResumeProcessor(
+        new BatchOperationLifecycleManagementResumeProcessor(
             writers, null, state, null, null, mock(BatchOperationMetrics.class));
   }
 

@@ -23,7 +23,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
-public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
+public class JobRecurAfterBackoffProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final String NOT_FAILED_JOB_MESSAGE =
       "Expected to back off failed job with key '%d', but %s";
@@ -33,7 +33,7 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final InstantSource clock;
 
-  public JobRecurProcessor(
+  public JobRecurAfterBackoffProcessor(
       final ProcessingState processingState,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,

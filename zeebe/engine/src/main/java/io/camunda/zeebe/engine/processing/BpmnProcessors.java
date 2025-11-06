@@ -25,7 +25,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchAc
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -283,7 +283,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
-        new ProcessInstanceCreationCreateWithResultProcessor(
+        new ProcessInstanceCreationCreateWithAwaitingResultProcessor(
             createProcessor, elementInstanceState));
   }
 
