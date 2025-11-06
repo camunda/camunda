@@ -9,6 +9,7 @@ package io.camunda.search.test.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -55,6 +56,12 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
       "idxtestprocess" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
 
   public static final ProcessIndex PROCESS_INDEX = new ProcessIndex(IDX_PROCESS_PREFIX, true);
+
+  public static final String IDX_DECISIONREQUIREMENTS_PREFIX =
+      "idxtestdrd" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+
+  public static final DecisionRequirementsIndex DECISIONREQUIREMENTS_INDEX =
+      new DecisionRequirementsIndex(IDX_DECISIONREQUIREMENTS_PREFIX, true);
 
   public static final String IDX_FORM_PREFIX =
       "idxtestform" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
