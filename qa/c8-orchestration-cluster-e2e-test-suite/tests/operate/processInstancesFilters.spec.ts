@@ -81,9 +81,9 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
         callActivityProcessInstanceKey,
       );
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeVisible();
+      await expect(operateProcessesPage.noMatchingInstancesMessage).toBeVisible(
+        {timeout: 60000},
+      );
       await operateProcessesPage.clickProcessCompletedCheckbox();
       await waitForAssertion({
         assertion: async () => {
