@@ -99,8 +99,10 @@ public class HealthConfigurationInitializer
     }
 
     if (secondaryStorageEnabled && activeProfiles.contains(Profile.OPERATE.getId())) {
-      healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
+      if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
+        healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
+      }
     }
 
     if (secondaryStorageEnabled

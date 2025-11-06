@@ -28,6 +28,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -49,6 +50,7 @@ import org.springframework.util.StringUtils;
 
 @Component
 @ConditionalOnOperateCompatibility(enabled = "false", matchIfMissing = true)
+@ConditionalOnRdbmsDisabled
 public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ServicesBasedAdapter.class);

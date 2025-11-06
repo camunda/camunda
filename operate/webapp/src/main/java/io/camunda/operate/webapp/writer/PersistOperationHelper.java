@@ -19,6 +19,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Component;
  * be modified and all the modifications are serialized into a single field.
  */
 @Component
+@ConditionalOnRdbmsDisabled
 public class PersistOperationHelper {
   private final OperationStore operationStore;
   private final IncidentReader incidentReader;

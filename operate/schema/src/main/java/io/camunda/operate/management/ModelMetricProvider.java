@@ -11,6 +11,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.store.ProcessStore;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import jakarta.annotation.PostConstruct;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+@ConditionalOnRdbmsDisabled
 public class ModelMetricProvider {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());

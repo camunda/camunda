@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.management;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.webapp.management.dto.UsageMetricDTO;
 import io.camunda.operate.webapp.management.dto.UsageMetricQueryDTO;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.MediaType;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Component
 @Deprecated(forRemoval = true, since = "8.8")
 @RestControllerEndpoint(id = "usage-metrics")
+@ConditionalOnRdbmsDisabled
 public class UsageMetricsService {
 
   @Autowired private MetricsStore metricsStore;
@@ -36,7 +38,7 @@ public class UsageMetricsService {
   @GetMapping(
       value = "/process-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
-  public UsageMetricDTO retrieveProcessInstanceCount(UsageMetricQueryDTO query) {
+  public UsageMetricDTO retrieveProcessInstanceCount(final UsageMetricQueryDTO query) {
     final Long total =
         metricsStore.retrieveProcessInstanceCount(
             query.getStartTime(), query.getEndTime(), query.getTenantId());
@@ -52,7 +54,7 @@ public class UsageMetricsService {
   @GetMapping(
       value = "/decision-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
-  public UsageMetricDTO retrieveDecisionInstancesCount(UsageMetricQueryDTO query) {
+  public UsageMetricDTO retrieveDecisionInstancesCount(final UsageMetricQueryDTO query) {
     final Long total =
         metricsStore.retrieveDecisionInstanceCount(
             query.getStartTime(), query.getEndTime(), query.getTenantId());
