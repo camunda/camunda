@@ -262,7 +262,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The element instance key associated with this message subscription.
         messageSubscriptionState:
-          $ref: 'enums.yaml#/components/schemas/MessageSubscriptionStateEnum'
+          $ref: '#/components/schemas/MessageSubscriptionStateEnum'
         lastUpdatedDate:
           description: The last updated date of the message subscription.
           type: string
@@ -532,7 +532,7 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/MessageSubscriptionStateEnum"
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         - $ref: '#/components/schemas/AdvancedMessageSubscriptionStateFilter'
 
     AdvancedMessageSubscriptionStateFilter:
@@ -543,11 +543,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/MessageSubscriptionStateEnum"
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/MessageSubscriptionStateEnum"
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -555,6 +555,15 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "enums.yaml#/components/schemas/MessageSubscriptionStateEnum"
+            $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    MessageSubscriptionStateEnum:
+      description: The state of message subscription.
+      type: string
+      enum:
+        - CORRELATED
+        - CREATED
+        - DELETED
+        - MIGRATED

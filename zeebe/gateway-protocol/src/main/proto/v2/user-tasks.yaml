@@ -455,7 +455,7 @@ components:
           type: string
           description: The name for this user task.
         state:
-          $ref: 'enums.yaml#/components/schemas/UserTaskStateEnum'
+          $ref: '#/components/schemas/UserTaskStateEnum'
         assignee:
           description: The assignee of the user task.
           type: string
@@ -692,7 +692,7 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/UserTaskStateEnum"
+            - $ref: "#/components/schemas/UserTaskStateEnum"
         - $ref: '#/components/schemas/AdvancedUserTaskStateFilter'
 
     AdvancedUserTaskStateFilter:
@@ -703,11 +703,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/UserTaskStateEnum"
+            - $ref: "#/components/schemas/UserTaskStateEnum"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/UserTaskStateEnum"
+            - $ref: "#/components/schemas/UserTaskStateEnum"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -715,6 +715,20 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "enums.yaml#/components/schemas/UserTaskStateEnum"
+            $ref: "#/components/schemas/UserTaskStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    UserTaskStateEnum:
+      description: The state of the user task.
+      type: string
+      enum:
+        - CREATING
+        - CREATED
+        - ASSIGNING
+        - UPDATING
+        - COMPLETING
+        - COMPLETED
+        - CANCELING
+        - CANCELED
+        - FAILED

@@ -124,7 +124,7 @@ components:
         decisionEvaluationInstanceKey:
           $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
         state:
-          $ref: 'enums.yaml#/components/schemas/DecisionInstanceStateEnum'
+          $ref: '#/components/schemas/DecisionInstanceStateEnum'
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
@@ -144,7 +144,7 @@ components:
           format: int32
           description: The version of the decision.
         decisionDefinitionType:
-          $ref: 'enums.yaml#/components/schemas/DecisionDefinitionTypeEnum'
+          $ref: '#/components/schemas/DecisionDefinitionTypeEnum'
         tenantId:
           description: The tenant ID of the decision instance.
           allOf:
@@ -194,7 +194,7 @@ components:
         decisionEvaluationInstanceKey:
           $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
         state:
-          $ref: 'enums.yaml#/components/schemas/DecisionInstanceStateEnum'
+          $ref: '#/components/schemas/DecisionInstanceStateEnum'
         evaluationDate:
           type: string
           format: date-time
@@ -214,7 +214,7 @@ components:
           format: int32
           description: The version of the decision.
         decisionDefinitionType:
-          $ref: 'enums.yaml#/components/schemas/DecisionDefinitionTypeEnum'
+          $ref: '#/components/schemas/DecisionDefinitionTypeEnum'
         result:
           type: string
           description: The result of the decision instance.
@@ -308,3 +308,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EvaluatedDecisionOutputItem'
+
+    DecisionDefinitionTypeEnum:
+      description: The type of the decision.
+      type: string
+      enum:
+        - DECISION_TABLE
+        - LITERAL_EXPRESSION
+        - UNKNOWN
+
+    DecisionInstanceStateEnum:
+      description: The state of the decision instance.
+      type: string
+      enum:
+        - EVALUATED
+        - FAILED
+        - UNSPECIFIED
