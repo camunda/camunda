@@ -77,7 +77,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   }, [statistics, elementId, isMultiInstance]);
 
   const incidentCount =
-    statistics?.items.find((stat) => stat.elementId === elementId)?.incidents ||
+    statistics?.items.find((stat) => stat.elementId === elementId)?.incidents ??
     0;
 
   const shouldFetchElementInstances =
