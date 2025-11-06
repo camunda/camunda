@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -34,7 +33,7 @@ public class AuthorizationCreateProcessor
   private final SideEffectWriter sideEffectWriter;
   private final PermissionsBehavior permissionsBehavior;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
-  private final UserState userState;
+  private final AuthorizationEntityChecker authorizationEntityChecker;
 
   public AuthorizationCreateProcessor(
       final Writers writers,
@@ -50,7 +49,7 @@ public class AuthorizationCreateProcessor
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
-    userState = processingState.getUserState();
+    authorizationEntityChecker = new AuthorizationEntityChecker(processingState);
   }
 
   @Override
@@ -64,10 +63,6 @@ public class AuthorizationCreateProcessor
                     record.getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to create authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
-<<<<<<< HEAD
-        .flatMap(permissionsBehavior::mappingRuleExists)
-=======
->>>>>>> 91d0b42a (fix: adjust processor and checker to use the correct variable)
         .flatMap(permissionsBehavior::permissionsAlreadyExist)
         .flatMap(authorizationRecord -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
@@ -81,13 +76,8 @@ public class AuthorizationCreateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
-<<<<<<< HEAD
-        .mappingRuleExists(command.getValue())
-        .flatMap(permissionsBehavior::permissionsAlreadyExist)
-=======
         .permissionsAlreadyExist(command.getValue())
         .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
->>>>>>> 91d0b42a (fix: adjust processor and checker to use the correct variable)
         .ifRightOrLeft(
             ignored -> {
               stateWriter.appendFollowUpEvent(
