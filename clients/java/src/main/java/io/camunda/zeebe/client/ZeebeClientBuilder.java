@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.worker.JobHandler;
@@ -242,12 +241,11 @@ public interface ZeebeClientBuilder {
    * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
    *
    * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
-   * @deprecated since 8.5, will be removed in 8.8
-   * @return this builder for chaining
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
-  @Deprecated
   ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
+
+  /** Sets the maximum number of concurrent HTTP connections the client can open. */
+  ZeebeClientBuilder maxHttpConnections(int maxConnections);
 
   /**
    * @return a new {@link ZeebeClient} with the provided configuration options.

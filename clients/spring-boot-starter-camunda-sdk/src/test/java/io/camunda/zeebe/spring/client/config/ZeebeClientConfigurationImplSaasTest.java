@@ -40,7 +40,8 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
       "camunda.client.cloud.cluster-id=12345",
       "camunda.client.cloud.region=bru-2",
       "camunda.client.auth.client-id=my-client-id",
-      "camunda.client.auth.client-secret=my-client-secret"
+      "camunda.client.auth.client-secret=my-client-secret",
+      "camunda.client.max-http-connections=1234"
     })
 @ExtendWith(OutputCaptureExtension.class)
 public class ZeebeClientConfigurationImplSaasTest {
@@ -206,5 +207,10 @@ public class ZeebeClientConfigurationImplSaasTest {
   void shouldHaveDefaultPreferRestOverGrpc() {
     assertThat(zeebeClientConfiguration.preferRestOverGrpc())
         .isEqualTo(DEFAULT.preferRestOverGrpc());
+  }
+
+  @Test
+  public void hasMaxHttpConnections() {
+    assertThat(zeebeClientConfiguration.getMaxHttpConnections()).isEqualTo(1234);
   }
 }

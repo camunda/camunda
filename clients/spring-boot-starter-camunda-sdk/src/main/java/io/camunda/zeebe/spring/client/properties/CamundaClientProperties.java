@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
+
 import io.camunda.zeebe.spring.client.properties.common.AuthProperties;
 import io.camunda.zeebe.spring.client.properties.common.ZeebeClientProperties;
 import java.util.ArrayList;
@@ -33,6 +35,9 @@ public class CamundaClientProperties {
   private String tenantId;
   @NestedConfigurationProperty private AuthProperties auth = new AuthProperties();
   @NestedConfigurationProperty private ZeebeClientProperties zeebe = new ZeebeClientProperties();
+
+  /** The maximum number of concurrent HTTP connections the client can open. */
+  private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
 
   @NestedConfigurationProperty
   private CamundaClientCloudProperties cloud = new CamundaClientCloudProperties();
@@ -110,6 +115,14 @@ public class CamundaClientProperties {
     this.region = region;
   }
 
+  public int getMaxHttpConnections() {
+    return maxHttpConnections;
+  }
+
+  public void setMaxHttpConnections(final int maxHttpConnections) {
+    this.maxHttpConnections = maxHttpConnections;
+  }
+
   @Override
   public String toString() {
     return "CamundaClientProperties{"
@@ -122,6 +135,8 @@ public class CamundaClientProperties {
         + auth
         + ", zeebe="
         + zeebe
+        + ", maxHttpConnections="
+        + maxHttpConnections
         + ", cloud="
         + cloud
         + '}';
