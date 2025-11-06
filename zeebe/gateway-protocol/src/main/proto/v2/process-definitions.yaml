@@ -1,0 +1,488 @@
+## Endpoint definitions
+
+paths:
+  /process-definitions/search:
+    post:
+      tags:
+        - Process definition
+      operationId: searchProcessDefinitions
+      summary: Search process definitions
+      description: Search for process definitions based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDefinitionSearchQuery'
+      responses:
+        "200":
+          description: The process definition search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDefinitionSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-definitions/{processDefinitionKey}:
+    get:
+      tags:
+        - Process definition
+      operationId: getProcessDefinition
+      summary: Get process definition
+      description: Returns process definition as JSON.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: >
+            The assigned key of the process definition, which acts as a unique identifier for this
+            process definition.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+      responses:
+        "200":
+          description: The process definition is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDefinitionResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            The process definition with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-definitions/{processDefinitionKey}/xml:
+    get:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionXML
+      summary: Get process definition XML
+      description: Returns process definition as XML.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: |
+            The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+      responses:
+        "200":
+          description: The XML of the process definition is successfully returned.
+          content:
+            text/xml:
+              schema:
+                type: string
+        "204":
+          description: The process definition was found but does not have XML.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The process definition with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-definitions/{processDefinitionKey}/form:
+    get:
+      tags:
+        - Process definition
+      operationId: getStartProcessForm
+      summary: Get process start form
+      description: |
+        Get the start form of a process.
+        Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The process key.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+      responses:
+        "200":
+          description: The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: 'form-models.yaml#/components/schemas/FormResult'
+        "204":
+          description: The process was found, but no form is associated with it.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-definitions/{processDefinitionKey}/statistics/element-instances:
+    post:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionStatistics
+      summary: Get process definition statistics
+      description: Get statistics about elements in currently running process instances by process definition key and search filter.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDefinitionElementStatisticsQuery'
+      responses:
+        "200":
+          description: The process definition statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDefinitionElementStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /process-definitions/statistics/process-instances:
+    post:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionInstanceStatistics
+      summary: Get statistics for process instances by process definition
+      description: |
+        Get statistics about process instances, grouped by process definition. For each process
+        definition, the response includes the latest deployed instance name, total counts of active
+        instances without incident, total counts of active instances with incident and whether the
+        instance has more than one version.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsQuery'
+      responses:
+        "200":
+          description: The process definition instance statistic result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+## Schema definitions
+
+components:
+  schemas:
+    ProcessDefinitionSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - processDefinitionKey
+            - name
+            - resourceName
+            - version
+            - versionTag
+            - processDefinitionId
+            - tenantId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    ProcessDefinitionSearchQuery:
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionFilter'
+          description: The process definition search filters.
+
+    ProcessDefinitionFilter:
+      description: Process definition search filter.
+      type: object
+      properties:
+        name:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Name of this process definition.
+        isLatestVersion:
+          description: |
+            Whether to only return the latest version of each process definition.
+            When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`.
+            The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`.
+          type: boolean
+        resourceName:
+          description: Resource name of this process definition.
+          type: string
+        version:
+          description: Version of this process definition.
+          type: integer
+          format: int32
+        versionTag:
+          description: Version tag of this process definition.
+          type: string
+        processDefinitionId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Process definition ID of this process definition.
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: Tenant ID of this process definition.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key for this process definition.
+        hasStartForm:
+          description: Indicates whether the start event of the process has an associated Form Key.
+          type: boolean
+
+    ProcessDefinitionSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching process definitions.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionResult'
+
+    ProcessDefinitionResult:
+      type: object
+      properties:
+        name:
+          description: Name of this process definition.
+          type: string
+        resourceName:
+          description: Resource name for this process definition.
+          type: string
+        version:
+          description: Version of this process definition.
+          type: integer
+          format: int32
+        versionTag:
+          description: Version tag of this process definition.
+          type: string
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: Process definition ID of this process definition.
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: Tenant ID of this process definition.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key for this process definition.
+        hasStartForm:
+          description: Indicates whether the start event of the process has an associated Form Key.
+          type: boolean
+
+    ProcessDefinitionElementStatisticsQuery:
+      description: Process definition element statistics request.
+      type: object
+      additionalProperties: false
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessDefinitionStatisticsFilter'
+          description: The process definition statistics search filters.
+
+    ProcessDefinitionElementStatisticsQueryResult:
+      description: Process definition element statistics query response.
+      type: object
+      properties:
+        items:
+          description: The element statistics.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessElementStatisticsResult'
+
+    ProcessElementStatisticsResult:
+      description: Process element statistics response.
+      type: object
+      properties:
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID for which the results are aggregated.
+        active:
+          description: The total number of active instances of the element.
+          type: integer
+          format: int64
+        canceled:
+          description: The total number of canceled instances of the element.
+          type: integer
+          format: int64
+        incidents:
+          description: The total number of incidents for the element.
+          type: integer
+          format: int64
+        completed:
+          description: The total number of completed instances of the element.
+          type: integer
+          format: int64
+
+    ProcessDefinitionInstanceStatisticsQuery:
+      type: object
+      properties:
+        page:
+          description: Pagination criteria.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageRequest'
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsQuerySortRequest'
+        filter:
+          description: The process definition instance statistics filters.
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+
+    ProcessDefinitionInstanceStatisticsQueryResult:
+      type: object
+      description: Process definition instance statistics query response.
+      properties:
+        items:
+          description: The process definition instance statistics result.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsResult'
+        page:
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsPageResponse'
+          description: Pagination information about the search results.
+
+    ProcessDefinitionInstanceStatisticsResult:
+      description: Process definition instance statistics response.
+      type: object
+      properties:
+        processDefinitionId:
+          $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        latestProcessDefinitionName:
+          description: Name of the latest deployed process definition instance version.
+          type: string
+        hasMultipleVersions:
+          description: Indicates whether multiple versions of this process definition instance are deployed.
+          type: boolean
+        activeInstancesWithoutIncidentCount:
+          description: Total number of currently active process instances of this definition that do not have incidents.
+          type: integer
+          format: int64
+        activeInstancesWithIncidentCount:
+          description: Total number of currently active process instances of this definition that have at least one incident.
+          type: integer
+          format: int64
+
+    ProcessDefinitionInstanceStatisticsQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - processDefinitionId
+            - activeInstancesWithIncident
+            - activeInstancesWithoutIncident
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    ProcessDefinitionInstanceStatisticsPageRequest:
+      type: object
+      properties:
+        from:
+          description: The index of items to start searching from.
+          type: integer
+          format: int32
+        limit:
+          description: The maximum number of items to return in one request.
+          type: integer
+          default: 100
+
+    ProcessDefinitionInstanceStatisticsPageResponse:
+      description: Pagination information about the search results.
+      type: object
+      properties:
+        totalItems:
+          description: Total items matching the criteria.
+          type: integer
+          format: int64
+        hasMoreTotalItems:
+          description: Indicates whether there are more items matching the criteria.
+          type: boolean

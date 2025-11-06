@@ -25,7 +25,7 @@
         <directory>src/main/proto</directory>
         <includes>
           <include>**/*.proto</include>
-          <include>rest-api.yaml</include>
+          <include>v2/*.yaml</include>
         </includes>
       </resource>
     </resources>

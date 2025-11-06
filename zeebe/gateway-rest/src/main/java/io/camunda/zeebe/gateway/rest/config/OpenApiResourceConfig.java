@@ -66,7 +66,7 @@ public class OpenApiResourceConfig {
 
   private void loadBaseOpenApiSpec(final OpenAPI openApi) {
     try {
-      OpenApiYamlLoader.customizeOpenApiFromYaml(openApi, "rest-api.yaml");
+      OpenApiYamlLoader.customizeOpenApiFromYaml(openApi, "v2/rest-api.yaml");
     } catch (final OpenApiLoadingException e) {
       LOGGER.warn(
           "Could not load OpenAPI from rest-api.yaml, using controller-based organization: {}",

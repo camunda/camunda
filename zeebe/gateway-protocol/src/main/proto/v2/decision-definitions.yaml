@@ -1,0 +1,419 @@
+## Endpoint definitions
+
+paths:
+  /decision-definitions/search:
+    post:
+      tags:
+        - Decision definition
+      operationId: searchDecisionDefinitions
+      summary: Search decision definitions
+      description: Search for decision definitions based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionDefinitionSearchQuery'
+      responses:
+        "200":
+          description: The decision definition search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionDefinitionSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /decision-definitions/{decisionDefinitionKey}:
+    get:
+      tags:
+        - Decision definition
+      operationId: getDecisionDefinition
+      summary: Get decision definition
+      description: Returns a decision definition by key.
+      parameters:
+        - name: decisionDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+      responses:
+        "200":
+          description: The decision definition is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionDefinitionResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            The decision definition with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /decision-definitions/{decisionDefinitionKey}/xml:
+    get:
+      tags:
+        - Decision definition
+      operationId: getDecisionDefinitionXML
+      summary: Get decision definition XML
+      description: Returns decision definition as XML.
+      parameters:
+        - name: decisionDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+      responses:
+        "200":
+          description: The XML of the decision definition is successfully returned.
+          content:
+            text/xml:
+              schema:
+                type: string
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            The decision definition with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /decision-definitions/evaluation:
+    post:
+      tags:
+        - Decision definition
+      operationId: evaluateDecision
+      summary: Evaluate decision
+      description: |
+        Evaluates a decision.
+        You specify the decision to evaluate either by using its unique key (as returned by
+        DeployResource), or using the decision ID. When using the decision ID, the latest deployed
+        version of the decision is used.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionEvaluationInstruction'
+            examples:
+              By decision definition key:
+                summary: Evaluate the decision by decisionDefinitionKey.
+                value:
+                  decisionDefinitionKey: "12345"
+                  variables: {}
+              By decision definition ID:
+                summary: Evaluate the decision by decisionDefinitionId.
+                value:
+                  decisionDefinitionId: 1234-5678
+                  variables: {}
+      responses:
+        "200":
+          description: The decision was evaluated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluateDecisionResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The decision is not found.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+## Schema definitions
+
+components:
+  schemas:
+    DecisionDefinitionSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - decisionDefinitionKey
+            - decisionDefinitionId
+            - name
+            - version
+            - decisionRequirementsId
+            - decisionRequirementsKey
+            - tenantId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    DecisionDefinitionSearchQuery:
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionDefinitionSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/DecisionDefinitionFilter'
+          description: The decision definition search filters.
+
+    DecisionDefinitionFilter:
+      description: Decision definition search filter.
+      type: object
+      properties:
+        decisionDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: The DMN ID of the decision definition.
+        name:
+          type: string
+          description: The DMN name of the decision definition.
+        version:
+          type: integer
+          description: The assigned version of the decision definition.
+        decisionRequirementsId:
+          type: string
+          description: the DMN ID of the decision requirements graph that the decision definition is part of.
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the decision definition.
+        decisionDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: The assigned key, which acts as a unique identifier for this decision definition.
+        decisionRequirementsKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: The assigned key of the decision requirements graph that the decision definition is part of.
+
+    DecisionDefinitionSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching decision definitions.
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionDefinitionResult'
+
+    DecisionDefinitionResult:
+      type: object
+      properties:
+        decisionDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: The DMN ID of the decision definition.
+        name:
+          type: string
+          description: The DMN name of the decision definition.
+        version:
+          type: integer
+          description: The assigned version of the decision definition.
+        decisionRequirementsId:
+          type: string
+          description: the DMN ID of the decision requirements graph that the decision definition is part of.
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the decision definition.
+        decisionDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: The assigned key, which acts as a unique identifier for this decision definition.
+        decisionRequirementsKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: The assigned key of the decision requirements graph that the decision definition is part of.
+
+    DecisionEvaluationInstruction:
+      x-polymorphic-schema: true
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/DecisionEvaluationById'
+        - $ref: '#/components/schemas/DecisionEvaluationByKey'
+
+    DecisionEvaluationById:
+      type: object
+      additionalProperties: false
+      title: Decision evaluation by ID
+      properties:
+        decisionDefinitionId:
+          $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+        variables:
+          type: object
+          additionalProperties: true
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      required:
+        - decisionDefinitionId
+
+    DecisionEvaluationByKey:
+      type: object
+      title: Decision evaluation by key
+      additionalProperties: false
+      properties:
+        decisionDefinitionKey:
+          $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+        variables:
+          type: object
+          additionalProperties: true
+          description: The message variables as JSON document.
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      required:
+        - decisionDefinitionKey
+
+    EvaluateDecisionResult:
+      x-semantic-provider:
+        - decisionEvaluationKey
+      type: object
+      required:
+        - decisionDefinitionId
+        - decisionDefinitionName
+        - decisionDefinitionVersion
+        - decisionRequirementsId
+        - output
+        - failedDecisionDefinitionId
+        - failureMessage
+        - decisionDefinitionKey
+        - tenantId
+        - decisionRequirementsKey
+        - decisionEvaluationKey
+        - evaluatedDecisions
+      properties:
+        decisionDefinitionId:
+          description: The ID of the decision which was evaluated.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+        decisionDefinitionName:
+          description: The name of the decision which was evaluated.
+          type: string
+        decisionDefinitionVersion:
+          description: The version of the decision which was evaluated.
+          type: integer
+          format: int32
+        decisionRequirementsId:
+          description: The ID of the decision requirements graph that the decision which was evaluated is part of.
+          type: string
+        output:
+          description: |
+            JSON document that will instantiate the result of the decision which was evaluated.
+          type: string
+        failedDecisionDefinitionId:
+          description: The ID of the decision which failed during evaluation.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+        failureMessage:
+          description: Message describing why the decision which was evaluated failed.
+          type: string
+        tenantId:
+          description: The tenant ID of the evaluated decision.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        decisionDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: The unique key identifying the decision which was evaluated.
+        decisionRequirementsKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
+        decisionInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionInstanceKey'
+          description: Deprecated, please refer to `decisionEvaluationKey`.
+          deprecated: true
+        decisionEvaluationKey:
+          description: The unique key identifying this decision evaluation.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
+        evaluatedDecisions:
+          description: Decisions that were evaluated within the requested decision evaluation.
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluatedDecisionResult'
+
+    EvaluatedDecisionResult:
+      x-semantic-provider:
+        - decisionEvaluationInstanceKey
+      type: object
+      description: A decision that was evaluated.
+      properties:
+        decisionDefinitionId:
+          description: The ID of the decision which was evaluated.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+        decisionDefinitionName:
+          description: The name of the decision which was evaluated.
+          type: string
+        decisionDefinitionVersion:
+          description: The version of the decision which was evaluated.
+          type: integer
+          format: int32
+        decisionDefinitionType:
+          description: The type of the decision which was evaluated.
+          type: string
+        output:
+          description: |
+            JSON document that will instantiate the result of the decision which was evaluated.
+          type: string
+        tenantId:
+          description: The tenant ID of the evaluated decision.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        matchedRules:
+          description: The decision rules that matched within this decision evaluation.
+          type: array
+          items:
+            $ref: 'decision-instances.yaml#/components/schemas/MatchedDecisionRuleItem'
+        evaluatedInputs:
+          description: The decision inputs that were evaluated within this decision evaluation.
+          type: array
+          items:
+            $ref: 'decision-instances.yaml#/components/schemas/EvaluatedDecisionInputItem'
+        decisionDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: The unique key identifying the decision which was evaluate.
+        decisionEvaluationInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
+          description: The unique key identifying this decision evaluation instance.

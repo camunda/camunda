@@ -1,0 +1,236 @@
+# Common enumeration types
+
+components:
+  schemas:
+    SortOrderEnum:
+      description: The order in which to sort the related field.
+      type: string
+      enum:
+        - ASC
+        - DESC
+      default: ASC
+    
+    PermissionTypeEnum:
+      description: Specifies the type of permissions.
+      type: string
+      enum:
+        - ACCESS
+        - CANCEL_PROCESS_INSTANCE
+        - CLAIM
+        - COMPLETE
+        - CREATE
+        - CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE
+        - CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION
+        - CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE
+        - CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION
+        - CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE
+        - CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE
+        - CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE
+        - CREATE_BATCH_OPERATION_RESOLVE_INCIDENT
+        - CREATE_DECISION_INSTANCE
+        - CREATE_PROCESS_INSTANCE
+        - DELETE
+        - DELETE_DECISION_INSTANCE
+        - DELETE_DRD
+        - DELETE_FORM
+        - DELETE_PROCESS
+        - DELETE_PROCESS_INSTANCE
+        - DELETE_RESOURCE
+        - MODIFY_PROCESS_INSTANCE
+        - READ
+        - READ_DECISION_DEFINITION
+        - READ_DECISION_INSTANCE
+        - READ_PROCESS_DEFINITION
+        - READ_PROCESS_INSTANCE
+        - READ_USAGE_METRIC
+        - READ_USER_TASK
+        - UPDATE
+        - UPDATE_PROCESS_INSTANCE
+        - UPDATE_USER_TASK
+    
+    ResourceTypeEnum:
+      description: The type of resource to add/remove permissions to/from.
+      type: string
+      enum:
+        - AUTHORIZATION
+        - BATCH
+        - COMPONENT
+        - DECISION_DEFINITION
+        - DECISION_REQUIREMENTS_DEFINITION
+        - DOCUMENT
+        - GROUP
+        - MAPPING_RULE
+        - MESSAGE
+        - PROCESS_DEFINITION
+        - RESOURCE
+        - ROLE
+        - SYSTEM
+        - TENANT
+        - USER
+        - USER_TASK
+    
+    OwnerTypeEnum:
+      type: string
+      description: The type of the owner of permissions.
+      enum:
+        - USER
+        - CLIENT
+        - ROLE
+        - GROUP
+        - MAPPING_RULE
+        - UNSPECIFIED
+    
+    ProcessInstanceStateEnum:
+      description: Process instance states
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - TERMINATED
+    
+    ElementInstanceStateEnum:
+      description: Element states
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - TERMINATED
+    
+    UserTaskStateEnum:
+      description: The state of the user task.
+      type: string
+      enum:
+        - CREATING
+        - CREATED
+        - ASSIGNING
+        - UPDATING
+        - COMPLETING
+        - COMPLETED
+        - CANCELING
+        - CANCELED
+        - FAILED
+    
+    MessageSubscriptionStateEnum:
+      description: The state of message subscription.
+      type: string
+      enum:
+        - CORRELATED
+        - CREATED
+        - DELETED
+        - MIGRATED
+    
+    JobStateEnum:
+      description: The state of the job.
+      type: string
+      enum:
+        - CANCELED
+        - COMPLETED
+        - CREATED
+        - ERROR_THROWN
+        - FAILED
+        - MIGRATED
+        - RETRIES_UPDATED
+        - TIMED_OUT
+    
+    JobKindEnum:
+      description: The job kind.
+      example: BPMN_ELEMENT
+      type: string
+      enum:
+        - BPMN_ELEMENT
+        - EXECUTION_LISTENER
+        - TASK_LISTENER
+        - AD_HOC_SUB_PROCESS
+    
+    JobListenerEventTypeEnum:
+      example: UNSPECIFIED
+      description: The listener event type of the job.
+      type: string
+      enum:
+        - ASSIGNING
+        - CANCELING
+        - COMPLETING
+        - CREATING
+        - END
+        - START
+        - UNSPECIFIED
+        - UPDATING
+    
+    DecisionDefinitionTypeEnum:
+      description: The type of the decision.
+      type: string
+      enum:
+        - DECISION_TABLE
+        - LITERAL_EXPRESSION
+        - UNKNOWN
+    
+    DecisionInstanceStateEnum:
+      description: The state of the decision instance.
+      type: string
+      enum:
+        - EVALUATED
+        - FAILED
+        - UNSPECIFIED
+    
+    BatchOperationTypeEnum:
+      description: The type of the batch operation.
+      type: string
+      enum:
+        - CANCEL_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - MIGRATE_PROCESS_INSTANCE
+        - MODIFY_PROCESS_INSTANCE
+        - DELETE_PROCESS_INSTANCE
+        - ADD_VARIABLE
+        - UPDATE_VARIABLE
+        - DELETE_DECISION_DEFINITION
+        - DELETE_PROCESS_DEFINITION
+    
+    BatchOperationStateEnum:
+      description: The batch operation state.
+      type: string
+      enum:
+        - ACTIVE
+        - CANCELED
+        - COMPLETED
+        - CREATED
+        - FAILED
+        - PARTIALLY_COMPLETED
+        - SUSPENDED
+    
+    BatchOperationItemStateEnum:
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - CANCELED
+        - FAILED
+    
+    IncidentErrorTypeEnum:
+      description: Incident error type with a defined set of values.
+      enum:
+        - AD_HOC_SUB_PROCESS_NO_RETRIES
+        - CALLED_DECISION_ERROR
+        - CALLED_ELEMENT_ERROR
+        - CONDITION_ERROR
+        - DECISION_EVALUATION_ERROR
+        - EXECUTION_LISTENER_NO_RETRIES
+        - EXTRACT_VALUE_ERROR
+        - FORM_NOT_FOUND
+        - IO_MAPPING_ERROR
+        - JOB_NO_RETRIES
+        - MESSAGE_SIZE_EXCEEDED
+        - RESOURCE_NOT_FOUND
+        - TASK_LISTENER_NO_RETRIES
+        - UNHANDLED_ERROR_EVENT
+        - UNKNOWN
+        - UNSPECIFIED
+    
+    IncidentStateEnum:
+      description: Incident states with a defined set of values.
+      enum:
+        - ACTIVE
+        - MIGRATED
+        - PENDING
+        - RESOLVED

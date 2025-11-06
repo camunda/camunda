@@ -1,0 +1,641 @@
+# Common filter schemas for advanced search
+components:
+  schemas:
+    LikeFilter:
+      type: string
+      description: |
+        Checks if the property matches the provided like value.
+
+        Supported wildcard characters are:
+
+        * `*`: matches zero, one, or multiple characters.
+        * `?`: matches one, single character.
+
+        Wildcard characters can be escaped with backslash, for instance: `\*`.
+
+    BasicStringFilter:
+      title: Advanced filter
+      description: Basic advanced string filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: string
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: string
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: string
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            type: string
+
+    AdvancedStringFilter:
+      title: Advanced filter
+      description: Advanced string filter.
+      allOf:
+        - $ref: '#/components/schemas/BasicStringFilter'
+        - type: object
+          properties:
+            $like:
+              $ref: '#/components/schemas/LikeFilter'
+
+    BasicStringFilterProperty:
+      description: String property with basic advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+        - $ref: '#/components/schemas/BasicStringFilter'
+
+    StringFilterProperty:
+      description: String property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+        - $ref: '#/components/schemas/AdvancedStringFilter'
+
+    # Integer filter types
+    AdvancedIntegerFilter:
+      title: Advanced filter
+      description: Advanced integer (int32) filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: integer
+          format: int32
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: integer
+          format: int32
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: integer
+          format: int32
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: integer
+          format: int32
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: integer
+          format: int32
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: integer
+          format: int32
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: integer
+            format: int32
+
+    IntegerFilterProperty:
+      description: Integer property with advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int32
+          description: Matches the value exactly.
+        - $ref: '#/components/schemas/AdvancedIntegerFilter'
+
+    # DateTime filter types
+    AdvancedDateTimeFilter:
+      title: Advanced filter
+      description: Advanced date-time filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: string
+          format: date-time
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: string
+          format: date-time
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: string
+          format: date-time
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: string
+          format: date-time
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: string
+          format: date-time
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: string
+          format: date-time
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: string
+            format: date-time
+
+    DateTimeFilterProperty:
+      description: Date-time property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          format: date-time
+          description: Matches the value exactly.
+        - $ref: '#/components/schemas/AdvancedDateTimeFilter'
+
+    # Batch operation filter types
+    BatchOperationTypeFilterProperty:
+      description: BatchOperationTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/BatchOperationTypeEnum"
+        - $ref: '#/components/schemas/AdvancedBatchOperationTypeFilter'
+
+    AdvancedBatchOperationTypeFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/BatchOperationTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/BatchOperationTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: 'enums.yaml#/components/schemas/BatchOperationTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    BatchOperationStateFilterProperty:
+      description: BatchOperationStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/BatchOperationStateEnum"
+        - $ref: '#/components/schemas/AdvancedBatchOperationStateFilter'
+
+    AdvancedBatchOperationStateFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/BatchOperationStateEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/BatchOperationStateEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: 'enums.yaml#/components/schemas/BatchOperationStateEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    BatchOperationItemStateFilterProperty:
+      description: BatchOperationItemStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/BatchOperationItemStateEnum'
+        - $ref: '#/components/schemas/AdvancedBatchOperationItemStateFilter'
+
+    AdvancedBatchOperationItemStateFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationItemStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/BatchOperationItemStateEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/BatchOperationItemStateEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: 'enums.yaml#/components/schemas/BatchOperationItemStateEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    ElementInstanceStateFilterProperty:
+      description: ElementInstanceStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/ElementInstanceStateEnum"
+        - $ref: '#/components/schemas/AdvancedElementInstanceStateFilter'
+
+    AdvancedElementInstanceStateFilter:
+      title: Advanced filter
+      description: Advanced ElementInstanceStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/ElementInstanceStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/ElementInstanceStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/ElementInstanceStateEnum"
+        $like:
+          $ref: '#/components/schemas/LikeFilter'
+
+    ProcessDefinitionKeyFilterProperty:
+      description: ProcessDefinitionKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
+        - $ref: '#/components/schemas/AdvancedProcessDefinitionKeyFilter'
+
+    AdvancedProcessDefinitionKeyFilter:
+      title: Advanced filter
+      description: Advanced ProcessDefinitionKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
+
+    ProcessInstanceKeyFilterProperty:
+      description: ProcessInstanceKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+        - $ref: '#/components/schemas/AdvancedProcessInstanceKeyFilter'
+
+    AdvancedProcessInstanceKeyFilter:
+      title: Advanced filter
+      description: Advanced ProcessInstanceKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+
+    ElementInstanceKeyFilterProperty:
+      description: ElementInstanceKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+        - $ref: '#/components/schemas/AdvancedElementInstanceKeyFilter'
+
+    AdvancedElementInstanceKeyFilter:
+      title: Advanced filter
+      description: Advanced ElementInstanceKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+        $neq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+
+    AdvancedScopeKeyFilter:
+      title: Advanced filter
+      description: Advanced ScopeKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ScopeKey"
+        $neq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ScopeKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ScopeKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ScopeKey"
+    ScopeKeyFilterProperty:
+      description: ScopeKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ScopeKey"
+        - $ref: '#/components/schemas/AdvancedScopeKeyFilter'
+
+    AdvancedVariableKeyFilter:
+      title: Advanced filter
+      description: Advanced VariableKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/VariableKey"
+        $neq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/VariableKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/VariableKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/VariableKey"
+    VariableKeyFilterProperty:
+      description: VariableKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/VariableKey"
+        - $ref: '#/components/schemas/AdvancedVariableKeyFilter'
+
+    AdvancedProcessInstanceStateFilter:
+      title: Advanced filter
+      description: Advanced ProcessInstanceStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/ProcessInstanceStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/ProcessInstanceStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/ProcessInstanceStateEnum"
+        $like:
+          $ref: '#/components/schemas/LikeFilter'
+
+    ProcessInstanceStateFilterProperty:
+      description: ProcessInstanceStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/ProcessInstanceStateEnum"
+        - $ref: '#/components/schemas/AdvancedProcessInstanceStateFilter'
+
+    AdvancedMessageSubscriptionKeyFilter:
+      title: Advanced filter
+      description: Advanced MessageSubscriptionKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+        $neq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+
+    MessageSubscriptionKeyFilterProperty:
+      description: MessageSubscriptionKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+        - $ref: '#/components/schemas/AdvancedMessageSubscriptionKeyFilter'
+
+    AdvancedDecisionDefinitionKeyFilter:
+      title: Advanced filter
+      description: Advanced DecisionDefinitionKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
+
+    DecisionDefinitionKeyFilterProperty:
+      description: DecisionDefinitionKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
+        - $ref: '#/components/schemas/AdvancedDecisionDefinitionKeyFilter'
+
+    JobKeyFilterProperty:
+      description: JobKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+        - $ref: '#/components/schemas/AdvancedJobKeyFilter'
+
+    AdvancedJobKeyFilter:
+      title: Advanced filter
+      description: Advanced JobKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: 'keys.yaml#/components/schemas/JobKey'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: 'keys.yaml#/components/schemas/JobKey'

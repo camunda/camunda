@@ -1,0 +1,241 @@
+## Endpoint definitions
+
+paths:
+  /variables/search:
+    post:
+      tags:
+        - Variable
+      operationId: searchVariables
+      summary: Search variables
+      description: Search for process and local variables based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VariableSearchQuery'
+      responses:
+        "200":
+          description: The variable search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariableSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /variables/{variableKey}:
+    get:
+      tags:
+        - Variable
+      operationId: getVariable
+      summary: Get variable
+      description: Get the variable by the variable key.
+      parameters:
+        - name: variableKey
+          in: path
+          required: true
+          description: The variable key.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/VariableKey'
+      responses:
+        "200":
+          description: The variable is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariableResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+## Schema definitions
+
+components:
+  schemas:
+    VariableSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - value
+            - name
+            - tenantId
+            - variableKey
+            - scopeKey
+            - processInstanceKey
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    VariableSearchQuery:
+      description: Variable search query request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/VariableSearchQuerySortRequest'
+        filter:
+          description: The variable search filters.
+          allOf:
+            - $ref: '#/components/schemas/VariableFilter'
+
+    VariableFilter:
+      description: Variable filter request.
+      type: object
+      properties:
+        name:
+          description: Name of the variable.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        value:
+          description: The value of the variable.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        tenantId:
+          description: Tenant ID of this variable.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
+        variableKey:
+          description: The key for this variable.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/VariableKeyFilterProperty'
+        scopeKey:
+          description: The key of the scope of this variable.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ScopeKeyFilterProperty'
+        processInstanceKey:
+          description: The key of the process instance of this variable.
+          allOf:
+          - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+
+    VariableSearchQueryResult:
+      description: Variable search query response.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching variables.
+          type: array
+          items:
+            $ref: '#/components/schemas/VariableSearchResult'
+
+    VariableSearchResult:
+      description: Variable search response item.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/VariableResultBase'
+      properties:
+        value:
+          description: Value of this variable. Can be truncated.
+          type: string
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
+
+    VariableResult:
+      description: Variable search response item.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/VariableResultBase'
+      properties:
+        value:
+          description: Full value of this variable.
+          type: string
+
+    VariableResultBase:
+      description: Variable response item.
+      type: object
+      properties:
+        name:
+          description: Name of this variable.
+          type: string
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: Tenant ID of this variable.
+        variableKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/VariableKey'
+          description: The key for this variable.
+        scopeKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ScopeKey'
+          description: The key of the scope of this variable.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance of this variable.
+
+    VariableValueFilterProperty:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the variable.
+        value:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The value of the variable.
+      required:
+        - name
+        - value
+
+    SetVariableRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        variables:
+          description: JSON object representing the variables to set in the element’s scope.
+          additionalProperties: true
+          type: object
+        local:
+          description: |
+            If set to true, the variables are merged strictly into the local scope (as specified by the `elementInstanceKey`).
+            Otherwise, the variables are propagated to upper scopes and set at the outermost one.
+            Let’s consider the following example:
+            There are two scopes '1' and '2'.
+            Scope '1' is the parent scope of '2'. The effective variables of the scopes are:
+            1 => { "foo" : 2 }
+            2 => { "bar" : 1 }
+            An update request with elementInstanceKey as '2', variables { "foo" : 5 }, and local set
+            to true leaves scope '1' unchanged and adjusts scope '2' to { "bar" : 1, "foo" 5 }.
+            By default, with local set to false, scope '1' will be { "foo": 5 }
+            and scope '2' will be { "bar" : 1 }.
+          type: boolean
+          default: false
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - variables

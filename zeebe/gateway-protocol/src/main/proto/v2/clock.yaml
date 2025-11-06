@@ -1,0 +1,69 @@
+## Endpoint definitions
+
+paths:
+  /clock:
+    put:
+      tags:
+        - Clock
+      operationId: pinClock
+      summary: Pin internal clock (alpha)
+      description: |
+        Set a precise, static time for the Zeebe engine's internal clock.
+        When the clock is pinned, it remains at the specified time and does not advance.
+        To change the time, the clock must be pinned again with a new timestamp.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClockPinRequest'
+      responses:
+        "204":
+          description: The clock was successfully pinned.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /clock/reset:
+    post:
+      tags:
+        - Clock
+      operationId: resetClock
+      summary: Reset internal clock (alpha)
+      description: |
+        Resets the Zeebe engine's internal clock to the current system time, enabling it to tick in real-time.
+        This operation is useful for returning the clock to
+        normal behavior after it has been pinned to a specific time.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      responses:
+        "204":
+          description: The clock was successfully reset to the system time.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+## Schema definitions
+
+components:
+  schemas:
+    ClockPinRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        timestamp:
+          description: The exact time in epoch milliseconds to which the clock should be pinned.
+          type: integer
+          format: int64
+      required:
+        - timestamp

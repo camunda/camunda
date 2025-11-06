@@ -1,0 +1,206 @@
+## Endpoint definitions
+
+paths:
+  /decision-requirements/search:
+    post:
+      tags:
+        - Decision requirements
+      operationId: searchDecisionRequirements
+      summary: Search decision requirements
+      description: Search for decision requirements based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequirementsSearchQuery'
+      responses:
+        "200":
+          description: The decision requirements search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionRequirementsSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /decision-requirements/{decisionRequirementsKey}:
+    get:
+      tags:
+        - Decision requirements
+      operationId: getDecisionRequirements
+      summary: Get decision requirements
+      description: Returns Decision Requirements as JSON.
+      parameters:
+        - name: decisionRequirementsKey
+          in: path
+          required: true
+          description: The assigned key of the decision requirements, which acts as a unique identifier for this decision requirements.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+      responses:
+        "200":
+          description: The decision requirements is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionRequirementsResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            The decision requirements with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /decision-requirements/{decisionRequirementsKey}/xml:
+    get:
+      tags:
+        - Decision requirements
+      operationId: getDecisionRequirementsXML
+      summary: Get decision requirements XML
+      description: Returns decision requirements as XML.
+      parameters:
+        - name: decisionRequirementsKey
+          in: path
+          required: true
+          description: The assigned key of the decision requirements, which acts as a unique identifier for this decision.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+      responses:
+        "200":
+          description: The XML of the decision requirements is successfully returned.
+          content:
+            text/xml:
+              schema:
+                type: string
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            The decision requirements with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+## Schema definitions
+
+components:
+  schemas:
+    DecisionRequirementsSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - decisionRequirementsKey
+            - decisionRequirementsName
+            - version
+            - decisionRequirementsId
+            - tenantId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    DecisionRequirementsSearchQuery:
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionRequirementsSearchQuerySortRequest'
+        filter:
+          description: The decision definition search filters.
+          allOf:
+            - $ref: '#/components/schemas/DecisionRequirementsFilter'
+
+    DecisionRequirementsFilter:
+      description: Decision requirements search filter.
+      type: object
+      properties:
+        decisionRequirementsName:
+          type: string
+          description: The DMN name of the decision requirements.
+        decisionRequirementsId:
+          type: string
+          description: the DMN ID of the decision requirements.
+        decisionRequirementsKey:
+          $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+        version:
+          type: integer
+          format: int32
+          description: The assigned version of the decision requirements.
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        resourceName:
+          type: string
+          description: The name of the resource from which the decision requirements were parsed
+
+    DecisionRequirementsSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching decision requirements.
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionRequirementsResult'
+
+    DecisionRequirementsResult:
+      type: object
+      additionalProperties: false
+      properties:
+        decisionRequirementsName:
+          type: string
+          description: The DMN name of the decision requirements.
+        version:
+          type: integer
+          format: int32
+          description: The assigned version of the decision requirements.
+        decisionRequirementsId:
+          type: string
+          description: The DMN ID of the decision requirements.
+        resourceName:
+          type: string
+          description: The name of the resource from which this decision requirements was parsed.
+        tenantId:
+          description: The tenant ID of the decision requirements.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        decisionRequirementsKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: The assigned key, which acts as a unique identifier for this decision requirements.

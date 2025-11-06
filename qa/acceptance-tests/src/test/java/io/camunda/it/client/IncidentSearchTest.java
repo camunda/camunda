@@ -281,7 +281,7 @@ class IncidentSearchTest {
                 If it fails, ensure the following are updated:
                   - `client` module: `io.camunda.client.api.search.enums.IncidentErrorType` - '%1$s' type defined
                   - `search-domain` module: `io.camunda.client.api.search.enums.IncidentErrorType` - '%1$s' type defined
-                  - `gateway-protocol` module: `zeebe/gateway-protocol/src/main/proto/rest-api.yaml` - '%1$s' `errorType` defined for `IncidentFilterRequestBase` document""",
+                  - `gateway-protocol` module: `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml` - '%1$s' `errorType` defined for `IncidentFilterRequestBase` document""",
             errorType)
         .doesNotThrowAnyException();
   }

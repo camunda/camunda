@@ -1,0 +1,352 @@
+## Endpoint definitions
+
+paths:
+  /incidents/search:
+    post:
+      tags:
+        - Incident
+      operationId: searchIncidents
+      summary: Search incidents
+      description: |
+        Search for incidents based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentSearchQuery'
+      responses:
+        "200":
+          description: The incident search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /incidents/{incidentKey}:
+    get:
+      tags:
+        - Incident
+      operationId: getIncident
+      summary: Get incident
+      description: |
+        Returns incident as JSON.
+      parameters:
+        - name: incidentKey
+          in: path
+          required: true
+          description: The assigned key of the incident, which acts as a unique identifier for this incident.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/IncidentKey'
+      responses:
+        "200":
+          description: The incident is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The incident with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /incidents/{incidentKey}/resolution:
+    post:
+      tags:
+        - Incident
+      operationId: resolveIncident
+      summary: Resolve incident
+      description: |
+        Marks the incident as resolved; most likely a call to Update job will be necessary
+        to reset the job's retries, followed by this call.
+      parameters:
+        - name: incidentKey
+          in: path
+          required: true
+          description: Key of the incident to resolve.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/IncidentKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentResolutionRequest'
+      responses:
+        "204":
+          description: The incident is marked as resolved.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The incident with the incidentKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+## Schema definitions
+
+components:
+  schemas:
+    IncidentSearchQuery:
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentSearchQuerySortRequest'
+        filter:
+          description: The incident search filters.
+          allOf:
+            - $ref: '#/components/schemas/IncidentFilter'
+
+    IncidentFilter:
+      description: Incident search filter.
+      type: object
+      properties:
+        processDefinitionId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The process definition ID associated to this incident.
+        errorType:
+          description: Incident error type with a defined set of values.
+          allOf:
+            - $ref: '#/components/schemas/IncidentErrorTypeFilterProperty'
+        errorMessage:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        elementId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The element ID associated to this incident.
+        creationTime:
+          allOf:
+            - $ref: "filters.yaml#/components/schemas/DateTimeFilterProperty"
+          description: Date of incident creation.
+        state:
+          description: State of this incident with a defined set of values.
+          allOf:
+            - $ref: '#/components/schemas/IncidentStateFilterProperty'
+        tenantId:
+          description: The tenant ID of the incident.
+          allOf:
+            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
+        incidentKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+          description: The assigned key, which acts as a unique identifier for this incident.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+          description: The process definition key associated to this incident.
+        processInstanceKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+          description: The process instance key associated to this incident.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+          description: The element instance key associated to this incident.
+        jobKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/JobKeyFilterProperty'
+          description: The job key, if exists, associated with this incident.
+
+    IncidentErrorTypeFilterProperty:
+      description: IncidentErrorTypeEnum with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        - $ref: '#/components/schemas/AdvancedIncidentErrorTypeFilter'
+
+    AdvancedIncidentStateFilter:
+      title: Advanced filter
+      description: Advanced IncidentStateEnum filter
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+        $notIn:
+          description: Checks if the property does not match any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    AdvancedIncidentErrorTypeFilter:
+      title: Advanced filter
+      description: Advanced IncidentErrorTypeEnum filter
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        $notIn:
+          description: Checks if the property does not match any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    IncidentStateFilterProperty:
+      description: IncidentStateEnum with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+        - $ref: '#/components/schemas/AdvancedIncidentStateFilter'
+
+    IncidentSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - incidentKey
+            - processDefinitionKey
+            - processDefinitionId
+            - processInstanceKey
+            - errorType
+            - errorMessage
+            - elementId
+            - elementInstanceKey
+            - creationTime
+            - state
+            - jobKey
+            - tenantId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    IncidentSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching incidents.
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentResult'
+
+    IncidentResult:
+      type: object
+      properties:
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The process definition ID associated to this incident.
+        errorType:
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        errorMessage:
+          type: string
+          description: Error message which describes the error in more detail.
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID associated to this incident.
+        creationTime:
+          type: string
+          format: date-time
+        state:
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the incident.
+        incidentKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/IncidentKey'
+          description: The assigned key, which acts as a unique identifier for this incident.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The process definition key associated to this incident.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The process instance key associated to this incident.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The element instance key associated to this incident.
+        jobKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+          description: The job key, if exists, associated with this incident.
+
+    IncidentResolutionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'

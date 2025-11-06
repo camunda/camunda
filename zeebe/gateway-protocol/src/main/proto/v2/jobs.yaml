@@ -1,0 +1,1010 @@
+## Endpoint definitions
+
+paths:
+  /jobs/activation:
+    post:
+      tags:
+        - Job
+      operationId: activateJobs
+      summary: Activate jobs
+      description: |
+        Iterate through all known partitions and activate jobs up to the requested maximum.
+      x-eventually-consistent: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobActivationRequest'
+      responses:
+        "200":
+          description: The list of activated jobs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobActivationResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
+  /jobs/search:
+    post:
+      tags:
+        - Job
+      operationId: searchJobs
+      summary: Search jobs
+      description: Search for jobs based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobSearchQuery'
+      responses:
+        "200":
+          description: The job search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /jobs/{jobKey}/failure:
+    post:
+      tags:
+        - Job
+      operationId: failJob
+      summary: Fail job
+      description: |
+        Mark the job as failed.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to fail.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/JobKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobFailRequest'
+      responses:
+        "204":
+          description: The job is failed.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: >
+            The job with the given jobKey is not found. It was completed by another worker,
+            or the process instance itself was canceled.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >
+            The job with the given key is in the wrong state (i.e: not ACTIVATED or ACTIVATABLE).
+            The job was failed by another worker with retries = 0, and the process is now in an
+            incident state.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /jobs/{jobKey}/error:
+    post:
+      tags:
+        - Job
+      operationId: throwJobError
+      summary: Throw error for job
+      description: |
+        Reports a business error (i.e. non-technical) that occurs while processing a job.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/JobKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobErrorRequest'
+      responses:
+        "204":
+          description: An error is thrown for the job.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: |
+            The job with the given key was not found or is not activated.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /jobs/{jobKey}/completion:
+    post:
+      tags:
+        - Job
+      operationId: completeJob
+      summary: Complete job
+      description: |
+        Complete a job with the given payload, which allows completing the associated service task.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to complete.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/JobKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCompletionRequest'
+      responses:
+        "204":
+          description: The job was completed successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The job with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /jobs/{jobKey}:
+    patch:
+      tags:
+        - Job
+      operationId: updateJob
+      summary: Update job
+      description: Update a job with the given key.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to update.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/JobKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobUpdateRequest'
+      responses:
+        "204":
+          description: The job was updated successfully.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The job with the jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+## Schema definitions
+
+components:
+  schemas:
+    JobActivationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          description: The job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition type="payment-service" />)
+          type: string
+          example: create-new-user-record
+        worker:
+          description: The name of the worker activating the jobs, mostly used for logging purposes.
+          type: string
+          example: worker-324
+        timeout:
+          description: >
+            A job returned after this call will not be activated by another call until the
+            timeout (in ms) has been reached.
+          type: integer
+          format: int64
+          example: 20000
+        maxJobsToActivate:
+          description: The maximum jobs to activate by this request.
+          type: integer
+          format: int32
+          example: 5
+        fetchVariable:
+          description: A list of variables to fetch as the job variables; if empty, all visible variables at the time of activation for the scope of the job will be returned.
+          type: array
+          items:
+            type: string
+        requestTimeout:
+          description: >
+            The request will be completed when at least one job is activated or after the
+            requestTimeout (in ms). If the requestTimeout = 0, a default timeout is used.
+            If the requestTimeout < 0, long polling is disabled and the request is completed
+            immediately, even when no job is activated.
+          type: integer
+          format: int64
+          example: 60000
+        tenantIds:
+          description: A list of IDs of tenants for which to activate jobs.
+          type: array
+          items:
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
+      required:
+        - type
+        - timeout
+        - maxJobsToActivate
+
+    JobActivationResult:
+      description: The list of activated jobs
+      type: object
+      required:
+        - jobs
+      properties:
+        jobs:
+          description: The activated jobs.
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivatedJobResult'
+
+    ActivatedJobResult:
+      x-semantic-provider:
+        - elementId
+        - jobKey
+        - elementInstanceKey
+      type: object
+      required:
+        - type
+        - processDefinitionId
+        - processDefinitionVersion
+        - elementId
+        - customHeaders
+        - worker
+        - retries
+        - deadline
+        - variables
+        - tenantId
+        - jobKey
+        - processInstanceKey
+        - processDefinitionKey
+        - elementInstanceKey
+        - kind
+        - listenerEventType
+      properties:
+        type:
+          description: The type of the job (should match what was requested).
+          type: string
+          example: create-new-user-record
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The bpmn process ID of the job's process definition.
+        processDefinitionVersion:
+          description: The version of the job's process definition.
+          type: integer
+          format: int32
+          example: 1
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The associated task element ID.
+        customHeaders:
+          description: A set of custom headers defined during modelling; returned as a serialized JSON document.
+          type: object
+          additionalProperties: true
+          example: {}
+        worker:
+          description: The name of the worker which activated this job.
+          type: string
+          example: worker-324
+        retries:
+          description: The amount of retries left to this job (should always be positive).
+          type: integer
+          format: int32
+          example: 3
+        deadline:
+          description: When the job can be activated again, sent as a UNIX epoch timestamp.
+          type: integer
+          format: int64
+          example: 1757280974277
+        variables:
+          description: All variables visible to the task scope, computed at activation time.
+          type: object
+          additionalProperties: true
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The ID of the tenant that owns the job.
+        jobKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+          description: The key, a unique identifier for the job.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The job's process instance key.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the job's process definition.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+        kind:
+          $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+        listenerEventType:
+          $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+        userTask:
+          $ref: '#/components/schemas/UserTaskProperties'
+        tags:
+          $ref: 'identifiers.yaml#/components/schemas/TagSet'
+
+    UserTaskProperties:
+      type: object
+      description: Contains properties of a user task.
+      properties:
+        action:
+          description: The action performed on the user task.
+          type: string
+        assignee:
+          description: The user assigned to the task.
+          type: string
+          nullable: true
+        candidateGroups:
+          type: array
+          items:
+            type: string
+        candidateUsers:
+          type: array
+          items:
+            type: string
+        changedAttributes:
+          type: array
+          items:
+            type: string
+        dueDate:
+          description: The due date of the user task in ISO 8601 format.
+          type: string
+          nullable: true
+        followUpDate:
+          description: The follow-up date of the user task in ISO 8601 format.
+          type: string
+          nullable: true
+        formKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKey'
+          description: The key of the form associated with the user task.
+        priority:
+          description: The priority of the user task.
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          nullable: true
+        userTaskKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          nullable: true
+
+    JobSearchQuery:
+      description: Job search request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/JobSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/JobFilter'
+          description: The job search filters.
+
+    JobSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - deadline
+            - deniedReason
+            - elementId
+            - elementInstanceKey
+            - endTime
+            - errorCode
+            - errorMessage
+            - hasFailedWithRetriesLeft
+            - isDenied
+            - jobKey
+            - kind
+            - listenerEventType
+            - processDefinitionId
+            - processDefinitionKey
+            - processInstanceKey
+            - retries
+            - state
+            - tenantId
+            - type
+            - worker
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    JobFilter:
+      description: Job search filter.
+      type: object
+      properties:
+        deadline:
+          description: When the job can next be activated.
+          nullable: true
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        deniedReason:
+          description: The reason provided by the user task listener for denying the work.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        elementId:
+          description: The element ID associated with the job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        elementInstanceKey:
+          description: The element instance key associated with the job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+        endTime:
+          description: When the job ended.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        errorCode:
+          description: The error code provided for the failed job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        errorMessage:
+          description: The error message that provides additional context for a failed job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        hasFailedWithRetriesLeft:
+          description: Indicates whether the job has failed with retries left.
+          type: boolean
+        isDenied:
+          description: Indicates whether the user task listener denies the work.
+          type: boolean
+          nullable: true
+        jobKey:
+          description: The key, a unique identifier for the job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/JobKeyFilterProperty'
+        kind:
+          description: The kind of the job.
+          allOf:
+            - $ref: '#/components/schemas/JobKindFilterProperty'
+        listenerEventType:
+          description: The listener event type of the job.
+          allOf:
+            - $ref: '#/components/schemas/JobListenerEventTypeFilterProperty'
+        processDefinitionId:
+          description: The process definition ID associated with the job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        processDefinitionKey:
+          description: The process definition key associated with the job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+        processInstanceKey:
+          description: The process instance key associated with the job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        retries:
+          description: The number of retries left.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+        state:
+          description: The state of the job.
+          allOf:
+            - $ref: '#/components/schemas/JobStateFilterProperty'
+        tenantId:
+          description: The tenant ID.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        type:
+          description: The type of the job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        worker:
+          description: The name of the worker for this job.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+
+    JobSearchQueryResult:
+      description: Job search response.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching jobs.
+          type: array
+          items:
+            $ref: '#/components/schemas/JobSearchResult'
+
+    JobSearchResult:
+      type: object
+      required:
+        - customHeaders
+        - elementId
+        - elementInstanceKey
+        - hasFailedWithRetriesLeft
+        - jobKey
+        - kind
+        - listenerEventType
+        - processDefinitionId
+        - processDefinitionKey
+        - processInstanceKey
+        - retries
+        - state
+        - tenantId
+        - type
+        - worker
+      properties:
+        customHeaders:
+          description: A set of custom headers defined during modelling.
+          type: object
+          additionalProperties:
+            type: string
+        deadline:
+          description: If the job has been activated, when it will next be available to be activated.
+          type: string
+          format: date-time
+          nullable: true
+        deniedReason:
+          description: The reason provided by the user task listener for denying the work.
+          type: string
+          nullable: true
+        elementId:
+          description: The element ID associated with the job.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
+        elementInstanceKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+          description: The element instance key associated with the job.
+        endTime:
+          description: When the job ended.
+          type: string
+          format: date-time
+        errorCode:
+          description: The error code provided for a failed job.
+          type: string
+          nullable: true
+        errorMessage:
+          description: The error message that provides additional context for a failed job.
+          type: string
+          nullable: true
+        hasFailedWithRetriesLeft:
+          description: Indicates whether the job has failed with retries left.
+          type: boolean
+        isDenied:
+          description: Indicates whether the user task listener denies the work.
+          type: boolean
+          nullable: true
+        jobKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/JobKey"
+          description: The key, a unique identifier for the job.
+        kind:
+          $ref: "enums.yaml#/components/schemas/JobKindEnum"
+        listenerEventType:
+          $ref: "enums.yaml#/components/schemas/JobListenerEventTypeEnum"
+        processDefinitionId:
+          description: The process definition ID associated with the job.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
+        processDefinitionKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
+          description: The process definition key associated with the job.
+        processInstanceKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+          description: The process instance key associated with the job.
+        retries:
+          description: The amount of retries left to this job.
+          type: integer
+          format: int32
+        state:
+          $ref: "enums.yaml#/components/schemas/JobStateEnum"
+        tenantId:
+          $ref: "identifiers.yaml#/components/schemas/TenantId"
+        type:
+          description: The type of the job.
+          type: string
+        worker:
+          description: The name of the worker of this job.
+          type: string
+
+    JobFailRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        retries:
+          description: The amount of retries the job should have left
+          type: integer
+          format: int32
+          default: 0
+        errorMessage:
+          description: An optional error message describing why the job failed; if not provided, an empty string is used.
+          type: string
+        retryBackOff:
+          description: An optional retry back off for the failed job. The job will not be retryable before the current time plus the back off time. The default is 0 which means the job is retryable immediately.
+          type: integer
+          format: int64
+          default: 0
+        variables:
+          type: object
+          additionalProperties: true
+
+    JobErrorRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        errorCode:
+          description: >
+            The error code that will be matched with an error catch event.
+          type: string
+        errorMessage:
+          description: >
+            An error message that provides additional context.
+          type: string
+          nullable: true
+        variables:
+          additionalProperties: true
+          description: >
+            JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
+          type: object
+          nullable: true
+      required:
+        - errorCode
+
+    JobCompletionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        variables:
+          additionalProperties: true
+          description: The variables to complete the job with.
+          type: object
+          nullable: true
+        result:
+          $ref: '#/components/schemas/JobResult'
+
+    JobResult:
+      description: >
+        The result of the completed job as determined by the worker.
+      discriminator:
+        propertyName: type
+        mapping:
+          userTask: '#/components/schemas/JobResultUserTask'
+          adHocSubProcess: '#/components/schemas/JobResultAdHocSubProcess'
+      oneOf:
+        - $ref: '#/components/schemas/JobResultUserTask'
+        - $ref: '#/components/schemas/JobResultAdHocSubProcess'
+
+    JobResultUserTask:
+      description: >
+        Job result details for a user task completion, optionally including a denial
+        reason and corrected task properties.
+      type: object
+      nullable: true
+      properties:
+        denied:
+          type: boolean
+          description: >
+            Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
+            For example, a user task listener can deny the completion of a task by setting this flag to true.
+            In this example, the completion of a task is represented by a job that the worker can complete as denied.
+            As a result, the completion request is rejected and the task remains active.
+            Defaults to false.
+          nullable: true
+        deniedReason:
+          type: string
+          description: The reason provided by the user task listener for denying the work.
+          nullable: true
+        corrections:
+          $ref: '#/components/schemas/JobResultCorrections'
+        type:
+          description: Used to distinguish between different types of job results.
+          type: string
+          example: userTask
+
+    JobResultCorrections:
+      type: object
+      description: |
+        JSON object with attributes that were corrected by the worker.
+
+        The following attributes can be corrected, additional attributes will be ignored:
+
+        * `assignee` - clear by providing an empty String
+        * `dueDate` - clear by providing an empty String
+        * `followUpDate` - clear by providing an empty String
+        * `candidateGroups` - clear by providing an empty list
+        * `candidateUsers` - clear by providing an empty list
+        * `priority` - minimum 0, maximum 100, default 50
+
+        Providing any of those attributes with a `null` value or omitting it preserves
+        the persisted attribute's value.
+      nullable: true
+      properties:
+        assignee:
+          type: string
+          description: Assignee of the task.
+          nullable: true
+        dueDate:
+          type: string
+          format: date-time
+          description: The due date of the task.
+          nullable: true
+        followUpDate:
+          type: string
+          format: date-time
+          description: The follow-up date of the task.
+          nullable: true
+        candidateUsers:
+          type: array
+          description: The list of candidate users of the task.
+          items:
+            type: string
+          nullable: true
+        candidateGroups:
+          type: array
+          description: The list of candidate groups of the task.
+          items:
+            type: string
+          nullable: true
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the task.
+          minimum: 0
+          maximum: 100
+          nullable: true
+
+    JobResultAdHocSubProcess:
+      description: >
+        Job result details for an ad‑hoc sub‑process, including elements to activate
+        and flags indicating completion or cancellation behavior.
+      type: object
+      nullable: true
+      properties:
+        activateElements:
+          type: array
+          description: Indicates which elements need to be activated in the ad-hoc subprocess.
+          items:
+            $ref: '#/components/schemas/JobResultActivateElement'
+        isCompletionConditionFulfilled:
+          type: boolean
+          description: Indicates whether the completion condition of the ad-hoc subprocess is fulfilled.
+          default: false
+          nullable: false
+        isCancelRemainingInstances:
+          type: boolean
+          description: Indicates whether the remaining instances of the ad-hoc subprocess should be canceled.
+          default: false
+          nullable: false
+        type:
+          description: Used to distinguish between different types of job results.
+          type: string
+          example: adHocSubProcess
+
+    JobResultActivateElement:
+      description: Instruction to activate a single BPMN element within an ad‑hoc sub‑process, optionally providing variables scoped to that element.
+      type: object
+      properties:
+        elementId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID to activate.
+        variables:
+          type: object
+          additionalProperties: true
+          description: Variables for the element.
+
+    JobUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        changeset:
+          $ref: '#/components/schemas/JobChangeset'
+        operationReference:
+          $ref: "keys.yaml#/components/schemas/OperationReference"
+      required:
+        - changeset
+
+    JobChangeset:
+      description: JSON object with changed job attribute values. The job cannot be completed or failed with this endpoint, use the complete job or fail job endpoints instead.
+      type: object
+      properties:
+        retries:
+          type: integer
+          format: int32
+          description: The new number of retries for the job.
+        timeout:
+          type: integer
+          format: int64
+          description: The new timeout for the job in milliseconds.
+
+    JobKindFilterProperty:
+      description: JobKindEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+        - $ref: '#/components/schemas/AdvancedJobKindFilter'
+
+    AdvancedJobKindFilter:
+      title: Advanced filter
+      description: Advanced JobKindEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    JobListenerEventTypeFilterProperty:
+      description: JobListenerEventTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+        - $ref: '#/components/schemas/AdvancedJobListenerEventTypeFilter'
+
+    AdvancedJobListenerEventTypeFilter:
+      title: Advanced filter
+      description: Advanced JobListenerEventTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    JobStateFilterProperty:
+      description: JobStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          format: JobStateEnum
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobStateEnum'
+        - $ref: '#/components/schemas/AdvancedJobStateFilter'
+
+    AdvancedJobStateFilter:
+      title: Advanced filter
+      description: Advanced JobStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobStateEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: 'enums.yaml#/components/schemas/JobStateEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: 'enums.yaml#/components/schemas/JobStateEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"

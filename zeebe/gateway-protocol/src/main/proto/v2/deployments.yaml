@@ -1,0 +1,359 @@
+## Endpoint definitions
+
+paths:
+  /deployments:
+    post:
+      tags:
+        - Resource
+      operationId: createDeployment
+      summary: Deploy resources
+      description: |
+        Deploys one or more resources (e.g. processes, decision models, or forms).
+        This is an atomic call, i.e. either all resources are deployed or none of them are.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              additionalProperties: false
+              type: object
+              properties:
+                resources:
+                  type: array
+                  description: |
+                    The binary data to create the deployment resources. It is possible to have more than one form part with different form part names for the binary data to create a deployment.
+                  items:
+                    type: string
+                    format: binary
+                tenantId:
+                  $ref: 'identifiers.yaml#/components/schemas/TenantId'
+              required:
+                - resources
+      responses:
+        "200":
+          description: The resources are deployed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /resources/{resourceKey}:
+    get:
+      tags:
+        - Resource
+      operationId: getResource
+      summary: Get resource
+      description: |
+        Returns a deployed resource.
+        :::info
+        Currently, this endpoint only supports RPA resources.
+        :::
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: The unique key identifying the resource.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ResourceKey'
+      responses:
+        "200":
+          description: The resource is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResult'
+        "404":
+          description: A resource with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: false
+
+  /resources/{resourceKey}/content:
+    get:
+      tags:
+        - Resource
+      operationId: getResourceContent
+      summary: Get resource content
+      description: |
+        Returns the content of a deployed resource.
+        :::info
+        Currently, this endpoint only supports RPA resources.
+        :::
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: The unique key identifying the resource.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ResourceKey'
+      responses:
+        "200":
+          description: The resource content is successfully returned.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: A resource with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: false
+
+  /resources/{resourceKey}/deletion:
+    post:
+      tags:
+        - Resource
+      operationId: deleteResource
+      summary: Delete resource
+      description: |
+        Deletes a deployed resource.
+        This can be a process definition, decision requirements definition, or form definition
+        deployed using the deploy resources endpoint. Specify the resource you want to delete in the `resourceKey` parameter.
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: |
+            The key of the resource to delete.
+            This can be the key of a process definition, the key of a decision requirements
+            definition or the key of a form definition
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ResourceKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteResourceRequest'
+      responses:
+        "200":
+          description: The resource is deleted.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The resource is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+## Schema definitions
+
+components:
+  schemas:
+    DeploymentResult:
+      type: object
+      required:
+        - deploymentKey
+        - tenantId
+        - deployments
+      properties:
+        deploymentKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DeploymentKey'
+          description: The unique key identifying the deployment.
+        tenantId:
+          description: The tenant ID associated with the deployment.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        deployments:
+          description: Items deployed by the request.
+          type: array
+          items:
+            $ref: '#/components/schemas/DeploymentMetadataResult'
+
+    DeploymentMetadataResult:
+      type: object
+      properties:
+        processDefinition:
+          $ref: '#/components/schemas/DeploymentProcessResult'
+        decisionDefinition:
+          $ref: '#/components/schemas/DeploymentDecisionResult'
+        decisionRequirements:
+          $ref: '#/components/schemas/DeploymentDecisionRequirementsResult'
+        form:
+          $ref: '#/components/schemas/DeploymentFormResult'
+        resource:
+          $ref: '#/components/schemas/DeploymentResourceResult'
+
+    DeploymentProcessResult:
+      description: A deployed process.
+      x-semantic-provider:
+        - processDefinitionKey
+        - processDefinitionId
+      type: object
+      required:
+        - processDefinitionId
+        - processDefinitionVersion
+        - resourceName
+        - processDefinitionKey
+        - tenantId
+      properties:
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: |
+            The bpmn process ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific process definition.
+        processDefinitionVersion:
+          type: integer
+          format: int32
+          description: The assigned process version.
+        resourceName:
+          type: string
+          description: The resource name from which this process was parsed.
+        tenantId:
+          description: The tenant ID of the deployed process.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The assigned key, which acts as a unique identifier for this process.
+
+    DeploymentDecisionResult:
+      description: A deployed decision.
+      type: object
+      x-semantic-provider:
+        - decisionDefinitionKey
+        - decisionRequirementsKey
+      properties:
+        decisionDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: |
+            The dmn decision ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific decision.
+        version:
+          type: integer
+          format: int32
+          description: The assigned decision version.
+        name:
+          type: string
+          description: The DMN name of the decision, as parsed during deployment.
+        tenantId:
+          description: The tenant ID of the deployed decision.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        decisionRequirementsId:
+          type: string
+          description: |
+            The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
+        decisionDefinitionKey:
+          allOf:
+            - $ref:  'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: |
+            The assigned decision key, which acts as a unique identifier for this decision.
+        decisionRequirementsKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: |
+            The assigned key of the decision requirements graph that this decision is part of.
+
+    DeploymentDecisionRequirementsResult:
+      description: Deployed decision requirements.
+      type: object
+      x-semantic-provider:
+        - decisionRequirementsKey
+      properties:
+        decisionRequirementsId:
+          type: string
+        decisionRequirementsName:
+          type: string
+        version:
+          type: integer
+          format: int32
+        resourceName:
+          type: string
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        decisionRequirementsKey:
+          $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+
+    DeploymentFormResult:
+      description: A deployed form.
+      type: object
+      x-semantic-provider:
+        - formKey
+      properties:
+        formId:
+          $ref: 'identifiers.yaml#/components/schemas/FormId'
+        version:
+          type: integer
+          format: int32
+        resourceName:
+          type: string
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        formKey:
+          $ref: 'keys.yaml#/components/schemas/FormKey'
+
+    DeploymentResourceResult:
+      description: A deployed Resource.
+      x-semantic-provider:
+        - resourceKey
+      type: object
+      properties:
+        resourceId:
+          type: string
+        resourceName:
+          type: string
+        version:
+          type: integer
+          format: int32
+        tenantId:
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        resourceKey:
+          $ref: 'keys.yaml#/components/schemas/ResourceKey'
+
+    DeleteResourceRequest:
+      type: object
+      nullable: true
+      additionalProperties: false
+      properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+
+    ResourceResult:
+      type: object
+      properties:
+        resourceName:
+          description: The resource name from which this resource was parsed.
+          type: string
+        version:
+          description: The assigned resource version.
+          type: integer
+          format: int32
+        versionTag:
+          description: The version tag of this resource.
+          type: string
+        resourceId:
+          description: The resource ID of this resource.
+          type: string
+        tenantId:
+          description: The tenant ID of this resource.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        resourceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ResourceKey'
+          description: The unique key of this resource.

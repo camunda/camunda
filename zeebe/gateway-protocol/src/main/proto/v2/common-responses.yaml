@@ -1,0 +1,55 @@
+# Common HTTP response definitions
+components:
+  responses:
+    Unauthorized:
+      description: The request lacks valid authentication credentials.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+
+    Forbidden:
+      description: Forbidden. The request is not allowed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+
+    InvalidData:
+      description: The provided data is not valid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+
+    InternalServerError:
+      description: An internal error occurred while processing the request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+
+    ServiceUnavailable:
+      description: >
+        The service is currently unavailable. This may happen only on some requests where the system
+        creates backpressure to prevent the server's compute resources from being exhausted, avoiding more severe failures.
+        In this case, the title of the error object contains `RESOURCE_EXHAUSTED`.
+        Clients are recommended to eventually retry those requests after a backoff period.
+        You can learn more about the backpressure mechanism here: https://docs.camunda.io/docs/components/zeebe/technical-concepts/internal-processing/#handling-backpressure .
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+
+    UnsupportedMediaType:
+      description: |
+        The server cannot process the request because the media type (Content-Type) of the request payload is not supported
+        by the server for the requested resource and method.
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'

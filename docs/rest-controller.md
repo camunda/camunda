@@ -6,7 +6,7 @@ It covers the whole end-to-end view from endpoint definition and implementation 
 considerations and testing, touching on the following steps:
 
 - [ ] Define the endpoint you want to create.
-- [ ] Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) of the Orchestration Cluster REST API.
+- [ ] Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml) of the Orchestration Cluster REST API.
 - [ ] Implement your controller(s) in the `zeebe/gateway-rest` module.
 - [ ] Implement or extend the respective `Services` your controller invokes.
 - [ ] Extend the Camunda Client with the new command.
@@ -23,7 +23,7 @@ Define the endpoint you want to create.
 
 ## OpenAPI extension
 
-Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) of the Orchestration Cluster REST API.
+Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml) of the Orchestration Cluster REST API.
 
 1. Consider the [OpenAPI specification](https://spec.openapis.org/oas/v3.0.3) and [guide](https://learn.openapis.org/) for detailed guidance.
 2. Reuse existing data models as much as possible to avoid duplication and foster streamlined models. Consider the following aspects:
@@ -112,7 +112,7 @@ The documentation project is configured to execute [a workflow](https://github.c
 
 1. Consider the [documentation guide](https://github.com/camunda/camunda-docs/blob/main/howtos/interactive-api-explorers.md) explaining how to generate the REST API explorer.
 2. If you encounter any adjustments to improve the generated documentation, feed it back into the OpenAPI file and regenerate until the docs are in the desired state.
-3. Adjust and commit the OpenAPI file back to the [Camunda repository](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) to check in the changes to the source of truth.
+3. Adjust and commit the OpenAPI file back to the [Camunda repository](../zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml) to check in the changes to the source of truth.
    Otherwise, subsequent generations of the documentation will override your manual changes by copying the source of truth OpenAPI from this repository to the Camunda documentation repository.
 4. Create a documentation PR and follow the [documentation team's guidelines](https://github.com/camunda/camunda-docs/blob/main/CONTRIBUTING.MD).
 

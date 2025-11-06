@@ -20,7 +20,7 @@
   <name>Zeebe Gateway REST API server</name>
 
   <properties>
-    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
+    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
   </properties>
 
   <dependencies>

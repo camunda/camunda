@@ -1,0 +1,482 @@
+## Endpoint definitions
+
+paths:
+  /element-instances/search:
+    post:
+      tags:
+        - Element instance
+      operationId: searchElementInstances
+      summary: Search element instances
+      description: Search for element instances based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementInstanceSearchQuery'
+      responses:
+        "200":
+          description: The element instance search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementInstanceSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /element-instances/{elementInstanceKey}:
+    get:
+      tags:
+        - Element instance
+      operationId: getElementInstance
+      summary: Get element instance
+      description: Returns element instance as JSON.
+      parameters:
+        - name: elementInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the element instance, which acts as a unique identifier for this element instance.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      responses:
+        "200":
+          description: The element instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementInstanceResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            The element instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+
+  /element-instances/{elementInstanceKey}/variables:
+    put:
+      tags:
+        - Element instance
+      operationId: createElementInstanceVariables
+      summary: Update element instance variables
+      description: |
+        Updates all the variables of a particular scope (for example, process instance, element instance) with the given variable data.
+        Specify the element instance in the `elementInstanceKey` parameter.
+      parameters:
+        - name: elementInstanceKey
+          in: path
+          required: true
+          description: |
+            The key of the element instance to update the variables for.
+            This can be the process instance key (as obtained during instance creation), or a given
+            element, such as a service task (see the `elementInstanceKey` on the job message).
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'variables.yaml#/components/schemas/SetVariableRequest'
+      responses:
+        "204":
+          description: The variables were updated.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+  /element-instances/{elementInstanceKey}/incidents/search:
+    post:
+      tags:
+        - Element instance
+      operationId: searchElementInstanceIncidents
+      summary: Search for incidents of a specific element instance
+      description: |
+        Search for incidents caused by the specified element instance, including incidents of any child instances created from this element instance.
+
+        Although the `elementInstanceKey` is provided as a path parameter to indicate the root element instance,
+        you may also include an `elementInstanceKey` within the filter object to narrow results to specific
+        child element instances. This is useful, for example, if you want to isolate incidents associated with
+        nested or subordinate elements within the given element instance while excluding incidents directly tied
+        to the root element itself.
+      parameters:
+        - name: elementInstanceKey
+          in: path
+          required: true
+          description: The unique key of the element instance to search incidents for.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementInstanceIncidentSearchQuery'
+      responses:
+        "200":
+          description: The element instance incident search result.
+          content:
+            application/json:
+              schema:
+                $ref: 'incidents.yaml#/components/schemas/IncidentSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The element instance with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+  /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
+    post:
+      tags:
+        - Ad-hoc sub-process
+      operationId: activateAdHocSubProcessActivities
+      summary: Activate activities within an ad-hoc sub-process
+      description: |
+        Activates selected activities within an ad-hoc sub-process identified by element ID.
+        The provided element IDs must exist within the ad-hoc sub-process instance identified by the
+        provided adHocSubProcessInstanceKey.
+      parameters:
+        - name: adHocSubProcessInstanceKey
+          in: path
+          required: true
+          description: The key of the ad-hoc sub-process instance that contains the activities.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdHocSubProcessActivateActivitiesInstruction'
+      responses:
+        "204":
+          description: The ad-hoc sub-process instance is modified.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The ad-hoc sub-process instance is not found or the provided key does not identify an
+              ad-hoc sub-process.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
+
+## Schema definitions
+
+components:
+  schemas:
+    ElementInstanceSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - elementInstanceKey
+            - processInstanceKey
+            - processDefinitionKey
+            - processDefinitionId
+            - startDate
+            - endDate
+            - elementId
+            - elementName
+            - type
+            - state
+            - incidentKey
+            - tenantId
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    ElementInstanceSearchQuery:
+      description: Element instance search request.
+      type: object
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementInstanceSearchQuerySortRequest'
+        filter:
+          description: The element instance search filters.
+          allOf:
+            - $ref: '#/components/schemas/ElementInstanceFilter'
+
+    ElementInstanceFilter:
+      description: Element instance filter.
+      type: object
+      properties:
+        processDefinitionId:
+          description: The process definition ID associated to this element instance.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
+        state:
+          description: State of element instance as defined set of values.
+          allOf:
+            - $ref: "filters.yaml#/components/schemas/ElementInstanceStateFilterProperty"
+        type:
+          description: Type of element as defined set of values.
+          type: string
+          enum:
+            - UNSPECIFIED
+            - PROCESS
+            - SUB_PROCESS
+            - EVENT_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS_INNER_INSTANCE
+            - START_EVENT
+            - INTERMEDIATE_CATCH_EVENT
+            - INTERMEDIATE_THROW_EVENT
+            - BOUNDARY_EVENT
+            - END_EVENT
+            - SERVICE_TASK
+            - RECEIVE_TASK
+            - USER_TASK
+            - MANUAL_TASK
+            - TASK
+            - EXCLUSIVE_GATEWAY
+            - INCLUSIVE_GATEWAY
+            - PARALLEL_GATEWAY
+            - EVENT_BASED_GATEWAY
+            - SEQUENCE_FLOW
+            - MULTI_INSTANCE_BODY
+            - CALL_ACTIVITY
+            - BUSINESS_RULE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - UNKNOWN
+        elementId:
+          description: The element ID for this element instance.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
+        elementName:
+          type: string
+          description: >
+            The element name. This only works for data created with 8.8 and onwards.
+            Instances from prior versions don't contain this data and cannot be found.
+        hasIncident:
+          type: boolean
+          description: Shows whether this element instance has an incident related to.
+        tenantId:
+          $ref: "identifiers.yaml#/components/schemas/TenantId"
+        elementInstanceKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+          description: The assigned key, which acts as a unique identifier for this element instance.
+        processInstanceKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+          description: The process instance key associated to this element instance.
+        processDefinitionKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
+          description: The process definition key associated to this element instance.
+        incidentKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/IncidentKey"
+          description: The key of incident if field incident is true.
+        startDate:
+          description: The start date of this element instance.
+          allOf:
+            - $ref: "filters.yaml#/components/schemas/DateTimeFilterProperty"
+        endDate:
+          description: The end date of this element instance.
+          allOf:
+            - $ref: "filters.yaml#/components/schemas/DateTimeFilterProperty"
+        elementInstanceScopeKey:
+          type: string
+          description: >
+            The scope key of this element instance. If provided with a process instance
+            key it will return element instances that are immediate children of the process
+            instance. If provided with an element instance key it will return element instances that
+            are immediate children of the element instance.
+          oneOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+
+    ElementInstanceSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching element instances.
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementInstanceResult'
+
+    ElementInstanceResult:
+      type: object
+      required:
+        - processDefinitionId
+        - startDate
+        - elementId
+        - elementName
+        - type
+        - state
+        - hasIncident
+        - tenantId
+        - elementInstanceKey
+        - processInstanceKey
+        - processDefinitionKey
+      properties:
+        processDefinitionId:
+          description: The process definition ID associated to this element instance.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
+        startDate:
+          description: Date when element instance started.
+          type: string
+          format: date-time
+        endDate:
+          description: Date when element instance finished.
+          type: string
+          format: date-time
+        elementId:
+          description: The element ID for this element instance.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
+        elementName:
+          description: The element name for this element instance.
+          type: string
+        type:
+          description: Type of element as defined set of values.
+          type: string
+          enum:
+            - UNSPECIFIED
+            - PROCESS
+            - SUB_PROCESS
+            - EVENT_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS_INNER_INSTANCE
+            - START_EVENT
+            - INTERMEDIATE_CATCH_EVENT
+            - INTERMEDIATE_THROW_EVENT
+            - BOUNDARY_EVENT
+            - END_EVENT
+            - SERVICE_TASK
+            - RECEIVE_TASK
+            - USER_TASK
+            - MANUAL_TASK
+            - TASK
+            - EXCLUSIVE_GATEWAY
+            - INCLUSIVE_GATEWAY
+            - PARALLEL_GATEWAY
+            - EVENT_BASED_GATEWAY
+            - SEQUENCE_FLOW
+            - MULTI_INSTANCE_BODY
+            - CALL_ACTIVITY
+            - BUSINESS_RULE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - UNKNOWN
+        state:
+          description: State of element instance as defined set of values.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/ElementInstanceStateEnum"
+        hasIncident:
+          description: Shows whether this element instance has an incident. If true also an incidentKey is provided.
+          type: boolean
+        tenantId:
+          description: The tenant ID of the incident.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/TenantId"
+        elementInstanceKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
+          description: The assigned key, which acts as a unique identifier for this element instance.
+        processInstanceKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+          description: The process instance key associated to this element instance.
+        processDefinitionKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
+          description: The process definition key associated to this element instance.
+        incidentKey:
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/IncidentKey"
+          description: Incident key associated with this element instance.
+
+    ElementInstanceIncidentSearchQuery:
+      type: object
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "incidents.yaml#/components/schemas/IncidentSearchQuerySortRequest"
+
+    AdHocSubProcessActivateActivitiesInstruction:
+      type: object
+      properties:
+        elements:
+          description: Activities to activate.
+          type: array
+          items:
+            $ref: '#/components/schemas/AdHocSubProcessActivateActivityReference'
+        cancelRemainingInstances:
+          description: Whether to cancel remaining instances of the ad-hoc sub-process.
+          type: boolean
+          default: false
+      required:
+        - elements
+
+    AdHocSubProcessActivateActivityReference:
+      type: object
+      properties:
+        elementId:
+          description: The ID of the element that should be activated.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ElementId"
+        variables:
+          description: Variables to be set when activating the element.
+          type: object
+          additionalProperties: true
+      required:
+        - elementId
