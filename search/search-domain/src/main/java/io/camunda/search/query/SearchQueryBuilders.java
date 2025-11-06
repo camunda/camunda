@@ -227,7 +227,7 @@ public final class SearchQueryBuilders {
   }
 
   public static ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder
-      messageSubscriptionProcessDefinitionStatisticsQuery() {
+      processDefinitionMessageSubscriptionStatisticsQuery() {
     return new ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder();
   }
 

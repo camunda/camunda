@@ -4515,6 +4515,7 @@ paths:
 
   /process-definitions/statistics/message-subscriptions:
     post:
+      x-eventually-consistent: true
       tags:
         - Process definition
       operationId: getProcessDefinitionMessageSubscriptionStatistics
@@ -8454,9 +8455,11 @@ components:
           $ref: "#/components/schemas/LikeFilter"
     ProcessDefinitionMessageSubscriptionStatisticsQuery:
       type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
+        page:
+          description: The pagination information, limited to 'from' and 'limit'. Backward pagination is not supported.
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionMessageSubscriptionStatisticsPageRequest"
         filter:
           description: The message subscription filters.
           allOf:
@@ -8490,6 +8493,18 @@ components:
           description: The total number of active message subscriptions for this process definition key.
           type: integer
           format: int64
+    ProcessDefinitionMessageSubscriptionStatisticsPageRequest:
+      type: object
+      properties:
+        from:
+          description: The index of items to start searching from.
+          type: integer
+          format: int32
+        limit:
+          description: The maximum number of items to return in one request.
+          type: integer
+          format: int32
+          default: 100
     IncidentResult:
       type: object
       properties:

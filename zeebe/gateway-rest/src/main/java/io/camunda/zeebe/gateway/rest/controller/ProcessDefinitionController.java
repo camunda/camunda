@@ -139,14 +139,12 @@ public class ProcessDefinitionController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/message-subscriptions")
   public ResponseEntity<ProcessDefinitionMessageSubscriptionStatisticsQueryResult>
-      processDefinitionStatistics(
+      messageSubscriptionStatistics(
           @RequestBody(required = false)
               final ProcessDefinitionMessageSubscriptionStatisticsQuery searchRequest) {
-    return SearchQueryRequestMapper.toMessageSubscriptionProcessDefinitionStatisticsQuery(
+    return SearchQueryRequestMapper.toProcessDefinitionMessageSubscriptionStatisticsQuery(
             searchRequest)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            this::getMessageSubscriptionProcessDefinitionStatistics);
+        .fold(RestErrorMapper::mapProblemToResponse, this::getMessageSubscriptionStatistics);
   }
 
   @CamundaPostMapping(path = "/statistics/process-instances")
@@ -186,7 +184,7 @@ public class ProcessDefinitionController {
   }
 
   private ResponseEntity<ProcessDefinitionMessageSubscriptionStatisticsQueryResult>
-      getMessageSubscriptionProcessDefinitionStatistics(
+      getMessageSubscriptionStatistics(
           final io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
     try {
       final var result =
@@ -194,7 +192,7 @@ public class ProcessDefinitionController {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getProcessDefinitionMessageSubscriptionStatistics(query);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toMessageSubscriptionProcessDefinitionStatisticsQueryResponse(
+          SearchQueryResponseMapper.toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
               result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
