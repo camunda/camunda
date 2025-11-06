@@ -121,6 +121,7 @@ public class CamundaClientJobWorkerProperties {
       autoComplete = true;
       requestTimeout = DEFAULT_REQUEST_TIMEOUT;
       retryBackoff = Duration.ZERO;
+      forceFetchAllVariables = false;
     }
   }
 
