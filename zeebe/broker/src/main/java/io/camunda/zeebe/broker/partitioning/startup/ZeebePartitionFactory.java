@@ -75,25 +75,6 @@ public final class ZeebePartitionFactory {
 
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS = List.of();
 
-  private static final List<PartitionTransitionStep> TRANSITION_STEPS =
-      List.of(
-          new MetricsStep(),
-          new LogStoragePartitionTransitionStep(),
-          new LogStreamPartitionTransitionStep(),
-          new ZeebeDbPartitionTransitionStep(),
-          new MigrationTransitionStep(),
-          new QueryServicePartitionTransitionStep(),
-          new BackupStoreTransitionStep(),
-          new BackupServiceTransitionStep(),
-          new InterPartitionCommandServiceStep(),
-          new StreamProcessorTransitionStep(),
-          new CommandApiServiceTransitionStep(),
-          new SnapshotDirectorPartitionTransitionStep(),
-          new SnapshotAfterMigrationTransitionStep(),
-          new ExporterDirectorPartitionTransitionStep(),
-          new BackupApiRequestHandlerStep(),
-          new AdminApiRequestHandlerStep());
-
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
@@ -176,9 +157,30 @@ public final class ZeebePartitionFactory {
             brokerHealthCheckService);
     context.setDynamicPartitionConfig(initialPartitionConfig);
 
-    final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);
+    final PartitionTransition newTransitionBehavior =
+        new PartitionTransitionImpl(generateTransitionSteps());
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
+  }
+
+  private List<PartitionTransitionStep> generateTransitionSteps() {
+    return List.of(
+        new MetricsStep(),
+        new LogStoragePartitionTransitionStep(),
+        new LogStreamPartitionTransitionStep(),
+        new ZeebeDbPartitionTransitionStep(),
+        new MigrationTransitionStep(),
+        new QueryServicePartitionTransitionStep(),
+        new BackupStoreTransitionStep(),
+        new BackupServiceTransitionStep(),
+        new InterPartitionCommandServiceStep(),
+        new StreamProcessorTransitionStep(),
+        new CommandApiServiceTransitionStep(),
+        new SnapshotDirectorPartitionTransitionStep(),
+        new SnapshotAfterMigrationTransitionStep(),
+        new ExporterDirectorPartitionTransitionStep(),
+        new BackupApiRequestHandlerStep(),
+        new AdminApiRequestHandlerStep());
   }
 
   private StateController createStateController(
