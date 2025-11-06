@@ -11,7 +11,6 @@ import {createInstance, createProcessInstance} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
 import {Wrapper, firstIncident, incidentsMock} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('Sorting', () => {
@@ -19,7 +18,6 @@ describe('Sorting', () => {
     mockFetchProcessInstance().withSuccess(
       createInstance({permissions: ['UPDATE_PROCESS_INSTANCE']}),
     );
-    mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
         hasIncident: true,

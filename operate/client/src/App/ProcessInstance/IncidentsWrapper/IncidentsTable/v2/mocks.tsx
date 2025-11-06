@@ -45,15 +45,16 @@ const longError =
 
 const firstIncident = createEnhancedIncidentV2({
   errorType: 'IO_MAPPING_ERROR',
+  processInstanceKey: '1',
   errorMessage: shortError,
   elementId: 'StartEvent_1',
   elementInstanceKey: '18239123812938',
-  processInstanceKey: '111111111111111111',
   processDefinitionId: 'calledInstance',
 });
 
 const secondIncident = createEnhancedIncidentV2({
   errorType: 'CALLED_DECISION_ERROR',
+  processInstanceKey: '1',
   errorMessage: longError,
   elementId: 'Event_1db567d',
   elementInstanceKey: id,
