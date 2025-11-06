@@ -15,6 +15,9 @@
  */
 package io.camunda.client.jobhandling;
 
+import static io.camunda.client.spring.properties.CamundaClientJobWorkerProperties.DEFAULT_AUTO_COMPLETE;
+import static io.camunda.client.spring.properties.CamundaClientJobWorkerProperties.DEFAULT_MAX_RETRIES;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.bean.MethodInfo;
@@ -67,11 +70,11 @@ public class BeanJobHandlerFactory implements JobHandlerFactory {
     final boolean autoComplete =
         context.jobWorkerValue().getAutoComplete().value() != null
             ? context.jobWorkerValue().getAutoComplete().value()
-            : true;
+            : DEFAULT_AUTO_COMPLETE;
     final int maxRetries =
         context.jobWorkerValue().getMaxRetries().value() != null
             ? context.jobWorkerValue().getMaxRetries().value()
-            : 0;
+            : DEFAULT_MAX_RETRIES;
     return new JobHandlerInvokingBeans(
         context.jobWorkerValue().getName().value(),
         methodInfo::invoke,
