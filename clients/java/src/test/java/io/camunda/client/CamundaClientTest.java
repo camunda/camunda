@@ -1213,7 +1213,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {MAX_HTTP_CONNECTIONS})
+  @ValueSource(strings = {MAX_HTTP_CONNECTIONS, LegacyZeebeClientProperties.MAX_HTTP_CONNECTIONS})
   public void shouldSetMaxHttpConnectionsWithProperty(final String propertyName) {
     // given
     final Properties properties = new Properties();
@@ -1229,7 +1229,11 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS})
+  @ValueSource(
+      strings = {
+        CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS,
+        LegacyZeebeClientEnvironmentVariables.MAX_HTTP_CONNECTIONS
+      })
   public void shouldSetMaxHttpConnectionsWithEnv(final String envName) {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();

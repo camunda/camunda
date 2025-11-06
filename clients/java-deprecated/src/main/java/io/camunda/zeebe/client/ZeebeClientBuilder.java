@@ -245,11 +245,14 @@ public interface ZeebeClientBuilder {
    * The default value is {@code false} (gRPC is preferred).
    *
    * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
-   *
-   * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
-   * @return this builder for chaining
    */
   ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
+
+  /**
+   * Sets the maximum number of HTTP connections to maintain in the connection pool. This affects
+   * the number of concurrent REST API calls that can be made.
+   */
+  ZeebeClientBuilder maxHttpConnections(int maxConnections);
 
   /**
    * @return a new {@link ZeebeClient} with the provided configuration options.

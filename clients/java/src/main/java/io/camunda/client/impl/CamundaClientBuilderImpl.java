@@ -303,7 +303,8 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> maxHttpConnections(Integer.parseInt(value)),
-        ClientProperties.MAX_HTTP_CONNECTIONS);
+        ClientProperties.MAX_HTTP_CONNECTIONS,
+        LegacyZeebeClientProperties.MAX_HTTP_CONNECTIONS);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
@@ -644,7 +645,9 @@ public final class CamundaClientBuilderImpl
         PREFER_REST_VAR,
         LegacyZeebeClientEnvironmentVariables.PREFER_REST_VAR);
     applyEnvironmentValueIfNotNull(
-        value -> maxHttpConnections(Integer.parseInt(value)), MAX_HTTP_CONNECTIONS);
+        value -> maxHttpConnections(Integer.parseInt(value)),
+        MAX_HTTP_CONNECTIONS,
+        LegacyZeebeClientEnvironmentVariables.MAX_HTTP_CONNECTIONS);
     applyEnvironmentValueIfNotNull(
         this::defaultTenantId,
         DEFAULT_TENANT_ID_VAR,
