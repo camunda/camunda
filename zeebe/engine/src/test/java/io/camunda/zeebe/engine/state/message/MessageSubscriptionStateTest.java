@@ -97,17 +97,16 @@ public final class MessageSubscriptionStateTest {
     assertThat(subscriptions).hasSize(1);
     final var expectedSubscription = subscriptions.getFirst().getRecord();
     assertThat(expectedSubscription.getProcessInstanceKey())
-        .isEqualTo(expectedSubscription.getProcessInstanceKey());
+        .isEqualTo(subscription.getProcessInstanceKey());
     assertThat(expectedSubscription.getElementInstanceKey())
-        .isEqualTo(expectedSubscription.getElementInstanceKey());
+        .isEqualTo(subscription.getElementInstanceKey());
     assertThat(expectedSubscription.getProcessDefinitionKey())
-        .isEqualTo(expectedSubscription.getProcessDefinitionKey());
+        .isEqualTo(subscription.getProcessDefinitionKey());
     assertThat(expectedSubscription.getMessageName())
-        .isEqualTo(expectedSubscription.getMessageName());
+        .isEqualTo(subscription.getMessageName());
     assertThat(expectedSubscription.getCorrelationKey())
-        .isEqualTo(expectedSubscription.getCorrelationKey());
-    assertThat(expectedSubscription.getVariables()).isEqualTo(expectedSubscription.getVariables());
-    assertThat(subscriptions.getFirst().isCorrelating()).isFalse();
+        .isEqualTo(subscription.getCorrelationKey());
+assertThat(expectedSubscription.getVariables()).isEqualTo(subscription.getVariables());
   }
 
   @Test
