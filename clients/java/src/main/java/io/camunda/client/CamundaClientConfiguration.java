@@ -15,7 +15,6 @@
  */
 package io.camunda.client;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
@@ -154,6 +153,10 @@ public interface CamundaClientConfiguration {
   /**
    * @see CamundaClientBuilder#preferRestOverGrpc(boolean)
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   boolean preferRestOverGrpc();
+
+  /**
+   * @see CamundaClientBuilder#maxHttpConnections(int)
+   */
+  int getMaxHttpConnections();
 }
