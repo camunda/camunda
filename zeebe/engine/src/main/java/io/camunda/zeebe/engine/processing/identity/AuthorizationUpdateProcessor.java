@@ -34,6 +34,7 @@ public class AuthorizationUpdateProcessor
   private final SideEffectWriter sideEffectWriter;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
+  private final AuthorizationEntityChecker authorizationEntityChecker;
 
   public AuthorizationUpdateProcessor(
       final Writers writers,
@@ -49,6 +50,7 @@ public class AuthorizationUpdateProcessor
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    authorizationEntityChecker = new AuthorizationEntityChecker(processingState);
   }
 
   @Override
@@ -66,7 +68,7 @@ public class AuthorizationUpdateProcessor
                     command.getValue().getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
-        .flatMap(permissionsBehavior::mappingRuleExists)
+        .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
@@ -78,16 +80,8 @@ public class AuthorizationUpdateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
-<<<<<<< HEAD
-        .mappingRuleExists(command.getValue())
-        .flatMap(
-            s ->
-                permissionsBehavior.authorizationExists(
-                    s, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE))
-=======
         .authorizationExists(command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
         .flatMap(s -> authorizationEntityChecker.ownerAndResourceExists(command))
->>>>>>> 91d0b42a (fix: adjust processor and checker to use the correct variable)
         .ifRightOrLeft(
             ignored -> {
               stateWriter.appendFollowUpEvent(
