@@ -168,17 +168,17 @@ public class AnnotationUtil {
               new JobWorkerValue(
                   type,
                   name,
-                  annotation.timeout() == 300000L
+                  annotation.timeout() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(Duration.of(annotation.timeout(), ChronoUnit.MILLIS)),
-                  annotation.maxJobsActive() == 32
+                  annotation.maxJobsActive() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(annotation.maxJobsActive()),
-                  annotation.requestTimeout() == 10L
+                  annotation.requestTimeout() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(
                           Duration.of(annotation.requestTimeout(), ChronoUnit.SECONDS)),
-                  annotation.pollInterval() == 100L
+                  annotation.pollInterval() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(
                           Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS)),
@@ -194,11 +194,11 @@ public class AnnotationUtil {
                           ? new GeneratedFromMethodInfo<>(true)
                           : new Empty<>(),
                   annotation.streamEnabled() ? new FromAnnotation<>(true) : new Empty<>(),
-                  annotation.streamTimeout() == 28800000L
+                  annotation.streamTimeout() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(
                           Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS)),
-                  annotation.maxRetries() == 0
+                  annotation.maxRetries() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(annotation.maxRetries())))
           .map(

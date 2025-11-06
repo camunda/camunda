@@ -15,6 +15,11 @@
  */
 package io.camunda.client.annotation;
 
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
+import static io.camunda.client.spring.properties.CamundaClientJobWorkerProperties.DEFAULT_AUTO_COMPLETE;
+import static io.camunda.client.spring.properties.CamundaClientJobWorkerProperties.DEFAULT_ENABLED;
+import static io.camunda.client.spring.properties.CamundaClientJobWorkerProperties.DEFAULT_FORCE_FETCH_ALL_VARIABLES;
+
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
@@ -70,7 +75,7 @@ public @interface JobWorker {
    * Set the request timeout (in seconds) for activate job request used to poll for new jobs. If no
    * request timeout is set then the default is used from the {@link CamundaClientConfiguration}
    */
-  long requestTimeout() default -1L;
+  long requestTimeout() default -1;
 
   /**
    * Set the maximal interval (in milliseconds) between polling for new jobs. A job worker will
@@ -78,7 +83,7 @@ public @interface JobWorker {
    * activated after completing, the worker will periodically poll for new jobs. If no poll interval
    * is set then the default is used from the {@link CamundaClientConfiguration}
    */
-  long pollInterval() default -1L;
+  long pollInterval() default -1;
 
   /**
    * Set a list of variable names which should be fetched on job activation. The jobs which are
@@ -88,7 +93,7 @@ public @interface JobWorker {
   String[] fetchVariables() default {};
 
   /** If set to true, all variables are fetched */
-  boolean fetchAllVariables() default false;
+  boolean fetchAllVariables() default DEFAULT_FORCE_FETCH_ALL_VARIABLES;
 
   /**
    * If set to true, the job is automatically completed after the worker code has finished. In this
@@ -98,10 +103,10 @@ public @interface JobWorker {
    * control the retry behavior or submit variables, you can use the {@link JobError}. You could
    * also raise a BPMN error throwing a {@link BpmnError}
    */
-  boolean autoComplete() default true;
+  boolean autoComplete() default DEFAULT_AUTO_COMPLETE;
 
   /** If set to true, the worker will actually be subscribing. */
-  boolean enabled() default true;
+  boolean enabled() default DEFAULT_ENABLED;
 
   /** A list of tenants for this job will be worked on. */
   String[] tenantIds() default {};
@@ -110,13 +115,13 @@ public @interface JobWorker {
    * Whether job streaming should be enabled for this job type. Useful in high-performance setups
    * but can only be used with a gRPC connection.
    */
-  boolean streamEnabled() default false;
+  boolean streamEnabled() default DEFAULT_STREAM_ENABLED;
 
   /** Stream timeout in ms */
-  long streamTimeout() default 28800000L;
+  long streamTimeout() default -1;
 
   /** Set the max number of retries for a job */
-  int maxRetries() default 0;
+  int maxRetries() default -1;
 
   /** Set the retry backoff for a job (in milliseconds) */
   long retryBackoff() default -1L;
