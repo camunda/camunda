@@ -32,13 +32,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** This test class only covers cases not covered by the LifecycleBatchOperationTest engine test */
-class BatchOperationSuspendProcessorTest {
+class BatchOperationLifecycleManagementSuspendProcessorTest {
 
   private StateWriter stateWriter;
   private TypedCommandWriter commandWriter;
   private TypedRejectionWriter rejectionWriter;
   private TypedResponseWriter responseWriter;
-  private BatchOperationSuspendProcessor processor;
+  private BatchOperationLifecycleManagementSuspendProcessor processor;
   private KeyGenerator keyGenerator;
   private BatchOperationState batchOperationState;
 
@@ -68,7 +68,7 @@ class BatchOperationSuspendProcessorTest {
 
     // Inject mocked writers
     processor =
-        new BatchOperationSuspendProcessor(
+        new BatchOperationLifecycleManagementSuspendProcessor(
             writers,
             null,
             state,
