@@ -106,7 +106,7 @@ public class JobWorkerController {
 
   @WriteOperation
   public void updateJobWorker(
-      @Selector final String finalType,
+      @Selector final String typeSelector,
       @Nullable final String type,
       @Nullable final String name,
       @Nullable final Boolean enabled,
@@ -123,10 +123,10 @@ public class JobWorkerController {
       @Nullable final Boolean reset,
       @Nullable final Boolean applyCustomizers) {
     if (reset != null && reset) {
-      jobWorkerManager.resetJobWorker(finalType);
+      jobWorkerManager.resetJobWorker(typeSelector);
     } else {
       jobWorkerManager.updateJobWorker(
-          finalType,
+          typeSelector,
           createChangeSet(
               type,
               name,
