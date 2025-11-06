@@ -40,9 +40,11 @@ public class ElasticSearchDecisionRequirementsCacheLoader
                     .id(String.valueOf(decisionRequirementsKey)),
             DecisionRequirementsEntity.class);
     if (response.found()) {
-      final DecisionRequirementsEntity decisionEntity = response.source();
+      final DecisionRequirementsEntity decisionRequirementsEntity = response.source();
       return new CachedDecisionRequirementsEntity(
-          decisionEntity.getKey(), decisionEntity.getName(), decisionEntity.getVersion());
+          decisionRequirementsEntity.getKey(),
+          decisionRequirementsEntity.getName(),
+          decisionRequirementsEntity.getVersion());
     } else {
       LOG.debug("DecisionRequirements '{}' not found in Elasticsearch", decisionRequirementsKey);
       return null;

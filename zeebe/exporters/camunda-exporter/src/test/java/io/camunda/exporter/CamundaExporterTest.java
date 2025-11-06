@@ -24,6 +24,7 @@ import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -82,6 +83,12 @@ final class CamundaExporterTest {
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
         final String processIndexName) {
+      return k -> null;
+    }
+
+    @Override
+    public CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
+        final String decisionIndexName) {
       return k -> null;
     }
 

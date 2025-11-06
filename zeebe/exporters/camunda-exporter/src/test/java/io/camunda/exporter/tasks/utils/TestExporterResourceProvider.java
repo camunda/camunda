@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
@@ -72,6 +73,12 @@ public class TestExporterResourceProvider implements ExporterResourceProvider {
 
   @Override
   public ExporterEntityCacheImpl<Long, CachedProcessEntity> getProcessCache() {
+    return null;
+  }
+
+  @Override
+  public ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity>
+      getDecisionRequirementsCache() {
     return null;
   }
 
