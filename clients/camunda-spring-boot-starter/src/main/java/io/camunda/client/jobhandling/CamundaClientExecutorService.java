@@ -42,6 +42,8 @@ public class CamundaClientExecutorService {
   private final ExecutorService jobHandlingExecutor;
   private final boolean jobHandlingExecutorOwnedByCamundaClient;
 
+  /** Sets a single executor service for both scheduled tasks and job handling. */
+  @Deprecated
   public CamundaClientExecutorService(
       final ScheduledExecutorService scheduledExecutorService, final boolean ownedByCamundaClient) {
     this(
@@ -52,6 +54,7 @@ public class CamundaClientExecutorService {
         null);
   }
 
+  /** Sets separate executor services for scheduled tasks and job handling. */
   public CamundaClientExecutorService(
       final ScheduledExecutorService scheduledExecutorService,
       final boolean scheduledExecutorOwnedByCamundaClient,
