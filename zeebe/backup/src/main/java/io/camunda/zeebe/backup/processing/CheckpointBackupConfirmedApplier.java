@@ -19,6 +19,9 @@ public class CheckpointBackupConfirmedApplier {
 
   public void apply(final CheckpointRecord checkpointRecord) {
     checkpointState.setLatestBackupInfo(
-        checkpointRecord.getCheckpointId(), checkpointRecord.getCheckpointPosition());
+        checkpointRecord.getCheckpointId(),
+        checkpointRecord.getCheckpointPosition(),
+        checkpointRecord.getCheckpointTimestamp(),
+        checkpointRecord.getCheckpointType());
   }
 }
