@@ -20,5 +20,13 @@ public enum CheckpointType {
   SCHEDULED_BACKUP,
   MANUAL_BACKUP,
   // Empty state markup indicator
-  NONE
+  NONE;
+
+  public boolean shouldCreateBackup() {
+    return this == SCHEDULED_BACKUP || this == MANUAL_BACKUP;
+  }
+
+  public boolean isManual() {
+    return this == MANUAL_BACKUP;
+  }
 }

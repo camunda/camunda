@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.util.Optional;
 
 /**
@@ -43,4 +44,14 @@ public interface BackupDescriptor {
    * @return The version of the broker that took the backup.
    */
   String brokerVersion();
+
+  /**
+   * @return the timestamp at which the related checkpoint was created
+   */
+  long checkpointTimestamp();
+
+  /**
+   * @return the type of the checkpoint that triggered the backup
+   */
+  CheckpointType checkpointType();
 }
