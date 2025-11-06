@@ -17,7 +17,7 @@ type Props = {
   elementInstanceKey: string;
   instanceMetadata: V2InstanceMetadata;
   isVisible: boolean;
-  setIsVisible: (isVisible: boolean) => void;
+  onClose: () => void;
 };
 
 const DetailsModal: React.FC<Props> = ({
@@ -25,7 +25,7 @@ const DetailsModal: React.FC<Props> = ({
   elementInstanceKey,
   instanceMetadata,
   isVisible,
-  setIsVisible,
+  onClose,
 }) => {
   const {data} = useGetIncidentsByElementInstance(elementInstanceKey, {
     enabled: isVisible && instanceMetadata.hasIncident,
@@ -42,7 +42,7 @@ const DetailsModal: React.FC<Props> = ({
   return (
     <JSONEditorModal
       isVisible={isVisible}
-      onClose={() => setIsVisible(false)}
+      onClose={onClose}
       title={`Element "${elementName}" ${elementInstanceKey} Metadata`}
       value={buildMetadata(instanceMetadata, incident)}
       readOnly

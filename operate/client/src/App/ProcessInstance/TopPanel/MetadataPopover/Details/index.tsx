@@ -149,7 +149,7 @@ const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
           elementName={elementName}
           instanceMetadata={instanceMetadata}
           isVisible={isModalVisible}
-          setIsVisible={setIsModalVisible}
+          onClose={() => setIsModalVisible(false)}
         />
       )}
     </>
