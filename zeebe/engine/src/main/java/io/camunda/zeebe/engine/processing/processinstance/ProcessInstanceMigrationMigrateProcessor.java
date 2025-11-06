@@ -338,12 +338,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var updatedElementInstanceRecord =
         getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
 
-    // TODO write ELEMENT_MIGRATED event after the user task migration?
-    stateWriter.appendFollowUpEvent(
-        elementInstance.getKey(),
-        ProcessInstanceIntent.ELEMENT_MIGRATED,
-        updatedElementInstanceRecord);
-
     // Migrate user task and cancel job
     if (isUserTaskConversion) {
       tryMigrateJobWorkerToCamundaUserTask(
@@ -355,6 +349,12 @@ public class ProcessInstanceMigrationMigrateProcessor
           elementId,
           targetElementId);
     }
+
+    // TODO write ELEMENT_MIGRATED event after the user task migration?
+    stateWriter.appendFollowUpEvent(
+        elementInstance.getKey(),
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        updatedElementInstanceRecord);
 
     final Set<ExecutableSequenceFlow> sequenceFlows =
         getSequenceFlowsToMigrate(
@@ -533,7 +533,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         newProperties = targetElement.getUserTaskProperties();
 
     if (formKey != null) {
-      if (formKey.contains("bpmn:userTaskForm")) {
+      if (formKey.toLowerCase().contains("bpmn:usertaskform")) {
         // embedded form
         final AtomicBoolean embeddedFormMigrated = new AtomicBoolean(false);
 
@@ -587,7 +587,6 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final var userTaskRecord =
         userTaskBehavior.createNewUserTask(
-            jobKey, // job-based user tasks use the jobKey as userTaskKey
             context,
             sourceElement.getJobWorkerProperties().getTaskHeaders(),
             targetElement.getId(),

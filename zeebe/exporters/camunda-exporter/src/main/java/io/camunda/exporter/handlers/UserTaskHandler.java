@@ -206,13 +206,20 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           TaskTemplate.PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
     }
 
-    // TODO only apply for MIGRATION?
+    // TODO this needs to be restricted! Only apply for CREATING or MIGRATION?
     if (entity.getImplementation() != null) {
       updateFields.put(TaskTemplate.IMPLEMENTATION, entity.getImplementation());
     }
     if (entity.getPriority() != null) {
       updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
     }
+    if (entity.getFormId() != null) {
+      updateFields.put(TaskTemplate.FORM_ID, entity.getFormId());
+    }
+    if (entity.getFormKey() != null) {
+      updateFields.put(TaskTemplate.FORM_KEY, entity.getFormKey());
+    }
+    updateFields.put(TaskTemplate.KEY, entity.getKey());
 
     return updateFields;
   }
