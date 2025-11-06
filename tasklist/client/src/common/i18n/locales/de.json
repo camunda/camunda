@@ -342,9 +342,8 @@
     "relativeDateYearsFmt_speech": "do. MMMM, yyyy",
     "relativeDateYearsFmt_time_speech": "do. MMMM, yyyy 'um' p",
     "relativeDateUnknown": "'Unbekannt'",
-    "processesTabPreviousPageButtonLabel": "Vorherige Seite",
-    "processesTabNextPageButtonLabel": "Nächste Seite",
-    "processesTabPaginationOfLabel": "{{currentPage}} von {{totalPages}}",
+    "processesLoadMore": "Mehr laden",
+    "processesLoadingMore": "Wird geladen...",
     "deniedReason": "Die Aufgabe {{type}} wurde vom System abgelehnt."
   }
 }
