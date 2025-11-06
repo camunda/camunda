@@ -228,9 +228,11 @@ public interface CamundaClientBuilder {
    * <p>NOTE: job streaming is only supported via gRPC
    *
    * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
-   * @return this builder for chaining
    */
   CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
+
+  /** Sets the maximum number of concurrent HTTP connections the client can open. */
+  CamundaClientBuilder maxHttpConnections(int maxConnections);
 
   /**
    * @return a new {@link CamundaClient} with the provided configuration options.

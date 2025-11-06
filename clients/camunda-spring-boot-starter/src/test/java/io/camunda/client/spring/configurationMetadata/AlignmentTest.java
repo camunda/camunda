@@ -62,6 +62,9 @@ public class AlignmentTest {
     // camunda.client.prefer-rest-over-grpc
     GETTERS.put(
         "camunda.client.prefer-rest-over-grpc", CamundaClientProperties::getPreferRestOverGrpc);
+    // camunda.client.prefer-rest-over-grpc
+    GETTERS.put(
+        "camunda.client.max-http-connections", CamundaClientProperties::getMaxHttpConnections);
     // camunda.client.rest-address
     GETTERS.put("camunda.client.rest-address", CamundaClientProperties::getRestAddress);
     MAPPERS.put("camunda.client.rest-address", p -> URI.create((String) p));
