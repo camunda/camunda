@@ -90,8 +90,11 @@ describe('<FormModal />', () => {
 
     expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
-    await user.type(
+    await user.click(
       await screen.findByRole('textbox', {name: /my variable/i}),
+    );
+    await user.type(
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     await user.type(
@@ -294,8 +297,11 @@ describe('<FormModal />', () => {
 
     expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
-    await user.type(
+    await user.click(
       await screen.findByRole('textbox', {name: /my variable/i}),
+    );
+    await user.type(
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     vi.runOnlyPendingTimers();
