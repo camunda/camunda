@@ -42,6 +42,8 @@ class OperateProcessesPage {
   readonly latestOperationProgressBar: Locator;
   readonly latestOperationEntryBeforeCompletion: Locator;
   readonly operationSuccessMessage: Locator;
+  readonly collapsedOperationsPanel: Locator;
+  readonly expandOperationsButton: Locator;
 
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
@@ -119,7 +121,13 @@ class OperateProcessesPage {
     );
     this.latestOperationProgressBar =
       this.latestOperationEntry.getByRole('progressbar');
-    this.operationSuccessMessage = page.getByText(/\d+ operations? succeeded/);
+    this.operationSuccessMessage = page
+      .getByText(/\d+ operations? succeeded/)
+      .first();
+    this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
+    this.expandOperationsButton = page.getByRole('button', {
+      name: 'Expand Operations',
+    });
   }
 
   async selectProcessInstances(count: number): Promise<void> {
@@ -222,6 +230,28 @@ class OperateProcessesPage {
 
   getVersionCells(version: string): Locator {
     return this.dataList.getByRole('cell', {name: version, exact: true});
+  }
+
+  async expandOperationsPanel(): Promise<void> {
+    const isCollapsed = await this.collapsedOperationsPanel.isVisible();
+    if (isCollapsed) {
+      await this.expandOperationsButton.click();
+      await this.operationsList.waitFor({state: 'visible', timeout: 10000});
+    }
+  }
+
+  async waitForOperationToComplete(): Promise<void> {
+    // New operations appear at the bottom while in progress, then move to top when complete
+    // Look for any progress bar with aria-busy="true" in the operations list
+    const inProgressBar = this.operationsList.locator(
+      '[role="progressbar"][aria-busy="true"]',
+    );
+
+    // Wait for the in-progress bar to appear (operation started)
+    await expect(inProgressBar).toBeVisible({timeout: 10000});
+
+    // Wait for it to disappear (operation completed and moved to top)
+    await expect(inProgressBar).not.toBeVisible({timeout: 120000});
   }
 }
 
