@@ -50,12 +50,11 @@ public class ElementTreePathBuilder {
   }
 
   private void buildElementTreePathProperties(final long elementInstanceKey) {
-    final var elementInstance = getElementInstance(elementInstanceKey);
+    final var elementInstance = tryGetElementInstance(elementInstanceKey);
     final long parentElementInstanceKey = elementInstance.getParentKey();
     final var elementProperties =
         new ElementProperties(
             elementInstanceKey, parentElementInstanceKey, elementInstance.getValue());
-
     buildElementTreePathProperties(elementProperties);
   }
 
@@ -71,18 +70,7 @@ public class ElementTreePathBuilder {
       long currParent = curr.parentElementInstanceKey;
       while (currParent != -1) {
         elementInstancePath.addFirst(currParent);
-        final ElementInstance instance;
-        try {
-          instance = getElementInstance(currParent);
-        } catch (final ElementInstanceNotFoundException exception) {
-          throw new IllegalStateException(
-              """
-              Expected to build element tree path, but couldn't find element instance '%d'. \
-              Element tree path created so far: '%s'. \
-              Currently adding parent process instance's element instance path: '%s'."""
-                  .formatted(currParent, properties, elementInstancePath),
-              exception);
-        }
+        final var instance = tryGetElementInstance(currParent, elementInstancePath);
         processInstanceRecord = instance.getValue();
         currParent = instance.getParentKey();
       }
@@ -94,7 +82,7 @@ public class ElementTreePathBuilder {
       if (callingElementInstanceKey != -1) {
         properties.callingElementPath.addFirst(getCallActivityIndex(callingElementInstanceKey));
         // For next iteration: walk to the parent process instance
-        final ElementInstance callingInstance = getElementInstance(callingElementInstanceKey);
+        final var callingInstance = tryGetElementInstance(callingElementInstanceKey);
         // Add the calling element instance to the queue
         elementQueue.offer(
             new ElementProperties(
@@ -107,7 +95,7 @@ public class ElementTreePathBuilder {
 
   private Integer getCallActivityIndex(final long callingElementInstanceKey) {
     final ElementInstance callActivityElementInstance =
-        getElementInstance(callingElementInstanceKey);
+        tryGetElementInstance(callingElementInstanceKey);
     final var callActivityInstanceRecord = callActivityElementInstance.getValue();
 
     final ExecutableCallActivity callActivity =
@@ -120,13 +108,28 @@ public class ElementTreePathBuilder {
     return callActivity.getLexicographicIndex();
   }
 
-  private ElementInstance getElementInstance(final long elementInstanceKey) {
+  private ElementInstance tryGetElementInstance(final long elementInstanceKey) {
     final ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
     if (instance == null) {
-      throw new ElementInstanceNotFoundException(
-          String.format(
-              "Expected to find element instance for given key '%d', but didn't exist.",
-              elementInstanceKey));
+      throw new IllegalStateException(
+          """
+          Expected to build element tree path, but couldn't find element instance '%d'. \
+          Element tree path created so far: '%s'."""
+              .formatted(elementInstanceKey, properties));
+    }
+    return instance;
+  }
+
+  private ElementInstance tryGetElementInstance(
+      final long elementInstanceKey, final List<Long> elementInstancePath) {
+    final ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
+    if (instance == null) {
+      throw new IllegalStateException(
+          """
+          Expected to build element tree path, but couldn't find element instance '%d'. \
+          Element tree path created so far: '%s'. \
+          Element instance path created so far: '%s'."""
+              .formatted(elementInstanceKey, properties, elementInstancePath));
     }
     return instance;
   }
@@ -140,11 +143,4 @@ public class ElementTreePathBuilder {
       Long elementInstanceKey,
       Long parentElementInstanceKey,
       ProcessInstanceRecordValue processInstanceRecord) {}
-
-  private static class ElementInstanceNotFoundException extends IllegalStateException {
-
-    ElementInstanceNotFoundException(final String message) {
-      super(message);
-    }
-  }
 }
