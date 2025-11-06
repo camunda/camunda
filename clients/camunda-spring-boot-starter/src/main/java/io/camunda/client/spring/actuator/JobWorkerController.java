@@ -217,10 +217,32 @@ public class JobWorkerController {
         type,
         jobWorkerValue.getType().value(),
         jobWorkerValue.getName().value(),
-        ofNullable(jobWorkerValue.getEnabled().value()).orElse(true),
-        jobWorkerValue.getTenantIds().stream().map(SourceAware::value).toList());
+        jobWorkerValue.getFetchVariables().stream().map(SourceAware::value).toList(),
+        jobWorkerValue.getTimeout().value(),
+        jobWorkerValue.getEnabled().value(),
+        jobWorkerValue.getForceFetchAllVariables().value(),
+        jobWorkerValue.getTenantIds().stream().map(SourceAware::value).toList(),
+        jobWorkerValue.getMaxJobsActive().value(),
+        jobWorkerValue.getRequestTimeout().value(),
+        jobWorkerValue.getPollInterval().value(),
+        jobWorkerValue.getStreamEnabled().value(),
+        jobWorkerValue.getStreamTimeout().value(),
+        jobWorkerValue.getMaxRetries().value());
   }
 
   public record JobWorkerDto(
-      String type, String currentType, String name, boolean enabled, List<String> tenantIds) {}
+      String typeSelector,
+      String type,
+      String name,
+      List<String> fetchVariables,
+      Duration timeout,
+      boolean enabled,
+      boolean forceFetchAllVariables,
+      List<String> tenantIds,
+      int maxJobsActive,
+      Duration requestTimeout,
+      Duration pollInterval,
+      boolean streamEnabled,
+      Duration streamTimeout,
+      int maxRetries) {}
 }
