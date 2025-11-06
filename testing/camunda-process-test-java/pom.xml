@@ -177,7 +177,7 @@
       <!-- Regular resources with filtering enabled -->
       <resource>
         <filtering>true</filtering>
-        <directory>src/main/resources</directory>
+        <directory>target/generated-resources</directory>
         <excludes>
           <exclude>coverage/static/media/**</exclude>
         </excludes>
@@ -185,7 +185,7 @@
       <!-- Binary files with filtering disabled -->
       <resource>
         <filtering>false</filtering>
-        <directory>src/main/resources</directory>
+        <directory>target/generated-resources</directory>
         <includes>
           <include>coverage/static/media/**</include>
         </includes>
@@ -240,7 +240,7 @@
               <arguments>install</arguments>
             </configuration>
           </execution>
-          <!-- Build frontend (output: src/main/resources/coverage) -->
+          <!-- Build frontend (output: target/generated-resources/coverage) -->
           <execution>
             <id>npm-build</id>
             <goals>
