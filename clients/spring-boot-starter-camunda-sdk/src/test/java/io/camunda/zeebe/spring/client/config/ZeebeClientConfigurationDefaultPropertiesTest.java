@@ -77,5 +77,6 @@ public class ZeebeClientConfigurationDefaultPropertiesTest {
     assertThat(client.getConfiguration().getRestAddress())
         .isEqualTo(new URI("http://0.0.0.0:8080"));
     assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    assertThat(client.getConfiguration().getMaxHttpConnections()).isEqualTo(100);
   }
 }
