@@ -41,7 +41,11 @@ public sealed interface JobWorkerChangeSet {
   static <T> boolean updateIfChanged(
       final SourceAware<T> original, final T updated, final Consumer<SourceAware<T>> setter) {
     if (!Objects.equals(original.value(), updated)) {
-      setter.accept(new FromRuntimeOverride<>(updated, original));
+      final SourceAware<T> originalToSet =
+          original instanceof final FromRuntimeOverride<T> fromRuntimeOverride
+              ? fromRuntimeOverride.original()
+              : original;
+      setter.accept(new FromRuntimeOverride<>(updated, originalToSet));
       return true;
     }
     return false;
@@ -51,23 +55,35 @@ public sealed interface JobWorkerChangeSet {
       final List<SourceAware<T>> original,
       final List<T> updated,
       final Consumer<List<SourceAware<T>>> setter) {
+    final List<T> updatedModifiable = new ArrayList<>(updated);
     final List<SourceAware<T>> originalModifiable = new ArrayList<>(original);
-    if (!Objects.equals(originalModifiable.stream().map(SourceAware::value).toList(), updated)) {
-      final int listSize = Math.max(originalModifiable.size(), updated.size());
-      while (originalModifiable.size() < listSize || updated.size() < listSize) {
+    if (!Objects.equals(
+        originalModifiable.stream().map(SourceAware::value).toList(), updatedModifiable)) {
+      final int listSize = Math.max(originalModifiable.size(), updatedModifiable.size());
+      while (originalModifiable.size() < listSize || updatedModifiable.size() < listSize) {
         if (originalModifiable.size() < listSize) {
           originalModifiable.add(new Empty<>());
         }
-        if (updated.size() < listSize) {
-          updated.add(null);
+        if (updatedModifiable.size() < listSize) {
+          updatedModifiable.add(null);
         }
       }
       setter.accept(
           IntStream.range(0, listSize)
               .mapToObj(
-                  i ->
-                      (SourceAware<T>)
-                          new FromRuntimeOverride<>(updated.get(i), originalModifiable.get(i)))
+                  i -> {
+                    final SourceAware<T> originalElement = originalModifiable.get(i);
+                    final SourceAware<T> originalToSet =
+                        originalElement instanceof final FromRuntimeOverride<T> fromRuntimeOverride
+                            ? fromRuntimeOverride.original()
+                            : originalElement;
+                    return (SourceAware<T>)
+                        new FromRuntimeOverride<>(updatedModifiable.get(i), originalToSet);
+                  })
+              .filter(
+                  sa ->
+                      sa.value() != null
+                          || ((FromRuntimeOverride<T>) sa).original().value() != null)
               .toList());
       return true;
     }
@@ -218,6 +234,11 @@ public sealed interface JobWorkerChangeSet {
   record FetchVariablesChangeSet(List<String> fetchVariables) implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      final Boolean forceFetchAllVariables = jobWorkerValue.getForceFetchAllVariables().value();
+      if (forceFetchAllVariables != null && forceFetchAllVariables) {
+        // ignore changes to fetchVariables as long as force fetch variables is true
+        return false;
+      }
       return updateIfChangedList(
           jobWorkerValue.getFetchVariables(), fetchVariables, jobWorkerValue::setFetchVariables);
     }
@@ -227,10 +248,20 @@ public sealed interface JobWorkerChangeSet {
       implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      return updateIfChanged(
-          jobWorkerValue.getForceFetchAllVariables(),
-          forceFetchAllVariables,
-          jobWorkerValue::setForceFetchAllVariables);
+      final boolean changed =
+          updateIfChanged(
+              jobWorkerValue.getForceFetchAllVariables(),
+              forceFetchAllVariables,
+              jobWorkerValue::setForceFetchAllVariables);
+      if (changed) {
+        if (forceFetchAllVariables) {
+          updateIfChangedList(
+              jobWorkerValue.getFetchVariables(), List.of(), jobWorkerValue::setFetchVariables);
+        } else {
+          resetList(jobWorkerValue.getFetchVariables(), jobWorkerValue::setFetchVariables);
+        }
+      }
+      return changed;
     }
   }
 
