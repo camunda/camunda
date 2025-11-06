@@ -12,8 +12,6 @@ import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.slf4j.Logger;
@@ -37,29 +35,7 @@ public final class OpenApiYamlLoader {
    */
   public static OpenAPI loadOpenApiFromYaml(final String yamlPath) {
     try {
-      final ParseOptions options = new ParseOptions();
-      options.setResolve(true);
-      options.setResolveFully(true);
-
-      final Path absolutePath = Path.of(yamlPath);
-      final SwaggerParseResult result;
-
-      if (absolutePath.isAbsolute() && Files.exists(absolutePath)) {
-        // Load from absolute file path - convert to file:// URL
-        LOG.debug("Loading OpenAPI from absolute path: {}", yamlPath);
-        final String fileUrl = absolutePath.toUri().toString();
-        result = new OpenAPIV3Parser().readLocation(fileUrl, null, options);
-      } else {
-        // Load from classpath - need to resolve references using classpath resources
-        LOG.debug("Loading OpenAPI from classpath: {}", yamlPath);
-        final ClassPathResource resource = new ClassPathResource(yamlPath);
-
-        // Get the URL of the resource to use as base for reference resolution
-        final String resourceUrl = resource.getURL().toString();
-
-        result = new OpenAPIV3Parser().readLocation(resourceUrl, null, options);
-      }
-
+      final SwaggerParseResult result = loadYamlContent(yamlPath);
       if (result.getOpenAPI() == null) {
         final String errorMsg = "Failed to parse OpenAPI YAML: " + yamlPath;
         if (result.getMessages() != null && !result.getMessages().isEmpty()) {
@@ -118,18 +94,26 @@ public final class OpenApiYamlLoader {
     }
   }
 
-  private static String loadYamlContent(final String yamlPath) throws IOException {
+  private static SwaggerParseResult loadYamlContent(final String yamlPath) throws IOException {
+    final ParseOptions options = new ParseOptions();
+    options.setResolve(true);
+    options.setResolveFully(true);
+
     final Path absolutePath = Path.of(yamlPath);
+
     if (absolutePath.isAbsolute() && Files.exists(absolutePath)) {
-      LOG.debug("Loading YAML from absolute path: {}", yamlPath);
-      return Files.readString(absolutePath);
-    } else {
-      LOG.debug("Loading YAML from classpath: {}", yamlPath);
-      final ClassPathResource resource = new ClassPathResource(yamlPath);
-      try (final InputStream inputStream = resource.getInputStream()) {
-        return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-      }
+      // Load from absolute file path - convert to file:// URL
+      LOG.debug("Loading OpenAPI from absolute path: {}", yamlPath);
+      final String fileUrl = absolutePath.toUri().toString();
+      return new OpenAPIV3Parser().readLocation(fileUrl, null, options);
     }
+    // Load from classpath - need to resolve references using classpath resources
+    LOG.debug("Loading OpenAPI from classpath: {}", yamlPath);
+    final ClassPathResource resource = new ClassPathResource(yamlPath);
+
+    // Get the URL of the resource to use as base for reference resolution
+    final String resourceUrl = resource.getURL().toString();
+    return new OpenAPIV3Parser().readLocation(resourceUrl, null, options);
   }
 
   /** Custom exception for OpenAPI loading failures. */
