@@ -13,11 +13,6 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 
-// BPMN resource paths
-const BPMN_V1_PATH = './resources/orderProcessMigration_v_1.bpmn';
-const BPMN_V2_PATH = './resources/orderProcessMigration_v_2.bpmn';
-const BPMN_V3_PATH = './resources/orderProcessMigration_v_3.bpmn';
-
 type ProcessDeployment = {
   bpmnProcessId: string;
   version: number;
@@ -32,32 +27,26 @@ type SetupData = {
 let initialData: SetupData;
 
 test.beforeAll(async () => {
-  // Deploy version 1
-  await deploy([BPMN_V1_PATH]);
+  await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
 
-  // Extract process definition information
-  // Version will be auto-incremented 1, 2, 3 as we deploy
   const processV1: ProcessDeployment = {
     bpmnProcessId: 'orderProcessMigration',
     version: 1,
   };
 
-  // Create process instances for v1
   await createInstances(processV1.bpmnProcessId, processV1.version, 10, {
     key1: 'myFirstCorrelationKey',
     key2: 'mySecondCorrelationKey',
   });
 
-  // Deploy version 2
-  await deploy([BPMN_V2_PATH]);
+  await deploy(['./resources/orderProcessMigration_v_2.bpmn']);
 
   const processV2: ProcessDeployment = {
     bpmnProcessId: 'orderProcessMigration',
     version: 2,
   };
 
-  // Deploy version 3
-  await deploy([BPMN_V3_PATH]);
+  await deploy(['./resources/orderProcessMigration_v_3.bpmn']);
 
   const processV3: ProcessDeployment = {
     bpmnProcessId: 'orderProcessMigration_v3',
@@ -71,7 +60,7 @@ test.beforeAll(async () => {
   };
 });
 
-test.describe('Process Instance Migration', () => {
+test.describe.serial('Process Instance Migration', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -87,6 +76,8 @@ test.describe('Process Instance Migration', () => {
   test('Auto mapping migration from V1 to V2', async ({
     page,
     operateFiltersPanelPage,
+    operateProcessesPage,
+    operateProcessesMigrationPage,
   }) => {
     test.slow();
 
@@ -95,10 +86,7 @@ test.describe('Process Instance Migration', () => {
     const targetVersion = initialData.processV2.version.toString();
     const targetBpmnProcessId = initialData.processV2.bpmnProcessId;
 
-    await test.step('Navigate to processes page and filter by process name and version', async () => {
-      await page.goto('/operate/processes?active=true&incidents=true');
-      await sleep(2000);
-
+    await test.step('Filter by process name and version', async () => {
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
@@ -106,28 +94,10 @@ test.describe('Process Instance Migration', () => {
     });
 
     await test.step('Select first 6 process instances for migration', async () => {
-      const processInstancesTable = page.getByRole('region', {
-        name: 'process instances panel',
-      });
+      await operateProcessesPage.selectProcessInstances(6);
 
-      for (let i = 0; i < 6; i++) {
-        await processInstancesTable
-          .getByRole('row', {name: 'select row'})
-          .nth(i)
-          .locator('label')
-          .click();
-        await sleep(100);
-      }
-
-      const migrateButton = processInstancesTable.getByRole('button', {
-        name: /^migrate$/i,
-      });
-      await expect(migrateButton).toBeEnabled({timeout: 10000});
-      await migrateButton.click();
-
-      const migrationModal = page.getByRole('dialog', {name: 'migrate'});
-      await expect(migrationModal).toBeVisible();
-      await migrationModal.getByRole('button', {name: 'confirm'}).click();
+      await operateProcessesPage.clickMigrateButton();
+      await operateProcessesMigrationPage.migrateProcessInstance();
 
       await expect(page).toHaveURL(/.*migrate.*/);
     });
