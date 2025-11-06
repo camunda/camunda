@@ -145,7 +145,7 @@ public class SearchAggregationResultTransformer<T>
                   case final LongTermsBucket b -> b.keyAsString();
                   case final CompositeBucket b ->
                       b.key().values().stream()
-                          .map(FieldValue::stringValue)
+                          .map(SearchAggregationResultTransformer::fieldValueToString)
                           .collect(Collectors.joining(COMPOSITE_KEY_DELIMITER));
                   default ->
                       throw new IllegalStateException(
@@ -167,12 +167,18 @@ public class SearchAggregationResultTransformer<T>
     if (aggregate instanceof final CompositeAggregate compositeAggregate) {
       return compositeAggregate.afterKey() != null
           ? compositeAggregate.afterKey().entrySet().stream()
-              .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stringValue()))
+              .collect(
+                  Collectors.toMap(
+                      Map.Entry::getKey, entry -> fieldValueToString(entry.getValue())))
               .entrySet()
               .toArray()
           : null;
     }
     return null;
+  }
+
+  private static String fieldValueToString(final FieldValue fieldValue) {
+    return String.valueOf(fieldValue._get());
   }
 
   private Map<String, AggregationResult> transformAggregation(

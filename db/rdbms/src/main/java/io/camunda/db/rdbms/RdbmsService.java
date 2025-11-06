@@ -23,6 +23,7 @@ import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
@@ -70,6 +71,8 @@ public class RdbmsService {
   private final UsageMetricsDbReader usageMetricReader;
   private final UsageMetricTUDbReader usageMetricTUDbReader;
   private final MessageSubscriptionDbReader messageSubscriptionReader;
+  private final ProcessDefinitionMessageSubscriptionStatisticsDbReader
+      processDefinitionMessageSubscriptionStatisticsDbReader;
   private final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader;
 
   public RdbmsService(
@@ -100,6 +103,8 @@ public class RdbmsService {
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
+      final ProcessDefinitionMessageSubscriptionStatisticsDbReader
+          processDefinitionMessageSubscriptionStatisticsDbReader,
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
@@ -128,6 +133,8 @@ public class RdbmsService {
     this.usageMetricReader = usageMetricReader;
     this.usageMetricTUDbReader = usageMetricTUDbReader;
     this.messageSubscriptionReader = messageSubscriptionReader;
+    this.processDefinitionMessageSubscriptionStatisticsDbReader =
+        processDefinitionMessageSubscriptionStatisticsDbReader;
     this.correlatedMessageSubscriptionReader = correlatedMessageSubscriptionReader;
   }
 
@@ -233,6 +240,11 @@ public class RdbmsService {
 
   public MessageSubscriptionDbReader getMessageSubscriptionReader() {
     return messageSubscriptionReader;
+  }
+
+  public ProcessDefinitionMessageSubscriptionStatisticsDbReader
+  getProcessDefinitionMessageSubscriptionStatisticsDbReader() {
+    return processDefinitionMessageSubscriptionStatisticsDbReader;
   }
 
   public CorrelatedMessageSubscriptionDbReader getCorrelatedMessageSubscriptionReader() {

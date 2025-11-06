@@ -27,6 +27,7 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -56,6 +57,7 @@ import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleMemberQuery;
@@ -214,6 +216,13 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
       processDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity>
+      getProcessDefinitionMessageSubscriptionStatistics(
+          final ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
     return SearchQueryResult.empty();
   }
 
