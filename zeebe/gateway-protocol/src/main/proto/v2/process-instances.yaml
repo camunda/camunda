@@ -877,7 +877,7 @@ components:
           description: The end date.
         state:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceStateFilterProperty'
+            - $ref: '#/components/schemas/ProcessInstanceStateFilterProperty'
           description: The process instance state.
         hasIncident:
           type: boolean
@@ -1089,7 +1089,7 @@ components:
           type: string
           format: date-time
         state:
-          $ref: 'enums.yaml#/components/schemas/ProcessInstanceStateEnum'
+          $ref: '#/components/schemas/ProcessInstanceStateEnum'
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
@@ -1289,3 +1289,46 @@ components:
           description: The ID of the element that should be terminated.
       required:
         - elementInstanceKey
+
+    AdvancedProcessInstanceStateFilter:
+      title: Advanced filter
+      description: Advanced ProcessInstanceStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    ProcessInstanceStateFilterProperty:
+      description: ProcessInstanceStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        - $ref: '#/components/schemas/AdvancedProcessInstanceStateFilter'
+
+    ProcessInstanceStateEnum:
+      description: Process instance states
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - TERMINATED

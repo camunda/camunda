@@ -229,7 +229,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
           description: Key of the batch operation.
         batchOperationType:
-          $ref: 'enums.yaml#/components/schemas/BatchOperationTypeEnum'
+          $ref: '#/components/schemas/BatchOperationTypeEnum'
 
     BatchOperationSearchQuerySortRequest:
       type: object
@@ -276,11 +276,11 @@ components:
         operationType:
           description: The type of the batch operation.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/BatchOperationTypeFilterProperty'
+            - $ref: '#/components/schemas/BatchOperationTypeFilterProperty'
         state:
           description: The state of the batch operation.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/BatchOperationStateFilterProperty'
+            - $ref: '#/components/schemas/BatchOperationStateFilterProperty'
 
     BatchOperationSearchQueryResult:
       description: The batch operation search query result.
@@ -302,9 +302,9 @@ components:
             - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
           description: Key or (Operate Legacy ID = UUID) of the batch operation.
         state:
-          $ref: 'enums.yaml#/components/schemas/BatchOperationStateEnum'
+          $ref: '#/components/schemas/BatchOperationStateEnum'
         batchOperationType:
-          $ref: 'enums.yaml#/components/schemas/BatchOperationTypeEnum'
+          $ref: '#/components/schemas/BatchOperationTypeEnum'
         startDate:
           type: string
           description: The start date of the batch operation.
@@ -401,7 +401,7 @@ components:
           type: string
           description: The state of the batch operation.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/BatchOperationItemStateFilterProperty'
+            - $ref: '#/components/schemas/BatchOperationItemStateFilterProperty'
 
     BatchOperationItemSearchQueryResult:
       type: object
@@ -418,7 +418,7 @@ components:
       type: object
       properties:
         operationType:
-          $ref: 'enums.yaml#/components/schemas/BatchOperationTypeEnum'
+          $ref: '#/components/schemas/BatchOperationTypeEnum'
         batchOperationKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
@@ -550,3 +550,143 @@ components:
       required:
         - sourceElementId
         - targetElementId
+
+    BatchOperationTypeFilterProperty:
+      description: BatchOperationTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationTypeEnum"
+        - $ref: '#/components/schemas/AdvancedBatchOperationTypeFilter'
+
+    AdvancedBatchOperationTypeFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationTypeEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    BatchOperationTypeEnum:
+      description: The type of the batch operation.
+      type: string
+      enum:
+        - CANCEL_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - MIGRATE_PROCESS_INSTANCE
+        - MODIFY_PROCESS_INSTANCE
+        - DELETE_PROCESS_INSTANCE
+        - ADD_VARIABLE
+        - UPDATE_VARIABLE
+        - DELETE_DECISION_DEFINITION
+        - DELETE_PROCESS_DEFINITION
+
+    BatchOperationStateFilterProperty:
+      description: BatchOperationStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationStateEnum"
+        - $ref: '#/components/schemas/AdvancedBatchOperationStateFilter'
+
+    AdvancedBatchOperationStateFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationStateEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationStateEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationStateEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    BatchOperationStateEnum:
+      description: The batch operation state.
+      type: string
+      enum:
+        - ACTIVE
+        - CANCELED
+        - COMPLETED
+        - CREATED
+        - FAILED
+        - PARTIALLY_COMPLETED
+        - SUSPENDED
+
+    BatchOperationItemStateFilterProperty:
+      description: BatchOperationItemStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationItemStateEnum'
+        - $ref: '#/components/schemas/AdvancedBatchOperationItemStateFilter'
+
+    AdvancedBatchOperationItemStateFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationItemStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationItemStateEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationItemStateEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchOperationItemStateEnum'
+        $like:
+          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+
+    BatchOperationItemStateEnum:
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - CANCELED
+        - FAILED

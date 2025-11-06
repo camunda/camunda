@@ -321,7 +321,7 @@ components:
       properties:
         messageSubscriptionKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/MessageSubscriptionKeyFilterProperty'
+            - $ref: '#/components/schemas/MessageSubscriptionKeyFilterProperty'
           description: The message subscription key associated with this message subscription.
         processDefinitionId:
           allOf:
@@ -517,7 +517,7 @@ components:
           description: The process instance key associated with this correlated message subscription.
         subscriptionKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/MessageSubscriptionKeyFilterProperty'
+            - $ref: '#/components/schemas/MessageSubscriptionKeyFilterProperty'
           description: The subscription key that received the message.
         tenantId:
           allOf:
@@ -567,3 +567,41 @@ components:
         - CREATED
         - DELETED
         - MIGRATED
+
+    AdvancedMessageSubscriptionKeyFilter:
+      title: Advanced filter
+      description: Advanced MessageSubscriptionKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+        $neq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+
+    MessageSubscriptionKeyFilterProperty:
+      description: MessageSubscriptionKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/MessageSubscriptionKey"
+        - $ref: '#/components/schemas/AdvancedMessageSubscriptionKeyFilter'

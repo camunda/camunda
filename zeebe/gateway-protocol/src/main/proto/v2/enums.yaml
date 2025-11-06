@@ -10,14 +10,6 @@ components:
         - DESC
       default: ASC
 
-    ProcessInstanceStateEnum:
-      description: Process instance states
-      type: string
-      enum:
-        - ACTIVE
-        - COMPLETED
-        - TERMINATED
-
     ElementInstanceStateEnum:
       description: Element states
       type: string
@@ -25,41 +17,6 @@ components:
         - ACTIVE
         - COMPLETED
         - TERMINATED
-
-    BatchOperationTypeEnum:
-      description: The type of the batch operation.
-      type: string
-      enum:
-        - CANCEL_PROCESS_INSTANCE
-        - RESOLVE_INCIDENT
-        - MIGRATE_PROCESS_INSTANCE
-        - MODIFY_PROCESS_INSTANCE
-        - DELETE_PROCESS_INSTANCE
-        - ADD_VARIABLE
-        - UPDATE_VARIABLE
-        - DELETE_DECISION_DEFINITION
-        - DELETE_PROCESS_DEFINITION
-
-    BatchOperationStateEnum:
-      description: The batch operation state.
-      type: string
-      enum:
-        - ACTIVE
-        - CANCELED
-        - COMPLETED
-        - CREATED
-        - FAILED
-        - PARTIALLY_COMPLETED
-        - SUSPENDED
-
-    BatchOperationItemStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
-      type: string
-      enum:
-        - ACTIVE
-        - COMPLETED
-        - CANCELED
-        - FAILED
 
     IncidentErrorTypeEnum:
       description: Incident error type with a defined set of values.
