@@ -230,6 +230,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
         .orElse(DEFAULT.preferRestOverGrpc());
   }
 
+  @Override
+  public int getMaxHttpConnections() {
+    return camundaClientProperties.getMaxHttpConnections();
+  }
+
   private String composeGatewayAddress() {
     final URI gatewayUrl = getGrpcAddress();
     final int port = gatewayUrl.getPort();
