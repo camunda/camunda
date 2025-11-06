@@ -18,13 +18,12 @@ import {
   createUser,
 } from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {getIncidentErrorName} from 'modules/utils/incidents';
 
 const firstIncidentErrorName = getIncidentErrorName(firstIncident.errorType);
 const secondIncidentErrorName = getIncidentErrorName(secondIncident.errorType);
 
-describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
+describe('IncidentsTable', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(
       createInstance({permissions: ['UPDATE_PROCESS_INSTANCE']}),
@@ -223,6 +222,33 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
         description: `View root cause instance ${firstIncident.processDefinitionName} - ${firstIncident.processInstanceKey}`,
       }),
     ).toBeInTheDocument();
+  });
+
+  it('should provide a retry operation for incidents in the open process instance', async () => {
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[
+          {...firstIncident, processInstanceKey: '1'},
+          {...secondIncident, processInstanceKey: '2'},
+        ]}
+      />,
+      {wrapper: Wrapper},
+    );
+    let firstIncidentRow = within(
+      screen.getByRole('row', {name: new RegExp(firstIncidentErrorName)}),
+    );
+    let secondIncidentRow = within(
+      screen.getByRole('row', {name: new RegExp(secondIncidentErrorName)}),
+    );
+
+    expect(
+      await firstIncidentRow.findByRole('button', {name: 'Retry Incident'}),
+    ).toBeInTheDocument();
+    expect(
+      secondIncidentRow.queryByRole('button', {name: 'Retry Incident'}),
+    ).not.toBeInTheDocument();
   });
 
   it('should show a more button for long error messages', () => {
