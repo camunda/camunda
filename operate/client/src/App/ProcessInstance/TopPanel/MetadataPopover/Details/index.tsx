@@ -6,59 +6,52 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
 import {Stack} from '@carbon/react';
+import {useState} from 'react';
 import isNil from 'lodash/isNil';
-import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
-import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {Header} from '../Header';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
-import {buildMetadata} from './buildMetadata';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {type V2MetaDataDto} from '../types';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {DetailsModal} from './DetailsModal';
 
 type Props = {
-  metaData: MetaDataDto;
-  flowNodeId: string;
+  metaData: V2MetaDataDto;
+  elementId: string;
+  businessObject?: BusinessObject | null;
 };
 
 const NULL_METADATA = {
-  flowNodeInstanceId: null,
+  elementInstanceKey: null,
   startDate: null,
   endDate: null,
   calledProcessInstanceId: null,
   calledProcessDefinitionName: null,
   calledDecisionInstanceId: null,
   calledDecisionDefinitionName: null,
-  flowNodeType: null,
+  type: null,
   jobRetries: null,
 } as const;
 
-const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
+const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const {data} = useProcessInstanceXml({
-    processDefinitionKey,
-  });
-  const businessObject = data?.businessObjects[flowNodeId];
+  const elementName = businessObject?.name || elementId;
 
-  const flowNodeName = businessObject?.name || flowNodeId;
-
-  const {instanceMetadata, incident} = metaData;
+  const {instanceMetadata} = metaData;
   const {
-    flowNodeInstanceId,
+    elementInstanceKey,
     startDate,
     endDate,
     calledProcessInstanceId,
     calledProcessDefinitionName,
     calledDecisionInstanceId,
     calledDecisionDefinitionName,
-    flowNodeType,
+    type,
     jobRetries,
   } = instanceMetadata ?? NULL_METADATA;
 
@@ -67,8 +60,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
       <Header
         title="Details"
         link={
-          !isNil(window.clientConfig?.tasklistUrl) &&
-          flowNodeType === 'USER_TASK'
+          !isNil(window.clientConfig?.tasklistUrl) && type === 'USER_TASK'
             ? {
                 href: window.clientConfig!.tasklistUrl,
                 label: 'Open Tasklist',
@@ -93,13 +85,13 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
       />
       <Stack gap={5}>
         <Stack gap={3} as="dl">
-          <SummaryDataKey>Flow Node Instance Key</SummaryDataKey>
-          <SummaryDataValue>{flowNodeInstanceId}</SummaryDataValue>
+          <SummaryDataKey>Element Instance Key</SummaryDataKey>
+          <SummaryDataValue>{elementInstanceKey}</SummaryDataValue>
         </Stack>
         <Stack gap={3} as="dl">
           <SummaryDataKey>Execution Duration</SummaryDataKey>
           <SummaryDataValue>
-            {getExecutionDuration(startDate!, endDate)}
+            {startDate ? getExecutionDuration(startDate, endDate) : '—'}
           </SummaryDataValue>
         </Stack>
 
@@ -113,7 +105,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
         )}
 
         {businessObject?.$type === 'bpmn:CallActivity' &&
-          flowNodeType !== 'MULTI_INSTANCE_BODY' && (
+          type !== 'MULTI_INSTANCE_BODY' && (
             <Stack gap={3} as="dl">
               <SummaryDataKey>Called Process Instance</SummaryDataKey>
               <SummaryDataValue data-testid="called-process-instance">
@@ -151,13 +143,15 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
           </Stack>
         )}
       </Stack>
-      <JSONEditorModal
-        isVisible={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        title={`Flow Node "${flowNodeName}" ${flowNodeInstanceId} Metadata`}
-        value={buildMetadata(instanceMetadata, incident)}
-        readOnly
-      />
+      {elementInstanceKey !== null && instanceMetadata !== null && (
+        <DetailsModal
+          elementInstanceKey={elementInstanceKey}
+          elementName={elementName}
+          instanceMetadata={instanceMetadata}
+          isVisible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+        />
+      )}
     </>
   );
 };

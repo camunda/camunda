@@ -52,10 +52,6 @@ type V2InstanceMetadata = {
 
 type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata' | 'incident'> & {
   instanceMetadata: V2InstanceMetadata | null;
-  incident: {
-    errorType: {id: string; name: string};
-    errorMessage: string;
-  } | null;
 };
 
 type UserTaskSubset = Pick<
