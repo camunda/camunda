@@ -74,7 +74,7 @@ public class RdbmsService {
   private final UsageMetricTUDbReader usageMetricTUDbReader;
   private final MessageSubscriptionDbReader messageSubscriptionReader;
   private final ProcessDefinitionMessageSubscriptionStatisticsDbReader
-      messageSubscriptionProcessDefinitionStatisticsReader;
+      processDefinitionMessageSubscriptionStatisticsDbReader;
   private final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader;
 
   public RdbmsService(
@@ -107,7 +107,7 @@ public class RdbmsService {
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
       final ProcessDefinitionMessageSubscriptionStatisticsDbReader
-          messageSubscriptionProcessDefinitionStatisticsReader,
+          processDefinitionMessageSubscriptionStatisticsDbReader,
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
@@ -137,8 +137,8 @@ public class RdbmsService {
     this.usageMetricReader = usageMetricReader;
     this.usageMetricTUDbReader = usageMetricTUDbReader;
     this.messageSubscriptionReader = messageSubscriptionReader;
-    this.messageSubscriptionProcessDefinitionStatisticsReader =
-        messageSubscriptionProcessDefinitionStatisticsReader;
+    this.processDefinitionMessageSubscriptionStatisticsDbReader =
+        processDefinitionMessageSubscriptionStatisticsDbReader;
     this.correlatedMessageSubscriptionReader = correlatedMessageSubscriptionReader;
   }
 
@@ -251,8 +251,8 @@ public class RdbmsService {
   }
 
   public ProcessDefinitionMessageSubscriptionStatisticsDbReader
-      getMessageSubscriptionProcessDefinitionStatisticsReader() {
-    return messageSubscriptionProcessDefinitionStatisticsReader;
+  getProcessDefinitionMessageSubscriptionStatisticsDbReader() {
+    return processDefinitionMessageSubscriptionStatisticsDbReader;
   }
 
   public CorrelatedMessageSubscriptionDbReader getCorrelatedMessageSubscriptionReader() {

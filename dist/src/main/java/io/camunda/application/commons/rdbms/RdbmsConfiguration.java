@@ -220,8 +220,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessDefinitionMessageSubscriptionStatisticsReader
-      messageSubscriptionProcessDefinitionStatisticsReader(
+  public ProcessDefinitionMessageSubscriptionStatisticsDbReader
+      processDefinitionMessageSubscriptionStatisticsDbReader(
           final MessageSubscriptionMapper messageSubscriptionMapper) {
     return new ProcessDefinitionMessageSubscriptionStatisticsDbReader(messageSubscriptionMapper);
   }
@@ -261,6 +261,11 @@ public class RdbmsConfiguration {
   @Bean
   public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader() {
     return new ProcessDefinitionInstanceStatisticsDbReader();
+  }
+
+  @Bean
+  public ProcessDefinitionMessageSubscriptionStatisticsReader processDefinitionMessageSubscriptionStatisticsReader(){
+    return new ProcessDefinitionMessageSubscriptionStatisticsDbReader();
   }
 
   @Bean
@@ -354,7 +359,7 @@ public class RdbmsConfiguration {
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
-      final ProcessDefinitionMessageSubscriptionStatisticsReader
+      final ProcessDefinitionMessageSubscriptionStatisticsDbReader
           processDefinitionMessageSubscriptionStatisticsReader,
       final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
     return new RdbmsService(
@@ -386,8 +391,7 @@ public class RdbmsConfiguration {
         usageMetricReader,
         usageMetricTUDbReader,
         messageSubscriptionReader,
-        (ProcessDefinitionMessageSubscriptionStatisticsDbReader)
-            processDefinitionMessageSubscriptionStatisticsReader,
+        processDefinitionMessageSubscriptionStatisticsReader,
         correlatedMessageSubscriptionReader);
   }
 
