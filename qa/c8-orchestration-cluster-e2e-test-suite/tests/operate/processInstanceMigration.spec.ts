@@ -10,7 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
+import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 
 type ProcessDeployment = {
@@ -34,10 +34,15 @@ test.beforeAll(async () => {
     version: 1,
   };
 
-  await createInstances(processV1.bpmnProcessId, processV1.version, 10, {
-    key1: 'myFirstCorrelationKey',
-    key2: 'mySecondCorrelationKey',
-  });
+  await Promise.all(
+    [...new Array(10)].map((_, index) =>
+      createInstances(processV1.bpmnProcessId, processV1.version, 1, {
+        key1: 'myFirstCorrelationKey',
+        key2: 'mySecondCorrelationKey',
+        key3: `myCorrelationKey${index}`,
+      }),
+    ),
+  );
 
   await deploy(['./resources/orderProcessMigration_v_2.bpmn']);
 
@@ -53,11 +58,15 @@ test.beforeAll(async () => {
     version: 3,
   };
 
+  await sleep(2000);
+
   initialData = {
     processV1,
     processV2,
     processV3,
   };
+
+  await sleep(2000);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -96,23 +105,17 @@ test.describe.serial('Process Instance Migration', () => {
     await test.step('Select first 6 process instances for migration', async () => {
       await operateProcessesPage.selectProcessInstances(6);
 
-      await operateProcessesPage.clickMigrateButton();
-      await operateProcessesMigrationPage.migrateProcessInstance();
-
-      await expect(page).toHaveURL(/.*migrate.*/);
+      await operateProcessesPage.startMigration();
     });
 
-    await test.step('Verify target process is preselected with auto-mapping', async () => {
-      const targetProcessCombobox = page.getByRole('combobox', {
-        name: 'Target',
-        exact: true,
-      });
-      await expect(targetProcessCombobox).toHaveValue(targetBpmnProcessId);
+    await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
+      await expect(
+        operateProcessesMigrationPage.targetProcessCombobox,
+      ).toHaveValue(targetBpmnProcessId);
 
-      const targetVersionDropdown = page.getByRole('combobox', {
-        name: 'Target Version',
-      });
-      await expect(targetVersionDropdown).toHaveText(targetVersion, {
+      await expect(
+        operateProcessesMigrationPage.targetVersionDropdown,
+      ).toHaveText(targetVersion, {
         useInnerText: true,
       });
 
@@ -122,80 +125,35 @@ test.describe.serial('Process Instance Migration', () => {
       await expect(
         page.getByLabel('target element for ship articles'),
       ).toHaveValue('shipArticles');
-    });
 
-    await test.step('Proceed to summary and verify migration details', async () => {
-      const nextButton = page.getByRole('button', {name: 'next'});
-      await nextButton.click();
-
-      const summaryNotification = page.getByRole('main').getByRole('status');
-      await expect(summaryNotification).toContainText(
-        `You are about to migrate 6 process instances from the process definition: ${sourceBpmnProcessId} - version ${sourceVersion} to the process definition: ${targetBpmnProcessId} - version ${targetVersion}`,
-      );
-    });
-
-    await test.step('Confirm migration and type MIGRATE', async () => {
-      const confirmButton = page.getByRole('button', {name: 'confirm'});
-      await confirmButton.click();
-
-      const migrationConfirmationModal = page.getByRole('dialog', {
-        name: 'migration confirmation',
-      });
-      await expect(migrationConfirmationModal).toBeVisible();
-      await migrationConfirmationModal.getByRole('textbox').fill('MIGRATE');
-      await migrationConfirmationModal
-        .getByRole('button', {name: 'confirm'})
-        .click();
-
-      await sleep(2000);
+      await operateProcessesMigrationPage.completeProcessInstanceMigration();
     });
 
     await test.step('Verify migration operation is created and completes', async () => {
-      const operationsPanel = page.getByRole('complementary', {
-        name: 'operations panel',
-      });
-      await expect(operationsPanel).toBeVisible({timeout: 10000});
-
-      const operationsList = operationsPanel.getByRole('list');
-      const migrateOperationEntry = operationsList
-        .getByRole('listitem')
-        .first();
-
-      await expect(migrateOperationEntry).toContainText('Migrate', {
-        timeout: 10000,
+      await expect(operateProcessesPage.operationsList).toBeVisible({
+        timeout: 30000,
       });
 
       await expect(
-        migrateOperationEntry.getByRole('progressbar'),
+        operateProcessesPage.latestOperationProgressBar,
       ).not.toBeVisible({timeout: 120000});
-
-      await expect(
-        page
-          .getByRole('combobox', {name: 'name'})
-          .filter({hasText: targetBpmnProcessId}),
-      ).toBeVisible({timeout: 10000});
     });
 
     await test.step('Verify 6 instances migrated to target version', async () => {
-      const operationsPanel = page.getByRole('complementary', {
-        name: 'operations panel',
+      await expect(operateProcessesPage.operationSuccessMessage).toBeVisible({
+        timeout: 120000,
       });
-      const operationsList = operationsPanel.getByRole('list');
-      const migrateOperationEntry = operationsList
-        .getByRole('listitem')
-        .first();
 
-      await migrateOperationEntry.getByRole('link').click();
-      await sleep(2000);
+      await operateProcessesPage.clickLatestOperationLink();
 
+      await validateURL(page, /operationId=/);
       await expect(page.getByText('6 results')).toBeVisible({
         timeout: 30000,
       });
 
-      const dataList = page.getByTestId('data-list');
-      await expect(
-        dataList.getByRole('cell', {name: targetVersion, exact: true}),
-      ).toHaveCount(6, {timeout: 30000});
+      await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
+        timeout: 30000,
+      });
     });
   });
 
@@ -207,6 +165,7 @@ test.describe.serial('Process Instance Migration', () => {
   test('Manual mapping migration from V2 to V3', async ({
     page,
     operateFiltersPanelPage,
+    operateProcessesPage,
   }) => {
     test.slow();
 
@@ -310,42 +269,28 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify migration operation completes', async () => {
-      const operationsPanel = page.getByRole('complementary', {
-        name: 'operations panel',
-      });
-      const operationsList = operationsPanel.getByRole('list');
-      const migrateOperationEntry = operationsList
-        .getByRole('listitem')
-        .first();
-
-      await expect(migrateOperationEntry).toContainText('Migrate', {
-        timeout: 10000,
-      });
+      await expect(operateProcessesPage.latestOperationEntry).toContainText(
+        'Migrate',
+        {
+          timeout: 10000,
+        },
+      );
 
       await expect(
-        migrateOperationEntry.getByRole('progressbar'),
+        operateProcessesPage.latestOperationEntry.getByRole('progressbar'),
       ).not.toBeVisible({timeout: 120000});
     });
 
     await test.step('Verify 3 instances migrated to target version', async () => {
-      const operationsPanel = page.getByRole('complementary', {
-        name: 'operations panel',
-      });
-      const operationsList = operationsPanel.getByRole('list');
-      const migrateOperationEntry = operationsList
-        .getByRole('listitem')
-        .first();
-
-      await migrateOperationEntry.getByRole('link').click();
+      await operateProcessesPage.clickLatestOperationLink();
       await sleep(2000);
 
       await expect(page.getByText(/3 results/i)).toBeVisible({
         timeout: 30000,
       });
 
-      const dataList = page.getByTestId('data-list');
       await expect(
-        dataList.getByRole('cell', {name: targetVersion, exact: true}),
+        operateProcessesPage.getVersionCells(targetVersion),
       ).toHaveCount(3, {timeout: 30000});
     });
   });

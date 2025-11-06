@@ -7,7 +7,6 @@
  */
 
 import {expect} from '@playwright/test';
-import {waitForAssertion} from 'utils/waitForAssertion';
 import {test} from 'fixtures';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
@@ -125,11 +124,7 @@ test.describe('task details page', () => {
     );
   });
 
-  test('assign and unassign task', async ({
-    page,
-    taskPanelPage,
-    taskDetailsPage,
-  }) => {
+  test('assign and unassign task', async ({taskPanelPage, taskDetailsPage}) => {
     await taskPanelPage.openTask('usertask_to_be_completed');
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible({
