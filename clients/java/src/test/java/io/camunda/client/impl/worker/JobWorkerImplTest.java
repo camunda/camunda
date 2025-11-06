@@ -27,7 +27,7 @@ import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.client.impl.util.EnvironmentExtension;
-import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -217,7 +217,7 @@ public final class JobWorkerImplTest {
             new CamundaClientBuilderImpl(),
             channel,
             GatewayGrpc.newStub(channel),
-            new ExecutorResource(executor, true))) {
+            new JobWorkerExecutors(executor, true))) {
       try (final JobWorker jobWorker =
           client
               .newWorker()
@@ -257,7 +257,7 @@ public final class JobWorkerImplTest {
             new CamundaClientBuilderImpl(),
             channel,
             GatewayGrpc.newStub(channel),
-            new ExecutorResource(closedExecutor, true))) {
+            new JobWorkerExecutors(closedExecutor, true))) {
 
       final JobWorker jobWorker =
           client
@@ -287,8 +287,8 @@ public final class JobWorkerImplTest {
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     final ExecutorService jobHandlingExecutor =
         Mockito.spy(Executors.newSingleThreadExecutor(r -> new Thread(r, "test-executor-")));
-    final ExecutorResource executorResource =
-        new ExecutorResource(scheduler, true, jobHandlingExecutor, true);
+    final JobWorkerExecutors executorResource =
+        new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true);
 
     try (final CamundaClient client =
         new CamundaClientImpl(

@@ -311,7 +311,7 @@ import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatist
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
 import io.camunda.client.impl.util.AddressUtil;
-import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
@@ -343,7 +343,7 @@ public final class CamundaClientImpl implements CamundaClient {
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
-  private final ExecutorResource executorResource;
+  private final JobWorkerExecutors executorResource;
   private final List<Closeable> closeables = new CopyOnWriteArrayList<>();
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
@@ -381,7 +381,7 @@ public final class CamundaClientImpl implements CamundaClient {
       final CamundaClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
-      final ExecutorResource executorResource) {
+      final JobWorkerExecutors executorResource) {
     this(config, channel, gatewayStub, executorResource, buildHttpClient(config));
   }
 
@@ -389,7 +389,7 @@ public final class CamundaClientImpl implements CamundaClient {
       final CamundaClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
-      final ExecutorResource executorResource,
+      final JobWorkerExecutors executorResource,
       final HttpClient httpClient) {
     this.config = config;
     jsonMapper = config.getJsonMapper();
@@ -506,7 +506,7 @@ public final class CamundaClientImpl implements CamundaClient {
     }
   }
 
-  private static ExecutorResource buildExecutorService(
+  private static JobWorkerExecutors buildExecutorService(
       final CamundaClientConfiguration configuration) {
 
     final ScheduledExecutorService scheduledExecutor;
@@ -532,7 +532,7 @@ public final class CamundaClientImpl implements CamundaClient {
       ownsJobHandlingExecutor = true;
     }
 
-    return new ExecutorResource(
+    return new JobWorkerExecutors(
         scheduledExecutor, ownsScheduledExecutor, jobHandlingExecutor, ownsJobHandlingExecutor);
   }
 

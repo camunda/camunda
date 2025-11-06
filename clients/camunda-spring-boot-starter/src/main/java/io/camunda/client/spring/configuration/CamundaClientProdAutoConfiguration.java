@@ -20,7 +20,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaClientImpl;
-import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
@@ -87,8 +87,8 @@ public class CamundaClientProdAutoConfiguration {
       final ManagedChannel managedChannel = CamundaClientImpl.buildChannel(configuration);
       final GatewayGrpc.GatewayStub gatewayStub =
           CamundaClientImpl.buildGatewayStub(managedChannel, configuration);
-      final ExecutorResource executorResource =
-          new ExecutorResource(
+      final JobWorkerExecutors executorResource =
+          new JobWorkerExecutors(
               jobWorkerExecutor,
               configuration.ownsJobWorkerExecutor(),
               jobHandlingExecutor == null ? jobWorkerExecutor : jobHandlingExecutor,

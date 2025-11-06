@@ -22,12 +22,22 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 /**
- * Represents a shared executor service which may or may not be owned by whoever created it. If it
- * is owned, then close will shut down the service. Otherwise it's a no-op.
+ * Executor services to be used by the job worker framework.
+ *
+ * <p>{@link JobWorkerExecutors#scheduledExecutor} is dedicated for scheduled tasks such as job
+ * polling or stream connection management.
+ *
+ * <p>{@link JobWorkerExecutors#jobHandlingExecutor} is a dedicated executor for job handling only.
+ *
+ * <p>Each executorService may or may not be owned by the Camunda Client Job framework, indicated by
+ * {@link JobWorkerExecutors#ownsScheduledExecutorResource} for the scheduledExecutor or by the
+ * {@link JobWorkerExecutors#ownsJobHandlingExecutor} flag for the jobHandlingExecutor. If flagged
+ * as owned, then {@link JobWorkerExecutors#close()} will shut down the service. Otherwise it's a
+ * no-op.
  */
-public final class ExecutorResource implements AutoCloseable {
+public final class JobWorkerExecutors implements AutoCloseable {
 
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ExecutorResource.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(JobWorkerExecutors.class);
 
   private final ScheduledExecutorService scheduledExecutor;
   private final boolean ownsScheduledExecutorResource;
@@ -35,11 +45,11 @@ public final class ExecutorResource implements AutoCloseable {
   private final ExecutorService jobHandlingExecutor;
   private final boolean ownsJobHandlingExecutor;
 
-  public ExecutorResource(final ScheduledExecutorService executor, final boolean ownsResource) {
+  public JobWorkerExecutors(final ScheduledExecutorService executor, final boolean ownsResource) {
     this(executor, ownsResource, null, false);
   }
 
-  public ExecutorResource(
+  public JobWorkerExecutors(
       final ScheduledExecutorService executor,
       final boolean ownsResource,
       final ExecutorService jobHandlingExecutor,
