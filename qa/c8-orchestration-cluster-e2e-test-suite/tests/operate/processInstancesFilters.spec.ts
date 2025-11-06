@@ -182,7 +182,6 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
 
-    // TODO discuss problem with parallel test execution and variable/process instance keys
     await test.step('Filter by variable and assert results', async ({ }) => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
@@ -255,14 +254,13 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.resetFiltersButton.click();
 
       await operateFiltersPanelPage.selectProcess('Process With Multiple Versions');
-      await operateProcessesPage.processInstancesTable.getByTestId('cell-processName').first().click();
-      // await operateFiltersPanelPage.processVersionFilter.click();
-      // await operateFiltersPanelPage.processVersionFilter.first().click();
 
-      //await operateFiltersPanelPage.selectVersion('2');
 
+      await operateFiltersPanelPage.selectVersion('2');
       // const currentVersion = await operateFiltersPanelPage.processVersionFilter.innerText();
-
+      
+      await sleep(1_000); // wait for filter to be applied
+      await operateProcessesPage.selectFirstProcessCheckbox();
 
     })
 

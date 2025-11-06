@@ -161,6 +161,11 @@ class OperateProcessesPage {
   async clickProcessNameSortButton(): Promise<void> {
     await this.processNameSortButton.click();
   }
+
+  async selectFirstProcessCheckbox(): Promise<void> {
+    const id = await this.page.getByRole('checkbox', { name: 'Select row' }).first().getAttribute('id');
+    await this.page.locator(`label[for="${id}"]`).click();
+  }
 }
 
 export {OperateProcessesPage};
