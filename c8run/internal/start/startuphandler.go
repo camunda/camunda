@@ -44,11 +44,6 @@ func printSystemInformation(javaVersion, javaHome, javaOpts string, usingElastic
 	fmt.Println("")
 }
 
-func buildElasticsearchHealthEndpoint(baseURL string) string {
-	trimmed := strings.TrimRight(baseURL, "/")
-	return trimmed + "/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
-}
-
 func getJavaVersion(javaBinary string) (string, error) {
 	javaVersionCmd := exec.Command(javaBinary, "JavaVersion")
 	var out strings.Builder
@@ -193,9 +188,8 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	settings := state.Settings
 	processInfo := state.ProcessInfo
 
-	// Check if Elasticsearch should be started (only when we manage the embedded instance)
-	shouldStartElasticsearch := settings.ManagesElasticsearchProcess()
-	elasticsearchURL := settings.ElasticsearchURL()
+	// Check if Elasticsearch should be started (only if secondary-storage.type is elasticsearch)
+	shouldStartElasticsearch := !settings.DisableElasticsearch
 
 	// Resolve JAVA_HOME and javaBinary
 	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
@@ -209,7 +203,7 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		os.Exit(1)
 	}
 
-	err = overrides.SetEnvVars(javaHome, settings)
+	err = overrides.SetEnvVars(javaHome, shouldStartElasticsearch)
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
@@ -242,9 +236,16 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
+	if shouldStartElasticsearch && settings.SecondaryStorageType != "" && !strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+		shouldStartElasticsearch = false
+		log.Info().
+			Str("secondaryStorage.type", settings.SecondaryStorageType).
+			Msg("Skipping Elasticsearch startup because configuration selects a different secondary storage backend")
+	}
+
 	printSystemInformation(javaVersion, javaHome, javaOpts, shouldStartElasticsearch)
-	elasticHealthEndpoint := buildElasticsearchHealthEndpoint(elasticsearchURL)
 	if shouldStartElasticsearch {
+		elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
 		s.ProcessHandler.AttemptToStartProcess(processInfo.Elasticsearch.PidPath, "Elasticsearch", func() {
 			elasticsearchCmd := c8.ElasticsearchCmd(ctx, processInfo.Elasticsearch.Version, parentDir)
 			elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
@@ -257,15 +258,6 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 		}, func() error {
 			return health.QueryElasticsearch(ctx, "Elasticsearch", 12, elasticHealthEndpoint)
 		}, stop)
-	} else if settings.UsesElasticsearch() {
-		log.Info().
-			Str("elasticsearch.url", elasticsearchURL).
-			Msg("Using externally managed Elasticsearch; skipping bundled instance startup")
-		if err := health.QueryElasticsearch(ctx, "Elasticsearch", 12, elasticHealthEndpoint); err != nil {
-			log.Err(err).Msg("Elasticsearch did not respond as healthy")
-			stop()
-			return
-		}
 	}
 
 	var extraArgs string

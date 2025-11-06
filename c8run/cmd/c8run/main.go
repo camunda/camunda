@@ -179,6 +179,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
+	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", true, "Do not start or stop Elasticsearch (disabling will enable H2)")
 	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
@@ -192,6 +193,7 @@ func createOperateUrl(settings *types.C8RunSettings) string {
 
 func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
+	stopFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
 	stopFlagSet.BoolVar(&settings.Docker, "docker", false, "Stop docker-compose distribution of camunda.")
 	return stopFlagSet
 }
@@ -260,42 +262,33 @@ func initialize(baseCommand string, baseDir string) *types.State {
 }
 
 func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings) {
-	settings.SecondaryStorageURL = types.DefaultElasticsearchURL
 	configPaths := resolveConfigPaths(baseDir, settings.Config)
 
 	var secondaryType string
-	var elasticsearchURL string
 	var configSource string
 	for _, path := range configPaths {
 		// We only expect one active config; use the first file where the type is defined
-		cfg, err := detectSecondaryStorageConfig(path)
+		typeFromConfig, err := detectSecondaryStorageType(path)
 		if err != nil {
 			log.Debug().Err(err).Str("config", path).Msg("Unable to read configuration for secondary storage type")
 			continue
 		}
-		if elasticsearchURL == "" && strings.TrimSpace(cfg.ElasticsearchURL) != "" {
-			elasticsearchURL = cfg.ElasticsearchURL
-		}
-		if cfg.Type != "" {
-			secondaryType = cfg.Type
-			if strings.TrimSpace(cfg.ElasticsearchURL) != "" {
-				elasticsearchURL = cfg.ElasticsearchURL
-			}
+		if typeFromConfig != "" {
+			secondaryType = typeFromConfig
 			configSource = path
 			break
 		}
 	}
 
 	settings.SecondaryStorageType = strings.TrimSpace(secondaryType)
-	if trimmedURL := strings.TrimSpace(elasticsearchURL); trimmedURL != "" {
-		settings.SecondaryStorageURL = trimmedURL
-	}
 	if settings.SecondaryStorageType == "" {
-		// Nothing configured, keep the default of using Elasticsearch.
+		// Nothing configured, keep whatever defaults were provided via CLI/env
 		return
 	}
 
-	if !settings.UsesElasticsearch() {
+	// Any non-elasticsearch backend means we keep Elasticsearch disabled (default true)
+	if !strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+		settings.DisableElasticsearch = true
 		event := log.Info().
 			Str("secondaryStorage.type", settings.SecondaryStorageType)
 		if configSource != "" {
@@ -305,17 +298,14 @@ func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings
 		return
 	}
 
+	// Explicit elasticsearch configuration flips the flag so ES starts alongside the stack
+	settings.DisableElasticsearch = false
 	event := log.Debug().
-		Str("secondaryStorage.type", settings.SecondaryStorageType).
-		Str("elasticsearch.url", settings.ElasticsearchURL())
+		Str("secondaryStorage.type", settings.SecondaryStorageType)
 	if configSource != "" {
 		event = event.Str("config", configSource)
 	}
-	if settings.ManagesElasticsearchProcess() {
-		event.Msg("Secondary storage type is Elasticsearch; using bundled Elasticsearch instance")
-		return
-	}
-	event.Msg("Secondary storage type is Elasticsearch; using externally managed Elasticsearch instance")
+	event.Msg("Secondary storage type is Elasticsearch; keeping default behavior")
 }
 
 func resolveConfigPaths(baseDir string, userConfig string) []string {
@@ -334,75 +324,62 @@ func resolveConfigPaths(baseDir string, userConfig string) []string {
 	return paths
 }
 
-type secondaryStorageConfig struct {
-	Type             string
-	ElasticsearchURL string
-}
-
-func detectSecondaryStorageConfig(path string) (secondaryStorageConfig, error) {
-	var cfg secondaryStorageConfig
+func detectSecondaryStorageType(path string) (string, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return cfg, nil
+			return "", nil
 		}
-		return cfg, err
+		return "", err
 	}
 	if info.IsDir() {
-		return detectSecondaryStorageConfig(filepath.Join(path, "application.yaml"))
+		return detectSecondaryStorageType(filepath.Join(path, "application.yaml"))
 	}
 
 	content, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return cfg, nil
+			return "", nil
 		}
-		return cfg, err
+		return "", err
 	}
 
 	ext := strings.ToLower(filepath.Ext(path))
 	if ext != ".yaml" && ext != ".yml" {
-		return cfg, nil
+		return "", nil
 	}
-	return parseSecondaryStorageConfigFromYAML(content)
+	return parseSecondaryStorageTypeFromYAML(content)
 }
 
-func parseSecondaryStorageConfigFromYAML(content []byte) (secondaryStorageConfig, error) {
-	var cfg secondaryStorageConfig
+func parseSecondaryStorageTypeFromYAML(content []byte) (string, error) {
 	if len(bytes.TrimSpace(content)) == 0 {
-		return cfg, nil
+		return "", nil
 	}
 
 	var root map[string]any
 	if err := yaml.Unmarshal(content, &root); err != nil {
-		return cfg, err
+		return "", err
 	}
-	return extractSecondaryStorageConfigFromMap(root), nil
+	return extractSecondaryStorageTypeFromMap(root), nil
 }
 
-func extractSecondaryStorageConfigFromMap(root map[string]any) secondaryStorageConfig {
-	var cfg secondaryStorageConfig
+func extractSecondaryStorageTypeFromMap(root map[string]any) string {
 	camunda, ok := root["camunda"].(map[string]any)
 	if !ok {
-		return cfg
+		return ""
 	}
 	data, ok := camunda["data"].(map[string]any)
 	if !ok {
-		return cfg
+		return ""
 	}
 	secondary, ok := data["secondary-storage"].(map[string]any)
 	if !ok {
-		return cfg
+		return ""
 	}
 	if typ, ok := secondary["type"].(string); ok {
-		cfg.Type = typ
+		return typ
 	}
-	if esSection, ok := secondary["elasticsearch"].(map[string]any); ok {
-		if url, ok := esSection["url"].(string); ok {
-			cfg.ElasticsearchURL = url
-		}
-	}
-	return cfg
+	return ""
 }
 
 func main() {
