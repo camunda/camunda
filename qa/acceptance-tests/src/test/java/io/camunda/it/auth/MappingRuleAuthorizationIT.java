@@ -77,6 +77,7 @@ class MappingRuleAuthorizationIT {
       new TestUser(
           UPDATER, DEFAULT_PASSWORD, List.of(new Permissions(MAPPING_RULE, UPDATE, List.of("*"))));
 
+  @Test
   void searchShouldReturnAuthorizedMappingRules(
       @Authenticated(RESTRICTED) final CamundaClient userClient,
       @Authenticated(ADMIN) final CamundaClient adminClient) {
