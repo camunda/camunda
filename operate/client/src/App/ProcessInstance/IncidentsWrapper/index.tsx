@@ -34,8 +34,8 @@ import {useEffect} from 'react';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
-import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
-import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
+import {useGetIncidentsByProcessInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByProcessInstancePaginated';
+import {useGetIncidentsByElementInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByElementInstancePaginated';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
 type Props = {
@@ -220,11 +220,14 @@ const IncidentsByProcessInstance: React.FC<
     incidentsPanelStore.state.selectedErrorTypes,
   );
 
-  const result = useGetIncidentsByProcessInstance(props.processInstanceKey, {
-    enabled: props.enableQuery,
-    enablePeriodicRefetch: props.enablePeriodicRefetch,
-    payload: {sort, filter},
-  });
+  const result = useGetIncidentsByProcessInstancePaginated(
+    props.processInstanceKey,
+    {
+      enabled: props.enableQuery,
+      enablePeriodicRefetch: props.enablePeriodicRefetch,
+      payload: {sort, filter},
+    },
+  );
 
   return props.children(mapQueryResultToIncidentsHandle(result));
 });
@@ -237,11 +240,14 @@ const IncidentsByElementInstance: React.FC<
     incidentsPanelStore.state.selectedErrorTypes,
   );
 
-  const result = useGetIncidentsByElementInstance(props.elementInstanceKey, {
-    enabled: props.enableQuery,
-    enablePeriodicRefetch: props.enablePeriodicRefetch,
-    payload: {sort, filter},
-  });
+  const result = useGetIncidentsByElementInstancePaginated(
+    props.elementInstanceKey,
+    {
+      enabled: props.enableQuery,
+      enablePeriodicRefetch: props.enablePeriodicRefetch,
+      payload: {sort, filter},
+    },
+  );
 
   return props.children(mapQueryResultToIncidentsHandle(result));
 };

@@ -60,21 +60,30 @@ const queryKeys = {
       'processInstanceIncidentsCount',
       processInstanceKey,
     ],
-    searchByProcessInstanceKey: (
-      processInstanceKey: string,
-      payload?: QueryProcessInstanceIncidentsRequestBody,
-    ) => [
-      queryKeys.incidents.search()[0],
-      'searchByProcessInstanceKey',
-      processInstanceKey,
-      payload,
-    ],
     searchByElementInstanceKey: (
       elementInstanceKey: string,
       payload?: QueryElementInstanceIncidentsRequestBody,
     ) => [
       queryKeys.incidents.search()[0],
       'searchByElementInstanceKey',
+      elementInstanceKey,
+      payload,
+    ],
+    searchByProcessInstanceKeyPaginated: (
+      processInstanceKey: string,
+      payload?: QueryProcessInstanceIncidentsRequestBody,
+    ) => [
+      queryKeys.incidents.search()[0],
+      'searchByProcessInstanceKeyPaginated',
+      processInstanceKey,
+      payload,
+    ],
+    searchByElementInstanceKeyPaginated: (
+      elementInstanceKey: string,
+      payload?: QueryElementInstanceIncidentsRequestBody,
+    ) => [
+      queryKeys.incidents.search()[0],
+      'searchByElementInstanceKeyPaginated',
       elementInstanceKey,
       payload,
     ],

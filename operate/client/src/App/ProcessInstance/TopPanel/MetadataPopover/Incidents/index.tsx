@@ -27,10 +27,14 @@ const Incidents: React.FC<Props> = ({
   elementId,
 }) => {
   const {data, isLoading: isSearchingIncidents} =
-    useGetIncidentsByElementInstance(elementInstanceKey);
-
-  const totalIncidents = data?.pages.at(0)?.page.totalItems ?? 0;
-  const singleIncident = data?.pages.at(0)?.items.at(0) ?? null;
+    useGetIncidentsByElementInstance(elementInstanceKey, {
+      select: (data) => ({
+        totalIncidents: data.page.totalItems,
+        singleIncident: data.items.at(0) ?? null,
+      }),
+    });
+  const totalIncidents = data?.totalIncidents ?? 0;
+  const singleIncident = data?.singleIncident;
 
   return (
     <>

@@ -10,11 +10,7 @@ import type {
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstanceIncidentsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {
-  useInfiniteQuery,
-  useQuery,
-  type InfiniteData,
-} from '@tanstack/react-query';
+import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
 import {searchIncidentsByProcessInstance} from 'modules/api/v2/incidents/searchIncidentsByProcessInstance';
 import {queryKeys} from '../queryKeys';
 
@@ -27,7 +23,7 @@ type QueryOptions<T> = {
   select?: (data: InfiniteData<QueryProcessInstanceIncidentsResponseBody>) => T;
 };
 
-const useGetIncidentsByProcessInstance = <
+const useGetIncidentsByProcessInstancePaginated = <
   T = InfiniteData<QueryProcessInstanceIncidentsResponseBody>,
 >(
   processInstanceKey: string,
@@ -38,7 +34,7 @@ const useGetIncidentsByProcessInstance = <
     filter: {state: 'ACTIVE', ...options?.payload?.filter},
   };
   return useInfiniteQuery({
-    queryKey: queryKeys.incidents.searchByProcessInstanceKey(
+    queryKey: queryKeys.incidents.searchByProcessInstanceKeyPaginated(
       processInstanceKey,
       payload,
     ),
@@ -73,34 +69,4 @@ const useGetIncidentsByProcessInstance = <
   });
 };
 
-type CountQueryOptions = {
-  enabled?: boolean;
-};
-
-function useProcessInstanceIncidentsCount(
-  processInstanceKey: string,
-  options?: CountQueryOptions,
-): number {
-  const {data} = useQuery({
-    queryKey:
-      queryKeys.incidents.processInstanceIncidentsCount(processInstanceKey),
-    enabled: options?.enabled ?? !!processInstanceKey,
-    refetchInterval: 5000,
-    staleTime: 5000,
-    queryFn: async () => {
-      const {response, error} = await searchIncidentsByProcessInstance(
-        processInstanceKey,
-        {page: {limit: 0}, filter: {state: 'ACTIVE'}},
-      );
-      if (response !== null) {
-        return response.page.totalItems;
-      }
-
-      throw error;
-    },
-  });
-
-  return data ?? 0;
-}
-
-export {useGetIncidentsByProcessInstance, useProcessInstanceIncidentsCount};
+export {useGetIncidentsByProcessInstancePaginated};

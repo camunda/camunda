@@ -10,18 +10,23 @@ import type {
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstanceIncidentsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {useQuery} from '@tanstack/react-query';
+import {useInfiniteQuery, type InfiniteData} from '@tanstack/react-query';
 import {searchIncidentsByElementInstance} from 'modules/api/v2/incidents/searchIncidentsByElementInstance';
 import {queryKeys} from '../queryKeys';
 
+const PAGE_LIMIT = 50;
+
 type QueryOptions<T> = {
   payload?: QueryElementInstanceIncidentsRequestBody;
-  select?: (result: QueryElementInstanceIncidentsResponseBody) => T;
   enabled?: boolean;
+  enablePeriodicRefetch?: boolean;
+  select?: (
+    result: InfiniteData<QueryElementInstanceIncidentsResponseBody>,
+  ) => T;
 };
 
-const useGetIncidentsByElementInstance = <
-  T = QueryElementInstanceIncidentsResponseBody,
+const useGetIncidentsByElementInstancePaginated = <
+  T = InfiniteData<QueryElementInstanceIncidentsResponseBody>,
 >(
   elementInstanceKey: string,
   options?: QueryOptions<T>,
@@ -30,17 +35,19 @@ const useGetIncidentsByElementInstance = <
     ...options?.payload,
     filter: {state: 'ACTIVE', ...options?.payload?.filter},
   };
-  return useQuery({
-    queryKey: queryKeys.incidents.searchByElementInstanceKey(
+  return useInfiniteQuery({
+    queryKey: queryKeys.incidents.searchByElementInstanceKeyPaginated(
       elementInstanceKey,
       payload,
     ),
+    refetchInterval: () => (options?.enablePeriodicRefetch ? 5000 : false),
+    staleTime: 5000,
     enabled: options?.enabled ?? !!elementInstanceKey,
     select: options?.select,
-    queryFn: async () => {
+    queryFn: async ({pageParam}) => {
       const {response, error} = await searchIncidentsByElementInstance(
         elementInstanceKey,
-        payload,
+        {...payload, page: {from: pageParam, limit: PAGE_LIMIT}},
       );
       if (response !== null) {
         return response;
@@ -48,7 +55,17 @@ const useGetIncidentsByElementInstance = <
 
       throw error;
     },
+    maxPages: 2,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      const nextPage = lastPageParam + PAGE_LIMIT;
+      return nextPage > lastPage.page.totalItems ? null : nextPage;
+    },
+    getPreviousPageParam: (_, __, firstPageParam) => {
+      const previousPage = firstPageParam - PAGE_LIMIT;
+      return previousPage < 0 ? null : previousPage;
+    },
   });
 };
 
-export {useGetIncidentsByElementInstance};
+export {useGetIncidentsByElementInstancePaginated};
