@@ -46,7 +46,7 @@ import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.lang.Nullable;
 
-@WebEndpoint(id = "jobWorkers")
+@WebEndpoint(id = "jobworkers")
 public class JobWorkerController {
   private final JobWorkerManager jobWorkerManager;
 
