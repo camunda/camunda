@@ -112,24 +112,6 @@
       ]
     },
     {
-      "description": "Allow minor updates for Spring and Spring-boot for stable branches where the Spring support window is not matching the Camunda support window yet. Right now these are 8.6+. Since Spring has a 1-year support cycle while C8 is supported for 18 months, we allow minor updates to help mitigate security risks.",
-      "matchBaseBranches": [
-        "/^stable\\/8\\.([6-9]|\\d\\d)/",
-        "stable/operate-8.5"
-      ],
-      "matchManagers": [
-        "maven"
-      ],
-      "matchPackageNames": [
-        "org.springframework**"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "enabled": true
-    },
-    {
       "matchManagers": [
         "maven"
       ],
