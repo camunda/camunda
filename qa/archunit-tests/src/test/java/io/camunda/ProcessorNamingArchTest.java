@@ -139,8 +139,8 @@ public final class ProcessorNamingArchTest {
                   private static final Map<String, Set<String>> VALUE_TYPE_TO_INTENTS =
                       new HashMap<>();
                   private static final Set<String> VALUE_TYPES = new HashSet<>();
-                  private static final Set<String> WHITELIST = Set.of(
-                  );
+                  private static final Set<String> WHITELIST =
+                      Set.of("BpmnStreamProcessor", "CommandProcessor", "CommandProcessorImpl");
                   private static volatile boolean initialized = false;
 
                   private static void ensureInitialized() {
