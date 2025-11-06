@@ -30,6 +30,9 @@ class OperateProcessesPage {
   readonly parentInstanceIdCell: Locator;
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
+  readonly continueButton: Locator;
+  readonly processInstancesPanel: Locator;
+  readonly migrateButton: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
   constructor(page: Page) {
@@ -85,6 +88,24 @@ class OperateProcessesPage {
       .getByTestId('cell-endDate')
       .first();
     this.versionCell = page.getByTestId('process-version-select');
+    this.continueButton = page.getByRole('button', {name: 'continue'});
+    this.processInstancesPanel = page.getByRole('region', {
+      name: 'process instances panel',
+    });
+    this.migrateButton = this.processInstancesPanel.getByRole('button', {
+      name: /^migrate$/i,
+    });
+  }
+
+  async selectProcessInstances(count: number): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      await this.processInstancesPanel
+        .getByRole('row', {name: 'select row'})
+        .nth(i)
+        .locator('label')
+        .click();
+      await sleep(100);
+    }
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -155,6 +176,10 @@ class OperateProcessesPage {
 
   async clickProcessNameSortButton(): Promise<void> {
     await this.processNameSortButton.click();
+  }
+
+  async clickMigrateButton(): Promise<void> {
+    await this.migrateButton.click();
   }
 }
 
