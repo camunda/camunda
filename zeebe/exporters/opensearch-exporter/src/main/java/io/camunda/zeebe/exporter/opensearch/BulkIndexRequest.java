@@ -185,9 +185,6 @@ final class BulkIndexRequest implements ContentProducer {
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
 
-  @JsonIgnoreProperties({
-    CHECKPOINT_TYPE_PROPERTY,
-    CHECKPOINT_TIMESTAMP_PROPERTY,
-  })
+  @JsonIgnoreProperties({CHECKPOINT_TYPE_PROPERTY, CHECKPOINT_TIMESTAMP_PROPERTY})
   private static final class CheckpointRecordMixin {}
 }

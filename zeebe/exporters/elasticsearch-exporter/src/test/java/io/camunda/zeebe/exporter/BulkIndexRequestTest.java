@@ -373,7 +373,7 @@ final class BulkIndexRequestTest {
     }
 
     @Test
-    void shouldIndexCheckpointRecordWihTypeAndTimestamp() {
+    void shouldIndexCheckpointRecordWithTypeAndTimestamp() {
       // given
       final var timestamp = Instant.now();
       final var record =
