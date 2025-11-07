@@ -60,7 +60,7 @@ import FlowNodeEventMessageEnd from 'modules/components/Icon/flow-node-event-mes
 
 import FlowNodeEventTimerStart from 'modules/components/Icon/flow-node-event-timer-start.svg?react';
 import FlowNodeEventTimerBoundaryInterrupting from 'modules/components/Icon/flow-node-event-timer-interrupting.svg?react';
-import FlowNodeEventTimerBoundaryNonInerrupting from 'modules/components/Icon/flow-node-event-timer-non-interrupting.svg?react';
+import FlowNodeEventTimerBoundaryNonInterrupting from 'modules/components/Icon/flow-node-event-timer-non-interrupting.svg?react';
 
 import FlowNodeEventErrorStart from 'modules/components/Icon/flow-node-event-error-start.svg?react';
 import FlowNodeEventErrorBoundary from 'modules/components/Icon/flow-node-event-error-boundary.svg?react';
@@ -229,7 +229,7 @@ const getSVGComponent = (
             case 'interrupting':
               return FlowNodeEventTimerBoundaryInterrupting;
             case 'non-interrupting':
-              return FlowNodeEventTimerBoundaryNonInerrupting;
+              return FlowNodeEventTimerBoundaryNonInterrupting;
           }
       }
     case 'bpmn:TerminateEventDefinition':
