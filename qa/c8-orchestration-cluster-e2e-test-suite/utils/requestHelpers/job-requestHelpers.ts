@@ -11,6 +11,7 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {cancelProcessInstance, createInstances, deploy} from '../zeebeClient';
+import {defaultAssertionOptions} from '../constants';
 
 export async function activateJobToObtainAValidJobKey(
   request: APIRequestContext,
@@ -28,6 +29,41 @@ export async function activateJobToObtainAValidJobKey(
   const activateJson = await activateRes.json();
   expect(activateJson.jobs.length).toBe(1);
   return activateJson.jobs[0].jobKey;
+}
+
+export async function searchJobKey(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<number> {
+  const result: Record<string, number> = {};
+  await expect(async () => {
+    const searchRes = await request.post(buildUrl('/jobs/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          processInstanceKey: processInstanceKey,
+        },
+      },
+    });
+    await assertStatusCode(searchRes, 200);
+    const searchJson = await searchRes.json();
+    expect(searchJson.items.length).toBeGreaterThan(0);
+    result.jobKey = searchJson.items[0].jobKey;
+  }).toPass(defaultAssertionOptions);
+  return result.jobKey;
+}
+
+export async function completeJob(
+  request: APIRequestContext,
+  jobKey: number,
+): Promise<void> {
+  const completeRes = await request.post(
+    buildUrl(`/jobs/${jobKey}/completion`),
+    {
+      headers: jsonHeaders(),
+    },
+  );
+  await assertStatusCode(completeRes, 204);
 }
 
 export function setupProcessInstanceForTests(
