@@ -237,7 +237,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   private SSLSocketFactory createSSLContext() {
-    return SSLContextUtil.createSSLContext(
+    return SSLContextUtil.createSSLFactory(
         keystorePath, keystorePassword, truststorePath, truststorePassword, keystoreKeyPassword);
   }
 

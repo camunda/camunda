@@ -29,7 +29,7 @@ import org.apache.hc.core5.ssl.SSLContexts;
 public final class SSLContextUtil {
   private SSLContextUtil() {}
 
-  public static SSLSocketFactory createSSLContext(
+  public static SSLSocketFactory createSSLFactory(
       final Path keystorePath,
       final String keystorePassword,
       final Path truststorePath,
