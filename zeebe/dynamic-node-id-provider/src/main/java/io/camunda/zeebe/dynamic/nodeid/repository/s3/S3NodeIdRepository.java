@@ -30,6 +30,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class S3NodeIdRepository implements NodeIdRepository {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -129,6 +130,13 @@ public class S3NodeIdRepository implements NodeIdRepository {
       final var res = client.putObject(putRequest, RequestBody.empty());
       LOG.debug("File created for nodeId {}: {}", nodeId, res.eTag());
     } catch (final Exception e) {
+      if (e instanceof final S3Exception s3Exception) {
+        // if bucket does not exist, it return 404
+        if (s3Exception.statusCode() == 404) {
+          throw new IllegalArgumentException(
+              "Cannot create file for node " + nodeId + " in bucket" + config.bucketName, e);
+        }
+      }
       LOG.debug(
           "File creation failed for nodeId {}: {}",
           nodeId,
