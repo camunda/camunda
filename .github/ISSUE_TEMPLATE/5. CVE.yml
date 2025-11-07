@@ -6,40 +6,40 @@ body:
   - type: dropdown
     id: Component
     attributes:
-      label: Component
+      label: <!-- Component -->
       description: Which component is affected by this CVE?
       # The components should be kept in alphabetical order, with "Not sure" at the top
       options:
-        - C8-API-
-        - C8Run-
-        - Camunda Process Test-
-        - Clients-
-        - Data Layer-
-        - Feel-
-        - Identity-
-        - Management Identity-
-        - Operate-
-        - Optimize-
-        - Spring SDK-
-        - Tasklist-
-        - Zeebe-
+        - <!-- C8-API- -->
+        - <!-- C8Run- -->
+        - <!-- Camunda Process Test- -->
+        - <!-- Clients- -->
+        - <!-- Data Layer- -->
+        - <!-- Feel- -->
+        - <!-- Identity- -->
+        - <!-- Management Identity- -->
+        - <!-- Operate- -->
+        - <!-- Optimize- -->
+        - <!-- Spring SDK- -->
+        - <!-- Tasklist- -->
+        - <!-- Zeebe- -->
       default: null
     validations:
       required: true
   - type: dropdown
     id: affected-version
     attributes:
-      label: Affected version
+      label: <!-- Affected version -->
       multiple: true
       description: Which version is affected? (You can select more than one)
       options:
-        - -8.3
-        - -8.4
-        - -8.5
-        - -8.6
-        - -8.7
-        - -8.8
-        - -8.9
+        - <!-- -8.3 -->
+        - <!-- -8.4 -->
+        - <!-- -8.5 -->
+        - <!-- -8.6 -->
+        - <!-- -8.7 -->
+        - <!-- -8.8 -->
+        - <!-- -8.9 -->
       default: null
     validations:
       required: true
