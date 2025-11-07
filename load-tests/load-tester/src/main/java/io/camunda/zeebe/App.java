@@ -145,10 +145,19 @@ abstract class App implements Runnable {
               "Failed to retrieve topology due to authentication error; check your config", e);
           System.exit(1);
         }
-        THROTTLED_LOGGER.warn("Failed to retrieve topology due to client exception: ", e);
+        reportErrorAndSleep("Failed to retrieve topology due to client exception: ", e);
       } catch (final Exception e) {
-        THROTTLED_LOGGER.warn("Topology request failed: ", e);
+        reportErrorAndSleep("Topology request failed: ", e);
       }
+    }
+  }
+
+  private void reportErrorAndSleep(final String error, final Exception e) {
+    THROTTLED_LOGGER.warn(error, e);
+    try {
+      Thread.sleep(1000);
+    } catch (final InterruptedException ex) {
+      throw new RuntimeException(ex);
     }
   }
 
