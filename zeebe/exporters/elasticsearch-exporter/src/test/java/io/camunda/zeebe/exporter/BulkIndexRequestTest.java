@@ -32,7 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.time.InstantSource;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -344,7 +344,6 @@ final class BulkIndexRequestTest {
     @Test
     void shouldIndexCheckpointRecordWithoutTypeAndTimestampOnPreviousVersion() {
       // given
-      final var timestamp = InstantSource.system().millis();
       final var record =
           recordFactory.generateRecord(
               r ->
@@ -352,7 +351,7 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CheckpointRecord()
                               .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
-                              .setCheckpointTimestamp(timestamp)
+                              .setCheckpointTimestamp(Instant.now())
                               .setCheckpointId(100)
                               .setCheckpointPosition(100L)));
 
@@ -376,7 +375,7 @@ final class BulkIndexRequestTest {
     @Test
     void shouldIndexCheckpointRecordWihTypeAndTimestamp() {
       // given
-      final var timestamp = InstantSource.system().millis();
+      final var timestamp = Instant.now();
       final var record =
           recordFactory.generateRecord(
               r ->
@@ -403,7 +402,8 @@ final class BulkIndexRequestTest {
               source -> ((Map<String, Object>) source).get("checkpointTimestamp"))
           .describedAs("Expect that the records are serialized with type and timestamp")
           .containsAll(
-              Set.of(Tuple.tuple(CheckpointType.SCHEDULED_BACKUP.name(), Long.valueOf(timestamp))));
+              Set.of(
+                  Tuple.tuple(CheckpointType.SCHEDULED_BACKUP.name(), timestamp.toEpochMilli())));
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {

@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.InstantJsonSerde;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -52,7 +53,9 @@ import org.opensearch.client.transport.rest_client.RestClientTransport;
  */
 final class TestClient implements CloseableSilently {
   private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
+      new ObjectMapper()
+          .registerModule(InstantJsonSerde.INSTANT_TO_LONG_SERDE_MODULE)
+          .registerModule(new ZeebeProtocolModule());
 
   private final OpensearchExporterConfiguration config;
   private final RestClient restClient;
