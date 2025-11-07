@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import type {
   ElementInstance,
   ProcessInstance,
@@ -17,13 +16,13 @@ import type {
   DecisionInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-// V2 Element Instance Metadata - extends the old structure but with v2 element instance fields will be removed after other components migration
-type V2InstanceMetadata = {
+type InstanceMetadata = {
   elementInstanceKey: string;
   elementId: string;
   elementName?: string;
   type: ElementInstance['type'];
-  state?: ElementInstance['state'] | UserTask['state'];
+  userTaskState?: UserTask['state'];
+  elementInstanceState: ElementInstance['state'];
   startDate: string;
   endDate: string | null;
   processDefinitionId?: string;
@@ -37,9 +36,7 @@ type V2InstanceMetadata = {
   calledDecisionInstanceId: string | null;
   calledDecisionDefinitionName: string | null;
   jobRetries: number | null;
-  flowNodeInstanceId?: string;
-  flowNodeId?: string;
-  flowNodeType?: string;
+  elementType?: string;
   eventId?: string;
   jobType?: string | null;
   jobWorker?: string | null;
@@ -49,10 +46,6 @@ type V2InstanceMetadata = {
   messageName?: string | null;
   correlationKey?: string | null;
 } & Partial<UserTask>;
-
-type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata' | 'incident'> & {
-  instanceMetadata: V2InstanceMetadata | null;
-};
 
 type UserTaskSubset = Pick<
   UserTask,
@@ -71,17 +64,15 @@ type UserTaskSubset = Pick<
   | 'priority'
 >;
 
-// Utility function to create V2 instance metadata from old metadata + migrated element instance
-function createV2InstanceMetadata(
-  oldMetadata: MetaDataDto['instanceMetadata'],
+function createInstanceMetadata(
   elementInstance: ElementInstance,
   job?: Job,
-  calledProcess?: ProcessInstance,
+  calledProcessInstance?: ProcessInstance,
   messageSubscription?: MessageSubscription,
   calledDecisionDefinition?: DecisionDefinition,
   calledDecisionInstance?: DecisionInstance,
   userTask: Partial<UserTaskSubset> | null = {},
-): V2InstanceMetadata {
+): InstanceMetadata {
   const {
     creationDate,
     completionDate,
@@ -101,8 +92,9 @@ function createV2InstanceMetadata(
   const {messageName, correlationKey} = messageSubscription ?? {};
 
   return {
-    calledProcessInstanceId: calledProcess?.processInstanceKey ?? null,
-    calledProcessDefinitionName: calledProcess?.processDefinitionName ?? null,
+    calledProcessInstanceId: calledProcessInstance?.processInstanceKey ?? null,
+    calledProcessDefinitionName:
+      calledProcessInstance?.processDefinitionName ?? null,
     calledDecisionInstanceId:
       calledDecisionInstance?.decisionEvaluationInstanceKey ?? null,
     calledDecisionDefinitionName:
@@ -119,8 +111,8 @@ function createV2InstanceMetadata(
     elementId: elementInstance.elementId,
     elementName: elementInstance.elementName,
     type: elementInstance.type,
-    state: (userTaskState ??
-      elementInstance.state) as V2InstanceMetadata['state'],
+    elementInstanceState: elementInstance.state,
+    userTaskState: userTaskState,
     startDate: elementInstance.startDate || '',
     endDate: elementInstance.endDate || null,
     processDefinitionId: elementInstance.processDefinitionId,
@@ -129,10 +121,7 @@ function createV2InstanceMetadata(
     hasIncident: elementInstance.hasIncident,
     incidentKey: elementInstance.incidentKey,
     tenantId: elementInstance.tenantId,
-    flowNodeInstanceId: elementInstance.elementInstanceKey,
-    flowNodeId: elementInstance.elementId,
-    flowNodeType: oldMetadata?.flowNodeType,
-
+    elementType: elementInstance.type,
     creationDate,
     completionDate,
     customHeaders,
@@ -145,12 +134,11 @@ function createV2InstanceMetadata(
     candidateGroups,
     candidateUsers,
     externalFormReference,
-
     messageName,
     correlationKey,
   };
 }
 
-export type {V2MetaDataDto, V2InstanceMetadata};
+export type {InstanceMetadata};
 
-export {createV2InstanceMetadata};
+export {createInstanceMetadata};

@@ -425,7 +425,7 @@ describe('MetadataPopover', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/This Element instance triggered 10 times/),
+        screen.getByText(/This element instance triggered 10 times/),
       ).toBeInTheDocument();
     });
     expect(

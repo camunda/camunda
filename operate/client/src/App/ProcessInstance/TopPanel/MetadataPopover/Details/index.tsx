@@ -15,45 +15,45 @@ import {tracking} from 'modules/tracking';
 import {Header} from '../Header';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
-import {type V2MetaDataDto} from '../types';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {DetailsModal} from './DetailsModal';
+import type {
+  DecisionDefinition,
+  DecisionInstance,
+  ElementInstance,
+  Job,
+  MessageSubscription,
+  ProcessInstance,
+  UserTask,
+} from '@camunda/camunda-api-zod-schemas/8.8';
+import {createInstanceMetadata} from '../types';
 
 type Props = {
-  metaData: V2MetaDataDto;
-  elementId: string;
+  elementInstance: ElementInstance;
   businessObject?: BusinessObject | null;
+  job?: Job;
+  calledProcessInstance?: ProcessInstance;
+  messageSubscription?: MessageSubscription;
+  calledDecisionDefinition?: DecisionDefinition;
+  calledDecisionInstance?: DecisionInstance;
+  userTask?: UserTask;
 };
 
-const NULL_METADATA = {
-  elementInstanceKey: null,
-  startDate: null,
-  endDate: null,
-  calledProcessInstanceId: null,
-  calledProcessDefinitionName: null,
-  calledDecisionInstanceId: null,
-  calledDecisionDefinitionName: null,
-  type: null,
-  jobRetries: null,
-} as const;
-
-const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
+const Details: React.FC<Props> = ({
+  elementInstance,
+  businessObject,
+  job,
+  calledProcessInstance,
+  messageSubscription,
+  calledDecisionDefinition,
+  calledDecisionInstance,
+  userTask,
+}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  const {elementId, startDate, endDate, type, elementInstanceKey} =
+    elementInstance;
   const elementName = businessObject?.name || elementId;
-
-  const {instanceMetadata} = metaData;
-  const {
-    elementInstanceKey,
-    startDate,
-    endDate,
-    calledProcessInstanceId,
-    calledProcessDefinitionName,
-    calledDecisionInstanceId,
-    calledDecisionDefinitionName,
-    type,
-    jobRetries,
-  } = instanceMetadata ?? NULL_METADATA;
 
   return (
     <>
@@ -95,11 +95,11 @@ const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
           </SummaryDataValue>
         </Stack>
 
-        {jobRetries !== null && (
+        {job?.retries !== undefined && (
           <Stack gap={3} as="dl">
             <SummaryDataKey>Retries Left</SummaryDataKey>
             <SummaryDataValue data-testid="retries-left-count">
-              {jobRetries}
+              {job.retries}
             </SummaryDataValue>
           </Stack>
         )}
@@ -109,13 +109,15 @@ const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
             <Stack gap={3} as="dl">
               <SummaryDataKey>Called Process Instance</SummaryDataKey>
               <SummaryDataValue data-testid="called-process-instance">
-                {calledProcessInstanceId ? (
+                {calledProcessInstance ? (
                   <Link
-                    to={Paths.processInstance(calledProcessInstanceId)}
-                    title={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
-                    aria-label={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
+                    to={Paths.processInstance(
+                      calledProcessInstance.processInstanceKey,
+                    )}
+                    title={`View ${calledProcessInstance.processDefinitionName} instance ${calledProcessInstance.processInstanceKey}`}
+                    aria-label={`View ${calledProcessInstance.processDefinitionName} instance ${calledProcessInstance.processInstanceKey}`}
                   >
-                    {`${calledProcessDefinitionName} - ${calledProcessInstanceId}`}
+                    {`${calledProcessInstance.processDefinitionName} - ${calledProcessInstance.processInstanceKey}`}
                   </Link>
                 ) : (
                   'None'
@@ -128,26 +130,36 @@ const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
           <Stack gap={3} as="dl">
             <SummaryDataKey>Called Decision Instance</SummaryDataKey>
             <SummaryDataValue>
-              {calledDecisionInstanceId ? (
+              {calledDecisionInstance ? (
                 <Link
-                  to={Paths.decisionInstance(calledDecisionInstanceId)}
-                  title={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
-                  aria-label={`View ${calledDecisionDefinitionName} instance ${calledDecisionInstanceId}`}
+                  to={Paths.decisionInstance(
+                    calledDecisionInstance.decisionEvaluationInstanceKey,
+                  )}
+                  title={`View ${calledDecisionInstance.decisionDefinitionName} instance ${calledDecisionInstance.decisionEvaluationInstanceKey}`}
+                  aria-label={`View ${calledDecisionInstance.decisionDefinitionName} instance ${calledDecisionInstance.decisionEvaluationInstanceKey}`}
                 >
-                  {`${calledDecisionDefinitionName} - ${calledDecisionInstanceId}`}
+                  {`${calledDecisionInstance.decisionDefinitionName} - ${calledDecisionInstance.decisionEvaluationInstanceKey}`}
                 </Link>
               ) : (
-                (calledDecisionDefinitionName ?? '—')
+                '—'
               )}
             </SummaryDataValue>
           </Stack>
         )}
       </Stack>
-      {elementInstanceKey !== null && instanceMetadata !== null && (
+      {elementInstanceKey !== null && (
         <DetailsModal
           elementInstanceKey={elementInstanceKey}
           elementName={elementName}
-          instanceMetadata={instanceMetadata}
+          instanceMetadata={createInstanceMetadata(
+            elementInstance,
+            job,
+            calledProcessInstance,
+            messageSubscription,
+            calledDecisionDefinition,
+            calledDecisionInstance,
+            userTask,
+          )}
           isVisible={isModalVisible}
           onClose={() => setIsModalVisible(false)}
         />

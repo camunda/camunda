@@ -83,28 +83,6 @@ const calledInstanceMetadata = {
   },
 };
 
-const calledInstanceWithIncidentMetadata = {
-  ...calledInstanceMetadata,
-  incident: {
-    id: '4503599627375678',
-    errorType: {
-      id: 'CALLED_ELEMENT_ERROR',
-      name: 'Called Element Error',
-    },
-    errorMessage:
-      "Expected process with BPMN process id 'called-process' to be deployed, but not found.",
-    flowNodeId: 'call-order-process',
-    flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
-    jobId: null,
-    creationTime: '2022-02-03T16:44:06.981+0000',
-    hasActiveOperation: false,
-    lastOperation: null,
-    rootCauseInstance: null,
-    rootCauseDecision: null,
-  },
-  incidentCount: 1,
-};
-
 const multiInstancesMetadata = {
   ...baseMetadata,
   flowNodeInstanceId: null,
@@ -136,18 +114,6 @@ const calledUnevaluatedDecisionMetadata = {
     flowNodeType: 'TASK_BUSINESS_RULE',
     calledDecisionInstanceId: null,
     calledDecisionDefinitionName: 'Take decision',
-  },
-};
-
-const rootIncidentFlowNodeMetaData = {
-  ...calledInstanceWithIncidentMetadata,
-  incident: {
-    ...calledInstanceWithIncidentMetadata.incident,
-    rootCauseInstance: {
-      processDefinitionId: 'called-process',
-      processDefinitionName: 'Called Process',
-      instanceId: PROCESS_INSTANCE_ID,
-    },
   },
 };
 
@@ -192,35 +158,6 @@ const userTaskFlowNodeMetaData = {
 const retriesLeftFlowNodeMetaData = {
   ...baseMetadata,
   instanceMetadata: {...baseInstanceMetadata, jobRetries: 2},
-};
-
-const incidentsByProcessKeyMetadata = {
-  items: [
-    {
-      processDefinitionId: 'invoice',
-      errorType: 'JOB_NO_RETRIES' as const,
-      errorMessage: 'There are no more retries left.',
-      elementId: 'call-order-process',
-      creationTime: '2022-02-03T16:44:06.981+0000',
-      state: 'PENDING' as const,
-      tenantId: '<default>',
-      incidentKey: '2251799814080730',
-      processDefinitionKey: '2251799813686633',
-      processInstanceKey: '2251799813685593',
-      elementInstanceKey: FLOW_NODE_INSTANCE_ID,
-      jobKey: '2251799814080730',
-    },
-  ],
-  page: {totalItems: 1},
-};
-
-const processDefinitionMetadata = {
-  name: 'DMN invoice',
-  processDefinitionId: 'invoice',
-  processDefinitionKey: '2251799813686633',
-  resourceName: 'usertest/invoice.bpmn',
-  tenantId: '<default>',
-  version: 1,
 };
 
 const jobMetadata: Job = {
@@ -275,11 +212,8 @@ export {
   calledInstanceMetadata,
   multiInstancesMetadata,
   multiInstanceCallActivityMetadata,
-  rootIncidentFlowNodeMetaData,
   userTaskFlowNodeMetaData,
   retriesLeftFlowNodeMetaData,
-  incidentsByProcessKeyMetadata,
-  processDefinitionMetadata,
   jobMetadata,
   calledDecisionInstanceMetadata,
   PROCESS_INSTANCE_ID,
@@ -287,5 +221,4 @@ export {
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
   BUSINESS_RULE_FLOW_NODE_ID,
-  FLOW_NODE_INSTANCE_ID,
 };
