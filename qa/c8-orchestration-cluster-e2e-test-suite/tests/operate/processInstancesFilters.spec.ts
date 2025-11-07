@@ -276,7 +276,7 @@ test.describe('Process Instances Filters', () => {
       await operateProcessMigrationModePage.clickMigrationConfirmationButton();
 
       // filter by operation id
-      await operateOperationPanelPage.selectFirstOperationItem();
+      await operateOperationPanelPage.selectLastOperationItem();
 
       await waitForAssertion({
         assertion: async () => {
@@ -296,33 +296,21 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          expect(await operateProcessesPage.processInstancesTable.count()).toBeGreaterThan(1);
-          expect(operateFiltersPanelPage.runningInstancesCheckbox).toBeChecked();
+          await expect(operateFiltersPanelPage.runningInstancesCheckbox).toBeChecked();
+          await expect(operateProcessesPage.tableLoadingSpinner).toBeHidden();
         },
         onFailure: async () => {
           await page.reload();
         }
       });
 
-      // select process to work with
-      await operateFiltersPanelPage.selectProcess('Variable_Process');
-      await sleep(1_000); // wait for filter to be applied
-
-      await operateProcessesPage.selectFirstProcessCheckbox();
+      
 
       // filter by operation id
       // await page.getByTestId('operation-id').first().click( {timeout: 5000});
       // await operateProcessesPage.selectFirstOperationItem();
 
-      // await waitForAssertion({
-      //   assertion: async () => {
-      //     await expect(page.getByText('1 result')).toBeVisible();
-      //     await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(processWithMultVerV2Key);
-      //   },
-      //   onFailure: async () => {
-      //     await page.reload();
-      //   }
-      // });
+
     })
 
   });

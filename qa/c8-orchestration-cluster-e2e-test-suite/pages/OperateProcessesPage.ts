@@ -33,6 +33,10 @@ class OperateProcessesPage {
   readonly processInstanceKeyCell: Locator;
   readonly migrateSelectedProcessesButton: Locator;
   readonly continueMigrationDialogButton: Locator;
+  readonly cancelProcessInstanceButton: Locator;
+  readonly cancelProcessInstanceDialogButton: Locator;
+  readonly singleCancellationSpinner: Locator;
+  readonly tableLoadingSpinner: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
   constructor(page: Page) {
@@ -96,6 +100,12 @@ class OperateProcessesPage {
     this.continueMigrationDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Continue',});
+    this.cancelProcessInstanceButton = page.getByRole('button', { name: 'Cancel Instance' }).first();
+    this.cancelProcessInstanceDialogButton = page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Apply' });
+    this.singleCancellationSpinner = page.getByTestId('operation-spinner');
+    this.tableLoadingSpinner = page.getByTestId('data-table-loader');
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -179,6 +189,14 @@ class OperateProcessesPage {
 
   async clickContinueMigrationDialogButton(): Promise<void> {
     await this.continueMigrationDialogButton.click();
+  }
+
+  async clickCancelProcessInstanceButton(): Promise<void> {
+    await this.cancelProcessInstanceButton.click();
+  }
+
+  async clickCancelProcessInstanceDialogButton(): Promise<void> {
+    await this.cancelProcessInstanceDialogButton.click( {timeout: 6000} );
   }
 
 }

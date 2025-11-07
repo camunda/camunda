@@ -21,8 +21,8 @@ export class OperateOperationPanelPage {
     this.collapseButton = page.getByRole('button', { name: 'Collapse Operations' })
   }
 
-  async selectFirstOperationItem(): Promise<void> {
-    await this.operationIdField.first().click( {timeout: 10000} );
+  async selectLastOperationItem(): Promise<void> {
+    await this.operationIdField.last().click( {timeout: 10000} );
   }
 
   async expandOperationIdField(): Promise<void> {
