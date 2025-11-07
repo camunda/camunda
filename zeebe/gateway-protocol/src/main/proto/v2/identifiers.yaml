@@ -34,12 +34,6 @@ components:
       pattern: ^[A-Za-z0-9_@.+-]+$
       example: new-hire-onboarding-workflow
 
-    DocumentId:
-      description: Document Id that uniquely identifies a document.
-      format: DocumentId
-      x-semantic-type: DocumentId
-      type: string
-
     TenantId:
       example: customer-service
       description: The unique identifier of the tenant.

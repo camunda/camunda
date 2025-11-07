@@ -89,24 +89,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/LongKey'
 
-    MessageSubscriptionKey:
-      description: System-generated key for a message subscription.
-      format: MessageSubscriptionKey
-      x-semantic-type: MessageSubscriptionKey
-      example: "2251799813632456"
-      type: string
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
-
-    MessageCorrelationKey:
-      description: System-generated key for a message correlation.
-      format: MessageCorrelationKey
-      x-semantic-type: MessageCorrelationKey
-      example: "2251799813634265"
-      type: string
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
-
     DecisionDefinitionKey:
       description: System-generated key for a decision definition.
       format: DecisionDefinitionKey
@@ -143,24 +125,6 @@ components:
       example: "2251799813683346"
       type: string
 
-    AuthorizationKey:
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
-      description: System-generated key for an authorization.
-      format: AuthorizationKey
-      x-semantic-type: AuthorizationKey
-      example: "2251799813684332"
-      type: string
-
-    MessageKey:
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
-      description: System-generated key for an message.
-      format: MessageKey
-      x-semantic-type: MessageKey
-      example: "2251799813683467"
-      type: string
-
     DecisionInstanceKey:
       allOf:
         - $ref: '#/components/schemas/LongKey'
@@ -169,33 +133,6 @@ components:
       x-semantic-type: DecisionInstanceKey
       example: "22517998136843567"
       type: string
-
-    SignalKey:
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
-      description: System-generated key for an signal.
-      format: SignalKey
-      x-semantic-type: SignalKey
-      example: "22517998136987467"
-      type: string
-
-    DeploymentKey:
-      description: Key for a deployment.
-      format: DeploymentKey
-      x-semantic-type: DeploymentKey
-      type: string
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
-
-    ResourceKey:
-      type: string
-      oneOf:
-        - $ref: '#/components/schemas/ProcessDefinitionKey'
-        - $ref: '#/components/schemas/DecisionRequirementsKey'
-        - $ref: '#/components/schemas/FormKey'
-        - $ref: '#/components/schemas/DecisionDefinitionKey'
-      description: The system-assigned key for this resource.
-      format: ResourceKey
 
     BatchOperationKey:
       x-semantic-type: BatchOperationKey

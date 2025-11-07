@@ -56,19 +56,31 @@ tags:
   - name: Variable
 
 paths:
-  # Cluster endpoints
-  /topology:
-    $ref: 'cluster.yaml#/paths/~1topology'
-  /status:
-    $ref: 'cluster.yaml#/paths/~1status'
-
-  # License endpoints
-  /license:
-    $ref: 'licenses.yaml#/paths/~1license'
-#
   # Authentication endpoints
   /authentication/me:
     $ref: 'authentication.yaml#/paths/~1authentication~1me'
+
+  # Authorization endpoints
+  /authorizations:
+    $ref: 'authorizations.yaml#/paths/~1authorizations'
+  /authorizations/search:
+    $ref: 'authorizations.yaml#/paths/~1authorizations~1search'
+  /authorizations/{authorizationKey}:
+    $ref: 'authorizations.yaml#/paths/~1authorizations~1{authorizationKey}'
+
+  # Batch operation endpoints
+  /batch-operation-items/search:
+    $ref: 'batch-operations.yaml#/paths/~1batch-operation-items~1search'
+  /batch-operations/search:
+    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1search'
+  /batch-operations/{batchOperationKey}:
+    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}'
+  /batch-operations/{batchOperationKey}/cancellation:
+    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}~1cancellation'
+  /batch-operations/{batchOperationKey}/resumption:
+    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}~1resumption'
+  /batch-operations/{batchOperationKey}/suspension:
+    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}~1suspension'
 
   # Clock endpoints
   /clock:
@@ -76,149 +88,25 @@ paths:
   /clock/reset:
     $ref: 'clock.yaml#/paths/~1clock~1reset'
 
-  # Setup endpoints
-  /setup/user:
-    $ref: 'setup.yaml#/paths/~1setup~1user'
-
-  # Job endpoints
-  /jobs/activation:
-    $ref: 'jobs.yaml#/paths/~1jobs~1activation'
-  /jobs/search:
-    $ref: 'jobs.yaml#/paths/~1jobs~1search'
-  /jobs/{jobKey}/failure:
-    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1failure'
-  /jobs/{jobKey}/error:
-    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1error'
-  /jobs/{jobKey}/completion:
-    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1completion'
-  /jobs/{jobKey}:
-    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}'
-
-  # Incident endpoints
-  /incidents/search:
-    $ref: 'incidents.yaml#/paths/~1incidents~1search'
-  /incidents/{incidentKey}:
-    $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}'
-  /incidents/{incidentKey}/resolution:
-    $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}~1resolution'
-
-  # Tenant endpoints
-  /tenants:
-    $ref: 'tenants.yaml#/paths/~1tenants'
-  /tenants/search:
-    $ref: 'tenants.yaml#/paths/~1tenants~1search'
-  /tenants/{tenantId}:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}'
-  /tenants/{tenantId}/users/{username}:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1users~1{username}'
-  /tenants/{tenantId}/users/search:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1users~1search'
-  /tenants/{tenantId}/clients/{clientId}:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1clients~1{clientId}'
-  /tenants/{tenantId}/clients/search:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1clients~1search'
-  /tenants/{tenantId}/groups/{groupId}:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1groups~1{groupId}'
-  /tenants/{tenantId}/groups/search:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1groups~1search'
-  /tenants/{tenantId}/roles/{roleId}:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1roles~1{roleId}'
-  /tenants/{tenantId}/roles/search:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1roles~1search'
-  /tenants/{tenantId}/mapping-rules/{mappingRuleId}:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1mapping-rules~1{mappingRuleId}'
-  /tenants/{tenantId}/mapping-rules/search:
-    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1mapping-rules~1search'
-
-  # User task endpoints
-  /user-tasks/{userTaskKey}/completion:
-    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1completion'
-  /user-tasks/{userTaskKey}/assignment:
-    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1assignment'
-  /user-tasks/{userTaskKey}:
-    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}'
-  /user-tasks/{userTaskKey}/form:
-    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1form'
-  /user-tasks/{userTaskKey}/assignee:
-    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1assignee'
-  /user-tasks/search:
-    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1search'
-  /user-tasks/{userTaskKey}/variables/search:
-    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1variables~1search'
-
-  # Variable endpoints
-  /variables/search:
-    $ref: 'variables.yaml#/paths/~1variables~1search'
-  /variables/{variableKey}:
-    $ref: 'variables.yaml#/paths/~1variables~1{variableKey}'
-
-  # Process definition endpoints
-  /process-definitions/search:
-    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1search'
-  /process-definitions/{processDefinitionKey}:
-    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}'
-  /process-definitions/{processDefinitionKey}/xml:
-    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1xml'
-  /process-definitions/{processDefinitionKey}/form:
-    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1form'
-  /process-definitions/{processDefinitionKey}/statistics/element-instances:
-    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1statistics~1element-instances'
-  /process-definitions/statistics/process-instances:
-    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1statistics~1process-instances'
-
-  # Process instance endpoints
-  /process-instances:
-    $ref: 'process-instances.yaml#/paths/~1process-instances'
-  /process-instances/{processInstanceKey}:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}'
-  /process-instances/{processInstanceKey}/sequence-flows:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1sequence-flows'
-  /process-instances/{processInstanceKey}/statistics/element-instances:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1element-instances'
-  /process-instances/search:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1search'
-  /process-instances/{processInstanceKey}/incidents/search:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1incidents~1search'
-  /process-instances/{processInstanceKey}/incident-resolution:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1incident-resolution'
-  /process-instances/{processInstanceKey}/cancellation:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1cancellation'
-  /process-instances/cancellation:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1cancellation'
-  /process-instances/incident-resolution:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1incident-resolution'
-  /process-instances/migration:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1migration'
-  /process-instances/modification:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1modification'
-  /process-instances/{processInstanceKey}/migration:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1migration'
-  /process-instances/{processInstanceKey}/modification:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1modification'
-  /process-instances/{processInstanceKey}/call-hierarchy:
-    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1call-hierarchy'
-
-  # Element instance endpoints
-  /element-instances/search:
-    $ref: 'element-instances.yaml#/paths/~1element-instances~1search'
-  /element-instances/{elementInstanceKey}:
-    $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}'
-  /element-instances/{elementInstanceKey}/variables:
-    $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
-  /element-instances/{elementInstanceKey}/incidents/search:
-    $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1incidents~1search'
-  /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
-    $ref: 'element-instances.yaml#/paths/~1element-instances~1ad-hoc-activities~1{adHocSubProcessInstanceKey}~1activation'
+  # Message endpoints
+  /correlated-message-subscriptions/search:
+    $ref: 'messages.yaml#/paths/~1correlated-message-subscriptions~1search'
 
   # Decision definition endpoints
+  /decision-definitions/evaluation:
+    $ref: 'decision-definitions.yaml#/paths/~1decision-definitions~1evaluation'
   /decision-definitions/search:
     $ref: 'decision-definitions.yaml#/paths/~1decision-definitions~1search'
   /decision-definitions/{decisionDefinitionKey}:
     $ref: 'decision-definitions.yaml#/paths/~1decision-definitions~1{decisionDefinitionKey}'
   /decision-definitions/{decisionDefinitionKey}/xml:
     $ref: 'decision-definitions.yaml#/paths/~1decision-definitions~1{decisionDefinitionKey}~1xml'
-  /decision-definitions/evaluation:
-    $ref: 'decision-definitions.yaml#/paths/~1decision-definitions~1evaluation'
+
+  # Decision instance endpoints
+  /decision-instances/search:
+    $ref: 'decision-instances.yaml#/paths/~1decision-instances~1search'
+  /decision-instances/{decisionEvaluationInstanceKey}:
+    $ref: 'decision-instances.yaml#/paths/~1decision-instances~1{decisionEvaluationInstanceKey}'
 
   # Decision requirements endpoints
   /decision-requirements/search:
@@ -228,87 +116,9 @@ paths:
   /decision-requirements/{decisionRequirementsKey}/xml:
     $ref: 'decision-requirements.yaml#/paths/~1decision-requirements~1{decisionRequirementsKey}~1xml'
 
-  # Decision instance endpoints
-  /decision-instances/search:
-    $ref: 'decision-instances.yaml#/paths/~1decision-instances~1search'
-  /decision-instances/{decisionEvaluationInstanceKey}:
-    $ref: 'decision-instances.yaml#/paths/~1decision-instances~1{decisionEvaluationInstanceKey}'
-
-  # Authorization endpoints
-  /authorizations:
-    $ref: 'authorizations.yaml#/paths/~1authorizations'
-  /authorizations/{authorizationKey}:
-    $ref: 'authorizations.yaml#/paths/~1authorizations~1{authorizationKey}'
-  /authorizations/search:
-    $ref: 'authorizations.yaml#/paths/~1authorizations~1search'
-
-  # Role endpoints
-  /roles:
-    $ref: 'roles.yaml#/paths/~1roles'
-  /roles/{roleId}:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}'
-  /roles/search:
-    $ref: 'roles.yaml#/paths/~1roles~1search'
-  /roles/{roleId}/users/{username}:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1{username}'
-  /roles/{roleId}/users/search:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1search'
-  /roles/{roleId}/clients/{clientId}:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1clients~1{clientId}'
-  /roles/{roleId}/clients/search:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1clients~1search'
-  /roles/{roleId}/groups/{groupId}:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1groups~1{groupId}'
-  /roles/{roleId}/groups/search:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1groups~1search'
-  /roles/{roleId}/mapping-rules/{mappingRuleId}:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1mapping-rules~1{mappingRuleId}'
-  /roles/{roleId}/mapping-rules/search:
-    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1mapping-rules~1search'
-
-  # Group endpoints
-  /groups:
-    $ref: 'groups.yaml#/paths/~1groups'
-  /groups/{groupId}:
-    $ref: 'groups.yaml#/paths/~1groups~1{groupId}'
-  /groups/search:
-    $ref: 'groups.yaml#/paths/~1groups~1search'
-  /groups/{groupId}/users/{username}:
-    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1users~1{username}'
-  /groups/{groupId}/users/search:
-    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1users~1search'
-  /groups/{groupId}/clients/{clientId}:
-    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1clients~1{clientId}'
-  /groups/{groupId}/clients/search:
-    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1clients~1search'
-  /groups/{groupId}/mapping-rules/{mappingRuleId}:
-    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1mapping-rules~1{mappingRuleId}'
-  /groups/{groupId}/mapping-rules/search:
-    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1mapping-rules~1search'
-  /groups/{groupId}/roles/search:
-    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1roles~1search'
-
-  # Mapping rule endpoints
-  /mapping-rules:
-    $ref: 'mapping-rules.yaml#/paths/~1mapping-rules'
-  /mapping-rules/{mappingRuleId}:
-    $ref: 'mapping-rules.yaml#/paths/~1mapping-rules~1{mappingRuleId}'
-  /mapping-rules/search:
-    $ref: 'mapping-rules.yaml#/paths/~1mapping-rules~1search'
-
-  # Message endpoints
-  /messages/publication:
-    $ref: 'messages.yaml#/paths/~1messages~1publication'
-  /messages/correlation:
-    $ref: 'messages.yaml#/paths/~1messages~1correlation'
-  /message-subscriptions/search:
-    $ref: 'messages.yaml#/paths/~1message-subscriptions~1search'
-  /correlated-message-subscriptions/search:
-    $ref: 'messages.yaml#/paths/~1correlated-message-subscriptions~1search'
-
-  # Signal endpoints
-  /signals/broadcast:
-    $ref: 'signals.yaml#/paths/~1signals~1broadcast'
+  # Deployment/Resource endpoints
+  /deployments:
+    $ref: 'deployments.yaml#/paths/~1deployments'
 
   # Document endpoints
   /documents:
@@ -320,6 +130,208 @@ paths:
   /documents/{documentId}/links:
     $ref: 'documents.yaml#/paths/~1documents~1{documentId}~1links'
 
+  # Element instance endpoints
+  /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1ad-hoc-activities~1{adHocSubProcessInstanceKey}~1activation'
+  /element-instances/search:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1search'
+  /element-instances/{elementInstanceKey}:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}'
+  /element-instances/{elementInstanceKey}/incidents/search:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1incidents~1search'
+  /element-instances/{elementInstanceKey}/variables:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
+
+  # Group endpoints
+  /groups:
+    $ref: 'groups.yaml#/paths/~1groups'
+  /groups/search:
+    $ref: 'groups.yaml#/paths/~1groups~1search'
+  /groups/{groupId}:
+    $ref: 'groups.yaml#/paths/~1groups~1{groupId}'
+  /groups/{groupId}/clients/search:
+    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1clients~1search'
+  /groups/{groupId}/clients/{clientId}:
+    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1clients~1{clientId}'
+  /groups/{groupId}/mapping-rules/search:
+    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1mapping-rules~1search'
+  /groups/{groupId}/mapping-rules/{mappingRuleId}:
+    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1mapping-rules~1{mappingRuleId}'
+  /groups/{groupId}/roles/search:
+    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1roles~1search'
+  /groups/{groupId}/users/search:
+    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1users~1search'
+  /groups/{groupId}/users/{username}:
+    $ref: 'groups.yaml#/paths/~1groups~1{groupId}~1users~1{username}'
+
+  # Incident endpoints
+  /incidents/search:
+    $ref: 'incidents.yaml#/paths/~1incidents~1search'
+  /incidents/{incidentKey}:
+    $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}'
+  /incidents/{incidentKey}/resolution:
+    $ref: 'incidents.yaml#/paths/~1incidents~1{incidentKey}~1resolution'
+
+  # Job endpoints
+  /jobs/activation:
+    $ref: 'jobs.yaml#/paths/~1jobs~1activation'
+  /jobs/search:
+    $ref: 'jobs.yaml#/paths/~1jobs~1search'
+  /jobs/{jobKey}:
+    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}'
+  /jobs/{jobKey}/completion:
+    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1completion'
+  /jobs/{jobKey}/error:
+    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1error'
+  /jobs/{jobKey}/failure:
+    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1failure'
+
+  # License endpoints
+  /license:
+    $ref: 'licenses.yaml#/paths/~1license'
+
+  # Mapping rule endpoints
+  /mapping-rules:
+    $ref: 'mapping-rules.yaml#/paths/~1mapping-rules'
+  /mapping-rules/search:
+    $ref: 'mapping-rules.yaml#/paths/~1mapping-rules~1search'
+  /mapping-rules/{mappingRuleId}:
+    $ref: 'mapping-rules.yaml#/paths/~1mapping-rules~1{mappingRuleId}'
+
+  # Message endpoints
+  /message-subscriptions/search:
+    $ref: 'messages.yaml#/paths/~1message-subscriptions~1search'
+  /messages/correlation:
+    $ref: 'messages.yaml#/paths/~1messages~1correlation'
+  /messages/publication:
+    $ref: 'messages.yaml#/paths/~1messages~1publication'
+
+  # Process definition endpoints
+  /process-definitions/search:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1search'
+  /process-definitions/statistics/process-instances:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1statistics~1process-instances'
+  /process-definitions/{processDefinitionKey}:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}'
+  /process-definitions/{processDefinitionKey}/form:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1form'
+  /process-definitions/{processDefinitionKey}/statistics/element-instances:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1statistics~1element-instances'
+  /process-definitions/{processDefinitionKey}/xml:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1xml'
+
+  # Process instance endpoints
+  /process-instances:
+    $ref: 'process-instances.yaml#/paths/~1process-instances'
+  /process-instances/cancellation:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1cancellation'
+  /process-instances/incident-resolution:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1incident-resolution'
+  /process-instances/migration:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1migration'
+  /process-instances/modification:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1modification'
+  /process-instances/search:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1search'
+  /process-instances/{processInstanceKey}:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}'
+  /process-instances/{processInstanceKey}/call-hierarchy:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1call-hierarchy'
+  /process-instances/{processInstanceKey}/cancellation:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1cancellation'
+  /process-instances/{processInstanceKey}/incident-resolution:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1incident-resolution'
+  /process-instances/{processInstanceKey}/incidents/search:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1incidents~1search'
+  /process-instances/{processInstanceKey}/migration:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1migration'
+  /process-instances/{processInstanceKey}/modification:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1modification'
+  /process-instances/{processInstanceKey}/sequence-flows:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1sequence-flows'
+  /process-instances/{processInstanceKey}/statistics/element-instances:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1element-instances'
+
+  # Resource endpoints
+  /resources/{resourceKey}:
+    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}'
+  /resources/{resourceKey}/content:
+    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1content'
+  /resources/{resourceKey}/deletion:
+    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1deletion'
+
+  # Role endpoints
+  /roles:
+    $ref: 'roles.yaml#/paths/~1roles'
+  /roles/search:
+    $ref: 'roles.yaml#/paths/~1roles~1search'
+  /roles/{roleId}:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}'
+  /roles/{roleId}/clients/search:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1clients~1search'
+  /roles/{roleId}/clients/{clientId}:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1clients~1{clientId}'
+  /roles/{roleId}/groups/search:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1groups~1search'
+  /roles/{roleId}/groups/{groupId}:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1groups~1{groupId}'
+  /roles/{roleId}/mapping-rules/search:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1mapping-rules~1search'
+  /roles/{roleId}/mapping-rules/{mappingRuleId}:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1mapping-rules~1{mappingRuleId}'
+  /roles/{roleId}/users/search:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1search'
+  /roles/{roleId}/users/{username}:
+    $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1{username}'
+
+  # Setup endpoints
+  /setup/user:
+    $ref: 'setup.yaml#/paths/~1setup~1user'
+
+  # Signal endpoints
+  /signals/broadcast:
+    $ref: 'signals.yaml#/paths/~1signals~1broadcast'
+
+  # Cluster endpoints
+  /status:
+    $ref: 'cluster.yaml#/paths/~1status'
+
+  # System endpoints
+  /system/usage-metrics:
+    $ref: 'system.yaml#/paths/~1system~1usage-metrics'
+
+  # Tenant endpoints
+  /tenants:
+    $ref: 'tenants.yaml#/paths/~1tenants'
+  /tenants/search:
+    $ref: 'tenants.yaml#/paths/~1tenants~1search'
+  /tenants/{tenantId}:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}'
+  /tenants/{tenantId}/clients/search:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1clients~1search'
+  /tenants/{tenantId}/clients/{clientId}:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1clients~1{clientId}'
+  /tenants/{tenantId}/groups/search:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1groups~1search'
+  /tenants/{tenantId}/groups/{groupId}:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1groups~1{groupId}'
+  /tenants/{tenantId}/mapping-rules/search:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1mapping-rules~1search'
+  /tenants/{tenantId}/mapping-rules/{mappingRuleId}:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1mapping-rules~1{mappingRuleId}'
+  /tenants/{tenantId}/roles/search:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1roles~1search'
+  /tenants/{tenantId}/roles/{roleId}:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1roles~1{roleId}'
+  /tenants/{tenantId}/users/search:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1users~1search'
+  /tenants/{tenantId}/users/{username}:
+    $ref: 'tenants.yaml#/paths/~1tenants~1{tenantId}~1users~1{username}'
+
+  # Cluster endpoints
+  /topology:
+    $ref: 'cluster.yaml#/paths/~1topology'
+
   # User endpoints
   /users:
     $ref: 'users.yaml#/paths/~1users'
@@ -328,33 +340,27 @@ paths:
   /users/{username}:
     $ref: 'users.yaml#/paths/~1users~1{username}'
 
-  # System endpoints
-  /system/usage-metrics:
-    $ref: 'system.yaml#/paths/~1system~1usage-metrics'
+  # User task endpoints
+  /user-tasks/search:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1search'
+  /user-tasks/{userTaskKey}:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}'
+  /user-tasks/{userTaskKey}/assignee:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1assignee'
+  /user-tasks/{userTaskKey}/assignment:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1assignment'
+  /user-tasks/{userTaskKey}/completion:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1completion'
+  /user-tasks/{userTaskKey}/form:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1form'
+  /user-tasks/{userTaskKey}/variables/search:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1variables~1search'
 
-  # Deployment/Resource endpoints
-  /deployments:
-    $ref: 'deployments.yaml#/paths/~1deployments'
-  /resources/{resourceKey}:
-    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}'
-  /resources/{resourceKey}/content:
-    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1content'
-  /resources/{resourceKey}/deletion:
-    $ref: 'deployments.yaml#/paths/~1resources~1{resourceKey}~1deletion'
-
-  # Batch operation endpoints
-  /batch-operations/{batchOperationKey}:
-    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}'
-  /batch-operations/search:
-    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1search'
-  /batch-operations/{batchOperationKey}/cancellation:
-    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}~1cancellation'
-  /batch-operations/{batchOperationKey}/suspension:
-    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}~1suspension'
-  /batch-operations/{batchOperationKey}/resumption:
-    $ref: 'batch-operations.yaml#/paths/~1batch-operations~1{batchOperationKey}~1resumption'
-  /batch-operation-items/search:
-    $ref: 'batch-operations.yaml#/paths/~1batch-operation-items~1search'
+  # Variable endpoints
+  /variables/search:
+    $ref: 'variables.yaml#/paths/~1variables~1search'
+  /variables/{variableKey}:
+    $ref: 'variables.yaml#/paths/~1variables~1{variableKey}'
 
 components:
   securitySchemes:

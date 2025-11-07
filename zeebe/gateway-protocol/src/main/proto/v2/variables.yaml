@@ -129,11 +129,11 @@ components:
         variableKey:
           description: The key for this variable.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/VariableKeyFilterProperty'
+            - $ref: '#/components/schemas/VariableKeyFilterProperty'
         scopeKey:
           description: The key of the scope of this variable.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ScopeKeyFilterProperty'
+            - $ref: '#/components/schemas/ScopeKeyFilterProperty'
         processInstanceKey:
           description: The key of the process instance of this variable.
           allOf:
@@ -239,3 +239,81 @@ components:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
       required:
         - variables
+
+    ## Filters
+
+    AdvancedScopeKeyFilter:
+      title: Advanced filter
+      description: Advanced ScopeKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ScopeKey"
+        $neq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ScopeKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ScopeKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/ScopeKey"
+
+    ScopeKeyFilterProperty:
+      description: ScopeKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ScopeKey"
+        - $ref: '#/components/schemas/AdvancedScopeKeyFilter'
+
+    AdvancedVariableKeyFilter:
+      title: Advanced filter
+      description: Advanced VariableKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/VariableKey"
+        $neq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/VariableKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/VariableKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/VariableKey"
+
+    VariableKeyFilterProperty:
+      description: VariableKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/VariableKey"
+        - $ref: '#/components/schemas/AdvancedVariableKeyFilter'

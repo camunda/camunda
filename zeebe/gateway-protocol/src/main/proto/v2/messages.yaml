@@ -172,7 +172,7 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         messageKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageKey'
+            - $ref: '#/components/schemas/MessageKey'
           description: The key of the correlated message.
         processInstanceKey:
           allOf:
@@ -220,7 +220,7 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         messageKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageKey'
+            - $ref: '#/components/schemas/MessageKey'
           description: The key of the published message.
 
     MessageSubscriptionSearchQueryResult:
@@ -239,7 +239,7 @@ components:
       properties:
         messageSubscriptionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageSubscriptionKey'
+            - $ref: '#/components/schemas/MessageSubscriptionKey'
           description: The message subscription key associated with this message subscription.
         processDefinitionId:
           allOf:
@@ -262,7 +262,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The element instance key associated with this message subscription.
         messageSubscriptionState:
-          $ref: 'enums.yaml#/components/schemas/MessageSubscriptionStateEnum'
+          $ref: '#/components/schemas/MessageSubscriptionStateEnum'
         lastUpdatedDate:
           description: The last updated date of the message subscription.
           type: string
@@ -272,7 +272,7 @@ components:
           type: string
         correlationKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageCorrelationKey'
+            - $ref: '#/components/schemas/MessageCorrelationKey'
           description: The correlation key of the message subscription.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -321,7 +321,7 @@ components:
       properties:
         messageSubscriptionKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/MessageSubscriptionKeyFilterProperty'
+            - $ref: '#/components/schemas/MessageSubscriptionKeyFilterProperty'
           description: The message subscription key associated with this message subscription.
         processDefinitionId:
           allOf:
@@ -390,7 +390,7 @@ components:
           description: The element instance key that received the message.
         messageKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageKey'
+            - $ref: '#/components/schemas/MessageKey'
           description: The message key.
         messageName:
           description: The name of the message.
@@ -413,7 +413,7 @@ components:
           description: The process instance key associated with this correlated message subscription.
         subscriptionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/MessageSubscriptionKey'
+            - $ref: '#/components/schemas/MessageSubscriptionKey'
           description: The subscription key that received the message.
         tenantId:
           allOf:
@@ -471,6 +471,19 @@ components:
       required:
         - field
 
+    ## Enums
+
+    MessageSubscriptionStateEnum:
+      description: The state of message subscription.
+      type: string
+      enum:
+        - CORRELATED
+        - CREATED
+        - DELETED
+        - MIGRATED
+
+    ## Filters
+
     CorrelatedMessageSubscriptionFilter:
       description: Correlated message subscriptions search filter.
       type: object
@@ -517,7 +530,7 @@ components:
           description: The process instance key associated with this correlated message subscription.
         subscriptionKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/MessageSubscriptionKeyFilterProperty'
+            - $ref: '#/components/schemas/MessageSubscriptionKeyFilterProperty'
           description: The subscription key that received the message.
         tenantId:
           allOf:
@@ -532,7 +545,7 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/MessageSubscriptionStateEnum"
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         - $ref: '#/components/schemas/AdvancedMessageSubscriptionStateFilter'
 
     AdvancedMessageSubscriptionStateFilter:
@@ -543,11 +556,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/MessageSubscriptionStateEnum"
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: "enums.yaml#/components/schemas/MessageSubscriptionStateEnum"
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -555,6 +568,73 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "enums.yaml#/components/schemas/MessageSubscriptionStateEnum"
+            $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    AdvancedMessageSubscriptionKeyFilter:
+      title: Advanced filter
+      description: Advanced MessageSubscriptionKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
+        $neq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionKey"
+
+    MessageSubscriptionKeyFilterProperty:
+      description: MessageSubscriptionKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
+        - $ref: '#/components/schemas/AdvancedMessageSubscriptionKeyFilter'
+
+    ## Keys
+
+    MessageSubscriptionKey:
+      description: System-generated key for a message subscription.
+      format: MessageSubscriptionKey
+      x-semantic-type: MessageSubscriptionKey
+      example: "2251799813632456"
+      type: string
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+
+    MessageCorrelationKey:
+      description: System-generated key for a message correlation.
+      format: MessageCorrelationKey
+      x-semantic-type: MessageCorrelationKey
+      example: "2251799813634265"
+      type: string
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+
+    MessageKey:
+      allOf:
+        - $ref: 'keys.yaml#/components/schemas/LongKey'
+      description: System-generated key for an message.
+      format: MessageKey
+      x-semantic-type: MessageKey
+      example: "2251799813683467"
+      type: string

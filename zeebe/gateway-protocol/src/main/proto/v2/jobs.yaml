@@ -397,9 +397,9 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         kind:
-          $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+          $ref: '#/components/schemas/JobKindEnum'
         listenerEventType:
-          $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+          $ref: '#/components/schemas/JobListenerEventTypeEnum'
         userTask:
           $ref: '#/components/schemas/UserTaskProperties'
         tags:
@@ -663,9 +663,9 @@ components:
             - $ref: "keys.yaml#/components/schemas/JobKey"
           description: The key, a unique identifier for the job.
         kind:
-          $ref: "enums.yaml#/components/schemas/JobKindEnum"
+          $ref: "#/components/schemas/JobKindEnum"
         listenerEventType:
-          $ref: "enums.yaml#/components/schemas/JobListenerEventTypeEnum"
+          $ref: "#/components/schemas/JobListenerEventTypeEnum"
         processDefinitionId:
           description: The process definition ID associated with the job.
           allOf:
@@ -683,7 +683,7 @@ components:
           type: integer
           format: int32
         state:
-          $ref: "enums.yaml#/components/schemas/JobStateEnum"
+          $ref: "#/components/schemas/JobStateEnum"
         tenantId:
           $ref: "identifiers.yaml#/components/schemas/TenantId"
         type:
@@ -903,6 +903,47 @@ components:
           format: int64
           description: The new timeout for the job in milliseconds.
 
+    ## Enums
+
+    JobStateEnum:
+      description: The state of the job.
+      type: string
+      enum:
+        - CANCELED
+        - COMPLETED
+        - CREATED
+        - ERROR_THROWN
+        - FAILED
+        - MIGRATED
+        - RETRIES_UPDATED
+        - TIMED_OUT
+
+    JobKindEnum:
+      description: The job kind.
+      example: BPMN_ELEMENT
+      type: string
+      enum:
+        - BPMN_ELEMENT
+        - EXECUTION_LISTENER
+        - TASK_LISTENER
+        - AD_HOC_SUB_PROCESS
+
+    JobListenerEventTypeEnum:
+      example: UNSPECIFIED
+      description: The listener event type of the job.
+      type: string
+      enum:
+        - ASSIGNING
+        - CANCELING
+        - COMPLETING
+        - CREATING
+        - END
+        - START
+        - UNSPECIFIED
+        - UPDATING
+
+    ## Filters
+
     JobKindFilterProperty:
       description: JobKindEnum property with full advanced search capabilities.
       type: object
@@ -911,7 +952,7 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+            - $ref: '#/components/schemas/JobKindEnum'
         - $ref: '#/components/schemas/AdvancedJobKindFilter'
 
     AdvancedJobKindFilter:
@@ -922,11 +963,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+            - $ref: '#/components/schemas/JobKindEnum'
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+            - $ref: '#/components/schemas/JobKindEnum'
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -934,7 +975,7 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: 'enums.yaml#/components/schemas/JobKindEnum'
+            $ref: '#/components/schemas/JobKindEnum'
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
 
@@ -946,7 +987,7 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+            - $ref: '#/components/schemas/JobListenerEventTypeEnum'
         - $ref: '#/components/schemas/AdvancedJobListenerEventTypeFilter'
 
     AdvancedJobListenerEventTypeFilter:
@@ -957,11 +998,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+            - $ref: '#/components/schemas/JobListenerEventTypeEnum'
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+            - $ref: '#/components/schemas/JobListenerEventTypeEnum'
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -969,7 +1010,7 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: 'enums.yaml#/components/schemas/JobListenerEventTypeEnum'
+            $ref: '#/components/schemas/JobListenerEventTypeEnum'
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
 
@@ -982,7 +1023,7 @@ components:
           description: Matches the value exactly.
           format: JobStateEnum
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobStateEnum'
+            - $ref: '#/components/schemas/JobStateEnum'
         - $ref: '#/components/schemas/AdvancedJobStateFilter'
 
     AdvancedJobStateFilter:
@@ -993,11 +1034,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobStateEnum'
+            - $ref: '#/components/schemas/JobStateEnum'
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: 'enums.yaml#/components/schemas/JobStateEnum'
+            - $ref: '#/components/schemas/JobStateEnum'
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -1005,6 +1046,6 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: 'enums.yaml#/components/schemas/JobStateEnum'
+            $ref: '#/components/schemas/JobStateEnum'
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
