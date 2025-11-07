@@ -44,14 +44,15 @@ const changedFolders =
     : [];
 
 // Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
-const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
+const isV2ModeEnabled =
+  process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
 
 export default defineConfig({
   testDir: `./tests/`,
   timeout: 12 * 60 * 1000,
   workers: 4,
   retries: 1,
-  grep: isV2ModeEnabled ? /^(?!.*@v1-only).*$/ : undefined,
+  grep: isV2ModeEnabled ? /^(?!.*@v1-only).*$/ : /^(?!.*@v2-only).*$/,
   expect: {
     timeout: 10_000,
   },
@@ -69,6 +70,7 @@ export default defineConfig({
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
         : undefined,
       testIgnore: 'task-panel.spec.ts',
+      grep: /^(?!.*@v2-only).*$/,
       teardown: 'chromium-subset',
     },
     {
@@ -81,29 +83,34 @@ export default defineConfig({
       name: 'firefox',
       use: devices['Desktop Firefox'],
       testIgnore: 'task-panel.spec.ts',
+      grep: /^(?!.*@v2-only).*$/,
       teardown: 'firefox-subset',
     },
     {
       name: 'firefox-subset',
       testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Firefox'],
+      grep: /^(?!.*@v2-only).*$/,
     },
     {
       name: 'msedge',
       use: devices['Desktop Edge'],
       testIgnore: 'task-panel.spec.ts',
+      grep: /^(?!.*@v2-only).*$/,
       teardown: 'msedge-subset',
     },
     {
       name: 'msedge-subset',
       testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Edge'],
+      grep: /^(?!.*@v2-only).*$/,
     },
     {
       name: 'tasklist-v1-e2e',
       testMatch: ['tests/tasklist/*.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
       use: devices['Desktop Edge'],
       testIgnore: 'task-panel.spec.ts',
+      grep: /^(?!.*@v2-only).*$/,
       teardown: 'chromium-subset',
     },
     {
