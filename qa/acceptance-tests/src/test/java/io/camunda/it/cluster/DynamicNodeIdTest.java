@@ -13,8 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
@@ -23,10 +22,10 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import net.bytebuddy.utility.dispatcher.JavaDispatcher.Container;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
@@ -48,17 +47,61 @@ public class DynamicNodeIdTest {
           .withEnv("LS_LOG", "trace");
 
   @AutoClose private static S3Client s3Client;
+  private static String bucketName;
+  private static String taskId;
+  private static int clusterSize;
 
-  @TestZeebe(autoStart = false)
-  protected TestStandaloneApplication<?> testStandaloneApplication;
+  @TestZeebe
+  protected TestCluster testCluster =
+      TestCluster.builder()
+          .withName("dynamic-node-id-test")
+          .withBrokersCount(clusterSize)
+          .withPartitionsCount(1)
+          .withReplicationFactor(clusterSize)
+          .withNodeConfig(
+              app ->
+                  app.withAdditionalProperties(
+                          // Disable secondary storage
+                          Map.of(
+                              "camunda.rest.query.enabled",
+                              "false",
+                              "camunda.persistent.sessions.enabled",
+                              "false",
+                              "camunda.data.secondary-storage.type",
+                              "none",
+                              "camunda.operate.importerenabled",
+                              "false",
+                              "camunda.operate.archiverenabled",
+                              "false",
+                              "camunda.tasklist.importerenabled",
+                              "false",
+                              "camunda.tasklist.archiverenabled",
+                              "false"))
+                      .withAdditionalProperties(
+                          Map.of(
+                              "camunda.cluster.size",
+                              clusterSize,
+                              "camunda.cluster.dynamic-node-id.type",
+                              "s3",
+                              "camunda.cluster.dynamic-node-id.s3.taskId",
+                              taskId + "nodeId=" + app.nodeId(),
+                              "camunda.cluster.dynamic-node-id.s3.bucketName",
+                              bucketName,
+                              "camunda.cluster.dynamic-node-id.s3.leaseDuration",
+                              LEASE_DURATION,
+                              "camunda.cluster.dynamic-node-id.s3.endpoint",
+                              S3.getEndpoint(),
+                              "camunda.cluster.dynamic-node-id.s3.region",
+                              S3.getRegion(),
+                              "camunda.cluster.dynamic-node-id.s3.accessKey",
+                              S3.getAccessKey(),
+                              "camunda.cluster.dynamic-node-id.s3.secretKey",
+                              S3.getSecretKey())))
+          .build();
 
-  private String bucketName;
-  private String taskId;
-  private int clusterSize;
-
-  @Container
-  @BeforeEach
-  public void setup() {
+  @BeforeAll
+  // Setup as static so it's done before the cluster
+  public static void setupAll() {
     bucketName = UUID.randomUUID().toString();
 
     taskId = UUID.randomUUID().toString();
@@ -72,49 +115,6 @@ public class DynamicNodeIdTest {
 
     // bucket must be created before the application is started
     s3Client.createBucket(b -> b.bucket(bucketName));
-
-    testStandaloneApplication =
-        new TestStandaloneBroker()
-            .withCreateSchema(false)
-            .withAdditionalProperties(
-                // Disable secondary storage
-                Map.of(
-                    "camunda.rest.query.enabled",
-                    "false",
-                    "camunda.persistent.sessions.enabled",
-                    "false",
-                    "camunda.data.secondary-storage.type",
-                    "none",
-                    "camunda.operate.importerenabled",
-                    "false",
-                    "camunda.operate.archiverenabled",
-                    "false",
-                    "camunda.tasklist.importerenabled",
-                    "false",
-                    "camunda.tasklist.archiverenabled",
-                    "false"))
-            .withAdditionalProperties(
-                Map.of(
-                    "camunda.cluster.size",
-                    clusterSize,
-                    "camunda.cluster.dynamic-node-id.type",
-                    "s3",
-                    "camunda.cluster.dynamic-node-id.s3.taskId",
-                    taskId,
-                    "camunda.cluster.dynamic-node-id.s3.bucketName",
-                    bucketName,
-                    "camunda.cluster.dynamic-node-id.s3.leaseDuration",
-                    LEASE_DURATION,
-                    "camunda.cluster.dynamic-node-id.s3.endpoint",
-                    S3.getEndpoint(),
-                    "camunda.cluster.dynamic-node-id.s3.region",
-                    S3.getRegion(),
-                    "camunda.cluster.dynamic-node-id.s3.accessKey",
-                    S3.getAccessKey(),
-                    "camunda.cluster.dynamic-node-id.s3.secretKey",
-                    S3.getSecretKey()));
-
-    testStandaloneApplication.start();
   }
 
   @Test
@@ -130,13 +130,21 @@ public class DynamicNodeIdTest {
       final var payload = lease.readAllBytes();
       if (payload.length > 0) {
         final var parsed = Lease.fromJsonBytes(OBJECT_MAPPER, payload);
-        if (parsed.isStillValid(System.currentTimeMillis(), LEASE_DURATION)
-            && parsed.taskId().equals(taskId)) {
+        if (parsed.isStillValid(System.currentTimeMillis(), LEASE_DURATION)) {
           leases.add(parsed);
         }
       }
     }
 
-    assertThat(leases).hasSize(1);
+    assertThat(leases).hasSize(3);
+    final var configuredTaskIds =
+        testCluster.brokers().values().stream()
+            .map(
+                app ->
+                    app.property("camunda.cluster.dynamic-node-id.s3.taskId", String.class, null))
+            .collect(Collectors.toSet());
+    assertThat(configuredTaskIds).allSatisfy(o -> assertThat(o).isNotNull());
+    assertThat(leases.stream().map(Lease::taskId).collect(Collectors.toSet()))
+        .isEqualTo(configuredTaskIds);
   }
 }
