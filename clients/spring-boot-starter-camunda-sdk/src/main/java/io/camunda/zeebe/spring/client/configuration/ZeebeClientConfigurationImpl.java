@@ -368,6 +368,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
     return new NoopCredentialsProvider();
   }
 
+  @Override
+  public int getMaxHttpConnections() {
+    return camundaClientProperties.getMaxHttpConnections();
+  }
+
   private String composeGatewayAddress() {
     final URI gatewayUrl = camundaClientProperties.getZeebe().getGrpcAddress();
     final int port = gatewayUrl.getPort();

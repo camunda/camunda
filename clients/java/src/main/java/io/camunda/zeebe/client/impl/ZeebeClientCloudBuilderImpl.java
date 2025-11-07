@@ -292,6 +292,12 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder maxHttpConnections(final int maxConnections) {
+    innerBuilder.maxHttpConnections(maxConnections);
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
     innerBuilder.grpcAddress(determineGrpcAddress());
     innerBuilder.restAddress(determineRestAddress());
