@@ -18,8 +18,6 @@ package io.camunda.client.jobhandling;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Wrapper bean for {@link ScheduledExecutorService} required in Spring Zeebe for Job Handling,
@@ -29,9 +27,6 @@ import org.slf4j.LoggerFactory;
  * the right one.
  */
 public class CamundaClientExecutorService {
-
-  private static final Logger LOG = LoggerFactory.getLogger(CamundaClientExecutorService.class);
-
   private final ScheduledExecutorService scheduledExecutorService;
   private final boolean scheduledExecutorOwnedByCamundaClient;
 
