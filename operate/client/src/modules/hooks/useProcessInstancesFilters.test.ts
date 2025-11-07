@@ -17,7 +17,7 @@ vi.mock('modules/hooks/useFilters');
 const mockedUseFilters = vi.mocked(useFilters);
 
 describe('useProcessInstanceFilters', () => {
-  it('should map filters to request correctly with both state and incidents', () => {
+  it('should correctly map filters to request', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
       startDateBefore: '2023-01-31',
@@ -67,9 +67,6 @@ describe('useProcessInstanceFilters', () => {
           },
           {hasIncident: true},
         ],
-        state: {
-          $in: ['ACTIVE', 'COMPLETED', 'TERMINATED'],
-        },
         parentProcessInstanceKey: {
           $eq: 'parent1',
         },
@@ -88,7 +85,7 @@ describe('useProcessInstanceFilters', () => {
         incidentErrorHashCode: 321456,
         hasRetriesLeft: true,
       },
-    };
+    } as const;
 
     const {result} = renderHook(() => useProcessInstanceFilters());
     expect(result.current).toEqual(expectedRequest);
@@ -179,7 +176,7 @@ describe('useProcessInstanceFilters', () => {
           $gt: '2023-01-01T00:00:00.000Z',
         },
         state: {
-          $in: ['ACTIVE'],
+          $eq: 'ACTIVE',
         },
       },
     };
