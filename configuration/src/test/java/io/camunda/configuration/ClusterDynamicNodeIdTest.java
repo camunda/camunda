@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.configuration.DynamicNodeIdConfig.S3;
 import io.camunda.configuration.DynamicNodeIdConfig.Type;
 import java.time.Duration;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,7 @@ public class ClusterDynamicNodeIdTest {
         "camunda.cluster.dynamic-node-id.type=s3",
         "camunda.cluster.dynamic-node-id.s3.bucketName=bucketExample",
         "camunda.cluster.dynamic-node-id.s3.leaseDuration=PT10s",
+        "camunda.cluster.dynamic-node-id.s3.task-id=example-task-id",
         "camunda.cluster.dynamic-node-id.s3.endpoint=https://s3.example.com",
         "camunda.cluster.dynamic-node-id.s3.region=us-east-1",
         "camunda.cluster.dynamic-node-id.s3.accessKey=myAccessKey",
@@ -74,10 +76,11 @@ public class ClusterDynamicNodeIdTest {
       assertThat(cluster.getDynamicNodeId().s3())
           .returns("bucketExample", S3::getBucketName)
           .returns(Duration.ofSeconds(10), S3::getLeaseDuration)
-          .returns("https://s3.example.com", S3::getEndpoint)
-          .returns("us-east-1", S3::getRegion)
-          .returns("myAccessKey", S3::getAccessKey)
-          .returns("mySecretKey", S3::getSecretKey);
+          .returns(Optional.of("example-task-id"), S3::getTaskId)
+          .returns(Optional.of("https://s3.example.com"), S3::getEndpoint)
+          .returns(Optional.of("us-east-1"), S3::getRegion)
+          .returns(Optional.of("myAccessKey"), S3::getAccessKey)
+          .returns(Optional.of("mySecretKey"), S3::getSecretKey);
     }
   }
 

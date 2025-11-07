@@ -18,6 +18,9 @@ import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3Client
 import java.net.URI;
 import java.time.Clock;
 import java.util.Optional;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +32,7 @@ import software.amazon.awssdk.regions.Region;
 @Profile(value = {"broker", "restore"})
 @DependsOn("unifiedConfigurationHelper")
 public class NodeIdProviderConfiguration {
+  private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
 
   private final Cluster cluster;
 
@@ -66,12 +70,14 @@ public class NodeIdProviderConfiguration {
           throw new IllegalStateException(
               "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
         }
+        final var taskId = config.getTaskId().orElse(UUID.randomUUID().toString());
+        LOG.info("Node configured with taskId {}", taskId);
         final var repository =
             new RepositoryNodeIdProvider(
                 nodeIdRepository.get(),
                 Clock.systemUTC(),
                 config.getLeaseDuration(),
-                config.getTaskId(),
+                taskId,
                 () -> System.exit(-1));
         repository.initialize(cluster.getSize());
         yield repository;
@@ -80,15 +86,16 @@ public class NodeIdProviderConfiguration {
   }
 
   private static S3ClientConfig makeS3ClientConfig(final S3 s3) {
-    Optional<S3ClientConfig.Credentials> credentials = Optional.empty();
-    if (s3.getAccessKey() != null && s3.getSecretKey() != null) {
-      credentials =
-          Optional.of(new S3ClientConfig.Credentials(s3.getAccessKey(), s3.getSecretKey()));
-    }
+    final var credentials =
+        s3.getAccessKey()
+            .flatMap(
+                accessKey ->
+                    s3.getSecretKey()
+                        .map(secretKey -> new S3ClientConfig.Credentials(accessKey, secretKey)));
     return new S3ClientConfig(
         credentials,
-        Optional.ofNullable(s3.getRegion()).map(Region::of),
-        Optional.ofNullable(s3.getEndpoint()).map(URI::create),
+        s3.getRegion().map(Region::of),
+        s3.getEndpoint().map(URI::create),
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),

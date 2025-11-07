@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import java.time.Duration;
+import java.util.Optional;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 //  @ConfigurationProperties
@@ -63,40 +64,40 @@ public class DynamicNodeIdConfig {
     /** Lease duration before expiry */
     private Duration leaseDuration;
 
-    /** The taskId to use when registering to a lease * */
-    private String taskId;
-
     /**
      * Name of the bucket where the backup will be stored. The bucket must be already created. The
      * bucket must not be shared with other zeebe clusters. bucketName must not be empty.
      */
     private String bucketName;
 
+    /** The taskId to use when registering to a lease * */
+    private Optional<String> taskId = Optional.empty();
+
     /**
      * Configure URL endpoint for the store. If no endpoint is provided, it will be determined based
      * on the configured region.
      */
-    private String endpoint;
+    private Optional<String> endpoint = Optional.empty();
 
     /**
      * Configure AWS region. If no region is provided it will be determined as documented in <a
      * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment">...</a>
      */
-    private String region;
+    private Optional<String> region = Optional.empty();
 
     /**
      * Configure access credentials. If either accessKey or secretKey is not provided, the
      * credentials will be determined as documented in <a
      * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain">...</a>
      */
-    private String accessKey;
+    private Optional<String> accessKey = Optional.empty();
 
     /**
      * Configure access credentials. If either accessKey or secretKey is not provided, the
      * credentials will be determined as documented in <a
      * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain">...</a>
      */
-    private String secretKey;
+    private Optional<String> secretKey = Optional.empty();
 
     /**
      * Configure a maximum duration for all S3 client API calls. Lower values will ensure that
@@ -107,36 +108,36 @@ public class DynamicNodeIdConfig {
      */
     private final Duration apiCallTimeout = Duration.ofSeconds(180);
 
-    public String getEndpoint() {
+    public Optional<String> getEndpoint() {
       return endpoint;
     }
 
     public void setEndpoint(final String endpoint) {
-      this.endpoint = endpoint;
+      this.endpoint = Optional.ofNullable(endpoint);
     }
 
-    public String getRegion() {
+    public Optional<String> getRegion() {
       return region;
     }
 
     public void setRegion(final String region) {
-      this.region = region;
+      this.region = Optional.ofNullable(region);
     }
 
-    public String getAccessKey() {
+    public Optional<String> getAccessKey() {
       return accessKey;
     }
 
     public void setAccessKey(final String accessKey) {
-      this.accessKey = accessKey;
+      this.accessKey = Optional.ofNullable(accessKey);
     }
 
-    public String getSecretKey() {
+    public Optional<String> getSecretKey() {
       return secretKey;
     }
 
     public void setSecretKey(final String secretKey) {
-      this.secretKey = secretKey;
+      this.secretKey = Optional.ofNullable(secretKey);
     }
 
     public Duration getApiCallTimeout() {
@@ -182,12 +183,12 @@ public class DynamicNodeIdConfig {
       this.leaseDuration = leaseDuration;
     }
 
-    public String getTaskId() {
+    public Optional<String> getTaskId() {
       return taskId;
     }
 
     public void setTaskId(final String taskId) {
-      this.taskId = taskId;
+      this.taskId = Optional.ofNullable(taskId);
     }
   }
 }
