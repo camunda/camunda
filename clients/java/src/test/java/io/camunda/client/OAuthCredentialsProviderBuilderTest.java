@@ -232,7 +232,8 @@ public final class OAuthCredentialsProviderBuilderTest {
   @Test
   void shouldUseDefaultAuthorizationServerUrl() {
     // given
-    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder().audience("a").clientId("b").clientSecret("c");
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder().audience("a").clientId("b").clientSecret("c");
     // when
     builder.build();
     // then

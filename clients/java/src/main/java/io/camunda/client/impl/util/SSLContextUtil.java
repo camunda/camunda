@@ -43,8 +43,8 @@ public final class SSLContextUtil {
       if (keystorePath != null) {
         builder.loadKeyMaterial(
             keystorePath,
-            keystorePassword == null ? null : keystorePassword.toCharArray(),
-            keystoreKeyPassword == null ? new char[0] : keystoreKeyPassword.toCharArray());
+            toPasswordChars(keystorePassword, null),
+            toPasswordChars(keystoreKeyPassword, new char[0]));
       }
       if (truststorePath != null) {
         builder.loadTrustMaterial(
@@ -59,5 +59,9 @@ public final class SSLContextUtil {
         | IOException e) {
       throw new RuntimeException("Failed to create SSL context", e);
     }
+  }
+
+  private static char[] toPasswordChars(final String password, final char[] defaultPassword) {
+    return password != null ? password.toCharArray() : defaultPassword;
   }
 }
