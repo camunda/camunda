@@ -96,21 +96,6 @@ const getSVGComponent = (
   businessObject: BusinessObject | undefined,
   elementInstanceType: ElementInstance['type'],
 ) => {
-  if (businessObject === undefined) {
-    return FlowNodeTask;
-  }
-  if (elementInstanceType === 'MULTI_INSTANCE_BODY') {
-    const multiInstanceType = getMultiInstanceType(businessObject);
-
-    if (multiInstanceType === 'parallel') {
-      return FlowNodeTaskParallel;
-    }
-
-    if (multiInstanceType === 'sequential') {
-      return FlowNodeTaskMulti;
-    }
-  }
-
   if (elementInstanceType === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
     return FlowNodeTaskSubProcessAdhocInnerInstance;
   }
@@ -181,6 +166,18 @@ const getSVGComponent = (
 
   if (businessObject === undefined) {
     return FlowNodeTask;
+  }
+
+  if (elementInstanceType === 'MULTI_INSTANCE_BODY') {
+    const multiInstanceType = getMultiInstanceType(businessObject);
+
+    if (multiInstanceType === 'parallel') {
+      return FlowNodeTaskParallel;
+    }
+
+    if (multiInstanceType === 'sequential') {
+      return FlowNodeTaskMulti;
+    }
   }
 
   switch (getEventType(businessObject)) {
