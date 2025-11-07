@@ -39,6 +39,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
   private final Config config;
   private final InstantSource clock;
   private final boolean closeClient;
+  private volatile boolean initialized = false;
 
   public S3NodeIdRepository(
       final S3Client s3Client,
@@ -60,7 +61,10 @@ public class S3NodeIdRepository implements NodeIdRepository {
 
   @Override
   public void initialize(final int count) {
-    IntStream.range(0, count).forEach(this::initializeForNode);
+    if (!initialized) {
+      IntStream.range(0, count).forEach(this::initializeForNode);
+    }
+    initialized = true;
   }
 
   @Override

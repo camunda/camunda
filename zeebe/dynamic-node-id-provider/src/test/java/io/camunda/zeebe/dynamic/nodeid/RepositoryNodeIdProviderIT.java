@@ -249,7 +249,10 @@ public class RepositoryNodeIdProviderIT {
   }
 
   RepositoryNodeIdProvider ofSize(final int clusterSize) {
-    return new RepositoryNodeIdProvider(
-        repository, clusterSize, clock, EXPIRY_DURATION, taskId, () -> leaseFailed = true);
+    final var provider =
+        new RepositoryNodeIdProvider(
+            repository, clock, EXPIRY_DURATION, taskId, () -> leaseFailed = true);
+    provider.initialize(clusterSize);
+    return provider;
   }
 }

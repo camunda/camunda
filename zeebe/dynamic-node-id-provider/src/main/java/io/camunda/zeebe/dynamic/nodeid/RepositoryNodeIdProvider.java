@@ -26,7 +26,6 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepositoryNodeIdProvider.class);
   private final NodeIdRepository nodeIdRepository;
-  private final int clusterSize;
   private final InstantSource clock;
   private volatile StoredLease.Initialized currentLease;
   private final Duration leaseDuration;
@@ -40,13 +39,11 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
-      final int clusterSize,
       final InstantSource clock,
       final Duration expiryDuration,
       final String taskId,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository = nodeIdRepository;
-    this.clusterSize = clusterSize;
     this.clock = clock;
     leaseDuration = expiryDuration;
     this.taskId = taskId;
@@ -55,8 +52,40 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     renewalDelay = leaseDuration.dividedBy(3);
     currentDelay = 0L;
     executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
-    CompletableFuture.runAsync(this::acquireInitialLease, executor)
+  }
+
+  @Override
+  public void initialize(final int clusterSize) {
+    nodeIdRepository.initialize(clusterSize);
+    CompletableFuture.runAsync(() -> acquireInitialLease(clusterSize), executor)
         .thenRun(this::startRenewalTimer);
+  }
+
+  @Override
+  public NodeInstance currentNodeInstance() {
+    return getCurrentLease().lease().nodeInstance();
+  }
+
+  /**
+   * Verify the status of the lease, to be used for health checks. If the scheduler is not able to
+   * reply in time, then it's marked as invalid. There's no need to set an external timeout, the
+   * future will be completed with false.
+   *
+   * @return A future that completes with true if the lease is acquired and valid. false if the
+   *     lease is not present anymore or invalid. The future never fails, all exceptions are
+   *     converted to `false` (timeouts included).
+   */
+  @Override
+  public CompletableFuture<Boolean> isValid() {
+    final var now = clock.millis();
+    return CompletableFuture.supplyAsync(
+            () -> currentLease != null && currentLease.lease().isStillValid(now, leaseDuration))
+        .orTimeout(leaseDuration.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS)
+        .exceptionally(
+            t -> {
+              LOG.warn("Failed to check the status of the lease. Marking it as failed", t);
+              return false;
+            });
   }
 
   private void startRenewalTimer() {
@@ -86,7 +115,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
    * one. Until a lease is acquired, this object cannot perform other tasks, so it's ok to block all
    * the other operations (including health checks)
    */
-  private void acquireInitialLease() {
+  private void acquireInitialLease(final int clusterSize) {
     var i = 0;
     var retryRound = 0;
     while (currentLease == null) {
@@ -171,32 +200,5 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         }
       }
     }
-  }
-
-  @Override
-  public NodeInstance currentNodeInstance() {
-    return getCurrentLease().lease().nodeInstance();
-  }
-
-  /**
-   * Verify the status of the lease, to be used for health checks. If the scheduler is not able to
-   * reply in time, then it's marked as invalid. There's no need to set an external timeout, the
-   * future will be completed with false.
-   *
-   * @return A future that completes with true if the lease is acquired and valid. false if the
-   *     lease is not present anymore or invalid. The future never fails, all exceptions are
-   *     converted to `false` (timeouts included).
-   */
-  @Override
-  public CompletableFuture<Boolean> isValid() {
-    final var now = clock.millis();
-    return CompletableFuture.supplyAsync(
-            () -> currentLease != null && currentLease.lease().isStillValid(now, leaseDuration))
-        .orTimeout(leaseDuration.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS)
-        .exceptionally(
-            t -> {
-              LOG.warn("Failed to check the status of the lease. Marking it as failed", t);
-              return false;
-            });
   }
 }
