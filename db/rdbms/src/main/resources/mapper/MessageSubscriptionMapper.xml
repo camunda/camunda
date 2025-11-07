@@ -26,6 +26,7 @@
     SELECT
     MESSAGE_SUBSCRIPTION_KEY,
     PROCESS_DEFINITION_ID,
+    PROCESS_DEFINITION_KEY,
     PROCESS_INSTANCE_KEY,
     FLOW_NODE_ID,
     FLOW_NODE_INSTANCE_KEY,
@@ -70,6 +71,12 @@
     <if test="filter.messageSubscriptionKeyOperations != null and !filter.messageSubscriptionKeyOperations.isEmpty()">
       <foreach collection="filter.messageSubscriptionKeyOperations" item="operation">
         AND MESSAGE_SUBSCRIPTION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+        AND PROCESS_DEFINITION_KEY
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
@@ -134,6 +141,7 @@
       <idArg column="MESSAGE_SUBSCRIPTION_KEY" javaType="java.lang.Long" />
     </constructor>
     <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
+    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
     <result column="FLOW_NODE_ID" property="flowNodeId" javaType="java.lang.String" />
     <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
@@ -151,6 +159,7 @@
     INSERT INTO ${prefix}MESSAGE_SUBSCRIPTION (
                                                MESSAGE_SUBSCRIPTION_KEY,
                                                PROCESS_DEFINITION_ID,
+                                               PROCESS_DEFINITION_KEY,
                                                PROCESS_INSTANCE_KEY,
                                                FLOW_NODE_ID,
                                                FLOW_NODE_INSTANCE_KEY,
@@ -165,6 +174,7 @@
     VALUES (
             #{messageSubscriptionKey},
             #{processDefinitionId},
+            #{processDefinitionKey},
             #{processInstanceKey},
             #{flowNodeId},
             #{flowNodeInstanceKey},
@@ -181,6 +191,7 @@
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel">
     UPDATE ${prefix}MESSAGE_SUBSCRIPTION
     SET PROCESS_DEFINITION_ID = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY = #{processDefinitionKey},
         PROCESS_INSTANCE_KEY = #{processInstanceKey},
         FLOW_NODE_ID = #{flowNodeId},
         FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},

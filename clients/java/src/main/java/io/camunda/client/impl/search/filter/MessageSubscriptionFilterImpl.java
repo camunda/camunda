@@ -54,6 +54,19 @@ public class MessageSubscriptionFilterImpl
   }
 
   @Override
+  public MessageSubscriptionFilter processDefinitionKey(final Long processDefinitionKey) {
+    return processDefinitionKey(f -> f.eq(processDefinitionKey));
+  }
+
+  @Override
+  public MessageSubscriptionFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public MessageSubscriptionFilter processDefinitionId(final String processDefinitionId) {
     return processDefinitionId(f -> f.eq(processDefinitionId));
   }

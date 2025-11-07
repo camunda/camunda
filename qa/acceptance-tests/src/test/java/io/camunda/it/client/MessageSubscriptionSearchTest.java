@@ -17,13 +17,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.response.MessageSubscription;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@MultiDbTest
+@MultiDbTest(DatabaseType.RDBMS)
 public class MessageSubscriptionSearchTest {
 
   private static final int NUMBER_OF_MESSAGE_SUBSCRIPTIONS = 3;
@@ -91,6 +92,7 @@ public class MessageSubscriptionSearchTest {
                     f.messageSubscriptionKey(
                             expectedMessageSubscription.getMessageSubscriptionKey())
                         .processDefinitionId(expectedMessageSubscription.getProcessDefinitionId())
+                        .processDefinitionKey(expectedMessageSubscription.getProcessDefinitionKey())
                         .processInstanceKey(expectedMessageSubscription.getProcessInstanceKey())
                         .elementId(expectedMessageSubscription.getElementId())
                         .elementInstanceKey(expectedMessageSubscription.getElementInstanceKey())
