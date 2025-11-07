@@ -259,24 +259,10 @@ function mapQueryResultToIncidentsHandle(
 ): IncidentsHandle {
   const incidents = result.data?.pages.flatMap((p) => p.items) ?? [];
   const totalIncidentsCount = result.data?.pages[0]?.page.totalItems ?? 0;
-
-  let displayState: React.ComponentProps<typeof IncidentsTableV2>['state'] =
-    'content';
-
-  if (result.status === 'pending') {
-    displayState = 'skeleton';
-  } else if (
-    result.isFetching &&
-    !result.isRefetching &&
-    !result.isFetchingPreviousPage &&
-    !result.isFetchingNextPage
-  ) {
-    displayState = 'loading';
-  } else if (result.status === 'error') {
-    displayState = 'error';
-  } else if (result.status === 'success' && totalIncidentsCount === 0) {
-    displayState = 'empty';
-  }
+  const displayState = computeDisplayStateFromQueryResult(
+    result,
+    totalIncidentsCount,
+  );
 
   return {
     incidents,
@@ -295,6 +281,32 @@ function mapQueryResultToIncidentsHandle(
       }
     },
   };
+}
+
+function computeDisplayStateFromQueryResult(
+  result: UseInfiniteQueryResult<InfiniteData<unknown>>,
+  totalItems: number,
+): React.ComponentProps<typeof IncidentsTableV2>['state'] {
+  switch (true) {
+    case result.status === 'pending': {
+      return 'skeleton';
+    }
+    case result.isFetching &&
+      !result.isRefetching &&
+      !result.isFetchingPreviousPage &&
+      !result.isFetchingNextPage: {
+      return 'loading';
+    }
+    case result.status === 'error': {
+      return 'error';
+    }
+    case result.status === 'success' && totalItems === 0: {
+      return 'empty';
+    }
+    default: {
+      return 'content';
+    }
+  }
 }
 
 export {IncidentsWrapper, IncidentsWrapperV2};
