@@ -4,14 +4,14 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.4-SNAPSHOT</version>
+    <version>8.8.3-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>identity-parent</artifactId>
   <packaging>pom</packaging>
   <name>Identity Parent</name>
-  <!-- When adding modules here, keep in mind that the Management Identity
+  <!-- When adding modules here, keep in mind that the Management Identity 
     codebase (https://github.com/camunda-cloud/identity/) uses
     the same groupId; accordingly, do not pick conflicting artifactIds -->
   <modules>
