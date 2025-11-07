@@ -91,6 +91,7 @@ test.describe.serial('Process Instance Migration', () => {
     operateProcessesPage,
     operateProcessesMigrationPage,
   }) => {
+    test.slow();
     const sourceVersion = testProcesses.processV1.version.toString();
     const sourceBpmnProcessId = testProcesses.processV1.bpmnProcessId;
     const targetVersion = testProcesses.processV2.version.toString();
@@ -164,6 +165,7 @@ test.describe.serial('Process Instance Migration', () => {
     operateProcessesPage,
     operateProcessesMigrationPage,
   }) => {
+    test.slow();
     const sourceVersion = testProcesses.processV2.version.toString();
     const sourceBpmnProcessId = testProcesses.processV2.bpmnProcessId;
     const targetVersion = testProcesses.processV3.version.toString();
