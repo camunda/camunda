@@ -15,14 +15,12 @@ import {
   assertConflictRequest,
   assertPaginatedRequest,
 } from '../../../../utils/http';
-import {
-  defaultAssertionOptions,
-  generateUniqueId,
-} from '../../../../utils/constants';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertUserNameInResponse,
   assignRoleToUsers,
   createRole,
+  createUser,
   userFromState,
 } from '@requestHelpers';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
@@ -61,8 +59,12 @@ test.describe.parallel('Role Users API Tests', () => {
   test('Assign Role To User', async ({request}) => {
     const role = await createRole(request);
     createdRoleIds.push(role.roleId as string);
-    const user = 'test-user' + generateUniqueId();
+
+    // Create the user first
+    const userBody = await createUser(request);
+    const user = userBody.username;
     createdUserIds.push(user);
+
     const p = {
       userId: user,
       roleId: role.roleId as string,

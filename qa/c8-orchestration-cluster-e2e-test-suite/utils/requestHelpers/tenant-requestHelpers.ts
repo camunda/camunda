@@ -8,6 +8,7 @@
 
 import type {APIRequestContext} from 'playwright-core';
 import {groupIdFromState} from './get-value-from-state-requestHelpers';
+import {createUsersAndStoreResponseFields} from './user-requestHelpers';
 import {
   assertEqualsForKeys,
   assertRequiredFields,
@@ -26,8 +27,11 @@ export async function assignUsersToTenant(
   tenantId: string,
   state: Record<string, unknown>,
 ) {
+  // First create the users
+  await createUsersAndStoreResponseFields(request, numberOfUsers, state);
+
   for (let i = 1; i <= numberOfUsers; i++) {
-    const user = 'user' + generateUniqueId();
+    const user = state[`username${i}`] as string;
     const p = {
       userId: user,
       tenantId: tenantId,

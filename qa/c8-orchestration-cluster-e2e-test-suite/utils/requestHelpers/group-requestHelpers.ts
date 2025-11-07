@@ -8,6 +8,7 @@
 
 import type {APIRequestContext} from 'playwright-core';
 import {defaultAssertionOptions, generateUniqueId} from '../constants';
+import {createUsersAndStoreResponseFields} from './user-requestHelpers';
 import {
   assertEqualsForKeys,
   assertRequiredFields,
@@ -25,8 +26,11 @@ export async function assignUsersToGroup(
   groupId: string,
   state: Record<string, unknown>,
 ) {
+  // First create the users
+  await createUsersAndStoreResponseFields(request, numberOfUsers, state);
+
   for (let i = 1; i <= numberOfUsers; i++) {
-    const user = 'test-user' + generateUniqueId();
+    const user = state[`username${i}`] as string;
     const stateParams: Record<string, string> = {
       groupId: groupId,
       username: user,

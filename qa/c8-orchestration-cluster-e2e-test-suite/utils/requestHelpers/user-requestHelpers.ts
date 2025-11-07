@@ -7,7 +7,6 @@
  */
 
 import type {APIRequestContext} from 'playwright-core';
-import {generateUniqueId} from '../constants';
 import {
   assertEqualsForKeys,
   assertRequiredFields,
@@ -34,8 +33,11 @@ export async function assignRoleToUsers(
   roleId: string,
   state: Record<string, unknown>,
 ) {
+  // First create the users
+  await createUsersAndStoreResponseFields(request, numberOfUsers, state);
+
   for (let i = 1; i <= numberOfUsers; i++) {
-    const user = 'user' + generateUniqueId();
+    const user = state[`username${i}`] as string;
     const p = {
       userId: user,
       roleId: roleId,

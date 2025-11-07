@@ -21,12 +21,10 @@ import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/be
 import {
   assignUsersToGroup,
   createGroupAndStoreResponseFields,
+  createUser,
   userFromState,
 } from '@requestHelpers';
-import {
-  defaultAssertionOptions,
-  generateUniqueId,
-} from '../../../../utils/constants';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 /* eslint-disable playwright/expect-expect */
@@ -70,7 +68,10 @@ test.describe.parallel('Group Users API Tests', () => {
   });
 
   test('Assign User To Group', async ({request}) => {
-    const user = 'test-user' + generateUniqueId();
+    // Create the user first
+    const userBody = await createUser(request);
+    const user = userBody.username;
+
     const stateParams: Record<string, string> = {
       groupId: state['groupId1'] as string,
       username: user,

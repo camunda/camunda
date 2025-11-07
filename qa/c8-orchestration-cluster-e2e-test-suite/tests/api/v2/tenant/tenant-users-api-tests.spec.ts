@@ -15,14 +15,12 @@ import {
   assertConflictRequest,
   assertPaginatedRequest,
 } from '../../../../utils/http';
-import {
-  defaultAssertionOptions,
-  generateUniqueId,
-} from '../../../../utils/constants';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertUserNameInResponse,
   assignUsersToTenant,
   createTenant,
+  createUser,
   userFromState,
 } from '@requestHelpers';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -51,7 +49,11 @@ test.describe.parallel('Tenant Users API Tests', () => {
 
   test('Assign User To Tenant', async ({request}) => {
     const tenant = await createTenant(request);
-    const user = 'test-user' + generateUniqueId();
+
+    // Create the user first
+    const userBody = await createUser(request);
+    const user = userBody.username;
+
     const p = {
       userName: user,
       tenantId: tenant.tenantId as string,
