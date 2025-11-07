@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.14
+
+### 🩹 Fixes
+
+- update process instance filtering and item types ([#40663](https://github.com/camunda/camunda/pull/40663))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.13
 
 ### 🩹 Fixes
