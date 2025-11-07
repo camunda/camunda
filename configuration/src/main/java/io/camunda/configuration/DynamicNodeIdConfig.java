@@ -63,6 +63,9 @@ public class DynamicNodeIdConfig {
     /** Lease duration before expiry */
     private Duration leaseDuration;
 
+    /** The taskId to use when registering to a lease * */
+    private String taskId;
+
     /**
      * Name of the bucket where the backup will be stored. The bucket must be already created. The
      * bucket must not be shared with other zeebe clusters. bucketName must not be empty.
@@ -177,6 +180,14 @@ public class DynamicNodeIdConfig {
 
     public void setLeaseDuration(final Duration leaseDuration) {
       this.leaseDuration = leaseDuration;
+    }
+
+    public String getTaskId() {
+      return taskId;
+    }
+
+    public void setTaskId(final String taskId) {
+      this.taskId = taskId;
     }
   }
 }
