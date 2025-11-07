@@ -18,7 +18,6 @@ import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3Client
 import java.net.URI;
 import java.time.Clock;
 import java.util.Optional;
-import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,16 +39,16 @@ public class NodeIdProviderConfiguration {
 
   @Bean
   /** Create the S3NodeReposiotry as a separate bean so it's lifecycle is managed by spring */
-  public Optional<S3NodeIdRepository> s3NodeIdRepository() {
+  public S3NodeIdRepository s3NodeIdRepository() {
     return switch (cluster.getDynamicNodeId().getType()) {
-      case NONE -> Optional.empty();
+      case NONE -> null;
       case S3 -> {
         final var clientConfig = makeS3ClientConfig(cluster.getDynamicNodeId().s3());
         final var config =
             new S3NodeIdRepository.Config(
                 cluster.getDynamicNodeId().s3().getBucketName(),
                 cluster.getDynamicNodeId().s3().getLeaseDuration());
-        yield Optional.of(S3NodeIdRepository.of(clientConfig, config, Clock.systemUTC()));
+        yield S3NodeIdRepository.of(clientConfig, config, Clock.systemUTC());
       }
     };
   }
@@ -67,12 +66,15 @@ public class NodeIdProviderConfiguration {
           throw new IllegalStateException(
               "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
         }
-        yield new RepositoryNodeIdProvider(
-            nodeIdRepository.get(),
-            Clock.systemUTC(),
-            config.getLeaseDuration(),
-            UUID.randomUUID().toString(),
-            () -> System.exit(-1));
+        final var repository =
+            new RepositoryNodeIdProvider(
+                nodeIdRepository.get(),
+                Clock.systemUTC(),
+                config.getLeaseDuration(),
+                config.getTaskId(),
+                () -> System.exit(-1));
+        repository.initialize(cluster.getSize());
+        yield repository;
       }
     };
   }
