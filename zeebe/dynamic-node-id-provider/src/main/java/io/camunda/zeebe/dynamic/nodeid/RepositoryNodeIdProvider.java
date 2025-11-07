@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.U
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -43,11 +44,12 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       final Duration expiryDuration,
       final String taskId,
       final Runnable onLeaseFailure) {
-    this.nodeIdRepository = nodeIdRepository;
-    this.clock = clock;
-    leaseDuration = expiryDuration;
-    this.taskId = taskId;
-    this.onLeaseFailure = onLeaseFailure;
+    this.nodeIdRepository =
+        Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
+    this.clock = Objects.requireNonNull(clock, "clock cannot be null");
+    leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
+    this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
+    this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoff(Duration.ofSeconds(1), leaseDuration.dividedBy(2));
     renewalDelay = leaseDuration.dividedBy(3);
     currentDelay = 0L;
