@@ -33,10 +33,7 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_INCIDENTS_PANEL_V2,
-} from 'modules/feature-flags';
+import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -371,20 +368,19 @@ describe('TopPanel', () => {
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
 
-    const tableHeading = IS_INCIDENTS_PANEL_V2
-      ? 'Incidents - 1 result'
-      : 'Incidents View - 1 result';
     await waitFor(() =>
-      expect(screen.queryByText(tableHeading)).not.toBeInTheDocument(),
+      expect(
+        screen.queryByText('Incidents - 1 result'),
+      ).not.toBeInTheDocument(),
     );
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(await screen.findByText(tableHeading)).toBeInTheDocument();
+    expect(await screen.findByText('Incidents - 1 result')).toBeInTheDocument();
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(screen.queryByText(tableHeading)).not.toBeInTheDocument();
+    expect(screen.queryByText('Incidents - 1 result')).not.toBeInTheDocument();
   });
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {

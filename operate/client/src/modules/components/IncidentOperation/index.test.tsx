@@ -13,7 +13,7 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {IncidentOperationV2} from '.';
+import {IncidentOperation} from '.';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockResolveIncident} from 'modules/mocks/api/v2/incidents/resolveIncident';
 import {tracking} from 'modules/tracking';
@@ -47,7 +47,7 @@ describe('IncidentOperationV2', () => {
 
   it('should display an notification when retrying an incident fails', async () => {
     mockResolveIncident().withServerError(500);
-    const {user} = render(<IncidentOperationV2 incidentKey="123" />, {
+    const {user} = render(<IncidentOperation incidentKey="123" />, {
       wrapper: Wrapper,
     });
 
@@ -64,7 +64,7 @@ describe('IncidentOperationV2', () => {
   it('should track successful retry operations', async () => {
     mockResolveIncident().withSuccess(null);
     const spy = vi.spyOn(tracking, 'track').mockReturnValue();
-    const {user} = render(<IncidentOperationV2 incidentKey="123" />, {
+    const {user} = render(<IncidentOperation incidentKey="123" />, {
       wrapper: Wrapper,
     });
 
@@ -84,7 +84,7 @@ describe('IncidentOperationV2', () => {
     const resolveSpy = vi.fn();
     mockResolveIncident().withSuccess(null, {mockResolverFn: resolveSpy});
     const {user} = render(
-      <IncidentOperationV2 incidentKey="123" jobKey="456" />,
+      <IncidentOperation incidentKey="123" jobKey="456" />,
       {wrapper: Wrapper},
     );
 
@@ -100,7 +100,7 @@ describe('IncidentOperationV2', () => {
     const resolveSpy = vi.fn();
     mockResolveIncident().withSuccess(null, {mockResolverFn: resolveSpy});
     const {user} = render(
-      <IncidentOperationV2 incidentKey="123" jobKey="456" />,
+      <IncidentOperation incidentKey="123" jobKey="456" />,
       {wrapper: Wrapper},
     );
 
@@ -114,7 +114,7 @@ describe('IncidentOperationV2', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     mockUpdateJob().withDelay(null);
     mockResolveIncident().withDelay(null);
-    const {user} = render(<IncidentOperationV2 incidentKey="123" />, {
+    const {user} = render(<IncidentOperation incidentKey="123" />, {
       wrapper: Wrapper,
     });
 

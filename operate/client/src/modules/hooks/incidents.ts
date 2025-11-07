@@ -7,7 +7,6 @@
  */
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {incidentsStore} from 'modules/stores/incidents';
 import {getFlowNodeName} from '../utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
@@ -24,26 +23,6 @@ type EnhancedIncident = Incident & {
   processDefinitionName: string;
   elementName: string;
   isSelected: boolean;
-};
-
-const useIncidents = () => {
-  const {data: businessObjects} = useBusinessObjects();
-
-  if (incidentsStore.state.response === null) {
-    return [];
-  }
-  return incidentsStore.state.response.incidents.map((incident) => ({
-    ...incident,
-    flowNodeName: getFlowNodeName({
-      businessObjects,
-      flowNodeId: incident.flowNodeId,
-    }),
-    isSelected: flowNodeSelectionStore.isSelected({
-      flowNodeId: incident.flowNodeId,
-      flowNodeInstanceId: incident.flowNodeInstanceId,
-      isMultiInstance: false,
-    }),
-  }));
 };
 
 const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
@@ -103,26 +82,4 @@ const useIncidentsSort = () => {
   }, [location.search]);
 };
 
-const useIncidentsElements = () => {
-  const {data: businessObjects} = useBusinessObjects();
-
-  if (incidentsStore.state.response === null) {
-    return [];
-  }
-
-  return incidentsStore.state.response.flowNodes.map((flowNode) => ({
-    ...flowNode,
-    name: getFlowNodeName({
-      businessObjects,
-      flowNodeId: flowNode.id,
-    }),
-  }));
-};
-
-export {
-  useIncidents,
-  useIncidentsElements,
-  useEnhancedIncidents,
-  useIncidentsSort,
-  type EnhancedIncident,
-};
+export {useEnhancedIncidents, useIncidentsSort, type EnhancedIncident};

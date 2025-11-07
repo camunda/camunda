@@ -11,7 +11,6 @@ import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {incidentsStore} from 'modules/stores/incidents';
 import {IncidentsBanner} from './IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -71,7 +70,6 @@ import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 
@@ -232,18 +230,13 @@ const TopPanel: React.FC = observer(() => {
 
   const modifiableFlowNodes = useModifiableFlowNodes();
 
-  // Conditional hook call, but the condition is static during runtime.
-  const incidentsCount = IS_INCIDENTS_PANEL_V2
-    ? useProcessInstanceIncidentsCount(processInstanceId, {
-        enabled:
-          processInstance &&
-          isInstanceRunning(processInstance) &&
-          !!processInstance.hasIncident,
-      })
-    : incidentsStore.incidentsCount;
-  const isIncidentBarOpen = IS_INCIDENTS_PANEL_V2
-    ? incidentsPanelStore.state.isPanelVisible
-    : incidentsStore.state.isIncidentBarOpen;
+  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceId, {
+    enabled:
+      processInstance &&
+      isInstanceRunning(processInstance) &&
+      !!processInstance.hasIncident,
+  });
+  const isIncidentBarOpen = incidentsPanelStore.state.isPanelVisible;
 
   const {isModificationModeEnabled} = modificationsStore;
 
@@ -293,12 +286,7 @@ const TopPanel: React.FC = observer(() => {
                 ? 'incidents-panel-closed'
                 : 'incidents-panel-opened',
             });
-
-            if (IS_INCIDENTS_PANEL_V2) {
-              incidentsPanelStore.setPanelOpen(!isIncidentBarOpen);
-            } else {
-              incidentsStore.setIncidentBarOpen(!isIncidentBarOpen);
-            }
+            incidentsPanelStore.setPanelOpen(!isIncidentBarOpen);
           }}
           isOpen={isIncidentBarOpen}
         />
