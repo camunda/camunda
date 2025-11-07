@@ -68,15 +68,7 @@ public class DynamicNodeIdTest {
                               "camunda.persistent.sessions.enabled",
                               "false",
                               "camunda.data.secondary-storage.type",
-                              "none",
-                              "camunda.operate.importerenabled",
-                              "false",
-                              "camunda.operate.archiverenabled",
-                              "false",
-                              "camunda.tasklist.importerenabled",
-                              "false",
-                              "camunda.tasklist.archiverenabled",
-                              "false"))
+                              "none"))
                       .withAdditionalProperties(
                           Map.of(
                               "camunda.cluster.size",
