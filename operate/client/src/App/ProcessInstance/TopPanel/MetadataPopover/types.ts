@@ -16,14 +16,12 @@ import type {
   DecisionInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-type TaskState = ElementInstance['state'] | UserTask['state'];
-
 type InstanceMetadata = {
   elementInstanceKey: string;
   elementId: string;
   elementName?: string;
   type: ElementInstance['type'];
-  userTaskState?: TaskState;
+  userTaskState?: UserTask['state'];
   elementInstanceState: ElementInstance['state'];
   startDate: string;
   endDate: string | null;
