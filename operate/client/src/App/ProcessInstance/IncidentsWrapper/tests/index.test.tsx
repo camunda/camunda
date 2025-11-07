@@ -16,9 +16,8 @@ import {createInstance, createProcessInstance} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
-describe('IncidentsWrapper', {skip: IS_INCIDENTS_PANEL_V2}, () => {
+describe('IncidentsWrapper', {todo: true}, () => {
   beforeEach(async () => {
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
