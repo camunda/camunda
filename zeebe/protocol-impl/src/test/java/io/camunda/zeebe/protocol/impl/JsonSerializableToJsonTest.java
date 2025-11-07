@@ -102,6 +102,7 @@ import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -124,7 +125,7 @@ final class JsonSerializableToJsonTest {
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_JSON));
 
   private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException("test");
-
+  private static final Instant TIMESTAMP = Instant.now();
   private static final String STACK_TRACE;
 
   static {
@@ -2149,16 +2150,37 @@ final class JsonSerializableToJsonTest {
                 new CheckpointRecord()
                     .setCheckpointId(1L)
                     .setCheckpointPosition(10L)
-                    .setCheckpointTimestamp(100L)
+                    .setCheckpointTimestamp(TIMESTAMP)
                     .setCheckpointType(CheckpointType.SCHEDULED_BACKUP),
         """
         {
           "checkpointId":1,
           "checkpointPosition":10,
-          "checkpointTimestamp":100,
+          "checkpointTimestamp":%d,
           "checkpointType":"SCHEDULED_BACKUP"
         }
         """
+            .formatted(TIMESTAMP.toEpochMilli())
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Checkpoint record without timestamp ///////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Checkpoint record",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new CheckpointRecord()
+                    .setCheckpointId(1L)
+                    .setCheckpointPosition(10L)
+                    .setCheckpointType(CheckpointType.SCHEDULED_BACKUP),
+        """
+          {
+            "checkpointId":1,
+            "checkpointPosition":10,
+            "checkpointTimestamp":-1,
+            "checkpointType":"SCHEDULED_BACKUP"
+          }
+          """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Escalation record /////////////////////////////////////////

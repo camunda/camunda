@@ -49,18 +49,21 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
     return checkpointTypeProperty.getValue();
   }
 
-  @Override
-  public long getCheckpointTimestamp() {
-    return checkpointTimestampProperty.getValue();
-  }
-
-  public CheckpointRecord setCheckpointTimestamp(final long checkpointTimestamp) {
-    checkpointTimestampProperty.setValue(checkpointTimestamp);
+  public CheckpointRecord setCheckpointType(final CheckpointType checkpointType) {
+    checkpointTypeProperty.setValue(checkpointType);
     return this;
   }
 
-  public CheckpointRecord setCheckpointType(final CheckpointType checkpointType) {
-    checkpointTypeProperty.setValue(checkpointType);
+  @Override
+  public Instant getCheckpointTimestamp() {
+    final var value = checkpointTimestampProperty.getValue();
+    return value == -1L ? Instant.MIN : Instant.ofEpochMilli(value);
+  }
+
+  public CheckpointRecord setCheckpointTimestamp(final Instant checkpointTimestamp) {
+    final var longTimestamp =
+        checkpointTimestamp.equals(Instant.MIN) ? -1L : checkpointTimestamp.toEpochMilli();
+    checkpointTimestampProperty.setValue(longTimestamp);
     return this;
   }
 

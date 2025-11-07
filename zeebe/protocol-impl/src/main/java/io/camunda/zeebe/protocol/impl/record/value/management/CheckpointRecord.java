@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import java.time.Instant;
 
 public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRecordValue {
 
@@ -24,7 +25,7 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
   private final LongProperty checkpointPositionProperty =
       new LongProperty(CHECKPOINT_POSITION_KEY, -1L);
   private final LongProperty checkpointTimestampProperty =
-      new LongProperty(CHECKPOINT_TIMESTAMP_KEY, -1);
+      new LongProperty(CHECKPOINT_TIMESTAMP_KEY, -1L);
   private final EnumProperty<CheckpointType> checkpointTypeProperty =
       new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.MARKER);
 
@@ -51,18 +52,21 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
     return checkpointTypeProperty.getValue();
   }
 
-  @Override
-  public long getCheckpointTimestamp() {
-    return checkpointTimestampProperty.getValue();
-  }
-
-  public CheckpointRecord setCheckpointTimestamp(final long checkpointTimestamp) {
-    checkpointTimestampProperty.setValue(checkpointTimestamp);
+  public CheckpointRecord setCheckpointType(final CheckpointType checkpointType) {
+    checkpointTypeProperty.setValue(checkpointType);
     return this;
   }
 
-  public CheckpointRecord setCheckpointType(final CheckpointType checkpointType) {
-    checkpointTypeProperty.setValue(checkpointType);
+  @Override
+  public Instant getCheckpointTimestamp() {
+    final var value = checkpointTimestampProperty.getValue();
+    return value == -1L ? Instant.MIN : Instant.ofEpochMilli(value);
+  }
+
+  public CheckpointRecord setCheckpointTimestamp(final Instant checkpointTimestamp) {
+    final var longTimestamp =
+        checkpointTimestamp.equals(Instant.MIN) ? -1L : checkpointTimestamp.toEpochMilli();
+    checkpointTimestampProperty.setValue(longTimestamp);
     return this;
   }
 
