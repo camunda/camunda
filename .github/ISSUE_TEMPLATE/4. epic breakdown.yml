@@ -6,24 +6,24 @@ body:
   - type: dropdown
     id: Component
     attributes:
-      label: <!-- Component -->
+      label: Component
       multiple: true
       description: What component(s) are affected by this epic?
       # The components should be kept in alphabetical order.
       options:
-        - <!-- C8-API- -->
-        - <!-- C8Run- -->
-        - <!-- Camunda Process Test- -->
-        - <!-- Clients- -->
-        - <!-- Data Layer- -->
-        - <!-- Feel- -->
-        - <!-- Identity- -->
-        - <!-- Management Identity- -->
-        - <!-- Operate- -->
-        - <!-- Optimize- -->
-        - <!-- Spring SDK- -->
-        - <!-- Tasklist- -->
-        - <!-- Zeebe- -->
+        - C8-API-
+        - C8Run-
+        - Camunda Process Test-
+        - Clients-
+        - Data Layer-
+        - Feel-
+        - Identity-
+        - Management Identity-
+        - Operate-
+        - Optimize-
+        - Spring SDK-
+        - Tasklist-
+        - Zeebe-
       default: 0
     validations:
       required: true

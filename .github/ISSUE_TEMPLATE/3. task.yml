@@ -6,23 +6,23 @@ body:
   - type: dropdown
     id: Component
     attributes:
-      label: <!-- Component -->
+      label: Component
       description: In which component shall the task be carried out?
       # The components should be kept in alphabetical order, with "Not sure" at the top
       options:
-        - <!-- C8-API- -->
-        - <!-- C8Run- -->
-        - <!-- Camunda Process Test- -->
-        - <!-- Clients- -->
-        - <!-- Data Layer- -->
-        - <!-- Feel- -->
-        - <!-- Identity- -->
-        - <!-- Management Identity- -->
-        - <!-- Operate- -->
-        - <!-- Optimize- -->
-        - <!-- Spring SDK- -->
-        - <!-- Tasklist- -->
-        - <!-- Zeebe- -->
+        - C8-API-
+        - C8Run-
+        - Camunda Process Test-
+        - Clients-
+        - Data Layer-
+        - Feel-
+        - Identity-
+        - Management Identity-
+        - Operate-
+        - Optimize-
+        - Spring SDK-
+        - Tasklist-
+        - Zeebe-
       default: null
     validations:
       required: true
