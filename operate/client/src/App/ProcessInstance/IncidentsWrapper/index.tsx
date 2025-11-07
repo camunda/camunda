@@ -38,6 +38,8 @@ import {useGetIncidentsByProcessInstancePaginated} from 'modules/queries/inciden
 import {useGetIncidentsByElementInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByElementInstancePaginated';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
+const ROW_HEIGHT = 32;
+
 type Props = {
   processInstance: ProcessInstance;
   setIsInTransition: (isTransitionActive: boolean) => void;
@@ -283,8 +285,8 @@ function mapQueryResultToIncidentsHandle(
     handleScrollStartReach: async (scrollDown) => {
       if (result.hasPreviousPage && !result.isFetchingPreviousPage) {
         await result.fetchPreviousPage();
-        // Scroll down a bit (~5 rows) to make it possible to continue scrolling up.
-        scrollDown(5 * 32);
+        const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
+        scrollDown(SMOOTH_SCROLL_STEP_SIZE);
       }
     },
     handleScrollEndReach: () => {
