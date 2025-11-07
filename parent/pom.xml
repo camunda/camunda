@@ -75,7 +75,7 @@
     <version.mockito>5.18.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.10</version.msgpack>
-    <version.netty>4.1.127.Final</version.netty>
+    <version.netty>4.1.128.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.17.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
@@ -83,7 +83,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.31.1</version.protobuf>
     <version.protobuf-common>2.59.2</version.protobuf-common>
-    <version.micrometer>1.15.2</version.micrometer>
+    <version.micrometer>1.15.6</version.micrometer>
     <version.rocksdbjni>10.2.1</version.rocksdbjni>
     <version.sbe>1.35.6</version.sbe>
     <version.scala>2.13.16</version.scala>
@@ -104,8 +104,8 @@
     <version.rest-assured>5.5.5</version.rest-assured>
     <version.spring>6.2.11</version.spring>
     <version.spring-security>6.5.5</version.spring-security>
-    <version.spring-boot>3.5.5</version.spring-boot>
-    <version.tomcat>10.1.44</version.tomcat>
+    <version.spring-boot>3.5.6</version.spring-boot>
+    <version.tomcat>10.1.48</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -119,16 +119,16 @@
     <version.resilience4j>2.3.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.181</version.classgraph>
+    <version.classgraph>4.8.184</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.9.7</version.spotbugs>
+    <version.spotbugs>4.9.8</version.spotbugs>
     <version.archunit>1.4.1</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
-    <version.jnr-ffi>2.2.17</version.jnr-ffi>
-    <version.jnr-posix>3.1.20</version.jnr-posix>
+    <version.jnr-ffi>2.2.18</version.jnr-ffi>
+    <version.jnr-posix>3.1.21</version.jnr-posix>
     <version.zpt>8.7.9</version.zpt>
     <version.feign>13.6</version.feign>
     <version.google-sdk>26.64.0</version.google-sdk>
@@ -222,7 +222,7 @@
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.9.7.0</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.9.8.1</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.2</plugin.version.surefire>
     <plugin.version.versions>2.18.0</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
@@ -1183,6 +1183,12 @@
         <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-annotations-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>

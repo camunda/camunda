@@ -178,6 +178,10 @@
       "defaultValue": true
     },
     {
+      "name": "camunda.client.max-http-connections",
+      "defaultValue": 100
+    },
+    {
       "name": "camunda.client.max-message-size",
       "defaultValue": "5MB"
     },

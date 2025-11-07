@@ -104,7 +104,7 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
     assertThat(filter.getElementId()).isEqualTo("element");
     assertThat(filter.getElementInstanceKey()).isEqualTo("4");
-    assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.001Z");
+    assertThat(filter.getCreationTime().get$Eq()).isEqualTo("2024-05-23T23:05:00.001Z");
     assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
     assertThat(filter.getJobKey()).isEqualTo("5");
     assertThat(filter.getTenantId()).isEqualTo("tenant");

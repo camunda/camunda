@@ -456,12 +456,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.tomcat</groupId>
-      <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.12</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

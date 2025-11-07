@@ -296,6 +296,12 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder maxHttpConnections(final int maxConnections) {
+    innerBuilder.maxHttpConnections(maxConnections);
+    return this;
+  }
+
+  @Override
   public CamundaClient build() {
     innerBuilder.grpcAddress(determineGrpcAddress());
     innerBuilder.restAddress(determineRestAddress());
