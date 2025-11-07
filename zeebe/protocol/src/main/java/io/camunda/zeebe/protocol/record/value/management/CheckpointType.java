@@ -16,7 +16,7 @@
 package io.camunda.zeebe.protocol.record.value.management;
 
 public enum CheckpointType {
-  NO_BACKUP,
+  MARKER,
   SCHEDULED_BACKUP,
   MANUAL_BACKUP
 }

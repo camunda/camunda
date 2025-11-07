@@ -12,7 +12,6 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-import java.time.Instant;
 
 public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRecordValue {
 
@@ -25,12 +24,12 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
   private final LongProperty checkpointPositionProperty =
       new LongProperty(CHECKPOINT_POSITION_KEY, -1L);
   private final LongProperty checkpointTimestampProperty =
-      new LongProperty(CHECKPOINT_TIMESTAMP_KEY, Instant.now().toEpochMilli());
+      new LongProperty(CHECKPOINT_TIMESTAMP_KEY, -1);
   private final EnumProperty<CheckpointType> checkpointTypeProperty =
-      new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.NO_BACKUP);
+      new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.MARKER);
 
   public CheckpointRecord() {
-    super(2);
+    super(4);
     declareProperty(checkpointIdProperty)
         .declareProperty(checkpointPositionProperty)
         .declareProperty(checkpointTimestampProperty)
