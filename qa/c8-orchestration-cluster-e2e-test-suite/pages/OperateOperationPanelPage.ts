@@ -10,23 +10,34 @@ import {Page, Locator, expect} from '@playwright/test';
 
 export class OperateOperationPanelPage {
   private page: Page;
-  readonly operationIdField: Locator;
   readonly expandButton: Locator;
   readonly collapseButton: Locator;
+  readonly operationEntry: Locator;
   
   constructor(page: Page) {
     this.page = page;
-    this.operationIdField = page.getByTestId('operation-id');
     this.expandButton = page.getByRole('button', { name: 'Expand Operations' })
     this.collapseButton = page.getByRole('button', { name: 'Collapse Operations' })
+    this.operationEntry = page.getByTestId('operations-entry');
   }
 
-  async selectLastOperationItem(): Promise<void> {
-    await this.operationIdField.last().click( {timeout: 10000} );
+   selectLastOperationEntry(): Locator {
+    const meow = this.operationEntry.last();
+    // await meow.getByTestId('operation-id').last().click( {timeout: 10000} );
+    return meow;
+  }
+
+   static getOperationEntryProgressBarValue(operationEntry: Locator): number {
+    const progressBarValue = operationEntry.getByRole('progressbar').getAttribute('aria-valuenow');
+    return Number(progressBarValue);
+  }
+
+  static getOperationEntrySuccess(operationEntry: Locator): Locator {
+    return operationEntry.getByText('1 operation succeeded');
   }
 
   async expandOperationIdField(): Promise<void> {
-    await this.expandButton.click();
+    await this.expandButton.click({timeout: 30000});
   }
 
   async collapseOperationIdField(): Promise<void> {

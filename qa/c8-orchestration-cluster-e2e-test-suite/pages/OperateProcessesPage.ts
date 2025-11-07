@@ -178,8 +178,8 @@ class OperateProcessesPage {
     await this.processNameSortButton.click();
   }
 
-  async selectFirstProcessCheckbox(): Promise<void> {
-    const id = await this.page.getByRole('checkbox', { name: 'Select row' }).first().getAttribute('id');
+  async selectNthProcessCheckbox(row: number): Promise<void> {
+    const id = await this.page.getByRole('checkbox', { name: 'Select row' }).nth(row).getAttribute('id');
     await this.page.locator(`label[for="${id}"]`).click();
   }
 

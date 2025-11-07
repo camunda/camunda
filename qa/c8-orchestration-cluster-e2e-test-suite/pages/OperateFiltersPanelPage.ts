@@ -232,6 +232,10 @@ export class OperateFiltersPanelPage {
     await this.errorMessageFilter.fill(errorMessage);
   }
 
+  async fillOperationIdFilter(operationId: string) {
+    await this.operationIdFilter.fill(operationId);
+  }
+
   async clickJsonEditorModal() {
     await this.jsonEditorModalButton.click();
   }
