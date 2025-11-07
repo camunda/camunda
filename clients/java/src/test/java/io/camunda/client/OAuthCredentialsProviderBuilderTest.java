@@ -18,6 +18,7 @@ package io.camunda.client;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.DEFAULT_AUTHZ_SERVER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -229,17 +230,13 @@ public final class OAuthCredentialsProviderBuilderTest {
   }
 
   @Test
-  void testAgainstReal() {
-    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
-    builder
-        .audience("a")
-        .clientId("b")
-        .clientSecret("c")
-        .issuerUrl("https://keycloak.consulting-sandbox.camunda.cloud/realms/jonny");
+  void shouldUseDefaultAuthorizationServerUrl() {
+    // given
+    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder().audience("a").clientId("b").clientSecret("c");
+    // when
     builder.build();
+    // then
     final String authorizationServerUrl = builder.getAuthorizationServer().toString();
-    assertThat(authorizationServerUrl)
-        .isEqualTo(
-            "https://keycloak.consulting-sandbox.camunda.cloud/realms/jonny/protocol/openid-connect/token");
+    assertThat(authorizationServerUrl).isEqualTo(DEFAULT_AUTHZ_SERVER);
   }
 }

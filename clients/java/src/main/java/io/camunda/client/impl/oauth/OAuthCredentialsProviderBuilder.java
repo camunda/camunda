@@ -70,7 +70,7 @@ public final class OAuthCredentialsProviderBuilder {
       Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
           .toAbsolutePath()
           .toString();
-  private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
+  public static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private String clientId;
   private String clientSecret;
   private String audience;
@@ -414,11 +414,14 @@ public final class OAuthCredentialsProviderBuilder {
       case issuerUrl:
         authorizationServerUrlFromIssuerUrl();
         break;
-      default:
+      case unset:
+        authorizationServerUrl = DEFAULT_AUTHZ_SERVER;
         break;
-    }
-    if (authorizationServerUrl == null) {
-      authorizationServerUrl = DEFAULT_AUTHZ_SERVER;
+      case authorizationServerUrl:
+        break;
+      default:
+        throw new IllegalArgumentException(
+            "Unsupported authorization server url source: " + source);
     }
   }
 
@@ -496,7 +499,7 @@ public final class OAuthCredentialsProviderBuilder {
     if (isSet(issuerUrl)) {
       return AuthorizationServerUrlSource.issuerUrl;
     }
-    return null;
+    return AuthorizationServerUrlSource.unset;
   }
 
   private boolean isSet(final String value) {
@@ -663,6 +666,7 @@ public final class OAuthCredentialsProviderBuilder {
   private enum AuthorizationServerUrlSource {
     authorizationServerUrl,
     wellKnownConfigurationUrl,
-    issuerUrl
+    issuerUrl,
+    unset
   }
 }
