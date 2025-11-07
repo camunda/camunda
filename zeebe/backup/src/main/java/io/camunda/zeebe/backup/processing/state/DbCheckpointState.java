@@ -12,6 +12,8 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import java.time.Instant;
 
 public final class DbCheckpointState implements CheckpointState {
   private static final String LATEST_CHECKPOINT_KEY = "checkpoint";
@@ -45,16 +47,44 @@ public final class DbCheckpointState implements CheckpointState {
   }
 
   @Override
-  public void setLatestCheckpointInfo(final long checkpointId, final long checkpointPosition) {
+  public Instant getLatestCheckpointTimestamp() {
     checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
-    checkpointInfo.setId(checkpointId).setPosition(checkpointPosition);
+    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
+    return info != null ? info.getTimestamp() : Instant.MIN;
+  }
+
+  @Override
+  public CheckpointType getLatestCheckpointType() {
+    return getCheckpointType(LATEST_CHECKPOINT_KEY);
+  }
+
+  @Override
+  public void setLatestCheckpointInfo(
+      final long checkpointId,
+      final long checkpointPosition,
+      final Instant timestamp,
+      final CheckpointType type) {
+    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
+    checkpointInfo
+        .setId(checkpointId)
+        .setPosition(checkpointPosition)
+        .setTimestamp(timestamp)
+        .setType(type);
     checkpointColumnFamily.upsert(checkpointInfoKey, checkpointInfo);
   }
 
   @Override
-  public void setLatestBackupInfo(final long checkpointId, final long checkpointPosition) {
+  public void setLatestBackupInfo(
+      final long checkpointId,
+      final long checkpointPosition,
+      final Instant timestamp,
+      final CheckpointType type) {
     checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
-    checkpointInfo.setId(checkpointId).setPosition(checkpointPosition);
+    checkpointInfo
+        .setId(checkpointId)
+        .setPosition(checkpointPosition)
+        .setTimestamp(timestamp)
+        .setType(type);
     checkpointColumnFamily.upsert(checkpointInfoKey, checkpointInfo);
   }
 
@@ -70,5 +100,23 @@ public final class DbCheckpointState implements CheckpointState {
     checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
     return info != null ? info.getPosition() : NO_CHECKPOINT;
+  }
+
+  @Override
+  public Instant getLatestBackupTimestamp() {
+    checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
+    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
+    return info != null ? info.getTimestamp() : Instant.MIN;
+  }
+
+  @Override
+  public CheckpointType getLatestBackupType() {
+    return getCheckpointType(LATEST_BACKUP_KEY);
+  }
+
+  private CheckpointType getCheckpointType(final String latestCheckpointKey) {
+    checkpointInfoKey.wrapString(latestCheckpointKey);
+    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
+    return info != null ? info.getType() : CheckpointType.NONE;
   }
 }

@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.backup.processing.state;
 
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import java.time.Instant;
+
 public interface CheckpointState {
 
   long NO_CHECKPOINT = -1L;
@@ -25,25 +28,49 @@ public interface CheckpointState {
    */
   long getLatestCheckpointPosition();
 
+  /** Returns the type of the last checkpoint with a successful backup. */
+  Instant getLatestCheckpointTimestamp();
+
+  /** Returns the type of the last created checkpoint. */
+  CheckpointType getLatestCheckpointType();
+
   /**
    * Set id and position of the last created checkpoint
    *
    * @param checkpointId id of the checkpoint
    * @param checkpointPosition position of the checkpoint
+   * @param timestamp timestamp of the checkpoint
+   * @param type type of the checkpoint
    */
-  void setLatestCheckpointInfo(final long checkpointId, final long checkpointPosition);
+  void setLatestCheckpointInfo(
+      final long checkpointId,
+      final long checkpointPosition,
+      final Instant timestamp,
+      final CheckpointType type);
 
   /**
    * Set id and position of the last checkpoint with a successful backup.
    *
    * @param checkpointId id of the checkpoint for this backup.
    * @param checkpointPosition position of the checkpoint for this backup.
+   * @param timestamp timestamp of the checkpoint for this backup.
+   * @param type type of the checkpoint for this backup.
    */
-  void setLatestBackupInfo(long checkpointId, long checkpointPosition);
+  void setLatestBackupInfo(
+      final long checkpointId,
+      final long checkpointPosition,
+      final Instant timestamp,
+      final CheckpointType type);
 
   /** Returns the id of the last checkpoint with a successful backup. */
   long getLatestBackupId();
 
   /** Returns the position of the last checkpoint with a successful backup. */
   long getLatestBackupPosition();
+
+  /** Returns the timestamp of the last checkpoint with a successful backup. */
+  Instant getLatestBackupTimestamp();
+
+  /** Returns the type of the last created backup. */
+  CheckpointType getLatestBackupType();
 }
