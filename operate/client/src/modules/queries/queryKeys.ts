@@ -51,6 +51,7 @@ const queryKeys = {
     ],
   },
   incidents: {
+    get: (incidentKey: string) => ['incident', incidentKey],
     search: () => ['incidentsSearch'],
     searchByProcessInstanceKey: (processInstanceKey: string) => [
       queryKeys.incidents.search()[0],
