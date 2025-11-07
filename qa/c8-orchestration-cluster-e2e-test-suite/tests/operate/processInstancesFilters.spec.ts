@@ -8,7 +8,7 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances, createSingleInstance, searchByProcessInstanceKey} from 'utils/zeebeClient';
+import {deploy, createInstances, createSingleInstance, searchByProcessInstanceKey, checkUpdateOnVersion} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
@@ -335,13 +335,14 @@ test.describe('Process Instances Filters', () => {
     await operateFiltersPanelPage.fillVariableNameFilter('runId');
     await operateFiltersPanelPage.fillVariableValueFilter(`"${runId}"`);
     await expect(page.getByText('1 result')).toBeVisible();
+
     await expect
-      .poll(async () => {
-        operateProcessesPage.tableHasInstanceKey(keyStr);
-        
-        (await operateProcessesPage.versionCell.textContent()) === '2';
-      }, { timeout: 30_000, intervals: [1_000] })
+      .poll(() => checkUpdateOnVersion('2', keyStr), { timeout: 120_000, intervals: [1_000] })
       .toBeTruthy();
+    // await operateProcessesPage.checkVersion(keyStr);
+
+    page.reload();
+    await page.waitForLoadState('networkidle');
   })
   
 

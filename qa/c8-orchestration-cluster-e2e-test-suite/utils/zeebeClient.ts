@@ -81,7 +81,13 @@ const cancelProcessInstance = async (processInstanceKey: string) => {
 async function searchByProcessInstanceKey(processInstanceKey: string) {
   return zeebe.searchProcessInstances({ filter: { processInstanceKey } });
 }
-
+async function checkUpdateOnVersion(targetVersion:string, processInstanceKey: string) {
+    const res = await zeebe.searchProcessInstances({ filter: { processInstanceKey } });
+    const item = res?.items?.[0];
+    console.log(`Target Version ${targetVersion}, Current Version ${item?.processDefinitionVersion}`);
+    console.log(!!item, item?.processDefinitionVersion == targetVersion);
+    return !!item && item.processDefinitionVersion == targetVersion;
+}
 
 export {
   deploy,
@@ -90,4 +96,5 @@ export {
   createSingleInstance,
   cancelProcessInstance,
   searchByProcessInstanceKey,
+  checkUpdateOnVersion,
 };

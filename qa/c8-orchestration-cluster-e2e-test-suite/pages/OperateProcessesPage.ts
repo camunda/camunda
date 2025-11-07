@@ -9,6 +9,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {OperateDiagramPage} from './OperateDiagramPage';
 import {sleep} from '../utils/sleep';
+import { checkUpdateOnVersion } from 'utils/zeebeClient';
 
 class OperateProcessesPage {
   private page: Page;
@@ -151,6 +152,24 @@ class OperateProcessesPage {
     }
     throw new Error(
       `Failed to click on process instance link after ${maxRetries} attempts.`,
+    );
+  }
+
+  async checkVersion(processInstanceKey: string): Promise<void> {
+    const maxRetries = 10;
+    let retryCount = 0;
+    while (retryCount < maxRetries) {
+      try {
+        await checkUpdateOnVersion('2', processInstanceKey);
+        return;
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await this.page.reload();
+      }
+    }
+    throw new Error(
+      `Failed to check version after ${maxRetries} attempts.`,
     );
   }
 
