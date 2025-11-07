@@ -23,8 +23,12 @@ import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.slf4j.Logger;
 
 public class MeteredCamundaClientExecutorService extends CamundaClientExecutorService {
+
+  private static final Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(MeteredCamundaClientExecutorService.class);
 
   public MeteredCamundaClientExecutorService(
       final ScheduledExecutorService scheduledExecutorService,
@@ -50,6 +54,13 @@ public class MeteredCamundaClientExecutorService extends CamundaClientExecutorSe
 
   private static ScheduledExecutorService createMeteredScheduledExecutorService(
       final ScheduledExecutorService scheduledExecutorService, final MeterRegistry meterRegistry) {
+
+    if (meterRegistry == null) {
+      LOG.warn(
+          "MeterRegistry is null. Skipping the registration of ScheduledExecutorService metrics.");
+      return scheduledExecutorService;
+    }
+
     return ExecutorServiceMetrics.monitor(
         meterRegistry,
         scheduledExecutorService,
@@ -59,6 +70,12 @@ public class MeteredCamundaClientExecutorService extends CamundaClientExecutorSe
 
   private static ExecutorService createMeteredExecutorService(
       final ExecutorService executorService, final MeterRegistry meterRegistry) {
+
+    if (meterRegistry == null) {
+      LOG.warn("MeterRegistry is null. Skipping the registration of ExecutorService metrics.");
+      return executorService;
+    }
+
     return ExecutorServiceMetrics.monitor(
         meterRegistry,
         executorService,
