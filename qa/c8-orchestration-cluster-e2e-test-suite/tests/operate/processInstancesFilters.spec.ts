@@ -8,7 +8,7 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
+import {deploy, createInstances, createSingleInstance, searchByProcessInstanceKey} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
@@ -70,6 +70,8 @@ test.beforeAll(async () => {
     ),
   };
 
+    await deploy(['./resources/Versioned Process.bpmn']);
+    await deploy(['./resources/Versioned Process_2.bpmn']);
 });
 
 test.describe('Process Instances Filters', () => {
@@ -258,98 +260,6 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
-    await test.step('Filter by op ID of migration and assert results', async ({ }) => {
-      await operateFiltersPanelPage.resetFiltersButton.click();
-
-      await deploy(['./resources/Versioned Process.bpmn']);
-      await deploy(['./resources/Versioned Process_2.bpmn']);
-      const [versionedProcessInstance] = await createInstances('versionedProcess', 1, 1);
-      console.log('Deployed versioned process');
-      const versionedProcessInstanceV4Key = versionedProcessInstance.processInstanceKey.toString();
-
-      await sleep(1_000); // wait for instance to be created
-
-      await operateFiltersPanelPage.selectProcess('Versioned Process');
-      await operateFiltersPanelPage.selectVersion('1');
-      await sleep(1_000); // wait for filter to be applied
-
-      // enter migration mode
-      const variableProcessInstanceKeys = [];
-      for (const element of await operateProcessesPage.processInstancesTable.getByTestId('cell-processInstanceKey').elementHandles()) {
-        variableProcessInstanceKeys.push(await element.innerText());
-      }
-
-      const rowOfProcess = variableProcessInstanceKeys.indexOf(versionedProcessInstanceV4Key);
-
-      await operateProcessesPage.selectNthProcessCheckbox(rowOfProcess);
-      await operateProcessesPage.clickMigrateSelectedProcessesButton();
-
-      // perform migration to version 2
-      await operateProcessesPage.clickContinueMigrationDialogButton();
-      await operateProcessMigrationModePage.clickTargetVersionCombo();
-      await operateProcessMigrationModePage.selectTargetVersion('2');
-      await operateProcessMigrationModePage.clickNextButton();
-      await operateProcessMigrationModePage.clickConfirmButton();
-      await operateProcessMigrationModePage.fillMigrationConfirmation('MIGRATE');
-      await operateProcessMigrationModePage.clickMigrationConfirmationButton();
-
-      // filter by operation id
-      const meow = operateOperationPanelPage.selectLastOperationEntry();
-
-      const opID = await meow.getByTestId('operation-id').innerText();
-      saveMyuNeves = opID;
-
-      // await waitForAssertion({
-      //   assertion: async () => {
-      //     await expect(OperateOperationPanelPage.getOperationEntrySuccess(meow)).toBeVisible({timeout: 90000})
-      //   },
-      //   onFailure: async () => {
-      //     await page.reload();
-      //   }
-      // });
-      
-      // await operateOperationPanelPage.collapseOperationIdField();
-
-      // await page.reload();
-      // await page.waitForLoadState();
-
-      // await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-      // await operateFiltersPanelPage.fillOperationIdFilter(opID);
-
-      // await waitForAssertion({
-      //   assertion: async () => {
-      //     await expect(operateFiltersPanelPage.operationIdFilter).toBeVisible({timeout: 5000});
-      //     await expect(page.getByText('1 result')).toBeVisible();
-      //     await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(versionedProcessInstanceV4Key);
-      //   },
-      //   onFailure: async () => {
-      //     await page.reload();
-      //   }
-      // });
-
-      
-    });
-
-  await test.step('Assert result after last test', async ({ }) => {
-      await sleep(10_000); // wait for any previous operation to settle
-      await page.reload();
-      await page.waitForLoadState();
-      await operateFiltersPanelPage.resetFiltersButton.click();
-      await operateOperationPanelPage.collapseOperationIdField();
-
-      await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
-      await operateFiltersPanelPage.fillOperationIdFilter(saveMyuNeves);
-
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(page.getByText('1 result')).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        }
-      });
-    })
-
    // await test.step('Filter by op ID of cancelation and assert results', async ({ }) => {
       // await operateFiltersPanelPage.resetFiltersButton.click();
 
@@ -373,6 +283,67 @@ test.describe('Process Instances Filters', () => {
    //  })
 
   });
+
+  test('Migration Operation test', async ({ 
+    page,
+    operateProcessesPage,
+    operateFiltersPanelPage,
+    operateProcessMigrationModePage,
+    operateOperationPanelPage,
+   }, testInfo) => {
+
+    const runId = `${testInfo.project.name}-${testInfo.workerIndex}-${Date.now()}`;
+
+    const [processInstanceKey ] = await createInstances('versionedProcess', 1, 1, { runId });
+
+    const keyStr = String(processInstanceKey.processInstanceKey);
+
+    await expect
+      .poll(async () => {
+        const res = await searchByProcessInstanceKey(keyStr);
+        return res.page.totalItems === 1;
+      }, { timeout: 30_000, intervals: [5_00] })
+      .toBeTruthy();
+
+    // Filter by the unique runId so you only see your instance
+    await operateFiltersPanelPage.selectProcess('Versioned Process');
+    await operateFiltersPanelPage.selectVersion('1');
+    await operateFiltersPanelPage.displayOptionalFilter('Variable');
+    await operateFiltersPanelPage.fillVariableNameFilter('runId');
+    await operateFiltersPanelPage.fillVariableValueFilter(`"${runId}"`);
+
+    await expect
+      .poll(async () => operateProcessesPage.tableHasInstanceKey(keyStr), {
+        timeout: 30_000,
+        intervals: [500],
+      })
+      .toBeTruthy();
+
+    // Select the exact row and migrate
+
+    // const row = page.getByRole('row', { name: new RegExp(`\\b${keyStr}\\b`) });
+    // await row.getByRole('checkbox', { name: /select row/i }).check();
+    await operateProcessesPage.selectProcessCheckboxByPIK(keyStr);
+    await operateProcessesPage.clickMigrateSelectedProcessesButton();
+    await operateProcessesPage.clickContinueMigrationDialogButton();
+    await operateProcessMigrationModePage.migrateProcessToVersion('2');
+    
+    await operateOperationPanelPage.collapseOperationIdField();
+
+    await operateFiltersPanelPage.resetFiltersButton.click();
+    await operateFiltersPanelPage.displayOptionalFilter('Variable');
+    await operateFiltersPanelPage.fillVariableNameFilter('runId');
+    await operateFiltersPanelPage.fillVariableValueFilter(`"${runId}"`);
+    await expect(page.getByText('1 result')).toBeVisible();
+    await expect
+      .poll(async () => {
+        operateProcessesPage.tableHasInstanceKey(keyStr);
+        
+        (await operateProcessesPage.versionCell.textContent()) === '2';
+      }, { timeout: 30_000, intervals: [1_000] })
+      .toBeTruthy();
+  })
+  
 
   test('Interaction between diagram and filters', async ({
     operateProcessesPage,

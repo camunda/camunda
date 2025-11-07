@@ -95,7 +95,7 @@ class OperateProcessesPage {
       .getByTestId('data-list')
       .getByTestId('cell-endDate')
       .first();
-    this.versionCell = page.getByTestId('process-version-select');
+    this.versionCell = page.getByTestId('cell-processVersion');
     this.migrateSelectedProcessesButton = page.getByRole('button', {name: 'Migrate',});
     this.continueMigrationDialogButton = page
       .getByRole('dialog')
@@ -183,6 +183,10 @@ class OperateProcessesPage {
     await this.page.locator(`label[for="${id}"]`).click();
   }
 
+  async selectProcessCheckboxByPIK(PIK: string): Promise<void> {
+    await this.page.locator(`label[for$="${PIK}"]`).click();
+  }
+
   async clickMigrateSelectedProcessesButton(): Promise<void> {
     await this.migrateSelectedProcessesButton.click();
   }
@@ -199,6 +203,14 @@ class OperateProcessesPage {
     await this.cancelProcessInstanceDialogButton.click( {timeout: 6000} );
   }
 
+  async tableHasInstanceKey(keyStr: string): Promise<boolean> {
+    const meow = this.processInstancesTable.getByTestId('cell-processInstanceKey').getByText(keyStr);
+    if (await meow.count()) {
+      return true;
+    }
+    return false;
+  }
 }
+
 
 export {OperateProcessesPage};

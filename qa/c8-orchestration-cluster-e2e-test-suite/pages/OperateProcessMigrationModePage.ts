@@ -48,4 +48,13 @@ export class OperateProcessMigrationModePage {
   async clickMigrationConfirmationButton(): Promise<void> {
     await this.migrationConfirmationButton.click();
   }
+
+  async migrateProcessToVersion(version: string): Promise<void> {
+    await this.clickTargetVersionCombo();
+    await this.selectTargetVersion(version);
+    await this.clickNextButton();
+    await this.clickConfirmButton();
+    await this.fillMigrationConfirmation('MIGRATE');
+    await this.clickMigrationConfirmationButton();
+  }
 }

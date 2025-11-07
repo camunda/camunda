@@ -78,10 +78,16 @@ const cancelProcessInstance = async (processInstanceKey: string) => {
   return zeebe.cancelProcessInstance({processInstanceKey});
 };
 
+async function searchByProcessInstanceKey(processInstanceKey: string) {
+  return zeebe.searchProcessInstances({ filter: { processInstanceKey } });
+}
+
+
 export {
   deploy,
   createInstances,
   generateManyVariables,
   createSingleInstance,
   cancelProcessInstance,
+  searchByProcessInstanceKey,
 };
