@@ -346,9 +346,12 @@ const ElementInstanceIcon: React.FC<Props> = ({
     <SVGIcon
       SVGComponent={SVGComponent}
       {...rest}
-      $isGateway={['PARALLEL_GATEWAY', 'EXCLUSIVE_GATEWAY'].includes(
-        elementInstanceType,
-      )}
+      $isGateway={[
+        'PARALLEL_GATEWAY',
+        'EXCLUSIVE_GATEWAY',
+        'INCLUSIVE_GATEWAY',
+        'EVENT_BASED_GATEWAY',
+      ].includes(elementInstanceType)}
       className={className}
       data-testid="element-instance-icon"
     />
