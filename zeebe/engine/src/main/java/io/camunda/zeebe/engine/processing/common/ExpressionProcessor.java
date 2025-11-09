@@ -50,12 +50,21 @@ public final class ExpressionProcessor {
   }
 
   /**
-   * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
-   * primaryContext} for all lookups. Only if it doesn't find a variable in {@code primaryContext},
-   * it will lookup variables in the evaluation context of {@code this} evaluation processor
+   * Creates a new {@code ExpressionProcessor} with an additional evaluation context placed in front
+   * of the current one.
    *
-   * @param scopedEvaluationContext new top level evaluation context
-   * @return new instance which uses {@code primaryContext} as new top level evaluation context
+   * <p>The provided {@code scopedEvaluationContext} becomes the highest-priority lookup context.
+   * When resolving expressions, variable lookup proceeds in this order:
+   *
+   * <ol>
+   *   <li>the newly provided {@code scopedEvaluationContext} (top-level)
+   *   <li>the existing context associated with this processor
+   * </ol>
+   *
+   * <p>No mutation is done on the current processor — a new instance is returned.
+   *
+   * @param scopedEvaluationContext the evaluation context to prepend and give priority to
+   * @return a new {@code ExpressionProcessor} whose lookup order starts with the given context
    */
   public ExpressionProcessor prependContext(final ScopedEvaluationContext scopedEvaluationContext) {
     return new ExpressionProcessor(
@@ -65,13 +74,25 @@ public final class ExpressionProcessor {
   }
 
   /**
-   * Evaluates the given expression and returns the result as string. If the evaluation fails or the
-   * result is not a string then a failure is returned.
+   * Evaluates the given expression and attempts to return the result as a {@link String}.
+   *
+   * <p>Expression resolution follows the provided {@code scopeKey} and {@code tenantId} when
+   * looking up variables:
+   *
+   * <ul>
+   *   <li>If {@code scopeKey} is negative, the evaluation is performed with an empty variable
+   *       context.
+   *   <li>Otherwise, variables are resolved using the context derived from the given scope and
+   *       tenant.
+   * </ul>
+   *
+   * <p>If the expression cannot be evaluated, or if the evaluation result is not a string, a {@code
+   * Failure} is returned instead of throwing an exception.
    *
    * @param expression the expression to evaluate
-   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
-   *     empty variable context)
-   * @return either the evaluation result as string, or a failure
+   * @param scopeKey the scope from which variables should be loaded; negative implies no context
+   * @param tenantId the tenant owning the scope, used to resolve variables in multi-tenant setups
+   * @return an {@code Either} containing either the evaluated string result, or a {@code Failure}
    */
   public Either<Failure, String> evaluateStringExpression(
       final Expression expression, final long scopeKey, final String tenantId) {

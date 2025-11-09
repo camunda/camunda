@@ -8,12 +8,16 @@
 package io.camunda.zeebe.engine.processing.expression;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -96,16 +100,14 @@ public class ClusterVariableEvaluationContextTest {
     final var processCreated =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_2").withTenantId(TENANT_A).create();
 
-    final var export =
-        RecordingExporter.jobRecords()
-            .withIntent(JobIntent.CREATED)
-            .withProcessInstanceKey(processCreated)
-            .withTenantId(TENANT_A)
-            .getFirst()
-            .getValue();
-
-    // Then
-    Assertions.assertThat(export).hasType("_2_");
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withIntent(JobIntent.CREATED)
+                .withProcessInstanceKey(processCreated)
+                .withType("_2_")
+                .withTenantId(TENANT_A)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -171,12 +173,11 @@ public class ClusterVariableEvaluationContextTest {
     ENGINE.deployment().withXmlResource(process).deploy();
 
     // When
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_4").create();
+    final var processCreated = ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_4").create();
 
     final var userTaskRecordValue =
         RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
-            .withProcessInstanceKey(processInstanceKey)
+            .withProcessInstanceKey(processCreated)
             .getFirst()
             .getValue();
 
@@ -208,12 +209,11 @@ public class ClusterVariableEvaluationContextTest {
             .done();
 
     ENGINE.deployment().withXmlResource(process).deploy();
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_5").create();
+    final var processCreated = ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_5").create();
 
     ENGINE
         .job()
-        .ofInstance(processInstanceKey)
+        .ofInstance(processCreated)
         .withType("_1_")
         .withVariables(
             Map.of("camunda", Map.of("vars", Map.of("env", Map.of("KEY", "ProcessDefined")))))
@@ -247,12 +247,14 @@ public class ClusterVariableEvaluationContextTest {
     ENGINE.deployment().withXmlResource(process).withTenantId(TENANT_A).deploy();
 
     // When
-    final var pi =
+    final var processCreated =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_6").withTenantId(TENANT_A).create();
 
     // Then
     final var job =
-        RecordingExporter.jobRecords(JobIntent.CREATED).withProcessInstanceKey(pi).getFirst();
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processCreated)
+            .getFirst();
     Assertions.assertThat(job.getValue()).hasType("tenant");
   }
 
@@ -282,16 +284,16 @@ public class ClusterVariableEvaluationContextTest {
     ENGINE.deployment().withXmlResource(process).withTenantId(TENANT_A).deploy();
 
     // When
-    final var processInstanceKey =
+    final var processCreated =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_7").withTenantId(TENANT_A).create();
 
-    final var s1 =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .filter(r -> r.getValue().getElementId().equals("MY_SERVICE_TASK_7"))
-            .getFirst();
-    // Then
-    Assertions.assertThat(s1.getValue()).hasType("globalA-tenantC");
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processCreated)
+                .withElementId("MY_SERVICE_TASK_7")
+                .withType("globalA-tenantC")
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -316,12 +318,14 @@ public class ClusterVariableEvaluationContextTest {
     ENGINE.deployment().withXmlResource(process).withTenantId(TENANT_A).deploy();
 
     // When
-    final var pi =
+    final var processCreated =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_8").withTenantId(TENANT_A).create();
 
     // Then
     final var created =
-        RecordingExporter.jobRecords(JobIntent.CREATED).withProcessInstanceKey(pi).getFirst();
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processCreated)
+            .getFirst();
     Assertions.assertThat(created.getValue()).hasType("global");
   }
 
@@ -339,12 +343,14 @@ public class ClusterVariableEvaluationContextTest {
             .done();
 
     ENGINE.deployment().withXmlResource(process).withTenantId(TENANT_A).deploy();
-    final var pi =
+    final var processCreated =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_9").withTenantId(TENANT_A).create();
 
     // Then
     final var job =
-        RecordingExporter.jobRecords(JobIntent.CREATED).withProcessInstanceKey(pi).getFirst();
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processCreated)
+            .getFirst();
     Assertions.assertThat(job.getValue()).hasType("global");
   }
 
@@ -373,12 +379,14 @@ public class ClusterVariableEvaluationContextTest {
 
     ENGINE.deployment().withXmlResource(process).withTenantId(TENANT_B).deploy();
 
-    final var pi =
+    final var processCreated =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_10").withTenantId(TENANT_B).create();
 
     // Then
     final var job =
-        RecordingExporter.jobRecords(JobIntent.CREATED).withProcessInstanceKey(pi).getFirst();
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processCreated)
+            .getFirst();
     Assertions.assertThat(job.getValue()).hasType("DEFAULT_JOB_TYPE");
   }
 
@@ -414,20 +422,20 @@ public class ClusterVariableEvaluationContextTest {
     ENGINE.deployment().withXmlResource(process).withTenantId(TENANT_B).deploy();
 
     // When
-    final var pi1 =
+    final var processCreated_1 =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_11").withTenantId(TENANT_A).create();
-    final var pi2 =
+    final var processCreated_2 =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_11").withTenantId(TENANT_B).create();
 
     final var j1 =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withTenantId(TENANT_A)
-            .withProcessInstanceKey(pi1)
+            .withProcessInstanceKey(processCreated_1)
             .getFirst();
     final var j2 =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withTenantId(TENANT_B)
-            .withProcessInstanceKey(pi2)
+            .withProcessInstanceKey(processCreated_2)
             .getFirst();
 
     // Then
@@ -461,6 +469,203 @@ public class ClusterVariableEvaluationContextTest {
     final var job = ENGINE.jobs().withType("_2_").activate().getValue().getJobs().getFirst();
 
     assertThat(job.getVariables()).containsEntry("resultJob", null);
+  }
+
+  @Test
+  public void checkGlobalClusterVariableIsResolvedInRetries() {
+    // Given
+    ENGINE.clusterVariables().withName("JOB_RETRIES").withValue("1").setGlobalScope().create();
+
+    final var process =
+        Bpmn.createExecutableProcess("PROCESS_ID_13")
+            .startEvent()
+            .serviceTask(
+                "MY_SERVICE_TASK_13",
+                serviceTaskBuilder ->
+                    serviceTaskBuilder
+                        .zeebeJobType("_1_")
+                        .zeebeJobRetriesExpression("=camunda.vars.cluster.JOB_RETRIES"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // When
+    final var processCreated = ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_13").create();
+
+    final var export =
+        RecordingExporter.jobRecords()
+            .withIntent(JobIntent.CREATED)
+            .withProcessInstanceKey(processCreated)
+            .getFirst()
+            .getValue();
+
+    // Then
+    Assertions.assertThat(export).hasRetries(1);
+  }
+
+  @Test
+  public void checkGlobalClusterVariableIsResolvedInsideUserTaskForAssignee() {
+    // Given
+    ENGINE
+        .clusterVariables()
+        .withName("MY_ASSIGNEE")
+        .withValue("\"john_doe\"")
+        .setGlobalScope()
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess("PROCESS_ID_14")
+            .startEvent()
+            .userTask(
+                "MY_USER_TASK_2",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssigneeExpression(
+                            "if camunda.vars.cluster.MY_ASSIGNEE = null then \"default_assignee\" else camunda.vars.cluster.MY_ASSIGNEE"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // When
+    final var processCreated = ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_14").create();
+
+    final var userTaskRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .withProcessInstanceKey(processCreated)
+            .getFirst()
+            .getValue();
+
+    // Then
+    Assertions.assertThat(userTaskRecordValue).hasAssignee("john_doe");
+  }
+
+  @Test
+  public void checkGlobalClusterVariableIsResolvedInsideUserTaskForDueDate() {
+    // Given
+    ENGINE
+        .clusterVariables()
+        .withName("DUE_DATE")
+        .withValue("\"2040-01-01T00:00Z\"")
+        .setGlobalScope()
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess("PROCESS_ID_15")
+            .startEvent()
+            .userTask(
+                "MY_USER_TASK_3",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssignee("CamundaUser")
+                        .zeebeDueDateExpression("camunda.vars.cluster.DUE_DATE"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // When
+    final var processCreated = ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_15").create();
+
+    final var userTaskRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .withProcessInstanceKey(processCreated)
+            .getFirst()
+            .getValue();
+
+    // Then
+    Assertions.assertThat(userTaskRecordValue).hasDueDate("2040-01-01T00:00Z");
+  }
+
+  @Test
+  public void checkGlobalClusterVariableIsResolvedInsideUserTaskForFollowUpDate() {
+    // Given
+    ENGINE
+        .clusterVariables()
+        .withName("FOLLOW_UP_DATE")
+        .withValue("\"2040-01-01T00:00Z\"")
+        .setGlobalScope()
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess("PROCESS_ID_16")
+            .startEvent()
+            .userTask(
+                "MY_USER_TASK_4",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssignee("CamundaUser")
+                        .zeebeFollowUpDateExpression("camunda.vars.cluster.FOLLOW_UP_DATE"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // When
+    final var processCreated = ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_16").create();
+
+    final var userTaskRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .withProcessInstanceKey(processCreated)
+            .getFirst()
+            .getValue();
+
+    // Then
+    Assertions.assertThat(userTaskRecordValue).hasFollowUpDate("2040-01-01T00:00Z");
+  }
+
+  @Test
+  public void checkGlobalClusterVariableIsResolvedInsideCorrelationKey() {
+    // Given
+    ENGINE
+        .clusterVariables()
+        .withName("START_CORRELATION_KEY")
+        .withValue("\"start\"")
+        .setGlobalScope()
+        .create();
+
+    final var process =
+        Bpmn.createExecutableProcess("PROCESS_ID_17")
+            .startEvent()
+            .intermediateCatchEvent()
+            .message(
+                messageBuilder ->
+                    messageBuilder
+                        .name("message")
+                        .zeebeCorrelationKeyExpression(
+                            "camunda.vars.cluster.START_CORRELATION_KEY"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // When
+    final var processCreated =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS_ID_17")
+            .withVariable("test", "test")
+            .create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processCreated)
+                .onlyEvents()
+                .limit(
+                    r ->
+                        r.getValue().getBpmnElementType()
+                                == BpmnElementType.INTERMEDIATE_CATCH_EVENT
+                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.INTERMEDIATE_CATCH_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                BpmnElementType.INTERMEDIATE_CATCH_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   record JobConfiguration(String type, int retries) {}
