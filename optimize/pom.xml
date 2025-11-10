@@ -100,14 +100,85 @@
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
+ <dependencyManagement>
   <dependencies>
-    <!-- Common test dependencies-->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bom</artifactId>
+      <version>${zeebe.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-build-tools</artifactId>
-      <version>8.9.0-SNAPSHOT</version>
-      <scope>test</scope>
+      <version>${zeebe.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-reader</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-auth</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-plugin</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    </dependencies>
+</dependencyManagement>
+
+  <dependencies>
+    <!-- Common test dependencies-->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -247,7 +318,6 @@
               <dep>io.camunda.optimize:optimize-backend</dep>
               <dep>io.camunda.optimize:optimize-backend:test-jar</dep>
               <dep>io.camunda.optimize:upgrade-optimize</dep>
-              <dep>io.camunda:zeebe-build-tools</dep>
               <dep>io.github.netmikey.logunit:logunit-core</dep>
               <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
               <dep>io.netty:netty-codec-http</dep>
@@ -328,6 +398,12 @@
               <artifactId>junit-jupiter-engine</artifactId>
               <version>${junit.jupiter.version}</version>
             </dependency>
+            <!-- Override zeebe-build-tools version from parent -->
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${zeebe.version}</version>
+            </dependency>
           </dependencies>
         </plugin>
         <plugin>
@@ -338,6 +414,14 @@
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
           </configuration>
+          <dependencies>
+            <dependency>
+              <!-- Override zeebe-build-tools version from parent -->
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${zeebe.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -511,6 +595,18 @@
             <phase>clean</phase>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <dependencies>
+          <!-- Override zeebe-build-tools version from parent -->
+          <dependency>
+            <groupId>io.camunda</groupId>
+            <artifactId>zeebe-build-tools</artifactId>
+            <version>${zeebe.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
