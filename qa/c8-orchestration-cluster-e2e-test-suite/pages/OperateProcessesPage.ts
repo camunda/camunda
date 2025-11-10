@@ -235,6 +235,18 @@ class OperateProcessesPage {
     return texts.map(t => t.trim());
   }
 
+  static getProcessVersion(row: Locator): Locator {
+    return row.getByTestId('cell-processVersion');
+  }
+
+  static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
+    return page
+          .getByTestId('data-list')
+          .getByRole('row')
+          .filter({
+            has: page.getByTestId('cell-processInstanceKey').filter({ hasText: keyStr }),
+          });
+  }
 }
 
 

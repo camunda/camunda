@@ -255,5 +255,6 @@ export class OperateFiltersPanelPage {
     }
     await this.fillOperationIdFilter(opId);
     await sleep(1_000);
+    await this.page.waitForLoadState('networkidle');
   }
 }

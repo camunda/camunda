@@ -15,6 +15,7 @@ import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
 import { OperateOperationPanelPage } from '@pages/OperateOperationPanelPage';
 import { time } from 'console';
+import { OperateProcessesPage } from '@pages/OperateProcessesPage';
 
 type ProcessInstance = {processInstanceKey: number};
 
@@ -341,17 +342,9 @@ test.describe('Process Instances Filters', () => {
       .poll(async () => {
         for (const operation of last3or2) {
           await operateFiltersPanelPage.filterByOperationId(operation.id);
-          await page.waitForLoadState('networkidle');
-
-          const row = page
-            .getByTestId('data-list')
-            .getByRole('row')
-            .filter({
-              has: page.getByTestId('cell-processInstanceKey').filter({ hasText: keyStr }),
-            });
-
+          const row = OperateProcessesPage.getRowByProcessInstanceKey(page, keyStr);
         if (await row.count()) {
-          const versionText = (await row.getByTestId('cell-processVersion').innerText()).trim();
+          const versionText = (await OperateProcessesPage.getProcessVersion(row).innerText()).trim();
           if (versionText === String(targetVersion)) {
             return operation.id;
           }
