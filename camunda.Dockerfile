@@ -15,7 +15,7 @@ ARG BASE_DIGEST="sha256:5a15ae56ac90e5ed64653236c9feeadbad9ebde5b483dd11fdb93760
 ARG DIST="distball"
 
 ### Build camunda from scratch ###
-FROM reg.mini.dev/openjdk:21.0.8-dev AS build
+FROM reg.mini.dev/openjdk:21.0.9-dev AS build
 
 # hadolint ignore=DL3002
 USER root
