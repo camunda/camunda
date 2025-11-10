@@ -157,44 +157,43 @@ type IncidentsWrapperContentProps = {
   selectedElementName?: string;
 };
 
-const IncidentsWrapperContent: React.FC<IncidentsWrapperContentProps> = (
-  props,
-) => {
-  const enhancedIncidents = useEnhancedIncidents(props.handle.incidents);
-  const headerTitle = props.selectedElementName
-    ? `Incidents - Filtered by "${props.selectedElementName}"`
-    : 'Incidents';
+const IncidentsWrapperContent: React.FC<IncidentsWrapperContentProps> =
+  observer((props) => {
+    const enhancedIncidents = useEnhancedIncidents(props.handle.incidents);
+    const headerTitle = props.selectedElementName
+      ? `Incidents - Filtered by "${props.selectedElementName}"`
+      : 'Incidents';
 
-  return (
-    <Transition
-      in={props.isPanelVisible}
-      onEnter={() => props.setIsInTransition(true)}
-      onEntered={() => props.setIsInTransition(false)}
-      onExit={() => props.setIsInTransition(true)}
-      onExited={() => props.setIsInTransition(false)}
-      mountOnEnter
-      unmountOnExit
-      timeout={400}
-    >
-      <IncidentsOverlay>
-        <PanelHeader
-          title={headerTitle}
-          count={props.handle.totalIncidentsCount}
-          size="sm"
-        >
-          <IncidentsFilter />
-        </PanelHeader>
-        <IncidentsTableV2
-          state={props.handle.displayState}
-          onVerticalScrollStartReach={props.handle.handleScrollStartReach}
-          onVerticalScrollEndReach={props.handle.handleScrollEndReach}
-          processInstanceKey={props.processInstanceKey}
-          incidents={enhancedIncidents}
-        />
-      </IncidentsOverlay>
-    </Transition>
-  );
-};
+    return (
+      <Transition
+        in={props.isPanelVisible}
+        onEnter={() => props.setIsInTransition(true)}
+        onEntered={() => props.setIsInTransition(false)}
+        onExit={() => props.setIsInTransition(true)}
+        onExited={() => props.setIsInTransition(false)}
+        mountOnEnter
+        unmountOnExit
+        timeout={400}
+      >
+        <IncidentsOverlay>
+          <PanelHeader
+            title={headerTitle}
+            count={props.handle.totalIncidentsCount}
+            size="sm"
+          >
+            <IncidentsFilter />
+          </PanelHeader>
+          <IncidentsTableV2
+            state={props.handle.displayState}
+            onVerticalScrollStartReach={props.handle.handleScrollStartReach}
+            onVerticalScrollEndReach={props.handle.handleScrollEndReach}
+            processInstanceKey={props.processInstanceKey}
+            incidents={enhancedIncidents}
+          />
+        </IncidentsOverlay>
+      </Transition>
+    );
+  });
 
 type IncidentsSourceProps<Source> = Source & {
   enableQuery: boolean;
