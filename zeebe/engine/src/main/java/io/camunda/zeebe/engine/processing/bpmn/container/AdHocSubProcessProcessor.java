@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
+
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
@@ -40,7 +42,7 @@ public class AdHocSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableAdHocSubProcess> {
 
   private static final DirectBuffer AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_NAME =
-      BufferUtil.wrapString("adHocSubProcessElements");
+      BufferUtil.wrapString(AD_HOC_SUB_PROCESS_ELEMENTS);
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;

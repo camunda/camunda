@@ -9,11 +9,16 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -172,7 +177,8 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
 
     final Map<String, String> mappedElementIds =
-        mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
+        mapElementIds(
+            mappingInstructions, processInstance, targetProcessDefinition, sourceProcessDefinition);
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
@@ -214,13 +220,23 @@ public class ProcessInstanceMigrationMigrateProcessor
   private Map<String, String> mapElementIds(
       final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
       final ElementInstance processInstance,
-      final DeployedProcess targetProcessDefinition) {
+      final DeployedProcess targetProcessDefinition,
+      final DeployedProcess sourceProcessDefinition) {
     final Map<String, String> mappedElementIds =
         mappingInstructions.stream()
             .collect(
                 Collectors.toMap(
                     ProcessInstanceMigrationMappingInstructionValue::getSourceElementId,
                     ProcessInstanceMigrationMappingInstructionValue::getTargetElementId));
+
+    mappingInstructions.stream()
+        .filter(instruction -> isAdHocRelatedProcess(sourceProcessDefinition, instruction.getSourceElementId()))
+        .forEach(
+            instruction ->
+                mappedElementIds.put(
+                    instruction.getSourceElementId() + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX,
+                    instruction.getTargetElementId() + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX));
+
     // users don't provide a mapping instruction for the bpmn process id
     mappedElementIds.put(
         processInstance.getValue().getBpmnProcessId(),
@@ -423,6 +439,8 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
+
+    handleAdHocSubProcess(elementInstance, targetProcessDefinition, elementInstanceRecord, targetElementId);
 
     if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
       // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
@@ -674,6 +692,55 @@ public class ProcessInstanceMigrationMigrateProcessor
         .resetProcessDefinitionPath();
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), intent, sequenceFlowRecord);
+  }
+
+  private void handleAdHocSubProcess(final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final ProcessInstanceRecord elementInstanceRecord, final String targetElementId) {
+    if (isAdHocSubProcess(elementInstanceRecord.getBpmnElementType())) {
+      final AbstractFlowElement element = targetProcessDefinition
+          .getProcess()
+          .getElementById(targetElementId);
+
+      ExecutableAdHocSubProcess targetAhsp;
+      if (element instanceof ExecutableMultiInstanceBody mi) {
+        targetAhsp = (ExecutableAdHocSubProcess) mi.getInnerActivity();
+      } else {
+        targetAhsp = (ExecutableAdHocSubProcess) element;
+      }
+
+      variableState
+          .getVariablesLocal(elementInstance.getKey())
+          .forEach(
+              variable ->
+                  stateWriter.appendFollowUpEvent(
+                      variable.key(),
+                      VariableIntent.UPDATED,
+                      variableRecord
+                          .setScopeKey(elementInstance.getKey())
+                          .setName(BufferUtil.wrapString(AD_HOC_SUB_PROCESS_ELEMENTS))
+                          .setValue(targetAhsp.getAdHocActivitiesMetadata())
+                          .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                          .setProcessDefinitionKey(targetProcessDefinition.getKey())
+                          .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                          .setTenantId(elementInstance.getValue().getTenantId())));
+    }
+  }
+
+  private static boolean isAdHocRelatedProcess(
+      final DeployedProcess processDefinition,
+      final String elementId) {
+    final var element =
+        processDefinition.getProcess().getElementById(elementId);
+    final var elementType = element.getElementType();
+
+    return isAdHocSubProcess(elementType)
+        || (element instanceof ExecutableMultiInstanceBody mi &&
+        isAdHocSubProcess(mi.getInnerActivity().getElementType()));
+  }
+
+  private static boolean isAdHocSubProcess(final BpmnElementType elementType) {
+    return elementType == BpmnElementType.AD_HOC_SUB_PROCESS;
   }
 
   /**

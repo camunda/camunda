@@ -12,7 +12,7 @@ import {hasType} from './hasType';
 function isSubProcess(businessObject?: BusinessObject) {
   return (
     businessObject !== undefined &&
-    hasType({businessObject, types: ['bpmn:SubProcess']})
+    hasType({businessObject, types: ['bpmn:SubProcess', 'bpmn:AdHocSubProcess']})
   );
 }
 
