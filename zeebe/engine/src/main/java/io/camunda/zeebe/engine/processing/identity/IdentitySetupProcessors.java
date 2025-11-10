@@ -31,6 +31,8 @@ public final class IdentitySetupProcessors {
             new IdentitySetupInitializeProcessor(writers, keyGenerator))
         .withListener(
             new IdentitySetupInitializer(
-                securityConfig, config.isEnableIdentitySetup(), new AuthorizationConfigurer()));
+                securityConfig,
+                config.isEnableIdentitySetup(),
+                new AuthorizationConfigurer(securityConfig.getCompiledIdValidationPattern())));
   }
 }
