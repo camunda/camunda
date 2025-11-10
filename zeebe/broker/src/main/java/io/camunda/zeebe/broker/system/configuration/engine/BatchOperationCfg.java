@@ -18,11 +18,6 @@ public class BatchOperationCfg implements ConfigurationEntry {
   /** Number of itemKeys in one BatchOperationChunkRecord. Must be below 4MB total record size. */
   private int chunkSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
 
-  /**
-   * Number of itemKeys in one PersistedBatchOperationChunk. Must be below 32KB total record size.
-   */
-  private int dbChunkSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
-
   private int queryPageSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
   private int queryInClauseSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
 
@@ -48,14 +43,6 @@ public class BatchOperationCfg implements ConfigurationEntry {
 
   public void setChunkSize(final int chunkSize) {
     this.chunkSize = chunkSize;
-  }
-
-  public int getDbChunkSize() {
-    return dbChunkSize;
-  }
-
-  public void setDbChunkSize(final int dbChunkSize) {
-    this.dbChunkSize = dbChunkSize;
   }
 
   public int getQueryPageSize() {
@@ -113,8 +100,6 @@ public class BatchOperationCfg implements ConfigurationEntry {
         + schedulerInterval
         + ", chunkSize="
         + chunkSize
-        + ", dbChunkSize="
-        + dbChunkSize
         + ", queryPageSize="
         + queryPageSize
         + ", queryInClauseSize="

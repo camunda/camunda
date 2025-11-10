@@ -28,6 +28,11 @@ import org.slf4j.LoggerFactory;
 
 public class DbBatchOperationState implements MutableBatchOperationState {
 
+  /**
+   * @deprecated the maximum chunk size for item keys in a batch operation chunk. This is only used
+   *     for the deprecated appendItemKeys method. The new addChunk method allows adding chunks with
+   *     any number of item keys, so this limit does not apply to it.
+   */
   public static final long MAX_DB_CHUNK_SIZE = 3500;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DbBatchOperationState.class);
