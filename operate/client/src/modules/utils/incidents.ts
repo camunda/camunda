@@ -11,7 +11,6 @@ import type {
   IncidentErrorType,
   QueryIncidentsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {autorun} from 'mobx';
 import {incidentsStore} from 'modules/stores/incidents';
 import {isInstanceRunning} from './instance';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
@@ -40,19 +39,6 @@ const availableErrorTypes = Object.keys(
 
 const getIncidentErrorName = (errorType: IncidentErrorType): string => {
   return ERROR_TYPE_NAMES[errorType];
-};
-
-const init = (processInstance?: ProcessInstance) => {
-  incidentsStore.disposer = autorun(() => {
-    if (processInstance?.hasIncident) {
-      if (incidentsStore.intervalId === null) {
-        incidentsStore.fetchIncidents(processInstance.processInstanceKey);
-        startPolling(processInstance);
-      }
-    } else {
-      incidentsStore.stopPolling();
-    }
-  });
 };
 
 const startPolling = async (
@@ -103,7 +89,6 @@ const getIncidentsSearchFilter = (
 export {
   availableErrorTypes,
   getIncidentErrorName,
-  init,
   startPolling,
   isSingleIncidentSelected,
   getIncidentsSearchFilter,
