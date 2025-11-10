@@ -92,7 +92,7 @@ public class ReadJobWorkerValueTest {
         .isEqualTo(new FromAnnotation<>(Duration.ofSeconds(500L)));
     assertThat(jobWorkerValue.get().getPollInterval())
         .isEqualTo(new FromAnnotation<>(Duration.ofSeconds(1L)));
-    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new Empty<>());
+    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new FromAnnotation<>(true));
     assertThat(jobWorkerValue.get().getFetchVariables())
         .isEqualTo(List.of(new FromAnnotation<>("foo")));
   }

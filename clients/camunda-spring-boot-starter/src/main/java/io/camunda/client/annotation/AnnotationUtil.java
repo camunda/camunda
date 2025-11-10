@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,18 +183,24 @@ public class AnnotationUtil {
                       ? new Empty<>()
                       : new FromAnnotation<>(
                           Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS)),
-                  annotation.autoComplete() ? new Empty<>() : new FromAnnotation<>(false),
+                  fromSingletonBooleanArray(
+                      annotation.autoComplete(), "autoComplete", methodInfo.getMethodName()),
                   fetchVariables,
-                  annotation.enabled() ? new Empty<>() : new FromAnnotation<>(false),
+                  fromSingletonBooleanArray(
+                      annotation.enabled(), "enabled", methodInfo.getMethodName()),
                   Arrays.stream(annotation.tenantIds())
                       .map(tenantId -> (SourceAware<String>) new FromAnnotation<>(tenantId))
                       .toList(),
-                  annotation.fetchAllVariables()
-                      ? new FromAnnotation<>(true)
-                      : usesActivatedJob(methodInfo)
-                          ? new GeneratedFromMethodInfo<>(true)
-                          : new Empty<>(),
-                  annotation.streamEnabled() ? new FromAnnotation<>(true) : new Empty<>(),
+                  fromSingletonBooleanArray(
+                      annotation.fetchAllVariables(),
+                      () ->
+                          usesActivatedJob(methodInfo)
+                              ? new GeneratedFromMethodInfo<>(true)
+                              : new Empty<>(),
+                      "fetchAllVariables",
+                      methodInfo.getMethodName()),
+                  fromSingletonBooleanArray(
+                      annotation.streamEnabled(), "streamEnabled", methodInfo.getMethodName()),
                   annotation.streamTimeout() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(
@@ -208,6 +215,28 @@ public class AnnotationUtil {
               });
     }
     return Optional.empty();
+  }
+
+  private static SourceAware<Boolean> fromSingletonBooleanArray(
+      final boolean[] annotationProperty,
+      final Supplier<SourceAware<Boolean>> defaultValue,
+      final String propertyName,
+      final String methodName) {
+    if (annotationProperty.length == 0) {
+      return defaultValue.get();
+    }
+    if (annotationProperty.length == 1) {
+      return new FromAnnotation<>(annotationProperty[0]);
+    }
+    throw new IllegalArgumentException(
+        String.format(
+            "Illegal configuration of boolean property '%s' on @JobWorker method '%s'",
+            propertyName, methodName));
+  }
+
+  private static SourceAware<Boolean> fromSingletonBooleanArray(
+      final boolean[] annotationProperty, final String propertyName, final String methodName) {
+    return fromSingletonBooleanArray(annotationProperty, Empty::new, propertyName, methodName);
   }
 
   private static boolean usesActivatedJob(final MethodInfo methodInfo) {
