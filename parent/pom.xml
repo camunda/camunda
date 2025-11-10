@@ -26,6 +26,9 @@
   <properties>
     <version.java>21</version.java>
 
+    <camunda.version>8.9.0-alpha1-rc1</camunda.version>
+    <camunda.test.version>8.9.0-SNAPSHOT</camunda.test.version>
+
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
     <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
@@ -282,144 +285,144 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-zeebe</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
       <!-- Internal Zeebe modules -->
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>debug-cli</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-stream-platform</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-logstreams</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-workflow-engine</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-msgpack-core</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-msgpack-value</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-impl</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-jackson</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker-client</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-transport</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-test-util</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-qa-util</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-qa-util</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-util</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-auth</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-scheduler</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-db</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-build-tools</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-protocol</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
       </dependency>
@@ -427,286 +430,286 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-grpc</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-exporter-common</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-exporter</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-elasticsearch-exporter</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-opensearch-exporter</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>rdbms-exporter</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-exporter-test</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-asserts</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-expression-language</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-feel-integration</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-feel-tagged-parameters</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-snapshots</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-journal</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-dmn</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-atomix-cluster</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-atomix-utils</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-store-s3</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-store-gcs</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-store-azure</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-store-filesystem</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-store-common</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-testkit</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-restore</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-rest</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-cluster-config</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-plugin</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <!-- Webapps Common -->
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>webapps-common</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>webapps-schema</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>webapps-backup</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
       <!-- Operate Modules -->
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-webapp</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-webjar</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-data-generator</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-common</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-schema</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-mvc-auth-commons</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-util</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-110</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-120</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-130</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-800</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-810</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-820</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-830</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-840</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-850</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
@@ -714,110 +717,110 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-webapp</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-webjar</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-data-generator</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-common</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-els-schema</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-util</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-it-tests</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-migration-tests-test-fixture-810</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-migration-tests-test-fixture-820</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-migration-tests-test-fixture-830</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-migration-tests-test-fixture-840</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-migration-tests-test-fixture-850</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>document-api</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>document-store</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <!-- camunda secondary db -->
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-db</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-db-rdbms</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-db-rdbms-schema</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <!-- camunda search client -->
@@ -825,67 +828,67 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-domain</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-reader</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-spring-utils</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-service</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-query-transformer</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-elasticsearch</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-opensearch</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-connect</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-schema-manager</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-test-utils</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <!-- camunda java client -->
@@ -893,30 +896,30 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-client-java</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-spring-boot-starter</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <!-- Camunda security modules -->
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-security-core</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-security-protocol</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-security-services</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <!-- Camunda Process Testing modules -->
@@ -924,13 +927,13 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-process-test-java</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-process-test-spring</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <!-- sibling projects -->
@@ -1134,19 +1137,19 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-authentication</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>identity-webjar</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>identity-migration</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
@@ -1170,7 +1173,7 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
       </dependency>
@@ -1190,7 +1193,7 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-workflow-engine</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
       </dependency>
@@ -1198,7 +1201,7 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-logstreams</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
       </dependency>
@@ -1206,7 +1209,7 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-scheduler</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.test.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
       </dependency>
@@ -1214,7 +1217,7 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>configuration</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
@@ -2242,7 +2245,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>${camunda.version}</version>
             </dependency>
           </dependencies>
           <executions>
@@ -2302,7 +2305,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>${camunda.version}</version>
             </dependency>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
@@ -2354,7 +2357,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>${camunda.version}</version>
             </dependency>
           </dependencies>
         </plugin>
@@ -2394,7 +2397,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>${camunda.version}</version>
             </dependency>
           </dependencies>
           <executions>
@@ -2990,7 +2993,7 @@
               <dependency>
                 <groupId>io.camunda</groupId>
                 <artifactId>zeebe-build-tools</artifactId>
-                <version>${project.version}</version>
+                <version>${camunda.version}</version>
               </dependency>
             </dependencies>
             <executions>
