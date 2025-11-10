@@ -25,6 +25,7 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
 import io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
@@ -67,6 +68,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -98,8 +100,11 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.AuthenticationEntryPointFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -802,7 +807,10 @@ public class WebSecurityConfig {
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
               .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+                  oauth2 ->
+                      oauth2
+                          .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
               .logout(AbstractHttpConfigurer::disable);
@@ -921,6 +929,23 @@ public class WebSecurityConfig {
         LOG.warn(
             "OAuth2RefreshTokenFilter is not registered because no OAuth2AuthorizedClientService or OAuth2AuthorizedClientManager is available.");
       }
+    }
+
+    private static ObjectPostProcessor<BearerTokenAuthenticationFilter>
+        postProcessBearerTokenFailureHandler() {
+      return new ObjectPostProcessor<>() {
+        @Override
+        public <O extends BearerTokenAuthenticationFilter> O postProcess(final O filter) {
+          // the same failure handler as instantiated by spring per default.
+          final AuthenticationEntryPointFailureHandler defaultFailureHandler =
+              new AuthenticationEntryPointFailureHandler(new BearerTokenAuthenticationEntryPoint());
+          // decorated with logging technical exceptions on WARN
+          final LoggingAuthenticationFailureHandler loggingFailureHandler =
+              new LoggingAuthenticationFailureHandler(defaultFailureHandler);
+          filter.setAuthenticationFailureHandler(loggingFailureHandler);
+          return filter;
+        }
+      };
     }
   }
 
