@@ -68,9 +68,10 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CommandExceptionHandlingStrategy commandExceptionHandlingStrategy(
+      final BackoffSupplier backoffSupplier,
       final CamundaClientExecutorService scheduledExecutorService) {
     return new DefaultCommandExceptionHandlingStrategy(
-        backoffSupplier(), scheduledExecutorService.get());
+        backoffSupplier, scheduledExecutorService.get());
   }
 
   @Bean
@@ -89,15 +90,7 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public ResultProcessorStrategy resultProcessorStrategy(
-      final DocumentResultProcessorFailureHandlingStrategy
-          documentResultProcessorFailureHandlingStrategy) {
-    return new DefaultResultProcessorStrategy(documentResultProcessorFailureHandlingStrategy);
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  public JobExceptionHandlerSupplier jobExceptionHandlingStrategy(
+  public JobExceptionHandlerSupplier jobExceptionHandlingSupplier(
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder) {
     return new DefaultJobExceptionHandlerSupplier(
@@ -105,9 +98,19 @@ public class CamundaClientAllAutoConfiguration {
   }
 
   @Bean
+  @ConditionalOnMissingBean
+  public ResultProcessorStrategy resultProcessorStrategy(
+      final DocumentResultProcessorFailureHandlingStrategy
+          documentResultProcessorFailureHandlingStrategy) {
+    return new DefaultResultProcessorStrategy(documentResultProcessorFailureHandlingStrategy);
+  }
+
+  @Bean
   public JobWorkerFactory jobWorkerFactory(
-      final BackoffSupplier backoffSupplier, final MetricsRecorder metricsRecorder) {
-    return new JobWorkerFactory(backoffSupplier, metricsRecorder);
+      final BackoffSupplier backoffSupplier,
+      final MetricsRecorder metricsRecorder,
+      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
+    return new JobWorkerFactory(backoffSupplier, metricsRecorder, jobExceptionHandlerSupplier);
   }
 
   @Bean

@@ -23,7 +23,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
@@ -39,19 +38,19 @@ import io.camunda.client.exception.JobError;
 import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.JobResponse;
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 
-public class SpringJobExceptionHandlerTest {
+public class BeanJobExceptionHandlerTest {
   @Test
   void shouldHandleAnyException() {
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
         mock(CommandExceptionHandlingStrategy.class);
-    final SpringJobExceptionHandler handler =
-        new SpringJobExceptionHandler(
-            jobWorkerValue, metricsRecorder, commandExceptionHandlingStrategy);
+    final BeanJobExceptionHandler handler =
+        new BeanJobExceptionHandler(
+            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -74,13 +73,12 @@ public class SpringJobExceptionHandlerTest {
 
   @Test
   void shouldHandleJobError() {
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
         mock(CommandExceptionHandlingStrategy.class);
-    final SpringJobExceptionHandler handler =
-        new SpringJobExceptionHandler(
-            jobWorkerValue, metricsRecorder, commandExceptionHandlingStrategy);
+    final BeanJobExceptionHandler handler =
+        new BeanJobExceptionHandler(
+            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
     final JobClient jobClient = mock(JobClient.class);
     final FailJobCommandStep1 failJobCommandStep1 = mock(FailJobCommandStep1.class);
     final FailJobCommandStep2 failJobCommandStep2 = mock(FailJobCommandStep2.class);
@@ -104,13 +102,12 @@ public class SpringJobExceptionHandlerTest {
 
   @Test
   void shouldHandleBpmnError() {
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     final MetricsRecorder metricsRecorder = new DefaultNoopMetricsRecorder();
     final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy =
         mock(CommandExceptionHandlingStrategy.class);
-    final SpringJobExceptionHandler handler =
-        new SpringJobExceptionHandler(
-            jobWorkerValue, metricsRecorder, commandExceptionHandlingStrategy);
+    final BeanJobExceptionHandler handler =
+        new BeanJobExceptionHandler(
+            Duration.ZERO, 0, metricsRecorder, commandExceptionHandlingStrategy);
     final JobClient jobClient = mock(JobClient.class);
     final ThrowErrorCommandStep1 throwErrorCommandStep1 = mock(ThrowErrorCommandStep1.class);
     final ThrowErrorCommandStep2 throwErrorCommandStep2 = mock(ThrowErrorCommandStep2.class);

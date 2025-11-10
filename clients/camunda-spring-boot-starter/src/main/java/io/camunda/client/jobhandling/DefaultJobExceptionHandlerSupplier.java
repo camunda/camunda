@@ -36,7 +36,10 @@ public class DefaultJobExceptionHandlerSupplier implements JobExceptionHandlerSu
   @Override
   public JobExceptionHandler getJobExceptionHandler(
       final JobExceptionHandlerSupplierContext context) {
-    return new SpringJobExceptionHandler(
-        context.jobWorkerValue(), metricsRecorder, commandExceptionHandlingStrategy);
+    return new BeanJobExceptionHandler(
+        context.retryBackoff(),
+        context.maxRetries(),
+        metricsRecorder,
+        commandExceptionHandlingStrategy);
   }
 }

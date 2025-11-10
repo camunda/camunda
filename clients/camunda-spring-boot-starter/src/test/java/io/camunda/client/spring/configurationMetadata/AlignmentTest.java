@@ -126,7 +126,8 @@ public class AlignmentTest {
           entry(
               "camunda.client.max-http-connections",
               new Getter(CamundaClientProperties::getMaxHttpConnections)),
-          entry("camunda.client.worker.defaults.retry-backoff",
+          entry(
+              "camunda.client.worker.defaults.retry-backoff",
               new Getter(p -> p.getWorker().getDefaults().getRetryBackoff(), DURATION_MAPPER)));
 
   @Autowired CamundaClientProperties camundaClientProperties;

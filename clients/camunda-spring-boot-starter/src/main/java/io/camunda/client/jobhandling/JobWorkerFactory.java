@@ -23,6 +23,7 @@ import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.jobhandling.JobExceptionHandlerSupplier.JobExceptionHandlerSupplierContext;
 import io.camunda.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
 import io.camunda.client.metrics.CamundaClientMetricsBridge;
 import io.camunda.client.metrics.MetricsRecorder;
@@ -33,11 +34,15 @@ import java.util.function.Predicate;
 public class JobWorkerFactory {
   private final BackoffSupplier backoffSupplier;
   private final MetricsRecorder metricsRecorder;
+  private final JobExceptionHandlerSupplier jobExceptionHandlerSupplier;
 
   public JobWorkerFactory(
-      final BackoffSupplier backoffSupplier, final MetricsRecorder metricsRecorder) {
+      final BackoffSupplier backoffSupplier,
+      final MetricsRecorder metricsRecorder,
+      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
     this.backoffSupplier = backoffSupplier;
     this.metricsRecorder = metricsRecorder;
+    this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
   }
 
   public JobWorker createJobWorker(
@@ -54,6 +59,11 @@ public class JobWorkerFactory {
             .handler(jobHandler)
             .name(jobWorkerValue.getName().value())
             .backoffSupplier(backoffSupplier)
+            .jobExceptionHandler(
+                jobExceptionHandlerSupplier.getJobExceptionHandler(
+                    new JobExceptionHandlerSupplierContext(
+                        jobWorkerValue.getRetryBackoff().value(),
+                        jobWorkerValue.getMaxRetries().value())))
             .metrics(
                 new CamundaClientMetricsBridge(metricsRecorder, jobWorkerValue.getType().value()));
 

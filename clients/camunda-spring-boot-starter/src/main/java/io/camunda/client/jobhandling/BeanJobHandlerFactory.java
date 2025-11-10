@@ -36,21 +36,18 @@ public class BeanJobHandlerFactory implements JobHandlerFactory {
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
   private final MetricsRecorder metricsRecorder;
-  private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
 
   public BeanJobHandlerFactory(
       final MethodInfo methodInfo,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
-      final MetricsRecorder metricsRecorder,
-      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
+      final MetricsRecorder metricsRecorder) {
     this.methodInfo = methodInfo;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
     this.metricsRecorder = metricsRecorder;
-    this.jobExceptionHandlingStrategy = jobExceptionHandlingStrategy;
   }
 
   private List<ParameterResolver> createParameterResolvers(final CamundaClient camundaClient) {
@@ -83,7 +80,6 @@ public class BeanJobHandlerFactory implements JobHandlerFactory {
         commandExceptionHandlingStrategy,
         metricsRecorder,
         createParameterResolvers(context.camundaClient()),
-        createResultProcessor(context.camundaClient()),
-        jobExceptionHandlingStrategy);
+        createResultProcessor(context.camundaClient()));
   }
 }

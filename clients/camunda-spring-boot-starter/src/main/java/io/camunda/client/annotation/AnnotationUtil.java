@@ -207,7 +207,10 @@ public class AnnotationUtil {
                           Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS)),
                   annotation.maxRetries() == -1
                       ? new Empty<>()
-                      : new FromAnnotation<>(annotation.maxRetries())))
+                      : new FromAnnotation<>(annotation.maxRetries()),
+                  annotation.retryBackoff() == -1
+                      ? new Empty<>()
+                      : new FromAnnotation<>(Duration.ofMillis(annotation.retryBackoff()))))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);
@@ -332,7 +335,8 @@ public class AnnotationUtil {
                           Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS)),
                   annotation.maxRetries() == -1
                       ? new Empty<>()
-                      : new FromAnnotation<>(annotation.maxRetries())))
+                      : new FromAnnotation<>(annotation.maxRetries()),
+                  new Empty<>()))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);

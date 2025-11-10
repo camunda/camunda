@@ -16,7 +16,6 @@
 package io.camunda.client.spring.configuration;
 
 import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
-import io.camunda.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
@@ -51,14 +50,12 @@ public class AnnotationProcessorConfiguration {
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy,
-      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
+      final ResultProcessorStrategy resultProcessorStrategy) {
     return new JobWorkerAnnotationProcessor(
         jobWorkerManager,
         commandExceptionHandlingStrategy,
         metricsRecorder,
         parameterResolverStrategy,
-        resultProcessorStrategy,
-        jobExceptionHandlingStrategy);
+        resultProcessorStrategy);
   }
 }

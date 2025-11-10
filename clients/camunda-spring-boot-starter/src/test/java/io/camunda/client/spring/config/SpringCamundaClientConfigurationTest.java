@@ -19,9 +19,11 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.spring.configuration.SpringCamundaClientConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
@@ -36,9 +38,16 @@ public class SpringCamundaClientConfigurationTest {
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final CamundaClientExecutorService executorService,
-      final CredentialsProvider credentialsProvider) {
+      final CredentialsProvider credentialsProvider,
+      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
     return new SpringCamundaClientConfiguration(
-        properties, jsonMapper, interceptors, chainHandlers, executorService, credentialsProvider);
+        properties,
+        jsonMapper,
+        interceptors,
+        chainHandlers,
+        executorService,
+        credentialsProvider,
+        jobExceptionHandlerSupplier);
   }
 
   private static CamundaClientProperties properties() {
@@ -57,6 +66,10 @@ public class SpringCamundaClientConfigurationTest {
     return new NoopCredentialsProvider();
   }
 
+  private static JobExceptionHandlerSupplier jobExceptionHandlerSupplier() {
+    return context -> null;
+  }
+
   @Test
   void shouldCreateSingletonCredentialProvider() {
     final SpringCamundaClientConfiguration configuration =
@@ -66,7 +79,8 @@ public class SpringCamundaClientConfigurationTest {
             List.of(),
             List.of(),
             executorService(),
-            credentialsProvider());
+            credentialsProvider(),
+            jobExceptionHandlerSupplier());
     final CredentialsProvider credentialsProvider1 = configuration.getCredentialsProvider();
     final CredentialsProvider credentialsProvider2 = configuration.getCredentialsProvider();
     assertThat(credentialsProvider1).isSameAs(credentialsProvider2);
@@ -75,7 +89,7 @@ public class SpringCamundaClientConfigurationTest {
   @Test
   void shouldPrintToString() {
     final SpringCamundaClientConfiguration camundaClientConfiguration =
-        new SpringCamundaClientConfiguration(properties(), null, null, null, null, null);
+        new SpringCamundaClientConfiguration(properties(), null, null, null, null, null, null);
     final String toStringOutput = camundaClientConfiguration.toString();
     assertThat(toStringOutput).matches("SpringCamundaClientConfiguration\\{.*}");
   }

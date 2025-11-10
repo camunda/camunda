@@ -75,9 +75,7 @@ public class JobHandlerInvokingBeansTest {
                 commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder(),
-                parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue))
+                metricsRecorder())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
@@ -106,9 +104,7 @@ public class JobHandlerInvokingBeansTest {
                 commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder(),
-                parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue))
+                metricsRecorder())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -129,9 +125,7 @@ public class JobHandlerInvokingBeansTest {
                 commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder(),
-                parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue))
+                metricsRecorder())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
@@ -153,9 +147,7 @@ public class JobHandlerInvokingBeansTest {
                 commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
                 resultProcessorStrategy(),
-                metricsRecorder(),
-                parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue))
+                metricsRecorder())
             .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
@@ -215,18 +207,5 @@ public class JobHandlerInvokingBeansTest {
 
   private static MetricsRecorder metricsRecorder() {
     return new DefaultNoopMetricsRecorder();
-  }
-
-  private static List<ParameterResolver> parameterResolvers(final JobWorkerValue jobWorkerValue) {
-    return JobHandlingUtil.createParameterResolvers(
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class)),
-        jobWorkerValue);
-  }
-
-  private static ResultProcessor resultProcessor(final JobWorkerValue jobWorkerValue) {
-    return JobHandlingUtil.createResultProcessor(
-        new DefaultResultProcessorStrategy(
-            mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class)),
-        jobWorkerValue);
   }
 }

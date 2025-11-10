@@ -25,7 +25,6 @@ import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.jobhandling.BeanJobHandlerFactory;
 import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
-import io.camunda.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.ManagedJobWorker;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -53,7 +52,6 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   private final MetricsRecorder metricsRecorder;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
-  private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
   private final List<ManagedJobWorker> managedJobWorkers = new ArrayList<>();
 
   public JobWorkerAnnotationProcessor(
@@ -61,14 +59,12 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy,
-      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
+      final ResultProcessorStrategy resultProcessorStrategy) {
     this.jobWorkerManager = jobWorkerManager;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
-    this.jobExceptionHandlingStrategy = jobExceptionHandlingStrategy;
   }
 
   @Override
@@ -94,8 +90,7 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
                               commandExceptionHandlingStrategy,
                               parameterResolverStrategy,
                               resultProcessorStrategy,
-                              metricsRecorder,
-                              jobExceptionHandlingStrategy)))
+                              metricsRecorder)))
               .ifPresent(newManagedJobWorkers::add);
         },
         ReflectionUtils.USER_DECLARED_METHODS);

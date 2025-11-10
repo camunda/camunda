@@ -201,7 +201,6 @@ public class JobWorkerValue {
     this.retryBackoff = retryBackoff;
   }
 
-
   @Deprecated(forRemoval = true, since = "8.9")
   public MethodInfo getMethodInfo() {
     return methodInfo;
@@ -228,7 +227,8 @@ public class JobWorkerValue {
         streamEnabled,
         streamTimeout,
         maxRetries,
-        jobHandlerFactory);
+        retryBackoff,
+        autoComplete);
   }
 
   @Override
@@ -259,6 +259,8 @@ public class JobWorkerValue {
     return "JobWorkerValue{"
         + "autoComplete="
         + autoComplete
+        + ", retryBackoff="
+        + retryBackoff
         + ", maxRetries="
         + maxRetries
         + ", streamTimeout="
@@ -281,12 +283,10 @@ public class JobWorkerValue {
         + maxJobsActive
         + ", timeout="
         + timeout
-        + ", name='"
+        + ", name="
         + name
-        + '\''
-        + ", type='"
+        + ", type="
         + type
-        + '\''
         + '}';
   }
 

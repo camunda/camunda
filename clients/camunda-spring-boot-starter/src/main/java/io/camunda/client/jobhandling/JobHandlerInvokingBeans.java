@@ -22,7 +22,6 @@ import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
-import io.camunda.client.jobhandling.JobExceptionHandlingStrategy.ExceptionHandlingContext;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.result.ResultProcessor;
 import io.camunda.client.jobhandling.result.ResultProcessorContext;
@@ -65,23 +64,23 @@ public class JobHandlerInvokingBeans implements JobHandler {
   @Override
   public void handle(final JobClient jobClient, final ActivatedJob job) throws Exception {
     final List<Object> args = createParameters(jobClient, job);
-    LOG.trace("Handle {} and invoke worker {}", job, workerValue);
+    LOG.trace("Handle {} and invoke worker {}", job, jobWorkerName);
     metricsRecorder.increase(
         MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
-      final Object methodInvocationResult = method.invoke(args.toArray());
-      final Object result =
-          resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
-      if (autoComplete) {
-        LOG.trace("Auto completing {}", job);
-        final CommandWrapper command =
-            createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
-        command.executeAsyncWithMetrics(
-            MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
-      } else {
-        if (result != null) {
-          LOG.warn("Result provided but auto complete disabled for job {}", job);
-        }
+    final Object methodInvocationResult = method.invoke(args.toArray());
+    final Object result =
+        resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
+    if (autoComplete) {
+      LOG.trace("Auto completing {}", job);
+      final CommandWrapper command =
+          createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
+      command.executeAsyncWithMetrics(
+          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
+    } else {
+      if (result != null) {
+        LOG.warn("Result provided but auto complete disabled for job {}", job);
       }
+    }
   }
 
   private CommandWrapper createCommandWrapper(
