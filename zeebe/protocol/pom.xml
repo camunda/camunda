@@ -133,10 +133,27 @@
           <compilerArgs combine.children="append">
             <!-- required by javac detection logic in immutables -->
             <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
-            <arg>-proc:full</arg>
           </compilerArgs>
           <fork>true</fork>
         </configuration>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <configuration>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>org.immutables</groupId>
+                  <artifactId>value-processor</artifactId>
+                  <version>${version.immutables}</version>
+                </path>
+              </annotationProcessorPaths>
+              <annotationProcessors>
+                <processor>org.immutables.value.processor.Processor</processor>
+              </annotationProcessors>
+            </configuration>
+          </execution>
+        </executions>
+
       </plugin>
 
       <plugin>
