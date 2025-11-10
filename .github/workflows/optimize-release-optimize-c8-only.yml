@@ -156,7 +156,7 @@ jobs:
           if [[ ! $RELEASE_VERSION =~ rc[0-9]+$ ]]; then
             is_rc="false"
           fi
-          if [[ ! $RELEASE_VERSION =~ alpha[0-9]+$ ]]; then
+          if [[ ! $RELEASE_VERSION =~ alpha[0-9]+(\.[0-9]+)*$ ]]; then
             is_alpha="false"
           fi
           {
