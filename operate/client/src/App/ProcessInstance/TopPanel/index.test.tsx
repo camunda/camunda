@@ -22,13 +22,8 @@ import {
   incidentFlowNodeMetaData,
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
-import {
-  createInstance,
-  createIncident,
-  createIncidentV2,
-} from 'modules/testUtils';
+import {createInstance, createIncident} from 'modules/testUtils';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
@@ -59,35 +54,10 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
 const mockIncidents = {
-  count: 1,
-  incidents: [
-    createIncident({
-      errorType: {
-        name: 'Condition error',
-        id: 'CONDITION_ERROR',
-      },
-      flowNodeId: 'Service5678',
-    }),
-  ],
-  errorTypes: [
-    {
-      id: 'Condition error',
-      name: 'Condition error',
-      count: 1,
-    },
-  ],
-  flowNodes: [
-    {
-      id: 'Service5678',
-      name: 'Do something',
-      count: 1,
-    },
-  ],
-};
-
-const mockIncidentsV2 = {
   page: {totalItems: 1},
-  items: [createIncidentV2()],
+  items: [
+    createIncident({errorType: 'CONDITION_ERROR', elementId: 'Service5678'}),
+  ],
 };
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
@@ -213,15 +183,14 @@ describe('TopPanel', () => {
       createInstance({id: 'instance_id', state: 'INCIDENT'}),
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidentsV2,
+      mockIncidents,
     );
     mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidentsV2,
+      mockIncidents,
     );
     mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidentsV2,
+      mockIncidents,
     );
     mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
     mockFetchFlownodeInstancesStatistics().withSuccess({
@@ -414,7 +383,6 @@ describe('TopPanel', () => {
         },
       ],
     });
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
     flowNodeMetaDataStore.setMetaData({
       ...calledInstanceMetadata,

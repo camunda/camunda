@@ -8,20 +8,20 @@
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {createIncidentV2} from 'modules/testUtils';
+import {createIncident} from 'modules/testUtils';
 import {Paths} from 'modules/Routes';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import type {QueryProcessInstanceIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
-const firstIncident = createIncidentV2({
+const firstIncident = createIncident({
   errorType: 'CONDITION_ERROR',
   creationTime: '2022-03-01T14:26:19',
   elementId: 'flowNodeId_exclusiveGateway',
 });
 
-const secondIncident = createIncidentV2({
+const secondIncident = createIncident({
   errorType: 'EXTRACT_VALUE_ERROR',
   elementId: 'flowNodeId_alwaysFailingTask',
 });

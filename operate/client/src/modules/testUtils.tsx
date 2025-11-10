@@ -10,7 +10,6 @@ import type {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
 import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
-import type {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import type {BatchOperationDto} from './api/sharedTypes';
 import type {
   ProcessInstance,
@@ -38,30 +37,7 @@ const randomProcessIdIterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
 
-/**
- * @returns a mocked incident Object
- * @param {*} customProps Obj with any type of custom property
- */
-const createIncident = (options: Partial<IncidentDto> = {}): IncidentDto => {
-  return {
-    errorMessage: 'Some Condition error has occurred',
-    errorType: {
-      name: 'Condition error',
-      id: 'CONDITION_ERROR',
-    },
-    id: randomIdIterator.next().value,
-    jobId: randomJobIdIterator.next().value,
-    flowNodeId: 'flowNodeId_alwaysFailingTask',
-    flowNodeInstanceId: randomFlowNodeInstanceIdIterator.next().value,
-    creationTime: '2019-03-01T14:26:19',
-    hasActiveOperation: false,
-    lastOperation: null,
-    rootCauseInstance: null,
-    ...options,
-  };
-};
-
-const createIncidentV2 = (options: Partial<Incident> = {}): Incident => {
+const createIncident = (options: Partial<Incident> = {}): Incident => {
   return {
     errorMessage: 'Some Condition error has occurred',
     errorType: 'CONDITION_ERROR',
@@ -79,10 +55,10 @@ const createIncidentV2 = (options: Partial<Incident> = {}): Incident => {
   };
 };
 
-const createEnhancedIncidentV2 = (
+const createEnhancedIncident = (
   options: Partial<EnhancedIncident> = {},
 ): EnhancedIncident => {
-  const incident = createIncidentV2(options);
+  const incident = createIncident(options);
   return {
     ...incident,
     processDefinitionName: 'Some Process Name',
@@ -1236,8 +1212,7 @@ const createEventSubProcessFlowNodeInstances = (
 
 export {
   createIncident,
-  createIncidentV2,
-  createEnhancedIncidentV2,
+  createEnhancedIncident,
   createOperation,
   groupedProcessesMock,
   createProcess,
