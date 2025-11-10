@@ -276,13 +276,12 @@ jobs:
           ${{ inputs.realistic && '-f https://raw.githubusercontent.com/zeebe-io/benchmark-helm/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml' || '' }}
           ${{ inputs.benchmark-load }}
       - name: Setup leader balancing
-        run: >
-          # shellcheck disable=SC2215
-          kubectl create cronjob leader-balancer
-          --namespace ${{ inputs.name }}
-          --image=curlimages/curl:7.87.0
-          --schedule="*/10 * * * *"
-          -- curl -L -v -X POST http://camunda:9600/actuator/rebalance
+        run: |
+          kubectl create cronjob leader-balancer \
+          --namespace ${{ inputs.name }} \
+          --image=curlimages/curl:7.87.0 \
+          --schedule="*/10 * * * *" \
+          -- curl -L -v -X POST http://camunda:9600/actuator/rebalance \
           || echo "Leader balancer cronjob already exists"
       - name: Label namespace
         run: >
