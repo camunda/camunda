@@ -24,7 +24,6 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {Incidents} from './Incidents';
-import {incidentsStore} from 'modules/stores/incidents';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -169,10 +168,6 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               count={incidentCount}
               onButtonClick={() => {
                 incidentsPanelStore.setPanelOpen(true);
-
-                incidentsStore.clearSelection();
-                incidentsStore.toggleFlowNodeSelection(elementId);
-                incidentsStore.setIncidentBarOpen(true);
               }}
             />
           </>

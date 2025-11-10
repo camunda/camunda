@@ -14,7 +14,6 @@ import {useProcessInstancePageParams} from './useProcessInstancePageParams';
 import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
-import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -39,7 +38,6 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-import {startPolling as startPollingIncidents} from 'modules/utils/incidents';
 import {
   init as initFlowNodeInstance,
   startPolling as startPollingFlowNodeInstance,
@@ -55,14 +53,10 @@ import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 
 const startPolling = (processInstance?: ProcessInstanceType) => {
-  startPollingIncidents(processInstance, {
-    runImmediately: true,
-  });
   startPollingFlowNodeInstance(processInstance, {runImmediately: true});
 };
 
 const stopPolling = () => {
-  incidentsStore.stopPolling();
   flowNodeInstanceStore.stopPolling();
 };
 

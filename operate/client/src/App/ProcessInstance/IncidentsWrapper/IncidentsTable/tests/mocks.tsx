@@ -10,7 +10,6 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {createEnhancedIncidentV2} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
-import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -20,7 +19,6 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
-      incidentsStore.reset();
       authenticationStore.reset();
       flowNodeSelectionStore.reset();
     };
