@@ -74,20 +74,20 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>${project.version}</version>
+      <version>8.9.0-alpha1-rc1</version>
     </dependency>
 
     <!-- Zeebe dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <version>${project.version}</version>
+      <version>8.9.0-alpha1-rc1</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
-      <version>${project.version}</version>
+      <version>8.9.0-alpha1-rc1</version>
       <scope>test</scope>
     </dependency>
 
@@ -294,7 +294,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-jackson</artifactId>
-      <version>${project.version}</version>
+      <version>8.9.0-alpha1-rc1</version>
       <scope>test</scope>
     </dependency>
 
