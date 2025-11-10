@@ -44,7 +44,7 @@ type UserTaskSubset = Pick<
 export function createMetadataJson(
   elementInstance: ElementInstance,
   incident: {
-    errorType: {id: string; name: string};
+    errorTypeName: string;
     errorMessage: string;
   } | null,
   job?: Job,
@@ -99,7 +99,7 @@ export function createMetadataJson(
     hasIncident: elementInstance.hasIncident,
     tenantId: elementInstance.tenantId,
     elementType: elementInstance.type,
-    incidentErrorType: incident?.errorType.name || null,
+    incidentErrorType: incident?.errorTypeName || null,
     incidentErrorMessage: incident?.errorMessage || null,
     calledProcessInstanceKey: calledProcessInstance?.processInstanceKey ?? null,
     calledDecisionInstanceKey:

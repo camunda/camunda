@@ -13,13 +13,13 @@ import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetU
 import {useSearchMessageSubscriptions} from 'modules/queries/messageSubscriptions/useSearchMessageSubscriptions';
 import {useDecisionDefinition} from 'modules/queries/decisionDefinitions/useDecisionDefinition';
 import {createMetadataJson} from './createMetadataJson';
-import {resolveIncidentErrorType} from '../Incidents/resolveIncidentErrorType';
 import type {
   ElementInstance,
   Job,
   ProcessInstance,
   DecisionInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
+import {getIncidentErrorName} from 'modules/utils/incidents';
 
 type Props = {
   elementInstance: ElementInstance;
@@ -81,7 +81,7 @@ const DetailsModal: React.FC<Props> = ({
         }
 
         return {
-          errorType: resolveIncidentErrorType(singleIncident.errorType),
+          errorTypeName: getIncidentErrorName(singleIncident.errorType),
           errorMessage: singleIncident.errorMessage,
         };
       },

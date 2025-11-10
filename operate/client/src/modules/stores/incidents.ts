@@ -18,14 +18,11 @@ import {
 import {
   fetchProcessInstanceIncidents,
   type ProcessInstanceIncidentsDto,
-  type IncidentDto,
 } from 'modules/api/processInstances/fetchProcessInstanceIncidents';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {tracking} from 'modules/tracking';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import type {ProcessInstanceEntity} from 'modules/types/operate';
-
-type Incident = IncidentDto & {isSelected: boolean; flowNodeName: string};
 
 type State = {
   response: null | ProcessInstanceIncidentsDto;
@@ -202,4 +199,3 @@ class Incidents extends NetworkReconnectionHandler {
 }
 
 export const incidentsStore = new Incidents();
-export type {Incident};
