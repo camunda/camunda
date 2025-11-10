@@ -407,16 +407,16 @@ public final class OAuthCredentialsProviderBuilder {
   private void findAuthorizationServerUrl() {
     final AuthorizationServerUrlSource source = detectSource();
     switch (source) {
+      case unset:
+        authorizationServerUrl = DEFAULT_AUTHZ_SERVER;
+        break;
+      case authorizationServerUrl:
+        break;
       case wellKnownConfigurationUrl:
         authorizationServerUrlFromWellKnownConfigurationUrl();
         break;
       case issuerUrl:
         authorizationServerUrlFromIssuerUrl();
-        break;
-      case unset:
-        authorizationServerUrl = DEFAULT_AUTHZ_SERVER;
-        break;
-      case authorizationServerUrl:
         break;
       default:
         throw new IllegalArgumentException(
