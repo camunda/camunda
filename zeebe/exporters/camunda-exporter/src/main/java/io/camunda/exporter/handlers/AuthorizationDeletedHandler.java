@@ -62,6 +62,7 @@ public class AuthorizationDeletedHandler
         .setResourceType(value.getResourceType().name())
         .setResourceMatcher(value.getResourceMatcher().value())
         .setResourceId(value.getResourceId())
+        .setResourcePropertyName(value.getResourcePropertyName())
         .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
   }
 
