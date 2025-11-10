@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Queue;
@@ -16,32 +17,35 @@ public final class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
 
   @Override
   public int size() {
-    throw new UnsupportedOperationException();
+    return 0;
   }
 
   @Override
   public boolean isEmpty() {
-    throw new UnsupportedOperationException();
+    return true;
   }
 
   @Override
   public boolean contains(final Object o) {
-    throw new UnsupportedOperationException();
+    return false;
   }
 
   @Override
   public Iterator<ActorJob> iterator() {
-    throw new UnsupportedOperationException();
+    return Collections.emptyIterator();
   }
 
   @Override
   public Object[] toArray() {
-    throw new UnsupportedOperationException();
+    return new Object[0];
   }
 
   @Override
   public <T> T[] toArray(final T[] a) {
-    throw new UnsupportedOperationException();
+    if (a.length > 0) {
+      a[0] = null;
+    }
+    return a;
   }
 
   @Override
@@ -51,7 +55,7 @@ public final class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
 
   @Override
   public boolean containsAll(final Collection<?> c) {
-    throw new UnsupportedOperationException();
+    return c.isEmpty();
   }
 
   @Override
@@ -71,7 +75,7 @@ public final class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
 
   @Override
   public void clear() {
-    throw new UnsupportedOperationException();
+    // No-op: queue is already empty
   }
 
   @Override
@@ -188,6 +192,6 @@ public final class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
 
   @Override
   public Iterator<ActorJob> descendingIterator() {
-    throw new UnsupportedOperationException();
+    return Collections.emptyIterator();
   }
 }
