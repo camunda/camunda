@@ -60,7 +60,6 @@ import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.Objects;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSocketFactory;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
@@ -480,13 +479,14 @@ public final class OAuthCredentialsProviderBuilder {
   private void maybeConfigureCustomSSLContext(final HttpURLConnection connection) {
     if (connection instanceof HttpsURLConnection) {
       final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
-      httpsConnection.setSSLSocketFactory(createSSLContext());
+      httpsConnection.setSSLSocketFactory(
+          SSLContextUtil.createSSLFactory(
+              keystorePath,
+              keystorePassword,
+              truststorePath,
+              truststorePassword,
+              keystoreKeyPassword));
     }
-  }
-
-  private SSLSocketFactory createSSLContext() {
-    return SSLContextUtil.createSSLFactory(
-        keystorePath, keystorePassword, truststorePath, truststorePassword, keystoreKeyPassword);
   }
 
   private AuthorizationServerUrlSource detectSource() {
