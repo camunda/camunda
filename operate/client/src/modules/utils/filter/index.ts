@@ -262,7 +262,7 @@ function getProcessInstancesRequestFilters(): RequestFilters {
         if (key === 'incidentErrorHashCode') {
           return {...accumulator, incidentErrorHashCode: value};
         }
-      } else {
+      } else if (typeof value === 'string') {
         if (key === 'errorMessage') {
           return {
             ...accumulator,
@@ -339,8 +339,7 @@ function getProcessInstancesRequestFilters(): RequestFilters {
             'startDateBefore',
             'endDateAfter',
             'endDateBefore',
-          ].includes(key) &&
-          value !== undefined
+          ].includes(key)
         ) {
           return {
             ...accumulator,

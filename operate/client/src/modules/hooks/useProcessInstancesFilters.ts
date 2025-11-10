@@ -7,7 +7,10 @@
  */
 
 import {useFilters} from 'modules/hooks/useFilters';
-import type {GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {
+  getProcessDefinitionStatisticsRequestBodySchema,
+  type GetProcessDefinitionStatisticsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {
   buildProcessInstanceFilter,
@@ -21,14 +24,16 @@ function mapFiltersToRequest(
     'includeIds' | 'excludeIds'
   > = {},
 ): GetProcessDefinitionStatisticsRequestBody {
-  const request: GetProcessDefinitionStatisticsRequestBody = {filter: {}};
-
   const builderOptions: BuildProcessInstanceFilterOptions = {
     ...options,
   };
 
-  request.filter = buildProcessInstanceFilter(filters, builderOptions);
-  return request;
+  const filter = buildProcessInstanceFilter(filters, builderOptions);
+  const result = getProcessDefinitionStatisticsRequestBodySchema.parse({
+    filter,
+  });
+
+  return result;
 }
 
 function useProcessInstanceFilters(
