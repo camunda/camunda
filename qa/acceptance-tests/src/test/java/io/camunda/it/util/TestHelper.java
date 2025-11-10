@@ -31,7 +31,9 @@ import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
@@ -1024,6 +1026,31 @@ public final class TestHelper {
                       .join();
               assertThat(result.items().size()).isOne();
             });
+  }
+
+  public static void waitForUserGroupAssignment(
+      final CamundaClient camundaClient, final String groupId, final String username) {
+    Awaitility.await("should wait until user group assignment is visible")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient.newUsersByGroupSearchRequest(groupId).send().join().items())
+                    .extracting(GroupUser::getUsername)
+                    .contains(username));
+  }
+
+  public static void waitForUserRoleAssignment(
+      final CamundaClient camundaClient, final String roleId, final String username) {
+    Awaitility.await("should wait until user role assignment is visible")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items())
+                    .extracting(RoleUser::getUsername)
+                    .contains(username));
   }
 
   public static <T, U extends Comparable<U>> void assertSorted(
