@@ -13,6 +13,8 @@ import type {RequestFilters} from 'modules/utils/filter';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {getElementInstanceStateFilter} from './getElementInstanceStateFilter';
 
 type ProcessInstanceFilterQuery = NonNullable<
   QueryProcessInstancesRequestBody['filter']
@@ -45,6 +47,7 @@ type BuildProcessInstanceFilterOptions = {
   includeIds?: string[];
   excludeIds?: string[];
   processDefinitionKeys?: string[];
+  businessObjects?: BusinessObjects;
 };
 
 // Unified input type that accepts either URL format or Request format
@@ -336,6 +339,14 @@ const buildProcessInstanceFilter = (
 
   if (normalizedFilters.variable) {
     mapVariables(query, normalizedFilters.variable);
+  }
+
+  const elementInstanceStateFilter = getElementInstanceStateFilter(
+    normalizedFilters.elementId,
+    options.businessObjects,
+  );
+  if (elementInstanceStateFilter) {
+    query.elementInstanceState = elementInstanceStateFilter;
   }
 
   return query;

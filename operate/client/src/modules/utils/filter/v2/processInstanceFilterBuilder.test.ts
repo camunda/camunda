@@ -10,6 +10,30 @@ import {buildProcessInstanceFilter} from './processInstanceFilterBuilder';
 
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import type {RequestFilters} from 'modules/utils/filter';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+
+const mockBusinessObjects: BusinessObjects = {
+  serviceTask1: {
+    id: 'serviceTask1',
+    name: 'Service Task',
+    $type: 'bpmn:ServiceTask',
+  },
+  endEvent1: {
+    id: 'endEvent1',
+    name: 'End Event',
+    $type: 'bpmn:EndEvent',
+    $parent: {
+      id: 'process1',
+      name: 'Process',
+      $type: 'bpmn:Process',
+    },
+  },
+  userTask1: {
+    id: 'userTask1',
+    name: 'User Task',
+    $type: 'bpmn:UserTask',
+  },
+};
 
 describe('buildProcessInstanceFilter', () => {
   it('maps fields with correct operators and date ranges', () => {
@@ -152,6 +176,55 @@ describe('buildProcessInstanceFilter', () => {
 
     expect(result).toEqual({
       processInstanceKey: {$in: ['1', '2'], $notIn: ['x']},
+    });
+  });
+
+  it('does not add elementInstanceState filter when no element is selected', () => {
+    const filters: ProcessInstanceFilters = {
+      active: true,
+    };
+
+    const result = buildProcessInstanceFilter(filters, {
+      businessObjects: mockBusinessObjects,
+    });
+
+    expect(result).toEqual({
+      state: {$eq: 'ACTIVE'},
+    });
+    expect(result.elementInstanceState).toBeUndefined();
+  });
+
+  it('does not add elementInstanceState filter when element is an end event', () => {
+    const filters: ProcessInstanceFilters = {
+      flowNodeId: 'endEvent1',
+      active: true,
+    };
+
+    const result = buildProcessInstanceFilter(filters, {
+      businessObjects: mockBusinessObjects,
+    });
+
+    expect(result).toEqual({
+      elementId: {$eq: 'endEvent1'},
+      state: {$eq: 'ACTIVE'},
+    });
+    expect(result.elementInstanceState).toBeUndefined();
+  });
+
+  it('adds elementInstanceState filter when element is not an end event', () => {
+    const filters: ProcessInstanceFilters = {
+      flowNodeId: 'serviceTask1',
+      active: true,
+    };
+
+    const result = buildProcessInstanceFilter(filters, {
+      businessObjects: mockBusinessObjects,
+    });
+
+    expect(result).toEqual({
+      elementId: {$eq: 'serviceTask1'},
+      state: {$eq: 'ACTIVE'},
+      elementInstanceState: {$neq: 'COMPLETED'},
     });
   });
 });
