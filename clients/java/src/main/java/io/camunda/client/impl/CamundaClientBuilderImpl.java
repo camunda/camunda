@@ -260,7 +260,7 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public JobExceptionHandler getDefaultJobWorkerJobExceptionHandler() {
+  public JobExceptionHandler getDefaultJobWorkerExceptionHandler() {
     return jobExceptionHandler;
   }
 

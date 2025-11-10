@@ -181,7 +181,7 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
-  public JobExceptionHandler getDefaultJobWorkerJobExceptionHandler() {
+  public JobExceptionHandler getDefaultJobWorkerExceptionHandler() {
     return JobExceptionHandler.createWithRetryBackoff(
         camundaClientProperties.getWorker().getDefaults().getRetryBackoff());
   }

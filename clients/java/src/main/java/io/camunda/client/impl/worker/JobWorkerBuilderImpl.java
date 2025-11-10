@@ -79,7 +79,7 @@ public final class JobWorkerBuilderImpl
     requestTimeout = configuration.getDefaultRequestTimeout();
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
-    jobExceptionHandler = configuration.getDefaultJobWorkerJobExceptionHandler();
+    jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;

@@ -154,7 +154,7 @@ public interface CamundaClientConfiguration {
   /**
    * @see CamundaClientBuilder#defaultJobWorkerExceptionHandler(JobExceptionHandler)
    */
-  JobExceptionHandler getDefaultJobWorkerJobExceptionHandler();
+  JobExceptionHandler getDefaultJobWorkerExceptionHandler();
 
   /**
    * @see CamundaClientBuilder#preferRestOverGrpc(boolean)
