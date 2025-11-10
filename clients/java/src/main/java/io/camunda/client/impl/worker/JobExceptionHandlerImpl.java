@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.worker;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
@@ -52,10 +54,13 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
       final Function<JobExceptionHandlerContext, Integer> retriesProvider,
       final Function<JobExceptionHandlerContext, Duration> retryBackoffProvider,
       final Function<JobExceptionHandlerContext, Object> variablesProvider) {
-    this.errorMessageProvider = errorMessageProvider;
-    this.retriesProvider = retriesProvider;
-    this.retryBackoffProvider = retryBackoffProvider;
-    this.variablesProvider = variablesProvider;
+    this.errorMessageProvider =
+        requireNonNull(errorMessageProvider, "errorMessageProvider must not be null");
+    this.retriesProvider = requireNonNull(retriesProvider, "retriesProvider must not be null");
+    this.retryBackoffProvider =
+        requireNonNull(retryBackoffProvider, "retryBackoffProvider must not be null");
+    this.variablesProvider =
+        requireNonNull(variablesProvider, "variablesProvider must not be null");
   }
 
   public JobExceptionHandlerImpl() {
