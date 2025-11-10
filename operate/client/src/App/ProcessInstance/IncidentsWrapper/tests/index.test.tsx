@@ -174,4 +174,38 @@ describe('IncidentsWrapper', () => {
     unmount(); // Unmount avoids React reacting to the global state cleanup
     incidentsPanelStore.clearSelection();
   });
+
+  it('should render incidents filtered for an elementId when scoped to it', async () => {
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess({
+      page: {totalItems: 1},
+      items: [firstIncident],
+    });
+
+    incidentsPanelStore.showIncidentsForElementId(firstIncident.elementId);
+    incidentsPanelStore.setPanelOpen(true);
+    const {unmount} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('data-table-skeleton'),
+    );
+    const table = within(screen.getByRole('table'));
+
+    expect(
+      screen.getByText(
+        `Incidents - Filtered by "${firstIncident.elementId}" - 1 result`,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      table.getByText(getIncidentErrorName(firstIncident.errorType)),
+    ).toBeInTheDocument();
+
+    unmount(); // Unmount avoids React reacting to the global state cleanup
+    incidentsPanelStore.clearSelection();
+  });
 });
