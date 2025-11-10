@@ -55,9 +55,23 @@ public class CamundaClientAuthProperties {
 
   /**
    * The authorization server URL from which to request the access token. A default is set by
-   * `camunda.client.mode: saas` and `camunda.client.auth.method: oidc`.
+   * `camunda.client.mode: saas`.
    */
   private URI tokenUrl;
+
+  /**
+   * The url of the issuer for the access token. It is used to generate the well-known configuration
+   * url from which the `token-url` is retrieved. Only applied if the
+   * `camunda.client.auth.well-known-configuration-url` is not set. A default is set by
+   * `camunda.client.auth.method: oidc`.
+   */
+  private URI issuerUrl;
+
+  /**
+   * The url of the well-known configuration of the issuer. It is used to retrieve the `token-url`.
+   * Only applied if `camunda.client.auth.token-url` is not set.
+   */
+  private URI wellKnownConfigurationUrl;
 
   /**
    * The resource for which the access token must be valid. A default is set by
@@ -121,6 +135,22 @@ public class CamundaClientAuthProperties {
 
   public void setTokenUrl(final URI tokenUrl) {
     this.tokenUrl = tokenUrl;
+  }
+
+  public URI getIssuerUrl() {
+    return issuerUrl;
+  }
+
+  public void setIssuerUrl(final URI issuerUrl) {
+    this.issuerUrl = issuerUrl;
+  }
+
+  public URI getWellKnownConfigurationUrl() {
+    return wellKnownConfigurationUrl;
+  }
+
+  public void setWellKnownConfigurationUrl(final URI wellKnownConfigurationUrl) {
+    this.wellKnownConfigurationUrl = wellKnownConfigurationUrl;
   }
 
   public Duration getConnectTimeout() {
@@ -246,9 +276,8 @@ public class CamundaClientAuthProperties {
   @Override
   public String toString() {
     return "CamundaClientAuthProperties{"
-        + "method='"
+        + "method="
         + method
-        + '\''
         + ", username='"
         + username
         + '\''
@@ -263,6 +292,10 @@ public class CamundaClientAuthProperties {
         + '\''
         + ", tokenUrl="
         + tokenUrl
+        + ", issuerUrl="
+        + issuerUrl
+        + ", wellKnownConfigurationUrl="
+        + wellKnownConfigurationUrl
         + ", audience='"
         + audience
         + '\''
@@ -272,18 +305,16 @@ public class CamundaClientAuthProperties {
         + ", resource='"
         + resource
         + '\''
-        + ", keystorePath='"
+        + ", keystorePath="
         + keystorePath
-        + '\''
         + ", keystorePassword='"
         + (keystorePassword != null ? "***" : null)
         + '\''
         + ", keystoreKeyPassword='"
         + (keystoreKeyPassword != null ? "***" : null)
         + '\''
-        + ", truststorePath='"
+        + ", truststorePath="
         + truststorePath
-        + '\''
         + ", truststorePassword='"
         + (truststorePassword != null ? "***" : null)
         + '\''
@@ -294,6 +325,8 @@ public class CamundaClientAuthProperties {
         + connectTimeout
         + ", readTimeout="
         + readTimeout
+        + ", clientAssertion="
+        + clientAssertion
         + '}';
   }
 
