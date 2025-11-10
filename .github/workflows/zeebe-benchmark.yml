@@ -279,10 +279,11 @@ jobs:
         run: >
           # shellcheck disable=SC2215
           kubectl create cronjob leader-balancer
-            --namespace ${{ inputs.name }}
-            --image=curlimages/curl:7.87.0
-            --schedule="*/10 * * * *"
-            -- curl -L -v -X POST http://camunda:9600/actuator/rebalance
+          --namespace ${{ inputs.name }}
+          --image=curlimages/curl:7.87.0
+          --schedule="*/10 * * * *"
+          -- curl -L -v -X POST http://camunda:9600/actuator/rebalance
+          || echo "Leader balancer cronjob already exists"
       - name: Label namespace
         run: >
           kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
