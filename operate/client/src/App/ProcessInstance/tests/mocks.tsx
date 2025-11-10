@@ -7,9 +7,7 @@
  */
 
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
-import {mockIncidents} from 'modules/mocks/incidents';
 import {testData} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
@@ -124,14 +122,6 @@ const mockRequests = () => {
     page: {
       totalItems: 1,
     },
-  });
-  mockFetchProcessInstanceIncidents().withSuccess({
-    ...mockIncidents,
-    count: 2,
-  });
-  mockFetchProcessInstanceIncidents().withSuccess({
-    ...mockIncidents,
-    count: 2,
   });
   mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
     items: [],

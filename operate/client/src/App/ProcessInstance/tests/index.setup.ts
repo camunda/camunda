@@ -6,11 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  createInstance,
-  createDiagramNode,
-  createIncident,
-} from 'modules/testUtils';
+import {createInstance, createDiagramNode} from 'modules/testUtils';
 
 const createDiagramNodes = () => {
   return {
@@ -29,37 +25,6 @@ const createDiagramNodes = () => {
       name: 'End the Process',
       $instanceOf: (type: string) => type === 'bpmn:FlowNode',
     }),
-  };
-};
-
-const mockIncidents = () => {
-  return {
-    count: 1,
-    incidents: [
-      createIncident({
-        errorType: {
-          name: 'Condition error',
-          id: 'CONDITION_ERROR',
-        },
-        flowNodeId: 'Service5678',
-      }),
-    ],
-    errorTypes: [
-      {
-        errorType: {
-          name: 'Condition error',
-          id: 'CONDITION_ERROR',
-        },
-        count: 1,
-      },
-    ],
-    flowNodes: [
-      {
-        flowNodeId: 'Service5678',
-        flowNodeName: 'Do something',
-        count: 1,
-      },
-    ],
   };
 };
 
@@ -88,7 +53,6 @@ export const testData = {
       processInstance,
       processInstanceWithIncident,
       diagramNodes: createDiagramNodes(),
-      incidents: mockIncidents(),
       noIncidents,
       completedProcessInstance,
     },

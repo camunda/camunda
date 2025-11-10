@@ -7,7 +7,7 @@
  */
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {createEnhancedIncidentV2} from 'modules/testUtils';
+import {createEnhancedIncident} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -41,7 +41,7 @@ const shortError = 'No data found for query $.orderId.';
 const longError =
   'Cannot compare values of different types: INTEGER and BOOLEAN';
 
-const firstIncident = createEnhancedIncidentV2({
+const firstIncident = createEnhancedIncident({
   errorType: 'IO_MAPPING_ERROR',
   processInstanceKey: '1',
   errorMessage: shortError,
@@ -50,7 +50,7 @@ const firstIncident = createEnhancedIncidentV2({
   processDefinitionId: 'calledInstance',
 });
 
-const secondIncident = createEnhancedIncidentV2({
+const secondIncident = createEnhancedIncident({
   errorType: 'CALLED_DECISION_ERROR',
   processInstanceKey: '1',
   errorMessage: longError,
