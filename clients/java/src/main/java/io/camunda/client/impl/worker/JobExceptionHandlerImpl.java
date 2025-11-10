@@ -25,6 +25,7 @@ import io.camunda.client.impl.Loggers;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
@@ -39,7 +40,7 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
   public static final Function<JobExceptionHandlerContext, Integer> DEFAULT_RETRIES_PROVIDER =
       ctx -> ctx.getActivatedJob().getRetries() - 1;
   public static final Function<JobExceptionHandlerContext, Duration>
-      DEFAULT_RETRY_BACKOFF_SUPPLIER = ctx -> Duration.ZERO;
+      DEFAULT_RETRY_BACKOFF_PROVIDER = ctx -> Duration.ZERO;
   public static final Function<JobExceptionHandlerContext, Object> DEFAULT_VARIABLES_PROVIDER =
       ctx -> null;
 
@@ -67,7 +68,7 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
     this(
         DEFAULT_ERROR_MESSAGE_PROVIDER,
         DEFAULT_RETRIES_PROVIDER,
-        DEFAULT_RETRY_BACKOFF_SUPPLIER,
+        DEFAULT_RETRY_BACKOFF_PROVIDER,
         DEFAULT_VARIABLES_PROVIDER);
   }
 
@@ -90,16 +91,58 @@ public class JobExceptionHandlerImpl implements JobExceptionHandler {
         job.getKey(),
         job.getType(),
         e);
-    final Object variables = variablesProvider.apply(context);
+    final Object variables =
+        applyProvider(variablesProvider, DEFAULT_VARIABLES_PROVIDER, context, "variablesProvider");
     final FailJobCommandStep2 failJobCommandStep2 =
         jobClient
             .newFailCommand(job.getKey())
-            .retries(retriesProvider.apply(context))
-            .errorMessage(errorMessageProvider.apply(context))
-            .retryBackoff(retryBackoffProvider.apply(context));
+            .retries(
+                applyProvider(
+                    retriesProvider,
+                    DEFAULT_RETRIES_PROVIDER,
+                    context,
+                    "retriesProvider",
+                    Objects::requireNonNull))
+            .errorMessage(
+                applyProvider(
+                    errorMessageProvider,
+                    DEFAULT_ERROR_MESSAGE_PROVIDER,
+                    context,
+                    "errorMessageProvider"))
+            .retryBackoff(
+                applyProvider(
+                    retryBackoffProvider,
+                    DEFAULT_RETRY_BACKOFF_PROVIDER,
+                    context,
+                    "retryBackoffProvider"));
     if (variables != null) {
       failJobCommandStep2.variables(variables);
     }
     failJobCommandStep2.send();
+  }
+
+  private <T> T applyProvider(
+      final Function<JobExceptionHandlerContext, T> provider,
+      final Function<JobExceptionHandlerContext, T> defaultProvider,
+      final JobExceptionHandlerContext context,
+      final String providerName) {
+    return applyProvider(provider, defaultProvider, context, providerName, t -> t);
+  }
+
+  private <T> T applyProvider(
+      final Function<JobExceptionHandlerContext, T> provider,
+      final Function<JobExceptionHandlerContext, T> defaultProvider,
+      final JobExceptionHandlerContext context,
+      final String providerName,
+      final Function<T, T> postProcessor) {
+    try {
+      return postProcessor.apply(provider.apply(context));
+    } catch (final Exception ex) {
+      LOG.warn(
+          "Failed to apply {} for job exception, using default implementation instead",
+          providerName,
+          ex);
+      return defaultProvider.apply(context);
+    }
   }
 }
