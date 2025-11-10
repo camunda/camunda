@@ -207,7 +207,7 @@
     <plugin.version.assembly>3.7.1</plugin.version.assembly>
     <plugin.version.build-helper>3.6.1</plugin.version.build-helper>
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
-    <plugin.version.compiler>3.14.0</plugin.version.compiler>
+    <plugin.version.compiler>3.14.1</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.16.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.8.1</plugin.version.dependency>
     <plugin.version.enforcer>3.6.1</plugin.version.enforcer>
