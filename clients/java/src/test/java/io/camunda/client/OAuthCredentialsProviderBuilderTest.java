@@ -15,8 +15,15 @@
  */
 package io.camunda.client;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder.DEFAULT_AUTHZ_SERVER;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -27,9 +34,8 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@WireMockTest
 public final class OAuthCredentialsProviderBuilderTest {
-
-  private final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
 
   @Test
   void shouldFailWithNoClientId() {
@@ -175,5 +181,63 @@ public final class OAuthCredentialsProviderBuilderTest {
     assertThatCode(builder::build)
         .hasMessageContaining("Keystore path does not exist")
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldDetectTokenEndpointFromWellKnownConfigurationUrl(
+      final WireMockRuntimeInfo wmRuntimeInfo) {
+    stubFor(
+        get("/.well-known/openid-configuration")
+            .willReturn(ok().withBody("{\"token_endpoint\": \"http://token-endpoint\"}")));
+    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
+    builder
+        .audience("a")
+        .clientId("b")
+        .clientSecret("c")
+        .wellKnownConfigurationUrl(
+            "http://localhost:"
+                + wmRuntimeInfo.getHttpPort()
+                + "/.well-known/openid-configuration");
+    builder.build();
+    final String authorizationServerUrl = builder.getAuthorizationServer().toString();
+    assertThat(authorizationServerUrl).isEqualTo("http://token-endpoint");
+  }
+
+  @Test
+  void shouldDetectTokenEndpointFromIssuerUrl(final WireMockRuntimeInfo wmRuntimeInfo) {
+    stubFor(
+        get("/.well-known/openid-configuration")
+            .willReturn(ok().withBody("{\"token_endpoint\": \"http://token-endpoint\"}")));
+    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
+    builder
+        .audience("a")
+        .clientId("b")
+        .clientSecret("c")
+        .issuerUrl("http://localhost:" + wmRuntimeInfo.getHttpPort());
+    builder.build();
+    final String authorizationServerUrl = builder.getAuthorizationServer().toString();
+    assertThat(authorizationServerUrl).isEqualTo("http://token-endpoint");
+  }
+
+  @Test
+  void shouldFailWhenWellKnownConfigurationIsWrong() {
+    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
+    builder.audience("a").clientId("b").clientSecret("c").issuerUrl("http://some-issuer");
+    // then
+    assertThatCode(builder::build)
+        .hasMessageContaining("Failed to retrieve well known configuration")
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldUseDefaultAuthorizationServerUrl() {
+    // given
+    final OAuthCredentialsProviderBuilder builder =
+        new OAuthCredentialsProviderBuilder().audience("a").clientId("b").clientSecret("c");
+    // when
+    builder.build();
+    // then
+    final String authorizationServerUrl = builder.getAuthorizationServer().toString();
+    assertThat(authorizationServerUrl).isEqualTo(DEFAULT_AUTHZ_SERVER);
   }
 }

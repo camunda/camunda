@@ -34,11 +34,22 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
+import static java.lang.Math.toIntExact;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables;
+import io.camunda.client.impl.util.SSLContextUtil;
+import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,6 +59,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.Objects;
+import javax.net.ssl.HttpsURLConnection;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
@@ -57,13 +69,15 @@ public final class OAuthCredentialsProviderBuilder {
       Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
           .toAbsolutePath()
           .toString();
-  private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
+  public static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private String clientId;
   private String clientSecret;
   private String audience;
   private String scope;
   private String resource;
   private String authorizationServerUrl;
+  private String wellKnownConfigurationUrl;
+  private String issuerUrl;
   private URL authorizationServer;
   private Path keystorePath;
   private String keystorePassword;
@@ -152,10 +166,23 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
+  /** The well known configuration URL of the issuer that will issue the access token. */
+  public OAuthCredentialsProviderBuilder wellKnownConfigurationUrl(
+      final String wellKnownConfigurationUrl) {
+    this.wellKnownConfigurationUrl = wellKnownConfigurationUrl;
+    return this;
+  }
+
+  /** The URL of the issuer that will issue the access token. */
+  public OAuthCredentialsProviderBuilder issuerUrl(final String issuerUrl) {
+    this.issuerUrl = issuerUrl;
+    return this;
+  }
+
   /**
    * @see OAuthCredentialsProviderBuilder#authorizationServerUrl(String)
    */
-  URL getAuthorizationServer() {
+  public URL getAuthorizationServer() {
     return authorizationServer;
   }
 
@@ -372,9 +399,111 @@ public final class OAuthCredentialsProviderBuilder {
       applySSLClientCertConfiguration();
     }
     applyDefaults();
-
+    findAuthorizationServerUrl();
     validate();
     return new OAuthCredentialsProvider(this);
+  }
+
+  private void findAuthorizationServerUrl() {
+    final AuthorizationServerUrlSource source = detectSource();
+    switch (source) {
+      case unset:
+        authorizationServerUrl = DEFAULT_AUTHZ_SERVER;
+        break;
+      case authorizationServerUrl:
+        break;
+      case wellKnownConfigurationUrl:
+        authorizationServerUrlFromWellKnownConfigurationUrl();
+        break;
+      case issuerUrl:
+        authorizationServerUrlFromIssuerUrl();
+        break;
+      default:
+        throw new IllegalArgumentException(
+            "Unsupported authorization server url source: " + source);
+    }
+  }
+
+  private void authorizationServerUrlFromIssuerUrl() {
+    if (issuerUrl.endsWith("/")) {
+      issuerUrl = issuerUrl.substring(0, issuerUrl.length() - 1);
+    }
+    wellKnownConfigurationUrl = issuerUrl + "/.well-known/openid-configuration";
+    authorizationServerUrlFromWellKnownConfigurationUrl();
+  }
+
+  private void authorizationServerUrlFromWellKnownConfigurationUrl() {
+    try {
+      final WellKnownConfiguration wellKnownConfiguration = fetchWellKnownConfiguration();
+      authorizationServerUrl = wellKnownConfiguration.getTokenEndpoint();
+    } catch (final IOException e) {
+      throw new IllegalArgumentException("Failed to retrieve well known configuration", e);
+    }
+  }
+
+  private WellKnownConfiguration fetchWellKnownConfiguration() throws IOException {
+    final HttpURLConnection connection =
+        (HttpURLConnection) new URL(wellKnownConfigurationUrl).openConnection();
+    maybeConfigureCustomSSLContext(connection);
+    connection.setRequestMethod("GET");
+    connection.setRequestProperty("Accept", "application/json");
+    connection.setDoOutput(true);
+    connection.setReadTimeout(toIntExact(readTimeout.toMillis()));
+    connection.setConnectTimeout(toIntExact(connectTimeout.toMillis()));
+    connection.setRequestProperty("User-Agent", "camunda-client-java/" + VersionUtil.getVersion());
+
+    if (connection.getResponseCode() != 200) {
+      throw new IOException(
+          String.format(
+              "Failed while requesting well known configuration with status code %d and message %s.",
+              connection.getResponseCode(), connection.getResponseMessage()));
+    }
+
+    try (final InputStream in = connection.getInputStream();
+        final InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+      final ObjectReader wellKnownConfigurationReader =
+          new ObjectMapper()
+              .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+              .readerFor(WellKnownConfiguration.class);
+      final WellKnownConfiguration wellKnownConfiguration =
+          wellKnownConfigurationReader.readValue(reader);
+
+      if (wellKnownConfiguration == null) {
+        throw new IOException("Expected valid well known configuration but got null instead.");
+      }
+
+      return wellKnownConfiguration;
+    }
+  }
+
+  private void maybeConfigureCustomSSLContext(final HttpURLConnection connection) {
+    if (connection instanceof HttpsURLConnection) {
+      final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+      httpsConnection.setSSLSocketFactory(
+          SSLContextUtil.createSSLFactory(
+              keystorePath,
+              keystorePassword,
+              truststorePath,
+              truststorePassword,
+              keystoreKeyPassword));
+    }
+  }
+
+  private AuthorizationServerUrlSource detectSource() {
+    if (isSet(authorizationServerUrl)) {
+      return AuthorizationServerUrlSource.authorizationServerUrl;
+    }
+    if (isSet(wellKnownConfigurationUrl)) {
+      return AuthorizationServerUrlSource.wellKnownConfigurationUrl;
+    }
+    if (isSet(issuerUrl)) {
+      return AuthorizationServerUrlSource.issuerUrl;
+    }
+    return AuthorizationServerUrlSource.unset;
+  }
+
+  private boolean isSet(final String value) {
+    return value != null && !value.isEmpty();
   }
 
   private void applySSLClientCertConfiguration() {
@@ -452,10 +581,6 @@ public final class OAuthCredentialsProviderBuilder {
       credentialsCachePath = DEFAULT_CREDENTIALS_CACHE_PATH;
     }
 
-    if (authorizationServerUrl == null) {
-      authorizationServerUrl = DEFAULT_AUTHZ_SERVER;
-    }
-
     if (connectTimeout == null) {
       connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     }
@@ -523,5 +648,25 @@ public final class OAuthCredentialsProviderBuilder {
               "%s timeout is %s milliseconds, expected timeout to be a positive number of milliseconds smaller than %s.",
               timeoutName, timeout.toMillis(), Integer.MAX_VALUE));
     }
+  }
+
+  static class WellKnownConfiguration {
+    @JsonProperty("token_endpoint")
+    private String tokenEndpoint;
+
+    public String getTokenEndpoint() {
+      return tokenEndpoint;
+    }
+
+    public void setTokenEndpoint(final String tokenEndpoint) {
+      this.tokenEndpoint = tokenEndpoint;
+    }
+  }
+
+  private enum AuthorizationServerUrlSource {
+    authorizationServerUrl,
+    wellKnownConfigurationUrl,
+    issuerUrl,
+    unset
   }
 }
