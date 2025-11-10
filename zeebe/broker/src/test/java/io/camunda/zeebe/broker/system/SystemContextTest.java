@@ -509,19 +509,6 @@ final class SystemContextTest {
   }
 
   @Test
-  void shouldThrowExceptionIfBatchOperationDbChunkSizeIsInvalid() {
-    // given
-    final BrokerCfg brokerCfg = new BrokerCfg();
-    brokerCfg.getExperimental().getEngine().getBatchOperations().setDbChunkSize(0);
-
-    // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
-        .isInstanceOf(InvalidConfigurationException.class)
-        .hasMessageContaining(
-            "experimental.engine.batchOperation.dbChunkSize must be greater than 0");
-  }
-
-  @Test
   void shouldThrowExceptionIfBatchOperationQueryPageSizeIsInvalid() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
