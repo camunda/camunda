@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.health;
 
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.availability.ReadinessStateHealthIndicator;
 import org.springframework.boot.availability.ApplicationAvailability;
@@ -20,12 +21,16 @@ import org.springframework.stereotype.Component;
 public final class BrokerReadyHealthIndicator extends ReadinessStateHealthIndicator {
 
   private final SpringBrokerBridge brokerBridge;
+  private final NodeIdProvider nodeIdProvider;
 
   @Autowired
   public BrokerReadyHealthIndicator(
-      final ApplicationAvailability availability, final SpringBrokerBridge brokerBridge) {
+      final ApplicationAvailability availability,
+      final SpringBrokerBridge brokerBridge,
+      final NodeIdProvider nodeIdProvider) {
     super(availability);
     this.brokerBridge = brokerBridge;
+    this.nodeIdProvider = nodeIdProvider;
   }
 
   @Override
@@ -35,6 +40,9 @@ public final class BrokerReadyHealthIndicator extends ReadinessStateHealthIndica
             .getBrokerHealthCheckService()
             .map(BrokerHealthCheckService::isBrokerReady)
             .orElse(false);
-    return isBrokerReady ? ReadinessState.ACCEPTING_TRAFFIC : ReadinessState.REFUSING_TRAFFIC;
+    final var isNodeIdProviderReady = nodeIdProvider.isValid().join();
+    return (isNodeIdProviderReady && isBrokerReady)
+        ? ReadinessState.ACCEPTING_TRAFFIC
+        : ReadinessState.REFUSING_TRAFFIC;
   }
 }
