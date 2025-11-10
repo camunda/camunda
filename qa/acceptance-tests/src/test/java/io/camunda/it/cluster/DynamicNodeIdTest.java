@@ -19,6 +19,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,10 +29,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Testcontainers
 @ZeebeIntegration
@@ -39,7 +42,9 @@ public class DynamicNodeIdTest {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Duration LEASE_DURATION = Duration.ofSeconds(10);
 
-  @org.testcontainers.junit.jupiter.Container
+  private static final String TASK_ID_PROPERTY = "camunda.cluster.dynamic-node-id.s3.taskId";
+
+  @Container
   private static final LocalStackContainer S3 =
       new LocalStackContainer(DockerImageName.parse("localstack/localstack:4.10"))
           .withServices(Service.S3)
@@ -50,7 +55,7 @@ public class DynamicNodeIdTest {
   private static final int CLUSTER_SIZE = 3;
 
   @TestZeebe
-  protected TestCluster testCluster =
+  private final TestCluster testCluster =
       TestCluster.builder()
           .withName("dynamic-node-id-test")
           .withBrokersCount(CLUSTER_SIZE)
@@ -59,34 +64,27 @@ public class DynamicNodeIdTest {
           .withNodeConfig(
               app ->
                   app.withAdditionalProperties(
-                          // Disable secondary storage
-                          Map.of(
-                              "camunda.rest.query.enabled",
-                              "false",
-                              "camunda.persistent.sessions.enabled",
-                              "false",
-                              "camunda.data.secondary-storage.type",
-                              "none"))
-                      .withAdditionalProperties(
-                          Map.of(
-                              "camunda.cluster.size",
-                              CLUSTER_SIZE,
-                              "camunda.cluster.dynamic-node-id.type",
-                              "s3",
-                              "camunda.cluster.dynamic-node-id.s3.taskId",
-                              taskId(Integer.parseInt(app.nodeId().id())),
-                              "camunda.cluster.dynamic-node-id.s3.bucketName",
-                              BUCKET_NAME,
-                              "camunda.cluster.dynamic-node-id.s3.leaseDuration",
-                              LEASE_DURATION,
-                              "camunda.cluster.dynamic-node-id.s3.endpoint",
-                              S3.getEndpoint(),
-                              "camunda.cluster.dynamic-node-id.s3.region",
-                              S3.getRegion(),
-                              "camunda.cluster.dynamic-node-id.s3.accessKey",
-                              S3.getAccessKey(),
-                              "camunda.cluster.dynamic-node-id.s3.secretKey",
-                              S3.getSecretKey())))
+                      Map.of(
+                          "camunda.data.secondary-storage.type",
+                          "none",
+                          "camunda.cluster.size",
+                          CLUSTER_SIZE,
+                          "camunda.cluster.dynamic-node-id.type",
+                          "s3",
+                          TASK_ID_PROPERTY,
+                          UUID.randomUUID().toString(),
+                          "camunda.cluster.dynamic-node-id.s3.bucketName",
+                          BUCKET_NAME,
+                          "camunda.cluster.dynamic-node-id.s3.leaseDuration",
+                          LEASE_DURATION,
+                          "camunda.cluster.dynamic-node-id.s3.endpoint",
+                          S3.getEndpoint(),
+                          "camunda.cluster.dynamic-node-id.s3.region",
+                          S3.getRegion(),
+                          "camunda.cluster.dynamic-node-id.s3.accessKey",
+                          S3.getAccessKey(),
+                          "camunda.cluster.dynamic-node-id.s3.secretKey",
+                          S3.getSecretKey())))
           .build();
 
   @BeforeAll
@@ -108,9 +106,24 @@ public class DynamicNodeIdTest {
     // then
     final var objectsInBucket = s3Client.listObjects(b -> b.bucket(BUCKET_NAME)).contents();
 
-    //    Awaitility.await("Repository has been initialized")
-    //        .untilAsserted(() -> assertThat(objectsInBucket).hasSize(clusterSize));
     assertThat(objectsInBucket).hasSize(CLUSTER_SIZE);
+    final var leases = readLeases(objectsInBucket);
+
+    // Verify the mapping nodeId -> taskId is consistent with the nodeId from the cluster
+    final var s3NodeIdMapping =
+        leases.stream().collect(Collectors.toMap(l -> l.nodeInstance().id(), Lease::taskId));
+
+    final var configNodeIdMapping =
+        testCluster.brokers().values().stream()
+            .collect(
+                Collectors.toMap(
+                    b -> b.brokerConfig().getCluster().getNodeId(),
+                    b -> b.property(TASK_ID_PROPERTY, String.class, null)));
+
+    assertThat(s3NodeIdMapping).isEqualTo(configNodeIdMapping);
+  }
+
+  private List<Lease> readLeases(final List<S3Object> objectsInBucket) throws IOException {
     final var leases = new ArrayList<Lease>();
     for (final var object : objectsInBucket) {
       final var lease = s3Client.getObject(b -> b.bucket(BUCKET_NAME).key(object.key()));
@@ -123,40 +136,6 @@ public class DynamicNodeIdTest {
       }
     }
 
-    assertThat(leases).hasSize(3);
-    final var configuredTaskIds =
-        testCluster.brokers().values().stream()
-            .map(
-                app ->
-                    app.property("camunda.cluster.dynamic-node-id.s3.taskId", String.class, null))
-            .collect(Collectors.toSet());
-    assertThat(configuredTaskIds).allSatisfy(o -> assertThat(o).isNotNull());
-    assertThat(leases.stream().map(Lease::taskId).collect(Collectors.toSet()))
-        .isEqualTo(configuredTaskIds);
-
-    // Verify the mapping nodeId -> taskId is consistent with the nodeId from the cluster
-    final var s3NodeIdMapping =
-        leases.stream().collect(Collectors.toMap(l -> l.nodeInstance().id(), Lease::taskId));
-    assertThat(s3NodeIdMapping)
-        .allSatisfy((id, taskId) -> assertThat(taskId).isNotNull())
-        .hasSize(CLUSTER_SIZE);
-
-    final var configNodeIdMapping =
-        testCluster.brokers().values().stream()
-            .collect(
-                Collectors.toMap(
-                    b -> b.brokerConfig().getCluster().getNodeId(),
-                    b ->
-                        b.property(
-                            "camunda.cluster.dynamic-node-id.s3.task-id", String.class, null)));
-    assertThat(configNodeIdMapping)
-        .allSatisfy((id, taskId) -> assertThat(taskId).isNotNull())
-        .hasSize(CLUSTER_SIZE);
-
-    assertThat(s3NodeIdMapping).isEqualTo(configNodeIdMapping);
-  }
-
-  private String taskId(final int nodeId) {
-    return "nodeId=" + nodeId;
+    return leases;
   }
 }
