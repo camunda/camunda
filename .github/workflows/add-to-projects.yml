@@ -12,6 +12,26 @@ jobs:
     name: Add issue to team projects if no project assigned and by corresponding component label
     runs-on: ubuntu-latest
     steps:
+      - id: get_project_count
+        uses: octokit/graphql-action@v2.3.2
+        with:
+          # API https://docs.github.com/en/graphql/reference/objects#issue
+          query: |
+            query getProjectCount($owner:String!, $repo:String!, $issue: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issue: issue(number: $issue) {
+                  projectsV2 {
+                    totalCount
+                  }
+                }
+              }
+            }
+          variables: |
+            owner: "camunda"
+            repo: "camunda"
+            issue: ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
       - id: add-to-zdp
         if: github.event.action != 'labeled' || github.event.label.name == 'component/zeebe'
         name: Add to ZDP project
@@ -122,12 +142,14 @@ jobs:
           labeled: component/build-pipeline, component/release
 
       - id: add-to-camunda-ex
+        # we only want to add the issue if no project is assigned yet
         if: >
-          github.event.action != 'labeled'
+          steps.has-project.outputs.result == 'false' &&
+          (github.event.action != 'labeled'
             || github.event.label.name == 'component/clients'
             || github.event.label.name == 'component/spring-boot-starter'
             || github.event.label.name == 'component/camunda-process-test'
-            || github.event.label.name == 'component/c8-api'
+            || github.event.label.name == 'component/c8-api')
         name: Add to CamundaEx Team project
         uses: actions/add-to-project@v1.0.2
         with:
