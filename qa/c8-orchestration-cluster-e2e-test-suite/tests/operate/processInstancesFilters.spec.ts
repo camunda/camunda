@@ -22,8 +22,6 @@ let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 let variableProcessInstance: ProcessInstance;
 let processWithMultVerV2Key: string;
-let saveMyuNeves: string;
-
 
 test.beforeAll(async () => {
   await deploy([
@@ -61,7 +59,6 @@ test.beforeAll(async () => {
     ),
   };
 
-  // for variable filter test
   await deploy(['./resources/Variable_Process.bpmn']);
   variableProcessInstance = {
     processInstanceKey: Number(
@@ -196,12 +193,11 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
       await operateFiltersPanelPage.fillVariableValueFilter('604');
-      
-
+    
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
 
-      await sleep(1_000); // wait for filter to be applied
+      await sleep(1_000);
         
       await waitForAssertion({
         assertion: async () => {
@@ -210,7 +206,6 @@ test.describe('Process Instances Filters', () => {
             variableProcessInstanceKeys.add(await element.innerText());
           }
           expect(variableProcessInstanceKeys.has(variableProcessInstanceKey)).toBeTruthy();
-          //await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(variableProcessInstanceKey);
         },
         onFailure: async () => {
           await page.reload();
@@ -260,28 +255,6 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
-   // await test.step('Filter by op ID of cancelation and assert results', async ({ }) => {
-      // await operateFiltersPanelPage.resetFiltersButton.click();
-
-      // await waitForAssertion({
-      //   assertion: async () => {
-      //     await expect(operateFiltersPanelPage.runningInstancesCheckbox).toBeChecked();
-      //     await expect(operateProcessesPage.tableLoadingSpinner).toBeHidden();
-      //   },
-      //   onFailure: async () => {
-      //     await page.reload();
-      //   }
-      // });
-
-      
-
-      // filter by operation id
-      // await page.getByTestId('operation-id').first().click( {timeout: 5000});
-      // await operateProcessesPage.selectFirstOperationItem();
-
-
-   //  })
-
   });
 
   test('Migration Operation test', async ({ 
@@ -295,7 +268,6 @@ test.describe('Process Instances Filters', () => {
     const runId = `${testInfo.project.name}-${testInfo.workerIndex}-${Date.now()}`;
 
     const [processInstanceKey ] = await createInstances('versionedProcess', 1, 1, { runId });
-
     const keyStr = String(processInstanceKey.processInstanceKey);
 
     await expect
@@ -305,7 +277,6 @@ test.describe('Process Instances Filters', () => {
       }, { timeout: 30_000, intervals: [5_00] })
       .toBeTruthy();
 
-    // Filter by the unique runId so you only see your instance
     await operateFiltersPanelPage.selectProcess('Versioned Process');
     await operateFiltersPanelPage.selectVersion('1');
     await operateFiltersPanelPage.displayOptionalFilter('Variable');
@@ -319,10 +290,6 @@ test.describe('Process Instances Filters', () => {
       })
       .toBeTruthy();
 
-    // Select the exact row and migrate
-
-    // const row = page.getByRole('row', { name: new RegExp(`\\b${keyStr}\\b`) });
-    // await row.getByRole('checkbox', { name: /select row/i }).check();
     await operateProcessesPage.selectProcessCheckboxByPIK(keyStr);
     await operateProcessesPage.clickMigrateSelectedProcessesButton();
     await operateProcessesPage.clickContinueMigrationDialogButton();
@@ -336,13 +303,63 @@ test.describe('Process Instances Filters', () => {
     await operateFiltersPanelPage.fillVariableValueFilter(`"${runId}"`);
     await expect(page.getByText('1 result')).toBeVisible();
 
+    const targetVersion = 2;
     await expect
-      .poll(() => checkUpdateOnVersion('2', keyStr), { timeout: 120_000, intervals: [1_000] })
+      .poll(() => checkUpdateOnVersion(targetVersion.toString(), keyStr), { timeout: 120_000, intervals: [1_000] })
       .toBeTruthy();
-    // await operateProcessesPage.checkVersion(keyStr);
 
     page.reload();
     await page.waitForLoadState('networkidle');
+
+    await operateOperationPanelPage.expandOperationIdField();
+
+    const rows = operateOperationPanelPage.selectAllOperationEntries();
+
+    try {
+      await expect
+        .poll(async () => rows.count(), { timeout: 10_000, intervals: [500] })
+        .toBeGreaterThanOrEqual(3);
+    } catch {
+      await expect
+        .poll(async () => rows.count(), { timeout: 10_000, intervals: [500] })
+        .toBeGreaterThanOrEqual(2);
+    }
+
+    const total = await rows.count();
+    const take = Math.min(3, total);
+    const start = Math.max(0, total - take);
+    const bottomN = Array.from({ length: take }, (_, i) => rows.nth(start + i));
+
+    const last3or2 = await Promise.all(bottomN.map(async (row) => ({
+    id: await OperateOperationPanelPage.getOperationID(row).innerText(),
+    type: await OperateOperationPanelPage.getOperationType(row).innerText(),
+    })));
+
+    await operateOperationPanelPage.collapseOperationIdField();
+
+    await expect
+      .poll(async () => {
+        for (const operation of last3or2) {
+          await operateFiltersPanelPage.filterByOperationId(operation.id);
+          await page.waitForLoadState('networkidle');
+
+          const row = page
+            .getByTestId('data-list')
+            .getByRole('row')
+            .filter({
+              has: page.getByTestId('cell-processInstanceKey').filter({ hasText: keyStr }),
+            });
+
+        if (await row.count()) {
+          const versionText = (await row.getByTestId('cell-processVersion').innerText()).trim();
+          if (versionText === String(targetVersion)) {
+            return operation.id;
+          }
+        }
+      }
+    return '';
+    }, { timeout: 10_000, intervals: [1_000] })
+    .not.toBe('');
   })
   
 

@@ -7,6 +7,7 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import { sleep } from 'utils/sleep';
 
 type OptionalFilter =
   | 'Variable'
@@ -246,5 +247,13 @@ export class OperateFiltersPanelPage {
 
   async clickMultipleVariablesSwitch() {
     await this.multipleVariablesSwitch.click({force: true});
+  }
+
+  async filterByOperationId(opId: string) {
+    if (!(await this.operationIdFilter.isVisible())) {
+      await this.displayOptionalFilter('Operation Id');
+    }
+    await this.fillOperationIdFilter(opId);
+    await sleep(1_000);
   }
 }

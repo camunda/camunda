@@ -12,28 +12,29 @@ export class OperateOperationPanelPage {
   private page: Page;
   readonly expandButton: Locator;
   readonly collapseButton: Locator;
-  readonly operationEntry: Locator;
+  readonly operationList: Locator;
   
   constructor(page: Page) {
     this.page = page;
     this.expandButton = page.getByRole('button', { name: 'Expand Operations' })
     this.collapseButton = page.getByRole('button', { name: 'Collapse Operations' })
-    this.operationEntry = page.getByTestId('operations-entry');
+    this.operationList = page.getByTestId('operations-list')
   }
 
-   selectLastOperationEntry(): Locator {
-    const meow = this.operationEntry.last();
-    // await meow.getByTestId('operation-id').last().click( {timeout: 10000} );
-    return meow;
-  }
-
-   static getOperationEntryProgressBarValue(operationEntry: Locator): number {
-    const progressBarValue = operationEntry.getByRole('progressbar').getAttribute('aria-valuenow');
-    return Number(progressBarValue);
+   selectAllOperationEntries(): Locator {
+    return this.operationList.getByTestId('operations-entry');
   }
 
   static getOperationEntrySuccess(operationEntry: Locator): Locator {
     return operationEntry.getByText('1 operation succeeded');
+  }
+
+  static getOperationID(operationEntry: Locator): Locator {
+    return operationEntry.getByTestId('operation-id');
+  }
+
+  static getOperationType(operationEntry: Locator): Locator {
+    return operationEntry.getByRole('heading');
   }
 
   async expandOperationIdField(): Promise<void> {

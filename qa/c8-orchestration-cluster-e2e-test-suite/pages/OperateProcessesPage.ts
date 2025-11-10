@@ -229,6 +229,12 @@ class OperateProcessesPage {
     }
     return false;
   }
+
+  async visibleKeys(): Promise<string[]> {
+    const texts = await this.page.getByTestId('cell-processInstanceKey').allInnerTexts();
+    return texts.map(t => t.trim());
+  }
+
 }
 
 
