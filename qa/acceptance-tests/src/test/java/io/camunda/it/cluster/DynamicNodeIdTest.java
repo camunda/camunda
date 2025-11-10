@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,6 @@ public class DynamicNodeIdTest {
 
   @AutoClose private static S3Client s3Client;
   private static String bucketName;
-  private static String taskId;
   private static int clusterSize;
 
   @TestZeebe
@@ -76,7 +74,7 @@ public class DynamicNodeIdTest {
                               "camunda.cluster.dynamic-node-id.type",
                               "s3",
                               "camunda.cluster.dynamic-node-id.s3.taskId",
-                              taskId + "nodeId=" + app.nodeId(),
+                              taskId(Integer.parseInt(app.nodeId().id())),
                               "camunda.cluster.dynamic-node-id.s3.bucketName",
                               bucketName,
                               "camunda.cluster.dynamic-node-id.s3.leaseDuration",
@@ -95,8 +93,6 @@ public class DynamicNodeIdTest {
   // Setup as static so it's done before the cluster
   public static void setupAll() {
     bucketName = UUID.randomUUID().toString();
-
-    taskId = UUID.randomUUID().toString();
     clusterSize = 3;
     s3Client =
         S3NodeIdRepository.buildClient(
@@ -111,11 +107,12 @@ public class DynamicNodeIdTest {
 
   @Test
   public void shouldStartAppCorrectlyAndAcquireALease() throws IOException {
+    // then
     final var objectsInBucket = s3Client.listObjects(b -> b.bucket(bucketName)).contents();
 
-    Awaitility.await("Repository has been initialized")
-        .untilAsserted(() -> assertThat(objectsInBucket).hasSize(clusterSize));
-
+    //    Awaitility.await("Repository has been initialized")
+    //        .untilAsserted(() -> assertThat(objectsInBucket).hasSize(clusterSize));
+    assertThat(objectsInBucket).hasSize(clusterSize);
     final var leases = new ArrayList<Lease>();
     for (final var object : objectsInBucket) {
       final var lease = s3Client.getObject(b -> b.bucket(bucketName).key(object.key()));
@@ -138,5 +135,30 @@ public class DynamicNodeIdTest {
     assertThat(configuredTaskIds).allSatisfy(o -> assertThat(o).isNotNull());
     assertThat(leases.stream().map(Lease::taskId).collect(Collectors.toSet()))
         .isEqualTo(configuredTaskIds);
+
+    // Verify the mapping nodeId -> taskId is consistent with the nodeId from the cluster
+    final var s3NodeIdMapping =
+        leases.stream().collect(Collectors.toMap(l -> l.nodeInstance().id(), Lease::taskId));
+    assertThat(s3NodeIdMapping)
+        .allSatisfy((id, taskId) -> assertThat(taskId).isNotNull())
+        .hasSize(clusterSize);
+
+    final var configNodeIdMapping =
+        testCluster.brokers().values().stream()
+            .collect(
+                Collectors.toMap(
+                    b -> b.brokerConfig().getCluster().getNodeId(),
+                    b ->
+                        b.property(
+                            "camunda.cluster.dynamic-node-id.s3.task-id", String.class, null)));
+    assertThat(configNodeIdMapping)
+        .allSatisfy((id, taskId) -> assertThat(taskId).isNotNull())
+        .hasSize(clusterSize);
+
+    assertThat(s3NodeIdMapping).isEqualTo(configNodeIdMapping);
+  }
+
+  private String taskId(final int nodeId) {
+    return "nodeId=" + nodeId;
   }
 }

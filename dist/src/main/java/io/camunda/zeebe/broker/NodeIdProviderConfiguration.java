@@ -59,30 +59,34 @@ public class NodeIdProviderConfiguration {
 
   @Bean
   public NodeIdProvider nodeIdProvider(final Optional<NodeIdRepository> nodeIdRepository) {
-    return switch (cluster.getDynamicNodeId().getType()) {
-      case NONE -> {
-        final var nodeId = cluster.getNodeId();
-        yield NodeIdProvider.staticProvider(nodeId);
-      }
-      case S3 -> {
-        final var config = cluster.getDynamicNodeId().s3();
-        if (nodeIdRepository.isEmpty()) {
-          throw new IllegalStateException(
-              "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
-        }
-        final var taskId = config.getTaskId().orElse(UUID.randomUUID().toString());
-        LOG.info("Node configured with taskId {}", taskId);
-        final var repository =
-            new RepositoryNodeIdProvider(
-                nodeIdRepository.get(),
-                Clock.systemUTC(),
-                config.getLeaseDuration(),
-                taskId,
-                () -> System.exit(-1));
-        repository.initialize(cluster.getSize());
-        yield repository;
-      }
-    };
+    final var nodeIdProvider =
+        switch (cluster.getDynamicNodeId().getType()) {
+          case NONE -> {
+            final var nodeId = cluster.getNodeId();
+            yield NodeIdProvider.staticProvider(nodeId);
+          }
+          case S3 -> {
+            final var config = cluster.getDynamicNodeId().s3();
+            if (nodeIdRepository.isEmpty()) {
+              throw new IllegalStateException(
+                  "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
+            }
+            final var taskId = config.getTaskId().orElse(UUID.randomUUID().toString());
+            LOG.info("Node configured with taskId {}", taskId);
+            final var repository =
+                new RepositoryNodeIdProvider(
+                    nodeIdRepository.get(),
+                    Clock.systemUTC(),
+                    config.getLeaseDuration(),
+                    taskId,
+                    () -> System.exit(-1));
+            repository.initialize(cluster.getSize());
+            yield repository;
+          }
+        };
+    nodeIdProvider.initialize(cluster.getSize());
+
+    return nodeIdProvider;
   }
 
   private static S3ClientConfig makeS3ClientConfig(final S3 s3) {
