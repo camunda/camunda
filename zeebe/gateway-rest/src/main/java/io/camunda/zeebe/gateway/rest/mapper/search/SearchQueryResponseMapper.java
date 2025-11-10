@@ -891,7 +891,9 @@ public final class SearchQueryResponseMapper {
         .version(d.version())
         .decisionDefinitionId(d.decisionDefinitionId())
         .decisionRequirementsKey(KeyUtil.keyToString(d.decisionRequirementsKey()))
-        .decisionRequirementsId(d.decisionRequirementsId());
+        .decisionRequirementsId(d.decisionRequirementsId())
+        .decisionRequirementsName(d.decisionRequirementsName())
+        .decisionRequirementsVersion(d.decisionRequirementsVersion());
   }
 
   public static DecisionRequirementsResult toDecisionRequirements(

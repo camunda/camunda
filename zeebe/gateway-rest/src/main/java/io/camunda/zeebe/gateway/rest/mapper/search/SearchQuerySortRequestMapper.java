@@ -559,6 +559,8 @@ public class SearchQuerySortRequestMapper {
         case VERSION -> builder.version();
         case DECISION_REQUIREMENTS_ID -> builder.decisionRequirementsId();
         case DECISION_REQUIREMENTS_KEY -> builder.decisionRequirementsKey();
+        case DECISION_REQUIREMENTS_NAME -> builder.decisionRequirementsName();
+        case DECISION_REQUIREMENTS_VERSION -> builder.decisionRequirementsVersion();
         case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
