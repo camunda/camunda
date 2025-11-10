@@ -8,7 +8,7 @@
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {createIncident, createIncidentV2} from 'modules/testUtils';
+import {createIncidentV2} from 'modules/testUtils';
 import {Paths} from 'modules/Routes';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -29,30 +29,6 @@ const secondIncident = createIncidentV2({
 const mockIncidents: QueryProcessInstanceIncidentsResponseBody = {
   page: {totalItems: 2},
   items: [firstIncident, secondIncident],
-};
-
-const mockResolvedIncidents = {
-  count: 1,
-  incidents: [
-    createIncident({
-      errorType: {name: 'Extract value errortype', id: 'EXTRACT_VALUE_ERROR'},
-      flowNodeId: 'flowNodeId_alwaysFailingTask',
-    }),
-  ],
-  errorTypes: [
-    {
-      id: 'EXTRACT_VALUE_ERROR',
-      name: 'Extract value errortype',
-      count: 1,
-    },
-  ],
-  flowNodes: [
-    {
-      id: 'flowNodeId_alwaysFailingTask',
-      name: 'flowNodeName_alwaysFailingTask',
-      count: 1,
-    },
-  ],
 };
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -77,10 +53,4 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-export {
-  mockIncidents,
-  mockResolvedIncidents,
-  firstIncident,
-  secondIncident,
-  Wrapper,
-};
+export {mockIncidents, firstIncident, secondIncident, Wrapper};
