@@ -401,7 +401,7 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-build-tools</artifactId>
-        <version>${project.version}</version>
+        <version>8.9.0-alpha1-rc1</version>
       </dependency>
 
       <dependency>
@@ -2242,7 +2242,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>8.9.0-alpha1-rc1</version>
             </dependency>
           </dependencies>
           <executions>
@@ -2302,7 +2302,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>8.9.0-alpha1-rc1</version>
             </dependency>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
@@ -2354,7 +2354,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>8.9.0-alpha1-rc1</version>
             </dependency>
           </dependencies>
         </plugin>
@@ -2394,7 +2394,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
+              <version>8.9.0-alpha1-rc1</version>
             </dependency>
           </dependencies>
           <executions>
@@ -2990,7 +2990,7 @@
               <dependency>
                 <groupId>io.camunda</groupId>
                 <artifactId>zeebe-build-tools</artifactId>
-                <version>${project.version}</version>
+                <version>8.9.0-alpha1-rc1</version>
               </dependency>
             </dependencies>
             <executions>
