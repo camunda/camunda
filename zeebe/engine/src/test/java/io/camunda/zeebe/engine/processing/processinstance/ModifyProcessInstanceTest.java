@@ -1380,6 +1380,23 @@ public class ModifyProcessInstanceTest {
         .deploy();
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var subprocessBodyInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("SubProcess")
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst();
+
+    final var miInstances =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .withFlowScopeKey(subprocessBodyInstance.getKey())
+            .limit(3)
+            .toList();
+    assertThat(miInstances).hasSize(3);
+
     final var aTasks =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("A")
@@ -1393,9 +1410,9 @@ public class ModifyProcessInstanceTest {
         .withInstanceKey(processInstanceKey)
         .modification()
         .terminateElement(aTasks.get(0).getKey())
-        .activateElement("B", aTasks.get(0).getValue().getFlowScopeKey())
+        .activateElement("B", miInstances.getFirst().getKey())
         .terminateElement(aTasks.get(2).getKey())
-        .activateElement("B", aTasks.get(2).getValue().getFlowScopeKey())
+        .activateElement("B", miInstances.getLast().getKey())
         .modify();
 
     // then
@@ -1420,8 +1437,303 @@ public class ModifyProcessInstanceTest {
         .extracting(Record::getValue)
         .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
         .describedAs("Expect each B Task to be activated inside specific flow scopes")
-        .containsExactlyInAnyOrder(
-            aTasks.get(0).getValue().getFlowScopeKey(), aTasks.get(2).getValue().getFlowScopeKey());
+        .containsExactlyInAnyOrder(miInstances.getFirst().getKey(), miInstances.getLast().getKey());
+  }
+
+  @Test
+  public void shouldUseAncestorSelectionInsideMultiInstanceAdHocSubprocess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    "adhoc_subprocess",
+                    adHocSubProcess -> {
+                      adHocSubProcess
+                          .multiInstance()
+                          .zeebeInputCollectionExpression("activateElements")
+                          .zeebeInputElement("element");
+                      adHocSubProcess.zeebeActiveElementsCollectionExpression("[element]");
+                      adHocSubProcess.userTask("A");
+                      adHocSubProcess.userTask("B");
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("activateElements", List.of("A", "A")))
+            .create();
+
+    // Get all multi-instance ad-hoc subprocess instances
+    final var adhocInnerInstances =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .limit(2)
+            .toList();
+    assertThat(adhocInnerInstances).hasSize(2);
+
+    final var aTasks =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withElementId("A")
+            .limit(2)
+            .toList();
+    assertThat(aTasks).hasSize(2);
+    final long taskAFlowScopeKey = aTasks.getFirst().getValue().getFlowScopeKey();
+    assertThat(taskAFlowScopeKey)
+        .describedAs("Expect first A Task to be activated in the first ad-hoc subprocess instance")
+        .isEqualTo(adhocInnerInstances.getFirst().getKey());
+
+    // when
+    // terminate task A in the first ad-hoc instance and activate task B there
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(aTasks.getFirst().getKey())
+        .activateElement("B", taskAFlowScopeKey)
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(aTasks.getFirst().getKey())
+                .exists())
+        .describedAs("Expect first A Task to be terminated")
+        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .limit(1))
+        .describedAs("Expect one Task B to be activated in the first ad-hoc subprocess instance")
+        .hasSize(1)
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .describedAs("Expect B Task to be activated in the specific ad-hoc subprocess instance")
+        .contains(taskAFlowScopeKey);
+  }
+
+  @Test
+  public void shouldModifyNestedMultiInstanceAdHocSubprocess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "outer_subprocess",
+                    outer ->
+                        outer
+                            .multiInstance(
+                                m ->
+                                    m.zeebeInputCollectionExpression("[1,2]")
+                                        .zeebeInputElement("outer_index")
+                                        .parallel())
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .adHocSubProcess(
+                                "inner_adhoc",
+                                adHocSubProcess -> {
+                                  adHocSubProcess
+                                      .multiInstance()
+                                      .zeebeInputCollectionExpression("inner_elements")
+                                      .zeebeInputElement("inner_element");
+                                  adHocSubProcess.zeebeActiveElementsCollectionExpression(
+                                      "[inner_element]");
+                                  adHocSubProcess.userTask("A");
+                                  adHocSubProcess.userTask("B");
+                                })
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("inner_elements", List.of("A", "A")))
+            .create();
+
+    // Wait for outer multi-instance subprocesses to be activated
+    final var outerSubprocesses =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("outer_subprocess")
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .limit(2)
+            .toList();
+    assertThat(outerSubprocesses).hasSize(2);
+
+    // Wait for inner ad-hoc subprocess bodies to be activated
+    final var innerAdhocInstances =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .limit(4)
+            .toList();
+    assertThat(innerAdhocInstances).hasSize(4);
+
+    // Wait for A tasks to be activated
+    final var aTasks =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .limit(2)
+            .toList();
+    assertThat(aTasks).hasSize(2);
+
+    final var firstInnerAdhocInstance = innerAdhocInstances.getFirst();
+
+    final var aTask = aTasks.getFirst();
+
+    // when
+    // terminate A and activate B in the specific nested ad-hoc instance
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(aTask.getKey())
+        .activateElement("B", firstInnerAdhocInstance.getKey())
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(aTask.getKey())
+                .exists())
+        .describedAs("Expect A Task to be terminated")
+        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .limit(1))
+        .describedAs("Expect B Task to be activated in the specific nested ad-hoc instance")
+        .hasSize(1)
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .describedAs("Expect B Task to be in the same ad-hoc instance as the terminated A Task")
+        .containsOnly(firstInnerAdhocInstance.getKey());
+  }
+
+  @Test
+  public void
+      shouldCreateNewAdhocSubprocessInnerInstanceWhenModifyingWithAncestorOtherThanAnInnerInstance() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .adHocSubProcess(
+                    "adhoc_subprocess",
+                    adHocSubProcess -> {
+                      adHocSubProcess
+                          .multiInstance()
+                          .zeebeInputCollectionExpression("activateElements")
+                          .zeebeInputElement("element");
+                      adHocSubProcess.zeebeActiveElementsCollectionExpression("[element]");
+                      adHocSubProcess.userTask("A");
+                      adHocSubProcess.userTask("B");
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("activateElements", List.of("A", "A")))
+            .create();
+
+    final var subprocessBodyInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("adhoc_subprocess")
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst();
+
+    // Get all multi-instance ad-hoc subprocess instances
+    final var miInstances =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withFlowScopeKey(subprocessBodyInstance.getKey())
+            .limit(2)
+            .toList();
+    assertThat(miInstances).hasSize(2);
+
+    final var adhocInnerInstances =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .limit(2)
+            .toList();
+    assertThat(adhocInnerInstances).hasSize(2);
+
+    final var aTasks =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withElementId("A")
+            .limit(2)
+            .toList();
+    assertThat(aTasks).hasSize(2);
+
+    // when
+    // terminate task A in the first ad-hoc instance and activate task B there
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(aTasks.getFirst().getKey())
+        .activateElement("B", miInstances.getFirst().getKey())
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(aTasks.getFirst().getKey())
+                .exists())
+        .describedAs("Expect first A Task to be terminated")
+        .isTrue();
+
+    final var activatedBTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .limit(1)
+            .findFirst();
+    assertThat(activatedBTask)
+        .isPresent()
+        .map(Record::getValue)
+        .map(ProcessInstanceRecordValue::getFlowScopeKey)
+        .describedAs("Expect B Task to be activated in a new ad-hoc subprocess inner instance")
+        .isNotIn(adhocInnerInstances.stream().map(Record::getKey).toList());
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withRecordKey(activatedBTask.get().getValue().getFlowScopeKey())
+                .limit(1))
+        .describedAs(
+            "Expect the flow scope of the activated B Task to be an ad-hoc subprocess inner instance inside the specified ad-hoc subprocess instance")
+        .hasSize(1)
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .containsOnly(miInstances.getFirst().getKey());
   }
 
   @Test
