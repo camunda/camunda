@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -28,7 +29,23 @@ import org.slf4j.LoggerFactory;
 
 public class DbBatchOperationState implements MutableBatchOperationState {
 
-  public static final long MAX_DB_CHUNK_SIZE = 3500;
+  /**
+   * The maximum number of item keys stored in a single chunk. If more item keys are added, a new
+   * chunk is created.
+   *
+   * <p>This value is chosen to balance between the number of database entries and the size of each
+   * entry. A chunk size of 3000 item keys results in a chunk size of approximately 24KB (31KB with
+   * overhead), which is reasonable for RocksDB to handle efficiently. Larger chunk sizes could lead
+   * to increased memory usage and potential performance degradation, while smaller chunk sizes
+   * would increase the number of database entries, leading to higher overhead in managing them.
+   *
+   * <p>PS: RocksDB is configured with a block size of 32KB, so chunks significantly larger than
+   * this would span multiple blocks, which is not optimal for read/write performance.
+   *
+   * @see ZeebeRocksDbFactory
+   * @see PersistedBatchOperationChunk
+   */
+  public static final long MAX_DB_CHUNK_SIZE = 3000;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DbBatchOperationState.class);
 
