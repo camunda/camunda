@@ -15,12 +15,14 @@ type State = {
     elementInstanceKey: string;
     elementName: string;
   } | null;
+  selectedElementId: string | null;
   selectedErrorTypes: IncidentErrorType[];
   isPanelVisible: boolean;
 };
 
 const DEFAULT_STATE: State = {
   selectedElementInstance: null,
+  selectedElementId: null,
   selectedErrorTypes: [],
   isPanelVisible: false,
 };
@@ -35,6 +37,7 @@ class IncidentsPanel {
   get hasActiveFilters(): boolean {
     return (
       this.state.selectedElementInstance !== null ||
+      this.state.selectedElementId !== null ||
       this.state.selectedErrorTypes.length > 0
     );
   }
@@ -45,6 +48,17 @@ class IncidentsPanel {
   ) {
     this.clearSelection();
     this.state.selectedElementInstance = {elementInstanceKey, elementName};
+    this.setPanelOpen(true);
+  }
+
+  /**
+   * Opens the incidents panel with a filter for the given `elementId`.
+   * Prefer to use {@linkcode showIncidentsForElementInstance}! This method
+   * is a fallback for cases where no element instance is available.
+   */
+  showIncidentsForElementId(elementId: string) {
+    this.clearSelection();
+    this.state.selectedElementId = elementId;
     this.setPanelOpen(true);
   }
 
@@ -64,6 +78,7 @@ class IncidentsPanel {
 
   clearSelection() {
     this.state.selectedElementInstance = null;
+    this.state.selectedElementId = null;
     this.state.selectedErrorTypes = [];
   }
 }
