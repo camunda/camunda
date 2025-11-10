@@ -11,13 +11,10 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OpenSearchSetupHelper extends ElasticOpenSearchSetupHelper {
   private static final Duration DEFAULT_INDEX_STATE_MGMT_JOB_INTERVAL = Duration.ofMinutes(5);
   private static final String DEFAULT_INDEX_STATE_MGMT_JITTER = "0.6";
-
-  private final AtomicBoolean hasClusterSettingsChanged = new AtomicBoolean(false);
 
   public OpenSearchSetupHelper(
       final String endpoint, final Collection<IndexDescriptor> expectedDescriptors) {
@@ -25,22 +22,18 @@ public class OpenSearchSetupHelper extends ElasticOpenSearchSetupHelper {
   }
 
   @Override
-  public void applyIndexPoliciesPollInterval(final Duration pollInterval) {
+  protected Map<String, Object> getLifecyclePollIntervalSettings(final Duration pollInterval) {
     // set a very low jitter to make sure the job runs quickly after the interval
-    applyClusterSettings(getSettingsWithISMJobInterval(pollInterval, "0.001"));
-    hasClusterSettingsChanged.set(true); // mark cluster settings changed to reset after the test
+    return getLifecycleJobInterval(pollInterval, "0.001");
   }
 
   @Override
-  protected void resetIndicesLifecyclePollInterval() {
-    if (hasClusterSettingsChanged.getAndSet(false)) {
-      applyClusterSettings(
-          getSettingsWithISMJobInterval(
-              DEFAULT_INDEX_STATE_MGMT_JOB_INTERVAL, DEFAULT_INDEX_STATE_MGMT_JITTER));
-    }
+  protected Map<String, Object> getResetLifecyclePollIntervalSettings() {
+    return getLifecycleJobInterval(
+        DEFAULT_INDEX_STATE_MGMT_JOB_INTERVAL, DEFAULT_INDEX_STATE_MGMT_JITTER);
   }
 
-  private Map<String, Object> getSettingsWithISMJobInterval(
+  private Map<String, Object> getLifecycleJobInterval(
       final Duration jobInterval, final String jitter) {
     if (jobInterval.toMinutes() < 1) {
       throw new IllegalArgumentException(

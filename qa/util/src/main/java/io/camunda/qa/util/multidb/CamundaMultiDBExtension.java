@@ -291,13 +291,13 @@ public class CamundaMultiDBExtension
         multiDbConfigurator.configureElasticsearchSupport(
             elasticSearchUrl, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
-        setupHelper = new ElasticOpenSearchSetupHelper(elasticSearchUrl, expectedDescriptors);
+        setupHelper = new ElasticsearchSetupHelper(elasticSearchUrl, expectedDescriptors);
       }
       case ES -> {
         multiDbConfigurator.configureElasticsearchSupport(
             DEFAULT_ES_URL, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
-        setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_ES_URL, expectedDescriptors);
+        setupHelper = new ElasticsearchSetupHelper(DEFAULT_ES_URL, expectedDescriptors);
       }
       case OS -> {
         multiDbConfigurator.configureOpenSearchSupport(
