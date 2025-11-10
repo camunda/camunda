@@ -43,6 +43,7 @@ public final class ExporterMetadata {
           put(TaskImplementation.JOB_WORKER, (long) UNSET_POSITION);
         }
       };
+  private long firstProcessMessageSubscriptionKey = UNSET_POSITION;
 
   public ExporterMetadata(final ObjectMapper objectMapper) {
     // Specialized reader/writer for this class for efficiency
@@ -78,6 +79,21 @@ public final class ExporterMetadata {
     this.firstUserTaskKeys = firstUserTaskKeys;
   }
 
+  public long getFirstProcessMessageSubscriptionKey() {
+    return firstProcessMessageSubscriptionKey;
+  }
+
+  public void setFirstProcessMessageSubscriptionKey(final long processMessageSubscriptionKey) {
+    if (firstProcessMessageSubscriptionKey == UNSET_POSITION) {
+      firstProcessMessageSubscriptionKey = processMessageSubscriptionKey;
+    }
+  }
+
+  public boolean keyIsBeforeFirstProcessMessageSubscriptionKey(final long key) {
+    return getFirstProcessMessageSubscriptionKey() == UNSET_POSITION
+        || key < getFirstProcessMessageSubscriptionKey();
+  }
+
   public void deserialize(final byte[] bytes) {
     try {
       objectReader.readValue(bytes);
@@ -97,7 +113,8 @@ public final class ExporterMetadata {
 
   @Override
   public int hashCode() {
-    return Objects.hash(lastIncidentUpdatePosition, firstUserTaskKeys);
+    return Objects.hash(
+        lastIncidentUpdatePosition, firstUserTaskKeys, firstProcessMessageSubscriptionKey);
   }
 
   @Override
@@ -110,7 +127,8 @@ public final class ExporterMetadata {
     }
     final ExporterMetadata that = (ExporterMetadata) o;
     return lastIncidentUpdatePosition == that.lastIncidentUpdatePosition
-        && firstUserTaskKeys == that.firstUserTaskKeys;
+        && firstUserTaskKeys == that.firstUserTaskKeys
+        && firstProcessMessageSubscriptionKey == that.firstProcessMessageSubscriptionKey;
   }
 
   @Override
@@ -120,6 +138,8 @@ public final class ExporterMetadata {
         + lastIncidentUpdatePosition
         + ", firstUserTaskKeys="
         + firstUserTaskKeys
+        + ", firstProcessMessageSubscriptionKey="
+        + firstProcessMessageSubscriptionKey
         + '}';
   }
 
