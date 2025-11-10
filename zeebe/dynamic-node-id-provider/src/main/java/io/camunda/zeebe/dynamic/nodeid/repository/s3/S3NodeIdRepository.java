@@ -134,7 +134,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
         // if bucket does not exist, it return 404
         if (s3Exception.statusCode() == 404) {
           throw new IllegalArgumentException(
-              "Cannot create file for node " + nodeId + " in bucket" + config.bucketName, e);
+              "Cannot create file for node " + nodeId + " in bucket " + config.bucketName, e);
         }
       }
       LOG.debug(
