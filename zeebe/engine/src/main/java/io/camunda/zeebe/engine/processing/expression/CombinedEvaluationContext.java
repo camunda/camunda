@@ -64,8 +64,7 @@ public final class CombinedEvaluationContext implements ScopedEvaluationContext 
     } else if (directBufferEvaluationContextEither.isRight()) {
       final var value = directBufferEvaluationContextEither.get();
       return value != null;
-    } else {
-      return false;
     }
+    throw new IllegalStateException("Either is neither left nor right");
   }
 }

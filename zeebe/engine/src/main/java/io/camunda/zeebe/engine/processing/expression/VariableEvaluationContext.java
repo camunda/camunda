@@ -18,10 +18,11 @@ import org.agrona.DirectBuffer;
 public final class VariableEvaluationContext implements ScopedEvaluationContext {
 
   private final VariableState variableState;
-  private long scopeKey;
+  private final long scopeKey;
 
   public VariableEvaluationContext(final VariableState variableState) {
     this.variableState = variableState;
+    scopeKey = -1;
   }
 
   private VariableEvaluationContext(final VariableState variableState, final long scopeKey) {
