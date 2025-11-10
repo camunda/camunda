@@ -254,11 +254,13 @@ public final class VariableBehavior {
   }
 
   private void evaluateConditionalsIfExists(final List<VariableRecord> records) {
-    final Set<Long> visitedScopeKeys = new HashSet<>();
+    // each subscription should be triggered only once per document merge
+    final Set<Long> triggeredSubscriptionKeys = new HashSet<>();
     // for each created/updated variable
     for (final VariableRecord record : records) {
       // start top-down traversal from the scope key where the variable was set
       final var scopes = new ArrayDeque<>(List.of(record.getScopeKey()));
+      final Set<Long> visitedScopeKeys = new HashSet<>();
 
       while (!scopes.isEmpty()) {
         final var scopeKey = scopes.poll();
@@ -284,11 +286,14 @@ public final class VariableBehavior {
                 final Either<Failure, Boolean> evaluation =
                     expressionProcessor.evaluateBooleanExpression(
                         catchEvent.getCondition().getConditionExpression(), scopeKey);
-                if (evaluation.isRight() && evaluation.get().equals(true)) {
+                if (evaluation.isRight()
+                    && evaluation.get().equals(true)
+                    && !triggeredSubscriptionKeys.contains(subscription.getKey())) {
                   commandWriter.appendFollowUpCommand(
                       subscription.getKey(),
                       ConditionSubscriptionIntent.TRIGGER,
                       subscriptionRecord);
+                  triggeredSubscriptionKeys.add(subscription.getKey());
                 }
               });
         }

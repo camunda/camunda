@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.state.immutable.ConditionSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -65,6 +66,7 @@ public final class CatchEventBehavior {
   private final TimerInstanceState timerInstanceState;
   private final ProcessState processState;
   private final SignalSubscriptionState signalSubscriptionState;
+  private final ConditionSubscriptionState conditionSubscriptionState;
 
   private final ProcessMessageSubscriptionRecord subscription =
       new ProcessMessageSubscriptionRecord();
@@ -98,6 +100,7 @@ public final class CatchEventBehavior {
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
     processState = processingState.getProcessState();
     signalSubscriptionState = processingState.getSignalSubscriptionState();
+    conditionSubscriptionState = processingState.getConditionSubscriptionState();
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
@@ -153,6 +156,21 @@ public final class CatchEventBehavior {
     unsubscribeFromMessageEvents(
         elementInstanceKey, sub -> elementIdFilter.test(sub.getRecord().getElementIdBuffer()));
     unsubscribeFromSignalEvents(elementInstanceKey, elementIdFilter);
+    unsubscribeFromConditionalEvents(elementInstanceKey, elementIdFilter);
+  }
+
+  private void unsubscribeFromConditionalEvents(
+      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+    conditionSubscriptionState.visitByScopeKey(
+        elementInstanceKey,
+        subscription -> {
+          if (elementIdFilter.test(subscription.getRecord().getCatchEventIdBuffer())) {
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(),
+                ConditionSubscriptionIntent.CANCELED,
+                subscription.getRecord());
+          }
+        });
   }
 
   /**
@@ -240,6 +258,7 @@ public final class CatchEventBehavior {
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setCatchEventId(event.getId())
+        .setInterrupting(event.isInterrupting())
         .setCondition(BufferUtil.wrapString(condition.getConditionExpression().getExpression()))
         .setTenantId(context.getTenantId());
 

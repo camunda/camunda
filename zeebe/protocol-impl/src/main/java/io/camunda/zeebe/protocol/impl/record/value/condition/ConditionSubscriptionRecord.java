@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.condition;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -27,6 +28,7 @@ public class ConditionSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue CATCH_EVENT_ID_KEY = new StringValue("catchEventId");
+  private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
   private static final StringValue CONDITION_KEY = new StringValue("condition");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
@@ -37,17 +39,19 @@ public class ConditionSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY);
   private final StringProperty catchEventIdProp = new StringProperty(CATCH_EVENT_ID_KEY, "");
+  private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
   private final StringProperty conditionProp = new StringProperty(CONDITION_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ConditionSubscriptionRecord() {
-    super(7);
+    super(8);
     declareProperty(scopeKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(catchEventIdProp)
+        .declareProperty(interruptingProp)
         .declareProperty(conditionProp)
         .declareProperty(tenantIdProp);
   }
@@ -58,6 +62,7 @@ public class ConditionSubscriptionRecord extends UnifiedRecordValue
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
     catchEventIdProp.setValue(record.getCatchEventId());
+    interruptingProp.setValue(record.isInterrupting());
     conditionProp.setValue(record.getCondition());
     tenantIdProp.setValue(record.getTenantId());
   }
@@ -134,6 +139,16 @@ public class ConditionSubscriptionRecord extends UnifiedRecordValue
 
   public ConditionSubscriptionRecord setCondition(final DirectBuffer condition) {
     conditionProp.setValue(condition);
+    return this;
+  }
+
+  @Override
+  public boolean isInterrupting() {
+    return interruptingProp.getValue();
+  }
+
+  public ConditionSubscriptionRecord setInterrupting(final boolean interrupting) {
+    interruptingProp.setValue(interrupting);
     return this;
   }
 

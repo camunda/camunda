@@ -12,12 +12,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableConditionSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.condition.ConditionSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.ConditionSubscriptionIntent;
 
-public final class ConditionSubscriptionTriggeredApplier
+public final class ConditionSubscriptionCanceledApplier
     implements TypedEventApplier<ConditionSubscriptionIntent, ConditionSubscriptionRecord> {
 
   private final MutableConditionSubscriptionState conditionSubscriptionState;
 
-  public ConditionSubscriptionTriggeredApplier(
+  public ConditionSubscriptionCanceledApplier(
       final MutableConditionSubscriptionState conditionSubscriptionState) {
     this.conditionSubscriptionState = conditionSubscriptionState;
   }
@@ -25,8 +25,6 @@ public final class ConditionSubscriptionTriggeredApplier
   @Override
   public void applyState(final long key, final ConditionSubscriptionRecord value) {
     // remove the subscription once it has been triggered
-    if (value.isInterrupting()) {
-      conditionSubscriptionState.delete(key, value);
-    }
+    conditionSubscriptionState.delete(key, value);
   }
 }

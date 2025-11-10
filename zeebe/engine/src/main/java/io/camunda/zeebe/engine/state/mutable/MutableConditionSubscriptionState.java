@@ -13,4 +13,6 @@ import io.camunda.zeebe.protocol.impl.record.value.condition.ConditionSubscripti
 public interface MutableConditionSubscriptionState extends ConditionSubscriptionState {
 
   void put(final long key, ConditionSubscriptionRecord subscription);
+
+  void delete(final long key, ConditionSubscriptionRecord subscription);
 }

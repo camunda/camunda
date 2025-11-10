@@ -133,6 +133,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ConditionSubscriptionIntent.TRIGGERED,
         new ConditionSubscriptionTriggeredApplier(state.getConditionSubscriptionState()));
+    register(
+        ConditionSubscriptionIntent.CANCELED,
+        new ConditionSubscriptionCanceledApplier(state.getConditionSubscriptionState()));
 
     registerCompensationSubscriptionApplier(state);
 

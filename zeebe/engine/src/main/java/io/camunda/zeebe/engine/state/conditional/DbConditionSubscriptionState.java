@@ -74,6 +74,16 @@ public class DbConditionSubscriptionState implements MutableConditionSubscriptio
   }
 
   @Override
+  public void delete(final long key, final ConditionSubscriptionRecord subscription) {
+    subscriptionKey.wrapLong(key);
+    tenantIdKey.wrapString(subscription.getTenantId());
+    scopeKey.wrapLong(subscription.getScopeKey());
+
+    conditionKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
+    scopeKeyColumnFamily.deleteExisting(tenantAwareScopeKeyAndSubscriptionKey);
+  }
+
+  @Override
   public List<ConditionSubscription> getSubscriptionsByScopeKey(
       final String tenantId, final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
@@ -100,5 +110,15 @@ public class DbConditionSubscriptionState implements MutableConditionSubscriptio
   }
 
   @Override
-  public void visitByScopeKey(final long scopeKey, final ConditionSubscriptionVisitor visitor) {}
+  public void visitByScopeKey(final long scopeKey, final ConditionSubscriptionVisitor visitor) {
+    this.scopeKey.wrapLong(scopeKey);
+
+    scopeKeyColumnFamily.whileEqualPrefix(
+        new DbTenantAwareKey<>(tenantIdKey, this.scopeKey, DbTenantAwareKey.PlacementType.PREFIX),
+        (ignore, subscription) -> {
+          final ConditionSubscription copySubscription = new ConditionSubscription();
+          copySubscription.copyFrom(subscription);
+          visitor.visit(copySubscription);
+        });
+  }
 }

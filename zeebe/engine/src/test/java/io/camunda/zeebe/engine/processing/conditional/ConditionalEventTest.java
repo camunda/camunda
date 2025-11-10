@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ConditionSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -572,6 +573,40 @@ public class ConditionalEventTest {
         .isTrue();
   }
 
+  @Test
+  public void shouldTriggerConditionalBoundaryEventOnlyOnceOnMultipleVariableCreation() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .cancelActivity(false)
+                    .conditionalEventDefinition("conditional")
+                    .condition("x > 1")
+                    .conditionalEventDefinitionDone()
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.CREATED).exists())
+        .isTrue();
+
+    engine.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 2, "y", 1)).update();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.TRIGGER))
+        .hasSize(1);
+  }
+
   // INTERMEDIATE CATCH EVENT
 
   @Test
@@ -628,5 +663,273 @@ public class ConditionalEventTest {
     final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.records().withIntent(ConditionSubscriptionIntent.CREATED).await();
+  }
+
+  // EXECUTION LISTENERS
+
+  @Test
+  public void shouldTriggerConditionalEventOnAllStartELCompleted() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String startElJobType = helper.getStartExecutionListenerType();
+    final String startElJobType2 = helper.getStartExecutionListenerType() + "2";
+    final String serviceTaskJobType = helper.getJobType();
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType(serviceTaskJobType)
+                            .zeebeStartExecutionListener(startElJobType)
+                            .zeebeStartExecutionListener(startElJobType2))
+                .boundaryEvent("boundary1")
+                .conditionalEventDefinition("conditional")
+                .condition("x > 1")
+                .conditionalEventDefinitionDone()
+                .endEvent()
+                .moveToActivity("task")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // complete the start execution listener job to continue the process execution
+    RecordingExporter.jobRecords().withType(startElJobType).withIntent(JobIntent.CREATED).await();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(startElJobType)
+        .withVariables(Map.of("x", 2))
+        .complete();
+
+    engine.job().ofInstance(processInstanceKey).withType(startElJobType2).complete();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.CREATED).exists())
+        .isTrue();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.TRIGGER).exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("boundary1")
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .exists())
+        .isTrue();
+
+    assert false;
+  }
+
+  // TODO - no unsubscribe on element completion yet, so triggers even after end el but should not
+  // when unsubscribe is implemented
+  @Test
+  public void shouldNotTriggerConditionalEventOnEndELCompleted() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String endElJobType = helper.getEndExecutionListenerType();
+    final String endElJobType2 = helper.getEndExecutionListenerType() + "2";
+    final String serviceTaskJobType = helper.getJobType();
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType(serviceTaskJobType)
+                            .zeebeEndExecutionListener(endElJobType)
+                            .zeebeEndExecutionListener(endElJobType2))
+                .boundaryEvent("boundary1")
+                .conditionalEventDefinition("conditional")
+                .condition("x > 1")
+                .conditionalEventDefinitionDone()
+                .endEvent()
+                .moveToActivity("task")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.jobRecords()
+        .withType(serviceTaskJobType)
+        .withIntent(JobIntent.CREATED)
+        .await();
+    engine.job().ofInstance(processInstanceKey).withType(serviceTaskJobType).complete();
+
+    // complete the start execution listener job to continue the process execution
+    RecordingExporter.jobRecords().withType(endElJobType).withIntent(JobIntent.CREATED).await();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(endElJobType)
+        .withVariables(Map.of("x", 2))
+        .complete();
+
+    engine.job().ofInstance(processInstanceKey).withType(endElJobType2).complete();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.CREATED).exists())
+        .isTrue();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.TRIGGER).exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("boundary1")
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .exists())
+        .isTrue();
+
+    assert false;
+  }
+
+  // MULTI-INSTANCE TASKS
+
+  @Test
+  public void shouldInterruptMultiInstanceTaskOnChildInstanceMergeVariablesThatTriggersCondition() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "miTask",
+                        t ->
+                            t.zeebeJobType("miJob")
+                                .multiInstance(
+                                    mi ->
+                                        mi.zeebeInputCollectionExpression("items")
+                                            .zeebeInputElement("item")
+                                            .zeebeOutputCollection("outputs")
+                                            .zeebeOutputElementExpression("output")))
+                    .boundaryEvent("boundary1")
+                    .conditionalEventDefinition("conditional")
+                    .condition("x > 1")
+                    .conditionalEventDefinitionDone()
+                    .endEvent()
+                    .moveToActivity("miTask")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("items", new String[] {"a", "b", "c"}))
+            .create();
+
+    // complete first child instance
+    final var miJob1 =
+        RecordingExporter.jobRecords()
+            .withType("miJob")
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("miTask")
+            .withIntent(JobIntent.CREATED)
+            .getFirst();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withKey(miJob1.getKey())
+        .withVariables(Map.of("output", "a"))
+        .complete();
+
+    // complete second child instance and merge variables that trigger the condition
+    final var miJob2 =
+        RecordingExporter.jobRecords()
+            .withType("miJob")
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("miTask")
+            .withIntent(JobIntent.CREATED)
+            .toList()
+            .get(1);
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withKey(miJob2.getKey())
+        .withVariables(Map.of("output", "b", "x", 2))
+        .complete();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.CREATED).exists())
+        .isTrue();
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.TRIGGER).exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("boundary1")
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .exists())
+        .isTrue();
+
+    assert false;
+  }
+
+  // CONDITION SUBSCRIPTION TRIGGER WILL BE REJECTED ON SERVICE TASK COMPLETION WITH VARIABLES
+  @Test
+  public void shouldNotTriggerConditionalEventOnServiceTaskCompletion() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String serviceTaskJobType = helper.getJobType();
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(serviceTaskJobType))
+                .boundaryEvent("boundary1")
+                .conditionalEventDefinition("conditional")
+                .condition("x > 1")
+                .conditionalEventDefinitionDone()
+                .endEvent("conditionEnd")
+                .moveToActivity("task")
+                .endEvent("end")
+                .done())
+        .deploy();
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.CREATED).exists())
+        .isTrue();
+
+    // complete the service task job with variables that trigger the condition
+    RecordingExporter.jobRecords()
+        .withType(serviceTaskJobType)
+        .withIntent(JobIntent.CREATED)
+        .await();
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(serviceTaskJobType)
+        .withVariables(Map.of("x", 2))
+        .complete();
+
+    assertThat(RecordingExporter.records().withIntent(ConditionSubscriptionIntent.TRIGGER).exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("boundary1")
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .exists())
+        .isTrue();
+
+    assert false;
   }
 }

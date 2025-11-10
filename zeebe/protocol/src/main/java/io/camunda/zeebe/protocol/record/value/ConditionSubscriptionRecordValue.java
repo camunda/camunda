@@ -58,4 +58,11 @@ public interface ConditionSubscriptionRecordValue
    * @return the condition expression as a String
    */
   String getCondition();
+
+  /**
+   * Indicates whether the condition is interrupting or non-interrupting.
+   *
+   * @return true if the condition is interrupting, false otherwise
+   */
+  boolean isInterrupting();
 }
