@@ -11,6 +11,7 @@ import {groupIdFromState} from './get-value-from-state-requestHelpers';
 import {
   assertEqualsForKeys,
   assertRequiredFields,
+  assertStatusCode,
   buildUrl,
   jsonHeaders,
 } from '../http';
@@ -19,6 +20,7 @@ import {generateUniqueId} from '../constants';
 import {CREATE_NEW_TENANT, tenantRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {createGroupAndStoreResponseFields} from './group-requestHelpers';
+import {createUser} from './user-requestHelpers';
 
 export async function assignUsersToTenant(
   request: APIRequestContext,
@@ -27,17 +29,17 @@ export async function assignUsersToTenant(
   state: Record<string, unknown>,
 ) {
   for (let i = 1; i <= numberOfUsers; i++) {
-    const user = 'user' + generateUniqueId();
+    const user = await createUser(request, {}, 'user' + generateUniqueId());
     const p = {
-      userId: user,
+      userId: user.username,
       tenantId: tenantId,
     };
     const res = await request.put(
       buildUrl('/tenants/{tenantId}/users/{userId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
-    state[`username${tenantId}${i}`] = user;
+    await assertStatusCode(res, 204);
+    state[`username${tenantId}${i}`] = user.username;
   }
 }
 
@@ -57,7 +59,7 @@ export async function assignClientsToTenant(
       buildUrl('/tenants/{tenantId}/clients/{clientId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
     state[`client${tenantId}${i}`] = clientId;
   }
 }
@@ -74,7 +76,7 @@ export async function createTenant(
     data: body,
   });
 
-  expect(res.status()).toBe(201);
+  await assertStatusCode(res, 201);
   const json = await res.json();
   assertRequiredFields(json, tenantRequiredFields);
   if (state && key) {
@@ -118,7 +120,7 @@ export async function assignGroupsToTenant(
         headers: jsonHeaders(),
       },
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
   }
 }
 export function assertTenantInResponse(

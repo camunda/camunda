@@ -14,15 +14,14 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
-import {
-  defaultAssertionOptions,
-  generateUniqueId,
-} from '../../../../utils/constants';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertUserNameInResponse,
   assignRoleToUsers,
   createRole,
+  createUser,
   userFromState,
 } from '@requestHelpers';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
@@ -61,10 +60,10 @@ test.describe.parallel('Role Users API Tests', () => {
   test('Assign Role To User', async ({request}) => {
     const role = await createRole(request);
     createdRoleIds.push(role.roleId as string);
-    const user = 'test-user' + generateUniqueId();
-    createdUserIds.push(user);
+    const user = await createUser(request, state, 'test-user');
+    createdUserIds.push(user.username);
     const p = {
-      userId: user,
+      userId: user.username,
       roleId: role.roleId as string,
     };
 
@@ -73,11 +72,11 @@ test.describe.parallel('Role Users API Tests', () => {
         buildUrl('/roles/{roleId}/users/{userId}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Assign Role To User Non Existent User Success', async ({request}) => {
+  test('Assign Role To User Non Existent User NotFound', async ({request}) => {
     const p = {
       userId: 'invalidUserId',
       roleId: state['roleId1'] as string,
@@ -86,7 +85,10 @@ test.describe.parallel('Role Users API Tests', () => {
       buildUrl('/roles/{roleId}/users/{userId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertNotFoundRequest(
+      res,
+      "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND'",
+    );
   });
 
   test('Assign Role To User Non Existent Role Not Found', async ({request}) => {
@@ -196,7 +198,7 @@ test.describe.parallel('Role Users API Tests', () => {
           buildUrl('/roles/{roleId}/users/{userId}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
