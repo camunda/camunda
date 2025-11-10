@@ -11,6 +11,7 @@ import {test} from 'fixtures';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 test.beforeAll(async () => {
   await deploy([
@@ -171,7 +172,9 @@ test.describe('variables page', () => {
     await taskPanelPage.openTask('usertask_with_variables');
 
     await expect(taskDetailsPage.addVariableButton).toBeHidden();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible({timeout: 60000});
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+      timeout: 60000,
+    });
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await taskDetailsPage.clickAssignToMeButton();
 
@@ -193,7 +196,19 @@ test.describe('variables page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('usertask_with_variables');
 
-    await expect(page.getByText('newVariableName')).toBeVisible({timeout: 60000});
-    await expect(page.getByText('newVariableValue')).toBeVisible();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(page.getByText('newVariableName')).toBeVisible({
+          timeout: 60000,
+        });
+        await expect(page.getByText('newVariableValue')).toBeVisible();
+      },
+      onFailure: async () => {
+        console.log('Variables not visible, reloading page...');
+        await page.reload();
+        await taskPanelPage.filterBy('Completed');
+        await taskPanelPage.openTask('usertask_with_variables');
+      },
+    });
   });
 });
