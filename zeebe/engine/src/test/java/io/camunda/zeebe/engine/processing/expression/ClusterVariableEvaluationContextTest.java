@@ -422,20 +422,20 @@ public class ClusterVariableEvaluationContextTest {
     ENGINE.deployment().withXmlResource(process).withTenantId(TENANT_B).deploy();
 
     // When
-    final var processCreated_1 =
+    final var processCreated1 =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_11").withTenantId(TENANT_A).create();
-    final var processCreated_2 =
+    final var processCreated2 =
         ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_11").withTenantId(TENANT_B).create();
 
     final var j1 =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withTenantId(TENANT_A)
-            .withProcessInstanceKey(processCreated_1)
+            .withProcessInstanceKey(processCreated1)
             .getFirst();
     final var j2 =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withTenantId(TENANT_B)
-            .withProcessInstanceKey(processCreated_2)
+            .withProcessInstanceKey(processCreated2)
             .getFirst();
 
     // Then
