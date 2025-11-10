@@ -320,13 +320,6 @@ public final class SystemContext {
               + "is not recommended since it may lead to performance issues in the exporters.");
     }
 
-    if (config.getDbChunkSize() <= 0) {
-      errors.add(
-          String.format(
-              "experimental.engine.batchOperation.dbChunkSize must be greater than 0, but was %s",
-              config.getChunkSize()));
-    }
-
     if (config.getQueryPageSize() <= 0) {
       errors.add(
           String.format(
