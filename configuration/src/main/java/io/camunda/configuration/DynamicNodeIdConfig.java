@@ -11,9 +11,15 @@ import java.time.Duration;
 import java.util.Optional;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-//  @ConfigurationProperties
 public class DynamicNodeIdConfig {
+
+  /**
+   * Set the {@link Type} of the implementation for the provider of dynamic node id. {@link
+   * Type#NONE} refers to no provider.
+   */
   private Type type = Type.NONE;
+
+  /** Configuration to use S3 for dynamic node id. */
   private @NestedConfigurationProperty S3 s3 = new S3();
 
   public Type getType() {
@@ -54,12 +60,7 @@ public class DynamicNodeIdConfig {
     return s3;
   }
 
-  public enum Type {
-    NONE,
-    S3;
-  }
-
-  public class S3 {
+  public static class S3 {
 
     /** Lease duration before expiry */
     private Duration leaseDuration;
@@ -190,5 +191,10 @@ public class DynamicNodeIdConfig {
     public void setTaskId(final String taskId) {
       this.taskId = Optional.ofNullable(taskId);
     }
+  }
+
+  public enum Type {
+    NONE,
+    S3;
   }
 }

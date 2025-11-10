@@ -82,6 +82,10 @@ public class Cluster implements Cloneable {
    */
   private Integer nodeId;
 
+  /**
+   * Configuration to use when deploying camunda in a stateless setup, i.e. when each node cannot be
+   * assigned a static {@link #nodeId}.
+   */
   @NestedConfigurationProperty
   private DynamicNodeIdConfig dynamicNodeId = new DynamicNodeIdConfig();
 
