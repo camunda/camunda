@@ -195,6 +195,7 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   public int getMaxHttpConnections() {
     return camundaClientProperties.getMaxHttpConnections();
   }
+
   @Override
   public String toString() {
     return "SpringCamundaClientConfiguration{"
