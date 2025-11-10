@@ -277,6 +277,7 @@ jobs:
           ${{ inputs.benchmark-load }}
       - name: Setup leader balancing
         run: >
+          # shellcheck disable=SC2215
           kubectl create cronjob leader-balancer
             --namespace ${{ inputs.name }}
             --image=curlimages/curl:7.87.0
