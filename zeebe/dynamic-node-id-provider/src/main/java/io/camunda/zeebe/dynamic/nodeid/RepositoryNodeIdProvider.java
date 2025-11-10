@@ -60,7 +60,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   public void initialize(final int clusterSize) {
     nodeIdRepository.initialize(clusterSize);
     CompletableFuture.runAsync(() -> acquireInitialLease(clusterSize), executor)
-        .thenRun(this::startRenewalTimer);
+        .thenRun(this::startRenewalTimer)
+        .join();
   }
 
   @Override
