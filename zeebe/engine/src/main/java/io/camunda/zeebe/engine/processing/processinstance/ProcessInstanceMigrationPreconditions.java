@@ -1231,6 +1231,20 @@ public final class ProcessInstanceMigrationPreconditions {
     }
   }
 
+  public static boolean isAdHocRelatedProcess(
+      final DeployedProcess processDefinition, final String elementId) {
+    final var element = processDefinition.getProcess().getElementById(elementId);
+    final var elementType = element.getElementType();
+
+    return isAdHocSubProcess(elementType)
+        || (element instanceof ExecutableMultiInstanceBody mi
+            && isAdHocSubProcess(mi.getInnerActivity().getElementType()));
+  }
+
+  public static boolean isAdHocSubProcess(final BpmnElementType elementType) {
+    return BpmnElementType.AD_HOC_SUB_PROCESS == elementType;
+  }
+
   /**
    * This precondition checks whether the given distribution is pending to prevent the scenario:
    *
