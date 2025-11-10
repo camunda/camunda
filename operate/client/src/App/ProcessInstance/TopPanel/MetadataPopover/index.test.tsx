@@ -8,7 +8,6 @@
 
 import {screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {incidentsStore} from 'modules/stores/incidents';
 import {
   calledInstanceMetadata,
   incidentFlowNodeMetaData,
@@ -182,7 +181,6 @@ describe('MetadataPopover', () => {
 
   afterEach(() => {
     flowNodeSelectionStore.reset();
-    incidentsStore.reset();
   });
 
   it('should not show unrelated data', async () => {

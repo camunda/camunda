@@ -7,12 +7,9 @@
  */
 
 import type {
-  ProcessInstance,
   IncidentErrorType,
   QueryIncidentsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {incidentsStore} from 'modules/stores/incidents';
-import {isInstanceRunning} from './instance';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
 
 const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
@@ -41,31 +38,6 @@ const getIncidentErrorName = (errorType: IncidentErrorType): string => {
   return ERROR_TYPE_NAMES[errorType];
 };
 
-const startPolling = async (
-  processInstance?: ProcessInstance,
-  options: {runImmediately?: boolean} = {runImmediately: false},
-) => {
-  if (
-    document.visibilityState === 'hidden' ||
-    (processInstance && !isInstanceRunning(processInstance)) ||
-    !processInstance?.hasIncident
-  ) {
-    return;
-  }
-
-  if (options.runImmediately) {
-    if (!incidentsStore.isPollRequestRunning) {
-      incidentsStore.handlePolling(processInstance.processInstanceKey);
-    }
-  }
-
-  incidentsStore.intervalId = setInterval(() => {
-    if (!incidentsStore.isPollRequestRunning) {
-      incidentsStore.handlePolling(processInstance.processInstanceKey);
-    }
-  }, 5000);
-};
-
 const isSingleIncidentSelected = (
   incidents: EnhancedIncident[],
   elementInstanceKey: string,
@@ -89,7 +61,6 @@ const getIncidentsSearchFilter = (
 export {
   availableErrorTypes,
   getIncidentErrorName,
-  startPolling,
   isSingleIncidentSelected,
   getIncidentsSearchFilter,
 };

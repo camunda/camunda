@@ -9,7 +9,6 @@
 import {Paths} from 'modules/Routes';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {incidentsStore} from 'modules/stores/incidents';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
@@ -27,7 +26,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       flowNodeMetaDataStore.reset();
       flowNodeSelectionStore.reset();
       processInstanceDetailsStore.reset();
-      incidentsStore.reset();
     };
   }, []);
 

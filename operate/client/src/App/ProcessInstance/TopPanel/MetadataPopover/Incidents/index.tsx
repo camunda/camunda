@@ -7,7 +7,6 @@
  */
 
 import {Loading} from '@carbon/react';
-import {incidentsStore} from 'modules/stores/incidents';
 import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
 import {MultiIncidents} from './multiIncidents';
 import {SingleIncident} from './singleIncident';
@@ -20,11 +19,7 @@ type Props = {
   elementId: string;
 };
 
-const Incidents: React.FC<Props> = ({
-  elementInstanceKey,
-  elementName,
-  elementId,
-}) => {
+const Incidents: React.FC<Props> = ({elementInstanceKey, elementName}) => {
   const {data, isLoading: isSearchingIncidents} =
     useGetIncidentsByElementInstance(elementInstanceKey, {
       select: (data) => ({
@@ -49,11 +44,6 @@ const Incidents: React.FC<Props> = ({
                 elementInstanceKey,
                 elementName,
               );
-
-              incidentsStore.clearSelection();
-              incidentsStore.toggleFlowNodeSelection(elementId);
-              incidentsStore.toggleErrorTypeSelection(singleIncident.errorType);
-              incidentsStore.setIncidentBarOpen(true);
             }}
           />
         </>
@@ -67,10 +57,6 @@ const Incidents: React.FC<Props> = ({
                 elementInstanceKey,
                 elementName,
               );
-
-              incidentsStore.clearSelection();
-              incidentsStore.toggleFlowNodeSelection(elementId);
-              incidentsStore.setIncidentBarOpen(true);
             }}
           />
         </>
