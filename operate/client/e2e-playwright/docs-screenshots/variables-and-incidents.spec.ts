@@ -136,11 +136,6 @@ test.describe('variables and incidents', () => {
 
     await expect(
       page.getByRole('combobox', {
-        name: /filter by flow node/i,
-      }),
-    ).toBeInViewport();
-    await expect(
-      page.getByRole('combobox', {
         name: /filter by incident type/i,
       }),
     ).toBeInViewport();
@@ -216,11 +211,6 @@ test.describe('variables and incidents', () => {
       })
       .click();
 
-    await expect(
-      page.getByRole('combobox', {
-        name: /filter by flow node/i,
-      }),
-    ).toBeInViewport();
     await expect(
       page.getByRole('combobox', {
         name: /filter by incident type/i,
