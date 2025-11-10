@@ -13,7 +13,8 @@ public enum AuthorizationSearchColumn implements SearchColumn<AuthorizationEntit
   OWNER_ID("ownerId"),
   OWNER_TYPE("ownerType"),
   RESOURCE_TYPE("resourceType"),
-  RESOURCE_ID("resourceId");
+  RESOURCE_ID("resourceId"),
+  RESOURCE_PROPERTY_NAME("resourcePropertyName");
 
   private final String property;
 
