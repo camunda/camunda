@@ -214,15 +214,12 @@ test.describe('Process Instances Filters', () => {
       });
     })
 
-    await test.step('Filter by process instance key and assert results', async ({ }) => {
+    await test.step('Filter by process instance key with one key and assert results', async ({ }) => {
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
-      const callActivityProcessInstanceKey =
-        callActivityProcessInstance.processInstanceKey.toString();
 
       await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
 
-      // test with one key
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(variableProcessInstanceKey);
       await waitForAssertion({
         assertion: async () => {
@@ -233,8 +230,13 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         }
       });
-      
-      // test with multiple keys
+    });
+
+    await test.step('Filter by process instance key with multiple keys and assert results', async ({ }) => {
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+      const callActivityProcessInstanceKey =
+        callActivityProcessInstance.processInstanceKey.toString();
       await operateFiltersPanelPage.resetFiltersButton.click();
       await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
 
@@ -254,7 +256,7 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         }
       });
-    });
+    })
 
   });
 
