@@ -320,20 +320,5 @@ public class MultiDbConfigurator {
   public void configureAWSOpenSearchSupport(
       final String opensearchUrl, final String indexPrefix, final boolean isHistoryRelatedTest) {
     configureOpenSearchSupport(opensearchUrl, indexPrefix, "", "", isHistoryRelatedTest, true);
-    testApplication.withExporter(
-        OpensearchExporter.class.getSimpleName().toLowerCase(),
-        cfg -> {
-          cfg.setClassName(OpensearchExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "url",
-                  opensearchUrl,
-                  "index",
-                  Map.of("prefix", indexPrefix),
-                  "bulk",
-                  Map.of("size", 1),
-                  "aws",
-                  Map.of("enabled", true)));
-        });
   }
 }
