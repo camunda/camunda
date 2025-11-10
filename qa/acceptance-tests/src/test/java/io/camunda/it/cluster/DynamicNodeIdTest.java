@@ -46,16 +46,16 @@ public class DynamicNodeIdTest {
           .withEnv("LS_LOG", "trace");
 
   @AutoClose private static S3Client s3Client;
-  private static String bucketName;
-  private static int clusterSize;
+  private static final String BUCKET_NAME = UUID.randomUUID().toString();
+  private static final int CLUSTER_SIZE = 3;
 
   @TestZeebe
   protected TestCluster testCluster =
       TestCluster.builder()
           .withName("dynamic-node-id-test")
-          .withBrokersCount(clusterSize)
+          .withBrokersCount(CLUSTER_SIZE)
           .withPartitionsCount(1)
-          .withReplicationFactor(clusterSize)
+          .withReplicationFactor(CLUSTER_SIZE)
           .withNodeConfig(
               app ->
                   app.withAdditionalProperties(
@@ -70,13 +70,13 @@ public class DynamicNodeIdTest {
                       .withAdditionalProperties(
                           Map.of(
                               "camunda.cluster.size",
-                              clusterSize,
+                              CLUSTER_SIZE,
                               "camunda.cluster.dynamic-node-id.type",
                               "s3",
                               "camunda.cluster.dynamic-node-id.s3.taskId",
                               taskId(Integer.parseInt(app.nodeId().id())),
                               "camunda.cluster.dynamic-node-id.s3.bucketName",
-                              bucketName,
+                              BUCKET_NAME,
                               "camunda.cluster.dynamic-node-id.s3.leaseDuration",
                               LEASE_DURATION,
                               "camunda.cluster.dynamic-node-id.s3.endpoint",
@@ -92,8 +92,6 @@ public class DynamicNodeIdTest {
   @BeforeAll
   // Setup as static so it's done before the cluster
   public static void setupAll() {
-    bucketName = UUID.randomUUID().toString();
-    clusterSize = 3;
     s3Client =
         S3NodeIdRepository.buildClient(
             new S3ClientConfig(
@@ -102,20 +100,20 @@ public class DynamicNodeIdTest {
                 Optional.of(S3.getEndpoint())));
 
     // bucket must be created before the application is started
-    s3Client.createBucket(b -> b.bucket(bucketName));
+    s3Client.createBucket(b -> b.bucket(BUCKET_NAME));
   }
 
   @Test
   public void shouldStartAppCorrectlyAndAcquireALease() throws IOException {
     // then
-    final var objectsInBucket = s3Client.listObjects(b -> b.bucket(bucketName)).contents();
+    final var objectsInBucket = s3Client.listObjects(b -> b.bucket(BUCKET_NAME)).contents();
 
     //    Awaitility.await("Repository has been initialized")
     //        .untilAsserted(() -> assertThat(objectsInBucket).hasSize(clusterSize));
-    assertThat(objectsInBucket).hasSize(clusterSize);
+    assertThat(objectsInBucket).hasSize(CLUSTER_SIZE);
     final var leases = new ArrayList<Lease>();
     for (final var object : objectsInBucket) {
-      final var lease = s3Client.getObject(b -> b.bucket(bucketName).key(object.key()));
+      final var lease = s3Client.getObject(b -> b.bucket(BUCKET_NAME).key(object.key()));
       final var payload = lease.readAllBytes();
       if (payload.length > 0) {
         final var parsed = Lease.fromJsonBytes(OBJECT_MAPPER, payload);
@@ -141,7 +139,7 @@ public class DynamicNodeIdTest {
         leases.stream().collect(Collectors.toMap(l -> l.nodeInstance().id(), Lease::taskId));
     assertThat(s3NodeIdMapping)
         .allSatisfy((id, taskId) -> assertThat(taskId).isNotNull())
-        .hasSize(clusterSize);
+        .hasSize(CLUSTER_SIZE);
 
     final var configNodeIdMapping =
         testCluster.brokers().values().stream()
@@ -153,7 +151,7 @@ public class DynamicNodeIdTest {
                             "camunda.cluster.dynamic-node-id.s3.task-id", String.class, null)));
     assertThat(configNodeIdMapping)
         .allSatisfy((id, taskId) -> assertThat(taskId).isNotNull())
-        .hasSize(clusterSize);
+        .hasSize(CLUSTER_SIZE);
 
     assertThat(s3NodeIdMapping).isEqualTo(configNodeIdMapping);
   }
