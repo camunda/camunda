@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class AuthorizationConfigurerTest {
@@ -41,7 +42,7 @@ class AuthorizationConfigurerTest {
   public void shouldValidateOwnerType() {
     // when:
     final Either<List<String>, AuthorizationRecord> result =
-        new AuthorizationConfigurer().configure(INVALID_OWNER_TYPE);
+        new AuthorizationConfigurer(Pattern.compile(".*")).configure(INVALID_OWNER_TYPE);
 
     // then:
     assertThat(result.isLeft()).isTrue();
@@ -52,7 +53,7 @@ class AuthorizationConfigurerTest {
   public void shouldSuccessfullyConfigure() {
     // when:
     final Either<List<String>, AuthorizationRecord> result =
-        new AuthorizationConfigurer().configure(VALID_AUTH);
+        new AuthorizationConfigurer(Pattern.compile(".*")).configure(VALID_AUTH);
 
     // then:
     assertThat(result.isRight()).isTrue();
@@ -66,7 +67,7 @@ class AuthorizationConfigurerTest {
 
     // when:
     final Either<List<String>, List<AuthorizationRecord>> result =
-        new AuthorizationConfigurer().configureEntities(auths);
+        new AuthorizationConfigurer(Pattern.compile(".*")).configureEntities(auths);
 
     // then:
     assertThat(result.isLeft()).isTrue();
@@ -81,7 +82,7 @@ class AuthorizationConfigurerTest {
 
     // when:
     final Either<List<String>, List<AuthorizationRecord>> result =
-        new AuthorizationConfigurer().configureEntities(auths);
+        new AuthorizationConfigurer(Pattern.compile(".*")).configureEntities(auths);
 
     // then:
     assertThat(result.isRight()).isTrue();
