@@ -25,61 +25,54 @@ import io.camunda.client.api.response.ThrowErrorResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
+import io.camunda.client.impl.worker.JobExceptionHandlerImpl;
 import io.camunda.client.metrics.MetricsRecorder;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandlingStrategy {
-  private static final Logger LOG =
-      LoggerFactory.getLogger(DefaultJobExceptionHandlingStrategy.class);
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+public class SpringJobExceptionHandler extends JobExceptionHandlerImpl {
+  private static final Logger LOG = LoggerFactory.getLogger(SpringJobExceptionHandler.class);
+  private final JobWorkerValue jobWorkerValue;
   private final MetricsRecorder metricsRecorder;
+  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
 
-  public DefaultJobExceptionHandlingStrategy(
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder) {
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+  public SpringJobExceptionHandler(
+      final JobWorkerValue jobWorkerValue,
+      final MetricsRecorder metricsRecorder,
+      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy) {
+    super(
+        DEFAULT_ERROR_MESSAGE_PROVIDER,
+        DEFAULT_RETRIES_PROVIDER,
+        ctx -> jobWorkerValue.getRetryBackoff(),
+        DEFAULT_VARIABLES_PROVIDER);
+    this.jobWorkerValue = jobWorkerValue;
     this.metricsRecorder = metricsRecorder;
-  }
-
-  private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command, final ActivatedJob job, final JobWorkerValue workerValue) {
-    return new CommandWrapper(
-        command,
-        job,
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        workerValue.getMaxRetries());
+    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
   }
 
   @Override
-  public void handleException(final Exception exception, final ExceptionHandlingContext context)
-      throws Exception {
+  public void handleJobException(final JobExceptionHandlerContext context) {
+    final Exception exception = context.getException();
+    final ActivatedJob job = context.getActivatedJob();
+    final JobClient jobClient = context.getJobClient();
     if (exception instanceof final JobError jobError) {
-      LOG.trace("Caught job error on {}", context.job());
+      LOG.trace("Caught job error on {}", job);
       final CommandWrapper command =
-          createCommandWrapper(
-              createFailJobCommand(context.jobClient(), context.job(), jobError),
-              context.job(),
-              context.jobWorkerValue());
+          createCommandWrapper(createFailJobCommand(jobClient, job, jobError), job, jobWorkerValue);
       command.executeAsyncWithMetrics(
-          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, context.job().getType());
+          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
     } else if (exception instanceof final BpmnError bpmnError) {
-      LOG.trace("Caught BPMN error on {}", context.job());
+      LOG.trace("Caught BPMN error on {}", job);
       final CommandWrapper command =
           createCommandWrapper(
-              createThrowErrorCommand(context.jobClient(), context.job(), bpmnError),
-              context.job(),
-              context.jobWorkerValue());
+              createThrowErrorCommand(jobClient, job, bpmnError), job, jobWorkerValue);
       command.executeAsyncWithMetrics(
-          MetricsRecorder.METRIC_NAME_JOB,
-          MetricsRecorder.ACTION_BPMN_ERROR,
-          context.job().getType());
+          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_BPMN_ERROR, job.getType());
     } else {
       metricsRecorder.increase(
-          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, context.job().getType());
-      throw exception;
+          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
+      super.handleJobException(context);
     }
   }
 
@@ -100,7 +93,7 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
     final String errorMessage = JobHandlingUtil.createErrorMessage(jobError);
     final Duration backoff =
         jobError.getRetryBackoff().apply(retries) == null
-            ? Duration.ZERO
+            ? jobWorkerValue.getRetryBackoff()
             : jobError.getRetryBackoff().apply(retries);
     final FailJobCommandStep2 command =
         jobClient
@@ -109,5 +102,15 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
             .errorMessage(errorMessage)
             .retryBackoff(backoff);
     return JobHandlingUtil.applyVariables(jobError.getVariables(), command);
+  }
+
+  private CommandWrapper createCommandWrapper(
+      final FinalCommandStep<?> command, final ActivatedJob job, final JobWorkerValue workerValue) {
+    return new CommandWrapper(
+        command,
+        job,
+        commandExceptionHandlingStrategy,
+        metricsRecorder,
+        workerValue.getMaxRetries());
   }
 }

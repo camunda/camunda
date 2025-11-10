@@ -18,10 +18,10 @@ package io.camunda.client.spring.configuration;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -181,6 +181,12 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
+  public JobExceptionHandler getDefaultJobWorkerExceptionHandler() {
+    return JobExceptionHandler.createWithRetryBackoff(
+        camundaClientProperties.getWorker().getDefaults().getRetryBackoff());
+  }
+
+  @Override
   public boolean preferRestOverGrpc() {
     return camundaClientProperties.getPreferRestOverGrpc();
   }
@@ -190,55 +196,9 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
     return camundaClientProperties.getMaxHttpConnections();
   }
 
-  private String composeGatewayAddress() {
-    final URI gatewayUrl = getGrpcAddress();
-    final int port = gatewayUrl.getPort();
-    final String host = gatewayUrl.getHost();
-
-    // port is set
-    if (port != -1) {
-      return composeAddressWithPort(host, port, "Gateway port is set");
-    }
-
-    // port is not set, attempting to use default
-    int defaultPort;
-    try {
-      defaultPort = gatewayUrl.toURL().getDefaultPort();
-    } catch (final MalformedURLException e) {
-      LOG.warn("Invalid gateway url: {}", gatewayUrl);
-      // could not get a default port, setting it to -1 and moving to the next statement
-      defaultPort = -1;
-    }
-    if (defaultPort != -1) {
-      return composeAddressWithPort(host, defaultPort, "Gateway port has default");
-    }
-
-    // do not use any port
-    LOG.debug("Gateway cannot be determined, address will be '{}'", host);
-    return host;
-  }
-
-  private String composeAddressWithPort(
-      final String host, final int port, final String debugMessage) {
-    final String gatewayAddress = host + ":" + port;
-    LOG.debug("{}, address will be '{}'", debugMessage, gatewayAddress);
-    return gatewayAddress;
-  }
-
-  private boolean composePlaintext() {
-    final String protocol = getGrpcAddress().getScheme();
-    return switch (protocol) {
-      case "http", "grpc" -> true;
-      case "https", "grpcs" -> false;
-      default ->
-          throw new IllegalStateException(
-              String.format("Unrecognized zeebe protocol '%s'", protocol));
-    };
-  }
-
   @Override
   public String toString() {
-    return "CamundaClientConfigurationImpl{"
+    return "SpringCamundaClientConfiguration{"
         + "camundaClientProperties="
         + camundaClientProperties
         + ", jsonMapper="
