@@ -18,6 +18,29 @@ type ProcessInstanceFilterQuery = NonNullable<
   QueryProcessInstancesRequestBody['filter']
 >;
 
+type NormalizedFilters = {
+  processInstanceKey?: string[];
+  elementId?: string;
+  batchOperationId?: string;
+  tenantId?: string;
+  processDefinitionVersionTag?: string;
+  processDefinitionKey?: string[];
+  variable?: {name: string; values: string[]};
+  parentInstanceId?: string;
+  errorMessage?: string;
+  hasElementInstanceIncident?: boolean;
+  incidentErrorHashCode?: number;
+  retriesLeft?: boolean;
+  startDateAfter?: string;
+  startDateBefore?: string;
+  endDateAfter?: string;
+  endDateBefore?: string;
+  active?: boolean;
+  completed?: boolean;
+  canceled?: boolean;
+  incidents?: boolean;
+};
+
 type BuildProcessInstanceFilterOptions = {
   includeIds?: string[];
   excludeIds?: string[];
@@ -61,8 +84,7 @@ const inputFilterSchema = z
     incidents: z.boolean().optional(),
   })
   .transform((data) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const normalized: Record<string, any> = {};
+    const normalized: NormalizedFilters = {};
 
     if (data.ids) {
       normalized.processInstanceKey =
