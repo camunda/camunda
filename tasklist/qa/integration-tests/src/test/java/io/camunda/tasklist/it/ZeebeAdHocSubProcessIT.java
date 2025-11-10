@@ -8,6 +8,7 @@
 package io.camunda.tasklist.it;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -90,7 +91,7 @@ public class ZeebeAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
                         "[\"task1\",\"task2\",\"task3\"]",
                         "[\"task1\",\"task2\",\"task3\"]"),
                     tuple(
-                        "adHocSubProcessElements",
+                        AD_HOC_SUB_PROCESS_ELEMENTS,
                         AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE,
                         AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE));
         case "task2" ->
@@ -109,7 +110,7 @@ public class ZeebeAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
                         "[\"task1\",\"task2\",\"task3\"]",
                         "[\"task1\",\"task2\",\"task3\"]"),
                     tuple(
-                        "adHocSubProcessElements",
+                        AD_HOC_SUB_PROCESS_ELEMENTS,
                         AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE,
                         AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE));
         case "task3" ->
@@ -127,7 +128,7 @@ public class ZeebeAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
                         "[\"task1\",\"task2\",\"task3\"]",
                         "[\"task1\",\"task2\",\"task3\"]"),
                     tuple(
-                        "adHocSubProcessElements",
+                        AD_HOC_SUB_PROCESS_ELEMENTS,
                         AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE,
                         AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_VALUE));
         default -> fail("Unexpected task id: " + taskId);
