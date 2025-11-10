@@ -65,7 +65,7 @@ public class DynamicNodeIdConfig {
     private Duration leaseDuration;
 
     /**
-     * Name of the bucket where the backup will be stored. The bucket must be already created. The
+     * Name of the bucket where the leases will be stored. The bucket must be already created. The
      * bucket must not be shared with other zeebe clusters. bucketName must not be empty.
      */
     private String bucketName;

@@ -14,7 +14,7 @@ public interface NodeIdProvider extends AutoCloseable {
   void initialize(int clusterSize);
 
   /**
-   * @return the node instance. Null cna be returned when the provider is shutting down
+   * @return the node instance. Null can be returned when the provider is shutting down
    */
   NodeInstance currentNodeInstance();
 
