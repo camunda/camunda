@@ -477,6 +477,25 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       },
     ],
   },
+  incidentsV2: {
+    page: {totalItems: 1},
+    items: [
+      {
+        errorMessage:
+          "failed to evaluate expression 'clientId': no variable found for name 'clientId'",
+        errorType: 'EXTRACT_VALUE_ERROR',
+        incidentKey: '2251799813901252',
+        elementId: 'messageTask',
+        elementInstanceKey: '2251799813901251',
+        creationTime: '2023-09-29T12:37:31.772+0000',
+        processInstanceKey: '2251799813888430',
+        processDefinitionId: 'eventBasedGatewayProcess',
+        processDefinitionKey: '2251799813687567',
+        tenantId: '<default>',
+        state: 'ACTIVE',
+      },
+    ],
+  },
   metaData: {
     flowNodeInstanceId: '2251799813899087',
     flowNodeId: null,

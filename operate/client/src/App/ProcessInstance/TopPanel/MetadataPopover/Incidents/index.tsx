@@ -27,16 +27,20 @@ const Incidents: React.FC<Props> = ({
   elementId,
 }) => {
   const {data, isLoading: isSearchingIncidents} =
-    useGetIncidentsByElementInstance(elementInstanceKey);
-
-  const singleIncident = data?.page.totalItems === 1 ? data?.items[0] : null;
-  const multiIncidents = data && data?.page.totalItems > 1 ? data.items : null;
+    useGetIncidentsByElementInstance(elementInstanceKey, {
+      select: (data) => ({
+        totalIncidents: data.page.totalItems,
+        singleIncident: data.items.at(0) ?? null,
+      }),
+    });
+  const totalIncidents = data?.totalIncidents ?? 0;
+  const singleIncident = data?.singleIncident;
 
   return (
     <>
       {isSearchingIncidents ? (
         <Loading small withOverlay={false} data-testid="incidents-loading" />
-      ) : singleIncident ? (
+      ) : totalIncidents === 1 && singleIncident ? (
         <>
           <Divider />
           <SingleIncident
@@ -55,11 +59,11 @@ const Incidents: React.FC<Props> = ({
             }}
           />
         </>
-      ) : data && multiIncidents ? (
+      ) : totalIncidents > 1 ? (
         <>
           <Divider />
           <MultiIncidents
-            count={data.page.totalItems}
+            count={totalIncidents}
             onButtonClick={() => {
               if (IS_INCIDENTS_PANEL_V2) {
                 return incidentsPanelStore.showIncidentsForElementInstance(

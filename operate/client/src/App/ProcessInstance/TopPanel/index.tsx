@@ -70,9 +70,10 @@ import {
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
-import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
+import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {isInstanceRunning} from 'modules/utils/instance';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -233,7 +234,12 @@ const TopPanel: React.FC = observer(() => {
 
   // Conditional hook call, but the condition is static during runtime.
   const incidentsCount = IS_INCIDENTS_PANEL_V2
-    ? useProcessInstanceIncidentsCount(processInstanceId)
+    ? useProcessInstanceIncidentsCount(processInstanceId, {
+        enabled:
+          processInstance &&
+          isInstanceRunning(processInstance) &&
+          !!processInstance.hasIncident,
+      })
     : incidentsStore.incidentsCount;
   const isIncidentBarOpen = IS_INCIDENTS_PANEL_V2
     ? incidentsPanelStore.state.isPanelVisible

@@ -111,6 +111,7 @@ test.describe('modifications', () => {
         sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
+        incidentsV2: instanceWithIncident.incidentsV2,
         metaData: instanceWithIncident.metaData,
       }),
     );
@@ -143,6 +144,7 @@ test.describe('modifications', () => {
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
+        incidentsV2: instanceWithIncident.incidentsV2,
         metaData: instanceWithIncident.metaData,
       }),
     );
@@ -189,6 +191,7 @@ test.describe('modifications', () => {
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
+        incidentsV2: instanceWithIncident.incidentsV2,
         metaData: instanceWithIncident.metaData,
       }),
     );

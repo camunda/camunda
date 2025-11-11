@@ -9,6 +9,8 @@
 import type {
   ElementInstance,
   ProcessInstance,
+  QueryElementInstanceIncidentsRequestBody,
+  QueryProcessInstanceIncidentsRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
@@ -53,15 +55,37 @@ const queryKeys = {
   incidents: {
     get: (incidentKey: string) => ['incident', incidentKey],
     search: () => ['incidentsSearch'],
-    searchByProcessInstanceKey: (processInstanceKey: string) => [
+    processInstanceIncidentsCount: (processInstanceKey: string) => [
       queryKeys.incidents.search()[0],
-      'searchByProcessInstanceKey',
+      'processInstanceIncidentsCount',
       processInstanceKey,
     ],
-    searchByElementInstanceKey: (elementInstanceKey: string) => [
+    searchByElementInstanceKey: (
+      elementInstanceKey: string,
+      payload?: QueryElementInstanceIncidentsRequestBody,
+    ) => [
       queryKeys.incidents.search()[0],
       'searchByElementInstanceKey',
       elementInstanceKey,
+      payload,
+    ],
+    searchByProcessInstanceKeyPaginated: (
+      processInstanceKey: string,
+      payload?: QueryProcessInstanceIncidentsRequestBody,
+    ) => [
+      queryKeys.incidents.search()[0],
+      'searchByProcessInstanceKeyPaginated',
+      processInstanceKey,
+      payload,
+    ],
+    searchByElementInstanceKeyPaginated: (
+      elementInstanceKey: string,
+      payload?: QueryElementInstanceIncidentsRequestBody,
+    ) => [
+      queryKeys.incidents.search()[0],
+      'searchByElementInstanceKeyPaginated',
+      elementInstanceKey,
+      payload,
     ],
   },
   elementInstances: {

@@ -70,27 +70,29 @@ const DetailsModal: React.FC<Props> = ({
 
   const messageSubscription = messageSubscriptionSearchResult?.items?.[0];
 
-  const {data} = useGetIncidentsByElementInstance(elementInstanceKey, {
-    enabled: isVisible && elementInstance.hasIncident,
-  });
-  const singleIncident = data?.page.totalItems === 1 ? data?.items[0] : null;
+  const {data: incident} = useGetIncidentsByElementInstance(
+    elementInstanceKey,
+    {
+      enabled: isVisible && elementInstance.hasIncident,
+      select: (data) => {
+        const singleIncident = data.items.at(0) ?? null;
+        if (data.page.totalItems !== 1 || !singleIncident) {
+          return null;
+        }
 
-  const incident = useMemo(
-    () =>
-      singleIncident !== null
-        ? {
-            errorType: resolveIncidentErrorType(singleIncident.errorType),
-            errorMessage: singleIncident.errorMessage,
-          }
-        : null,
-    [singleIncident],
+        return {
+          errorType: resolveIncidentErrorType(singleIncident.errorType),
+          errorMessage: singleIncident.errorMessage,
+        };
+      },
+    },
   );
 
   const metadataJson = useMemo(
     () =>
       createMetadataJson(
         elementInstance,
-        incident,
+        incident ?? null,
         job,
         calledProcessInstance,
         messageSubscription,

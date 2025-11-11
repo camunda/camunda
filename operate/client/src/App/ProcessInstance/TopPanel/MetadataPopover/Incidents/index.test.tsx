@@ -164,7 +164,7 @@ describe('<Incidents />', () => {
       await screen.findByRole('heading', {name: /^incident$/i}),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/No more retries left./i)).toBeInTheDocument();
+    expect(screen.getByText(/Job: No retries left./i)).toBeInTheDocument();
     expect(screen.getByText(/Failed to execute job/i)).toBeInTheDocument();
     expect(screen.getByText(/Error Message/i)).toBeInTheDocument();
     expect(
@@ -192,7 +192,7 @@ describe('<Incidents />', () => {
       await screen.findByRole('heading', {name: /^incident$/i}),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/No more retries left./i)).toBeInTheDocument();
+    expect(screen.getByText(/Job: No retries left./i)).toBeInTheDocument();
     expect(screen.getByText(/Failed to execute job/i)).toBeInTheDocument();
     expect(screen.getByText(/Error Message/i)).toBeInTheDocument();
     expect(

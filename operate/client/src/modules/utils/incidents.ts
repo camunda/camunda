@@ -9,18 +9,18 @@
 import type {
   ProcessInstance,
   IncidentErrorType,
+  QueryIncidentsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {autorun} from 'mobx';
 import {incidentsStore, type Incident} from 'modules/stores/incidents';
 import {isInstanceRunning} from './instance';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 
 const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
   UNSPECIFIED: 'Unspecified',
   UNKNOWN: 'Unknown error',
   IO_MAPPING_ERROR: 'IO mapping error.',
-  JOB_NO_RETRIES: 'No more retries left.',
+  JOB_NO_RETRIES: 'Job: No retries left.',
   EXECUTION_LISTENER_NO_RETRIES: 'Execution listener error (no retries left).',
   TASK_LISTENER_NO_RETRIES: 'Task listener error (no retries left).',
   CONDITION_ERROR: 'Condition error.',
@@ -33,6 +33,10 @@ const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
   FORM_NOT_FOUND: 'Form not found.',
   RESOURCE_NOT_FOUND: 'Resource not found.',
 };
+
+const availableErrorTypes = Object.keys(
+  ERROR_TYPE_NAMES,
+) as (keyof typeof ERROR_TYPE_NAMES)[];
 
 const getIncidentErrorName = (errorType: IncidentErrorType): string => {
   return ERROR_TYPE_NAMES[errorType];
@@ -127,24 +131,21 @@ const isSingleIncidentSelectedV2 = (
   );
 };
 
-const getFilteredIncidentsV2 = (incidents: EnhancedIncident[]) => {
-  const {selectedErrorTypes} = incidentsPanelStore.state;
-
-  if (selectedErrorTypes.length === 0) {
-    return incidents;
-  }
-
-  return incidents.filter((incident) => {
-    return selectedErrorTypes.includes(incident.errorType);
-  });
+const getIncidentsSearchFilter = (
+  errorTypes: IncidentErrorType[],
+): QueryIncidentsRequestBody['filter'] => {
+  return {
+    errorType: errorTypes.length > 0 ? {$in: errorTypes} : undefined,
+  };
 };
 
 export {
+  availableErrorTypes,
   getIncidentErrorName,
   init,
   startPolling,
   isSingleIncidentSelected,
   isSingleIncidentSelectedV2,
   getFilteredIncidents,
-  getFilteredIncidentsV2,
+  getIncidentsSearchFilter,
 };

@@ -412,6 +412,25 @@ const instanceWithIncident: InstanceMock = {
       },
     ],
   },
+  incidentsV2: {
+    page: {totalItems: 1},
+    items: [
+      {
+        errorMessage:
+          "failed to evaluate expression '{orderId:orderNo,amountToPay:total}': no variable found for name 'total'",
+        errorType: 'IO_MAPPING_ERROR',
+        incidentKey: '6755399441062843',
+        elementId: 'Task_1b1r7ow',
+        elementInstanceKey: '6755399441062840',
+        creationTime: '2023-08-14T05:47:07.376+0000',
+        processInstanceKey: '6755399441062827',
+        processDefinitionId: 'orderProcess',
+        processDefinitionKey: '2251799813687188',
+        tenantId: '<default>',
+        state: 'ACTIVE',
+      },
+    ],
+  },
   metaData: {
     flowNodeInstanceId: '6755399441062840',
     flowNodeId: null,

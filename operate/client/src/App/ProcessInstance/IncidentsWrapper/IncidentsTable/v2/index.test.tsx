@@ -37,7 +37,11 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(
-      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
       {wrapper: Wrapper},
     );
     let withinRow = within(
@@ -84,7 +88,11 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     mockFetchProcessDefinitionXml().withSuccess('');
 
     render(
-      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
       {wrapper: Wrapper},
     );
 
@@ -102,7 +110,11 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     mockMe().withSuccess(createUser());
 
     render(
-      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
       {wrapper: Wrapper},
     );
 
@@ -123,7 +135,11 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     });
 
     render(
-      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
       {wrapper: Wrapper},
     );
 
@@ -144,7 +160,11 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     });
 
     render(
-      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
       {wrapper: Wrapper},
     );
     let withinRow = within(
@@ -199,9 +219,14 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     const incidentMock = {...firstIncident, jobKey: ''};
     const incidents = [incidentMock];
 
-    render(<IncidentsTable processInstanceKey="1" incidents={incidents} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidents}
+      />,
+      {wrapper: Wrapper},
+    );
 
     let withinFirstRow = within(
       screen.getByRole('row', {
@@ -215,7 +240,11 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
   it('should show a more button for long error messages', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     render(
-      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
       {wrapper: Wrapper},
     );
     let withinFirstRow = within(
@@ -238,7 +267,11 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
   it('should open an modal when clicking on the more button', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     const {user} = render(
-      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidentsMock}
+      />,
       {wrapper: Wrapper},
     );
 
