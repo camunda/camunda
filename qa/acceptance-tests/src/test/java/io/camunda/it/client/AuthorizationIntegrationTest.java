@@ -29,6 +29,7 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -320,7 +321,6 @@ public class AuthorizationIntegrationTest {
         .join();
 
     // when
-
     camundaClient
         .newCreateAuthorizationCommand()
         .ownerId(USER_ID_2)
@@ -344,6 +344,66 @@ public class AuthorizationIntegrationTest {
               assertThat(authorizationsSearchResponse.items())
                   .map(Authorization::getOwnerId)
                   .contains(USER_ID_1, USER_ID_2);
+            });
+  }
+
+  @Test
+  void searchShouldReturnAuthorizationsSortedByResourceId() {
+    // given: execute all authorization creation commands in parallel
+    final var future1 =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_1)
+            .ownerType(OwnerType.USER)
+            .resourceId("resource-zebra")
+            .resourceType(ResourceType.RESOURCE)
+            .permissionTypes(PermissionType.CREATE)
+            .send();
+
+    final var future2 =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_1)
+            .ownerType(OwnerType.USER)
+            .resourceId("resource-alpha")
+            .resourceType(ResourceType.RESOURCE)
+            .permissionTypes(PermissionType.CREATE)
+            .send();
+
+    final var future3 =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_2)
+            .ownerType(OwnerType.USER)
+            .resourceId("resource-beta")
+            .resourceType(ResourceType.RESOURCE)
+            .permissionTypes(PermissionType.CREATE)
+            .send();
+
+    CompletableFuture.allOf(
+            future1.toCompletableFuture(),
+            future2.toCompletableFuture(),
+            future3.toCompletableFuture())
+        .join();
+
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              // when
+              final var authorizationsSearchResponse =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          f -> f.resourceIds("resource-zebra", "resource-alpha", "resource-beta"))
+                      .sort(s -> s.resourceId().asc())
+                      .send()
+                      .join();
+
+              // then
+              assertThat(authorizationsSearchResponse.items())
+                  .map(Authorization::getResourceId)
+                  .containsExactly("resource-alpha", "resource-beta", "resource-zebra");
             });
   }
 
