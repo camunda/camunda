@@ -248,7 +248,7 @@ const mapProcessKeys = (
   options: BuildProcessInstanceFilterOptions,
 ) => {
   if (
-    options.processDefinitionKeys &&
+    Array.isArray(options.processDefinitionKeys) &&
     options.processDefinitionKeys.length > 0
   ) {
     query.processDefinitionKey = {$in: options.processDefinitionKeys};

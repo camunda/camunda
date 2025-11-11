@@ -24,10 +24,10 @@ function useProcessInstanceFilters(
   const filter = buildProcessInstanceFilter(filters, options);
 
   return {
-    filter: filter as NonNullable<
-      GetProcessDefinitionStatisticsRequestBody['filter']
-    >,
-  };
+    filter,
+  } satisfies NonNullable<
+    Pick<GetProcessDefinitionStatisticsRequestBody, 'filter'>
+  >;
 }
 
 export {useProcessInstanceFilters};

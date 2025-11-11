@@ -17,6 +17,7 @@ import {
 	type Endpoint,
 	basicStringFilterSchema,
 	getOrFilterSchema,
+	advancedIntegerFilterSchema,
 } from './common';
 import {
 	processDefinitionSchema,
@@ -73,7 +74,7 @@ const processDefinitionStatisticsFilterFieldsSchema = z.object({
 	elementInstanceState: advancedProcessInstanceStateFilterSchema,
 	elementId: advancedStringFilterSchema,
 	hasElementInstanceIncident: z.boolean(),
-	incidentErrorHashCode: z.number(),
+	incidentErrorHashCode: advancedIntegerFilterSchema,
 });
 
 const getProcessDefinitionStatisticsRequestBodySchema = z
