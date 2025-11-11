@@ -26,12 +26,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.Mockito;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
@@ -42,6 +45,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Testcontainers
+@Timeout(value = 120)
 public class RepositoryNodeIdProviderIT {
 
   private static final Duration EXPIRY_DURATION = Duration.ofSeconds(5);
@@ -84,7 +88,8 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldAcquireALease() {
+  public void shouldAcquireALease()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -105,7 +110,8 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldAcquireAnExpiredLease() {
+  public void shouldAcquireAnExpiredLease()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -136,7 +142,8 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldBlockInitializationIfAllLeasesAreTaken() {
+  public void shouldBlockInitializationIfAllLeasesAreTaken()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -154,7 +161,7 @@ public class RepositoryNodeIdProviderIT {
         .allSatisfy(l -> assertThat(l).isInstanceOf(StoredLease.Initialized.class));
 
     // when
-    nodeIdProvider = ofSize(clusterSize);
+    nodeIdProvider = ofSize(clusterSize, false);
 
     // then
     // verify that the lease status is not ready continuously
@@ -166,7 +173,8 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldRenewTheLeaseBeforeExpiration() {
+  public void shouldRenewTheLeaseBeforeExpiration()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -190,7 +198,8 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldInvokeFailureListenerWhenFailsToRenew() {
+  public void shouldInvokeFailureListenerWhenFailsToRenew()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -210,7 +219,8 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldReleaseGracefullyWhenClosed() {
+  public void shouldReleaseGracefullyWhenClosed()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -249,10 +259,17 @@ public class RepositoryNodeIdProviderIT {
   }
 
   RepositoryNodeIdProvider ofSize(final int clusterSize) {
+    return ofSize(clusterSize, true);
+  }
+
+  RepositoryNodeIdProvider ofSize(final int clusterSize, final boolean awaitInitialization) {
     final var provider =
         new RepositoryNodeIdProvider(
             repository, clock, EXPIRY_DURATION, taskId, () -> leaseFailed = true);
-    provider.initialize(clusterSize);
+    final var future = provider.initialize(clusterSize);
+    if (awaitInitialization) {
+      future.join();
+    }
     return provider;
   }
 }

@@ -80,7 +80,7 @@ public class NodeIdProviderConfiguration {
                     config.getLeaseDuration(),
                     taskId,
                     () -> System.exit(-1));
-            repository.initialize(cluster.getSize());
+            repository.initialize(cluster.getSize()).join();
             yield repository;
           }
         };

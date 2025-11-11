@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface NodeIdProvider extends AutoCloseable {
 
-  void initialize(int clusterSize);
+  CompletableFuture<Void> initialize(int clusterSize);
 
   /**
    * @return the node instance. Null can be returned when the provider is shutting down
@@ -42,7 +42,9 @@ public interface NodeIdProvider extends AutoCloseable {
       public void close() throws Exception {}
 
       @Override
-      public void initialize(final int clusterSize) {}
+      public CompletableFuture<Void> initialize(final int clusterSize) {
+        return CompletableFuture.completedFuture(null);
+      }
 
       @Override
       public NodeInstance currentNodeInstance() {
