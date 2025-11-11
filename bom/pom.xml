@@ -37,6 +37,7 @@
     <!-- release parent settings -->
     <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
+    <camunda.version>8.9.0-alpha1-rc1</camunda.version>
 
     <!-- Camunda License v1.0 header -->
     <license.header.file>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header.file>
@@ -61,43 +62,43 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-bpmn-model</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-client-java</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-client-java</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-exporter-api</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-protocol-impl</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-spring-boot-starter</artifactId>
-        <version>${project.version}</version>
+        <version>${camunda.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
