@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -220,7 +222,12 @@ final class InProgressBackupImpl implements InProgressBackup {
 
     final var backupDescriptor =
         new BackupDescriptorImpl(
-            snapshotId, checkpointPosition, numberOfPartitions, VersionUtil.getVersion());
+            snapshotId,
+            checkpointPosition,
+            numberOfPartitions,
+            VersionUtil.getVersion(),
+            Instant.now(),
+            CheckpointType.MANUAL_BACKUP);
     return new BackupImpl(backupId, backupDescriptor, snapshotFileSet, segmentsFileSet);
   }
 
