@@ -218,8 +218,8 @@ final class PartitionLeaveTest {
   private static Broker buildBroker(final Path tmp, final Consumer<BrokerCfg> configure) {
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
-    brokerCfg.init(tmp.toAbsolutePath().toString());
     configure.accept(brokerCfg);
+    brokerCfg.init(tmp.toAbsolutePath().toString());
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
     final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, METER_REGISTRY);
     final var brokerClient =
