@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-import java.time.Instant;
 
 public final class DbCheckpointState implements CheckpointState {
   private static final String LATEST_CHECKPOINT_KEY = "checkpoint";
@@ -47,10 +46,10 @@ public final class DbCheckpointState implements CheckpointState {
   }
 
   @Override
-  public Instant getLatestCheckpointTimestamp() {
+  public long getLatestCheckpointTimestamp() {
     checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getTimestamp() : Instant.MIN;
+    return info != null ? info.getTimestamp() : -1L;
   }
 
   @Override
@@ -62,7 +61,7 @@ public final class DbCheckpointState implements CheckpointState {
   public void setLatestCheckpointInfo(
       final long checkpointId,
       final long checkpointPosition,
-      final Instant timestamp,
+      final long timestamp,
       final CheckpointType type) {
     checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
     checkpointInfo
@@ -77,7 +76,7 @@ public final class DbCheckpointState implements CheckpointState {
   public void setLatestBackupInfo(
       final long checkpointId,
       final long checkpointPosition,
-      final Instant timestamp,
+      final long timestamp,
       final CheckpointType type) {
     checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
     checkpointInfo
@@ -103,10 +102,10 @@ public final class DbCheckpointState implements CheckpointState {
   }
 
   @Override
-  public Instant getLatestBackupTimestamp() {
+  public long getLatestBackupTimestamp() {
     checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getTimestamp() : Instant.MIN;
+    return info != null ? info.getTimestamp() : -1L;
   }
 
   @Override
@@ -117,6 +116,6 @@ public final class DbCheckpointState implements CheckpointState {
   private CheckpointType getCheckpointType(final String latestCheckpointKey) {
     checkpointInfoKey.wrapString(latestCheckpointKey);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getType() : CheckpointType.NONE;
+    return info != null ? info.getType() : null;
   }
 }

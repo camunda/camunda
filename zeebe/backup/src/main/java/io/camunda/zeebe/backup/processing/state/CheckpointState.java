@@ -8,7 +8,6 @@
 package io.camunda.zeebe.backup.processing.state;
 
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-import java.time.Instant;
 
 public interface CheckpointState {
 
@@ -29,7 +28,7 @@ public interface CheckpointState {
   long getLatestCheckpointPosition();
 
   /** Returns the type of the last checkpoint with a successful backup. */
-  Instant getLatestCheckpointTimestamp();
+  long getLatestCheckpointTimestamp();
 
   /** Returns the type of the last created checkpoint. */
   CheckpointType getLatestCheckpointType();
@@ -45,7 +44,7 @@ public interface CheckpointState {
   void setLatestCheckpointInfo(
       final long checkpointId,
       final long checkpointPosition,
-      final Instant timestamp,
+      final long timestamp,
       final CheckpointType type);
 
   /**
@@ -59,7 +58,7 @@ public interface CheckpointState {
   void setLatestBackupInfo(
       final long checkpointId,
       final long checkpointPosition,
-      final Instant timestamp,
+      final long timestamp,
       final CheckpointType type);
 
   /** Returns the id of the last checkpoint with a successful backup. */
@@ -69,7 +68,7 @@ public interface CheckpointState {
   long getLatestBackupPosition();
 
   /** Returns the timestamp of the last checkpoint with a successful backup. */
-  Instant getLatestBackupTimestamp();
+  long getLatestBackupTimestamp();
 
   /** Returns the type of the last created backup. */
   CheckpointType getLatestBackupType();

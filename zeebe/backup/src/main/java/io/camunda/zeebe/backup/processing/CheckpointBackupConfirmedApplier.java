@@ -9,7 +9,6 @@ package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
-import java.time.Instant;
 
 public class CheckpointBackupConfirmedApplier {
   private final CheckpointState checkpointState;
@@ -19,14 +18,10 @@ public class CheckpointBackupConfirmedApplier {
   }
 
   public void apply(final CheckpointRecord checkpointRecord) {
-    final var timestamp =
-        checkpointRecord.getCheckpointTimestamp() <= 0
-            ? null
-            : Instant.ofEpochMilli(checkpointRecord.getCheckpointTimestamp());
     checkpointState.setLatestBackupInfo(
         checkpointRecord.getCheckpointId(),
         checkpointRecord.getCheckpointPosition(),
-        timestamp,
+        checkpointRecord.getCheckpointTimestamp(),
         checkpointRecord.getCheckpointType());
   }
 }

@@ -12,7 +12,6 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-import java.time.Instant;
 
 /** Checkpoint info stored in db in msgpack format. */
 public final class CheckpointInfo extends UnpackedObject implements DbValue {
@@ -48,13 +47,12 @@ public final class CheckpointInfo extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public Instant getTimestamp() {
-    return timestamp.getValue() > 0 ? Instant.ofEpochMilli(timestamp.getValue()) : null;
+  public long getTimestamp() {
+    return timestamp.getValue();
   }
 
-  public CheckpointInfo setTimestamp(final Instant timestamp) {
-    final var millis = timestamp == null ? -1L : timestamp.toEpochMilli();
-    this.timestamp.setValue(millis);
+  public CheckpointInfo setTimestamp(final long timestamp) {
+    this.timestamp.setValue(timestamp);
     return this;
   }
 

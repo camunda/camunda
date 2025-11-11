@@ -11,7 +11,6 @@ import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
-import java.time.Instant;
 import java.util.Set;
 
 public final class CheckpointCreatedEventApplier {
@@ -31,11 +30,10 @@ public final class CheckpointCreatedEventApplier {
   }
 
   public void apply(final CheckpointRecord checkpointRecord) {
-    final var timestamp = checkpointRecord.getCheckpointTimestamp();
     checkpointState.setLatestCheckpointInfo(
         checkpointRecord.getCheckpointId(),
         checkpointRecord.getCheckpointPosition(),
-        timestamp > 0 ? Instant.ofEpochMilli(timestamp) : null,
+        checkpointRecord.getCheckpointTimestamp(),
         checkpointRecord.getCheckpointType());
     checkpointListeners.forEach(
         listener -> listener.onNewCheckpointCreated(checkpointState.getLatestCheckpointId()));
