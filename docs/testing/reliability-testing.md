@@ -38,6 +38,38 @@ With our load test, we pursue the following goals
   * Distributed system failures
 * Discover configuration/set up issues in different environments, SM/SaaS
 
+### Variations
+
+There exist various variations of load tests in the wild to answer different questions. The approaches to achieve them are pretty similar and can be covered under the category of load tests, which is to answer the question “What is the load we can handle? And how does the system behave?”.
+
+* Normal [Load test](https://en.wikipedia.org/wiki/Load_testing)  
+  * _Question: How does the system behave under normal workload? _ 
+  * This is to understand, in general, how the system behaves, providing a base for comparison.  
+  * Resources:  
+    * [1](https://en.wikipedia.org/wiki/Load_testing)   
+    * [2](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
+* [Stress test](https://en.wikipedia.org/wiki/Stress_testing)  
+  * _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?  _
+  * Here we put the system under high load up to maximum load. We want to find out what the limit is and where it starts to break.  
+  * These tests are commonly not long-running.  
+  * Resources  
+    * [3](https://en.wikipedia.org/wiki/Stress_testing)   
+    * [4](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
+* Spike test  
+  * _Question: How does the system handle spikes? Can it recover? What is max etc. _ 
+  * Here we put the system also under high load up to maximum load, but only for a short period of time. We want to understand how the system behaves and recovers afterwards.  
+  * These tests are commonly not long-running.  
+  * Resources  
+    * [5](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
+* [Endurance or soak test](https://en.wikipedia.org/wiki/Soak_testing)  
+  * _Question: Can it handle high load (not maximum) over a long time? Reliable?_   
+  * Discovery of memory or thread leaks and performance and stability issues over time  
+  * Resources
+    * [6](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
+    * [7](https://www.geeksforgeeks.org/software-testing/software-testing-endurance-testing/) 
+
+Our load tests can also be viewed as **endurance or soak tests**, as they typically share the same goals.
+
 ### Setup
 
 ![setup](assets/setup.png)
