@@ -63,6 +63,8 @@ public interface MutableBatchOperationState extends BatchOperationState {
    */
   void removeItemKeys(final long batchOperationKey, final Set<Long> itemKeys);
 
+  void removeChunkAndBatchFromState(final long batchOperationKey, final Set<Long> itemKeys);
+
   /**
    * Marks a batch operation as cancelled.
    *

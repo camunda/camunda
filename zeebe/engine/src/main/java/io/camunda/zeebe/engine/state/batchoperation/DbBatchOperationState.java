@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -202,6 +203,23 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     updateBatchAndChunkAfterRemoval(batch, chunk);
   }
 
+  @VisibleForTesting
+  public void removeChunkAndBatchFromState(final long batchOperationKey, final Set<Long> itemKeys) {
+    final var batch = get(batchOperationKey).orElse(null);
+    if (batch == null) {
+      LOGGER.error(
+          "Batch operation with key {} not found, cannot remove itemKeys from it.",
+          batchOperationKey);
+      return;
+    }
+
+    final var chunk = getMinChunk(batch);
+    batch.removeChunkKey(chunk.getKey());
+
+    batchKey.wrapLong(batchOperationKey);
+    batchOperationColumnFamily.update(batchKey, batch);
+  }
+
   @Override
   public void cancel(final long batchOperationKey) {
     LOGGER.trace("Cancel batch operation with key {}", batchOperationKey);
@@ -336,11 +354,21 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   private PersistedBatchOperationChunk createNewChunk(final PersistedBatchOperation batch) {
     final var currentChunkKey = batch.nextChunkKey();
+    final var batchOperationKey = batch.getKey();
     batch.addChunkKey(currentChunkKey);
 
     final var batchChunk = new PersistedBatchOperationChunk();
-    batchChunk.setKey(currentChunkKey).setBatchOperationKey(batch.getKey());
+    batchChunk.setKey(currentChunkKey).setBatchOperationKey(batchOperationKey);
     chunkKey.wrapLong(batchChunk.getKey());
+
+    final var existingChunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
+    if (existingChunk != null) {
+      LOGGER.debug(
+          "Chunk with key {} already exists for batch operation {}, returning existing chunk",
+          currentChunkKey,
+          batchOperationKey);
+      return existingChunk;
+    }
 
     batchOperationChunksColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
 
