@@ -182,7 +182,7 @@ export class IdentityAuthorizationsPage {
         await this.selectResourceType(authorization.resourceType);
         await this.fillResourceId(authorization.resourceId);
         await this.selectAccessPermissions(authorization.accessPermissions);
-        await this.createAuthorizationSubmitButton.click();
+        await this.createAuthorizationSubmitButton.click({timeout: 15000});
         await expect(this.createAuthorizationModal).toBeHidden({
           timeout: 15000,
         });
