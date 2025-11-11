@@ -11,8 +11,7 @@ import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.handler.sm.AuthorizationMigrationHandler;
 import io.camunda.migration.identity.handler.sm.ClientMigrationHandler;
-import io.camunda.migration.identity.handler.sm.GroupAuthorizationMigrationHandler;
-import io.camunda.migration.identity.handler.sm.GroupRoleMigrationHandler;
+import io.camunda.migration.identity.handler.sm.GroupMigrationHandler;
 import io.camunda.migration.identity.handler.sm.RoleMigrationHandler;
 import io.camunda.migration.identity.handler.sm.TenantMigrationHandler;
 import io.camunda.migration.identity.handler.sm.UserRoleMigrationHandler;
@@ -45,28 +44,22 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   @Order(2)
-  public GroupRoleMigrationHandler groupRoleMigrationHandler(
+  public GroupMigrationHandler groupMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
+      final AuthorizationServices authorizationServices,
       final RoleServices roleServices,
       final CamundaAuthentication authentication,
       final IdentityMigrationProperties migrationProperties) {
-    return new GroupRoleMigrationHandler(
-        managementIdentityClient, roleServices, authentication, migrationProperties);
+    return new GroupMigrationHandler(
+        managementIdentityClient,
+        authorizationServices,
+        roleServices,
+        authentication,
+        migrationProperties);
   }
 
   @Bean
   @Order(3)
-  public GroupAuthorizationMigrationHandler groupAuthorizationMigrationHandler(
-      final ManagementIdentityClient managementIdentityClient,
-      final AuthorizationServices authorizationServices,
-      final CamundaAuthentication authentication,
-      final IdentityMigrationProperties migrationProperties) {
-    return new GroupAuthorizationMigrationHandler(
-        managementIdentityClient, authorizationServices, authentication, migrationProperties);
-  }
-
-  @Bean
-  @Order(4)
   public UserRoleMigrationHandler userRoleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -77,7 +70,7 @@ public class SMKeycloakMigrationHandlerConfig {
   }
 
   @Bean
-  @Order(5)
+  @Order(4)
   public ClientMigrationHandler clientMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -88,7 +81,7 @@ public class SMKeycloakMigrationHandlerConfig {
   }
 
   @Bean
-  @Order(6)
+  @Order(5)
   public AuthorizationMigrationHandler authorizationMigrationHandler(
       final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
@@ -99,7 +92,7 @@ public class SMKeycloakMigrationHandlerConfig {
   }
 
   @Bean
-  @Order(7)
+  @Order(6)
   public TenantMigrationHandler tenantMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final TenantServices tenantService,
