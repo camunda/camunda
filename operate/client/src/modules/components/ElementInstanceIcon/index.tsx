@@ -121,72 +121,41 @@ const ElementInstanceIcon: React.FC<Props> = ({
     ...rest,
   };
 
-  if (elementInstanceType === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
-    return <FlowNodeTaskSubProcessAdhocInnerInstance {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'AD_HOC_SUB_PROCESS') {
-    return <FlowNodeTaskSubProcessAdhoc {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'EXCLUSIVE_GATEWAY') {
-    return <FlowNodeGatewayExclusive {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'INCLUSIVE_GATEWAY') {
-    return <FlowNodeGatewayInclusive {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'PARALLEL_GATEWAY') {
-    return <FlowNodeGatewayParallel {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'EVENT_BASED_GATEWAY') {
-    return <FlowNodeGatewayEventBased {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'SERVICE_TASK') {
-    return <FlowNodeTaskService {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'USER_TASK') {
-    return <FlowNodeTaskUser {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'BUSINESS_RULE_TASK') {
-    return <FlowNodeTaskBusinessRule {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'SCRIPT_TASK') {
-    return <FlowNodeTaskScript {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'RECEIVE_TASK') {
-    return <FlowNodeTaskReceive {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'SEND_TASK') {
-    return <FlowNodeTaskSend {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'MANUAL_TASK') {
-    return <FlowNodeTaskManual {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'CALL_ACTIVITY') {
-    return <FlowNodeCallActivity {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'PROCESS') {
-    return <FlowNodeProcess {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'EVENT_SUB_PROCESS') {
-    return <FlowNodeEventSubprocess {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'SUB_PROCESS') {
-    return <FlowNodeTaskSubProcess {...svgProps} />;
+  switch (elementInstanceType) {
+    case 'AD_HOC_SUB_PROCESS_INNER_INSTANCE':
+      return <FlowNodeTaskSubProcessAdhocInnerInstance {...svgProps} />;
+    case 'AD_HOC_SUB_PROCESS':
+      return <FlowNodeTaskSubProcessAdhoc {...svgProps} />;
+    case 'EXCLUSIVE_GATEWAY':
+      return <FlowNodeGatewayExclusive {...svgProps} />;
+    case 'INCLUSIVE_GATEWAY':
+      return <FlowNodeGatewayInclusive {...svgProps} />;
+    case 'PARALLEL_GATEWAY':
+      return <FlowNodeGatewayParallel {...svgProps} />;
+    case 'EVENT_BASED_GATEWAY':
+      return <FlowNodeGatewayEventBased {...svgProps} />;
+    case 'SERVICE_TASK':
+      return <FlowNodeTaskService {...svgProps} />;
+    case 'USER_TASK':
+      return <FlowNodeTaskUser {...svgProps} />;
+    case 'BUSINESS_RULE_TASK':
+      return <FlowNodeTaskBusinessRule {...svgProps} />;
+    case 'SCRIPT_TASK':
+      return <FlowNodeTaskScript {...svgProps} />;
+    case 'RECEIVE_TASK':
+      return <FlowNodeTaskReceive {...svgProps} />;
+    case 'SEND_TASK':
+      return <FlowNodeTaskSend {...svgProps} />;
+    case 'MANUAL_TASK':
+      return <FlowNodeTaskManual {...svgProps} />;
+    case 'CALL_ACTIVITY':
+      return <FlowNodeCallActivity {...svgProps} />;
+    case 'PROCESS':
+      return <FlowNodeProcess {...svgProps} />;
+    case 'EVENT_SUB_PROCESS':
+      return <FlowNodeEventSubprocess {...svgProps} />;
+    case 'SUB_PROCESS':
+      return <FlowNodeTaskSubProcess {...svgProps} />;
   }
 
   if (diagramBusinessObject === undefined) {
@@ -342,16 +311,13 @@ const ElementInstanceIcon: React.FC<Props> = ({
       }
   }
 
-  if (elementInstanceType === 'START_EVENT') {
-    return <FlowNodeEventStart {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'END_EVENT') {
-    return <FlowNodeEventEnd {...svgProps} />;
-  }
-
-  if (elementInstanceType === 'INTERMEDIATE_THROW_EVENT') {
-    return <FlowNodeEventIntermediateThrow {...svgProps} />;
+  switch (elementInstanceType) {
+    case 'START_EVENT':
+      return <FlowNodeEventStart {...svgProps} />;
+    case 'END_EVENT':
+      return <FlowNodeEventEnd {...svgProps} />;
+    case 'INTERMEDIATE_THROW_EVENT':
+      return <FlowNodeEventIntermediateThrow {...svgProps} />;
   }
 
   return <FlowNodeTask {...svgProps} />;
