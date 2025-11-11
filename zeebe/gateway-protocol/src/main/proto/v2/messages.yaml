@@ -330,7 +330,7 @@ components:
         processDefinitionKey:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
-          description: The process definition key associated with this correlated message subscription. This only works for data created with 8.9 and onwards. Message subscriptions from prior versions don't contain this data and cannot be found.
+          description: The process definition key associated with this correlated message subscription. This only works for data created with 8.9 and later.
         processDefinitionId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -531,7 +531,7 @@ components:
         processDefinitionKey:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
-          description: The process definition key associated with this correlated message subscription. This only works for data created with 8.9 and onwards. Correlated message subscriptions from prior versions don't contain this data and cannot be found.
+          description: The process definition key associated with this correlated message subscription. For intermediate message events, this only works for data created with 8.9 and later.
         processInstanceKey:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'

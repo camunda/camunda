@@ -24,7 +24,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@MultiDbTest(DatabaseType.RDBMS)
+@MultiDbTest
 public class MessageSubscriptionSearchTest {
 
   private static final int NUMBER_OF_MESSAGE_SUBSCRIPTIONS = 3;

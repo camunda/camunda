@@ -13,7 +13,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EVENT_SOURCE_TYPE;
@@ -44,7 +43,6 @@ public class MessageSubscriptionFilterTransformer
         List.of(messageSubscriptionTerm),
         longOperations(KEY, filter.messageSubscriptionKeyOperations()),
         stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()),
-        longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()),
         longOperations(PROCESS_KEY, filter.processDefinitionKeyOperations()),
         longOperations("processInstanceKey", filter.processInstanceKeyOperations()),
         stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()),
