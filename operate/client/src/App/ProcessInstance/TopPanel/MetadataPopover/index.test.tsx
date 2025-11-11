@@ -302,7 +302,7 @@ describe('MetadataPopover', () => {
     );
 
     expect(
-      screen.getByText(/Element "Activity_0zqism7" 2251799813699889 Metadata/),
+      screen.getByText(/Element "Service Task" 2251799813699889 Metadata/),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
 
@@ -622,12 +622,12 @@ describe('MetadataPopover', () => {
 
     renderPopover();
 
-    await waitFor(() => {
-      expect(screen.getByText('Called Decision Instance')).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByText('Called Decision Instance'),
+    ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('link', {
+      await screen.findByRole('link', {
         name: /View Approval Rules instance 9876543210/,
       }),
     ).toBeInTheDocument();

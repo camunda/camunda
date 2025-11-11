@@ -16,37 +16,6 @@ import type {
   DecisionInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-type InstanceMetadata = {
-  elementInstanceKey: string;
-  elementId: string;
-  elementName?: string;
-  type: ElementInstance['type'];
-  userTaskState?: UserTask['state'];
-  elementInstanceState: ElementInstance['state'];
-  startDate: string;
-  endDate: string | null;
-  processDefinitionId?: string;
-  processInstanceKey?: string;
-  processDefinitionKey?: string;
-  hasIncident?: boolean;
-  incidentKey?: string;
-  tenantId?: string;
-  calledProcessInstanceId: string | null;
-  calledProcessDefinitionName: string | null;
-  calledDecisionInstanceId: string | null;
-  calledDecisionDefinitionName: string | null;
-  jobRetries: number | null;
-  elementType?: string;
-  eventId?: string;
-  jobType?: string | null;
-  jobWorker?: string | null;
-  jobDeadline?: string | null;
-  jobCustomHeaders: Record<string, unknown> | null;
-  jobKey?: string | null;
-  messageName?: string | null;
-  correlationKey?: string | null;
-} & Partial<UserTask>;
-
 type UserTaskSubset = Pick<
   UserTask,
   | 'dueDate'
@@ -64,15 +33,27 @@ type UserTaskSubset = Pick<
   | 'priority'
 >;
 
-function createInstanceMetadata(
+/**
+ * Creates a JSON string representation of element instance metadata
+ * for display in the metadata modal.
+ *
+ * This function merges data from multiple sources (element instance, job,
+ * process instances, message subscriptions, decision instances, user tasks,
+ * and incidents) into a single JSON string.
+ */
+export function createMetadataJson(
   elementInstance: ElementInstance,
+  incident: {
+    errorType: {id: string; name: string};
+    errorMessage: string;
+  } | null,
   job?: Job,
   calledProcessInstance?: ProcessInstance,
   messageSubscription?: MessageSubscription,
   calledDecisionDefinition?: DecisionDefinition,
   calledDecisionInstance?: DecisionInstance,
-  userTask: Partial<UserTaskSubset> | null = {},
-): InstanceMetadata {
+  userTask?: Partial<UserTaskSubset> | null,
+): string {
   const {
     creationDate,
     completionDate,
@@ -91,12 +72,9 @@ function createInstanceMetadata(
 
   const {messageName, correlationKey} = messageSubscription ?? {};
 
-  return {
-    calledProcessInstanceId: calledProcessInstance?.processInstanceKey ?? null,
+  return JSON.stringify({
     calledProcessDefinitionName:
       calledProcessInstance?.processDefinitionName ?? null,
-    calledDecisionInstanceId:
-      calledDecisionInstance?.decisionEvaluationInstanceKey ?? null,
     calledDecisionDefinitionName:
       calledDecisionInstance?.decisionDefinitionName ||
       calledDecisionDefinition?.name ||
@@ -119,9 +97,13 @@ function createInstanceMetadata(
     processInstanceKey: elementInstance.processInstanceKey,
     processDefinitionKey: elementInstance.processDefinitionKey,
     hasIncident: elementInstance.hasIncident,
-    incidentKey: elementInstance.incidentKey,
     tenantId: elementInstance.tenantId,
     elementType: elementInstance.type,
+    incidentErrorType: incident?.errorType.name || null,
+    incidentErrorMessage: incident?.errorMessage || null,
+    calledProcessInstanceKey: calledProcessInstance?.processInstanceKey ?? null,
+    calledDecisionInstanceKey:
+      calledDecisionInstance?.decisionEvaluationInstanceKey ?? null,
     creationDate,
     completionDate,
     customHeaders,
@@ -136,9 +118,5 @@ function createInstanceMetadata(
     externalFormReference,
     messageName,
     correlationKey,
-  };
+  });
 }
-
-export type {InstanceMetadata};
-
-export {createInstanceMetadata};
