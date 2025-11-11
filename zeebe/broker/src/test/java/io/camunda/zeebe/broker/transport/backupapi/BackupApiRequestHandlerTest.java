@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -179,7 +180,14 @@ final class BackupApiRequestHandlerTest {
     final BackupStatus status =
         new BackupStatusImpl(
             new BackupIdentifierImpl(1, 1, checkpointId),
-            Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3, "test")),
+            Optional.of(
+                new BackupDescriptorImpl(
+                    Optional.of("s-id"),
+                    100,
+                    3,
+                    "test",
+                    Instant.now(),
+                    CheckpointType.MANUAL_BACKUP)),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty(),
             Optional.of(createdAt),
@@ -289,7 +297,14 @@ final class BackupApiRequestHandlerTest {
     final BackupStatus status =
         new BackupStatusImpl(
             new BackupIdentifierImpl(1, 1, 2),
-            Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3, "test")),
+            Optional.of(
+                new BackupDescriptorImpl(
+                    Optional.of("s-id"),
+                    100,
+                    3,
+                    "test",
+                    Instant.now(),
+                    CheckpointType.MANUAL_BACKUP)),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty(),
             Optional.of(createdAt),
