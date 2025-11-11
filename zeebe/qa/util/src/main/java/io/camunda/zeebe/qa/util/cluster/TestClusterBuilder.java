@@ -8,7 +8,7 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +36,15 @@ public final class TestClusterBuilder {
       (id, broker) -> {
         broker.withUnauthenticatedAccess();
       };
+  private BiConsumer<MemberId, TestStandaloneBroker> unifiedBrokerConfig =
+      (id, broker) -> {
+        broker.withUnauthenticatedAccess();
+      };
   private BiConsumer<MemberId, TestStandaloneGateway> gatewayConfig =
+      (id, gateway) -> {
+        gateway.withUnauthenticatedAccess();
+      };
+  private BiConsumer<MemberId, TestStandaloneGateway> unifiedGatewayConfig =
       (id, gateway) -> {
         gateway.withUnauthenticatedAccess();
       };
@@ -214,6 +222,12 @@ public final class TestClusterBuilder {
     return this;
   }
 
+  public TestClusterBuilder withUnifiedGatewayConfig(
+      final Consumer<TestStandaloneGateway> modifier) {
+    unifiedGatewayConfig = (memberId, gateway) -> modifier.accept(gateway);
+    return this;
+  }
+
   /**
    * Sets the configuration function that will be executed in the {@link #build()} method on each
    * broker. The first argument is the broker ID, and the second argument is the broker itself.
@@ -242,6 +256,11 @@ public final class TestClusterBuilder {
    */
   public TestClusterBuilder withBrokerConfig(final Consumer<TestStandaloneBroker> modifier) {
     brokerConfig = (id, broker) -> modifier.accept(broker);
+    return this;
+  }
+
+  public TestClusterBuilder withUnifiedBrokerConfig(final Consumer<TestStandaloneBroker> modifier) {
+    unifiedBrokerConfig = (id, broker) -> modifier.accept(broker);
     return this;
   }
 
@@ -341,32 +360,34 @@ public final class TestClusterBuilder {
     // AFTER the base broker configuration
     final var contactPoints = getInitialContactPoints();
     brokers.values().stream()
-        .map(TestStandaloneBroker::brokerConfig)
-        .map(BrokerCfg::getCluster)
+        .map(TestStandaloneBroker::unifiedConfig)
+        .map(Camunda::getCluster)
         .forEach(cfg -> cfg.setInitialContactPoints(contactPoints));
   }
 
   private TestStandaloneBroker createBroker(final int index) {
     final TestStandaloneBroker broker =
         new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg -> {
-                  final var cluster = cfg.getCluster();
+            .withUnifiedConfig(
+                uc -> {
+                  final var cluster = uc.getCluster();
                   if (setNodeId) {
                     cluster.setNodeId(index);
-                  }
-                  cluster.setPartitionsCount(partitionsCount);
+                    }
+                  cluster.setPartitionCount(partitionsCount);
                   cluster.setReplicationFactor(replicationFactor);
-                  cluster.setClusterSize(brokersCount);
-                  cluster.setClusterName(name);
+                  cluster.setSize(brokersCount);
+                  cluster.setName(name);
                 })
-            .withBrokerConfig(
-                cfg -> {
+            .withUnifiedConfig(
+                uc -> {
                   final var replicas = (partitionsCount * replicationFactor) / brokersCount;
-                  cfg.getThreads().setIoThreadCount(replicas);
-                  cfg.getThreads().setCpuThreadCount(replicas);
+                  uc.getSystem().setIoThreadCount(replicas);
+                  uc.getSystem().setCpuThreadCount(replicas);
                 })
-            .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
+            .withUnifiedConfig(
+                uc -> uc.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false))
+            .withGatewayEnabled(useEmbeddedGateway)
             .withRecordingExporter(useRecordingExporter);
     return broker;
   }
@@ -385,13 +406,14 @@ public final class TestClusterBuilder {
   private TestStandaloneGateway createGateway(final String id) {
     final TestStandaloneGateway gateway =
         new TestStandaloneGateway()
-            .withGatewayConfig(
-                cfg -> {
-                  final var cluster = cfg.getCluster();
-                  cluster.setMemberId(id);
-                  cluster.setClusterName(name);
+            .withUnifiedConfig(
+                uc -> {
+                  final var cluster = uc.getCluster();
+                  cluster.setName(name);
                   cluster.setInitialContactPoints(getInitialContactPoints());
-                });
+                })
+            // TODO KPO not available in UC
+            .withProperty("zeebe.gateway.cluster.memberId", id);
     return gateway;
   }
 

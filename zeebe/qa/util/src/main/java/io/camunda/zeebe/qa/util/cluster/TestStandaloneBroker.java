@@ -63,7 +63,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final Camunda unifiedConfig;
   private final CamundaSecurityProperties securityConfig;
-  private final boolean isGatewayEnabled = true;
+  private boolean isGatewayEnabled = true;
 
   public TestStandaloneBroker() {
     super(
@@ -131,17 +131,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public int mappedPort(final TestZeebePort port) {
-    // Ports are set via properties since they're dynamically allocated at test creation
-    // and not part of unified config structure yet
-    final var mport =
-        switch (port) {
-          case COMMAND -> unifiedConfig.getCluster().getNetwork().getCommandApi().getPort();
-          case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
-          case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
-          default -> super.mappedPort(port);
-        };
-
-    return mport;
+    return switch (port) {
+      case COMMAND -> unifiedConfig.getCluster().getNetwork().getCommandApi().getPort();
+      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
+      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
+      default -> super.mappedPort(port);
+    };
   }
 
   @Override
@@ -194,13 +189,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(unifiedConfig.getCluster().nodeId()));
+    return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
   }
 
   @Override
   public String host() {
-    // Network host configuration via property (not in unified config yet)
-    return property("zeebe.broker.network.host", String.class, "0.0.0.0");
+    return unifiedConfig.getCluster().getNetwork().getHost();
   }
 
   @Override
@@ -208,10 +202,17 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return brokerHealth();
   }
 
+  // TODO KPO add gateway enabled to unified configuration?
   @Override
   public boolean isGateway() {
     // Gateway enable flag is set via property (not fully in unified config yet)
     return isGatewayEnabled;
+  }
+
+  public TestStandaloneBroker withGatewayEnabled(final boolean enabled) {
+    // Gateway enable flag is set via property (not fully in unified config yet)
+    isGatewayEnabled = enabled;
+    return this;
   }
 
   @Override
@@ -509,6 +510,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .getInternalApi()
         .setPort(SocketUtil.getNextAddress().getPort());
     unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+
+    unifiedConfig.getCluster().getNetwork().setHost("0.0.0.0");
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {

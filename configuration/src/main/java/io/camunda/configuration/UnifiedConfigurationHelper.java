@@ -65,6 +65,16 @@ public class UnifiedConfigurationHelper {
       final BackwardsCompatibilityMode backwardsCompatibilityMode,
       final Set<String> legacyProperties) {
 
+    // If the environment is not set, it is assumed that the helper is used
+    // in a non-Spring context, and the validation of backward compatibility
+    // is not necessary.
+    // This is the case when running the test applications
+    // (e.g., TestCluster, TestStandaloneBroker, TestStandaloneGateway).
+    // These applications are configured using only the unified configuration.
+    if (environment == null) {
+      return newValue;
+    }
+
     if (backwardsCompatibilityMode == null) {
       throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
     }

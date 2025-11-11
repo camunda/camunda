@@ -58,7 +58,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
     unifiedConfig.getApi().getGrpc().setAddress("0.0.0.0");
     unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getCluster().getNetwork().setHost("0.0.0.0");
+    // unifiedConfig.getCluster().getNetwork().setHost("0.0.0.0");
     unifiedConfig
         .getCluster()
         .getNetwork()
@@ -83,6 +83,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     return this;
   }
 
+  // TODO KPO memeberId does not exist in UC, add?
   @Override
   public MemberId nodeId() {
     // Gateway member ID via property
@@ -91,7 +92,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
   @Override
   public String host() {
-    return property("zeebe.gateway.network.host", String.class, "0.0.0.0");
+    return unifiedConfig.getApi().getGrpc().getAddress();
   }
 
   @Override
@@ -102,8 +103,8 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   @Override
   public int mappedPort(final TestZeebePort port) {
     return switch (port) {
-      case GATEWAY -> property("zeebe.gateway.network.port", Integer.class, 0);
-      case CLUSTER -> property("zeebe.gateway.cluster.port", Integer.class, 0);
+      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
+      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
   }
