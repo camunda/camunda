@@ -31,7 +31,7 @@ jobs:
         run: |
           # List all `stable/8.*` branches
           # Sort them in desc order
-          # Exclude versions that don't require daily QA - for example, 8.4 in extended support
+          # Exclude versions that don't require daily QA - for example, 8.5 in extended support
           # Remove the `origin/` prefix
           # Transform to json-formatted objects with branch and generation_template fields
           # Transform them to json-formatted array of those objects
@@ -40,6 +40,7 @@ jobs:
             git ls-remote origin "refs/heads/stable/8.*" | awk '{print $2}' | sed 's|refs/heads/||' \
               | sort -Vr \
               | grep -v '^stable/8.4$' \
+              | grep -v '^stable/8.5$' \
               | while read -r branch; do
                   version="${branch#stable/}"
                   printf '{"branch":"%s","generation_template":"Camunda %s+gen1"}\n' "$branch" "$version"
@@ -48,8 +49,6 @@ jobs:
                   map(
                     if .branch == "stable/8.8" then
                       .generation_template = "Camunda 8.8-SNAPSHOT"
-                    elif .branch == "stable/8.5" then
-                      .generation_template = "Camunda 8.5+gen27"
                     else
                       .
                     end
