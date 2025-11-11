@@ -27,7 +27,7 @@ public interface CheckpointState {
    */
   long getLatestCheckpointPosition();
 
-  /** Returns the type of the last checkpoint with a successful backup. */
+  /** Returns the timestamp of the last checkpoint with a successful backup. */
   long getLatestCheckpointTimestamp();
 
   /** Returns the type of the last created checkpoint. */

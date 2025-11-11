@@ -33,23 +33,17 @@ public final class DbCheckpointState implements CheckpointState {
 
   @Override
   public long getLatestCheckpointId() {
-    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
-    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getId() : NO_CHECKPOINT;
+    return getCheckpointId(LATEST_CHECKPOINT_KEY);
   }
 
   @Override
   public long getLatestCheckpointPosition() {
-    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
-    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getPosition() : NO_CHECKPOINT;
+    return getCheckpointPosition(LATEST_CHECKPOINT_KEY);
   }
 
   @Override
   public long getLatestCheckpointTimestamp() {
-    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
-    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getTimestamp() : -1L;
+    return getCheckpointTimestamp(LATEST_CHECKPOINT_KEY);
   }
 
   @Override
@@ -89,23 +83,17 @@ public final class DbCheckpointState implements CheckpointState {
 
   @Override
   public long getLatestBackupId() {
-    checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
-    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getId() : NO_CHECKPOINT;
+    return getCheckpointId(LATEST_BACKUP_KEY);
   }
 
   @Override
   public long getLatestBackupPosition() {
-    checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
-    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getPosition() : NO_CHECKPOINT;
+    return getCheckpointPosition(LATEST_BACKUP_KEY);
   }
 
   @Override
   public long getLatestBackupTimestamp() {
-    checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
-    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
-    return info != null ? info.getTimestamp() : -1L;
+    return getCheckpointTimestamp(LATEST_BACKUP_KEY);
   }
 
   @Override
@@ -113,8 +101,26 @@ public final class DbCheckpointState implements CheckpointState {
     return getCheckpointType(LATEST_BACKUP_KEY);
   }
 
-  private CheckpointType getCheckpointType(final String latestCheckpointKey) {
-    checkpointInfoKey.wrapString(latestCheckpointKey);
+  private long getCheckpointId(final String key) {
+    checkpointInfoKey.wrapString(key);
+    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
+    return info != null ? info.getId() : NO_CHECKPOINT;
+  }
+
+  private long getCheckpointPosition(final String key) {
+    checkpointInfoKey.wrapString(key);
+    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
+    return info != null ? info.getPosition() : NO_CHECKPOINT;
+  }
+
+  private long getCheckpointTimestamp(final String key) {
+    checkpointInfoKey.wrapString(key);
+    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
+    return info != null ? info.getTimestamp() : -1L;
+  }
+
+  private CheckpointType getCheckpointType(final String key) {
+    checkpointInfoKey.wrapString(key);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
     return info != null ? info.getType() : null;
   }
