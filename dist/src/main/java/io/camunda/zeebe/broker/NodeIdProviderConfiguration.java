@@ -72,7 +72,7 @@ public class NodeIdProviderConfiguration {
                   "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
             }
             final var taskId = config.getTaskId().orElse(UUID.randomUUID().toString());
-            LOG.info("Node configured with taskId {}", taskId);
+            LOG.debug("Node configured with taskId {}", taskId);
             final var repository =
                 new RepositoryNodeIdProvider(
                     nodeIdRepository.get(),
