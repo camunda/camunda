@@ -43,7 +43,7 @@ With our load test, we pursue the following goals
 There exist various variations of load tests in the wild to answer different questions. The approaches to achieve them are pretty similar and can be covered under the category of load tests, which is to answer the question “What is the load we can handle? And how does the system behave?”.
 
 * Normal [Load test](https://en.wikipedia.org/wiki/Load_testing)  
-  * _Question: How does the system behave under normal workload? _ 
+  * _Question: How does the system behave under normal workload?_ 
   * This is to understand, in general, how the system behaves, providing a base for comparison.  
   * Resources:  
     * [1](https://en.wikipedia.org/wiki/Load_testing)   
