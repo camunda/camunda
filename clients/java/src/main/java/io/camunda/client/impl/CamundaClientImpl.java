@@ -311,7 +311,7 @@ import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatist
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
 import io.camunda.client.impl.util.AddressUtil;
-import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
@@ -333,6 +333,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -342,7 +343,7 @@ public final class CamundaClientImpl implements CamundaClient {
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
-  private final ExecutorResource executorResource;
+  private final JobWorkerExecutors executorResource;
   private final List<Closeable> closeables = new CopyOnWriteArrayList<>();
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
@@ -380,7 +381,7 @@ public final class CamundaClientImpl implements CamundaClient {
       final CamundaClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
-      final ExecutorResource executorResource) {
+      final JobWorkerExecutors executorResource) {
     this(config, channel, gatewayStub, executorResource, buildHttpClient(config));
   }
 
@@ -388,7 +389,7 @@ public final class CamundaClientImpl implements CamundaClient {
       final CamundaClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
-      final ExecutorResource executorResource,
+      final JobWorkerExecutors executorResource,
       final HttpClient httpClient) {
     this.config = config;
     jsonMapper = config.getJsonMapper();
@@ -505,16 +506,34 @@ public final class CamundaClientImpl implements CamundaClient {
     }
   }
 
-  private static ExecutorResource buildExecutorService(
+  private static JobWorkerExecutors buildExecutorService(
       final CamundaClientConfiguration configuration) {
-    if (configuration.jobWorkerExecutor() != null) {
-      return new ExecutorResource(
-          configuration.jobWorkerExecutor(), configuration.ownsJobWorkerExecutor());
+
+    final ScheduledExecutorService scheduledExecutor;
+    final boolean ownsScheduledExecutor;
+
+    if (configuration.jobWorkerSchedulingExecutor() != null) {
+      scheduledExecutor = configuration.jobWorkerSchedulingExecutor();
+      ownsScheduledExecutor = configuration.ownsJobWorkerSchedulingExecutor();
+    } else {
+      scheduledExecutor = Executors.newScheduledThreadPool(1);
+      ownsScheduledExecutor = true;
     }
 
-    final int threadCount = configuration.getNumJobWorkerExecutionThreads();
-    final ScheduledExecutorService executor = Executors.newScheduledThreadPool(threadCount);
-    return new ExecutorResource(executor, true);
+    final ExecutorService jobHandlingExecutor;
+    final boolean ownsJobHandlingExecutor;
+
+    if (configuration.jobHandlingExecutor() != null) {
+      jobHandlingExecutor = configuration.jobHandlingExecutor();
+      ownsJobHandlingExecutor = configuration.ownsJobHandlingExecutor();
+    } else {
+      final int threadCount = configuration.getNumJobWorkerExecutionThreads();
+      jobHandlingExecutor = Executors.newFixedThreadPool(threadCount);
+      ownsJobHandlingExecutor = true;
+    }
+
+    return new JobWorkerExecutors(
+        scheduledExecutor, ownsScheduledExecutor, jobHandlingExecutor, ownsJobHandlingExecutor);
   }
 
   @Override
@@ -726,7 +745,12 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public JobWorkerBuilderStep1 newWorker() {
-    return new JobWorkerBuilderImpl(config, jobClient, executorResource.executor(), closeables);
+    return new JobWorkerBuilderImpl(
+        config,
+        jobClient,
+        executorResource.scheduledExecutor(),
+        executorResource.jobHandlingExecutor(),
+        closeables);
   }
 
   @Override

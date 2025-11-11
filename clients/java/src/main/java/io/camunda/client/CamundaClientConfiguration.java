@@ -21,6 +21,7 @@ import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
@@ -132,14 +133,39 @@ public interface CamundaClientConfiguration {
   int getMaxMetadataSize();
 
   /**
-   * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
+   * @deprecated Use {@link #jobWorkerSchedulingExecutor()} and {@link #jobHandlingExecutor()}
+   *     instead.
+   * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
    */
+  @Deprecated
   ScheduledExecutorService jobWorkerExecutor();
 
   /**
-   * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
+   * @deprecated Use {@link #jobWorkerSchedulingExecutor()} and {@link #jobHandlingExecutor()}
+   *     instead.
    */
+  @Deprecated
   boolean ownsJobWorkerExecutor();
+
+  /**
+   * @see CamundaClientBuilder#jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)
+   */
+  ScheduledExecutorService jobWorkerSchedulingExecutor();
+
+  /**
+   * @see CamundaClientBuilder#jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)
+   */
+  boolean ownsJobWorkerSchedulingExecutor();
+
+  /**
+   * @see CamundaClientBuilder#jobHandlingExecutor(ExecutorService, boolean)
+   */
+  ExecutorService jobHandlingExecutor();
+
+  /**
+   * @see CamundaClientBuilder#jobHandlingExecutor(ExecutorService, boolean)
+   */
+  boolean ownsJobHandlingExecutor();
 
   /**
    * @see CamundaClientBuilder#defaultJobWorkerStreamEnabled(boolean)

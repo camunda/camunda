@@ -27,6 +27,7 @@ import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
@@ -167,12 +168,32 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
 
   @Override
   public ScheduledExecutorService jobWorkerExecutor() {
-    return zeebeClientExecutorService.get();
+    return zeebeClientExecutorService.getScheduledExecutor();
   }
 
   @Override
   public boolean ownsJobWorkerExecutor() {
-    return zeebeClientExecutorService.isOwnedByCamundaClient();
+    return zeebeClientExecutorService.isScheduledExecutorOwnedByCamundaClient();
+  }
+
+  @Override
+  public ScheduledExecutorService jobWorkerSchedulingExecutor() {
+    return zeebeClientExecutorService.getScheduledExecutor();
+  }
+
+  @Override
+  public boolean ownsJobWorkerSchedulingExecutor() {
+    return zeebeClientExecutorService.isScheduledExecutorOwnedByCamundaClient();
+  }
+
+  @Override
+  public ExecutorService jobHandlingExecutor() {
+    return zeebeClientExecutorService.getJobHandlingExecutor();
+  }
+
+  @Override
+  public boolean ownsJobHandlingExecutor() {
+    return zeebeClientExecutorService.isJobHandlingExecutorOwnedByCamundaClient();
   }
 
   @Override

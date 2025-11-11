@@ -74,6 +74,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
@@ -128,8 +129,10 @@ public final class CamundaClientBuilderImpl
   private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private int maxMetadataSize = DEFAULT_MAX_METADATA_SIZE;
   private boolean streamEnabled = DEFAULT_STREAM_ENABLED;
-  private ScheduledExecutorService jobWorkerExecutor;
+  private ScheduledExecutorService jobWorkerSchedulingExecutor;
   private boolean ownsJobWorkerExecutor;
+  private ExecutorService jobHandlingExecutor;
+  private boolean ownsJobHandlingExecutor;
   private boolean useDefaultRetryPolicy;
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
   private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
@@ -241,12 +244,32 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public ScheduledExecutorService jobWorkerExecutor() {
-    return jobWorkerExecutor;
+    return jobWorkerSchedulingExecutor;
   }
 
   @Override
   public boolean ownsJobWorkerExecutor() {
     return ownsJobWorkerExecutor;
+  }
+
+  @Override
+  public ScheduledExecutorService jobWorkerSchedulingExecutor() {
+    return jobWorkerSchedulingExecutor;
+  }
+
+  @Override
+  public boolean ownsJobWorkerSchedulingExecutor() {
+    return ownsJobWorkerExecutor;
+  }
+
+  @Override
+  public ExecutorService jobHandlingExecutor() {
+    return jobHandlingExecutor;
+  }
+
+  @Override
+  public boolean ownsJobHandlingExecutor() {
+    return ownsJobHandlingExecutor;
   }
 
   @Override
@@ -478,8 +501,22 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder jobWorkerExecutor(
       final ScheduledExecutorService executor, final boolean takeOwnership) {
-    jobWorkerExecutor = executor;
+    return jobWorkerSchedulingExecutor(executor, takeOwnership);
+  }
+
+  @Override
+  public CamundaClientBuilder jobWorkerSchedulingExecutor(
+      final ScheduledExecutorService executor, final boolean takeOwnership) {
+    jobWorkerSchedulingExecutor = executor;
     ownsJobWorkerExecutor = takeOwnership;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder jobHandlingExecutor(
+      final ExecutorService executor, final boolean takeOwnership) {
+    jobHandlingExecutor = executor;
+    ownsJobHandlingExecutor = takeOwnership;
     return this;
   }
 
@@ -697,8 +734,10 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "overrideAuthority", overrideAuthority);
     BuilderUtils.appendProperty(sb, "maxMessageSize", maxMessageSize);
     BuilderUtils.appendProperty(sb, "maxMetadataSize", maxMetadataSize);
-    BuilderUtils.appendProperty(sb, "jobWorkerExecutor", jobWorkerExecutor);
+    BuilderUtils.appendProperty(sb, "jobWorkerExecutor", jobWorkerSchedulingExecutor);
     BuilderUtils.appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
+    BuilderUtils.appendProperty(sb, "jobHandlingExecutor", jobHandlingExecutor);
+    BuilderUtils.appendProperty(sb, "ownsJobHandlingExecutor", ownsJobHandlingExecutor);
     BuilderUtils.appendProperty(sb, "streamEnabled", streamEnabled);
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
 

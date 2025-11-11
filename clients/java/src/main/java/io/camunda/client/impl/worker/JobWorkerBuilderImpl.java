@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class JobWorkerBuilderImpl
@@ -45,7 +46,8 @@ public final class JobWorkerBuilderImpl
       BackoffSupplier.newBackoffBuilder().build();
   public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
   private final JobClient jobClient;
-  private final ScheduledExecutorService executorService;
+  private final ScheduledExecutorService scheduledExecutor;
+  private final ExecutorService jobHandlingExecutor;
   private final List<Closeable> closeables;
   private String jobType;
   private JobHandler handler;
@@ -66,10 +68,12 @@ public final class JobWorkerBuilderImpl
   public JobWorkerBuilderImpl(
       final CamundaClientConfiguration configuration,
       final JobClient jobClient,
-      final ScheduledExecutorService executorService,
+      final ScheduledExecutorService scheduledExecutor,
+      final ExecutorService jobHandlingExecutor,
       final List<Closeable> closeables) {
     this.jobClient = jobClient;
-    this.executorService = executorService;
+    this.scheduledExecutor = scheduledExecutor;
+    this.jobHandlingExecutor = jobHandlingExecutor;
     this.closeables = closeables;
 
     timeout = configuration.getDefaultJobTimeout();
@@ -211,17 +215,17 @@ public final class JobWorkerBuilderImpl
               getTenantIds(),
               streamingTimeout,
               backoffSupplier,
-              executorService);
-      jobExecutor = new BlockingExecutor(executorService, maxJobsActive, timeout);
+              scheduledExecutor);
+      jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
-      jobExecutor = executorService;
+      jobExecutor = jobHandlingExecutor;
     }
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(
             maxJobsActive,
-            executorService,
+            scheduledExecutor,
             pollInterval,
             jobRunnableFactory,
             jobPoller,
