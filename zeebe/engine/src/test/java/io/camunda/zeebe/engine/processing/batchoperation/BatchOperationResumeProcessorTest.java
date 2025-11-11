@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
@@ -21,6 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -63,9 +66,11 @@ class BatchOperationResumeProcessorTest {
     final PersistedBatchOperation batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getKey()).thenReturn(batchOperationKey);
     when(batchOperation.isInitialized()).thenReturn(false);
+    final TypedRecord<BatchOperationLifecycleManagementRecord> mockedCommand =
+        mockCommand("test-user", recordValue);
 
     // when
-    processor.resumeBatchOperation(resumeKey, batchOperation, recordValue);
+    processor.resumeBatchOperation(resumeKey, batchOperation, mockedCommand);
 
     // then
     verify(stateWriter)
@@ -73,7 +78,10 @@ class BatchOperationResumeProcessorTest {
             resumeKey,
             BatchOperationIntent.RESUMED,
             recordValue,
-            FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperationKey)));
+            FollowUpEventMetadata.of(
+                m ->
+                    m.batchOperationReference(batchOperationKey)
+                        .claims(mockedCommand.getAuthorizations())));
     verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any(), any());
   }
 
@@ -89,9 +97,11 @@ class BatchOperationResumeProcessorTest {
     final PersistedBatchOperation batchOperation = mock(PersistedBatchOperation.class);
     when(batchOperation.getKey()).thenReturn(batchOperationKey);
     when(batchOperation.isInitialized()).thenReturn(true);
+    final TypedRecord<BatchOperationLifecycleManagementRecord> mockedCommand =
+        mockCommand("test-user", recordValue);
 
     // when
-    processor.resumeBatchOperation(resumeKey, batchOperation, recordValue);
+    processor.resumeBatchOperation(resumeKey, batchOperation, mockedCommand);
 
     // then
     verify(stateWriter)
@@ -99,7 +109,10 @@ class BatchOperationResumeProcessorTest {
             resumeKey,
             BatchOperationIntent.RESUMED,
             recordValue,
-            FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperationKey)));
+            FollowUpEventMetadata.of(
+                m ->
+                    m.batchOperationReference(batchOperationKey)
+                        .claims(mockedCommand.getAuthorizations())));
 
     final ArgumentCaptor<BatchOperationExecutionRecord> captor =
         ArgumentCaptor.forClass(BatchOperationExecutionRecord.class);
@@ -112,5 +125,14 @@ class BatchOperationResumeProcessorTest {
 
     final BatchOperationExecutionRecord capturedRecord = captor.getValue();
     assert capturedRecord.getBatchOperationKey() == batchOperationKey;
+  }
+
+  private TypedRecord<BatchOperationLifecycleManagementRecord> mockCommand(
+      final String username, final BatchOperationLifecycleManagementRecord recordValue) {
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_USERNAME, username));
+    when(command.hasRequestMetadata()).thenReturn(true);
+    when(command.getValue()).thenReturn(recordValue);
+    return command;
   }
 }
