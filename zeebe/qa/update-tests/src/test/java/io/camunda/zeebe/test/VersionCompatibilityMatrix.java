@@ -16,8 +16,10 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Comparator;
@@ -28,6 +30,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides combinations of versions that should be compatible with each other. This matrix is used
@@ -35,6 +39,7 @@ import org.junit.jupiter.params.provider.Arguments;
  */
 @SuppressWarnings("unused")
 final class VersionCompatibilityMatrix {
+  private static final Logger LOGGER = LoggerFactory.getLogger(VersionCompatibilityMatrix.class);
 
   /**
    * Automatically chooses the matrix to use depending on the environment where tests are run.
@@ -176,9 +181,40 @@ final class VersionCompatibilityMatrix {
       final var refs = new ObjectMapper().readValue(response.body(), Ref[].class);
       return Stream.of(refs)
           .map(Ref::toSemanticVersion)
-          .filter(version -> version != null && version.preRelease() == null);
+          .filter(version -> version != null && version.preRelease() == null)
+          .filter(VersionCompatibilityMatrix::existsInDockerHub);
     } catch (final Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public static void main(final String[] args) {
+    discoverVersions().forEach(System.out::println);
+  }
+
+  private static boolean existsInDockerHub(final SemanticVersion version) {
+    final var endpoint =
+        URI.create(
+            "https://hub.docker.com/v2/namespaces/camunda/repositories/zeebe/tags/%s"
+                .formatted(version));
+    try (final var httpClient = HttpClient.newBuilder().followRedirects(Redirect.ALWAYS).build()) {
+      final var retry =
+          Retry.of(
+              "docker-hub-api",
+              RetryConfig.custom()
+                  .maxAttempts(10)
+                  .intervalFunction(IntervalFunction.ofExponentialBackoff())
+                  .build());
+      final var response =
+          retry.executeCallable(
+              () ->
+                  httpClient.send(
+                      HttpRequest.newBuilder().HEAD().uri(endpoint).build(),
+                      BodyHandlers.discarding()));
+      return response.statusCode() >= 200 && response.statusCode() < 400;
+    } catch (final Exception e) {
+      LOGGER.warn("Failed to check Docker Hub for version {}, skipping", version, e);
+      return false;
     }
   }
 }
