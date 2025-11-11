@@ -49,11 +49,11 @@ public final class CheckpointInfo extends UnpackedObject implements DbValue {
   }
 
   public Instant getTimestamp() {
-    return timestamp.getValue() > 0 ? Instant.ofEpochMilli(timestamp.getValue()) : Instant.MIN;
+    return timestamp.getValue() > 0 ? Instant.ofEpochMilli(timestamp.getValue()) : null;
   }
 
   public CheckpointInfo setTimestamp(final Instant timestamp) {
-    final var millis = timestamp.equals(Instant.MIN) ? -1L : timestamp.toEpochMilli();
+    final var millis = timestamp == null ? -1L : timestamp.toEpochMilli();
     this.timestamp.setValue(millis);
     return this;
   }
