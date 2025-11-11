@@ -4,7 +4,6 @@ package windows
 
 import (
 	"context"
-	"os"
 	"os/exec"
 )
 
@@ -12,7 +11,7 @@ func (w *WindowsC8Run) OpenBrowser(ctx context.Context, url string) error {
 	panic("Platform was not built for windows")
 }
 
-func (w *WindowsC8Run) ProcessTree(commandPid int) []*os.Process {
+func (w *WindowsC8Run) ProcessTree(commandPid int) []int {
 	panic("Platform was not built for windows")
 }
 
