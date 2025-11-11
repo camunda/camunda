@@ -17,7 +17,6 @@ package io.camunda.zeebe.protocol.record.value.management;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import java.time.Instant;
 import org.immutables.value.Value;
 
 /** Represents a checkpoint related command or event. */
@@ -43,5 +42,5 @@ public interface CheckpointRecordValue extends RecordValue {
   /**
    * @return the timestamp of the checkpoint
    */
-  Instant getCheckpointTimestamp();
+  long getCheckpointTimestamp();
 }

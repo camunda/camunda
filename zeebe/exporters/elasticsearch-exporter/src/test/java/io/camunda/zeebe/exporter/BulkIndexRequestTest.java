@@ -351,7 +351,7 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CheckpointRecord()
                               .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
-                              .setCheckpointTimestamp(Instant.now())
+                              .setCheckpointTimestamp(Instant.now().toEpochMilli())
                               .setCheckpointId(100)
                               .setCheckpointPosition(100L)));
 
@@ -383,7 +383,7 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CheckpointRecord()
                               .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
-                              .setCheckpointTimestamp(timestamp)
+                              .setCheckpointTimestamp(timestamp.toEpochMilli())
                               .setCheckpointId(100)
                               .setCheckpointPosition(100L)));
 

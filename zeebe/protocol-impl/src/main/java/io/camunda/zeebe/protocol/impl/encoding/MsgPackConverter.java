@@ -24,7 +24,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.util.InstantJsonSerde;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -82,9 +81,7 @@ public final class MsgPackConverter {
           .configure(Feature.ALLOW_SINGLE_QUOTES, true)
           .setStreamReadConstraints(JSON_STREAM_CONSTRAINTS);
   private static final ObjectMapper JSON_OBJECT_MAPPER =
-      new ObjectMapper(JSON_FACTORY)
-          .registerModule(new JavaTimeModule())
-          .registerModule(InstantJsonSerde.INSTANT_TO_LONG_SERDE_MODULE);
+      new ObjectMapper(JSON_FACTORY).registerModule(new JavaTimeModule());
 
   // prevent instantiation
   private MsgPackConverter() {}
