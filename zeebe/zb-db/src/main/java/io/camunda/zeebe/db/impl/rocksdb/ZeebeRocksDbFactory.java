@@ -322,7 +322,7 @@ public final class ZeebeRocksDbFactory<
     return props;
   }
 
-    closeables.add(cache);
+  private TableFormatConfig createTableFormatConfig(final List<AutoCloseable> closeables) {
     final var filter = new BloomFilter(10, false);
     closeables.add(filter);
 
