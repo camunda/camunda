@@ -39,6 +39,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
 import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
+import org.rocksdb.WriteBufferManager;
 
 public final class ZeebeRocksDbFactory<
         ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
@@ -57,7 +58,9 @@ public final class ZeebeRocksDbFactory<
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration metricsConfiguration,
-      final Supplier<MeterRegistry> meterRegistryFactory) {
+      final Supplier<MeterRegistry> meterRegistryFactory,
+      final LRUCache lruCache,
+      final WriteBufferManager writeBufferManager) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;

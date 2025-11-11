@@ -57,6 +57,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.rocksdb.LRUCache;
+import org.rocksdb.WriteBufferManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,6 +121,20 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
+    // we need to pass the cache here
+    final long blockCacheBytes =
+        brokerCfg.getCluster().getPartitionsCount()
+            * brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes();
+    // allocate a quarter of the block cache to the write buffer manager, value to be
+    // discussed/tuned
+    final long wbmLimitBytes = blockCacheBytes / 4;
+    // capacity (blockCacheBytes)
+    // numShardBits (-1 = default), automatically picks a shard count based on your system and
+    // capacity
+    // strictCapacityLimit (true)
+    // highPriPoolRatio (0.5)
+    final LRUCache sharedCache = new LRUCache(blockCacheBytes, -1, true, 0.5);
+    final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -138,7 +154,9 @@ public final class PartitionManagerImpl
             featureFlags,
             securityConfig,
             searchClientsProxy,
-            brokerRequestAuthorizationConverter);
+            brokerRequestAuthorizationConverter,
+            sharedCache,
+            sharedWbm);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
