@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -41,7 +42,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * @return the address for the gRPC gateway
    */
   default URI grpcAddress() {
-    final var scheme = gatewayConfig().getSecurity().isEnabled() ? "https" : "http";
+    final var scheme = unifiedConfig().getApi().getGrpc().getSsl().isEnabled() ? "https" : "http";
     return uri(scheme, TestZeebePort.GATEWAY);
   }
 
@@ -97,6 +98,8 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
   /** Returns the gateway configuration for this node. */
   GatewayCfg gatewayConfig();
 
+  Camunda unifiedConfig();
+
   /** Returns a new pre-configured client builder for this gateway */
   default CamundaClientBuilder newClientBuilder() {
     final var builder =
@@ -104,10 +107,10 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
             .grpcAddress(grpcAddress())
             .restAddress(restAddress())
             .preferRestOverGrpc(false);
-    final var security = gatewayConfig().getSecurity();
+    final var security = unifiedConfig().getApi().getGrpc().getSsl();
     final var restSSL = property("server.ssl.enabled", Boolean.class, false);
     if (security.isEnabled() || restSSL) {
-      builder.caCertificatePath(security.getCertificateChainPath().getAbsolutePath());
+      builder.caCertificatePath(security.getCertificate().getAbsolutePath());
     }
 
     return builder;
@@ -168,7 +171,10 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * Method to await the complete topology of a cluster with the given configuration.
    *
    * @return itself for chaining
+   * @deprecated Use {@link #awaitCompleteTopology(Camunda)} instead. BrokerBasedProperties is
+   *     deprecated in favor of unified configuration.
    */
+  @Deprecated
   default T awaitCompleteTopology(final BrokerBasedProperties brokerBasedProperties) {
     final var clusterCfg = brokerBasedProperties.getCluster();
     return awaitCompleteTopology(
@@ -182,13 +188,48 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * Method to await the complete topology of a cluster with the given configuration.
    *
    * @return itself for chaining
+   * @deprecated Use {@link #awaitCompleteTopology(Camunda, CamundaClient)} instead.
+   *     BrokerBasedProperties is deprecated in favor of unified configuration.
    */
+  @Deprecated
   default T awaitCompleteTopology(
       final BrokerBasedProperties brokerBasedProperties, final CamundaClient camundaClient) {
     final var clusterCfg = brokerBasedProperties.getCluster();
     return awaitCompleteTopology(
         clusterCfg.getClusterSize(),
         clusterCfg.getPartitionsCount(),
+        clusterCfg.getReplicationFactor(),
+        Duration.ofSeconds(30),
+        camundaClient);
+  }
+
+  /**
+   * Method to await the complete topology of a cluster with the given unified configuration.
+   *
+   * @param unifiedConfig the unified configuration containing cluster settings
+   * @return itself for chaining
+   */
+  default T awaitCompleteTopology(final Camunda unifiedConfig) {
+    final var clusterCfg = unifiedConfig.getCluster();
+    return awaitCompleteTopology(
+        clusterCfg.getSize(),
+        clusterCfg.getPartitionCount(),
+        clusterCfg.getReplicationFactor(),
+        Duration.ofSeconds(30));
+  }
+
+  /**
+   * Method to await the complete topology of a cluster with the given unified configuration.
+   *
+   * @param unifiedConfig the unified configuration containing cluster settings
+   * @param camundaClient the client to use for checking topology
+   * @return itself for chaining
+   */
+  default T awaitCompleteTopology(final Camunda unifiedConfig, final CamundaClient camundaClient) {
+    final var clusterCfg = unifiedConfig.getCluster();
+    return awaitCompleteTopology(
+        clusterCfg.getSize(),
+        clusterCfg.getPartitionCount(),
         clusterCfg.getReplicationFactor(),
         Duration.ofSeconds(30),
         camundaClient);
