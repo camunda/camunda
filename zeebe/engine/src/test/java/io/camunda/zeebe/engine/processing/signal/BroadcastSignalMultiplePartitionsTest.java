@@ -191,14 +191,37 @@ public class BroadcastSignalMultiplePartitionsTest {
     final String signalName = newRandomSignal();
     final String processId = Strings.newRandomValidBpmnId();
     final String otherProcessId = Strings.newRandomValidBpmnId();
+    final var partitionId = 2;
     deployProcess(processId, "catch_main", signalName);
     deployProcess(otherProcessId, "catch_other", signalName);
 
-    createProcessInstance(processId, 2);
-    createProcessInstance(otherProcessId, 2);
+    createProcessInstance(processId, partitionId);
+    createProcessInstance(otherProcessId, partitionId);
 
     final UserRecordValue user = createUser();
     grantProcessPermission(user.getUsername(), processId);
+
+    // Wait for authorization to propagate
+    await("authorization created in the right partition")
+        .pollInterval(Duration.ofMillis(10))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> {
+              final var record =
+                  RecordingExporter.authorizationRecords()
+                      .withIntent(
+                          io.camunda.zeebe.protocol.record.intent.AuthorizationIntent.CREATED)
+                      .withOwnerId(user.getUsername())
+                      .withPartitionId(partitionId)
+                      .asList()
+                      .stream()
+                      .map(Record::getValue)
+                      .filter(
+                          v -> v.getResourceType() == AuthorizationResourceType.PROCESS_DEFINITION)
+                      .filter(v -> v.getResourceId().equals(processId))
+                      .findFirst();
+              assertThat(record).isNotNull();
+            });
 
     waitForSignalSubscriptions(signalName, 2);
 
