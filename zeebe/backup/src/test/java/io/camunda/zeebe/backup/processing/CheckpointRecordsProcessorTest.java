@@ -643,6 +643,6 @@ final class CheckpointRecordsProcessorTest {
     assertThat(state.getLatestBackupId()).isEqualTo(backupId);
     assertThat(state.getLatestBackupPosition()).isEqualTo(backupPosition);
     assertThat(state.getLatestBackupTimestamp()).isEqualTo(-1L);
-    assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MARKER);
+    assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
   }
 }
