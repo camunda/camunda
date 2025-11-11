@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.stream.impl.StreamProcessorContext;
 import java.io.File;
 import java.time.Duration;
 import java.util.Optional;
@@ -20,12 +21,13 @@ public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(128);
-
   private String directory = DEFAULT_DIRECTORY;
 
   private String runtimeDirectory = null;
 
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
+
+  private DataSize maxKeyWordFieldSize = StreamProcessorContext.DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE;
 
   private Duration snapshotPeriod = Duration.ofMinutes(5);
 
@@ -114,6 +116,20 @@ public final class DataCfg implements ConfigurationEntry {
 
   public void setLogSegmentSize(final DataSize logSegmentSize) {
     this.logSegmentSize = logSegmentSize;
+  }
+
+  public long getMaxKeyWordFieldSizeInBytes() {
+    return Optional.ofNullable(maxKeyWordFieldSize)
+        .orElse(StreamProcessorContext.DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE)
+        .toBytes();
+  }
+
+  public DataSize getMaxKeyWordFieldSize() {
+    return maxKeyWordFieldSize;
+  }
+
+  public void setMaxKeyWordFieldSize(final DataSize maxKeyWordFieldSize) {
+    this.maxKeyWordFieldSize = maxKeyWordFieldSize;
   }
 
   public Duration getSnapshotPeriod() {

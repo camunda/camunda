@@ -30,6 +30,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.util.unit.DataSize;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that buffers the processing results. After
@@ -45,18 +46,26 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final long operationReference;
   private boolean processInASeparateBatch = false;
   private final long batchOperationReference;
+  private final DataSize maxKeywordFieldSize;
 
-  BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
-    this(predicate, operationReferenceNullValue(), batchOperationReferenceNullValue());
+  BufferedProcessingResultBuilder(
+      final RecordBatchSizePredicate predicate, final DataSize maxKeywordFieldSize) {
+    this(
+        predicate,
+        operationReferenceNullValue(),
+        batchOperationReferenceNullValue(),
+        maxKeywordFieldSize);
   }
 
   BufferedProcessingResultBuilder(
       final RecordBatchSizePredicate predicate,
       final long operationReference,
-      final long batchOperationReference) {
+      final long batchOperationReference,
+      final DataSize maxKeywordFieldSize) {
     mutableRecordBatch = new RecordBatch(predicate);
     this.operationReference = operationReference;
     this.batchOperationReference = batchOperationReference;
+    this.maxKeywordFieldSize = maxKeywordFieldSize;
   }
 
   @Override
@@ -80,18 +89,25 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
-      final var metadataWithValueType = metadata.valueType(valueType);
-      final var either =
-          mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);
-      if (either.isLeft()) {
-        return Either.left(either.getLeft());
-      }
-    } else {
+    if (!(value instanceof UnifiedRecordValue)) {
       throw new IllegalStateException(
           String.format(
               "The record value %s is not a UnifiedRecordValue",
               StringUtil.limitString(value.toString(), 1024)));
+    }
+
+    // validate record keyword fields
+    final var validationResult =
+        ((UnifiedRecordValue) value).validateKeywordFields(maxKeywordFieldSize);
+    if (validationResult.isLeft()) {
+      return Either.left(validationResult.getLeft());
+    }
+
+    final var metadataWithValueType = metadata.valueType(valueType);
+    final var either =
+        mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, (UnifiedRecordValue) value);
+    if (either.isLeft()) {
+      return Either.left(either.getLeft());
     }
 
     return Either.right(this);
