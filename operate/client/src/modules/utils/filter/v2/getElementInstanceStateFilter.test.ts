@@ -10,7 +10,7 @@ import {getElementInstanceStateFilter} from './getElementInstanceStateFilter';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 describe('getElementInstanceStateFilter', () => {
-  it('returns undefined when no element is selected', () => {
+  it('should return undefined when no element is selected', () => {
     const businessObjects: BusinessObjects = {
       task1: {
         id: 'task1',
@@ -23,13 +23,13 @@ describe('getElementInstanceStateFilter', () => {
 
     expect(result).toBeUndefined();
   });
-  it('returns undefined when businessObjects are not provided', () => {
+  it('should return undefined when businessObjects are not provided', () => {
     const result = getElementInstanceStateFilter('task1', undefined);
 
     expect(result).toBeUndefined();
   });
 
-  it('returns undefined when element is not found in businessObjects', () => {
+  it('should return undefined when element is not found in businessObjects', () => {
     const businessObjects: BusinessObjects = {
       task1: {
         id: 'task1',
@@ -46,7 +46,7 @@ describe('getElementInstanceStateFilter', () => {
     expect(result).toBeUndefined();
   });
 
-  it('returns undefined when element is a process end event', () => {
+  it('should return undefined when element is a process end event', () => {
     const businessObjects: BusinessObjects = {
       endEvent1: {
         id: 'endEvent1',
@@ -65,7 +65,7 @@ describe('getElementInstanceStateFilter', () => {
     expect(result).toBeUndefined();
   });
 
-  it('returns undefined when element is a subprocess end event', () => {
+  it('should return undefined when element is a subprocess end event', () => {
     const businessObjects: BusinessObjects = {
       endEvent1: {
         id: 'endEvent1',
@@ -84,7 +84,7 @@ describe('getElementInstanceStateFilter', () => {
     expect(result).toBeUndefined();
   });
 
-  it('returns {$neq: "COMPLETED"} when element is NOT an end event', () => {
+  it('should return {$neq: "COMPLETED"} when element is NOT an end event', () => {
     const businessObjects: BusinessObjects = {
       task1: {
         id: 'task1',
