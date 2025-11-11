@@ -49,7 +49,7 @@ There exist various variations of load tests in the wild to answer different que
     * [1](https://en.wikipedia.org/wiki/Load_testing)   
     * [2](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
 * [Stress test](https://en.wikipedia.org/wiki/Stress_testing)  
-  * _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?  _
+  * _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?_
   * Here we put the system under high load up to maximum load. We want to find out what the limit is and where it starts to break.  
   * These tests are commonly not long-running.  
   * Resources:  
