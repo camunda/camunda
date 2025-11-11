@@ -285,9 +285,14 @@ components:
         resourceName:
           type: string
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the deployed decision requirements.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         decisionRequirementsKey:
-          $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: |
+            The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
 
     DeploymentFormResult:
       description: A deployed form.
@@ -296,7 +301,11 @@ components:
         - formKey
       properties:
         formId:
-          $ref: 'identifiers.yaml#/components/schemas/FormId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/FormId'
+          description: |
+            The form ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific form.
         version:
           type: integer
           format: int32
@@ -305,7 +314,9 @@ components:
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         formKey:
-          $ref: 'keys.yaml#/components/schemas/FormKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKey'
+          description: The assigned key, which acts as a unique identifier for this form.
 
     DeploymentResourceResult:
       description: A deployed Resource.
@@ -323,7 +334,9 @@ components:
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         resourceKey:
-          $ref: '#/components/schemas/ResourceKey'
+          allOf:
+            - $ref: '#/components/schemas/ResourceKey'
+          description: The assigned key, which acts as a unique identifier for this Resource.
 
     DeleteResourceRequest:
       type: object

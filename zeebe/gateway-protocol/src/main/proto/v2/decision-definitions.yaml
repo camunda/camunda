@@ -276,12 +276,20 @@ components:
       title: Decision evaluation by ID
       properties:
         decisionDefinitionId:
-          $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: |
+            The ID of the decision to be evaluated.
+            When using the decision ID, the latest
+            deployed version of the decision is used.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
         variables:
+          description: The message variables as JSON document.
           type: object
           additionalProperties: true
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the decision.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
       required:
         - decisionDefinitionId
 
@@ -297,7 +305,9 @@ components:
           additionalProperties: true
           description: The message variables as JSON document.
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the decision.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
       required:
         - decisionDefinitionKey
 

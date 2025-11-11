@@ -699,31 +699,61 @@ components:
       additionalProperties: false
       properties:
         processDefinitionKey:
-          $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: |
+            The unique key identifying the process definition, for example, returned for a process in the
+            deploy resources endpoint.
         variables:
+          description: |
+            JSON object that will instantiate the variables for the root variable scope
+            of the process instance.
           type: object
           additionalProperties: true
         startInstructions:
+          description: |
+            List of start instructions. By default, the process instance will start at
+            the start event. If provided, the process instance will apply start instructions
+            after it has been created.
           type: array
           items:
             $ref: '#/components/schemas/ProcessInstanceCreationStartInstruction'
         runtimeInstructions:
+          description: |
+            Runtime instructions (alpha). List of instructions that affect the runtime behavior of
+            the process instance. Refer to specific instruction types for more details.
+
+            This parameter is an alpha feature and may be subject to change
+            in future releases.
           type: array
           items:
             $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the process definition.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
         awaitCompletion:
+          description: |
+            Wait for the process instance to complete. If the process instance completion does
+            not occur within the requestTimeout, the request will be closed. This can lead to a 504
+            response status. Disabled by default.
           type: boolean
           default: false
         requestTimeout:
+          description: |
+            Timeout (in ms) the request waits for the process to complete. By default or
+            when set to 0, the generic request timeout configured in the cluster is applied.
           type: integer
           format: int64
           default: 0
         fetchVariables:
+          description: |
+            List of variables by name to be included in the response when awaitCompletion is set to true.
+            If empty, all visible variables in the root scope will be returned.
           type: array
+          example: []
           items:
             type: string
         tags:
@@ -735,7 +765,14 @@ components:
         - elementId
       properties:
         elementId:
-          $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: |
+            Future extensions might include:
+              - different types of start instructions
+              - ability to set local variables for different flow scopes
+
+            For now, however, the start instruction is implicitly a "startBeforeElement" instruction
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
 
     ProcessInstanceCreationRuntimeInstruction:
       discriminator:
@@ -1194,8 +1231,11 @@ components:
         The migration instructions describe how to migrate a process instance from one process definition to another.
       properties:
         targetProcessDefinitionKey:
-          $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of process definition to migrate the process instance to.
         mappingInstructions:
+          description: Element mappings from the source process instance to the target process instance.
           type: array
           items:
             $ref: '#/components/schemas/MigrateProcessInstanceMappingInstruction'
@@ -1211,9 +1251,13 @@ components:
         The mapping instructions describe how to map elements from the source process definition to the target process definition.
       properties:
         sourceElementId:
-          $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID to migrate from.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
         targetElementId:
-          $ref: 'identifiers.yaml#/components/schemas/ElementId'
+          description: The element ID to migrate into.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ElementId'
       required:
         - sourceElementId
         - targetElementId

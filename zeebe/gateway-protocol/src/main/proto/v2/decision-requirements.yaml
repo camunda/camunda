@@ -163,7 +163,9 @@ components:
           format: int32
           description: The assigned version of the decision requirements.
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the decision requirements.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         resourceName:
           type: string
           description: The name of the resource from which the decision requirements were parsed

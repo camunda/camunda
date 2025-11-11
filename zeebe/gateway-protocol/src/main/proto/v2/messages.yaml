@@ -169,7 +169,9 @@ components:
       type: object
       properties:
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the correlated message
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         messageKey:
           allOf:
             - $ref: '#/components/schemas/MessageKey'
@@ -217,7 +219,9 @@ components:
       type: object
       properties:
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the message.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         messageKey:
           allOf:
             - $ref: '#/components/schemas/MessageKey'
