@@ -85,7 +85,7 @@ describe('useProcessInstanceFilters', () => {
         incidentErrorHashCode: 321456,
         hasRetriesLeft: true,
       },
-    } as const;
+    };
 
     const {result} = renderHook(() => useProcessInstanceFilters());
     expect(result.current).toEqual(expectedRequest);

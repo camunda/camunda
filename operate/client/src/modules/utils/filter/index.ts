@@ -262,7 +262,7 @@ function getProcessInstancesRequestFilters(): RequestFilters {
         if (key === 'incidentErrorHashCode') {
           return {...accumulator, incidentErrorHashCode: value};
         }
-      } else if (typeof value === 'string') {
+      } else {
         if (key === 'errorMessage') {
           return {
             ...accumulator,

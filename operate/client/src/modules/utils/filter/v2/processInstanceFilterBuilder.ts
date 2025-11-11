@@ -259,7 +259,22 @@ const buildProcessInstanceFilter = (
   filters: UnifiedProcessInstanceFilters,
   options: BuildProcessInstanceFilterOptions = {},
 ): ProcessInstanceFilterQuery => {
-  const normalizedFilters = inputFilterSchema.parse(filters);
+  const parseResult = inputFilterSchema.safeParse(filters);
+
+  if (!parseResult.success) {
+    console.error(
+      'Filter parsing failed. Returning empty filter to show all data.',
+      {
+        filters,
+        error: parseResult.error.issues,
+      },
+    );
+
+    // Return empy query to show all data rather than crashing the app
+    return {};
+  }
+
+  const normalizedFilters = parseResult.data;
 
   const query: ProcessInstanceFilterQuery = {};
 

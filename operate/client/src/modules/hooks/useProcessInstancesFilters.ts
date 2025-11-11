@@ -7,34 +7,11 @@
  */
 
 import {useFilters} from 'modules/hooks/useFilters';
-import {
-  getProcessDefinitionStatisticsRequestBodySchema,
-  type GetProcessDefinitionStatisticsRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
-import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {type GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
   buildProcessInstanceFilter,
   type BuildProcessInstanceFilterOptions,
 } from 'modules/utils/filter/v2/processInstanceFilterBuilder';
-
-function mapFiltersToRequest(
-  filters: ProcessInstanceFilters,
-  options: Omit<
-    BuildProcessInstanceFilterOptions,
-    'includeIds' | 'excludeIds'
-  > = {},
-): GetProcessDefinitionStatisticsRequestBody {
-  const builderOptions: BuildProcessInstanceFilterOptions = {
-    ...options,
-  };
-
-  const filter = buildProcessInstanceFilter(filters, builderOptions);
-  const result = getProcessDefinitionStatisticsRequestBodySchema.parse({
-    filter,
-  });
-
-  return result;
-}
 
 function useProcessInstanceFilters(
   options: Omit<
@@ -44,8 +21,13 @@ function useProcessInstanceFilters(
 ): GetProcessDefinitionStatisticsRequestBody {
   const {getFilters} = useFilters();
   const filters = getFilters();
+  const filter = buildProcessInstanceFilter(filters, options);
 
-  return mapFiltersToRequest(filters, options);
+  return {
+    filter: filter as NonNullable<
+      GetProcessDefinitionStatisticsRequestBody['filter']
+    >,
+  };
 }
 
 export {useProcessInstanceFilters};
