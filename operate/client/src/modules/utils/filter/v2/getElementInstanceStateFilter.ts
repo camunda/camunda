@@ -39,4 +39,3 @@ const getElementInstanceStateFilter = (
 };
 
 export {getElementInstanceStateFilter};
-export type {ElementInstanceStateFilter};
