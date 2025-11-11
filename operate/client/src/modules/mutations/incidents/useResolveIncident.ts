@@ -33,16 +33,13 @@ function useResolveIncident(incidentKey: string, jobKey?: string) {
         throw {status: response.status, statusText: response.statusText};
       }
 
-      // Poll the incident until its state is no longer ACTIVE
       await queryClient.fetchQuery({
         queryKey: queryKeys.incidents.get(incidentKey),
         queryFn: async () => {
           const {response: incident, error} = await fetchIncident(incidentKey);
 
-          if (error) {
-            throw new Error(
-              error.response?.statusText ?? 'Failed to fetch incident',
-            );
+          if (error !== null) {
+            throw error;
           }
 
           if (incident.state === 'ACTIVE') {
