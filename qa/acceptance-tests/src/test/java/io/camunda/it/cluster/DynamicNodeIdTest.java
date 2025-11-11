@@ -61,6 +61,7 @@ public class DynamicNodeIdTest {
           .withBrokersCount(CLUSTER_SIZE)
           .withPartitionsCount(1)
           .withReplicationFactor(CLUSTER_SIZE)
+          .withoutNodeId()
           .withNodeConfig(
               app ->
                   app.withAdditionalProperties(
