@@ -32,9 +32,11 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -80,7 +82,7 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
           // create groups
           .withEnv("KEYCLOAK_GROUPS_0_NAME", "groupA")
           .withEnv("KEYCLOAK_GROUPS_1_NAME", "groupB")
-          .withEnv("KEYCLOAK_GROUPS_2_NAME", "groupC")
+          .withEnv("KEYCLOAK_GROUPS_2_NAME", "group C")
           // create users and assign them to groups and roles
           .withEnv("KEYCLOAK_USERS_0_EMAIL", "user0@email.com")
           .withEnv("KEYCLOAK_USERS_0_FIRST-NAME", "user0")
@@ -98,7 +100,7 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
           .withEnv("KEYCLOAK_USERS_1_LAST-NAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_USERNAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_PASSWORD", "password")
-          .withEnv("KEYCLOAK_USERS_1_GROUPS_0", "groupC")
+          .withEnv("KEYCLOAK_USERS_1_GROUPS_0", "group C")
           .withEnv("KEYCLOAK_USERS_1_ROLES_0", "Zeebe")
           // assign authorizations to groups
           .withEnv("IDENTITY_AUTHORIZATIONS_0_GROUP_NAME", "groupA")
@@ -301,7 +303,9 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
                 new URI(
                     "%s%s"
                         .formatted(
-                            externalIdentityUrl(IDENTITY_88), "/api/groups?search=" + groupName)))
+                            externalIdentityUrl(IDENTITY_88),
+                            "/api/groups?search="
+                                + URLEncoder.encode(groupName, StandardCharsets.UTF_8))))
             .GET()
             .header("Authorization", getManagementIdentityBearerToken())
             .build();

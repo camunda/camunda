@@ -7,8 +7,6 @@
  */
 package io.camunda.migration.identity.handler.sm;
 
-import static io.camunda.migration.identity.MigrationUtil.normalizeGroupID;
-
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
@@ -182,15 +180,13 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
     tenantGroups.forEach(
         group -> {
           try {
-            final var normalizedGroupId = normalizeGroupID(group);
             final var tenantMember =
-                new TenantMemberRequest(tenantId, normalizedGroupId, EntityType.GROUP);
+                new TenantMemberRequest(tenantId, group.name(), EntityType.GROUP);
             retryOnBackpressure(
                 () -> tenantService.addMember(tenantMember).join(),
                 "Failed to assign group with name: " + group.name() + " to tenant: " + tenantId);
             assignedGroupCount.incrementAndGet();
-            logger.debug(
-                "Group with name '{}' assigned to tenant '{}'.", normalizedGroupId, tenantId);
+            logger.debug("Group with name '{}' assigned to tenant '{}'.", group.name(), tenantId);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(

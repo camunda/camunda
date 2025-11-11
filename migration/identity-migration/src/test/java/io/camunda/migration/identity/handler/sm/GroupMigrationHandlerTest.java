@@ -128,7 +128,7 @@ public class GroupMigrationHandlerTest {
     verify(authorizationServices, times(3)).createAuthorization(request.capture());
     final List<CreateAuthorizationRequest> requests = request.getAllValues();
     MatcherAssert.assertThat(requests, Matchers.hasSize(3));
-    MatcherAssert.assertThat(requests.getFirst().ownerId(), Matchers.is("normal_group"));
+    MatcherAssert.assertThat(requests.getFirst().ownerId(), Matchers.is("Normal Group"));
     MatcherAssert.assertThat(
         requests.getFirst().ownerType(), Matchers.is(AuthorizationOwnerType.GROUP));
     MatcherAssert.assertThat(requests.getFirst().resourceId(), Matchers.is("process"));
@@ -142,7 +142,7 @@ public class GroupMigrationHandlerTest {
             PermissionType.READ_PROCESS_INSTANCE,
             PermissionType.UPDATE_PROCESS_INSTANCE,
             PermissionType.CREATE_PROCESS_INSTANCE));
-    MatcherAssert.assertThat(requests.get(1).ownerId(), Matchers.is("normal_group"));
+    MatcherAssert.assertThat(requests.get(1).ownerId(), Matchers.is("Normal Group"));
     MatcherAssert.assertThat(
         requests.get(1).ownerType(), Matchers.is(AuthorizationOwnerType.GROUP));
     MatcherAssert.assertThat(requests.get(1).resourceId(), Matchers.is("*"));
@@ -154,7 +154,7 @@ public class GroupMigrationHandlerTest {
             PermissionType.READ_DECISION_DEFINITION,
             PermissionType.READ_DECISION_INSTANCE,
             PermissionType.DELETE_DECISION_INSTANCE));
-    MatcherAssert.assertThat(requests.get(2).ownerId(), Matchers.is("normal_group"));
+    MatcherAssert.assertThat(requests.get(2).ownerId(), Matchers.is("Normal Group"));
     MatcherAssert.assertThat(
         requests.get(2).ownerType(), Matchers.is(AuthorizationOwnerType.GROUP));
     MatcherAssert.assertThat(requests.get(2).resourceId(), Matchers.is("process"));
@@ -264,12 +264,12 @@ public class GroupMigrationHandlerTest {
     // given
     // groups
     final String longGroupName = "a".repeat(300);
-    final String groupNameWithUnsupportedChars = "Group@Name#With$Special%Chars";
+    final String groupNameWithSpecialChars = "Group@Name With$Special%Chars";
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(
             List.of(
                 new Group("id1", longGroupName),
-                new Group("id2", groupNameWithUnsupportedChars),
+                new Group("id2", groupNameWithSpecialChars),
                 new Group("id3", "Normal Group")))
         .thenReturn(List.of());
     when(managementIdentityClient.fetchGroupRoles(any()))
@@ -300,12 +300,12 @@ public class GroupMigrationHandlerTest {
         .extracting(
             RoleMemberRequest::roleId, RoleMemberRequest::entityId, RoleMemberRequest::entityType)
         .containsExactlyInAnyOrder(
-            tuple("role_1", "a".repeat(256), EntityType.GROUP),
-            tuple("role@name_with_special_chars", "a".repeat(256), EntityType.GROUP),
-            tuple("role_2", "group@name_with_special_chars", EntityType.GROUP),
-            tuple("role_3", "group@name_with_special_chars", EntityType.GROUP),
-            tuple("role_1", "normal_group", EntityType.GROUP),
-            tuple("role_2", "normal_group", EntityType.GROUP));
+            tuple("role_1", longGroupName, EntityType.GROUP),
+            tuple("role@name_with_special_chars", longGroupName, EntityType.GROUP),
+            tuple("role_2", groupNameWithSpecialChars, EntityType.GROUP),
+            tuple("role_3", groupNameWithSpecialChars, EntityType.GROUP),
+            tuple("role_1", "Normal Group", EntityType.GROUP),
+            tuple("role_2", "Normal Group", EntityType.GROUP));
   }
 
   @Test

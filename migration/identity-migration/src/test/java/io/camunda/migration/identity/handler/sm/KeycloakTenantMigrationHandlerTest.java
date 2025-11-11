@@ -132,7 +132,7 @@ public class KeycloakTenantMigrationHandlerTest {
             tuple("tenant1", "username1", EntityType.USER),
             tuple("tenant1", "username2", EntityType.USER),
             // Groups for tenant1
-            tuple("tenant1", "group_1", EntityType.GROUP),
+            tuple("tenant1", "Group 1", EntityType.GROUP),
             // Clients for tenant1
             tuple("tenant1", "Client1", EntityType.CLIENT),
             tuple("tenant1", "Client2", EntityType.CLIENT),
@@ -140,13 +140,13 @@ public class KeycloakTenantMigrationHandlerTest {
             tuple("tenant2", "username3", EntityType.USER),
             tuple("tenant2", "username4", EntityType.USER),
             // Groups for tenant2
-            tuple("tenant2", "group_2", EntityType.GROUP),
+            tuple("tenant2", "Group 2", EntityType.GROUP),
             // Clients for tenant2
             tuple("tenant2", "Client3", EntityType.CLIENT),
             // Users for default tenant
             tuple("<default>", "username4", EntityType.USER),
             // Groups for default tenant
-            tuple("<default>", "group_3", EntityType.GROUP),
+            tuple("<default>", "Group 3", EntityType.GROUP),
             // Clients for default tenant
             tuple("<default>", "Client4", EntityType.CLIENT));
   }
