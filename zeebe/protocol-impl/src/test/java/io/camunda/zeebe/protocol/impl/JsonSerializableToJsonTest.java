@@ -97,10 +97,12 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -123,7 +125,7 @@ final class JsonSerializableToJsonTest {
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_JSON));
 
   private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException("test");
-
+  private static final Instant TIMESTAMP = Instant.now();
   private static final String STACK_TRACE;
 
   static {
@@ -2144,13 +2146,37 @@ final class JsonSerializableToJsonTest {
       {
         "Checkpoint record",
         (Supplier<UnifiedRecordValue>)
-            () -> new CheckpointRecord().setCheckpointId(1L).setCheckpointPosition(10L),
+            () ->
+                new CheckpointRecord()
+                    .setCheckpointId(1L)
+                    .setCheckpointPosition(10L)
+                    .setCheckpointTimestamp(TIMESTAMP.toEpochMilli())
+                    .setCheckpointType(CheckpointType.SCHEDULED_BACKUP),
         """
         {
           "checkpointId":1,
-          "checkpointPosition":10
+          "checkpointPosition":10,
+          "checkpointTimestamp":%d,
+          "checkpointType":"SCHEDULED_BACKUP"
         }
         """
+            .formatted(TIMESTAMP.toEpochMilli())
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////// Checkpoint record without timestamp and type ///////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Checkpoint record without timestamp",
+        (Supplier<UnifiedRecordValue>)
+            () -> new CheckpointRecord().setCheckpointId(1L).setCheckpointPosition(10L),
+        """
+          {
+            "checkpointId":1,
+            "checkpointPosition":10,
+            "checkpointTimestamp":-1,
+            "checkpointType":"MARKER"
+          }
+          """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Escalation record /////////////////////////////////////////

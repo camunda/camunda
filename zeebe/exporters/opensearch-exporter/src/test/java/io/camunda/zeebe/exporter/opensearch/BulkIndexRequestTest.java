@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.opensearch.BulkIndexRequest.BulkOperation;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceResultRecordValue;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.BufferedReader;
@@ -30,9 +32,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
@@ -335,6 +339,71 @@ final class BulkIndexRequestTest {
           .extracting(source -> ((Map<String, Object>) source).get("authInfo"))
           .describedAs("Expect that the records are NOT serialized with authInfo")
           .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexCheckpointRecordWithoutTypeAndTimestampOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new CheckpointRecord()
+                              .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
+                              .setCheckpointTimestamp(Instant.now().toEpochMilli())
+                              .setCheckpointId(100)
+                              .setCheckpointPosition(100L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(
+              source -> ((Map<String, Object>) source).get("checkpointType"),
+              source -> ((Map<String, Object>) source).get("checkpointTimestamp"))
+          .describedAs("Expect that the records are serialized without type and timestamp")
+          .containsAll(Set.of(Tuple.tuple(null, null)));
+    }
+
+    @Test
+    void shouldIndexCheckpointRecordWithTypeAndTimestamp() {
+      // given
+      final var timestamp = Instant.now();
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new CheckpointRecord()
+                              .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
+                              .setCheckpointTimestamp(timestamp.toEpochMilli())
+                              .setCheckpointId(100)
+                              .setCheckpointPosition(100L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(
+              source -> ((Map<String, Object>) source).get("checkpointType"),
+              source -> ((Map<String, Object>) source).get("checkpointTimestamp"))
+          .describedAs("Expect that the records are serialized with type and timestamp")
+          .containsAll(
+              Set.of(
+                  Tuple.tuple(CheckpointType.SCHEDULED_BACKUP.name(), timestamp.toEpochMilli())));
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {
