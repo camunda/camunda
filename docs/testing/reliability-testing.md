@@ -56,7 +56,7 @@ There exist various variations of load tests in the wild to answer different que
     * [3](https://en.wikipedia.org/wiki/Stress_testing)   
     * [4](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
 * Spike test  
-  * _Question: How does the system handle spikes? Can it recover? What is max etc. _ 
+  * _Question: How does the system handle spikes? Can it recover? What is max etc._ 
   * Here we put the system also under high load up to maximum load, but only for a short period of time. We want to understand how the system behaves and recovers afterwards.  
   * These tests are commonly not long-running.  
   * Resources:  
