@@ -209,6 +209,15 @@ public final class SortOptionBuilders {
     return fn.apply(authorization()).build();
   }
 
+  public static AuditLogSort.Builder auditLog() {
+    return new AuditLogSort.Builder();
+  }
+
+  public static AuditLogSort auditLog(
+      final Function<AuditLogSort.Builder, ObjectBuilder<AuditLogSort>> fn) {
+    return fn.apply(auditLog()).build();
+  }
+
   public static JobSort.Builder job() {
     return new JobSort.Builder();
   }

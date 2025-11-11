@@ -186,6 +186,15 @@ public final class SearchQueryBuilders {
     return fn.apply(authorizationSearchQuery()).build();
   }
 
+  public static AuditLogQuery.Builder auditLogSearchQuery() {
+    return new AuditLogQuery.Builder();
+  }
+
+  public static AuditLogQuery auditLogSearchQuery(
+      final Function<AuditLogQuery.Builder, ObjectBuilder<AuditLogQuery>> fn) {
+    return fn.apply(auditLogSearchQuery()).build();
+  }
+
   public static IncidentQuery.Builder incidentSearchQuery() {
     return new IncidentQuery.Builder();
   }

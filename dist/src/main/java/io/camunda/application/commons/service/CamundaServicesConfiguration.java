@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -35,6 +36,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.ApiServicesExecutorProvider;
+import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
@@ -234,6 +236,22 @@ public class CamundaServicesConfiguration {
     return new AdHocSubProcessActivityServices(
         brokerClient,
         securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public AuditLogServices auditLogServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final AuditLogSearchClient auditLogSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new AuditLogServices(
+        brokerClient,
+        securityContextProvider,
+        auditLogSearchClient,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);

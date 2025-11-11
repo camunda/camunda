@@ -183,6 +183,11 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  static List<SearchQuerySortRequest<AuditLogSearchQuerySortRequest.FieldEnum>>
+      fromAuditLogSearchQuerySortRequest(final List<AuditLogSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   static List<SearchQuerySortRequest<BatchOperationSearchQuerySortRequest.FieldEnum>>
       fromBatchOperationSearchQuerySortRequest(
           final List<BatchOperationSearchQuerySortRequest> requests) {
@@ -724,6 +729,27 @@ public class SearchQuerySortRequestMapper {
         case RESOURCE_ID -> builder.resourceId();
         case RESOURCE_TYPE -> builder.resourceType();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyAuditLogSortField(
+      final AuditLogSearchQuerySortRequest.FieldEnum field,
+      final io.camunda.search.sort.AuditLogSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case OPERATION_KEY -> builder.operationKey();
+        case TIMESTAMP -> builder.timestamp();
+        case OPERATION_TYPE -> builder.operationType();
+        case OPERATION_STATE -> builder.operationState();
+        case ENTITY_KEY -> builder.entityKey();
+        case ENTITY_TYPE -> builder.entityType();
+        case ACTOR_ID -> builder.actorId();
+        case TENANT_ID -> builder.tenantId();
       }
     }
     return validationErrors;

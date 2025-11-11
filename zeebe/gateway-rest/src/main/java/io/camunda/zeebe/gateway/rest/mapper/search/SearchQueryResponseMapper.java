@@ -13,6 +13,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
@@ -51,6 +52,8 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.entity.ClusterMetadata.AppName;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogResult;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError;
@@ -1189,6 +1192,53 @@ public final class SearchQueryResponseMapper {
                 .map(PermissionType::name)
                 .map(PermissionTypeEnum::fromValue)
                 .toList());
+  }
+
+  public static AuditLogSearchQueryResult toAuditLogSearchQueryResponse(
+      final SearchQueryResult<AuditLogEntity> result) {
+    return new AuditLogSearchQueryResult()
+        .items(toAuditLogs(result.items()))
+        .page(toSearchQueryPageResponse(result));
+  }
+
+  private static List<AuditLogResult> toAuditLogs(final List<AuditLogEntity> auditLogs) {
+    return auditLogs.stream().map(SearchQueryResponseMapper::toAuditLog).toList();
+  }
+
+  public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
+    return new AuditLogResult()
+        .operationKey(auditLog.operationKey())
+        .entityKey(auditLog.entityKey())
+        .entityType(ofNullable(auditLog.entityType()).map(Short::intValue).orElse(null))
+        .entityVersion(auditLog.entityVersion())
+        .operationType(ofNullable(auditLog.operationType()).map(Short::intValue).orElse(null))
+        .batchOperationKey(auditLog.batchOperationKey())
+        .timestamp(auditLog.timestamp())
+        .actorId(auditLog.actorId())
+        .actorType(toActorTypeEnum(auditLog.actorType()))
+        .tenantId(auditLog.tenantId())
+        .operationState(auditLog.operationState())
+        .operationNote(auditLog.operationNote())
+        .operationCategory(
+            ofNullable(auditLog.operationCategory()).map(Short::intValue).orElse(null))
+        .operationDetails(auditLog.operationDetails())
+        .processDefinitionKey(auditLog.processDefinitionKey())
+        .processInstanceKey(auditLog.processInstanceKey())
+        .elementInstanceKey(auditLog.elementInstanceKey())
+        .userTaskKey(auditLog.userTaskKey())
+        .decisionRequirementsKey(auditLog.decisionRequirementsKey())
+        .decisionKey(auditLog.decisionKey());
+  }
+
+  private static AuditLogResult.ActorTypeEnum toActorTypeEnum(final String actorType) {
+    if (actorType == null) {
+      return null;
+    }
+    try {
+      return AuditLogResult.ActorTypeEnum.fromValue(actorType);
+    } catch (final IllegalArgumentException e) {
+      return null;
+    }
   }
 
   private static ProcessInstanceStateEnum toProtocolState(

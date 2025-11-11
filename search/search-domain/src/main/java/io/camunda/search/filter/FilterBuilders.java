@@ -199,6 +199,15 @@ public final class FilterBuilders {
     return fn.apply(new AuthorizationFilter.Builder()).build();
   }
 
+  public static AuditLogFilter.Builder auditLog() {
+    return new AuditLogFilter.Builder();
+  }
+
+  public static AuditLogFilter auditLog(
+      final Function<AuditLogFilter.Builder, ObjectBuilder<AuditLogFilter>> fn) {
+    return fn.apply(new AuditLogFilter.Builder()).build();
+  }
+
   public static VariableFilter.Builder variable() {
     return new VariableFilter.Builder();
   }

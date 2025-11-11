@@ -889,6 +889,94 @@ public class SearchQueryFilterMapper {
         .orElse(null);
   }
 
+  static io.camunda.search.filter.AuditLogFilter toAuditLogFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.AuditLogFilter filter) {
+    if (filter == null) {
+      return FilterBuilders.auditLog().build();
+    }
+
+    final var builder = FilterBuilders.auditLog();
+
+    ofNullable(filter.getOperationKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::operationKeyOperations);
+
+    ofNullable(filter.getEntityKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::entityKeyOperations);
+
+    ofNullable(filter.getEntityType())
+        .map(mapToOperations(Integer.class))
+        .map(
+            ops ->
+                ops.stream()
+                    .map(op -> new Operation<>(op.operator(), op.value().shortValue()))
+                    .toList())
+        .ifPresent(builder::entityTypeOperations);
+
+    ofNullable(filter.getOperationType())
+        .map(mapToOperations(Integer.class))
+        .map(
+            ops ->
+                ops.stream()
+                    .map(op -> new Operation<>(op.operator(), op.value().shortValue()))
+                    .toList())
+        .ifPresent(builder::operationTypeOperations);
+
+    ofNullable(filter.getOperationState())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::operationStateOperations);
+
+    ofNullable(filter.getActorId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::actorIdOperations);
+
+    ofNullable(filter.getActorType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::actorTypeOperations);
+
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
+
+    ofNullable(filter.getBatchOperationKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::batchOperationKeyOperations);
+
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processDefinitionKeyOperations);
+
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::processInstanceKeyOperations);
+
+    ofNullable(filter.getElementInstanceKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::elementInstanceKeyOperations);
+
+    ofNullable(filter.getUserTaskKey()).ifPresent(builder::userTaskKey);
+    ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKey);
+    ofNullable(filter.getDecisionKey()).ifPresent(builder::decisionKey);
+
+    ofNullable(filter.getTimestamp())
+        .map(mapToOperations(String.class))
+        .map(
+            ops ->
+                ops.stream()
+                    .map(
+                        op ->
+                            new Operation<>(
+                                op.operator(),
+                                java.time.OffsetDateTime.parse(op.value())
+                                    .toInstant()
+                                    .toEpochMilli()))
+                    .toList())
+        .ifPresent(builder::timestampOperations);
+
+    return builder.build();
+  }
+
   static VariableFilter toUserTaskVariableFilter(final UserTaskVariableFilter filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();

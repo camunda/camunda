@@ -26,6 +26,7 @@ servers:
         description: The schema of the Orchestration Cluster REST API server.
 tags:
   - name: Ad-hoc sub-process
+  - name: Audit Log
   - name: Authentication
   - name: Authorization
   - name: Batch operation
@@ -67,6 +68,12 @@ paths:
     $ref: 'authorizations.yaml#/paths/~1authorizations~1search'
   /authorizations/{authorizationKey}:
     $ref: 'authorizations.yaml#/paths/~1authorizations~1{authorizationKey}'
+
+  # Audit Log endpoints
+  /audit-logs/search:
+    $ref: 'audit-logs.yaml#/paths/~1audit-logs~1search'
+  /audit-logs/{operationKey}:
+    $ref: 'audit-logs.yaml#/paths/~1audit-logs~1{operationKey}'
 
   # Batch operation endpoints
   /batch-operation-items/search:
