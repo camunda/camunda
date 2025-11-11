@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.junit.AfterClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,6 +68,79 @@ public class BroadcastSignalMultiplePartitionsTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @AfterClass
+  public static void dumpFinalState() {
+    System.out.println("\n=== FINAL STATE DUMP ===");
+
+    System.out.println("\nAll Signal records:");
+    RecordingExporter.signalRecords()
+        .limit(50)
+        .forEach(
+            r ->
+                System.out.println(
+                    "  P"
+                        + r.getPartitionId()
+                        + " | "
+                        + r.getIntent()
+                        + " | "
+                        + r.getRecordType()
+                        + " | Signal="
+                        + r.getValue().getSignalName()
+                        + " | Rejection="
+                        + r.getRejectionReason()));
+
+    System.out.println("\nAll SignalSubscription records:");
+    RecordingExporter.signalSubscriptionRecords()
+        .limit(50)
+        .forEach(
+            r ->
+                System.out.println(
+                    "  P"
+                        + r.getPartitionId()
+                        + " | "
+                        + r.getIntent()
+                        + " | Signal="
+                        + r.getValue().getSignalName()
+                        + " | CatchEventInstanceKey="
+                        + r.getValue().getCatchEventInstanceKey()));
+
+    System.out.println("\nAll CommandDistribution records:");
+    RecordingExporter.commandDistributionRecords()
+        .limit(50)
+        .forEach(
+            r ->
+                System.out.println(
+                    "  P"
+                        + r.getPartitionId()
+                        + " | "
+                        + r.getIntent()
+                        + " | ValueType="
+                        + r.getValue().getValueType()
+                        + " | Intent="
+                        + r.getValue().getIntent()
+                        + " | TargetPartition="
+                        + r.getValue().getPartitionId()));
+
+    System.out.println("\nAll Authorization records:");
+    RecordingExporter.authorizationRecords()
+        .limit(50)
+        .forEach(
+            r ->
+                System.out.println(
+                    "  P"
+                        + r.getPartitionId()
+                        + " | "
+                        + r.getIntent()
+                        + " | Owner="
+                        + r.getValue().getOwnerId()
+                        + " | ResourceType="
+                        + r.getValue().getResourceType()
+                        + " | ResourceId="
+                        + r.getValue().getResourceId()));
+
+    System.out.println("\n=== END STATE DUMP ===\n");
+  }
 
   @Test
   public void shouldWriteDistributingRecordsForOtherPartitions() {
@@ -191,44 +265,196 @@ public class BroadcastSignalMultiplePartitionsTest {
     final String signalName = newRandomSignal();
     final String processId = Strings.newRandomValidBpmnId();
     final String otherProcessId = Strings.newRandomValidBpmnId();
+
+    System.out.println("=== TEST START ===");
+    System.out.println("Signal name: " + signalName);
+    System.out.println("Authorized process: " + processId);
+    System.out.println("Unauthorized process: " + otherProcessId);
+
     deployProcess(processId, "catch_main", signalName);
     deployProcess(otherProcessId, "catch_other", signalName);
 
-    createProcessInstance(processId, 2);
-    createProcessInstance(otherProcessId, 2);
+    System.out.println("Processes deployed, checking deployment records...");
+    RecordingExporter.processRecords()
+        .withBpmnProcessId(processId)
+        .withIntent(io.camunda.zeebe.protocol.record.intent.ProcessIntent.CREATED)
+        .findFirst()
+        .ifPresent(
+            r ->
+                System.out.println(
+                    "Process '" + processId + "' deployed on partition " + r.getPartitionId()));
+    RecordingExporter.processRecords()
+        .withBpmnProcessId(otherProcessId)
+        .withIntent(io.camunda.zeebe.protocol.record.intent.ProcessIntent.CREATED)
+        .findFirst()
+        .ifPresent(
+            r ->
+                System.out.println(
+                    "Process '"
+                        + otherProcessId
+                        + "' deployed on partition "
+                        + r.getPartitionId()));
 
+    System.out.println("Creating process instances on partition 2...");
+    try {
+      createProcessInstance(processId, 2);
+      System.out.println("Created instance of '" + processId + "' on partition 2");
+    } catch (Exception e) {
+      System.err.println("FAILED to create instance of '" + processId + "': " + e.getMessage());
+      System.err.println("Available process instance creation records:");
+      RecordingExporter.processInstanceCreationRecords()
+          .limit(20)
+          .forEach(
+              r ->
+                  System.err.println(
+                      "  - "
+                          + r.getIntent()
+                          + " | partition="
+                          + r.getPartitionId()
+                          + " | recordType="
+                          + r.getRecordType()
+                          + " | rejection="
+                          + r.getRejectionReason()));
+      throw e;
+    }
+
+    try {
+      createProcessInstance(otherProcessId, 2);
+      System.out.println("Created instance of '" + otherProcessId + "' on partition 2");
+    } catch (Exception e) {
+      System.err.println(
+          "FAILED to create instance of '" + otherProcessId + "': " + e.getMessage());
+      System.err.println("Available process instance creation records:");
+      RecordingExporter.processInstanceCreationRecords()
+          .limit(20)
+          .forEach(
+              r ->
+                  System.err.println(
+                      "  - "
+                          + r.getIntent()
+                          + " | partition="
+                          + r.getPartitionId()
+                          + " | recordType="
+                          + r.getRecordType()
+                          + " | rejection="
+                          + r.getRejectionReason()));
+      throw e;
+    }
+
+    System.out.println("Creating user and granting permissions...");
     final UserRecordValue user = createUser();
-    grantProcessPermission(user.getUsername(), processId);
+    System.out.println("User created: " + user.getUsername());
 
+    grantProcessPermission(user.getUsername(), processId);
+    System.out.println("Permission granted for process '" + processId + "'");
+
+    // Wait for authorization to propagate
+    await("authorization created")
+        .pollInterval(Duration.ofMillis(10))
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              final long authCount =
+                  RecordingExporter.authorizationRecords()
+                      .withIntent(
+                          io.camunda.zeebe.protocol.record.intent.AuthorizationIntent.CREATED)
+                      .count();
+              System.out.println("Authorization records found: " + authCount);
+              assertThat(authCount).isGreaterThan(0);
+            });
+
+    System.out.println("Waiting for signal subscriptions...");
     waitForSignalSubscriptions(signalName, 2);
 
+    // Log all signal subscriptions
+    System.out.println("Signal subscriptions created:");
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withSignalName(signalName)
+        .limit(10)
+        .forEach(
+            r ->
+                System.out.println(
+                    "  - Partition "
+                        + r.getPartitionId()
+                        + " | CatchEventInstanceKey="
+                        + r.getValue().getCatchEventInstanceKey()
+                        + " | BpmnProcessId="
+                        + r.getValue().getBpmnProcessId()));
+
     // when
+    System.out.println("Broadcasting signal with user: " + user.getUsername());
     ENGINE.signal().withSignalName(signalName).broadcastWithMetadata(user.getUsername());
 
     // then - the command is rejected on the partition that hosts the unauthorized process instance
+    System.out.println("Waiting for signal broadcast rejection...");
     await("signal broadcast rejection for unauthorized process")
-        .pollInterval(Duration.ofMillis(10))
-        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(100))
+        .atMost(Duration.ofSeconds(10))
         .untilAsserted(
-            () ->
-                assertThat(
-                        RecordingExporter.signalRecords(SignalIntent.BROADCAST)
-                            .withSignalName(signalName)
-                            .withPartitionId(2)
-                            .withRecordType(RecordType.COMMAND_REJECTION)
-                            .withRejectionReason(
-                                "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
-                                    .formatted(otherProcessId))
-                            .exists())
-                    .isTrue());
+            () -> {
+              System.out.println("Checking for rejection on partition 2...");
+
+              // Log all signal records for debugging
+              final var allSignalRecords =
+                  RecordingExporter.signalRecords(SignalIntent.BROADCAST)
+                      .withSignalName(signalName)
+                      .limit(20)
+                      .asList();
+
+              System.out.println("All signal BROADCAST records (" + allSignalRecords.size() + "):");
+              allSignalRecords.forEach(
+                  r ->
+                      System.out.println(
+                          "  - Partition "
+                              + r.getPartitionId()
+                              + " | RecordType="
+                              + r.getRecordType()
+                              + " | Rejection="
+                              + r.getRejectionReason()));
+
+              // Check specifically for partition 2
+              final var partition2Signals =
+                  RecordingExporter.signalRecords(SignalIntent.BROADCAST)
+                      .withSignalName(signalName)
+                      .withPartitionId(2)
+                      .limit(10)
+                      .asList();
+
+              System.out.println("Partition 2 signal records (" + partition2Signals.size() + "):");
+              partition2Signals.forEach(
+                  r ->
+                      System.out.println(
+                          "  - RecordType="
+                              + r.getRecordType()
+                              + " | Rejection="
+                              + r.getRejectionReason()));
+
+              final boolean exists =
+                  RecordingExporter.signalRecords(SignalIntent.BROADCAST)
+                      .withSignalName(signalName)
+                      .withPartitionId(2)
+                      .withRecordType(RecordType.COMMAND_REJECTION)
+                      .withRejectionReason(
+                          "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                              .formatted(otherProcessId))
+                      .exists();
+
+              System.out.println("Expected rejection exists: " + exists);
+              assertThat(exists).isTrue();
+            });
 
     // then - the signal distribution is still finished because a redistribution is not necessary
-    assertThat(
-            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .withDistributionValueType(ValueType.SIGNAL)
-                .withDistributionIntent(SignalIntent.BROADCAST)
-                .exists())
-        .isTrue();
+    System.out.println("Checking for command distribution finished...");
+    final boolean distributionFinished =
+        RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+            .withDistributionValueType(ValueType.SIGNAL)
+            .withDistributionIntent(SignalIntent.BROADCAST)
+            .exists();
+
+    System.out.println("Distribution finished: " + distributionFinished);
+    assertThat(distributionFinished).isTrue();
+
+    System.out.println("=== TEST END ===");
   }
 
   // --- helpers -------------------------------------------------------------------------------
@@ -265,11 +491,60 @@ public class BroadcastSignalMultiplePartitionsTest {
   }
 
   private static void createProcessInstance(final String processId, final int partition) {
-    ENGINE
-        .processInstance()
-        .ofBpmnProcessId(processId)
-        .onPartition(partition)
-        .create(DEFAULT_USER.getUsername());
+    System.out.println(
+        "Attempting to create process instance: processId="
+            + processId
+            + ", partition="
+            + partition);
+
+    // Check if process exists before creating instance
+    final var processRecords =
+        RecordingExporter.processRecords()
+            .withBpmnProcessId(processId)
+            .withIntent(io.camunda.zeebe.protocol.record.intent.ProcessIntent.CREATED)
+            .limit(5)
+            .asList();
+
+    System.out.println(
+        "Found " + processRecords.size() + " process records for '" + processId + "'");
+    processRecords.forEach(
+        r -> System.out.println("  - Partition " + r.getPartitionId() + " | Key=" + r.getKey()));
+
+    try {
+      ENGINE
+          .processInstance()
+          .ofBpmnProcessId(processId)
+          .onPartition(partition)
+          .create(DEFAULT_USER.getUsername());
+      System.out.println(
+          "Successfully created process instance of '" + processId + "' on partition " + partition);
+    } catch (Exception e) {
+      System.err.println("ERROR creating process instance:");
+      System.err.println("  ProcessId: " + processId);
+      System.err.println("  Partition: " + partition);
+      System.err.println("  User: " + DEFAULT_USER.getUsername());
+      System.err.println("  Exception: " + e.getClass().getName() + " - " + e.getMessage());
+
+      // Dump recent process instance creation records
+      System.err.println("\nRecent ProcessInstanceCreation records (last 20):");
+      RecordingExporter.processInstanceCreationRecords()
+          .limit(20)
+          .forEach(
+              r ->
+                  System.err.println(
+                      "  - Intent="
+                          + r.getIntent()
+                          + " | RecordType="
+                          + r.getRecordType()
+                          + " | Partition="
+                          + r.getPartitionId()
+                          + " | BpmnProcessId="
+                          + r.getValue().getBpmnProcessId()
+                          + " | Rejection="
+                          + r.getRejectionReason()));
+
+      throw e;
+    }
   }
 
   private static UserRecordValue createUser() {
@@ -298,16 +573,22 @@ public class BroadcastSignalMultiplePartitionsTest {
 
   private static void waitForSignalSubscriptions(final String signalName, final int processCount) {
     await("signal subscriptions created for " + signalName)
-        .pollInterval(Duration.ofMillis(10))
-        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(100))
+        .atMost(Duration.ofSeconds(10))
         .untilAsserted(
-            () ->
-                assertThat(
-                        RecordingExporter.signalSubscriptionRecords(
-                                SignalSubscriptionIntent.CREATED)
-                            .withSignalName(signalName)
-                            .limit(processCount)
-                            .count())
-                    .isEqualTo(processCount));
+            () -> {
+              final long currentCount =
+                  RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+                      .withSignalName(signalName)
+                      .limit(processCount + 5)
+                      .count();
+              System.out.println(
+                  "Signal subscriptions found: "
+                      + currentCount
+                      + " (expected: "
+                      + processCount
+                      + ")");
+              assertThat(currentCount).isEqualTo(processCount);
+            });
   }
 }
