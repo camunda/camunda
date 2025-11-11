@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
-@Profile("!broker")
+@Profile("gateway")
 public final class GatewayBasedConfiguration {
 
   private final GatewayBasedProperties properties;
