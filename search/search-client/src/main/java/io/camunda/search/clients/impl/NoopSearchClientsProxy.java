@@ -10,6 +10,7 @@ package io.camunda.search.clients.impl;
 import static java.util.Collections.emptyList;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -40,6 +41,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -308,6 +310,16 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public AuditLogEntity getAuditLog(final String id) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
     return SearchQueryResult.empty();
   }
 

@@ -20,6 +20,7 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -538,6 +539,22 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyAuthorizationSortField);
     final var filter = SearchQueryFilterMapper.toAuthorizationFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::authorizationSearchQuery);
+  }
+
+  public static Either<ProblemDetail, AuditLogQuery> toAuditLogQuery(
+      final AuditLogSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromAuditLogSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::auditLog,
+            SearchQuerySortRequestMapper::applyAuditLogSortField);
+    final var filter = SearchQueryFilterMapper.toAuditLogFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }
 
   public static Either<ProblemDetail, MessageSubscriptionQuery> toMessageSubscriptionQuery(

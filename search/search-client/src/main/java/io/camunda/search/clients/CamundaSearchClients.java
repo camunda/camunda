@@ -13,6 +13,7 @@ import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SearchEntityReader;
 import io.camunda.search.clients.reader.SearchQueryStatisticsReader;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -49,6 +50,7 @@ import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -136,6 +138,17 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
     return doSearchWithReader(readers.correlatedMessageSubscriptionReader(), query);
+  }
+
+  @Override
+  public AuditLogEntity getAuditLog(final String id) {
+    return doGetWithReader(readers.auditLogReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Audit Log", id));
+  }
+
+  @Override
+  public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
+    return doSearchWithReader(readers.auditLogReader(), query);
   }
 
   @Override
