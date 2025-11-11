@@ -288,4 +288,12 @@ public sealed interface JobWorkerChangeSet {
           jobWorkerValue.getMaxRetries(), maxRetries, jobWorkerValue::setMaxRetries);
     }
   }
+
+  record RetryBackoffChangeSet(Duration retryBackoff) implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return updateIfChanged(
+          jobWorkerValue.getRetryBackoff(), retryBackoff, jobWorkerValue::setRetryBackoff);
+    }
+  }
 }

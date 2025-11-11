@@ -79,6 +79,7 @@ public class JobWorkerController {
       @Nullable final Boolean streamEnabled,
       @Nullable final Duration streamTimeout,
       @Nullable final Integer maxRetries,
+      @Nullable final Duration retryBackoff,
       @Nullable final Boolean reset) {
     if (reset != null && reset) {
       jobWorkerManager.resetJobWorkers();
@@ -97,7 +98,8 @@ public class JobWorkerController {
               forceFetchAllVariables,
               streamEnabled,
               streamTimeout,
-              maxRetries));
+              maxRetries,
+              retryBackoff));
     }
   }
 
@@ -117,8 +119,8 @@ public class JobWorkerController {
       @Nullable final Boolean streamEnabled,
       @Nullable final Duration streamTimeout,
       @Nullable final Integer maxRetries,
-      @Nullable final Boolean reset,
-      @Nullable final Boolean applyCustomizers) {
+      @Nullable final Duration retryBackoff,
+      @Nullable final Boolean reset) {
     if (reset != null && reset) {
       jobWorkerManager.resetJobWorker(typeSelector);
     } else {
@@ -137,7 +139,8 @@ public class JobWorkerController {
               forceFetchAllVariables,
               streamEnabled,
               streamTimeout,
-              maxRetries));
+              maxRetries,
+              retryBackoff));
     }
   }
 
@@ -154,7 +157,8 @@ public class JobWorkerController {
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
       final Duration streamTimeout,
-      final Integer maxRetries) {
+      final Integer maxRetries,
+      final Duration retryBackoff) {
     final List<JobWorkerChangeSet> changeSets = new ArrayList<>();
     if (enabled != null) {
       changeSets.add(new EnabledChangeSet(enabled));
@@ -229,7 +233,8 @@ public class JobWorkerController {
         jobWorkerValue.getPollInterval().value(),
         jobWorkerValue.getStreamEnabled().value(),
         jobWorkerValue.getStreamTimeout().value(),
-        jobWorkerValue.getMaxRetries().value());
+        jobWorkerValue.getMaxRetries().value(),
+        jobWorkerValue.getRetryBackoff().value());
   }
 
   public record JobWorkerDto(
@@ -246,5 +251,6 @@ public class JobWorkerController {
       Duration pollInterval,
       boolean streamEnabled,
       Duration streamTimeout,
-      int maxRetries) {}
+      int maxRetries,
+      Duration retryBackoff) {}
 }
