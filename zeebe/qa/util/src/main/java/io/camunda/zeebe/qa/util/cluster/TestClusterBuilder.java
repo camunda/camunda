@@ -8,6 +8,8 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +40,10 @@ public final class TestClusterBuilder {
   private BiConsumer<MemberId, TestStandaloneGateway> gatewayConfig =
       (id, gateway) -> {
         gateway.withUnauthenticatedAccess();
+      };
+  private BiConsumer<MemberId, TestStandaloneBroker> unifiedConfiguration =
+      (id, broker) -> {
+        broker.withUnauthenticatedAccess();
       };
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
@@ -230,6 +236,12 @@ public final class TestClusterBuilder {
     return this;
   }
 
+  public TestClusterBuilder withUnifiedConfiguration(
+      final BiConsumer<MemberId, TestStandaloneBroker> modifier) {
+    unifiedConfiguration = modifier;
+    return this;
+  }
+
   /**
    * Sets the configuration function that will be executed in the {@link #build()} method on each
    * broker.
@@ -245,7 +257,13 @@ public final class TestClusterBuilder {
     return this;
   }
 
-  // TODO KPO add java doc
+  public TestClusterBuilder withUnifiedConfiguration(
+      final Consumer<TestStandaloneBroker> modifier) {
+    unifiedConfiguration = (id, broker) -> modifier.accept(broker);
+    return this;
+  }
+
+  // TODO KPO remove
   public TestClusterBuilder withBrokerProperties(final Map<String, Object> brokerProperties) {
     this.brokerProperties = brokerProperties;
     return this;
@@ -341,28 +359,34 @@ public final class TestClusterBuilder {
     // since initial contact points has to contain all known brokers, we can only configure it
     // AFTER the base broker configuration
     final var contactPoints = getInitialContactPoints();
-    brokers
-        .values()
-        .forEach(
-            broker ->
-                broker.withProperty(
-                    "camunda.cluster.initial-contact-points", String.join(",", contactPoints)));
+    brokers.values().stream()
+        .map(TestStandaloneBroker::unifiedConfiguration)
+        .map(UnifiedConfiguration::getCamunda)
+        .map(Camunda::getCluster)
+        .forEach(cfg -> cfg.setInitialContactPoints(contactPoints));
   }
 
   private TestStandaloneBroker createBroker(final int index) {
-    final var replicas = (partitionsCount * replicationFactor) / brokersCount;
-
-    return new TestStandaloneBroker()
-        .withProperty("camunda.cluster.node-id", index)
-        .withProperty("camunda.cluster.partition-count", partitionsCount)
-        .withProperty("camunda.cluster.replication-factor", replicationFactor)
-        .withProperty("camunda.cluster.size", brokersCount)
-        .withProperty("camunda.cluster.name", name)
-        .withProperty("camunda.system.io-thread-count", replicas)
-        .withProperty("camunda.system.cpu-thread-count", replicas)
-        .withProperty("zeebe.broker.gateway.enable", useEmbeddedGateway)
-        .withRecordingExporter(useRecordingExporter)
-        .withAdditionalProperties(brokerProperties);
+    final TestStandaloneBroker broker =
+        new TestStandaloneBroker()
+            .withUnifiedConfiguration(
+                uc -> {
+                  final var cluster = uc.getCamunda().getCluster();
+                  cluster.setNodeId(index);
+                  cluster.setPartitionCount(partitionsCount);
+                  cluster.setReplicationFactor(replicationFactor);
+                  cluster.setSize(brokersCount);
+                  cluster.setName(name);
+                })
+            .withUnifiedConfiguration(
+                uc -> {
+                  final var replicas = (partitionsCount * replicationFactor) / brokersCount;
+                  uc.getCamunda().getSystem().setIoThreadCount(replicas);
+                  uc.getCamunda().getSystem().setCpuThreadCount(replicas);
+                })
+            .withProperty("zeebe.broker.gateway.enable", "true")
+            .withRecordingExporter(useRecordingExporter);
+    return broker;
   }
 
   private void createGateways() {

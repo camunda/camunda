@@ -65,6 +65,11 @@ public class UnifiedConfigurationHelper {
       final BackwardsCompatibilityMode backwardsCompatibilityMode,
       final Set<String> legacyProperties) {
 
+    // TODO KPO replace null with property "camunda.skip-validate-legacy-configuration"
+    if (environment == null) {
+      return newValue;
+    }
+
     if (backwardsCompatibilityMode == null) {
       throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
     }

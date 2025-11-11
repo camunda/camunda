@@ -19,7 +19,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
-import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,13 +44,13 @@ final class ScaleDownBrokersTest {
           .withBrokersCount(CLUSTER_SIZE)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
-          .withBrokerProperties(
-              Map.of(
-                  // Decrease the timeouts for fast convergence of broker topology.
-                  "camunda.cluster.membership.sync-interval",
-                  "1s",
-                  "camunda.data.secondary-storage.autoconfigure-camunda-exporter",
-                  false))
+          .withUnifiedConfiguration(
+              b ->
+                  b.unifiedConfiguration()
+                      .getCamunda()
+                      .getCluster()
+                      .getMembership()
+                      .setSyncInterval(Duration.ofSeconds(1)))
           .withGatewayConfig(
               g ->
                   g.gatewayConfig()
