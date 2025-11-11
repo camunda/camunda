@@ -224,7 +224,7 @@ final class IdentitySetupInitializerIT {
         new TestStandaloneBroker()
             .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
             .withSecurityConfig(securityCfg)
-            .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(partitionCount))
+            .withClusterConfig(cluster -> cluster.setPartitionCount(partitionCount))
             .withRecordingExporter(true);
 
     if (tempDir != null) {

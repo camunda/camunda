@@ -15,8 +15,11 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
@@ -32,7 +35,6 @@ import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -59,8 +61,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   public static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final BrokerBasedProperties config;
+  private final Camunda unifiedConfig;
   private final CamundaSecurityProperties securityConfig;
+  private final boolean isGatewayEnabled = true;
 
   public TestStandaloneBroker() {
     super(
@@ -69,35 +72,20 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         UnifiedConfigurationHelper.class,
         UnifiedConfiguration.class,
         NodeIdProviderConfiguration.class,
+        BrokerBasedPropertiesOverride.class,
+        GatewayBasedPropertiesOverride.class,
         GatewayRestPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
         SearchEngineIndexPropertiesOverride.class,
         SearchEngineRetentionPropertiesOverride.class);
 
-    config = new BrokerBasedProperties();
+    unifiedConfig = new Camunda();
 
-    config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
-    config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
-    config.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
-
-    // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
-    // for local development; also lower the watermarks for local testing
-    config.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
-    config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
-    config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
-    // Disable pre-allocation of segment files - many tests won't even fill up their first segment
-    config.getExperimental().getRaft().setPreallocateSegmentFiles(false);
-    // Disable flushes to reduce test runtime - we don't need perfect durability in tests, if the
-    // machine crashes the test fails anyway.
-    config.getCluster().getRaft().setFlush(new FlushConfig(false, Duration.ZERO));
-    config.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
-    config.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
-    config.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
-    config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
-    config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
+    // Initialize unified config with test-friendly defaults
+    initializeUnifiedConfigDefaults();
 
     //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
+    withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
@@ -143,12 +131,17 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public int mappedPort(final TestZeebePort port) {
-    return switch (port) {
-      case COMMAND -> config.getNetwork().getCommandApi().getPort();
-      case GATEWAY -> config.getGateway().getNetwork().getPort();
-      case CLUSTER -> config.getNetwork().getInternalApi().getPort();
-      default -> super.mappedPort(port);
-    };
+    // Ports are set via properties since they're dynamically allocated at test creation
+    // and not part of unified config structure yet
+    final var mport =
+        switch (port) {
+          case COMMAND -> unifiedConfig.getCluster().getNetwork().getCommandApi().getPort();
+          case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
+          case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
+          default -> super.mappedPort(port);
+        };
+
+    return mport;
   }
 
   @Override
@@ -174,9 +167,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
     // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
-    // we need to hook in at the last minute and set the property as it won't resolve from the
-    // config bean
-    withProperty("zeebe.broker.gateway.enable", config.getGateway().isEnable());
+    // we need to hook in at the last minute and set the property
+    // Gateway enable flag is set via property since gateway config isn't fully in unified config
+    withProperty(
+        "zeebe.broker.gateway.enable",
+        property("zeebe.broker.gateway.enable", Boolean.class, isGatewayEnabled));
     return super.createSpringBuilder();
   }
 
@@ -199,12 +194,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
+    return MemberId.from(String.valueOf(unifiedConfig.getCluster().nodeId()));
   }
 
   @Override
   public String host() {
-    return config.getNetwork().getHost();
+    // Network host configuration via property (not in unified config yet)
+    return property("zeebe.broker.network.host", String.class, "0.0.0.0");
   }
 
   @Override
@@ -214,7 +210,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public boolean isGateway() {
-    return config.getGateway().isEnable();
+    // Gateway enable flag is set via property (not fully in unified config yet)
+    return isGatewayEnabled;
   }
 
   @Override
@@ -224,7 +221,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           "Expected to get the gateway address for this broker, but the embedded gateway is not enabled");
     }
 
-    return TestStandaloneApplication.super.grpcAddress();
+    final var scheme = unifiedConfig.getApi().getGrpc().getSsl().isEnabled() ? "https" : "http";
+    return uri(scheme, TestZeebePort.GATEWAY);
   }
 
   @Override
@@ -234,13 +232,28 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public TestStandaloneBroker withGatewayConfig(final Consumer<GatewayCfg> modifier) {
-    modifier.accept(config.getGateway());
-    return this;
+    throw new UnsupportedOperationException(
+        "Gateway configuration via withGatewayConfig is not supported. "
+            + "Gateway is not yet fully migrated to unified configuration. "
+            + "Use withProperty() to set zeebe.broker.gateway.* properties instead.");
   }
 
   @Override
   public GatewayCfg gatewayConfig() {
-    return config.getGateway();
+    throw new UnsupportedOperationException(
+        "Gateway configuration access via gatewayConfig() is not supported. "
+            + "Gateway is not yet fully migrated to unified configuration.");
+  }
+
+  /**
+   * Returns the unified configuration object. This provides access to the camunda.* configuration
+   * structure and is the primary way to read/configure the test broker.
+   *
+   * @return the Camunda unified configuration object
+   */
+  @Override
+  public Camunda unifiedConfig() {
+    return unifiedConfig;
   }
 
   /** Enables multi-tenancy in the security configuration. */
@@ -267,38 +280,142 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    */
   public TestStandaloneBroker withRecordingExporter(final boolean useRecordingExporter) {
     if (!useRecordingExporter) {
-      config.getExporters().remove(RECORDING_EXPORTER_ID);
+      unifiedConfig.getData().getExporters().remove(RECORDING_EXPORTER_ID);
       return this;
     }
 
-    return withExporter(
-        RECORDING_EXPORTER_ID, cfg -> cfg.setClassName(RecordingExporter.class.getName()));
+    return withDataConfig(
+        data -> {
+          final var exporter =
+              data.getExporters()
+                  .computeIfAbsent(
+                      RECORDING_EXPORTER_ID, ignored -> new io.camunda.configuration.Exporter());
+          exporter.setClassName(RecordingExporter.class.getName());
+        });
   }
 
   /**
-   * Adds or replaces a new exporter with the given ID. If it was already existing, the existing
-   * configuration is passed to the modifier. If it's new, a blank configuration is passed.
+   * Adds or replaces a new exporter with the given ID using unified configuration.
+   *
+   * <p>Note: This method accepts ExporterCfg for backward compatibility but configures the unified
+   * config exporter. ExporterCfg will be converted to the unified Exporter format.
    *
    * @param id the ID of the exporter
-   * @param modifier a configuration function
+   * @param modifier a configuration function that accepts ExporterCfg
    * @return itself for chaining
    */
   @Override
   public TestStandaloneBroker withExporter(final String id, final Consumer<ExporterCfg> modifier) {
-    final var exporterConfig =
-        config.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
-    modifier.accept(exporterConfig);
+    // Create a temporary ExporterCfg to accept the configuration
+    final var tempExporterCfg = new ExporterCfg();
+    modifier.accept(tempExporterCfg);
 
+    // Transfer to unified config exporter
+    return withDataConfig(
+        data -> {
+          final var unifiedExporter =
+              data.getExporters()
+                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.Exporter());
+          unifiedExporter.setClassName(tempExporterCfg.getClassName());
+          unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
+          unifiedExporter.setArgs(tempExporterCfg.getArgs());
+        });
+  }
+
+  /**
+   * Modifies the broker configuration.
+   *
+   * @deprecated BrokerBasedProperties is no longer the primary configuration object. Use {@link
+   *     #withUnifiedConfig(Consumer)} or convenience methods like {@link
+   *     #withClusterConfig(Consumer)}, {@link #withDataConfig(Consumer)}, etc. instead.
+   *     BrokerBasedProperties will be created from UnifiedConfiguration at Spring startup.
+   */
+  @Deprecated
+  @Override
+  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
+    throw new UnsupportedOperationException(
+        "withBrokerConfig() is no longer supported. "
+            + "Use withUnifiedConfig() or convenience methods like withClusterConfig(), withDataConfig(), etc. "
+            + "BrokerBasedProperties is created from UnifiedConfiguration at Spring startup.");
+  }
+
+  /**
+   * Modifies the unified configuration (camunda.* properties). This is the recommended way to
+   * configure test brokers going forward.
+   *
+   * <p>The unified configuration will be merged into BrokerBasedProperties at Spring application
+   * startup via BrokerBasedPropertiesOverride, with unified config taking precedence.
+   *
+   * @param modifier a configuration function that accepts the Camunda configuration object
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneBroker withUnifiedConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(unifiedConfig);
     return this;
   }
 
   /**
-   * Modifies the broker configuration. Will still mutate the configuration if the broker is
-   * started, but likely has no effect until it's restarted.
+   * Convenience method to modify cluster configuration using the unified configuration API.
+   *
+   * @param modifier a configuration function for cluster settings (membership, raft, network, etc.)
+   * @return itself for chaining
    */
   @Override
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    modifier.accept(config);
+  public TestStandaloneBroker withClusterConfig(
+      final Consumer<io.camunda.configuration.Cluster> modifier) {
+    modifier.accept(unifiedConfig.getCluster());
+    return this;
+  }
+
+  /**
+   * Convenience method to modify data configuration using the unified configuration API.
+   *
+   * @param modifier a configuration function for data settings (storage, backup, exporters, etc.)
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneBroker withDataConfig(
+      final Consumer<io.camunda.configuration.Data> modifier) {
+    modifier.accept(unifiedConfig.getData());
+    return this;
+  }
+
+  /**
+   * Convenience method to modify API configuration using the unified configuration API.
+   *
+   * @param modifier a configuration function for API settings (gRPC, REST, long-polling, etc.)
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneBroker withApiConfig(final Consumer<io.camunda.configuration.Api> modifier) {
+    modifier.accept(unifiedConfig.getApi());
+    return this;
+  }
+
+  /**
+   * Convenience method to modify processing configuration using the unified configuration API.
+   *
+   * @param modifier a configuration function for processing settings (batches, async tasks, etc.)
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneBroker withProcessingConfig(
+      final Consumer<io.camunda.configuration.Processing> modifier) {
+    modifier.accept(unifiedConfig.getProcessing());
+    return this;
+  }
+
+  /**
+   * Convenience method to modify monitoring configuration using the unified configuration API.
+   *
+   * @param modifier a configuration function for monitoring settings (metrics, tracing, etc.)
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneBroker withMonitoringConfig(
+      final Consumer<io.camunda.configuration.Monitoring> modifier) {
+    modifier.accept(unifiedConfig.getMonitoring());
     return this;
   }
 
@@ -313,15 +430,85 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return this;
   }
 
-  /** Returns the broker configuration */
+  /**
+   * Returns the broker configuration.
+   *
+   * @deprecated BrokerBasedProperties is no longer maintained in TestStandaloneBroker. Use {@link
+   *     #unifiedConfig()} instead. BrokerBasedProperties will be created from UnifiedConfiguration
+   *     at Spring startup.
+   */
+  @Deprecated
   @Override
   public BrokerBasedProperties brokerConfig() {
-    return config;
+    throw new UnsupportedOperationException(
+        "brokerConfig() is no longer supported. "
+            + "Use unifiedConfig() instead. "
+            + "BrokerBasedProperties is created from UnifiedConfiguration at Spring startup.");
   }
 
   @Override
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
+  }
+
+  /**
+   * Initialize unified configuration with test-friendly defaults that match the legacy
+   * configuration behavior.
+   */
+  private void initializeUnifiedConfigDefaults() {
+    // Set cluster defaults
+    unifiedConfig.getCluster().setSize(1);
+    unifiedConfig.getCluster().setPartitionCount(1);
+    unifiedConfig.getCluster().setReplicationFactor(1);
+    unifiedConfig
+        .getCluster()
+        .setCompressionAlgorithm(io.camunda.configuration.Cluster.CompressionAlgorithm.NONE);
+
+    // Set membership defaults for fast test execution
+    unifiedConfig.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
+    unifiedConfig.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
+    unifiedConfig.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
+
+    // Set raft defaults - disable flushing for faster tests
+    unifiedConfig.getCluster().getRaft().setFlushEnabled(false);
+    unifiedConfig.getCluster().getRaft().setFlushDelay(Duration.ZERO);
+
+    // Set data defaults - smaller segments for tests
+    unifiedConfig.getData().setSnapshotPeriod(Duration.ofMinutes(5));
+    unifiedConfig
+        .getData()
+        .getPrimaryStorage()
+        .getLogStream()
+        .setLogSegmentSize(DataSize.ofMegabytes(16));
+    unifiedConfig
+        .getData()
+        .getPrimaryStorage()
+        .getDisk()
+        .getFreeSpace()
+        .setProcessing(DataSize.ofMegabytes(128));
+    unifiedConfig
+        .getData()
+        .getPrimaryStorage()
+        .getDisk()
+        .getFreeSpace()
+        .setReplication(DataSize.ofMegabytes(64));
+
+    // Set processing defaults - enable consistency checks
+    unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
+    unifiedConfig.getProcessing().setEnableForeignKeyChecks(true);
+
+    // Set dynamic ports via properties (these aren't in unified config yet)
+    unifiedConfig
+        .getCluster()
+        .getNetwork()
+        .getCommandApi()
+        .setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig
+        .getCluster()
+        .getNetwork()
+        .getInternalApi()
+        .setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {
