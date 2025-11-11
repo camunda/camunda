@@ -20,6 +20,8 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
+import io.camunda.client.jobhandling.JobExceptionHandlerSupplier.JobExceptionHandlerSupplierContext;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
@@ -39,6 +41,7 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   private final List<AsyncExecChainHandler> chainHandlers;
   private final CamundaClientExecutorService zeebeClientExecutorService;
   private final CredentialsProvider credentialsProvider;
+  private final JobExceptionHandlerSupplier jobExceptionHandlerSupplier;
 
   public SpringCamundaClientConfiguration(
       final CamundaClientProperties camundaClientProperties,
@@ -46,13 +49,15 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final CamundaClientExecutorService zeebeClientExecutorService,
-      final CredentialsProvider credentialsProvider) {
+      final CredentialsProvider credentialsProvider,
+      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
     this.camundaClientProperties = camundaClientProperties;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
     this.chainHandlers = chainHandlers;
     this.zeebeClientExecutorService = zeebeClientExecutorService;
     this.credentialsProvider = credentialsProvider;
+    this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
   }
 
   @Override
@@ -182,8 +187,10 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
 
   @Override
   public JobExceptionHandler getDefaultJobWorkerExceptionHandler() {
-    return JobExceptionHandler.createWithRetryBackoff(
-        camundaClientProperties.getWorker().getDefaults().getRetryBackoff());
+    return jobExceptionHandlerSupplier.getJobExceptionHandler(
+        new JobExceptionHandlerSupplierContext(
+            camundaClientProperties.getWorker().getDefaults().getRetryBackoff(),
+            camundaClientProperties.getWorker().getDefaults().getMaxRetries()));
   }
 
   @Override

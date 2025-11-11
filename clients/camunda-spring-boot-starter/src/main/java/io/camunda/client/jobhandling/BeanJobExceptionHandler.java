@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
@@ -31,24 +30,33 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SpringJobExceptionHandler extends JobExceptionHandlerImpl {
-  private static final Logger LOG = LoggerFactory.getLogger(SpringJobExceptionHandler.class);
-  private final JobWorkerValue jobWorkerValue;
+public class BeanJobExceptionHandler extends JobExceptionHandlerImpl {
+  private static final Logger LOG = LoggerFactory.getLogger(BeanJobExceptionHandler.class);
   private final MetricsRecorder metricsRecorder;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final int maxRetries;
+  private final Duration retryBackoff;
 
-  public SpringJobExceptionHandler(
-      final JobWorkerValue jobWorkerValue,
+  public BeanJobExceptionHandler(
+      final Duration retryBackoff,
+      final int maxRetries,
       final MetricsRecorder metricsRecorder,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy) {
     super(
         DEFAULT_ERROR_MESSAGE_PROVIDER,
         DEFAULT_RETRIES_PROVIDER,
-        ctx -> jobWorkerValue.getRetryBackoff(),
+        ctx -> retryBackoff,
         DEFAULT_VARIABLES_PROVIDER);
-    this.jobWorkerValue = jobWorkerValue;
     this.metricsRecorder = metricsRecorder;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.maxRetries = maxRetries;
+    this.retryBackoff = retryBackoff;
+  }
+
+  private CommandWrapper createCommandWrapper(
+      final FinalCommandStep<?> command, final ActivatedJob job, final int maxRetries) {
+    return new CommandWrapper(
+        command, job, commandExceptionHandlingStrategy, metricsRecorder, maxRetries);
   }
 
   @Override
@@ -59,14 +67,19 @@ public class SpringJobExceptionHandler extends JobExceptionHandlerImpl {
     if (exception instanceof final JobError jobError) {
       LOG.trace("Caught job error on {}", job);
       final CommandWrapper command =
-          createCommandWrapper(createFailJobCommand(jobClient, job, jobError), job, jobWorkerValue);
+          createCommandWrapper(
+              createFailJobCommand(jobClient, context.getActivatedJob(), jobError),
+              context.getActivatedJob(),
+              maxRetries);
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
     } else if (exception instanceof final BpmnError bpmnError) {
       LOG.trace("Caught BPMN error on {}", job);
       final CommandWrapper command =
           createCommandWrapper(
-              createThrowErrorCommand(jobClient, job, bpmnError), job, jobWorkerValue);
+              createThrowErrorCommand(jobClient, context.getActivatedJob(), bpmnError),
+              context.getActivatedJob(),
+              maxRetries);
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_BPMN_ERROR, job.getType());
     } else {
@@ -93,7 +106,7 @@ public class SpringJobExceptionHandler extends JobExceptionHandlerImpl {
     final String errorMessage = JobHandlingUtil.createErrorMessage(jobError);
     final Duration backoff =
         jobError.getRetryBackoff().apply(retries) == null
-            ? jobWorkerValue.getRetryBackoff()
+            ? retryBackoff
             : jobError.getRetryBackoff().apply(retries);
     final FailJobCommandStep2 command =
         jobClient
@@ -102,15 +115,5 @@ public class SpringJobExceptionHandler extends JobExceptionHandlerImpl {
             .errorMessage(errorMessage)
             .retryBackoff(backoff);
     return JobHandlingUtil.applyVariables(jobError.getVariables(), command);
-  }
-
-  private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command, final ActivatedJob job, final JobWorkerValue workerValue) {
-    return new CommandWrapper(
-        command,
-        job,
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        workerValue.getMaxRetries());
   }
 }

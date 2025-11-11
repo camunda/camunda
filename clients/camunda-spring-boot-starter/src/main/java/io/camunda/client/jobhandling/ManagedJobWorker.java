@@ -15,11 +15,7 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.api.worker.JobExceptionHandler;
-import java.time.Duration;
+import io.camunda.client.annotation.value.JobWorkerValue;
 
-public interface JobExceptionHandlerSupplier {
-  JobExceptionHandler getJobExceptionHandler(JobExceptionHandlerSupplierContext context);
-
-  record JobExceptionHandlerSupplierContext(Duration retryBackoff, int maxRetries) {}
-}
+public record ManagedJobWorker(
+    JobWorkerValue jobWorkerValue, JobHandlerFactory jobHandlerFactory) {}

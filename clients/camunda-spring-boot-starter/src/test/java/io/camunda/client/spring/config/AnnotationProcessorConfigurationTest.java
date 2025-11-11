@@ -19,8 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobWorkerManager;
+import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
+import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.annotation.processor.AbstractCamundaAnnotationProcessor;
 import io.camunda.client.spring.configuration.AnnotationProcessorConfiguration;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
@@ -42,6 +46,10 @@ public class AnnotationProcessorConfigurationTest {
   // required to auto-wire with the job worker annotation processor configuration
   @MockitoBean JobWorkerManager jobWorkerManager;
   @MockitoBean CamundaClient camundaClient;
+  @MockitoBean CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  @MockitoBean MetricsRecorder metricsRecorder;
+  @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
+  @MockitoBean ResultProcessorStrategy resultProcessorStrategy;
   @Autowired MockedBean mockedBean;
   @Autowired CamundaClientEventListener camundaClientEventListener;
   @Autowired Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet;

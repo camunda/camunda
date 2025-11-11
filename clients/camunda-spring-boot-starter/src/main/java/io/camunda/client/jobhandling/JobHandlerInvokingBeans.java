@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
@@ -34,19 +33,28 @@ import org.slf4j.Logger;
 public class JobHandlerInvokingBeans implements JobHandler {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
-  private final JobWorkerValue workerValue;
+  private final String jobWorkerName;
+  private final BeanMethod method;
+  private final boolean autoComplete;
+  private final int maxRetries;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final List<ParameterResolver> parameterResolvers;
   private final ResultProcessor resultProcessor;
 
   public JobHandlerInvokingBeans(
-      final JobWorkerValue workerValue,
+      final String jobWorkerName,
+      final BeanMethod method,
+      final boolean autoComplete,
+      final int maxRetries,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final List<ParameterResolver> parameterResolvers,
       final ResultProcessor resultProcessor) {
-    this.workerValue = workerValue;
+    this.jobWorkerName = jobWorkerName;
+    this.method = method;
+    this.autoComplete = autoComplete;
+    this.maxRetries = maxRetries;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolvers = parameterResolvers;
@@ -56,13 +64,13 @@ public class JobHandlerInvokingBeans implements JobHandler {
   @Override
   public void handle(final JobClient jobClient, final ActivatedJob job) throws Exception {
     final List<Object> args = createParameters(jobClient, job);
-    LOG.trace("Handle {} and invoke worker {}", job, workerValue);
+    LOG.trace("Handle {} and invoke worker {}", job, jobWorkerName);
     metricsRecorder.increase(
         MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
-    final Object methodInvocationResult = workerValue.getMethodInfo().invoke(args.toArray());
+    final Object methodInvocationResult = method.invoke(args.toArray());
     final Object result =
         resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
-    if (workerValue.getAutoComplete()) {
+    if (autoComplete) {
       LOG.trace("Auto completing {}", job);
       final CommandWrapper command =
           createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
@@ -78,11 +86,7 @@ public class JobHandlerInvokingBeans implements JobHandler {
   private CommandWrapper createCommandWrapper(
       final FinalCommandStep<?> command, final ActivatedJob job) {
     return new CommandWrapper(
-        command,
-        job,
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        workerValue.getMaxRetries());
+        command, job, commandExceptionHandlingStrategy, metricsRecorder, maxRetries);
   }
 
   private List<Object> createParameters(final JobClient jobClient, final ActivatedJob job) {

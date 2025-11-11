@@ -31,14 +31,17 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
 import io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy;
-import io.camunda.client.jobhandling.parameter.ParameterResolver;
+import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.client.jobhandling.result.DefaultDocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.client.jobhandling.result.DefaultResultProcessorStrategy;
-import io.camunda.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
-import io.camunda.client.jobhandling.result.ResultProcessor;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.test.util.JobWorkerPermutations;
@@ -64,16 +67,16 @@ public class JobHandlerInvokingBeansTest {
       value = Response.class,
       names = {"VOID", "RESPONSE"})
   void shouldAutoComplete(final Response response) throws Exception {
-    final JobWorkerValue jobWorkerValue =
-        jobWorkerValue(new TestDimension(AutoComplete.YES, response, List.of()));
-    final JobHandlerInvokingBeans jobHandler =
-        new JobHandlerInvokingBeans(
-            jobWorkerValue,
-            commandExceptionHandlingStrategy(),
-            metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue));
-
+    final TestDimension testDimension = new TestDimension(AutoComplete.YES, response, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
+    final JobHandler jobHandler =
+        new BeanJobHandlerFactory(
+                methodInfo(testDimension),
+                commandExceptionHandlingStrategy(),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder())
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
     final CamundaFuture<CompleteJobResponse> future = mock(CamundaFuture.class);
@@ -92,16 +95,17 @@ public class JobHandlerInvokingBeansTest {
 
   @Test
   void shouldNotAutoComplete() throws Exception {
-    final JobWorkerValue jobWorkerValue =
-        jobWorkerValue(new TestDimension(AutoComplete.NO, Response.VOID, List.of()));
-    final JobHandlerInvokingBeans jobHandler =
-        new JobHandlerInvokingBeans(
-            jobWorkerValue,
-            commandExceptionHandlingStrategy(),
-            metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue));
-
+    final TestDimension testDimension =
+        new TestDimension(AutoComplete.NO, Response.VOID, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
+    final JobHandler jobHandler =
+        new BeanJobHandlerFactory(
+                methodInfo(testDimension),
+                commandExceptionHandlingStrategy(),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder())
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
     jobHandler.handle(jobClient, job);
@@ -113,15 +117,16 @@ public class JobHandlerInvokingBeansTest {
   @ParameterizedTest
   @MethodSource("shouldFailJobSource")
   void shouldFailJob(final AutoComplete autoComplete, final Response response) throws Exception {
-    final JobWorkerValue jobWorkerValue =
-        jobWorkerValue(new TestDimension(autoComplete, response, List.of()));
-    final JobHandlerInvokingBeans jobHandler =
-        new JobHandlerInvokingBeans(
-            jobWorkerValue,
-            commandExceptionHandlingStrategy(),
-            metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue));
+    final TestDimension testDimension = new TestDimension(autoComplete, response, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
+    final JobHandler jobHandler =
+        new BeanJobHandlerFactory(
+                methodInfo(testDimension),
+                commandExceptionHandlingStrategy(),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder())
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -134,15 +139,16 @@ public class JobHandlerInvokingBeansTest {
   @MethodSource("shouldThrowBpmnErrorSource")
   void shouldThrowBpmnError(final AutoComplete autoComplete, final Response response)
       throws Exception {
-    final JobWorkerValue jobWorkerValue =
-        jobWorkerValue(new TestDimension(autoComplete, response, List.of()));
-    final JobHandlerInvokingBeans jobHandler =
-        new JobHandlerInvokingBeans(
-            jobWorkerValue,
-            commandExceptionHandlingStrategy(),
-            metricsRecorder(),
-            parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue));
+    final TestDimension testDimension = new TestDimension(autoComplete, response, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
+    final JobHandler jobHandler =
+        new BeanJobHandlerFactory(
+                methodInfo(testDimension),
+                commandExceptionHandlingStrategy(),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder())
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -152,8 +158,21 @@ public class JobHandlerInvokingBeansTest {
         .hasFieldOrPropertyWithValue("errorCode", "testCode");
   }
 
+  private ParameterResolverStrategy parameterResolverStrategy() {
+    return new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+  }
+
+  private static ResultProcessorStrategy resultProcessorStrategy() {
+    return new DefaultResultProcessorStrategy(
+        new DefaultDocumentResultProcessorFailureHandlingStrategy());
+  }
+
   private static JobWorkerValue jobWorkerValue(final TestDimension testDimension) {
     return JobWorkerPermutationsUtil.jobWorkerValue(JobWorkerPermutations.class, testDimension);
+  }
+
+  private static MethodInfo methodInfo(final TestDimension testDimension) {
+    return JobWorkerPermutationsUtil.getMethodInfo(JobWorkerPermutations.class, testDimension);
   }
 
   private static Stream<Arguments> shouldThrowBpmnErrorSource() {
@@ -188,18 +207,5 @@ public class JobHandlerInvokingBeansTest {
 
   private static MetricsRecorder metricsRecorder() {
     return new DefaultNoopMetricsRecorder();
-  }
-
-  private static List<ParameterResolver> parameterResolvers(final JobWorkerValue jobWorkerValue) {
-    return JobHandlingUtil.createParameterResolvers(
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class)),
-        jobWorkerValue);
-  }
-
-  private static ResultProcessor resultProcessor(final JobWorkerValue jobWorkerValue) {
-    return JobHandlingUtil.createResultProcessor(
-        new DefaultResultProcessorStrategy(
-            mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class)),
-        jobWorkerValue);
   }
 }

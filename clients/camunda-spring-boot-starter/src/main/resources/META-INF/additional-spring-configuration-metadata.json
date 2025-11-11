@@ -114,6 +114,14 @@
   ],
   "properties": [
     {
+      "name": "camunda.client.worker.defaults.enabled",
+      "defaultValue": true
+    },
+    {
+      "name": "camunda.client.worker.defaults.auto-complete",
+      "defaultValue": true
+    },
+    {
       "name": "camunda.client.worker.defaults.tenant-ids",
       "defaultValue": ["<default>"]
     },
@@ -140,6 +148,22 @@
     {
       "name": "camunda.client.worker.defaults.stream-enabled",
       "defaultValue": false
+    },
+    {
+      "name": "camunda.client.worker.defaults.request-timeout",
+      "defaultValue": "PT10S"
+    },
+    {
+      "name": "camunda.client.worker.defaults.force-fetch-all-variables",
+      "defaultValue": false
+    },
+    {
+      "name": "camunda.client.worker.defaults.max-retries",
+      "defaultValue": 0
+    },
+    {
+      "name": "camunda.client.worker.defaults.stream-timeout",
+      "defaultValue": "PT8H"
     },
     {
       "name": "camunda.client.auth.connect-timeout",
