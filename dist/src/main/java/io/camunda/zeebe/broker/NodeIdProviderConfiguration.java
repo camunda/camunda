@@ -73,18 +73,15 @@ public class NodeIdProviderConfiguration {
             }
             final var taskId = config.getTaskId().orElse(UUID.randomUUID().toString());
             LOG.debug("Node configured with taskId {}", taskId);
-            final var repository =
-                new RepositoryNodeIdProvider(
-                    nodeIdRepository.get(),
-                    Clock.systemUTC(),
-                    config.getLeaseDuration(),
-                    taskId,
-                    () -> System.exit(-1));
-            repository.initialize(cluster.getSize());
-            yield repository;
+            yield new RepositoryNodeIdProvider(
+                nodeIdRepository.get(),
+                Clock.systemUTC(),
+                config.getLeaseDuration(),
+                taskId,
+                () -> System.exit(-1));
           }
         };
-    nodeIdProvider.initialize(cluster.getSize());
+    nodeIdProvider.initialize(cluster.getSize()).join();
 
     return nodeIdProvider;
   }
