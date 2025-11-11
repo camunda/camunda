@@ -277,6 +277,8 @@
       <column name="VERSION" type="SMALLINT"/>
       <column name="DECISION_REQUIREMENTS_KEY" type="BIGINT"/>
       <column name="DECISION_REQUIREMENTS_ID" type="VARCHAR(255)"/>
+      <column name="DECISION_REQUIREMENTS_NAME" type="VARCHAR(255)"/>
+      <column name="DECISION_REQUIREMENTS_VERSION" type="SMALLINT"/>
     </createTable>
 
     <createIndex tableName="${prefix}DECISION_DEFINITION" indexName="${prefix}IDX_DECISION_DEFINITION_ID">

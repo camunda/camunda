@@ -65,6 +65,8 @@ public class DecisionDefinitionSpecificFilterIT {
                     .version(1337)
                     .decisionRequirementsKey(1338L)
                     .decisionRequirementsId("requirements-1338")
+                    .decisionRequirementsName("requirements-name-1338")
+                    .decisionRequirementsVersion(1338)
                     .tenantId("sorting-tenant1")));
 
     final var searchResult =
@@ -89,6 +91,10 @@ public class DecisionDefinitionSpecificFilterIT {
         new DecisionDefinitionFilter.Builder().decisionRequirementsIds("requirements-1338").build(),
         new DecisionDefinitionFilter.Builder().decisionRequirementsKeys(1338L).build(),
         new DecisionDefinitionFilter.Builder().versions(1337).build(),
+        new DecisionDefinitionFilter.Builder()
+            .decisionRequirementsNames("requirements-name-1338")
+            .build(),
+        new DecisionDefinitionFilter.Builder().decisionRequirementsVersions(1338).build(),
         new DecisionDefinitionFilter.Builder().tenantIds("sorting-tenant1").build());
   }
 }
