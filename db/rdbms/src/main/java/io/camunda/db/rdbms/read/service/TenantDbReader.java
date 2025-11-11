@@ -57,6 +57,11 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
 
     LOG.trace("[RDBMS DB] Search for tenants with filter {}", dbQuery);
     final var totalHits = tenantMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = tenantMapper.search(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
@@ -75,7 +80,7 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
   }
 
   private boolean shouldReturnEmptyResult(
-      final TenantFilter filter, ResourceAccessChecks resourceAccessChecks) {
+      final TenantFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.memberIds() != null && filter.memberIds().isEmpty())
         || (resourceAccessChecks.authorizationCheck().enabled()
             && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());

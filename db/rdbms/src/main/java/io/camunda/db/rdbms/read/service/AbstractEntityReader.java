@@ -162,4 +162,14 @@ abstract class AbstractEntityReader<T> {
         || resourceAccessChecks.tenantCheck().enabled()
             && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
   }
+
+  /**
+   * Checks if the provided search query page should result in an empty page.
+   *
+   * @param page the search query page to check
+   * @return {@code true} if the page size is zero, {@code false} otherwise
+   */
+  protected boolean shouldReturnEmptyPage(final SearchQueryPage page) {
+    return page.size() == 0;
+  }
 }

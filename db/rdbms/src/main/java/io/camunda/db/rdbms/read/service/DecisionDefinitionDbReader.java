@@ -59,6 +59,11 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
 
     LOG.trace("[RDBMS DB] Search for decision definition with filter {}", dbQuery);
     final var totalHits = decisionDefinitionMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = decisionDefinitionMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

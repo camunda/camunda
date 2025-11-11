@@ -60,6 +60,11 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
 
     LOG.trace("[RDBMS DB] Search for decision requirements with filter {}", dbQuery);
     final var totalHits = decisionRequirementsMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = decisionRequirementsMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

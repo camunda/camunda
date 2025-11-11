@@ -58,6 +58,11 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
                     .page(convertPaging(dbSort, query.page())));
     LOG.trace("[RDBMS DB] Search for variables with filter {}", query);
     final var totalHits = variableMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = variableMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

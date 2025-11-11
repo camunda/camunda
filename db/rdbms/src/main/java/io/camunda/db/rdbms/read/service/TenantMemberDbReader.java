@@ -56,6 +56,11 @@ public class TenantMemberDbReader extends AbstractEntityReader<TenantMemberEntit
 
     LOG.trace("[RDBMS DB] Search for tenants with filter {}", dbQuery);
     final var totalHits = tenantMapper.countMembers(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = tenantMapper.searchMembers(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
