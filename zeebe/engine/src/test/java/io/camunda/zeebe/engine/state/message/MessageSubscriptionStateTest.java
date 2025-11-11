@@ -106,7 +106,7 @@ public final class MessageSubscriptionStateTest {
         .isEqualTo(subscription.getMessageName());
     assertThat(expectedSubscription.getCorrelationKey())
         .isEqualTo(subscription.getCorrelationKey());
-assertThat(expectedSubscription.getVariables()).isEqualTo(subscription.getVariables());
+    assertThat(expectedSubscription.getVariables()).isEqualTo(subscription.getVariables());
   }
 
   @Test
