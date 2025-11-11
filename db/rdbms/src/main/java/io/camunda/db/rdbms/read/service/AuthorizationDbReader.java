@@ -81,6 +81,11 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
 
     LOG.trace("[RDBMS DB] Search for authorizations with filter {}", dbQuery);
     final var totalHits = authorizationMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = authorizationMapper.search(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

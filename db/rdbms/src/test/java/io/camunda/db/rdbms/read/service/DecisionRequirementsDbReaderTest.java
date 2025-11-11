@@ -8,7 +8,11 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -46,5 +50,21 @@ class DecisionRequirementsDbReaderTest {
 
     final var items = decisionRequirementsDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyPageWhenPageSizeIsZero() {
+    when(decisionRequirementsMapper.count(any())).thenReturn(21L);
+
+    final DecisionRequirementsQuery query =
+        DecisionRequirementsQuery.of(b -> b.page(p -> p.size(0)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    final var result = decisionRequirementsDbReader.search(query, resourceAccessChecks);
+
+    assertThat(result.total()).isEqualTo(21L);
+    assertThat(result.items()).isEmpty();
+    verify(decisionRequirementsMapper, times(0)).search(any());
   }
 }

@@ -58,6 +58,11 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
 
     LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
     final var totalHits = userTaskMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits =
         userTaskMapper.search(dbQuery).stream().map(UserTaskEntityMapper::toEntity).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);

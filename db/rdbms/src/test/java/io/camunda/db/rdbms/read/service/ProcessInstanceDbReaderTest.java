@@ -8,7 +8,11 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -44,5 +48,20 @@ class ProcessInstanceDbReaderTest {
 
     final var items = processInstanceDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyPageWhenPageSizeIsZero() {
+    when(processInstanceMapper.count(any())).thenReturn(21L);
+
+    final ProcessInstanceQuery query = ProcessInstanceQuery.of(b -> b.page(p -> p.size(0)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    final var result = processInstanceDbReader.search(query, resourceAccessChecks);
+
+    assertThat(result.total()).isEqualTo(21L);
+    assertThat(result.items()).isEmpty();
+    verify(processInstanceMapper, times(0)).search(any());
   }
 }

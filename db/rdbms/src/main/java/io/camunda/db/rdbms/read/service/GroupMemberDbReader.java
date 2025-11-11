@@ -52,6 +52,11 @@ public class GroupMemberDbReader extends AbstractEntityReader<GroupMemberEntity>
 
     LOG.trace("[RDBMS DB] Search for groups with filter {}", dbQuery);
     final var totalHits = groupMapper.countMembers(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = groupMapper.searchMembers(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
