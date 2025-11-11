@@ -28,7 +28,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
