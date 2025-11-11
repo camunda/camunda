@@ -23,6 +23,7 @@ public final class DecisionDefinitionFixtures extends CommonFixtures {
     final var decisionDefinitionKey = nextKey();
     final var decisionRequirementsKey = nextKey();
     final var version = RANDOM.nextInt(1000);
+    final var decisionRequirementsVersion = RANDOM.nextInt(1000);
     final var builder =
         new DecisionDefinitionDbModelBuilder()
             .decisionDefinitionKey(decisionDefinitionKey)
@@ -31,6 +32,8 @@ public final class DecisionDefinitionFixtures extends CommonFixtures {
             .version(version)
             .decisionRequirementsKey(decisionRequirementsKey)
             .decisionRequirementsId("decision-requirements-" + decisionRequirementsKey)
+            .decisionRequirementsName("decision-requirements-name-" + decisionRequirementsKey)
+            .decisionRequirementsVersion(decisionRequirementsVersion)
             .tenantId("tenant-" + decisionDefinitionKey);
 
     return builderFunction.apply(builder).build();
