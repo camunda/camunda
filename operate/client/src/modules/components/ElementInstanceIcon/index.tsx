@@ -12,7 +12,6 @@ import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
 import {isInterruptingEvent} from 'modules/bpmn-js/utils/isInterruptingEvent';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {SVGIcon} from './styled';
 
 import FlowNodeProcess from 'modules/components/Icon/flow-node-process-root.svg?react';
 
@@ -90,237 +89,6 @@ import FlowNodeEventCompensationStart from 'modules/components/Icon/flow-node-co
 import FlowNodeEventCompensationEnd from 'modules/components/Icon/flow-node-compensation-end-event.svg?react';
 import FlowNodeEventCompensationIntermediateThrow from 'modules/components/Icon/flow-node-compensation-intermediate-event-throw.svg?react';
 import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node-compensation-boundary-event.svg?react';
-import {useMemo} from 'react';
-
-const getSVGComponent = (
-  businessObject: BusinessObject | undefined,
-  elementInstanceType: ElementInstance['type'],
-) => {
-  if (elementInstanceType === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
-    return FlowNodeTaskSubProcessAdhocInnerInstance;
-  }
-
-  if (elementInstanceType === 'AD_HOC_SUB_PROCESS') {
-    return FlowNodeTaskSubProcessAdhoc;
-  }
-
-  if (elementInstanceType === 'EXCLUSIVE_GATEWAY') {
-    return FlowNodeGatewayExclusive;
-  }
-
-  if (elementInstanceType === 'INCLUSIVE_GATEWAY') {
-    return FlowNodeGatewayInclusive;
-  }
-
-  if (elementInstanceType === 'PARALLEL_GATEWAY') {
-    return FlowNodeGatewayParallel;
-  }
-
-  if (elementInstanceType === 'EVENT_BASED_GATEWAY') {
-    return FlowNodeGatewayEventBased;
-  }
-
-  if (elementInstanceType === 'SERVICE_TASK') {
-    return FlowNodeTaskService;
-  }
-
-  if (elementInstanceType === 'USER_TASK') {
-    return FlowNodeTaskUser;
-  }
-
-  if (elementInstanceType === 'BUSINESS_RULE_TASK') {
-    return FlowNodeTaskBusinessRule;
-  }
-
-  if (elementInstanceType === 'SCRIPT_TASK') {
-    return FlowNodeTaskScript;
-  }
-
-  if (elementInstanceType === 'RECEIVE_TASK') {
-    return FlowNodeTaskReceive;
-  }
-
-  if (elementInstanceType === 'SEND_TASK') {
-    return FlowNodeTaskSend;
-  }
-
-  if (elementInstanceType === 'MANUAL_TASK') {
-    return FlowNodeTaskManual;
-  }
-
-  if (elementInstanceType === 'CALL_ACTIVITY') {
-    return FlowNodeCallActivity;
-  }
-
-  if (elementInstanceType === 'PROCESS') {
-    return FlowNodeProcess;
-  }
-
-  if (elementInstanceType === 'EVENT_SUB_PROCESS') {
-    return FlowNodeEventSubprocess;
-  }
-
-  if (elementInstanceType === 'SUB_PROCESS') {
-    return FlowNodeTaskSubProcess;
-  }
-
-  if (businessObject === undefined) {
-    return FlowNodeTask;
-  }
-
-  if (elementInstanceType === 'MULTI_INSTANCE_BODY') {
-    const multiInstanceType = getMultiInstanceType(businessObject);
-
-    if (multiInstanceType === 'parallel') {
-      return FlowNodeTaskParallel;
-    }
-
-    if (multiInstanceType === 'sequential') {
-      return FlowNodeTaskMulti;
-    }
-  }
-
-  switch (getEventType(businessObject)) {
-    case 'bpmn:ErrorEventDefinition':
-      switch (businessObject.$type) {
-        default:
-        case 'bpmn:StartEvent':
-          return FlowNodeEventErrorStart;
-        case 'bpmn:EndEvent':
-          return FlowNodeEventErrorEnd;
-        case 'bpmn:BoundaryEvent':
-          return FlowNodeEventErrorBoundary;
-      }
-    case 'bpmn:MessageEventDefinition':
-      switch (businessObject.$type) {
-        default:
-        case 'bpmn:StartEvent':
-          return FlowNodeEventMessageStart;
-        case 'bpmn:EndEvent':
-          return FlowNodeEventMessageEnd;
-        case 'bpmn:IntermediateCatchEvent':
-          // uses the same style as boundary interrupting
-          return FlowNodeEventMessageBoundaryInterrupting;
-        case 'bpmn:IntermediateThrowEvent':
-          return FlowNodeEventMessageIntermediateThrow;
-        case 'bpmn:BoundaryEvent':
-          switch (getBoundaryEventType(businessObject)) {
-            default:
-            case 'interrupting':
-              return FlowNodeEventMessageBoundaryInterrupting;
-
-            case 'non-interrupting':
-              return FlowNodeEventMessageBoundaryNonInterrupting;
-          }
-      }
-    case 'bpmn:TimerEventDefinition':
-      switch (businessObject.$type) {
-        default:
-        case 'bpmn:StartEvent':
-          return FlowNodeEventTimerStart;
-        case 'bpmn:IntermediateCatchEvent':
-          return FlowNodeEventTimerBoundaryInterrupting;
-        case 'bpmn:BoundaryEvent':
-          switch (getBoundaryEventType(businessObject)) {
-            default:
-            case 'interrupting':
-              return FlowNodeEventTimerBoundaryInterrupting;
-            case 'non-interrupting':
-              return FlowNodeEventTimerBoundaryNonInterrupting;
-          }
-      }
-    case 'bpmn:TerminateEventDefinition':
-      return FlowNodeEventTerminateEnd;
-
-    case 'bpmn:LinkEventDefinition':
-      switch (businessObject.$type) {
-        default:
-        case 'bpmn:IntermediateCatchEvent':
-          return FlowNodeLinkEventIntermediateCatch;
-        case 'bpmn:IntermediateThrowEvent':
-          return FlowNodeLinkEventIntermediateThrow;
-      }
-
-    case 'bpmn:EscalationEventDefinition':
-      switch (businessObject.$type) {
-        default:
-        case 'bpmn:EndEvent':
-          return FlowNodeEscalationEndEvent;
-        case 'bpmn:StartEvent':
-          switch (isInterruptingEvent(businessObject)) {
-            default:
-            case true:
-              return FlowNodeEscalationStartEvent;
-            case false:
-              return FlowNodeEscalationNonInterruptingStartEvent;
-          }
-        case 'bpmn:IntermediateThrowEvent':
-          return FlowNodeEscalationIntermediateThrowEvent;
-        case 'bpmn:BoundaryEvent':
-          switch (getBoundaryEventType(businessObject)) {
-            default:
-            case 'interrupting':
-              return FlowNodeEscalationBoundaryEvent;
-            case 'non-interrupting':
-              return FlowNodeEscalationBoundaryNonInterruptingEvent;
-          }
-      }
-
-    case 'bpmn:SignalEventDefinition':
-      switch (businessObject.$type) {
-        default:
-        case 'bpmn:StartEvent':
-          switch (isInterruptingEvent(businessObject)) {
-            default:
-            case true:
-              return FlowNodeEventSignalStart;
-            case false:
-              return FlowNodeEventSignalNonInterruptingStart;
-          }
-        case 'bpmn:BoundaryEvent':
-          switch (getBoundaryEventType(businessObject)) {
-            default:
-            case 'interrupting':
-              return FlowNodeEventSignalInterruptingBoundary;
-            case 'non-interrupting':
-              return FlowNodeEventSignalNonInterruptingBoundary;
-          }
-        case 'bpmn:IntermediateThrowEvent':
-          return FlowNodeEventSignalIntermediateThrow;
-        case 'bpmn:IntermediateCatchEvent':
-          return FlowNodeEventSignalIntermediateCatch;
-        case 'bpmn:EndEvent':
-          return FlowNodeEventSignalEnd;
-      }
-
-    case 'bpmn:CompensateEventDefinition':
-      switch (businessObject.$type) {
-        default:
-        case 'bpmn:StartEvent':
-          return FlowNodeEventCompensationStart;
-        case 'bpmn:BoundaryEvent':
-          return FlowNodeEventCompensationBoundary;
-        case 'bpmn:IntermediateThrowEvent':
-          return FlowNodeEventCompensationIntermediateThrow;
-        case 'bpmn:EndEvent':
-          return FlowNodeEventCompensationEnd;
-      }
-  }
-
-  if (elementInstanceType === 'START_EVENT') {
-    return FlowNodeEventStart;
-  }
-
-  if (elementInstanceType === 'END_EVENT') {
-    return FlowNodeEventEnd;
-  }
-
-  if (elementInstanceType === 'INTERMEDIATE_THROW_EVENT') {
-    return FlowNodeEventIntermediateThrow;
-  }
-
-  return FlowNodeTask;
-};
 
 type Props = {
   elementInstanceType: ElementInstance['type'];
@@ -334,25 +102,259 @@ const ElementInstanceIcon: React.FC<Props> = ({
   className,
   ...rest
 }) => {
-  const SVGComponent = useMemo(
-    () => getSVGComponent(diagramBusinessObject, elementInstanceType),
-    [diagramBusinessObject, elementInstanceType],
-  );
+  const isGateway = [
+    'PARALLEL_GATEWAY',
+    'EXCLUSIVE_GATEWAY',
+    'INCLUSIVE_GATEWAY',
+    'EVENT_BASED_GATEWAY',
+  ].includes(elementInstanceType);
+  const svgProps = {
+    style: isGateway
+      ? {
+          position: 'relative' as const,
+          top: 3,
+          right: 2,
+        }
+      : undefined,
+    className,
+    'data-testid': 'element-instance-icon',
+    ...rest,
+  };
 
-  return (
-    <SVGIcon
-      SVGComponent={SVGComponent}
-      {...rest}
-      $isGateway={[
-        'PARALLEL_GATEWAY',
-        'EXCLUSIVE_GATEWAY',
-        'INCLUSIVE_GATEWAY',
-        'EVENT_BASED_GATEWAY',
-      ].includes(elementInstanceType)}
-      className={className}
-      data-testid="element-instance-icon"
-    />
-  );
+  if (elementInstanceType === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE') {
+    return <FlowNodeTaskSubProcessAdhocInnerInstance {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'AD_HOC_SUB_PROCESS') {
+    return <FlowNodeTaskSubProcessAdhoc {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'EXCLUSIVE_GATEWAY') {
+    return <FlowNodeGatewayExclusive {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'INCLUSIVE_GATEWAY') {
+    return <FlowNodeGatewayInclusive {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'PARALLEL_GATEWAY') {
+    return <FlowNodeGatewayParallel {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'EVENT_BASED_GATEWAY') {
+    return <FlowNodeGatewayEventBased {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'SERVICE_TASK') {
+    return <FlowNodeTaskService {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'USER_TASK') {
+    return <FlowNodeTaskUser {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'BUSINESS_RULE_TASK') {
+    return <FlowNodeTaskBusinessRule {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'SCRIPT_TASK') {
+    return <FlowNodeTaskScript {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'RECEIVE_TASK') {
+    return <FlowNodeTaskReceive {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'SEND_TASK') {
+    return <FlowNodeTaskSend {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'MANUAL_TASK') {
+    return <FlowNodeTaskManual {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'CALL_ACTIVITY') {
+    return <FlowNodeCallActivity {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'PROCESS') {
+    return <FlowNodeProcess {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'EVENT_SUB_PROCESS') {
+    return <FlowNodeEventSubprocess {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'SUB_PROCESS') {
+    return <FlowNodeTaskSubProcess {...svgProps} />;
+  }
+
+  if (diagramBusinessObject === undefined) {
+    return <FlowNodeTask {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'MULTI_INSTANCE_BODY') {
+    const multiInstanceType = getMultiInstanceType(diagramBusinessObject);
+
+    if (multiInstanceType === 'parallel') {
+      return <FlowNodeTaskParallel {...svgProps} />;
+    }
+
+    if (multiInstanceType === 'sequential') {
+      return <FlowNodeTaskMulti {...svgProps} />;
+    }
+  }
+
+  switch (getEventType(diagramBusinessObject)) {
+    case 'bpmn:ErrorEventDefinition':
+      switch (diagramBusinessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          return <FlowNodeEventErrorStart {...svgProps} />;
+        case 'bpmn:EndEvent':
+          return <FlowNodeEventErrorEnd {...svgProps} />;
+        case 'bpmn:BoundaryEvent':
+          return <FlowNodeEventErrorBoundary {...svgProps} />;
+      }
+    case 'bpmn:MessageEventDefinition':
+      switch (diagramBusinessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          return <FlowNodeEventMessageStart {...svgProps} />;
+        case 'bpmn:EndEvent':
+          return <FlowNodeEventMessageEnd {...svgProps} />;
+        case 'bpmn:IntermediateCatchEvent':
+          // uses the same style as boundary interrupting
+          return <FlowNodeEventMessageBoundaryInterrupting {...svgProps} />;
+        case 'bpmn:IntermediateThrowEvent':
+          return <FlowNodeEventMessageIntermediateThrow {...svgProps} />;
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(diagramBusinessObject)) {
+            default:
+            case 'interrupting':
+              return <FlowNodeEventMessageBoundaryInterrupting {...svgProps} />;
+
+            case 'non-interrupting':
+              return (
+                <FlowNodeEventMessageBoundaryNonInterrupting {...svgProps} />
+              );
+          }
+      }
+    case 'bpmn:TimerEventDefinition':
+      switch (diagramBusinessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          return <FlowNodeEventTimerStart {...svgProps} />;
+        case 'bpmn:IntermediateCatchEvent':
+          return <FlowNodeEventTimerBoundaryInterrupting {...svgProps} />;
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(diagramBusinessObject)) {
+            default:
+            case 'interrupting':
+              return <FlowNodeEventTimerBoundaryInterrupting {...svgProps} />;
+            case 'non-interrupting':
+              return (
+                <FlowNodeEventTimerBoundaryNonInterrupting {...svgProps} />
+              );
+          }
+      }
+    case 'bpmn:TerminateEventDefinition':
+      return <FlowNodeEventTerminateEnd {...svgProps} />;
+
+    case 'bpmn:LinkEventDefinition':
+      switch (diagramBusinessObject.$type) {
+        default:
+        case 'bpmn:IntermediateCatchEvent':
+          return <FlowNodeLinkEventIntermediateCatch {...svgProps} />;
+        case 'bpmn:IntermediateThrowEvent':
+          return <FlowNodeLinkEventIntermediateThrow {...svgProps} />;
+      }
+
+    case 'bpmn:EscalationEventDefinition':
+      switch (diagramBusinessObject.$type) {
+        default:
+        case 'bpmn:EndEvent':
+          return <FlowNodeEscalationEndEvent {...svgProps} />;
+        case 'bpmn:StartEvent':
+          switch (isInterruptingEvent(diagramBusinessObject)) {
+            default:
+            case true:
+              return <FlowNodeEscalationStartEvent {...svgProps} />;
+            case false:
+              return (
+                <FlowNodeEscalationNonInterruptingStartEvent {...svgProps} />
+              );
+          }
+        case 'bpmn:IntermediateThrowEvent':
+          return <FlowNodeEscalationIntermediateThrowEvent {...svgProps} />;
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(diagramBusinessObject)) {
+            default:
+            case 'interrupting':
+              return <FlowNodeEscalationBoundaryEvent {...svgProps} />;
+            case 'non-interrupting':
+              return (
+                <FlowNodeEscalationBoundaryNonInterruptingEvent {...svgProps} />
+              );
+          }
+      }
+
+    case 'bpmn:SignalEventDefinition':
+      switch (diagramBusinessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          switch (isInterruptingEvent(diagramBusinessObject)) {
+            default:
+            case true:
+              return <FlowNodeEventSignalStart {...svgProps} />;
+            case false:
+              return <FlowNodeEventSignalNonInterruptingStart {...svgProps} />;
+          }
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(diagramBusinessObject)) {
+            default:
+            case 'interrupting':
+              return <FlowNodeEventSignalInterruptingBoundary {...svgProps} />;
+            case 'non-interrupting':
+              return (
+                <FlowNodeEventSignalNonInterruptingBoundary {...svgProps} />
+              );
+          }
+        case 'bpmn:IntermediateThrowEvent':
+          return <FlowNodeEventSignalIntermediateThrow {...svgProps} />;
+        case 'bpmn:IntermediateCatchEvent':
+          return <FlowNodeEventSignalIntermediateCatch {...svgProps} />;
+        case 'bpmn:EndEvent':
+          return <FlowNodeEventSignalEnd {...svgProps} />;
+      }
+
+    case 'bpmn:CompensateEventDefinition':
+      switch (diagramBusinessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          return <FlowNodeEventCompensationStart {...svgProps} />;
+        case 'bpmn:BoundaryEvent':
+          return <FlowNodeEventCompensationBoundary {...svgProps} />;
+        case 'bpmn:IntermediateThrowEvent':
+          return <FlowNodeEventCompensationIntermediateThrow {...svgProps} />;
+        case 'bpmn:EndEvent':
+          return <FlowNodeEventCompensationEnd {...svgProps} />;
+      }
+  }
+
+  if (elementInstanceType === 'START_EVENT') {
+    return <FlowNodeEventStart {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'END_EVENT') {
+    return <FlowNodeEventEnd {...svgProps} />;
+  }
+
+  if (elementInstanceType === 'INTERMEDIATE_THROW_EVENT') {
+    return <FlowNodeEventIntermediateThrow {...svgProps} />;
+  }
+
+  return <FlowNodeTask {...svgProps} />;
 };
 
 export {ElementInstanceIcon};
