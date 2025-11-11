@@ -24,7 +24,6 @@ describe('useProcessInstanceFilters', () => {
       endDateAfter: '2023-02-01',
       endDateBefore: '2023-02-28',
       process: 'process1',
-      version: '1',
       ids: 'id1,id2',
       active: true,
       incidents: true,
