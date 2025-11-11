@@ -100,13 +100,13 @@ func (s *ShutdownHandler) stopProcess(pidPath string) error {
 	}
 
 	var killErr error
-	procs := s.ProcessHandler.GetProcessFromPid(pid)
-	for _, proc := range procs {
-		if proc == nil {
+	processPids := s.ProcessHandler.GetProcessFromPid(pid)
+	for _, procPid := range processPids {
+		if procPid <= 0 {
 			continue
 		}
 
-		killErr = s.ProcessHandler.KillProcess(proc)
+		killErr = s.ProcessHandler.KillProcess(procPid)
 	}
 
 	if err := os.Remove(pidPath); err != nil && !errors.Is(err, os.ErrNotExist) {

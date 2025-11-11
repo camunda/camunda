@@ -5,30 +5,20 @@ package windows
 
 import (
 	"fmt"
-	"os"
 	"syscall"
 	"unsafe"
 )
 
-func process_tree(pid int) []*os.Process {
-	// fmt.Println("The pid is ", pid)
+func processTree(pid int) []int {
 	rootPid := uint32(pid)
-	// fmt.Println("The unsigned pid is ", rootPid)
-
 	tree, err := getTreePids(rootPid)
 	if err != nil {
 		fmt.Println(err)
 	}
-	// fmt.Println("tree [", len(tree), "]:\t", tree)
 
-	processList := make([]*os.Process, len(tree))
-	for i, pid := range tree {
-		process, err := os.FindProcess(int(pid))
-		if err != nil {
-			fmt.Printf("Process %d not found\n", pid)
-			continue
-		}
-		processList[i] = process
+	processList := make([]int, 0, len(tree))
+	for _, pid := range tree {
+		processList = append(processList, int(pid))
 	}
 	return processList
 }
