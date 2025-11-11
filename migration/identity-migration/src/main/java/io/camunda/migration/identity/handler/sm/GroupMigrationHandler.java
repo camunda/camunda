@@ -9,7 +9,6 @@ package io.camunda.migration.identity.handler.sm;
 
 import static io.camunda.migration.identity.MigrationUtil.convertDecisionPermissions;
 import static io.camunda.migration.identity.MigrationUtil.convertProcessPermissions;
-import static io.camunda.migration.identity.MigrationUtil.normalizeGroupID;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE;
@@ -66,8 +65,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   protected void process(final List<Group> batch) {
     batch.forEach(
         group -> {
-          final var normalizedGroupId = normalizeGroupID(group);
-          createAuthorizationsForGroup(group.id(), normalizedGroupId);
+          createAuthorizationsForGroup(group);
           createGroupRoleMembership(group);
         });
   }
@@ -86,40 +84,37 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
     final var groupRoles = managementIdentityClient.fetchGroupRoles(group.id());
     totalGroupRoleMembershipCount.addAndGet(groupRoles.size());
 
-    final var normalizedGroupId = normalizeGroupID(group);
     groupRoles.forEach(
         role -> {
           try {
             final var roleId = normalizeID(role.name());
-            logger.debug("Assigning role '{}' to group '{}'", roleId, normalizedGroupId);
-            final var roleMember =
-                new RoleMemberRequest(roleId, normalizedGroupId, EntityType.GROUP);
+            logger.debug("Assigning role '{}' to group '{}'", roleId, group.name());
+            final var roleMember = new RoleMemberRequest(roleId, group.name(), EntityType.GROUP);
             retryOnBackpressure(
                 () -> roleServices.addMember(roleMember).join(),
-                String.format(
-                    "Failed to assign group '%s' to role '%s'", normalizedGroupId, roleId));
+                String.format("Failed to assign group '%s' to role '%s'", group.name(), roleId));
             createdGroupRoleMembershipCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
-              throw new MigrationException("Failed to assign group: " + normalizedGroupId, e);
+              throw new MigrationException("Failed to assign group: " + group.name(), e);
             }
             logger.debug(
-                "Group with ID '{}' is already assigned to role with ID '{}', skipping assignation.",
-                normalizedGroupId,
+                "Group with name '{}' is already assigned to role with ID '{}', skipping assignation.",
+                group.name(),
                 role.name());
           }
         });
   }
 
-  private void createAuthorizationsForGroup(final String groupId, final String targetGroupId) {
+  private void createAuthorizationsForGroup(final Group group) {
     final List<Authorization> authorizations;
     try {
-      authorizations = managementIdentityClient.fetchGroupAuthorizations(groupId);
+      authorizations = managementIdentityClient.fetchGroupAuthorizations(group.id());
       totalGroupAuthorizationCount.set(authorizations.size());
     } catch (final Exception e) {
       if (!isNotImplementedError(e)) {
         throw new MigrationException(
-            String.format("Failed to fetch authorizations for group with ID '%s'", groupId), e);
+            String.format("Failed to fetch authorizations for group with ID '%s'", group.id()), e);
       }
       logger.warn("Authorization endpoint is not available, skipping.");
       return;
@@ -129,7 +124,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
         authorization -> {
           final var request =
               new CreateAuthorizationRequest(
-                  targetGroupId,
+                  group.name(),
                   AuthorizationOwnerType.GROUP,
                   authorization.resourceKey(),
                   convertResourceType(authorization.resourceType()),
@@ -138,26 +133,26 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             retryOnBackpressure(
                 () -> authorizationServices.createAuthorization(request).join(),
                 "Failed to create authorization for group '"
-                    + targetGroupId
+                    + group.name()
                     + "' with permissions '"
                     + request.permissionTypes()
                     + "'");
             createdGroupAuthorizationCount.incrementAndGet();
             logger.debug(
                 "Authorization created for group '{}' with permissions '{}'.",
-                targetGroupId,
+                group.name(),
                 request.permissionTypes());
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
                   String.format(
                       "Failed to create authorization for group '%s' with permissions '%s'",
-                      targetGroupId, request.permissionTypes()),
+                      group.name(), request.permissionTypes()),
                   e);
             }
             logger.debug(
                 "Authorization for group '{}' with permissions '{}' already exists, skipping creation.",
-                targetGroupId,
+                group.name(),
                 authorization.permissions());
           }
         });
