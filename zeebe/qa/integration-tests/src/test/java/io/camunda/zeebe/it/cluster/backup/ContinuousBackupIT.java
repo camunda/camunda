@@ -19,10 +19,6 @@ import io.camunda.configuration.Gcs;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -55,7 +51,11 @@ final class ContinuousBackupIT {
 
   @TestZeebe
   private final TestStandaloneBroker broker =
-      new TestStandaloneBroker().withBrokerConfig(this::configureBroker);
+      new TestStandaloneBroker()
+          .withUnifiedConfig(this::configureBroker)
+          .withProperty("zeebe.broker.experimental.continuousBackups", true);
+
+  //   .withProperty("zeebe.broker.network.maxMessageSize", DataSize.ofKilobytes(500));
 
   private BackupActuator backupActuator;
   private PartitionsActuator partitionsActuator;
@@ -126,7 +126,8 @@ final class ContinuousBackupIT {
 
     // when - restoring from all three backups
     broker.stop();
-    final var dataDirectory = Path.of(broker.brokerConfig().getData().getDirectory()).getParent();
+    final var dataDirectory =
+        Path.of(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory()).getParent();
     FileUtil.deleteFolder(dataDirectory);
     FileUtil.ensureDirectoryExists(dataDirectory);
     final var restore =
@@ -169,7 +170,8 @@ final class ContinuousBackupIT {
 
     // when/then - restoring from backup 1 and 3, but skipping backup 2
     broker.stop();
-    final var dataDirectory = Path.of(broker.brokerConfig().getData().getDirectory()).getParent();
+    final var dataDirectory =
+        Path.of(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory()).getParent();
     FileUtil.deleteFolder(dataDirectory);
     FileUtil.ensureDirectoryExists(dataDirectory);
     final var restore =
@@ -245,18 +247,20 @@ final class ContinuousBackupIT {
     }
   }
 
-  private void configureBroker(final BrokerCfg cfg) {
-    cfg.getExperimental().setContinuousBackups(true);
+  private void configureBroker(final Camunda cfg) {
+    // Note: Experimental.continuousBackups is not yet in unified config, set via property
+    // For now, we'll need to use withProperty() for this setting
+    // cfg.getExperimental().setContinuousBackups(true); // Not available yet
 
-    final var gcsConfig = new GcsBackupStoreConfig();
-    gcsConfig.setAuth(GcsBackupStoreAuth.NONE);
+    final var gcsConfig = new Gcs();
+    gcsConfig.setAuth(Gcs.GcsBackupStoreAuth.NONE);
     gcsConfig.setBasePath(basePath);
     gcsConfig.setBucketName(BUCKET_NAME);
     gcsConfig.setHost(GCS.externalEndpoint());
     cfg.getData().getBackup().setGcs(gcsConfig);
-    cfg.getData().getBackup().setStore(BackupStoreType.GCS);
-    cfg.getData().setLogSegmentSize(DataSize.ofMegabytes(1));
-    cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
+    cfg.getData().getBackup().setStore(Backup.BackupStoreType.GCS);
+    cfg.getData().getPrimaryStorage().getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
+    cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
   }
 
   private void configureRestoreApp(final Camunda cfg) {
@@ -266,6 +270,6 @@ final class ContinuousBackupIT {
     gcsConfig.setBucketName(BUCKET_NAME);
     gcsConfig.setHost(GCS.externalEndpoint());
     cfg.getData().getBackup().setGcs(gcsConfig);
-    cfg.getData().getBackup().setStore(Backup.BackupStoreType.GCS.GCS);
+    cfg.getData().getBackup().setStore(Backup.BackupStoreType.GCS);
   }
 }
