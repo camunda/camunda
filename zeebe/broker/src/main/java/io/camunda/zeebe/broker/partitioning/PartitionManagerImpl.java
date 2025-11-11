@@ -128,12 +128,9 @@ public final class PartitionManagerImpl
     // allocate a quarter of the block cache to the write buffer manager, value to be
     // discussed/tuned
     final long wbmLimitBytes = blockCacheBytes / 4;
-    // capacity (blockCacheBytes)
-    // numShardBits (-1 = default), automatically picks a shard count based on your system and
-    // capacity
-    // strictCapacityLimit (true)
-    // highPriPoolRatio (0.5)
-    final LRUCache sharedCache = new LRUCache(blockCacheBytes, -1, true, 0.5);
+
+
+    final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
     final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
 
     zeebePartitionFactory =
