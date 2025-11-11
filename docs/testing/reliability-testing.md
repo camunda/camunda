@@ -52,19 +52,19 @@ There exist various variations of load tests in the wild to answer different que
   * _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?  _
   * Here we put the system under high load up to maximum load. We want to find out what the limit is and where it starts to break.  
   * These tests are commonly not long-running.  
-  * Resources  
+  * Resources:  
     * [3](https://en.wikipedia.org/wiki/Stress_testing)   
     * [4](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
 * Spike test  
   * _Question: How does the system handle spikes? Can it recover? What is max etc. _ 
   * Here we put the system also under high load up to maximum load, but only for a short period of time. We want to understand how the system behaves and recovers afterwards.  
   * These tests are commonly not long-running.  
-  * Resources  
+  * Resources:  
     * [5](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
 * [Endurance or soak test](https://en.wikipedia.org/wiki/Soak_testing)  
   * _Question: Can it handle high load (not maximum) over a long time? Reliable?_   
   * Discovery of memory or thread leaks and performance and stability issues over time  
-  * Resources
+  * Resources:
     * [6](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)   
     * [7](https://www.geeksforgeeks.org/software-testing/software-testing-endurance-testing/) 
 
