@@ -36,7 +36,7 @@ const ERROR_TYPE_NAMES: Record<IncidentErrorType, string> = {
 
 const availableErrorTypes = Object.keys(
   ERROR_TYPE_NAMES,
-) as IncidentErrorType[];
+) as (keyof typeof ERROR_TYPE_NAMES)[];
 
 const getIncidentErrorName = (errorType: IncidentErrorType): string => {
   return ERROR_TYPE_NAMES[errorType];
