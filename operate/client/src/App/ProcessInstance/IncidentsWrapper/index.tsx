@@ -10,7 +10,7 @@ import {IncidentsOverlay} from './IncidentsOverlay';
 import {observer} from 'mobx-react';
 import {Transition} from './styled';
 import {IncidentsFilter} from './IncidentsFilter';
-import {IncidentsTable as IncidentsTableV2} from './IncidentsTable';
+import {IncidentsTable} from './IncidentsTable';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {getIncidentsSearchFilter} from 'modules/utils/incidents';
 import {useEnhancedIncidents, useIncidentsSort} from 'modules/hooks/incidents';
@@ -115,7 +115,7 @@ const IncidentsWrapperContent: React.FC<IncidentsWrapperContentProps> =
           >
             <IncidentsFilter />
           </PanelHeader>
-          <IncidentsTableV2
+          <IncidentsTable
             state={props.handle.displayState}
             onVerticalScrollStartReach={props.handle.handleScrollStartReach}
             onVerticalScrollEndReach={props.handle.handleScrollEndReach}
@@ -136,12 +136,12 @@ type IncidentsSourceProps<Source> = Source & {
 type IncidentsHandle = {
   incidents: Incident[];
   totalIncidentsCount: number;
-  displayState: React.ComponentProps<typeof IncidentsTableV2>['state'];
+  displayState: React.ComponentProps<typeof IncidentsTable>['state'];
   handleScrollStartReach: React.ComponentProps<
-    typeof IncidentsTableV2
+    typeof IncidentsTable
   >['onVerticalScrollStartReach'];
   handleScrollEndReach: React.ComponentProps<
-    typeof IncidentsTableV2
+    typeof IncidentsTable
   >['onVerticalScrollEndReach'];
 };
 
@@ -217,7 +217,7 @@ function mapQueryResultToIncidentsHandle(
 function computeDisplayStateFromQueryResult(
   result: UseInfiniteQueryResult<InfiniteData<unknown>>,
   totalItems: number,
-): React.ComponentProps<typeof IncidentsTableV2>['state'] {
+): React.ComponentProps<typeof IncidentsTable>['state'] {
   switch (true) {
     case result.status === 'pending': {
       return 'skeleton';
