@@ -15,6 +15,8 @@ import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
@@ -44,6 +46,9 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(CheckpointRecordValue.class, CheckpointRecordMixin.class)
+          .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
+          .addMixIn(
+              ProcessMessageSubscriptionRecordValue.class, ProcessMessageSubscriptionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -54,6 +59,8 @@ final class BulkIndexRequest implements ContentProducer {
   private static final String AUTH_INFO_PROPERTY = "authInfo";
   private static final String CHECKPOINT_TIMESTAMP_PROPERTY = "checkpointTimestamp";
   private static final String CHECKPOINT_TYPE_PROPERTY = "checkpointType";
+  private static final String RECORD_MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY =
+      "processDefinitionKey";
   private final List<BulkOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -184,4 +191,10 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonIgnoreProperties({CHECKPOINT_TYPE_PROPERTY, CHECKPOINT_TIMESTAMP_PROPERTY})
   private static final class CheckpointRecordMixin {}
+
+  @JsonIgnoreProperties({RECORD_MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
+  private static final class MessageSubscriptionMixin {}
+
+  @JsonIgnoreProperties({RECORD_MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
+  private static final class ProcessMessageSubscriptionMixin {}
 }
