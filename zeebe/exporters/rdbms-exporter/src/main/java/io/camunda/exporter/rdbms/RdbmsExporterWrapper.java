@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
+import io.camunda.exporter.rdbms.cache.RdbmsDecisionRequirementsCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
 import io.camunda.exporter.rdbms.handlers.ClusterVariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -66,6 +68,7 @@ public class RdbmsExporterWrapper implements Exporter {
   private RdbmsExporter exporter;
 
   private ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private ExporterEntityCache<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
   private ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
   public RdbmsExporterWrapper(final RdbmsService rdbmsService) {
@@ -93,6 +96,13 @@ public class RdbmsExporterWrapper implements Exporter {
             config.getProcessCache().getMaxSize(),
             new RdbmsProcessCacheLoader(rdbmsService.getProcessDefinitionReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", context.getMeterRegistry()));
+
+    decisionRequirementsCache =
+        new ExporterEntityCacheImpl<>(
+            config.getDecisionRequirementsCache().getMaxSize(),
+            new RdbmsDecisionRequirementsCacheLoader(rdbmsService.getDecisionRequirementsReader()),
+            new CaffeineCacheStatsCounter(
+                NAMESPACE, "decisionRequirements", context.getMeterRegistry()));
 
     batchOperationCache =
         new ExporterEntityCacheImpl<>(
@@ -143,10 +153,12 @@ public class RdbmsExporterWrapper implements Exporter {
           new AuthorizationExportHandler(rdbmsWriter.getAuthorizationWriter()));
       builder.withHandler(
           ValueType.DECISION,
-          new DecisionDefinitionExportHandler(rdbmsWriter.getDecisionDefinitionWriter()));
+          new DecisionDefinitionExportHandler(
+              rdbmsWriter.getDecisionDefinitionWriter(), decisionRequirementsCache));
       builder.withHandler(
           ValueType.DECISION_REQUIREMENTS,
-          new DecisionRequirementsExportHandler(rdbmsWriter.getDecisionRequirementsWriter()));
+          new DecisionRequirementsExportHandler(
+              rdbmsWriter.getDecisionRequirementsWriter(), decisionRequirementsCache));
     }
     builder.withHandler(
         ValueType.DECISION_EVALUATION,
