@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
