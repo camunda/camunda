@@ -14,12 +14,17 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentity
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalKeycloakUrl;
 import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
+import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.identity.sdk.IdentityConfiguration.Type;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
+import io.camunda.migration.identity.dto.Group;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneIdentityMigration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -156,6 +161,7 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   protected TestStandaloneIdentityMigration migration;
   protected CamundaClient client;
+  protected Identity identitySdk;
   @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @BeforeAll
@@ -205,6 +211,17 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
         .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
     migration = new TestStandaloneIdentityMigration(migrationProperties);
 
+    identitySdk =
+        new Identity(
+            new IdentityConfiguration(
+                migrationProperties.getManagementIdentity().getBaseUrl(),
+                migrationProperties.getManagementIdentity().getIssuerBackendUrl(),
+                migrationProperties.getManagementIdentity().getIssuerBackendUrl(),
+                migrationProperties.getManagementIdentity().getClientId(),
+                migrationProperties.getManagementIdentity().getClientSecret(),
+                migrationProperties.getManagementIdentity().getAudience(),
+                Type.KEYCLOAK.name()));
+
     client = BROKER.newClientBuilder().build();
   }
 
@@ -248,6 +265,64 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
     final HttpResponse<String> response =
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), ClientsTenantResponse.class);
+  }
+
+  protected void addGroupToRoleInManagementIdentity(final String groupName, final String roleName)
+      throws URISyntaxException, IOException, InterruptedException {
+
+    final String groupId = getGroupIdByName(groupName);
+
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            externalIdentityUrl(IDENTITY_88), "/api/groups/" + groupId + "/roles")))
+            .POST(
+                HttpRequest.BodyPublishers.ofString("{ \"roleName\": \"%s\" }".formatted(roleName)))
+            .header("Content-Type", "application/json")
+            .header("Authorization", getManagementIdentityBearerToken())
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    if (response.statusCode() != 204) {
+      throw new IllegalStateException(
+          "Expected 204 to be returned as status code but got " + response.statusCode());
+    }
+  }
+
+  private String getGroupIdByName(final String groupName)
+      throws URISyntaxException, IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            externalIdentityUrl(IDENTITY_88), "/api/groups?search=" + groupName)))
+            .GET()
+            .header("Authorization", getManagementIdentityBearerToken())
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    final List<Group> groups = OBJECT_MAPPER.readValue(response.body(), new TypeReference<>() {});
+    return groups.stream()
+        .findFirst()
+        .map(Group::id)
+        .orElseThrow(
+            () -> new IllegalStateException("Expected to find group with name " + groupName));
+  }
+
+  private String getManagementIdentityBearerToken() {
+    return "Bearer %s"
+        .formatted(
+            identitySdk
+                .authentication()
+                .requestToken(CAMUNDA_IDENTITY_RESOURCE_SERVER)
+                .getAccessToken());
   }
 
   protected record GroupsTenantResponse(List<TenantGroup> items) {}

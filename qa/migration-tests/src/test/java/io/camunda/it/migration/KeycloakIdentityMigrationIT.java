@@ -16,6 +16,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.RoleGroup;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.TenantUser;
@@ -317,6 +318,48 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
                     PermissionType.DELETE_DECISION_INSTANCE,
                     PermissionType.READ_DECISION_INSTANCE,
                     PermissionType.READ_DECISION_DEFINITION)));
+  }
+
+  @Test
+  public void canMigrateGroupsRolesMembership()
+      throws URISyntaxException, IOException, InterruptedException {
+    // given
+    // we need to add the group-role memberships here via API calls, because there is no support to
+    // do that via configuration
+    addGroupToRoleInManagementIdentity("groupc", "Zeebe");
+    addGroupToRoleInManagementIdentity("groupb", "Tasklist");
+    addGroupToRoleInManagementIdentity("groupb", "Operate");
+    addGroupToRoleInManagementIdentity("groupa", "Identity");
+
+    // when
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var groups = client.newGroupsByRoleSearchRequest("zeebe").send().join();
+              assertThat(groups.items()).extracting(RoleGroup::getGroupId).contains("groupc");
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var zeebeGroups = client.newGroupsByRoleSearchRequest("zeebe").send().join().items();
+    assertThat(zeebeGroups).extracting(RoleGroup::getGroupId).containsExactlyInAnyOrder("groupc");
+    final var operateGroups = client.newGroupsByRoleSearchRequest("operate").send().join().items();
+    assertThat(operateGroups).extracting(RoleGroup::getGroupId).containsExactlyInAnyOrder("groupb");
+    final var tasklistGroups =
+        client.newGroupsByRoleSearchRequest("tasklist").send().join().items();
+    assertThat(tasklistGroups)
+        .extracting(RoleGroup::getGroupId)
+        .containsExactlyInAnyOrder("groupb");
+    final var identityGroups =
+        client.newGroupsByRoleSearchRequest("identity").send().join().items();
+    assertThat(identityGroups)
+        .extracting(RoleGroup::getGroupId)
+        .containsExactlyInAnyOrder("groupa");
   }
 
   @Test
