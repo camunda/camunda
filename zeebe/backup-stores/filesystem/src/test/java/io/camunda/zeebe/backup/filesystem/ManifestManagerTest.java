@@ -22,11 +22,13 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.FailedManifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -167,7 +169,12 @@ class ManifestManagerTest {
     return new BackupImpl(
         backupIdentifier,
         new BackupDescriptorImpl(
-            Optional.of("snapshotId"), backupIdentifier.checkpointId(), 1, "8.7.0"),
+            Optional.of("snapshotId"),
+            backupIdentifier.checkpointId(),
+            1,
+            "8.7.0",
+            Instant.now(),
+            CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),
         new NamedFileSetImpl(Map.of()));
   }

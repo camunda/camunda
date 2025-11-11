@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.gcs.manifest;
+package io.camunda.zeebe.backup.common.manifest;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -15,6 +15,8 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,13 @@ final class ManifestStateCastingTest {
         Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                new BackupDescriptorImpl(
+                    Optional.empty(),
+                    2345234L,
+                    3,
+                    "1.2.0-SNAPSHOT",
+                    Instant.now(),
+                    CheckpointType.MANUAL_BACKUP),
                 null,
                 null));
 
@@ -46,7 +54,13 @@ final class ManifestStateCastingTest {
         Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                new BackupDescriptorImpl(
+                    Optional.empty(),
+                    2345234L,
+                    3,
+                    "1.2.0-SNAPSHOT",
+                    Instant.now(),
+                    CheckpointType.MANUAL_BACKUP),
                 new NamedFileSetImpl(Map.of()),
                 new NamedFileSetImpl(Map.of())));
 
@@ -63,7 +77,13 @@ final class ManifestStateCastingTest {
         Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                new BackupDescriptorImpl(
+                    Optional.empty(),
+                    2345234L,
+                    3,
+                    "1.2.0-SNAPSHOT",
+                    Instant.now(),
+                    CheckpointType.MANUAL_BACKUP),
                 null,
                 null));
 

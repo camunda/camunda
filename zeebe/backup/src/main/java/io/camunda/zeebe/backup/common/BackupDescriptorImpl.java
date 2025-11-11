@@ -7,14 +7,23 @@
  */
 package io.camunda.zeebe.backup.common;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import java.io.IOException;
+import java.time.Instant;
 import java.util.Optional;
 
 public record BackupDescriptorImpl(
     Optional<String> snapshotId,
     long checkpointPosition,
     int numberOfPartitions,
-    String brokerVersion)
+    String brokerVersion,
+    Instant checkpointTimestamp,
+    @JsonDeserialize(using = CheckpointTypeDeserializer.class) CheckpointType checkpointType)
     implements BackupDescriptor {
 
   public static BackupDescriptorImpl from(final BackupDescriptor descriptor) {
@@ -22,6 +31,28 @@ public record BackupDescriptorImpl(
         descriptor.snapshotId(),
         descriptor.checkpointPosition(),
         descriptor.numberOfPartitions(),
-        descriptor.brokerVersion());
+        descriptor.brokerVersion(),
+        descriptor.checkpointTimestamp(),
+        descriptor.checkpointType());
+  }
+
+  /**
+   * CheckpointType backwards compatibility deserializer to handle missing fields and properly
+   * assign the {@link CheckpointType#MANUAL_BACKUP} value since checkpoints were previously
+   * directly associated with backups
+   */
+  static class CheckpointTypeDeserializer extends JsonDeserializer<CheckpointType> {
+
+    @Override
+    public CheckpointType deserialize(final JsonParser p, final DeserializationContext ctx)
+        throws IOException {
+      final String value = p.getText();
+      return CheckpointType.valueOf(value);
+    }
+
+    @Override
+    public CheckpointType getNullValue(final DeserializationContext ctx) {
+      return CheckpointType.MANUAL_BACKUP;
+    }
   }
 }
