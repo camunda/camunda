@@ -318,7 +318,7 @@ Accept: application/json
 
   client.test("Response should not be empty", function () {
     client.assert(Array.isArray(response.body), "items must be array");
-    client.assert(response.body.length == 0, "Expect no elements in hierarchy");
+    client.assert(response.body.length === 0, "Expect no elements in hierarchy");
   });
 %}
 
@@ -388,7 +388,7 @@ Accept: application/json
   });
 
   client.test("Response should be empty", function () {
-    client.assert(response.body.items.length == 0, "Process instances were not returned");
+    client.assert(response.body.items.length === 0, "Process instances were not returned");
   });
 %}
 
@@ -647,7 +647,7 @@ Accept: application/json
   });
 
   client.test("Response should not be empty", function () {
-    client.assert(response.body.elementInstanceKey !==undefined, "Element instance key were not returned");
+    client.assert(response.body.elementInstanceKey !== undefined, "Element instance key were not returned");
   });
 %}
 
@@ -797,9 +797,9 @@ Accept: application/json
 
   client.test("User task should be updated and assigned", function () {
     client.assert(response.body.userTaskKey !== undefined, "User task key were not returned");
-    client.assert(response.body.assignee == "demo", "User task was not assigned");
-    client.assert(response.body.priority == 100, "Priority was not updated");
-    client.assert(response.body.candidateUsers[0] == "demo", "User task key were not returned");
+    client.assert(response.body.assignee === "demo", "User task was not assigned");
+    client.assert(response.body.priority === 100, "Priority was not updated");
+    client.assert(response.body.candidateUsers[0] === "demo", "User task key were not returned");
   });
 %}
 
@@ -993,7 +993,7 @@ Accept: application/json
 
 ###
 # @name upload-document-authorized
-POST http://localhost:8080/v2/documents
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
 Accept: application/json
@@ -1029,7 +1029,7 @@ Content-Type: application/pdf
 
 ###
 # @name download-document-authorized
-GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
 Accept: application/octet-stream
@@ -1042,7 +1042,7 @@ Accept: application/octet-stream
 
 ###
 # @name delete-and-verify-document
-DELETE http://localhost:8080/v2/documents/{{DOCUMENT_ID}}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
 
@@ -1056,7 +1056,7 @@ X-CSRF-TOKEN: {{csrf_token}}
 
 ###
 # @name verify-deleted-document
-GET http://localhost:8080/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
 Accept: application/octet-stream
