@@ -28,6 +28,7 @@ import {
   TableSelectAll,
   TableSelectRow,
   TableExpandHeader,
+  Tag,
 } from '@carbon/react';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
@@ -35,6 +36,24 @@ import {EmptyMessage} from '../EmptyMessage';
 import {ErrorMessage} from '../ErrorMessage';
 
 const NUMBER_OF_SKELETON_ROWS = 10;
+
+const getOperationStateType = (
+  state: string,
+): 'red' | 'green' | 'blue' | 'gray' | 'purple' | 'cyan' => {
+  switch (state) {
+    case 'Completed':
+      return 'green';
+    case 'Failed':
+    case 'Cancelled':
+      return 'red';
+    case 'Active':
+      return 'blue';
+    case 'Created':
+      return 'cyan';
+    default:
+      return 'gray';
+  }
+};
 
 type HeaderColumn = {
   isDefault?: boolean;
@@ -56,6 +75,7 @@ type Props = {
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
+  columnsToRenderAsTags?: string[];
   batchOperationId?: string;
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
@@ -77,6 +97,7 @@ const SortableTable: React.FC<Props> = ({
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
+  columnsToRenderAsTags,
   batchOperationId,
 }) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
@@ -114,7 +135,7 @@ const SortableTable: React.FC<Props> = ({
       <DataTable
         rows={rows}
         headers={headerColumns}
-        size="sm"
+        size="md"
         render={({
           rows,
           headers,
@@ -207,17 +228,32 @@ const SortableTable: React.FC<Props> = ({
                                 }}
                               />
                             )}
-                            {row.cells.map((cell) => (
-                              <TableCell
-                                key={cell.id}
-                                data-testid={`cell-${cell.info.header}`}
-                                $hideCellPadding={columnsWithNoContentPadding?.includes(
-                                  cell.info.header,
-                                )}
-                              >
-                                {cell.value}
-                              </TableCell>
-                            ))}
+                            {row.cells.map((cell) => {
+                              const shouldRenderAsTag = columnsToRenderAsTags?.includes(
+                                cell.info.header,
+                              );
+
+                              return (
+                                <TableCell
+                                  key={cell.id}
+                                  data-testid={`cell-${cell.info.header}`}
+                                  $hideCellPadding={columnsWithNoContentPadding?.includes(
+                                    cell.info.header,
+                                  )}
+                                >
+                                  {shouldRenderAsTag ? (
+                                    <Tag
+                                      size="sm"
+                                      type={getOperationStateType(cell.value)}
+                                    >
+                                      {cell.value}
+                                    </Tag>
+                                  ) : (
+                                    cell.value
+                                  )}
+                                </TableCell>
+                              );
+                            })}
                           </TableExpandRow>
                           {errorMessage && (
                             <TableExpandedRow colSpan={headers.length + 2}>

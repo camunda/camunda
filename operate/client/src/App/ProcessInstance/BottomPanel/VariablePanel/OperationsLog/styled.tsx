@@ -42,14 +42,10 @@ const TimelineMarker = styled.div<MarkerProps>`
         backgroundColor = 'var(--cds-support-success)';
         break;
       case 'FAILED':
-      case 'CANCELLED':
         backgroundColor = 'var(--cds-support-error)';
         break;
-      case 'ACTIVE':
-        backgroundColor = 'var(--cds-support-info)';
-        break;
-      case 'CREATED':
-        backgroundColor = 'var(--cds-icon-primary)';
+      default:
+        backgroundColor = 'var(--cds-icon-secondary)';
         break;
     }
 

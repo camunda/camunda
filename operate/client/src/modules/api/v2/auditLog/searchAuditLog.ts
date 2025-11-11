@@ -30,7 +30,8 @@ export type OperationState =
   | 'COMPLETED'
   | 'PARTIALLY_COMPLETED'
   | 'CANCELLED'
-  | 'FAILED';
+  | 'FAILED'
+  | 'SKIPPED';
 
 // Process Instance States
 export type ProcessInstanceState =

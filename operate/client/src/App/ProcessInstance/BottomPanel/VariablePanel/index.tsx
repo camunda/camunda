@@ -115,7 +115,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
         },
         {
           id: 'operations-log',
-          label: 'Operations log',
+          label: 'Operations Log',
           content: <OperationsLog />,
           removePadding: true,
           onClick: () => {

@@ -65,9 +65,206 @@ export type MockAuditLogEntry = AuditLogEntry & {
     variable?: VariableDetails;
     userTask?: UserTaskDetails;
   };
+  // Indicates the operation was applied to multiple process instances
+  isMultiInstanceOperation?: boolean;
+  // Optional number of affected instances when operation is multi-instance
+  affectedInstancesCount?: number;
+  // Error message for failed operations
+  errorMessage?: string;
 };
 
 export const mockOperationLog: MockAuditLogEntry[] = [
+  // Failed multi-instance operation
+  {
+    id: '28',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'CANCEL_PROCESS_INSTANCE',
+    operationState: 'FAILED',
+    startTimestamp: new Date(Date.now() - 10).toISOString(),
+    user: 'Bulk Canceller',
+    comment: 'Attempted to cancel multiple instances but failed.',
+    isMultiInstanceOperation: true,
+    affectedInstancesCount: 15,
+    errorMessage: 'Request property [maxJobsToActivates] cannot be parsed.',
+  },
+  // Failed multi-instance operation (cancelled by user)
+  {
+    id: '27',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'MODIFY_PROCESS_INSTANCE',
+    operationState: 'FAILED',
+    startTimestamp: new Date(Date.now() - 30).toISOString(),
+    user: 'Admin User',
+    comment: 'Modification operation was cancelled by the user.',
+    errorMessage: 'Operation was cancelled by the user before completion.',
+    isMultiInstanceOperation: true,
+    affectedInstancesCount: 8,
+    details: {
+      modifications: {
+        activateInstructions: [
+          {
+            elementId: 'Activity_SendNotification',
+            elementName: 'Send Notification',
+          },
+        ],
+        terminateInstructions: [],
+      },
+    },
+  },
+  // Completed multi-instance operation
+  {
+    id: '26',
+    processDefinitionName: 'Payment Process',
+    processDefinitionVersion: 2,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'MIGRATE_PROCESS_INSTANCE',
+    operationState: 'COMPLETED',
+    startTimestamp: new Date(Date.now() - 50).toISOString(),
+    user: 'System Migration',
+    comment: 'Migration completed across multiple instances.',
+    isMultiInstanceOperation: true,
+    affectedInstancesCount: 42,
+    details: {
+      migrationPlan: {
+        targetProcessDefinitionKey: '7788990011',
+        targetProcessDefinitionName: 'Payment Process v4',
+        mappingInstructions: [
+          {
+            sourceElementId: 'Activity_ProcessPayment',
+            sourceElementName: 'Process Payment',
+            targetElementId: 'Activity_ProcessPayment_v4',
+            targetElementName: 'Process Payment (new gateway)',
+          },
+        ],
+      },
+    },
+  },
+  // Completed multi-instance operation
+  {
+    id: '25',
+    processDefinitionName: 'Fulfillment Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'RESOLVE_INCIDENT',
+    operationState: 'COMPLETED',
+    startTimestamp: new Date(Date.now() - 80).toISOString(),
+    user: 'Incident Manager',
+    comment: 'Incident resolution completed - incidents already resolved.',
+    isMultiInstanceOperation: true,
+    affectedInstancesCount: 5,
+    details: {
+      status: 'RESOLVED',
+    },
+  },
+  // Failed single instance operation
+  {
+    id: '24a',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'MODIFY_PROCESS_INSTANCE',
+    operationState: 'FAILED',
+    startTimestamp: new Date(Date.now() - 90).toISOString(),
+    user: 'John Modifier',
+    comment: 'Attempted to modify process instance.',
+    errorMessage: 'Cannot activate element "Confirm Order" because the target flow node has an active incident. Please resolve the incident before attempting to modify.',
+    details: {
+      modifications: {
+        activateInstructions: [
+          {
+            elementId: '2251734813681235',
+            elementName: 'Confirm Order',
+          },
+        ],
+        terminateInstructions: [],
+      },
+    },
+  },
+  {
+    id: '24',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'MODIFY_PROCESS_INSTANCE',
+    operationState: 'COMPLETED',
+    startTimestamp: new Date(Date.now() - 100).toISOString(),
+    user: 'Bulk Modifier',
+    comment: 'Applied variable update to a set of instances.',
+    isMultiInstanceOperation: true,
+    affectedInstancesCount: 25,
+    details: {
+      modifications: {
+        activateInstructions: [
+          {
+            elementId: 'Activity_UpdateCRM',
+            elementName: 'Update CRM',
+            variableInstructions: [
+              {
+                variables: {priority: 'HIGH'},
+                scopeId: 'Activity_UpdateCRM',
+              },
+            ],
+          },
+        ],
+        terminateInstructions: [],
+      },
+    },
+  },
+  {
+    id: '23',
+    processDefinitionName: 'Claims Process',
+    processDefinitionVersion: 2,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'MIGRATE_PROCESS_INSTANCE',
+    operationState: 'COMPLETED',
+    startTimestamp: new Date(Date.now() - 150).toISOString(),
+    user: 'Bulk Migrator',
+    comment: 'Migration executed across multiple running instances.',
+    isMultiInstanceOperation: true,
+    affectedInstancesCount: 12,
+    details: {
+      migrationPlan: {
+        targetProcessDefinitionKey: '9988776655',
+        targetProcessDefinitionName: 'Claims Process v4',
+        mappingInstructions: [
+          {
+            sourceElementId: 'Task_AssessClaim',
+            sourceElementName: 'Assess Claim',
+            targetElementId: 'Task_AssessClaim_v3',
+            targetElementName: 'Assess Claim (enhanced v3)',
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: '22',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'RESOLVE_INCIDENT',
+    operationState: 'COMPLETED',
+    startTimestamp: new Date(Date.now() - 200).toISOString(),
+    user: 'Incident Manager',
+    comment: 'Resolved incidents across a batch of instances.',
+    isMultiInstanceOperation: true,
+    affectedInstancesCount: 7,
+    details: {
+      status: 'RESOLVED',
+    },
+  },
   {
     id: '17',
     processDefinitionName: 'Order Process',
@@ -187,6 +384,31 @@ export const mockOperationLog: MockAuditLogEntry[] = [
       },
     },
   },
+    // Failed user task operation
+    {
+      id: '13a',
+      processDefinitionName: 'Order Process',
+      processDefinitionVersion: 1,
+      processInstanceKey: '123',
+      tenantId: 'default',
+      operationType: 'ASSIGN_USER_TASK',
+      operationState: 'FAILED',
+      startTimestamp: new Date(Date.now() - 4500).toISOString(),
+      user: 'Sarah Manager',
+      comment: 'Attempted to assign task to a user.',
+      errorMessage: 'The user does not have the required permissions to be assigned this task.',
+      details: {
+        userTask: {
+          name: 'Process an order',
+          elementId: 'UserTask_ProcessOrder',
+          assignee: 'robert.johnson@example.com',
+          candidateGroups: 'Group A, Group B',
+          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          action: 'assign',
+          allowOverride: false,
+        },
+      },
+    },
     {
       id: '13',
       processDefinitionName: 'Order Process',
@@ -242,10 +464,11 @@ export const mockOperationLog: MockAuditLogEntry[] = [
       processInstanceKey: '123',
       tenantId: 'default',
       operationType: 'MODIFY_PROCESS_INSTANCE',
-      operationState: 'SUSPENDED',
+      operationState: 'FAILED',
       startTimestamp: new Date(Date.now() - 15000).toISOString(),
       user: 'System Maintenance',
-      comment: 'Operation suspended due to system maintenance.',
+      comment: 'Operation failed due to system maintenance.',
+      errorMessage: 'Operation could not be completed because the system was undergoing maintenance. Please retry the operation.',
       details: {
         modifications: {
           activateInstructions: [{elementId: 'Gateway_1', elementName: 'Exclusive Gateway'}],
@@ -303,7 +526,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
       processInstanceKey: '789',
       tenantId: 'default',
       operationType: 'UPDATE_VARIABLE',
-      operationState: 'CREATED',
+      operationState: 'COMPLETED',
       startTimestamp: new Date(Date.now() - 25000).toISOString(),
       user: 'Karen Rodriguez',
       details: {
@@ -321,11 +544,11 @@ export const mockOperationLog: MockAuditLogEntry[] = [
       processInstanceKey: '789',
       tenantId: 'default',
       operationType: 'DELETE_DECISION_DEFINITION',
-      operationState: 'CANCELLED',
+      operationState: 'COMPLETED',
       startTimestamp: new Date(Date.now() - 30000).toISOString(),
       endTimestamp: new Date(Date.now() - 30000).toISOString(),
       user: 'Richard Garcia',
-      comment: 'Cancelled by user before completion.',
+      comment: 'Decision definition successfully deleted.',
     },
     {
       id: '7',
@@ -334,10 +557,10 @@ export const mockOperationLog: MockAuditLogEntry[] = [
       processInstanceKey: '123',
       tenantId: 'default',
       operationType: 'CANCEL_PROCESS_INSTANCE',
-      operationState: 'ACTIVE',
+      operationState: 'COMPLETED',
       startTimestamp: new Date(Date.now() - 35000).toISOString(),
       user: 'Susan Miller',
-      comment: 'Cancellation request received, processing.',
+      comment: 'Process instance successfully cancelled.',
     },
     {
       id: '6',

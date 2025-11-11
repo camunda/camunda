@@ -14,6 +14,8 @@ import {
   TextInput,
   FilterableMultiSelect,
   Layer,
+  DatePicker,
+  DatePickerInput,
 } from '@carbon/react';
 import type {
   OperationType,
@@ -196,26 +198,28 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
               }
               size="sm"
             />
-            <TextInput
-              id="start-date"
-              labelText="From"
-              type="datetime-local"
-              value={filters.startDateFrom || ''}
-              onChange={(e) =>
-                handleFilterChange('startDateFrom', e.target.value)
-              }
-              size="sm"
-            />
-            <TextInput
-              id="end-date"
-              labelText="To"
-              type="datetime-local"
-              value={filters.startDateTo || ''}
-              onChange={(e) =>
-                handleFilterChange('startDateTo', e.target.value)
-              }
-              size="sm"
-            />
+            <DatePicker
+              datePickerType="range"
+              value={[filters.startDateFrom || '', filters.startDateTo || '']}
+              onChange={(dates) => {
+                const [startDate, endDate] = dates;
+                handleFilterChange('startDateFrom', startDate?.toISOString() || '');
+                handleFilterChange('startDateTo', endDate?.toISOString() || '');
+              }}
+            >
+              <DatePickerInput
+                id="start-date"
+                labelText="From"
+                placeholder="mm/dd/yyyy"
+                size="sm"
+              />
+              <DatePickerInput
+                id="end-date"
+                labelText="To"
+                placeholder="mm/dd/yyyy"
+                size="sm"
+              />
+            </DatePicker>
             <TextInput
               id="user"
               labelText="User"

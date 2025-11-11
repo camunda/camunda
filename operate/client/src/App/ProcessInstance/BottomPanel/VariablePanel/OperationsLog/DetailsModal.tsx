@@ -15,16 +15,15 @@ import {
   Button,
   TextArea,
   Stack,
-  IconButton,
   Tag,
   StructuredListWrapper,
-  StructuredListHead,
-  StructuredListRow,
   StructuredListCell,
   StructuredListBody,
   Link,
+  ActionableNotification,
+  Layer,
 } from '@carbon/react';
-import {Edit, Add, ArrowRight} from '@carbon/react/icons';
+import {Edit, Add} from '@carbon/react/icons';
 import {DataTable} from 'modules/components/DataTable';
 import {formatDate} from 'modules/utils/date';
 import {useUpsertNote} from 'modules/mutations/auditLog/useUpsertNote';
@@ -38,9 +37,7 @@ import {
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {CheckmarkOutline} from '@carbon/react/icons';
 import {
-  User,
   EventSchedule,
-  UserSettings,
   UserAdmin,
   UserAvatar,
   Group,
@@ -233,19 +230,14 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
 
   const getOperationStateType = (
     state: string,
-  ): 'red' | 'green' | 'blue' | 'gray' | 'purple' | 'cyan' => {
+  ): 'green' | 'red' => {
     switch (state) {
       case 'COMPLETED':
         return 'green';
       case 'FAILED':
-      case 'CANCELLED':
         return 'red';
-      case 'ACTIVE':
-        return 'blue';
-      case 'CREATED':
-        return 'cyan';
       default:
-        return 'gray';
+        return 'green';
     }
   };
 
@@ -659,65 +651,88 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
       />
       <ModalBody>
         <Stack gap={5}>
-          <StructuredListWrapper isCondensed isFlush>
-            <StructuredListBody>
-              <VerticallyAlignedRow head>
-                <FirstColumn noWrap>
+          {entry.isMultiInstanceOperation && (
+            <Stack gap={2}>
+              <ActionableNotification
+                kind="info"
+                lowContrast
+                inline
+                hideCloseButton
+                title="This operation is part of a batch"
+                actionButtonLabel="View batch operation details"
+              />
+            </Stack>
+          )}
+          <Stack gap={1}>
+            <StructuredListWrapper isCondensed isFlush>
+              <StructuredListBody>
+                <VerticallyAlignedRow head>
+                  <FirstColumn noWrap>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--cds-spacing-03)',
+                      }}
+                    >
+                      <CheckmarkOutline />
+                      Status
+                    </div>
+                  </FirstColumn>
+                  <StructuredListCell>
+                    <Tag
+                      type={getOperationStateType(entry.operationState)}
+                      size="md"
+                    >
+                      {formatOperationState(entry.operationState)}
+                    </Tag>
+                  </StructuredListCell>
+                </VerticallyAlignedRow>
+                <VerticallyAlignedRow>
+                  <FirstColumn noWrap>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--cds-spacing-03)',
+                      }}
+                    >
+                      <UserAvatar />
+                      Applied by
+                    </div>
+                  </FirstColumn>
+                  <StructuredListCell>{entry.user}</StructuredListCell>
+                </VerticallyAlignedRow>
+                <VerticallyAlignedRow>
+                  <FirstColumn noWrap>
                   <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--cds-spacing-03)',
-                    }}
-                  >
-                    <CheckmarkOutline />
-                    Status
-                  </div>
-                </FirstColumn>
-                <StructuredListCell>
-                  <Tag
-                    size="sm"
-                    type={getOperationStateType(entry.operationState)}
-                    style={{margin: 0}}
-                  >
-                    {formatOperationState(entry.operationState)}
-                  </Tag>
-                </StructuredListCell>
-              </VerticallyAlignedRow>
-              <VerticallyAlignedRow>
-                <FirstColumn noWrap>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--cds-spacing-03)',
-                    }}
-                  >
-                    <UserAvatar />
-                    Performed by
-                  </div>
-                </FirstColumn>
-                <StructuredListCell>{entry.user}</StructuredListCell>
-              </VerticallyAlignedRow>
-              <VerticallyAlignedRow>
-                <FirstColumn noWrap>
-                <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--cds-spacing-03)',
-                    }}
-                  >
-                    <EventSchedule />
-                    Time
-                  </div>
-                </FirstColumn>
-                <StructuredListCell>
-                  {formatDate(entry.startTimestamp)}
-                </StructuredListCell>
-              </VerticallyAlignedRow>
-            </StructuredListBody>
-          </StructuredListWrapper>
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--cds-spacing-03)',
+                      }}
+                    >
+                      <EventSchedule />
+                      Start time
+                    </div>
+                  </FirstColumn>
+                  <StructuredListCell>
+                    {formatDate(entry.startTimestamp)}
+                  </StructuredListCell>
+                </VerticallyAlignedRow>
+              </StructuredListBody>
+            </StructuredListWrapper>
+          </Stack>
+          {entry.operationState === 'FAILED' && entry.errorMessage && (
+            <>
+            <Stack gap={1}>
+              <Subtitle>Error Message</Subtitle>
+              <div>
+                {entry.errorMessage}
+              </div>
+            </Stack>
+            </>
+          )}
           {renderDetails()}
           {renderUserTaskDetails(entry, onClose)}
           <Stack gap={1}>

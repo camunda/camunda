@@ -10,21 +10,21 @@ import {useState, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {
   Stack,
+  DataTable,
   Table,
   TableHead,
   TableRow,
   TableHeader,
   TableBody,
   TableCell,
-  Tag,
   Dropdown,
+  Tag,
 } from '@carbon/react';
 import {Information} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';
 import {DetailsModal} from './DetailsModal';
 import {mockOperationLog} from './mocks';
 import type {MockAuditLogEntry} from './mocks';
-//import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -38,19 +38,14 @@ type DetailsModalState = {
 
 const getOperationStateType = (
   state: string,
-): 'red' | 'green' | 'blue' | 'gray' | 'purple' | 'cyan' => {
+): 'green' | 'red' => {
   switch (state) {
     case 'Completed':
       return 'green';
     case 'Failed':
-    case 'Cancelled':
       return 'red';
-    case 'Active':
-      return 'blue';
-    case 'Created':
-      return 'cyan';
     default:
-      return 'gray';
+      return 'green';
   }
 };
 
@@ -74,22 +69,6 @@ const OperationsLogTable: React.FC = observer(() => {
     'All operations',
   );
 
-  const [sortKey, setSortKey] = useState<string>('startTimestamp');
-  const [sortDirection, setSortDirection] = useState<'ASC' | 'DESC' | 'NONE'>(
-    'DESC',
-  );
-
-  const handleSort = (key: string) => {
-    if (key === 'actions') {
-      return;
-    }
-    if (key !== sortKey) {
-      setSortKey(key);
-      setSortDirection('ASC');
-      return;
-    }
-    setSortDirection((prev) => (prev === 'ASC' ? 'DESC' : prev === 'DESC' ? 'NONE' : 'ASC'));
-  };
 
   const openDetailsModal = (entry: MockAuditLogEntry) => {
     setDetailsModal({open: true, entry});
@@ -116,12 +95,12 @@ const OperationsLogTable: React.FC = observer(() => {
   const headers = [
     {key: 'operationType', header: 'Operation'},
     {key: 'operationState', header: 'Status'},
-    {key: 'user', header: 'Performed by'},
-    {key: 'startTimestamp', header: 'Time'},
+    {key: 'user', header: 'Applied by'},
+    {key: 'startTimestamp', header: 'Start Time'},
     {key: 'actions', header: ' '},
   ];
 
-  const rows = useMemo(
+  const baseRows = useMemo(
     () =>
       (
         isRootNodeSelected
@@ -139,81 +118,30 @@ const OperationsLogTable: React.FC = observer(() => {
         operationState: formatOperationState(entry.operationState),
         user: entry.user,
         startTimestamp: formatDate(entry.startTimestamp),
-        // keep raw value for accurate sorting
         startTimestampRaw: entry.startTimestamp,
-        actions: (
-          <Stack orientation="horizontal" gap={2}>
-            <button
-              type="button"
-              onClick={() => openDetailsModal(entry)}
-              title="View details"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                color: 'var(--cds-text-primary)',
-              }}
-            >
-              <Information size={16} />
-            </button>
-          </Stack>
-        ),
+        entry: entry,
       })) || [],
     [isRootNodeSelected, isUserTaskSelected],
   );
 
   const operationTypeOptions = useMemo(() => {
     const unique = Array.from(
-      new Set(rows.map((row: any) => row.operationType)),
+      new Set(baseRows.map((row: any) => row.operationType)),
     );
     return ['All operations', ...unique];
-  }, [rows]);
+  }, [baseRows]);
 
   const filteredRows = useMemo(() => {
     if (operationTypeFilter === 'All operations') {
-      return rows;
+      return baseRows;
     }
-    return rows.filter((row) => row.operationType === operationTypeFilter);
-  }, [rows, operationTypeFilter]);
-
-  const sortedRows = useMemo(() => {
-    if (sortDirection === 'NONE') {
-      return filteredRows;
-    }
-    const data = [...filteredRows];
-    const directionMultiplier = sortDirection === 'ASC' ? 1 : -1;
-
-    data.sort((a: any, b: any) => {
-      const key = sortKey;
-      let aValue = a[key];
-      let bValue = b[key];
-
-      if (key === 'startTimestamp') {
-        aValue = new Date(a.startTimestampRaw).getTime();
-        bValue = new Date(b.startTimestampRaw).getTime();
-      }
-
-      if (aValue == null && bValue == null) return 0;
-      if (aValue == null) return -1 * directionMultiplier;
-      if (bValue == null) return 1 * directionMultiplier;
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return aValue.localeCompare(bValue) * directionMultiplier;
-      }
-
-      if (aValue < bValue) return -1 * directionMultiplier;
-      if (aValue > bValue) return 1 * directionMultiplier;
-      return 0;
-    });
-
-    return data;
-  }, [filteredRows, sortDirection, sortKey]);
+    return baseRows.filter((row) => row.operationType === operationTypeFilter);
+  }, [baseRows, operationTypeFilter]);
 
   if (!isRootNodeSelected && !isUserTaskSelected) {
     return (
       <EmptyMessageContainer>
-        <EmptyMessage message="This element has no operations" />
+        <EmptyMessage message="The element has no operations" />
       </EmptyMessageContainer>
     );
   }
@@ -246,42 +174,89 @@ const OperationsLogTable: React.FC = observer(() => {
             }}
           />
         </div>
-        <Table size="md" style={{tableLayout: 'fixed', width: '100%'}}>
-          <TableHead>
-            <TableRow>
-              {headers.map((header) => (
-                <TableHeader
-                  key={header.key}
-                  isSortable={header.key !== 'actions'}
-                  isSortHeader={sortKey === header.key}
-                  sortDirection={sortKey === header.key ? sortDirection : 'NONE'}
-                  onClick={() => handleSort(header.key)}
-                  style={header.key === 'actions' ? {width: '72px'} : {}}
-                >
-                  {header.header}
-                </TableHeader>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sortedRows.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{row.operationType}</TableCell>
-                <TableCell>
-                  <Tag
-                    size="sm"
-                    type={getOperationStateType(row.operationState)}
-                  >
-                    {row.operationState}
-                  </Tag>
-                </TableCell>
-                <TableCell>{row.user}</TableCell>
-                <TableCell>{row.startTimestamp}</TableCell>
-                <TableCell>{row.actions}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <DataTable
+          rows={filteredRows}
+          headers={headers}
+          isSortable
+          size="md"
+          render={({
+            rows,
+            headers,
+            getTableProps,
+            getHeaderProps,
+            getRowProps,
+          }) => (
+            <Table {...getTableProps()} style={{tableLayout: 'fixed', width: '100%'}}>
+              <TableHead>
+                <TableRow>
+                  {headers.map((header) => {
+                    const {key, ...headerProps} = getHeaderProps({
+                      header,
+                      isSortable: header.key !== 'actions',
+                    });
+                    return (
+                      <TableHeader
+                        {...headerProps}
+                        key={key}
+                        style={header.key === 'actions' ? {width: '72px'} : {}}
+                      >
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((row) => {
+                  const {key, ...rowProps} = getRowProps({row});
+                  const rowData = filteredRows.find((r) => r.id === row.id);
+                  
+                  return (
+                    <TableRow {...rowProps} key={key}>
+                      {row.cells.map((cell) => {
+                        if (cell.info.header === 'operationState') {
+                          return (
+                            <TableCell key={cell.id}>
+                              <Tag
+                                type={getOperationStateType(cell.value)}
+                                size="md"
+                              >
+                                {cell.value}
+                              </Tag>
+                            </TableCell>
+                          );
+                        }
+                        if (cell.info.header === 'actions') {
+                          return (
+                            <TableCell key={cell.id}>
+                              <Stack orientation="horizontal" gap={2}>
+                                <button
+                                  type="button"
+                                  onClick={() => rowData && openDetailsModal(rowData.entry)}
+                                  title="View details"
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    color: 'var(--cds-text-primary)',
+                                  }}
+                                >
+                                  <Information size={16} />
+                                </button>
+                              </Stack>
+                            </TableCell>
+                          );
+                        }
+                        return <TableCell key={cell.id}>{cell.value}</TableCell>;
+                      })}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        />
       </div>
 
       <DetailsModal

@@ -55,19 +55,14 @@ const OperationsLogTimeline: React.FC = observer(() => {
 
   const getOperationStateType = (
     state: string,
-  ): 'red' | 'green' | 'blue' | 'gray' | 'purple' | 'cyan' => {
+  ): 'red' | 'green' => {
     switch (state) {
       case 'COMPLETED':
         return 'green';
       case 'FAILED':
-      case 'CANCELLED':
         return 'red';
-      case 'ACTIVE':
-        return 'blue';
-      case 'CREATED':
-        return 'cyan';
       default:
-        return 'gray';
+        return 'green';
     }
   };
 

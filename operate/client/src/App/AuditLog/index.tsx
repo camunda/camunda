@@ -18,7 +18,6 @@ import {
 } from 'modules/api/v2/auditLog/searchAuditLog';
 import {useAuditLog} from 'modules/queries/auditLog/useAuditLog';
 import {SortableTable} from 'modules/components/SortableTable';
-import {Information} from '@carbon/react/icons';
 import {Stack} from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
@@ -139,11 +138,11 @@ const AuditLog: React.FC = () => {
   };
 
   const headers = [
-    {key: 'processDefinitionName', header: 'Process definition'},
     {key: 'operationType', header: 'Operation'},
     {key: 'operationState', header: 'Status'},
-    {key: 'startTimestamp', header: 'Start timestamp'},
-    {key: 'user', header: 'User'},
+    {key: 'processDefinitionName', header: 'Process'},
+    {key: 'startTimestamp', header: 'Start time'},
+    {key: 'user', header: 'Applied by'},
     {key: 'note', header: 'Note'},
   ];
 
@@ -276,6 +275,7 @@ const AuditLog: React.FC = () => {
               state={isLoading ? 'skeleton' : error ? 'error' : 'content'}
               headerColumns={headers}
               rows={sortedRows}
+              columnsToRenderAsTags={['operationState']}
               onSort={(clickedSortKey) => {
                 const newParams = new URLSearchParams(location.search);
                 const currentSort = getSortParams(location.search);
