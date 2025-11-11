@@ -48,7 +48,10 @@ public class BrokerBasedConfiguration {
     this.properties = properties;
     this.lifecycle = lifecycle;
 
-    properties.getCluster().setNodeId(nodeIdProvider.currentNodeInstance().id());
+    if (properties.getCluster().getNodeId() == null) {
+      final var nodeIdFromProvider = nodeIdProvider.currentNodeInstance().id();
+      properties.getCluster().setNodeId(nodeIdFromProvider);
+    }
     properties.init(workingDirectory.path().toAbsolutePath().toString());
   }
 

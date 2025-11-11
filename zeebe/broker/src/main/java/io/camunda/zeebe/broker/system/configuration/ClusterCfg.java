@@ -45,7 +45,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
   private List<Integer> partitionIds;
-  private Integer nodeId = 0;
+  private Integer nodeId;
   private String clusterId;
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;

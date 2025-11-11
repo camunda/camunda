@@ -131,6 +131,7 @@ public final class BrokerCfgTest {
     final ExporterCfg exporterCfgInternal2 = new ExporterCfg();
 
     final BrokerCfg config = new BrokerCfg();
+    config.getCluster().setNodeId(0);
     config.getExporters().put("external", exporterCfgExternal);
     config.getExporters().put("internal-1", exporterCfgInternal1);
     config.getExporters().put("internal-2", exporterCfgInternal2);

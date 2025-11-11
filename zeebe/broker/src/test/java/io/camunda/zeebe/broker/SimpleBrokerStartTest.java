@@ -58,6 +58,7 @@ public final class SimpleBrokerStartTest {
   public void shouldFailToCreateBrokerWithSmallSnapshotPeriod() {
     // given
     final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setNodeId(0);
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMillis(1));
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
@@ -89,6 +90,7 @@ public final class SimpleBrokerStartTest {
   public void shouldCallPartitionListenerAfterStart() throws Exception {
     // given
     final var brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setNodeId(0);
     assignSocketAddresses(brokerCfg);
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 

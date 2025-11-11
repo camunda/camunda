@@ -25,6 +25,7 @@ final class RestoreManagerTest {
   void shouldFailWhenDirectoryIsNotEmpty(@TempDir final Path dir) throws IOException {
     // given
     final var configuration = new BrokerCfg();
+    configuration.getCluster().setNodeId(0);
     configuration.getData().setDirectory(dir.toString());
     final var restoreManager =
         new RestoreManager(
@@ -42,6 +43,7 @@ final class RestoreManagerTest {
   void shouldIgnoreConfigurableFilesInTarget(@TempDir final Path dir) throws IOException {
     // given
     final var configuration = new BrokerCfg();
+    configuration.getCluster().setNodeId(0);
     configuration.getData().setDirectory(dir.toString());
     final var restoreManager =
         new RestoreManager(
