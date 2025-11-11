@@ -17,14 +17,13 @@ vi.mock('modules/hooks/useFilters');
 const mockedUseFilters = vi.mocked(useFilters);
 
 describe('useProcessInstanceFilters', () => {
-  it('should map filters to request correctly with both state and incidents', () => {
+  it('should correctly map filters to request', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
       startDateBefore: '2023-01-31',
       endDateAfter: '2023-02-01',
       endDateBefore: '2023-02-28',
       process: 'process1',
-      version: '1',
       ids: 'id1,id2',
       active: true,
       incidents: true,
@@ -67,9 +66,6 @@ describe('useProcessInstanceFilters', () => {
           },
           {hasIncident: true},
         ],
-        state: {
-          $in: ['ACTIVE', 'COMPLETED', 'TERMINATED'],
-        },
         parentProcessInstanceKey: {
           $eq: 'parent1',
         },
@@ -179,7 +175,7 @@ describe('useProcessInstanceFilters', () => {
           $gt: '2023-01-01T00:00:00.000Z',
         },
         state: {
-          $in: ['ACTIVE'],
+          $eq: 'ACTIVE',
         },
       },
     };

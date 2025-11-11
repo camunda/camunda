@@ -339,8 +339,7 @@ function getProcessInstancesRequestFilters(): RequestFilters {
             'startDateBefore',
             'endDateAfter',
             'endDateBefore',
-          ].includes(key) &&
-          value !== undefined
+          ].includes(key)
         ) {
           return {
             ...accumulator,

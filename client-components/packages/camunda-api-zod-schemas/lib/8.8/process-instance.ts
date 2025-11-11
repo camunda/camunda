@@ -14,6 +14,7 @@ import {
 	getQueryResponseBodySchema,
 	advancedDateTimeFilterSchema,
 	advancedStringFilterSchema,
+	advancedIntegerFilterSchema,
 	basicStringFilterSchema,
 	getOrFilterSchema,
 	type Endpoint,
@@ -49,7 +50,7 @@ const queryProcessInstancesFilterSchema = z
 	.object({
 		processDefinitionId: advancedStringFilterSchema,
 		processDefinitionName: advancedStringFilterSchema,
-		processDefinitionVersion: z.number().int(),
+		processDefinitionVersion: advancedIntegerFilterSchema,
 		processDefinitionVersionTag: advancedStringFilterSchema,
 		processDefinitionKey: basicStringFilterSchema,
 		processInstanceKey: basicStringFilterSchema,
@@ -61,13 +62,14 @@ const queryProcessInstancesFilterSchema = z
 		hasIncident: z.boolean(),
 		tenantId: advancedStringFilterSchema,
 		variables: z.array(processInstanceVariableFilterSchema),
-		batchOperationKey: z.string(),
+		batchOperationId: advancedStringFilterSchema,
 		errorMessage: advancedStringFilterSchema,
 		hasRetriesLeft: z.boolean(),
 		elementInstanceState: advancedProcessInstanceStateFilterSchema,
 		elementId: advancedStringFilterSchema,
-		hasElementInstanceIncidents: z.boolean(),
-		incidentErrorHashCode: z.number().int(),
+		hasElementInstanceIncident: z.boolean(),
+		incidentErrorHashCode: advancedIntegerFilterSchema,
+		tags: z.array(z.string().min(1).max(100).regex(/^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$/)).max(10),
 	})
 	.partial();
 

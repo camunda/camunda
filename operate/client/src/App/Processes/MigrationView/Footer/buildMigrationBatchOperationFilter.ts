@@ -13,7 +13,9 @@ import type {
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
 type MigrationFilterOptions = {
-  baseFilter: GetProcessDefinitionStatisticsRequestBody['filter'];
+  baseFilter:
+    | GetProcessDefinitionStatisticsRequestBody['filter']
+    | CreateMigrationBatchOperationRequestBody['filter'];
   includeIds: string[];
   excludeIds: string[];
   processDefinitionKey?: string | null;
