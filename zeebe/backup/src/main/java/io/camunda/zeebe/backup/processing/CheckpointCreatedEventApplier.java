@@ -31,7 +31,10 @@ public final class CheckpointCreatedEventApplier {
 
   public void apply(final CheckpointRecord checkpointRecord) {
     checkpointState.setLatestCheckpointInfo(
-        checkpointRecord.getCheckpointId(), checkpointRecord.getCheckpointPosition());
+        checkpointRecord.getCheckpointId(),
+        checkpointRecord.getCheckpointPosition(),
+        checkpointRecord.getCheckpointTimestamp(),
+        checkpointRecord.getCheckpointType());
     checkpointListeners.forEach(
         listener -> listener.onNewCheckpointCreated(checkpointState.getLatestCheckpointId()));
   }

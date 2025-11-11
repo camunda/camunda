@@ -2174,7 +2174,7 @@ final class JsonSerializableToJsonTest {
             "checkpointId":1,
             "checkpointPosition":10,
             "checkpointTimestamp":-1,
-            "checkpointType":"MARKER"
+            "checkpointType":"MANUAL_BACKUP"
           }
           """
       },

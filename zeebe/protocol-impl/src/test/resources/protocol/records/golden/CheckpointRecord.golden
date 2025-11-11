@@ -26,7 +26,7 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
   private final LongProperty checkpointTimestampProperty =
       new LongProperty(CHECKPOINT_TIMESTAMP_KEY, -1L);
   private final EnumProperty<CheckpointType> checkpointTypeProperty =
-      new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.MARKER);
+      new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.MANUAL_BACKUP);
 
   public CheckpointRecord() {
     super(4);
