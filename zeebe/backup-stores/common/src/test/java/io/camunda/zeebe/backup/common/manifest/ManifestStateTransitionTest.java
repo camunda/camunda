@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.gcs.manifest;
+package io.camunda.zeebe.backup.common.manifest;
 
 import static io.camunda.zeebe.backup.common.Manifest.StatusCode.COMPLETED;
 import static io.camunda.zeebe.backup.common.Manifest.StatusCode.FAILED;

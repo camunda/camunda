@@ -47,7 +47,8 @@ public interface BackupDescriptor {
   String brokerVersion();
 
   /**
-   * @return the timestamp at which the related checkpoint was created
+   * @return the timestamp at which the related checkpoint was created can be null for backups
+   *     created before 8.9
    */
   Instant checkpointTimestamp();
 

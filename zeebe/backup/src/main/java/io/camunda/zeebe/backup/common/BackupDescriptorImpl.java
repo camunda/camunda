@@ -38,7 +38,7 @@ public record BackupDescriptorImpl(
 
   /**
    * CheckpointType backwards compatibility deserializer to handle missing fields and properly
-   * assign the {@link CheckpointType.MANUAL_BACKUP} value since checkpoints were previously
+   * assign the {@link CheckpointType#MANUAL_BACKUP} value since checkpoints were previously
    * directly associated with backups
    */
   static class CheckpointTypeDeserializer extends JsonDeserializer<CheckpointType> {
@@ -47,9 +47,7 @@ public record BackupDescriptorImpl(
     public CheckpointType deserialize(final JsonParser p, final DeserializationContext ctx)
         throws IOException {
       final String value = p.getText();
-      return value == null || value.isEmpty()
-          ? CheckpointType.MANUAL_BACKUP
-          : CheckpointType.valueOf(value);
+      return CheckpointType.valueOf(value);
     }
 
     @Override
