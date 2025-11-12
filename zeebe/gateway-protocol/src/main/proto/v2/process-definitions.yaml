@@ -226,45 +226,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
-
-  /process-definitions/{processDefinitionId}/statistics/process-instances:
-    post:
-      tags:
-        - Process definition
-      operationId: getProcessDefinitionInstanceVersionStatistics
-      summary: Get process instance statistics by version
-      description: |
-        Get statistics about process instances, grouped by version for a given process definition.
-      parameters:
-        - name: processDefinitionId
-          in: path
-          required: true
-          description: The ID of the process definition.
-          schema:
-            $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProcessDefinitionInstanceVersionStatisticsQuery"
-      responses:
-        "200":
-          description: The process definition instance version statistic result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProcessDefinitionInstanceVersionStatisticsQueryResult"
-        "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
-        "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
-        "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
-        "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-definitions/{processDefinitionId}/statistics/process-instances:
     post:

@@ -276,11 +276,9 @@ public class SearchClientReaderConfiguration {
   @Bean
   public ProcessDefinitionInstanceVersionStatisticsReader
       processDefinitionInstanceVersionStatisticsReader(
-          final SearchClientBasedQueryExecutor executor,
-          final IndexDescriptors descriptors,
-          final IncidentErrorHashCodeNormalizer normalizer) {
+          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new ProcessDefinitionInstanceVersionStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class), normalizer) {};
+        executor, descriptors.get(ListViewTemplate.class)) {};
   }
 
   @Bean
