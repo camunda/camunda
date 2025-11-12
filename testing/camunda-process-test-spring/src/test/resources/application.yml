@@ -2,6 +2,7 @@ io:
   camunda:
     process:
       test:
+        connectors-docker-image-version: 8.6-SNAPSHOT
         connectors-enabled: true
         connectors-secrets:
           CONNECTORS_URL: http://connectors:8080/actuator/health/readiness
