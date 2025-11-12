@@ -31,6 +31,7 @@ import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
+import io.camunda.zeebe.broker.health.NodeIdProviderHealthIndicator;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -69,6 +70,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         UnifiedConfigurationHelper.class,
         UnifiedConfiguration.class,
         NodeIdProviderConfiguration.class,
+        NodeIdProviderHealthIndicator.class,
         GatewayRestPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
         SearchEngineIndexPropertiesOverride.class,
