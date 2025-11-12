@@ -360,30 +360,6 @@ public final class TestHelper {
    * Waits for process instances to start which are having a process variable {@link *
    * #VAR_TEST_SCOPE_ID}.
    *
-   * @param camundaClient ... CamundaClient
-   * @param expectedIncidents
-   */
-  public static void waitUntilScopedProcessInstanceHasIncidents(
-      final CamundaClient camundaClient, final String scopeId, final int expectedIncidents) {
-    Awaitility.await("should wait until scoped incidents are exists")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result =
-                  camundaClient
-                      .newProcessInstanceSearchRequest()
-                      .filter(f -> f.variables(getScopedVariables(scopeId)).hasIncident(true))
-                      .send()
-                      .join();
-              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
-            });
-  }
-
-  /**
-   * Waits for process instances to start which are having a process variable {@link *
-   * #VAR_TEST_SCOPE_ID}.
-   *
    * @param camundaClient CamundaClient
    * @param processInstanceKey the key of the process instance to check
    * @param variableName the name of the variable to check
@@ -782,7 +758,7 @@ public final class TestHelper {
   }
 
   public static void waitUntilProcessInstanceHasIncidents(
-      final CamundaClient camundaClient, final int expectedIncidents) {
+      final CamundaClient camundaClient, final int expectedInstancesWithIncidents) {
     Awaitility.await("should wait until incidents are exists")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -794,7 +770,7 @@ public final class TestHelper {
                       .filter(f -> f.hasIncident(true))
                       .send()
                       .join();
-              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+              assertThat(result.page().totalItems()).isEqualTo(expectedInstancesWithIncidents);
             });
   }
 
@@ -871,6 +847,24 @@ public final class TestHelper {
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
+  public static void waitUntilIncidentsAreResolved(
+      final CamundaClient camundaClient, final List<Long> incidentKeys) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newIncidentSearchRequest()
+                      .filter(
+                          f -> f.state(IncidentState.RESOLVED).incidentKey(k -> k.in(incidentKeys)))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(incidentKeys.size());
             });
   }
 
