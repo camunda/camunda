@@ -43,6 +43,7 @@ public final class TestClusterBuilder {
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
+  private boolean setNodeId = true;
 
   /**
    * If true, the brokers created by this cluster will use embedded gateways. By default this is
@@ -255,6 +256,11 @@ public final class TestClusterBuilder {
     return this;
   }
 
+  public TestClusterBuilder withoutNodeId() {
+    setNodeId = false;
+    return this;
+  }
+
   /**
    * Builds a new Zeebe cluster. Will create {@link #brokersCount} brokers (accessible later via
    * {@link TestCluster#brokers()}) and {@link #gatewaysCount} standalone gateways (accessible later
@@ -346,7 +352,9 @@ public final class TestClusterBuilder {
             .withBrokerConfig(
                 cfg -> {
                   final var cluster = cfg.getCluster();
-                  cluster.setNodeId(index);
+                  if (setNodeId) {
+                    cluster.setNodeId(index);
+                  }
                   cluster.setPartitionsCount(partitionsCount);
                   cluster.setReplicationFactor(replicationFactor);
                   cluster.setClusterSize(brokersCount);

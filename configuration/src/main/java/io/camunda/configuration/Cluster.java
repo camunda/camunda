@@ -11,12 +11,14 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 
+import io.camunda.configuration.DynamicNodeIdConfig.Type;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.core.ResolvableType;
@@ -78,7 +80,14 @@ public class Cluster implements Cloneable {
    * Specifies the unique id of this broker node in a cluster. The id should be between 0 and number
    * of nodes in the cluster (exclusive).
    */
-  private int nodeId = 0;
+  private Integer nodeId;
+
+  /**
+   * Configuration to use when deploying camunda in a stateless setup, i.e. when each node cannot be
+   * assigned a static {@link #nodeId}.
+   */
+  @NestedConfigurationProperty
+  private DynamicNodeIdConfig dynamicNodeId = new DynamicNodeIdConfig();
 
   /** The number of partitions in the cluster. */
   private int partitionCount = 1;
@@ -122,6 +131,14 @@ public class Cluster implements Cloneable {
   @NestedConfigurationProperty
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
 
+  public DynamicNodeIdConfig getDynamicNodeId() {
+    return dynamicNodeId;
+  }
+
+  public void setDynamicNodeId(final DynamicNodeIdConfig dynamicNodeId) {
+    this.dynamicNodeId = dynamicNodeId;
+  }
+
   public Metadata getMetadata() {
     return metadata;
   }
@@ -151,13 +168,26 @@ public class Cluster implements Cloneable {
     this.initialContactPoints = initialContactPoints;
   }
 
-  public int getNodeId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".node-id",
-        nodeId,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("nodeId")));
+  public Integer getNodeId() {
+    if (dynamicNodeId.getType() != Type.NONE && nodeId != null) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "Both %s.dynamic-node-id and %s.node-id are set at the same time. Only one of them can be set as they are mutually exclusive",
+              PREFIX, PREFIX));
+    }
+    if (dynamicNodeId.getType() == Type.NONE) {
+      final var id =
+          UnifiedConfigurationHelper.validateLegacyConfiguration(
+              PREFIX + ".node-id",
+              nodeId,
+              Integer.class,
+              UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+              Set.of(legacyPropertiesMap.get("nodeId")));
+
+      return Optional.ofNullable(id).orElse(0);
+    } else {
+      return null;
+    }
   }
 
   public void setNodeId(final int nodeId) {
@@ -260,6 +290,41 @@ public class Cluster implements Cloneable {
     } catch (final CloneNotSupportedException e) {
       throw new AssertionError("Unexpected: Class must implement Cloneable", e);
     }
+  }
+
+  @Override
+  public String toString() {
+    return "Cluster{"
+        + "legacyPropertiesMap="
+        + legacyPropertiesMap
+        + ", metadata="
+        + metadata
+        + ", network="
+        + network
+        + ", initialContactPoints="
+        + initialContactPoints
+        + ", nodeId="
+        + nodeId
+        + ", nodeIdProviderConfig="
+        + dynamicNodeId
+        + ", partitionCount="
+        + partitionCount
+        + ", replicationFactor="
+        + replicationFactor
+        + ", size="
+        + size
+        + ", membership="
+        + membership
+        + ", name='"
+        + name
+        + '\''
+        + ", raft="
+        + raft
+        + ", compressionAlgorithm="
+        + compressionAlgorithm
+        + ", globalListeners="
+        + globalListeners
+        + '}';
   }
 
   public Cluster withBrokerProperties() {

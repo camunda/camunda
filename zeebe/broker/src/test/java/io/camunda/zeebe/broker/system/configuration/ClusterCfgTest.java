@@ -223,6 +223,7 @@ public final class ClusterCfgTest {
     // given
     final ClusterCfg clusterCfg = new ClusterCfg();
     clusterCfg.setPartitionsCount(8);
+    clusterCfg.setNodeId(0);
 
     // when
     clusterCfg.init(new BrokerCfg(), "");
@@ -250,7 +251,7 @@ public final class ClusterCfgTest {
     // when - then
     assertThatCode(() -> TestConfigReader.readConfig("default", environment))
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("to int"); // spring related exception
+        .hasMessageContaining("to java.lang.Integer"); // spring related exception
   }
 
   @Test

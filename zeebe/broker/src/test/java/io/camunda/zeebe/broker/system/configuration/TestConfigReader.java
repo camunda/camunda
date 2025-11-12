@@ -23,6 +23,9 @@ public final class TestConfigReader {
     final BrokerCfg config =
         new TestConfigurationFactory()
             .create(environmentVariables, "zeebe.broker", configPath, BrokerCfg.class);
+    if (config.getCluster().getNodeId() == null) {
+      config.getCluster().setNodeId(0);
+    }
     config.init(BROKER_BASE, environmentVariables);
 
     return config;

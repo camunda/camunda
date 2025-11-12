@@ -30,6 +30,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class S3NodeIdRepository implements NodeIdRepository {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -39,13 +40,14 @@ public class S3NodeIdRepository implements NodeIdRepository {
   private final Config config;
   private final InstantSource clock;
   private final boolean closeClient;
+  private volatile boolean initialized = false;
 
   public S3NodeIdRepository(
-      final S3Client s3AsyncClient,
+      final S3Client s3Client,
       final Config config,
       final InstantSource clock,
       final boolean closeClient) {
-    client = s3AsyncClient;
+    client = s3Client;
     this.config = config;
     this.clock = clock;
     this.closeClient = closeClient;
@@ -60,7 +62,10 @@ public class S3NodeIdRepository implements NodeIdRepository {
 
   @Override
   public void initialize(final int count) {
-    IntStream.range(0, count).forEach(this::initializeForNode);
+    if (!initialized) {
+      IntStream.range(0, count).forEach(this::initializeForNode);
+    }
+    initialized = true;
   }
 
   @Override
@@ -88,7 +93,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
     final PutObjectRequest putRequest =
         createPutObjectRequest(nodeId, Optional.of(metadata), Optional.of(previousETag)).build();
     try {
-      if (!lease.isStillValid(clock.millis(), config.expiryDuration)) {
+      if (!lease.isStillValid(clock.millis(), config.leaseDuration)) {
         throw new IllegalArgumentException("The provided lease is not valid anymore: " + lease);
       }
       LOG.debug("Acquiring lease {}, previous ETag {}", lease, previousETag);
@@ -125,6 +130,13 @@ public class S3NodeIdRepository implements NodeIdRepository {
       final var res = client.putObject(putRequest, RequestBody.empty());
       LOG.debug("File created for nodeId {}: {}", nodeId, res.eTag());
     } catch (final Exception e) {
+      if (e instanceof final S3Exception s3Exception) {
+        // if bucket does not exist, it return 404
+        if (s3Exception.statusCode() == 404) {
+          throw new IllegalArgumentException(
+              "Cannot create file for node " + nodeId + " in bucket " + config.bucketName, e);
+        }
+      }
       LOG.debug(
           "File creation failed for nodeId {}: {}",
           nodeId,
@@ -177,10 +189,10 @@ public class S3NodeIdRepository implements NodeIdRepository {
     return builder.build();
   }
 
-  public record Config(String bucketName, Duration expiryDuration) {
+  public record Config(String bucketName, Duration leaseDuration) {
     public Config {
-      if (expiryDuration.toMillis() <= 0) {
-        throw new IllegalArgumentException("expiryDuration must be greater than 0");
+      if (leaseDuration.toMillis() <= 0) {
+        throw new IllegalArgumentException("leaseDuration must be greater than 0");
       }
       if (bucketName == null || bucketName.isEmpty()) {
         throw new IllegalArgumentException("bucketName cannot be null or empty");

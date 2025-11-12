@@ -313,6 +313,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     // set random port numbers
     assignSocketAddresses(brokerCfg);
 
+    if (brokerCfg.getCluster().getNodeId() == null) {
+      brokerCfg.getCluster().setNodeId(0);
+    }
+
     // initialize configuration
     brokerCfg.init(brokerBase.getAbsolutePath());
   }
