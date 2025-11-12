@@ -12,6 +12,7 @@ import type {
   ElementInstance,
   QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
+import {waitFor} from '@testing-library/react';
 
 const mockProcessInstanceKey = '2251799813685625';
 const mockChildScopeKey1 = '2251799813685630';
@@ -636,11 +637,61 @@ describe('elementInstancesTreeStore', () => {
     expect(elementInstancesTreeStore.state.expandedNodes.size).toBeGreaterThan(
       0,
     );
+    expect(elementInstancesTreeStore.state.abortControllers).toHaveLength(2);
 
     elementInstancesTreeStore.reset();
 
     expect(elementInstancesTreeStore.state.rootScopeKey).toBe(null);
     expect(elementInstancesTreeStore.state.nodes.size).toBe(0);
     expect(elementInstancesTreeStore.state.expandedNodes.size).toBe(0);
+    expect(elementInstancesTreeStore.state.abortControllers.size).toBe(0);
+  });
+
+  it('aborts pending fetch when switching to different root node', async () => {
+    mockSearchElementInstances().withDelay(mockFirstPageResponse);
+    elementInstancesTreeStore.setRootNode(mockProcessInstanceKey);
+
+    const firstController =
+      elementInstancesTreeStore.state.abortControllers.get(
+        mockProcessInstanceKey,
+      );
+    expect(firstController).toBeDefined();
+
+    const secondRootKey = '9999999999999999';
+    mockSearchElementInstances().withSuccess(mockChildResponse);
+    await elementInstancesTreeStore.setRootNode(secondRootKey);
+
+    await waitFor(() => expect(firstController?.signal.aborted).toBe(true));
+
+    expect(
+      elementInstancesTreeStore.state.nodes.has(mockProcessInstanceKey),
+    ).toBe(false);
+
+    expect(elementInstancesTreeStore.state.nodes.has(secondRootKey)).toBe(true);
+  });
+
+  it('aborts pending fetch when collapsing a node', async () => {
+    mockSearchElementInstances().withDelay(mockFirstPageResponse);
+
+    elementInstancesTreeStore.expandNode(mockChildScopeKey1);
+
+    const controller =
+      elementInstancesTreeStore.state.abortControllers.get(mockChildScopeKey1);
+    expect(controller).toBeDefined();
+    expect(controller?.signal.aborted).toBe(false);
+
+    elementInstancesTreeStore.collapseNode(mockChildScopeKey1);
+
+    expect(controller?.signal.aborted).toBe(true);
+
+    expect(
+      elementInstancesTreeStore.state.abortControllers.has(mockChildScopeKey1),
+    ).toBe(false);
+
+    await waitFor(() =>
+      expect(
+        elementInstancesTreeStore.state.nodes.has(mockChildScopeKey1),
+      ).toBe(false),
+    );
   });
 });
