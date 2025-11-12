@@ -7,15 +7,21 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.DynamicNodeIdConfig.S3;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.dynamic.nodeid.ConfiguredDataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.DataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
@@ -101,5 +107,23 @@ public class NodeIdProviderConfiguration {
         Optional.empty(),
         Optional.empty(),
         Optional.ofNullable(s3.getApiCallTimeout()));
+  }
+
+  @Bean
+  public DataDirectoryProvider dataDirectoryProvider(
+      final NodeIdProvider nodeIdProvider,
+      final BrokerBasedConfiguration brokerBasedConfiguration) {
+    final var initializer =
+        switch (cluster.getDynamicNodeId().getType()) {
+          case NONE -> new ConfiguredDataDirectoryProvider();
+          case S3 -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+        };
+
+    final DataCfg data = brokerBasedConfiguration.config().getData();
+    final var directory = Path.of(data.getDirectory());
+    final var configuredDirectory = initializer.initialize(directory).join();
+    data.setDirectory(configuredDirectory.toString());
+
+    return initializer;
   }
 }
