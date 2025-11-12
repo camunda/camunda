@@ -8,7 +8,6 @@
 
 import React, {useRef} from 'react';
 import {observer} from 'mobx-react';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   flowNodeInstanceStore,
@@ -27,15 +26,23 @@ import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {
-  appendExpandedFlowNodeInstanceIds,
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
-import {
-  selectAdHocSubProcessInnerInstance,
-  selectFlowNode,
-} from 'modules/utils/flowNodeSelection';
 import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {useLatestMigrationDate} from 'modules/queries/operations/useLatestMigrationDate';
+import {
+  fetchNext,
+  fetchPrevious,
+  fetchSubTree,
+} from 'modules/utils/flowNodeInstance';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {
+  selectFlowNode,
+  selectAdHocSubProcessInnerInstance,
+} from 'modules/utils/flowNodeSelection';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const TREE_NODE_HEIGHT = 32;
 
@@ -46,18 +53,19 @@ type Props = {
   scrollableContainerRef: React.RefObject<HTMLElement | null>;
 };
 
-const getFilteredVisibleChildPlaceholders = ({
+const getVisibleChildPlaceholdersFromFlowNodeInstance = ({
   isModificationModeEnabled,
   flowNodeInstance,
   businessObjects,
+  processInstance,
 }: {
   isModificationModeEnabled: boolean;
   flowNodeInstance: FlowNodeInstance;
-  businessObjects?: BusinessObjects;
+  businessObjects: BusinessObjects;
+  processInstance?: ProcessInstance;
 }) => {
   const {state, isPlaceholder, flowNodeId, id} = flowNodeInstance;
   if (
-    businessObjects === undefined ||
     !isModificationModeEnabled ||
     (!isPlaceholder &&
       (state === undefined || !['ACTIVE', 'INCIDENT'].includes(state)))
@@ -69,8 +77,8 @@ const getFilteredVisibleChildPlaceholders = ({
     id,
     flowNodeId,
     businessObjects,
-    processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
-    processInstanceDetailsStore.state.processInstance?.id,
+    processInstance?.processDefinitionId,
+    processInstance?.processInstanceKey,
     isPlaceholder,
   );
 };
@@ -110,25 +118,25 @@ const ScrollableNodes: React.FC<
 
 const FlowNodeInstancesTree: React.FC<Props> = observer(
   ({flowNodeInstance, scrollableContainerRef, isRoot = false, ...rest}) => {
-    const {fetchSubTree, removeSubTree, getVisibleChildNodes} =
-      flowNodeInstanceStore;
+    const {data: latestMigrationDate} = useLatestMigrationDate();
+    const {data: processInstance} = useProcessInstance();
+    const rootNode = useRootNode();
+    const {removeSubTree, getVisibleChildNodes} = flowNodeInstanceStore;
 
     const isProcessInstance =
-      flowNodeInstance.id ===
-      processInstanceDetailsStore.state.processInstance?.id;
+      flowNodeInstance.id === processInstance?.processInstanceKey;
 
     const visibleChildNodes = getVisibleChildNodes(flowNodeInstance);
-
     const processDefinitionKey = useProcessDefinitionKeyContext();
     const {data: processInstanceXmlData} = useProcessInstanceXml({
       processDefinitionKey,
     });
-
     const visibleChildPlaceholders: FlowNodeInstance[] =
-      getFilteredVisibleChildPlaceholders({
+      getVisibleChildPlaceholdersFromFlowNodeInstance({
         isModificationModeEnabled: modificationsStore.isModificationModeEnabled,
         flowNodeInstance,
-        businessObjects: processInstanceXmlData?.businessObjects,
+        businessObjects: processInstanceXmlData?.businessObjects || {},
+        processInstance,
       });
 
     const visibleChildren = [...visibleChildNodes, ...visibleChildPlaceholders];
@@ -136,8 +144,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const hasVisibleChildPlaceholders = visibleChildPlaceholders.length > 0;
     const hasVisibleChildNodes = visibleChildNodes.length > 0;
 
-    const bpmnProcessId =
-      processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
+    const bpmnProcessId = processInstance?.processDefinitionId;
 
     const businessObject = isProcessInstance
       ? bpmnProcessId
@@ -161,9 +168,9 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         processInstanceXmlData?.businessObjects &&
         hasChildPlaceholders(
           flowNodeInstance.id,
-          processInstanceXmlData.businessObjects,
-          processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
-          processInstanceDetailsStore.state.processInstance?.id,
+          processInstanceXmlData?.businessObjects,
+          processInstance?.processDefinitionId,
+          processInstance?.processInstanceKey,
         )
       : isFoldable;
 
@@ -177,13 +184,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
 
     const expandSubtree = (flowNodeInstance: FlowNodeInstance) => {
       if (!flowNodeInstance.isPlaceholder) {
-        fetchSubTree({treePath: flowNodeInstance.treePath});
-      } else if (processInstanceXmlData?.businessObjects) {
-        appendExpandedFlowNodeInstanceIds(
+        fetchSubTree({treePath: flowNodeInstance.treePath, processInstance});
+      } else {
+        instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(
           flowNodeInstance.id,
-          processInstanceXmlData.businessObjects,
-          processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
-          processInstanceDetailsStore.state.processInstance?.id,
         );
       }
     };
@@ -205,8 +209,9 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         return;
       }
       if (flowNodeInstance.treePath !== null) {
-        const fetchedInstancesCount = await flowNodeInstanceStore.fetchNext(
+        const fetchedInstancesCount = await fetchNext(
           flowNodeInstance.treePath,
+          processInstance,
         );
 
         // This ensures that the container is scrolling up when MAX_INSTANCES_STORED is reached.
@@ -229,10 +234,6 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       ? hasVisibleChildPlaceholders
       : hasVisibleChildNodes;
     let {rowRef: _, ...carbonTreeNodeProps} = rest;
-    const rootNode = {
-      flowNodeInstanceId: processInstanceDetailsStore.state.processInstance?.id,
-      isMultiInstance: false,
-    };
     return (
       <TreeNode
         {...carbonTreeNodeProps}
@@ -302,9 +303,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               !modificationsStore.isModificationModeEnabled
             }
             isRoot={isRoot}
-            latestMigrationDate={
-              processInstanceDetailsStore.latestMigrationDate ?? undefined
-            }
+            latestMigrationDate={latestMigrationDate}
             ref={rowRef}
           />
         }
@@ -316,10 +315,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               if (flowNodeInstance.treePath === null) {
                 return;
               }
-              const fetchedInstancesCount =
-                await flowNodeInstanceStore.fetchPrevious(
-                  flowNodeInstance.treePath,
-                );
+              const fetchedInstancesCount = await fetchPrevious(
+                flowNodeInstance.treePath,
+                processInstance,
+              );
 
               if (fetchedInstancesCount !== undefined) {
                 scrollDown(fetchedInstancesCount * TREE_NODE_HEIGHT);

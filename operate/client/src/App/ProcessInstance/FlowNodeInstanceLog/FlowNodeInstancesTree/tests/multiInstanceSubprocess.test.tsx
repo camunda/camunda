@@ -11,22 +11,48 @@ import {render, screen, waitFor, within} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {multiInstanceProcess} from 'modules/testUtils';
-import {FlowNodeInstancesTree} from '..';
+import {FlowNodeInstancesTree} from '../index';
 import {
   multiInstanceProcessInstance,
   flowNodeInstances,
   mockFlowNodeInstance,
   processInstanceId,
   Wrapper,
+  mockMultiInstanceProcessInstance,
 } from './mocks';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
-    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
+
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
+  });
+
+  afterEach(() => {
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
   });
 
   it('should load the instance history', async () => {
@@ -174,7 +200,10 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     ).not.toBeInTheDocument();
 
     // poll request
-    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1Poll);
 
     vi.runOnlyPendingTimers();

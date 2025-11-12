@@ -16,20 +16,33 @@ import {
   nestedSubProcessFlowNodeInstances,
   nestedSubProcessFlowNodeInstance,
   Wrapper,
+  mockNestedSubProcessesInstance,
 } from './mocks';
-import {FlowNodeInstancesTree} from '..';
+import {FlowNodeInstancesTree} from '../index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
-    mockFetchProcessInstance().withSuccess(nestedSubProcessesInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      nestedSubProcessesInstance,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      nestedSubProcessesInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockNestedSubProcessesInstance);
     mockFetchProcessDefinitionXml().withSuccess(
       open('NestedSubProcesses.bpmn'),
     );
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
 
     processInstanceDetailsStore.init({id: nestedSubProcessesInstance.id});
     flowNodeInstanceStore.init();
@@ -39,6 +52,14 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
+  });
+
+  afterEach(() => {
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
   });
 
   it('should add parent placeholders (ADD_TOKEN)', async () => {
@@ -105,6 +126,8 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
   });
 
   it('should add parent placeholders (MOVE_TOKEN)', async () => {
+    mockFetchProcessInstance().withSuccess(mockNestedSubProcessesInstance);
+
     const {user} = render(
       <FlowNodeInstancesTree
         flowNodeInstance={nestedSubProcessFlowNodeInstance}
