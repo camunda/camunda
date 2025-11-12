@@ -3,7 +3,7 @@
 # If you'd like to be added as an owner, don't hesitate to reach out to one of the existing ones.
 
 # C8 REST OpenAPI specification
-/zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml @camunda/c8-api-team
+/zeebe/gateway-protocol/src/main/proto/v2/* @camunda/c8-api-team
 
 # Testing guide
 /docs/testing.md       @npepinpe @ChrisKujawa
