@@ -19,7 +19,7 @@ on:
         required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to load test'
-        default: 'stable/8.8'
+        default: 'stable/8.7'
         required: false
       cluster:
         description: 'Specifies which cluster to deploy the load test on'
@@ -99,7 +99,7 @@ on:
         default: false
 
 env:
-  HELM_CHART: camunda-platform-8.8
+  HELM_CHART: camunda-platform-8.7
 
 defaults:
   run:
