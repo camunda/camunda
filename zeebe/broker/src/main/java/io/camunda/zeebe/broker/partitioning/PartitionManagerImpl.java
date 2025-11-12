@@ -58,6 +58,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
 import org.rocksdb.WriteBufferManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,8 +68,12 @@ public final class PartitionManagerImpl
 
   public static final String GROUP_NAME = "raft-partition";
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
-  private final ConcurrencyControl concurrencyControl;
 
+  static {
+    RocksDB.loadLibrary();
+  }
+
+  private final ConcurrencyControl concurrencyControl;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
   private final TopologyManagerImpl topologyManager;
@@ -121,15 +126,13 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    // we need to pass the cache here
+
     final long blockCacheBytes =
         brokerCfg.getCluster().getPartitionsCount()
             * brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes();
     // allocate a quarter of the block cache to the write buffer manager, value to be
     // discussed/tuned
     final long wbmLimitBytes = blockCacheBytes / 4;
-
-
     final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
     final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
 
