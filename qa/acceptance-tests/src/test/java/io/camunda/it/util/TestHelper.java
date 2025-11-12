@@ -846,11 +846,14 @@ public final class TestHelper {
               final var result =
                   camundaClient
                       .newIncidentSearchRequest()
-                      .filter(
-                          f -> f.state(IncidentState.RESOLVED).incidentKey(k -> k.in(incidentKeys)))
+                      .filter(f -> f.state(IncidentState.RESOLVED))
                       .send()
                       .join();
-              assertThat(result.page().totalItems()).isEqualTo(incidentKeys.size());
+              assertThat(
+                      result.items().stream()
+                          .filter(i -> incidentKeys.contains(i.getIncidentKey()))
+                          .count())
+                  .isEqualTo(incidentKeys.size());
             });
   }
 
