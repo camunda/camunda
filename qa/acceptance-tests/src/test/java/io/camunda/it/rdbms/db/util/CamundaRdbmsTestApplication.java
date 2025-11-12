@@ -7,7 +7,6 @@
  */
 package io.camunda.it.rdbms.db.util;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.atomix.cluster.MemberId;
@@ -39,8 +38,7 @@ public final class CamundaRdbmsTestApplication
   }
 
   public CamundaRdbmsTestApplication withRdbms() {
-    super.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms")
-        .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms")
+    super.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms")
         .withProperty("logging.level.io.camunda.db.rdbms", "DEBUG")
         .withProperty("logging.level.org.mybatis", "DEBUG");
     return this;
@@ -48,9 +46,10 @@ public final class CamundaRdbmsTestApplication
 
   public CamundaRdbmsTestApplication withH2() {
     super.withProperty(
-            "camunda.database.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
-        .withProperty("camunda.database.username", "sa")
-        .withProperty("camunda.database.password", "");
+            "camunda.data.secondary-storage.rdbms.url",
+            "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
+        .withProperty("camunda.data.secondary-storage.rdbms.username", "sa")
+        .withProperty("camunda.data.secondary-storage.rdbms.password", "");
     return this;
   }
 
@@ -61,9 +60,14 @@ public final class CamundaRdbmsTestApplication
       databaseContainer.start();
 
       if (databaseContainer instanceof final JdbcDatabaseContainer<?> jdbcDatabaseContainer) {
-        super.withProperty("camunda.database.url", jdbcDatabaseContainer.getJdbcUrl())
-            .withProperty("camunda.database.username", jdbcDatabaseContainer.getUsername())
-            .withProperty("camunda.database.password", jdbcDatabaseContainer.getPassword());
+        super.withProperty(
+                "camunda.data.secondary-storage.rdbms.url", jdbcDatabaseContainer.getJdbcUrl())
+            .withProperty(
+                "camunda.data.secondary-storage.rdbms.username",
+                jdbcDatabaseContainer.getUsername())
+            .withProperty(
+                "camunda.data.secondary-storage.rdbms.password",
+                jdbcDatabaseContainer.getPassword());
       }
     }
 
