@@ -20,6 +20,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -45,6 +47,8 @@ public final class BatchOperationCreateProcessor
 
   private static final String EMPTY_JSON_OBJECT = "{}";
   private static final String MESSAGE_GIVEN_FILTER_IS_EMPTY = "Given filter is empty";
+  private static final String BATCH_OPERATION_ALREADY_EXISTS =
+      "Expected to create a batch operation with key: '%d', but a batch operation with this key already exists";
 
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior commandDistributionBehavior;
@@ -54,15 +58,18 @@ public final class BatchOperationCreateProcessor
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final RoutingInfo routingInfo;
   private final BatchOperationMetrics metrics;
+  private final BatchOperationState batchOperationState;
 
   public BatchOperationCreateProcessor(
       final Writers writers,
+      final ProcessingState state,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final RoutingInfo routingInfo,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
+    this.batchOperationState = state.getBatchOperationState();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
@@ -120,13 +127,24 @@ public final class BatchOperationCreateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<BatchOperationCreationRecord> command) {
     final var recordValue = command.getValue();
+    final var recordKey = command.getKey();
 
     LOGGER.debug("Processing distributed command with key '{}': {}", command.getKey(), recordValue);
-    stateWriter.appendFollowUpEvent(
-        command.getKey(),
-        BatchOperationIntent.CREATED,
-        command.getValue(),
-        FollowUpEventMetadata.of(b -> b.batchOperationReference(command.getKey())));
+
+    batchOperationState
+        .get(recordKey)
+        .ifPresentOrElse(
+            bo -> {
+              final var message = BATCH_OPERATION_ALREADY_EXISTS.formatted(bo.getKey());
+              rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
+            },
+            () ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(),
+                    BatchOperationIntent.CREATED,
+                    command.getValue(),
+                    FollowUpEventMetadata.of(b -> b.batchOperationReference(command.getKey()))));
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
