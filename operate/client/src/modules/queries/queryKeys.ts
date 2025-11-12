@@ -9,6 +9,7 @@
 import type {
   ElementInstance,
   ProcessInstance,
+  QueryDecisionInstancesRequestBody,
   QueryElementInstanceIncidentsRequestBody,
   QueryElementInstancesRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
@@ -34,6 +35,14 @@ const queryKeys = {
     drdData: (decisionEvaluationKey: string) => [
       'decisionInstanceDrdData',
       decisionEvaluationKey,
+    ],
+    search: (payload?: QueryDecisionInstancesRequestBody) => [
+      'decisionInstancesSearch',
+      payload,
+    ],
+    searchPaginated: (payload?: QueryDecisionInstancesRequestBody) => [
+      'decisionInstancesSearchPaginated',
+      payload,
     ],
   },
   decisionDefinitions: {
