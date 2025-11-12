@@ -102,8 +102,7 @@ public final class MessageSubscriptionStateTest {
         .isEqualTo(subscription.getElementInstanceKey());
     assertThat(expectedSubscription.getProcessDefinitionKey())
         .isEqualTo(subscription.getProcessDefinitionKey());
-    assertThat(expectedSubscription.getMessageName())
-        .isEqualTo(subscription.getMessageName());
+    assertThat(expectedSubscription.getMessageName()).isEqualTo(subscription.getMessageName());
     assertThat(expectedSubscription.getCorrelationKey())
         .isEqualTo(subscription.getCorrelationKey());
     assertThat(expectedSubscription.getVariables()).isEqualTo(subscription.getVariables());
