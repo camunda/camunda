@@ -18,6 +18,8 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockResolveIncident} from 'modules/mocks/api/v2/incidents/resolveIncident';
 import {tracking} from 'modules/tracking';
 import {mockUpdateJob} from 'modules/mocks/api/v2/jobs/updateJob';
+import {mockGetIncident} from 'modules/mocks/api/v2/incidents/getIncident';
+import {createIncidentV2} from 'modules/testUtils';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -38,6 +40,10 @@ describe('IncidentOperationV2', () => {
     screen.getByRole('button', {
       name: 'Retry Incident',
     });
+
+  beforeEach(() => {
+    mockGetIncident().withSuccess(createIncidentV2({state: 'RESOLVED'}));
+  });
 
   it('should display an notification when retrying an incident fails', async () => {
     mockResolveIncident().withServerError(500);
@@ -127,5 +133,31 @@ describe('IncidentOperationV2', () => {
     expect(retryButton()).toBeEnabled();
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
     vi.useRealTimers();
+  });
+
+  it('should poll the incident until its state is RESOLVED', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const resolveSpy = vi.fn();
+    mockResolveIncident().withSuccess(null, {mockResolverFn: resolveSpy});
+    const getSpy = vi.fn();
+    mockGetIncident().withSuccess(createIncidentV2({state: 'RESOLVED'}), {
+      mockResolverFn: getSpy,
+    });
+    mockGetIncident().withSuccess(createIncidentV2({state: 'ACTIVE'}), {
+      mockResolverFn: getSpy,
+    });
+    const {user} = render(<IncidentOperationV2 incidentKey="123" />, {
+      wrapper: Wrapper,
+    });
+
+    await user.click(retryButton());
+    vi.runOnlyPendingTimers();
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('operation-spinner'),
+    );
+
+    expect(resolveSpy).toHaveBeenCalledTimes(1);
+    expect(getSpy).toHaveBeenCalledTimes(2);
+    expect(resolveSpy).toHaveBeenCalledBefore(getSpy);
   });
 });
