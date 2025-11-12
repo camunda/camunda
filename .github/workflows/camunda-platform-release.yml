@@ -333,20 +333,32 @@ jobs:
           revision: ${{ needs.release.outputs.releaseTagRevision }}
           version: ${{ inputs.releaseVersion }}
           platforms: ${{ env.PLATFORMS }}
-      - name: Sync Docker Image to DockerHub
+      - name: Sync Zeebe Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ steps.build-zeebe-docker.outputs.image }}
-      - name: Sync Latest Docker Image to DockerHub
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+              ${{ steps.build-zeebe-docker.outputs.image }}
+      - name: Sync Zeebe Latest Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:latest \
-            ${{ steps.build-zeebe-docker.outputs.image }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:latest \
+              ${{ steps.build-zeebe-docker.outputs.image }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -423,17 +435,29 @@ jobs:
       - name: Sync Operate Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ steps.build-operate-docker.outputs.image }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+              ${{ steps.build-operate-docker.outputs.image }}
       - name: Sync Latest Operate Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:latest \
-            ${{ steps.build-operate-docker.outputs.image }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:latest \
+              ${{ steps.build-operate-docker.outputs.image }} 
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -510,17 +534,29 @@ jobs:
       - name: Sync Tasklist Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ steps.build-tasklist-docker.outputs.image }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+              ${{ steps.build-tasklist-docker.outputs.image }}
       - name: Sync Latest Tasklist Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:latest \
-            ${{ steps.build-tasklist-docker.outputs.image }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:latest \
+              ${{ steps.build-tasklist-docker.outputs.image }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -604,17 +640,29 @@ jobs:
       - name: Sync Camunda Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-            ${{ steps.build-camunda-docker.outputs.image }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+              ${{ steps.build-camunda-docker.outputs.image }}
       - name: Sync Latest Camunda Docker Image to DockerHub
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ env.DOCKER_IMAGE }}:latest \
-            ${{ steps.build-camunda-docker.outputs.image }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_IMAGE }}:latest \
+              ${{ steps.build-camunda-docker.outputs.image }}
       - name: Observe build status
         if: always()
         continue-on-error: true
