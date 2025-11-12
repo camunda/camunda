@@ -12,7 +12,6 @@ import static io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStat
 
 import io.camunda.search.aggregation.result.ProcessDefinitionInstanceVersionStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
-import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -22,14 +21,9 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 public class ProcessDefinitionInstanceVersionStatisticsDocumentReader extends DocumentBasedReader
     implements ProcessDefinitionInstanceVersionStatisticsReader {
 
-  private final IncidentErrorHashCodeNormalizer normalizer;
-
   public ProcessDefinitionInstanceVersionStatisticsDocumentReader(
-      final SearchClientBasedQueryExecutor executor,
-      final IndexDescriptor indexDescriptor,
-      final IncidentErrorHashCodeNormalizer normalizer) {
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
     super(executor, indexDescriptor);
-    this.normalizer = normalizer;
   }
 
   @Override
@@ -37,19 +31,9 @@ public class ProcessDefinitionInstanceVersionStatisticsDocumentReader extends Do
       final ProcessDefinitionInstanceVersionStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
 
-    final var filter =
-        normalizer.normalizeAndValidateProcessInstanceFilter(query.filter(), resourceAccessChecks);
-    if (filter.isEmpty()) {
-      return SearchQueryResult.empty();
-    }
-    // Update the query to use the normalized filter
-    final var normalizedQuery =
-        new ProcessDefinitionInstanceVersionStatisticsQuery(
-            filter.get(), query.sort(), query.page());
-
     // Convert sorting field if needed
     final var updatedQuery =
-        normalizedQuery.withConvertedSortingField(
+        query.withConvertedSortingField(
             AGGREGATION_FIELD_PROCESS_DEFINITION_ID, AGGREGATION_FIELD_KEY);
 
     // Run a single paginated query; total count is provided by the cardinality aggregation
