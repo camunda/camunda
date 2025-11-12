@@ -39,7 +39,8 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
       "camunda.client.auth.method=oidc",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret",
-      "logging.level.io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration=debug"
+      "logging.level.io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration=debug",
+      "camunda.client.auth.token-url=https://auth.example.com/token"
     })
 @ExtendWith(OutputCaptureExtension.class)
 public class SpringCamundaClientConfigurationSelfManagedTest {

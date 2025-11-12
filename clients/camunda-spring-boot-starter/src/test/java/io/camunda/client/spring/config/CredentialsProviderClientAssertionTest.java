@@ -36,7 +36,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=CredentialsProviderSelfManagedTest-my-client-id",
       "camunda.client.auth.client-secret=my-client-secret",
-      "camunda.client.auth.client-assertion.keystore-password=mstest"
+      "camunda.client.auth.client-assertion.keystore-password=mstest",
+      "camunda.client.auth.token-url=https://auth.example.com/token"
     })
 @EnableConfigurationProperties(CamundaClientProperties.class)
 public class CredentialsProviderClientAssertionTest {

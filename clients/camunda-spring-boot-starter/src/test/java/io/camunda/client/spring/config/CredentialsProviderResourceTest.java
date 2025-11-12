@@ -34,7 +34,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=CredentialsProviderResourceTest-my-client-id",
       "camunda.client.auth.client-secret=my-client-secret",
-      "camunda.client.auth.resource=https://api.example.com"
+      "camunda.client.auth.resource=https://api.example.com",
+      "camunda.client.auth.token-url=https://auth.example.com/token"
     })
 @EnableConfigurationProperties(CamundaClientProperties.class)
 public class CredentialsProviderResourceTest {

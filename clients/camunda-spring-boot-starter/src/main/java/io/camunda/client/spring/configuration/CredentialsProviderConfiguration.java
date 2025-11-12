@@ -84,10 +84,10 @@ public class CredentialsProviderConfiguration {
             .audience(camundaClientProperties.getAuth().getAudience())
             .scope(camundaClientProperties.getAuth().getScope())
             .resource(camundaClientProperties.getAuth().getResource())
-            .authorizationServerUrl(
-                ofNullable(camundaClientProperties.getAuth().getTokenUrl())
-                    .map(URI::toString)
-                    .orElse(null))
+            .authorizationServerUrl(fromURI(camundaClientProperties.getAuth().getTokenUrl()))
+            .wellKnownConfigurationUrl(
+                fromURI(camundaClientProperties.getAuth().getWellKnownConfigurationUrl()))
+            .issuerUrl(fromURI(camundaClientProperties.getAuth().getIssuerUrl()))
             .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
             .connectTimeout(camundaClientProperties.getAuth().getConnectTimeout())
             .readTimeout(camundaClientProperties.getAuth().getReadTimeout())
@@ -101,17 +101,11 @@ public class CredentialsProviderConfiguration {
                 camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyPassword());
 
     maybeConfigureIdentityProviderSSLConfig(credBuilder, camundaClientProperties);
-    try {
-      return credBuilder.build();
-    } catch (final Exception e) {
-      LOG.warn(
-          "Failed to configure oidc credential provider, falling back to use no authentication, cause: {}",
-          e.getMessage());
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(e.getMessage(), e);
-      }
-      return new NoopCredentialsProvider();
-    }
+    return credBuilder.build();
+  }
+
+  private String fromURI(final URI uri) {
+    return ofNullable(uri).map(URI::toString).orElse(null);
   }
 
   private void maybeConfigureIdentityProviderSSLConfig(
