@@ -19,9 +19,13 @@ env:
 jobs:
   analyze:
     name: "Analyze ${{ matrix.project.name }} dependencies"
-    permissions: {}
-    runs-on: gcp-core-8-default
-    timeout-minutes: 20
+    permissions:
+      # Needed for camunda/infra-global-github-actions/fossa/info
+      actions: read
+      contents: read
+    runs-on: gcp-core-16-default
+    # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
+    timeout-minutes: 31
     strategy:
       # The matrix is necessary to run separate analyses
       matrix:
