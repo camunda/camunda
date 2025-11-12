@@ -75,7 +75,7 @@ final class PartitionJoinTest {
   TestCluster setupCluster(final InitialClusterState conf) {
     return TestCluster.builder()
         .withBrokersCount(conf.clusterSize())
-        .withBrokerConfig(broker -> broker.withCreateSchema(false))
+        .withBrokerConfig(broker -> broker.withCreateSchema(true))
         .withReplicationFactor(conf.replicationFactor())
         .withPartitionsCount(conf.partitionCount())
         .withGatewaysCount(1)

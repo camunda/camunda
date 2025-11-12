@@ -25,7 +25,7 @@ final class GossipClusteringIT {
   @TestZeebe
   private final TestCluster cluster =
       new TestClusterBuilder()
-          .withUnifiedBrokerConfig(
+          .withBrokerConfig(
               broker -> {
                 final var membership = broker.unifiedConfig().getCluster().getMembership();
                 membership.setFailureTimeout(Duration.ofMillis(2000));

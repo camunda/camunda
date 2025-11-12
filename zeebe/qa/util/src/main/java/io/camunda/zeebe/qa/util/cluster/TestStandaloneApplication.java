@@ -56,6 +56,7 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    * @param modifier a configuration function that accepts the Camunda configuration object
    * @return itself for chaining
    */
+  @Override
   default T withUnifiedConfig(final Consumer<Camunda> modifier) {
     throw new UnsupportedOperationException(
         "Unified configuration is not supported by this implementation");
