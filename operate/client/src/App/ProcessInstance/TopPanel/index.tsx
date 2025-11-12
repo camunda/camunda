@@ -47,6 +47,7 @@ import {
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
 import {
+  useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
   useTotalRunningInstancesVisibleForFlowNode,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
@@ -73,6 +74,7 @@ import {isRequestError} from 'modules/request';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -271,6 +273,10 @@ const TopPanel: React.FC = observer(() => {
     return 'content';
   };
 
+  console.log(modificationsStore.state.status);
+  const {data: totalRunningInstancesByFlowNode} =
+    useTotalRunningInstancesByFlowNode();
+
   return (
     <Container>
       {incidentsCount > 0 && (
@@ -300,7 +306,14 @@ const TopPanel: React.FC = observer(() => {
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
           <ModificationInfoBanner
-            text="Select the target flow node in the diagram"
+            text={
+              hasMultipleScopes(
+                businessObjects[sourceFlowNodeIdForMoveOperation ?? ''],
+                totalRunningInstancesByFlowNode,
+              )
+                ? 'Flow node has multiple parent scopes. Please select parent node from Instance History to move.'
+                : 'Select the target flow node in the diagram'
+            }
             button={{
               onClick: () =>
                 finishMovingToken(
@@ -353,6 +366,17 @@ const TopPanel: React.FC = observer(() => {
                 }
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
+                    if (
+                      hasMultipleScopes(
+                        businessObjects[sourceFlowNodeIdForMoveOperation ?? ''],
+                        totalRunningInstancesByFlowNode,
+                      ) &&
+                      !modificationsStore.state
+                        .ancestorFlowNodeInstanceKeyForMoveOperation
+                    ) {
+                      return;
+                    }
+
                     clearSelection(rootNode);
                     finishMovingToken(
                       affectedTokenCount,
@@ -360,6 +384,9 @@ const TopPanel: React.FC = observer(() => {
                       businessObjects,
                       processInstance?.processDefinitionId,
                       flowNodeId,
+                      modificationsStore.state
+                        .ancestorFlowNodeInstanceKeyForMoveOperation ||
+                        undefined,
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {

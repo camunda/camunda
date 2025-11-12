@@ -34,6 +34,7 @@ const finishMovingToken = (
   businessObjects: BusinessObjects,
   bpmnProcessId?: string,
   targetFlowNodeId?: string,
+  ancestorElementInstanceKey?: string,
 ) => {
   tracking.track({
     eventName: 'move-token',
@@ -68,6 +69,7 @@ const finishMovingToken = (
       newScopeCount,
       businessObjects,
       bpmnProcessId,
+      ancestorElementInstanceKey,
     });
   }
 

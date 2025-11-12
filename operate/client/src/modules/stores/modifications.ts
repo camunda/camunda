@@ -87,6 +87,7 @@ type State = {
     | 'enabled'
     | 'adding-token'
     | 'moving-token'
+    | 'canceling-token'
     | 'disabled'
     | 'applying-modifications';
   modifications: Modification[];
@@ -98,6 +99,7 @@ type State = {
     | undefined;
   sourceFlowNodeIdForMoveOperation: string | null;
   sourceFlowNodeInstanceKeyForMoveOperation: string | null;
+  ancestorFlowNodeInstanceKeyForMoveOperation: string | null;
   sourceFlowNodeIdForAddOperation: string | null;
 };
 
@@ -106,6 +108,7 @@ const DEFAULT_STATE: State = {
   modifications: [],
   sourceFlowNodeIdForMoveOperation: null,
   sourceFlowNodeInstanceKeyForMoveOperation: null,
+  ancestorFlowNodeInstanceKeyForMoveOperation: null,
   sourceFlowNodeIdForAddOperation: null,
   lastRemovedModification: undefined,
 };
@@ -213,6 +216,12 @@ class Modifications {
 
   setSourceFlowNodeIdForMoveOperation = (sourceFlowNodeId: string | null) => {
     this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
+  };
+  setAncestorFlowNodeKeyForMoveOperation = (
+    ancestorFlowNodeInstanceKey: string | null,
+  ) => {
+    this.state.ancestorFlowNodeInstanceKeyForMoveOperation =
+      ancestorFlowNodeInstanceKey;
   };
 
   setSourceFlowNodeInstanceKeyForMoveOperation = (
@@ -514,6 +523,7 @@ class Modifications {
               : {fromFlowNodeInstanceKey: payload.flowNodeInstanceKey}),
             toFlowNodeId: targetFlowNode.id,
             newTokensCount: scopeIds.length,
+            ancestorElementInstanceKey: payload.ancestorElement?.instanceKey,
             variables:
               Object.keys(allVariables).length > 0 ? allVariables : undefined,
           },
@@ -625,6 +635,7 @@ class Modifications {
     visibleAffectedTokenCount,
     businessObjects,
     bpmnProcessId,
+    ancestorElementInstanceKey,
   }: {
     sourceFlowNodeId: string;
     sourceFlowNodeInstanceKey?: string;
@@ -634,6 +645,7 @@ class Modifications {
     visibleAffectedTokenCount: number;
     businessObjects: BusinessObjects;
     bpmnProcessId?: string;
+    ancestorElementInstanceKey?: string;
   }) => {
     modificationsStore.addModification({
       type: 'token',
@@ -656,6 +668,10 @@ class Modifications {
         },
         affectedTokenCount,
         visibleAffectedTokenCount,
+        ancestorElement: {
+          instanceKey: ancestorElementInstanceKey ?? '',
+          flowNodeId: '',
+        },
         scopeIds: Array.from({
           length: newScopeCount,
         }).map(() => generateUniqueID()),

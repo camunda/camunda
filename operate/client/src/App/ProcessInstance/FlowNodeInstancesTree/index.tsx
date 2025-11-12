@@ -32,6 +32,7 @@ import {
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
 import {
+  getSelectedRunningInstanceCount,
   selectAdHocSubProcessInnerInstance,
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
@@ -260,6 +261,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             modificationsStore.finishAddingToken(
               processInstanceXmlData.businessObjects,
               flowNodeInstance.flowNodeId,
+              flowNodeInstance.id,
+            );
+          } else if (modificationsStore.state.status === 'moving-token') {
+            modificationsStore.setAncestorFlowNodeKeyForMoveOperation(
               flowNodeInstance.id,
             );
           } else {

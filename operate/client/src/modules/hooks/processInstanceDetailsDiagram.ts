@@ -41,13 +41,7 @@ const useFlowNodes = () => {
 
 const useAppendableFlowNodes = () => {
   return useFlowNodes()
-    .filter(
-      (flowNode) =>
-        flowNode.isMoveModificationTarget &&
-        ((IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED &&
-          modificationsStore.state.status !== 'moving-token') ||
-          !flowNode.hasMultipleScopes),
-    )
+    .filter((flowNode) => flowNode.isMoveModificationTarget)
     .map(({id}) => id);
 };
 

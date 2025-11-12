@@ -263,6 +263,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               flowNodeInstance.flowNodeId,
               flowNodeInstance.id,
             );
+          } else if (modificationsStore.state.status === 'moving-token') {
+            modificationsStore.setAncestorFlowNodeKeyForMoveOperation(
+              flowNodeInstance.id,
+            );
           } else {
             tracking.track({eventName: 'instance-history-item-clicked'});
             if (isAdHocSubProcessInnerInstance) {
