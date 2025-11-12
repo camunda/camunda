@@ -12,7 +12,7 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 
-import {FlowNodeInstanceLog} from './index';
+import {ElementInstanceLog} from './index';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {
@@ -85,7 +85,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 };
 
 // TODO unskip with #27330
-describe.skip('FlowNodeInstanceLog', () => {
+describe.skip('ElementInstanceLog', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
@@ -105,7 +105,7 @@ describe.skip('FlowNodeInstanceLog', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     init(mockProcessInstance);
 
-    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
@@ -120,7 +120,7 @@ describe.skip('FlowNodeInstanceLog', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     init(mockProcessInstance);
 
-    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
@@ -134,7 +134,7 @@ describe.skip('FlowNodeInstanceLog', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     init(mockProcessInstance);
 
-    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('Instance History could not be fetched'),
@@ -146,7 +146,7 @@ describe.skip('FlowNodeInstanceLog', () => {
     mockFetchProcessDefinitionXml().withServerError();
     init(mockProcessInstance);
 
-    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('Instance History could not be fetched'),
@@ -159,7 +159,7 @@ describe.skip('FlowNodeInstanceLog', () => {
     mockFetchProcessDefinitionXml().withServerError(403);
     init(mockProcessInstance);
 
-    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('Missing permissions to access Instance History'),
@@ -183,7 +183,7 @@ describe.skip('FlowNodeInstanceLog', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     init(mockProcessInstance);
 
-    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(
       screen.queryByTestId('instance-history-skeleton'),
@@ -242,7 +242,7 @@ describe.skip('FlowNodeInstanceLog', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     init(mockProcessInstance);
 
-    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
 
     expect((await screen.findAllByText('processName')).length).toBeGreaterThan(
       0,
