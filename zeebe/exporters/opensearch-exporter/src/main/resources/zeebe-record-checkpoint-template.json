@@ -25,9 +25,6 @@
             "checkpointPosition": {
               "type": "long"
             },
-            "checkpointTimestamp": {
-              "type": "long"
-            },
             "checkpointType": {
               "type": "keyword"
             }

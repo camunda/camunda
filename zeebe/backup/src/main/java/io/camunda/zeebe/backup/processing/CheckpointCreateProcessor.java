@@ -92,7 +92,7 @@ public final class CheckpointCreateProcessor {
     // Checkpoint should be created even if we don't take a backup for checkpoint-consistency
     appendCheckpointCreatedEvent(record, resultBuilder, followupRecord);
 
-    checkpointCreatedApplier.apply(followupRecord);
+    checkpointCreatedApplier.apply(followupRecord, record.getTimestamp());
 
     // Handle client response based on scaling state
     if (scalingInProgress) {

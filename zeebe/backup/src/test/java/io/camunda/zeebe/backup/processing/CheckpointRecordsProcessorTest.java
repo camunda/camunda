@@ -216,12 +216,10 @@ final class CheckpointRecordsProcessorTest {
     // given
     final long checkpointId = 1;
     final long checkpointPosition = 10;
-    final long timestamp = Instant.now().toEpochMilli();
     final CheckpointRecord value =
         new CheckpointRecord()
             .setCheckpointId(checkpointId)
             .setCheckpointPosition(checkpointPosition)
-            .setCheckpointTimestamp(timestamp)
             .setCheckpointType(CheckpointType.MARKER);
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
@@ -238,7 +236,7 @@ final class CheckpointRecordsProcessorTest {
     // state is updated
     assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
     assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
-    assertThat(state.getLatestCheckpointTimestamp()).isEqualTo(timestamp);
+    assertThat(state.getLatestCheckpointTimestamp()).isEqualTo(record.getTimestamp());
     assertThat(state.getLatestCheckpointType()).isEqualTo(CheckpointType.MARKER);
   }
 
@@ -369,12 +367,10 @@ final class CheckpointRecordsProcessorTest {
 
     final var newCheckpointId = 10;
     final var newCheckpointPosition = 100;
-    final var timestampNew = Instant.now().toEpochMilli();
     final var value =
         new CheckpointRecord()
             .setCheckpointId(newCheckpointId)
             .setCheckpointPosition(newCheckpointPosition)
-            .setCheckpointTimestamp(timestampNew)
             .setCheckpointType(CheckpointType.SCHEDULED_BACKUP);
     final var record =
         new MockTypedCheckpointRecord(
@@ -395,7 +391,7 @@ final class CheckpointRecordsProcessorTest {
         .returns(value, Event::value);
     assertThat(state.getLatestBackupId()).isEqualTo(newCheckpointId);
     assertThat(state.getLatestBackupPosition()).isEqualTo(newCheckpointPosition);
-    assertThat(state.getLatestBackupTimestamp()).isEqualTo(timestampNew);
+    assertThat(state.getLatestBackupTimestamp()).isEqualTo(record.getTimestamp());
     assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.SCHEDULED_BACKUP);
   }
 
@@ -483,13 +479,11 @@ final class CheckpointRecordsProcessorTest {
     // given
     final var backupId = 15;
     final var backupPosition = 150;
-    final var timestamp = Instant.now().toEpochMilli();
     final var value =
         new CheckpointRecord()
             .setCheckpointId(backupId)
             .setCheckpointPosition(backupPosition)
-            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
-            .setCheckpointTimestamp(timestamp);
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final var record =
         new MockTypedCheckpointRecord(
             backupPosition + 1,
@@ -504,7 +498,7 @@ final class CheckpointRecordsProcessorTest {
     // then - backup state is updated
     assertThat(state.getLatestBackupId()).isEqualTo(backupId);
     assertThat(state.getLatestBackupPosition()).isEqualTo(backupPosition);
-    assertThat(state.getLatestBackupTimestamp()).isEqualTo(timestamp);
+    assertThat(state.getLatestBackupTimestamp()).isEqualTo(record.getTimestamp());
     assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
   }
 
@@ -642,7 +636,7 @@ final class CheckpointRecordsProcessorTest {
     // then - backup state is updated
     assertThat(state.getLatestBackupId()).isEqualTo(backupId);
     assertThat(state.getLatestBackupPosition()).isEqualTo(backupPosition);
-    assertThat(state.getLatestBackupTimestamp()).isEqualTo(-1L);
+    assertThat(state.getLatestBackupTimestamp()).isEqualTo(record.getTimestamp());
     assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
   }
 }
