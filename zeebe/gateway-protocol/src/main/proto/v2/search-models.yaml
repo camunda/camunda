@@ -9,7 +9,6 @@ components:
           description: Pagination criteria.
           allOf:
             - $ref: '#/components/schemas/SearchQueryPageRequest'
-          type: object
 
     SearchQueryPageRequest:
       x-polymorphic-schema: true
@@ -57,7 +56,7 @@ components:
         after:
           description: Use the `endCursor` value from the previous response to fetch the next page of results.
           allOf:
-            - $ref: 'cursors.yaml#/components/schemas/StartCursor'
+            - $ref: 'cursors.yaml#/components/schemas/EndCursor'
         limit:
           description: The maximum number of items to return in one request.
           type: integer
@@ -75,7 +74,7 @@ components:
         before:
           description: Use the `startCursor` value from the previous response to fetch the previous page of results.
           allOf:
-            - $ref: 'cursors.yaml#/components/schemas/EndCursor'
+            - $ref: 'cursors.yaml#/components/schemas/StartCursor'
         limit:
           description: The maximum number of items to return in one request.
           type: integer

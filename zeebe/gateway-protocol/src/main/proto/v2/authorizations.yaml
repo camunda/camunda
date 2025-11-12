@@ -274,8 +274,7 @@ components:
           description: Specifies the types of the permissions.
           type: array
           items:
-            allOf:
-              - $ref: '#/components/schemas/PermissionTypeEnum'
+            $ref: '#/components/schemas/PermissionTypeEnum'
         authorizationKey:
           allOf:
             - $ref: '#/components/schemas/AuthorizationKey'

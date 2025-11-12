@@ -554,7 +554,7 @@ components:
     ## Enums
 
     BatchOperationItemStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, CANCELED, FAILED.
+      description: The batch operation item state.
       type: string
       enum:
         - ACTIVE
