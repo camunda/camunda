@@ -39,7 +39,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationResolveIncidentTest {
 
-  static final int AMOUNT_OF_INCIDENTS = 3;
+  static final int AMOUNT_OF_MI_INCIDENTS = 5;
+  static final int AMOUNT_OF_INCIDENTS = 3 + AMOUNT_OF_MI_INCIDENTS;
 
   private static CamundaClient camundaClient;
 
@@ -48,24 +49,30 @@ public class BatchOperationResolveIncidentTest {
     Objects.requireNonNull(camundaClient);
 
     final var processes =
-        List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
+        List.of(
+            "service_tasks_v1.bpmn",
+            "service_tasks_v2.bpmn",
+            "incident_process_v1.bpmn",
+            "multi_instance_incident.bpmn");
     processes.forEach(
         process -> deployResource(camundaClient, String.format("process/%s", process)));
 
-    waitForProcessesToBeDeployed(camundaClient, 3);
+    waitForProcessesToBeDeployed(camundaClient, 4);
 
     startProcessInstance(camundaClient, "service_tasks_v1");
     startProcessInstance(camundaClient, "service_tasks_v2", Map.of("path", 222));
     startProcessInstance(camundaClient, "incident_process_v1");
     startProcessInstance(camundaClient, "incident_process_v1");
     startProcessInstance(camundaClient, "incident_process_v1");
+    startProcessInstance(
+        camundaClient, "multi-instance-incident", Map.of("items", AMOUNT_OF_MI_INCIDENTS));
 
-    waitForProcessInstancesToStart(camundaClient, 5);
+    waitForProcessInstancesToStart(camundaClient, 6);
   }
 
   @BeforeEach
   void beforeEach() {
-    waitUntilProcessInstanceHasIncidents(camundaClient, 3);
+    waitUntilProcessInstanceHasIncidents(camundaClient, 4);
     waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
   }
 
