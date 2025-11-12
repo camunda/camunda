@@ -178,8 +178,8 @@ jobs:
 
   performance-tests:
     name: "Performance"
-    runs-on: gcp-perf-core-16-default
-    timeout-minutes: 20
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
