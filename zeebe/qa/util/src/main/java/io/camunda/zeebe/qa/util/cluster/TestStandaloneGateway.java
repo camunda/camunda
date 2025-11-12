@@ -141,6 +141,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
    * @param modifier a configuration function that accepts the Camunda configuration object
    * @return itself for chaining
    */
+  @Override
   public TestStandaloneGateway withUnifiedConfig(final Consumer<Camunda> modifier) {
     modifier.accept(unifiedConfig);
     return this;

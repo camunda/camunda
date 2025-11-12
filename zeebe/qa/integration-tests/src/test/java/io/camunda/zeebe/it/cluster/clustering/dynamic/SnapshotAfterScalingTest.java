@@ -11,10 +11,8 @@ import static io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipe
 import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.assertChangeIsPlanned;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
-import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
-import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
-import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.configuration.Export;
+import io.camunda.configuration.Metadata;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -27,7 +25,6 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -43,16 +40,14 @@ final class SnapshotAfterScalingTest {
           .withGatewaysCount(1)
           .withBrokerConfig(
               broker -> {
-                broker
-                    .brokerConfig()
-                    .setExporting(new ExportingCfg(Set.of(), Duration.ofMillis(100)));
+                final var export = new Export();
+                export.setDistributionInterval(Duration.ofMillis(100));
+                broker.unifiedConfig().getData().setExport(export);
 
-                final ConfigManagerCfg configManagerCfg =
-                    new ConfigManagerCfg(
-                        new ClusterConfigurationGossiperConfig(
-                            Duration.ofSeconds(1), DEFAULT_SYNC_REQUEST_TIMEOUT, 3));
-                final ClusterCfg clusterCfg = broker.brokerConfig().getCluster();
-                clusterCfg.setConfigManager(configManagerCfg);
+                final Metadata metadata = broker.unifiedConfig().getCluster().getMetadata();
+                metadata.setSyncDelay(Duration.ofSeconds(1));
+                metadata.setSyncRequestTimeout(DEFAULT_SYNC_REQUEST_TIMEOUT);
+                metadata.setGossipFanout(3);
               })
           .build()
           .start()

@@ -33,21 +33,9 @@ public final class TestClusterBuilder {
 
   private Consumer<TestApplication<?>> nodeConfig = node -> {};
   private BiConsumer<MemberId, TestStandaloneBroker> brokerConfig =
-      (id, broker) -> {
-        broker.withUnauthenticatedAccess();
-      };
-  private BiConsumer<MemberId, TestStandaloneBroker> unifiedBrokerConfig =
-      (id, broker) -> {
-        broker.withUnauthenticatedAccess();
-      };
+      (id, broker) -> broker.withUnauthenticatedAccess();
   private BiConsumer<MemberId, TestStandaloneGateway> gatewayConfig =
-      (id, gateway) -> {
-        gateway.withUnauthenticatedAccess();
-      };
-  private BiConsumer<MemberId, TestStandaloneGateway> unifiedGatewayConfig =
-      (id, gateway) -> {
-        gateway.withUnauthenticatedAccess();
-      };
+      (id, gateway) -> gateway.withUnauthenticatedAccess();
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
@@ -222,12 +210,6 @@ public final class TestClusterBuilder {
     return this;
   }
 
-  public TestClusterBuilder withUnifiedGatewayConfig(
-      final Consumer<TestStandaloneGateway> modifier) {
-    unifiedGatewayConfig = (memberId, gateway) -> modifier.accept(gateway);
-    return this;
-  }
-
   /**
    * Sets the configuration function that will be executed in the {@link #build()} method on each
    * broker. The first argument is the broker ID, and the second argument is the broker itself.
@@ -251,16 +233,10 @@ public final class TestClusterBuilder {
    * <p>NOTE: in case of conflicts with {@link #nodeConfig} or {@link #gatewayConfig} this
    * configuration will override them.
    *
-   * @param modifier the function that will be applied on all cluster brokers
    * @return this builder instance for chaining
    */
   public TestClusterBuilder withBrokerConfig(final Consumer<TestStandaloneBroker> modifier) {
     brokerConfig = (id, broker) -> modifier.accept(broker);
-    return this;
-  }
-
-  public TestClusterBuilder withUnifiedBrokerConfig(final Consumer<TestStandaloneBroker> modifier) {
-    unifiedBrokerConfig = (id, broker) -> modifier.accept(broker);
     return this;
   }
 
@@ -385,6 +361,7 @@ public final class TestClusterBuilder {
                   uc.getSystem().setIoThreadCount(replicas);
                   uc.getSystem().setCpuThreadCount(replicas);
                 })
+            // TODO KPO can we remove setAutoconfigureCamundaExporter?
             .withUnifiedConfig(
                 uc -> uc.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false))
             .withGatewayEnabled(useEmbeddedGateway)
