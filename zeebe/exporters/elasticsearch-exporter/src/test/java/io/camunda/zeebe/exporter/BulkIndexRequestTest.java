@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -444,7 +445,63 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
           .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
+          .describedAs("Expect that the records are serialized with processDefinitionKey")
+          .containsExactly(12345);
+    }
+
+    @Test
+    void shouldIndexProcessMessageSubscriptionRecordWithoutProcessDefinitionKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new ProcessMessageSubscriptionRecord()
+                              .setProcessInstanceKey(1L)
+                              .setElementInstanceKey(2L)
+                              .setProcessDefinitionKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
           .describedAs("Expect that the records are serialized without processDefinitionKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexProcessMessageSubscriptionRecordWithProcessDefinitionKey() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new ProcessMessageSubscriptionRecord()
+                              .setProcessInstanceKey(1L)
+                              .setElementInstanceKey(2L)
+                              .setProcessDefinitionKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
+          .describedAs("Expect that the records are serialized with processDefinitionKey")
           .containsExactly(12345);
     }
 
