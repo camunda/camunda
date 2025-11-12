@@ -167,6 +167,10 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  public void removeProperty(final String key) {
+    propertyOverrides.remove(key);
+  }
+
   public T withBasicAuth() {
     withProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
     withAdditionalProfile(Profile.CONSOLIDATED_AUTH);

@@ -15,12 +15,16 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Exporter;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
@@ -29,7 +33,6 @@ import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -56,43 +59,84 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public static final String DEFAULT_MAPPING_RULE_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_RULE_CLAIM_VALUE = "default";
   public static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final BrokerBasedProperties config;
   private final CamundaSecurityProperties securityConfig;
+  private final UnifiedConfiguration unifiedConfiguration;
+  private BrokerBasedProperties config;
 
   public TestStandaloneBroker() {
     super(
         BrokerModuleConfiguration.class,
         CommonsModuleConfiguration.class,
         UnifiedConfigurationHelper.class,
-        UnifiedConfiguration.class,
         GatewayRestPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
         SearchEngineIndexPropertiesOverride.class);
 
-    config = new BrokerBasedProperties();
+    final var camunda = new Camunda();
+    unifiedConfiguration = new UnifiedConfiguration();
+    unifiedConfiguration.setCamunda(camunda);
 
-    config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
-    config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
-    config.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
-
+    camunda
+        .getCluster()
+        .getNetwork()
+        .getCommandApi()
+        .setPort(SocketUtil.getNextAddress().getPort());
+    camunda
+        .getCluster()
+        .getNetwork()
+        .getInternalApi()
+        .setPort(SocketUtil.getNextAddress().getPort());
+    camunda.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
     // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
     // for local development; also lower the watermarks for local testing
-    config.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
-    config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
-    config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
+    camunda
+        .getData()
+        .getPrimaryStorage()
+        .getLogStream()
+        .setLogSegmentSize(DataSize.ofMegabytes(16));
+    camunda
+        .getData()
+        .getPrimaryStorage()
+        .getDisk()
+        .getFreeSpace()
+        .setProcessing(DataSize.ofMegabytes(128));
+    camunda
+        .getData()
+        .getPrimaryStorage()
+        .getDisk()
+        .getFreeSpace()
+        .setReplication(DataSize.ofMegabytes(64));
     // Disable pre-allocation of segment files - many tests won't even fill up their first segment
-    config.getExperimental().getRaft().setPreallocateSegmentFiles(false);
+    camunda.getCluster().getRaft().setPreallocateSegmentFiles(false);
     // Disable flushes to reduce test runtime - we don't need perfect durability in tests, if the
     // machine crashes the test fails anyway.
-    config.getCluster().getRaft().setFlush(new FlushConfig(false, Duration.ZERO));
-    config.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
-    config.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
-    config.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
-    config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
-    config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
+    camunda.getCluster().getRaft().setFlushEnabled(false);
+    camunda.getCluster().getRaft().setFlushDelay(Duration.ofSeconds(0));
+    camunda.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
+    camunda.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
+    camunda.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
+    camunda.getProcessing().setEnableForeignKeyChecks(true);
+
+    // TODO KPO do we have to set default
+    // withProperty("camunda.cluster.node-id", 0);
+    camunda.getCluster().getNetwork().setHost("0.0.0.0"); // ???
+    // withProperty("camunda.cluster.network.host", "0.0.0.0");
+
+    camunda.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
+
+    // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
+    // we need to hook in at the last minute and set the property as it won't resolve from the
+    // config bean
+    // TODO KPO check - property is not part of the unified configuration, add?
+    withProperty("zeebe.broker.gateway.enable", true);
 
     //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
+    final var brokerBasedPropertiesOverride =
+        new BrokerBasedPropertiesOverride(unifiedConfiguration, new LegacyBrokerBasedProperties());
+    config = brokerBasedPropertiesOverride.brokerBasedProperties();
+    withBean("config", config, BrokerBasedProperties.class);
+    withBean("unifiedConfiguration", unifiedConfiguration, UnifiedConfiguration.class);
+    withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
@@ -136,45 +180,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withCreateSchema(false);
   }
 
-  @Override
-  public int mappedPort(final TestZeebePort port) {
-    return switch (port) {
-      case COMMAND -> config.getNetwork().getCommandApi().getPort();
-      case GATEWAY -> config.getGateway().getNetwork().getPort();
-      case CLUSTER -> config.getNetwork().getInternalApi().getPort();
-      default -> super.mappedPort(port);
-    };
-  }
-
-  @Override
-  public TestStandaloneBroker withProperty(final String key, final Object value) {
-    // Since the security config is not constructed from the properties, we need to manually update
-    // it when we override a property.
-    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
-    return super.withProperty(key, value);
-  }
-
-  @Override
-  public TestStandaloneBroker withAuthenticationMethod(
-      final AuthenticationMethod authenticationMethod) {
-    // as mode is OIDC, and we have a user created by default in `TestStandaloneBroker`
-    // we need to reset the list of users to empty list as having pre-configured user in
-    // OIDC is not allowed
-    if (authenticationMethod == AuthenticationMethod.OIDC) {
-      securityConfig.getInitialization().setUsers(new ArrayList<>());
-    }
-    return super.withAuthenticationMethod(authenticationMethod);
-  }
-
-  @Override
-  protected SpringApplicationBuilder createSpringBuilder() {
-    // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
-    // we need to hook in at the last minute and set the property as it won't resolve from the
-    // config bean
-    withProperty("zeebe.broker.gateway.enable", config.getGateway().isEnable());
-    return super.createSpringBuilder();
-  }
-
   public TestStandaloneBroker withAuthorizationsEnabled() {
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
@@ -194,12 +199,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
+    final var nodeId = unifiedConfiguration.getCamunda().getCluster().getNodeId();
+    return MemberId.from(String.valueOf(nodeId));
   }
 
   @Override
   public String host() {
-    return config.getNetwork().getHost();
+    return unifiedConfiguration.getCamunda().getCluster().getNetwork().getHost();
   }
 
   @Override
@@ -209,7 +215,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public boolean isGateway() {
-    return config.getGateway().isEnable();
+    try {
+      return property("zeebe.broker.gateway.enable", Boolean.class, null);
+    } catch (final Exception e) {
+      return true;
+    }
   }
 
   @Override
@@ -229,13 +239,19 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public TestStandaloneBroker withGatewayConfig(final Consumer<GatewayCfg> modifier) {
-    modifier.accept(config.getGateway());
-    return this;
+    // TODO KPO implement add test
+    // modifier.accept(config.getGateway());
+    // return this;
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
   }
 
   @Override
   public GatewayCfg gatewayConfig() {
-    return config.getGateway();
+    // TODO KPO check whether bean can returned without isStarted, not sure who calls this, add test
+    if (isStarted()) {
+      return bean(BrokerBasedProperties.class).getGateway();
+    }
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
   }
 
   /** Enables multi-tenancy in the security configuration. */
@@ -262,12 +278,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    */
   public TestStandaloneBroker withRecordingExporter(final boolean useRecordingExporter) {
     if (!useRecordingExporter) {
-      config.getExporters().remove(RECORDING_EXPORTER_ID);
+      removeProperty(String.format("camunda.data.exporters.%s.class-name", RECORDING_EXPORTER_ID));
       return this;
     }
 
-    return withExporter(
-        RECORDING_EXPORTER_ID, cfg -> cfg.setClassName(RecordingExporter.class.getName()));
+    final var recordingExporter = new Exporter();
+    recordingExporter.setClassName(RecordingExporter.class.getName());
+
+    return withExporter(RECORDING_EXPORTER_ID, recordingExporter);
   }
 
   /**
@@ -280,11 +298,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    */
   @Override
   public TestStandaloneBroker withExporter(final String id, final Consumer<ExporterCfg> modifier) {
-    final var exporterConfig =
-        config.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
-    modifier.accept(exporterConfig);
+    // TODO KPO replace by setting the property
+    //     final var exporterConfig =
+    //         config.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
+    //     modifier.accept(exporterConfig);
 
-    return this;
+    // return this;
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
   }
 
   /**
@@ -311,12 +331,29 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   /** Returns the broker configuration */
   @Override
   public BrokerBasedProperties brokerConfig() {
-    return config;
+    throw new UnsupportedOperationException("call needs to be replaced by withProperty calls");
+    // return config;
   }
 
   @Override
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
+  }
+
+  public TestStandaloneBroker withUnifiedConfiguration(
+      final Consumer<UnifiedConfiguration> modifier) {
+    modifier.accept(unifiedConfiguration);
+    return this;
+  }
+
+  public UnifiedConfiguration unifiedConfiguration() {
+    return unifiedConfiguration;
+  }
+
+  // TODO KPO replaces withExporter
+  public TestStandaloneBroker withExporter(final String id, final Exporter exporter) {
+    unifiedConfiguration.getCamunda().getData().getExporters().put(id, exporter);
+    return this;
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {
@@ -377,5 +414,52 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withProperty("zeebe.broker.exporters.rdbms.args.history.maxHistoryCleanupInterval", "PT5S");
     withExporter("rdbms", cfg -> cfg.setClassName("-"));
     return this;
+  }
+
+  @Override
+  public TestStandaloneBroker start() {
+    final var brokerBasedPropertiesOverride =
+        new BrokerBasedPropertiesOverride(unifiedConfiguration, new LegacyBrokerBasedProperties());
+    config = brokerBasedPropertiesOverride.brokerBasedProperties();
+    withBean("config", config, BrokerBasedProperties.class);
+    withBean("unifiedConfiguration", unifiedConfiguration, UnifiedConfiguration.class);
+    return super.start();
+  }
+
+  @Override
+  public int mappedPort(final TestZeebePort port) {
+    return switch (port) {
+      case COMMAND ->
+          unifiedConfiguration.getCamunda().getCluster().getNetwork().getCommandApi().getPort();
+      case GATEWAY -> unifiedConfiguration.getCamunda().getApi().getGrpc().getPort();
+      case CLUSTER ->
+          unifiedConfiguration.getCamunda().getCluster().getNetwork().getInternalApi().getPort();
+      default -> super.mappedPort(port);
+    };
+  }
+
+  @Override
+  public TestStandaloneBroker withProperty(final String key, final Object value) {
+    // Since the security config is not constructed from the properties, we need to manually update
+    // it when we override a property.
+    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    return super.withProperty(key, value);
+  }
+
+  @Override
+  public TestStandaloneBroker withAuthenticationMethod(
+      final AuthenticationMethod authenticationMethod) {
+    // as mode is OIDC, and we have a user created by default in `TestStandaloneBroker`
+    // we need to reset the list of users to empty list as having pre-configured user in
+    // OIDC is not allowed
+    if (authenticationMethod == AuthenticationMethod.OIDC) {
+      securityConfig.getInitialization().setUsers(new ArrayList<>());
+    }
+    return super.withAuthenticationMethod(authenticationMethod);
+  }
+
+  @Override
+  protected SpringApplicationBuilder createSpringBuilder() {
+    return super.createSpringBuilder();
   }
 }

@@ -20,4 +20,8 @@ public class UnifiedConfiguration {
   public Camunda getCamunda() {
     return camunda;
   }
+
+  public void setCamunda(final Camunda camunda) {
+    this.camunda = camunda;
+  }
 }

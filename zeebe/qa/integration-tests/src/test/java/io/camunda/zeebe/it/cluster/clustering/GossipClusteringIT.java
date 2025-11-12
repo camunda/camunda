@@ -15,6 +15,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
+import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,17 +26,11 @@ final class GossipClusteringIT {
   @TestZeebe
   private final TestCluster cluster =
       new TestClusterBuilder()
-          .withBrokerConfig(
-              broker ->
-                  broker.withBrokerConfig(
-                      config ->
-                          config
-                              .getCluster()
-                              .getMembership()
-                              .setFailureTimeout(Duration.ofMillis(2000))
-                              .setGossipInterval(Duration.ofMillis(150))
-                              .setProbeInterval(Duration.ofMillis(250))
-                              .setProbeInterval(Duration.ofMillis(250))))
+          .withBrokerProperties(
+              Map.of(
+                  "camunda.cluster.membership.failure-timeout", Duration.ofMillis(2000),
+                  "camunda.cluster.membership.gossip-interval", Duration.ofMillis(150),
+                  "camunda.cluster.membership.probe-interval", Duration.ofMillis(250)))
           .withBrokersCount(3)
           .withReplicationFactor(3)
           .build();

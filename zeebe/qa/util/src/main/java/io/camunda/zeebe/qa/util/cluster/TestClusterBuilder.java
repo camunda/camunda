@@ -8,7 +8,8 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
@@ -40,9 +41,15 @@ public final class TestClusterBuilder {
       (id, gateway) -> {
         gateway.withUnauthenticatedAccess();
       };
+  private BiConsumer<MemberId, TestStandaloneBroker> unifiedConfiguration =
+      (id, broker) -> {
+        broker.withUnauthenticatedAccess();
+      };
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();
+
+  private Map<String, Object> brokerProperties = new HashMap<>();
 
   /**
    * If true, the brokers created by this cluster will use embedded gateways. By default this is
@@ -229,6 +236,12 @@ public final class TestClusterBuilder {
     return this;
   }
 
+  public TestClusterBuilder withUnifiedConfiguration(
+      final BiConsumer<MemberId, TestStandaloneBroker> modifier) {
+    unifiedConfiguration = modifier;
+    return this;
+  }
+
   /**
    * Sets the configuration function that will be executed in the {@link #build()} method on each
    * broker.
@@ -241,6 +254,18 @@ public final class TestClusterBuilder {
    */
   public TestClusterBuilder withBrokerConfig(final Consumer<TestStandaloneBroker> modifier) {
     brokerConfig = (id, broker) -> modifier.accept(broker);
+    return this;
+  }
+
+  public TestClusterBuilder withUnifiedConfiguration(
+      final Consumer<TestStandaloneBroker> modifier) {
+    unifiedConfiguration = (id, broker) -> modifier.accept(broker);
+    return this;
+  }
+
+  // TODO KPO remove
+  public TestClusterBuilder withBrokerProperties(final Map<String, Object> brokerProperties) {
+    this.brokerProperties = brokerProperties;
     return this;
   }
 
@@ -335,30 +360,31 @@ public final class TestClusterBuilder {
     // AFTER the base broker configuration
     final var contactPoints = getInitialContactPoints();
     brokers.values().stream()
-        .map(TestStandaloneBroker::brokerConfig)
-        .map(BrokerCfg::getCluster)
+        .map(TestStandaloneBroker::unifiedConfiguration)
+        .map(UnifiedConfiguration::getCamunda)
+        .map(Camunda::getCluster)
         .forEach(cfg -> cfg.setInitialContactPoints(contactPoints));
   }
 
   private TestStandaloneBroker createBroker(final int index) {
     final TestStandaloneBroker broker =
         new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg -> {
-                  final var cluster = cfg.getCluster();
+            .withUnifiedConfiguration(
+                uc -> {
+                  final var cluster = uc.getCamunda().getCluster();
                   cluster.setNodeId(index);
-                  cluster.setPartitionsCount(partitionsCount);
+                  cluster.setPartitionCount(partitionsCount);
                   cluster.setReplicationFactor(replicationFactor);
-                  cluster.setClusterSize(brokersCount);
-                  cluster.setClusterName(name);
+                  cluster.setSize(brokersCount);
+                  cluster.setName(name);
                 })
-            .withBrokerConfig(
-                cfg -> {
+            .withUnifiedConfiguration(
+                uc -> {
                   final var replicas = (partitionsCount * replicationFactor) / brokersCount;
-                  cfg.getThreads().setIoThreadCount(replicas);
-                  cfg.getThreads().setCpuThreadCount(replicas);
+                  uc.getCamunda().getSystem().setIoThreadCount(replicas);
+                  uc.getCamunda().getSystem().setCpuThreadCount(replicas);
                 })
-            .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
+            .withProperty("zeebe.broker.gateway.enable", "true")
             .withRecordingExporter(useRecordingExporter);
     return broker;
   }
