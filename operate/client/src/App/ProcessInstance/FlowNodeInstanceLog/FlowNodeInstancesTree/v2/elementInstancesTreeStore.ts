@@ -29,6 +29,7 @@ type State = {
   rootScopeKey: string | null;
   nodes: Map<string, NodeData>;
   expandedNodes: Set<string>;
+  abortControllers: Map<string, AbortController>;
 };
 
 class ElementInstancesTreeStore {
@@ -36,21 +37,39 @@ class ElementInstancesTreeStore {
     rootScopeKey: null,
     nodes: new Map(),
     expandedNodes: new Set(),
+    abortControllers: new Map(),
   };
 
   constructor() {
     makeAutoObservable(this);
   }
 
+  private getOrCreateAbortController = (scopeKey: string): AbortController => {
+    const existing = this.state.abortControllers.get(scopeKey);
+
+    if (existing && !existing.signal.aborted) {
+      return existing;
+    }
+
+    const controller = new AbortController();
+    this.state.abortControllers.set(scopeKey, controller);
+    return controller;
+  };
+
   setRootNode = async (processInstanceKey: string) => {
     if (this.state.rootScopeKey !== processInstanceKey) {
+      this.state.abortControllers.forEach((controller) => {
+        controller.abort();
+      });
+      this.state.abortControllers.clear();
+
       this.state.nodes.clear();
       this.state.expandedNodes.clear();
       this.state.rootScopeKey = processInstanceKey;
 
-      await this.fetchFirstPage(processInstanceKey);
-
       this.state.expandedNodes.add(processInstanceKey);
+
+      await this.fetchFirstPage(processInstanceKey);
     }
   };
 
@@ -69,11 +88,24 @@ class ElementInstancesTreeStore {
   private fetchFirstPage = async (scopeKey: string) => {
     this.setNodeStatus(scopeKey, 'loading');
 
-    const {response, error} = await searchElementInstances({
-      filter: {elementInstanceScopeKey: scopeKey},
-      page: {limit: PAGE_SIZE * 2, from: 0},
-      sort: [{field: 'startDate', order: 'asc'}],
-    });
+    const controller = this.getOrCreateAbortController(scopeKey);
+
+    const {response, error} = await searchElementInstances(
+      {
+        filter: {elementInstanceScopeKey: scopeKey},
+        page: {limit: PAGE_SIZE * 2, from: 0},
+        sort: [{field: 'startDate', order: 'asc'}],
+      },
+      controller.signal,
+    );
+
+    if (controller.signal.aborted) {
+      return;
+    }
+
+    if (!this.state.expandedNodes.has(scopeKey)) {
+      return;
+    }
 
     if (response !== null) {
       this.state.nodes.set(scopeKey, {
@@ -92,6 +124,12 @@ class ElementInstancesTreeStore {
   };
 
   collapseNode = (scopeKey: string) => {
+    const controller = this.state.abortControllers.get(scopeKey);
+    if (controller) {
+      controller.abort();
+      this.state.abortControllers.delete(scopeKey);
+    }
+
     this.state.expandedNodes.delete(scopeKey);
 
     this.collapseAndRemoveDescendants(scopeKey);
@@ -116,6 +154,12 @@ class ElementInstancesTreeStore {
 
     nodeData.items.forEach((item) => {
       const childKey = item.elementInstanceKey;
+
+      const controller = this.state.abortControllers.get(childKey);
+      if (controller) {
+        controller.abort();
+        this.state.abortControllers.delete(childKey);
+      }
 
       if (this.state.expandedNodes.has(childKey)) {
         this.state.expandedNodes.delete(childKey);
@@ -145,11 +189,24 @@ class ElementInstancesTreeStore {
 
     this.setNodeStatus(scopeKey, 'loading');
 
-    const {response, error} = await searchElementInstances({
-      filter: {elementInstanceScopeKey: scopeKey},
-      page: {limit: PAGE_SIZE * 2, from: nextWindowStart},
-      sort: [{field: 'startDate', order: 'asc'}],
-    });
+    const controller = this.getOrCreateAbortController(scopeKey);
+
+    const {response, error} = await searchElementInstances(
+      {
+        filter: {elementInstanceScopeKey: scopeKey},
+        page: {limit: PAGE_SIZE * 2, from: nextWindowStart},
+        sort: [{field: 'startDate', order: 'asc'}],
+      },
+      controller.signal,
+    );
+
+    if (controller.signal.aborted) {
+      return -1;
+    }
+
+    if (!this.state.expandedNodes.has(scopeKey)) {
+      return -1;
+    }
 
     if (response !== null) {
       this.state.nodes.set(scopeKey, {
@@ -181,17 +238,30 @@ class ElementInstancesTreeStore {
     const prevWindowEnd = nodeData.pageMetadata.windowStart;
     const prevWindowStart = Math.max(0, prevWindowEnd - PAGE_SIZE);
 
-    if (prevWindowStart < 0 || nodeData.pageMetadata.windowStart === 0) {
+    if (nodeData.pageMetadata.windowStart === 0) {
       return 0;
     }
 
     this.setNodeStatus(scopeKey, 'loading');
 
-    const {response, error} = await searchElementInstances({
-      filter: {elementInstanceScopeKey: scopeKey},
-      page: {limit: PAGE_SIZE * 2, from: prevWindowStart},
-      sort: [{field: 'startDate', order: 'asc'}],
-    });
+    const controller = this.getOrCreateAbortController(scopeKey);
+
+    const {response, error} = await searchElementInstances(
+      {
+        filter: {elementInstanceScopeKey: scopeKey},
+        page: {limit: PAGE_SIZE * 2, from: prevWindowStart},
+        sort: [{field: 'startDate', order: 'asc'}],
+      },
+      controller.signal,
+    );
+
+    if (controller.signal.aborted) {
+      return -1;
+    }
+
+    if (!this.state.expandedNodes.has(scopeKey)) {
+      return -1;
+    }
 
     if (response !== null) {
       this.state.nodes.set(scopeKey, {
@@ -231,6 +301,11 @@ class ElementInstancesTreeStore {
   };
 
   reset = () => {
+    this.state.abortControllers.forEach((controller) => {
+      controller.abort();
+    });
+    this.state.abortControllers.clear();
+
     this.state.rootScopeKey = null;
     this.state.nodes.clear();
     this.state.expandedNodes.clear();
