@@ -8,12 +8,14 @@
 package io.camunda.zeebe.qa.util.junit;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
@@ -25,8 +27,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -59,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * <p>See {@link TestZeebe} for annotation parameters.
  */
 final class ZeebeIntegrationExtension
-    implements BeforeAllCallback, BeforeEachCallback, TestWatcher {
+    implements BeforeAllCallback, BeforeEachCallback, TestWatcher, AfterEachCallback {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeIntegrationExtension.class);
 
@@ -168,7 +174,7 @@ final class ZeebeIntegrationExtension
       // The directory must be inserted into the store first, otherwise it will get deleted
       // before the cluster shuts down, leading to slowdown in the shutdown procedure.
       directories.add(createManagedDirectory(store, resource.cluster().name()));
-      store.put(resource, resource);
+      resourceGroup(extensionContext).add(resource);
     }
 
     var i = 0;
@@ -195,6 +201,7 @@ final class ZeebeIntegrationExtension
     // starting one fails
     resources.forEach(resource -> store.put(resource, resource));
     for (final var resource : resources) {
+      resourceGroup(extensionContext).add(resource);
       manageApplication(store, resource);
     }
   }
@@ -217,17 +224,23 @@ final class ZeebeIntegrationExtension
     if (annotation.autoStart()) {
       resource.start();
 
-      if (annotation.awaitStarted()) {
-        resource.await(TestHealthProbe.STARTED);
-      }
+      awaitResourceStatus(resource);
+    }
+  }
 
-      if (annotation.awaitReady()) {
-        resource.await(TestHealthProbe.READY);
-      }
+  private static void awaitResourceStatus(final TestZeebeResource resource) {
+    final var annotation = resource.annotation();
 
-      if (annotation.awaitCompleteTopology()) {
-        resource.awaitCompleteTopology();
-      }
+    if (annotation.awaitStarted()) {
+      resource.await(TestHealthProbe.STARTED);
+    }
+
+    if (annotation.awaitReady()) {
+      resource.await(TestHealthProbe.READY);
+    }
+
+    if (annotation.awaitCompleteTopology()) {
+      resource.awaitCompleteTopology();
     }
   }
 
@@ -269,8 +282,72 @@ final class ZeebeIntegrationExtension
     return new ApplicationResource(testInstance, field, field.getAnnotation(TestZeebe.class));
   }
 
-  private Store store(final ExtensionContext extensionContext) {
+  private static Store store(final ExtensionContext extensionContext) {
     return extensionContext.getStore(Namespace.create(ZeebeIntegrationExtension.class));
+  }
+
+  private static ZeebeResourceGroup resourceGroup(final ExtensionContext extensionContext) {
+    return store(extensionContext)
+        .getOrComputeIfAbsent(
+            ZeebeResourceGroup.class, key -> new ZeebeResourceGroup(), ZeebeResourceGroup.class);
+  }
+
+  @Override
+  public void afterEach(final ExtensionContext extensionContext) {
+    purgeAllResources(extensionContext);
+  }
+
+  private void purgeAllResources(final ExtensionContext extensionContext) {
+    final var resources = resourceGroup(extensionContext).resources();
+    for (final var resource : resources) {
+      if (!ModifierSupport.isStatic(resource.field()) || !resource.annotation().purgeAfterEach()) {
+        continue;
+      }
+      if (resource instanceof final ClusterResource clusterResource) {
+        purgeResource(clusterResource.cluster().anyGateway());
+      } else if (resource instanceof final ApplicationResource appResource) {
+        if (!(appResource.app() instanceof final TestGateway<?> testGateway)) {
+          // Not all `TestApplication`s and can be used to purge data.
+          // For example, a `TestRestoreApplication` does not even expose the cluster actuator.
+          // We use `TestGateway` as a signal that the application hopefully exposes the cluster
+          // actuator and can actually purge data.
+          throw new IllegalArgumentException(
+              "Cannot purge state of applications of type %s because it does not implement %s"
+                  .formatted(appResource.app().getClass().getName(), TestGateway.class.getName()));
+        }
+        purgeResource(testGateway);
+      }
+      awaitResourceStatus(resource);
+    }
+  }
+
+  private static void purgeResource(final TestGateway<?> gateway) {
+    final var clusterActuator = ClusterActuator.of(gateway);
+    final var purge = clusterActuator.purge(false);
+    Awaitility.await("Application %s has purged its state".formatted(gateway))
+        .atMost(Duration.ofMinutes(2))
+        .pollInterval(Duration.ofMillis(200))
+        .pollInSameThread()
+        .untilAsserted(
+            () -> ClusterActuatorAssert.assertThat(clusterActuator).hasCompletedChanges(purge));
+  }
+
+  private static final class ZeebeResourceGroup implements AutoCloseable {
+    private final Set<TestZeebeResource> resources = new HashSet<>();
+
+    private void add(final TestZeebeResource resource) {
+      resources.add(resource);
+    }
+
+    private Set<TestZeebeResource> resources() {
+      return resources;
+    }
+
+    @Override
+    public void close() {
+      CloseHelper.closeAll(
+          (error) -> LOG.warn("Failed to close resources {}", resources, error), resources);
+    }
   }
 
   private record ClusterResource(Object testInstance, Field field, TestZeebe annotation)
@@ -381,8 +458,10 @@ final class ZeebeIntegrationExtension
     }
   }
 
-  private interface TestZeebeResource {
+  private interface TestZeebeResource extends AutoCloseable {
     TestZeebe annotation();
+
+    Field field();
 
     void start();
 
