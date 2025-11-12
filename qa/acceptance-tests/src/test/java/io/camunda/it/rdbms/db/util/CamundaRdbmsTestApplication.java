@@ -57,7 +57,7 @@ public final class CamundaRdbmsTestApplication
   public CamundaRdbmsTestApplication withAuroraPostgreSQL() {
     super.withProperty(
         "camunda.data.secondary-storage.rdbms.url",
-        "jdbc:postgresql://xcamunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/db-camunda-aurora-postgresql");
+        "jdbc:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/db-camunda-aurora-postgresql");
     return this;
   }
 
