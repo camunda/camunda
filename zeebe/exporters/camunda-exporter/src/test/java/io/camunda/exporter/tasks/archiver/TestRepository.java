@@ -16,6 +16,7 @@ import java.util.concurrent.Executor;
 final class TestRepository extends NoopArchiverRepository {
   final List<DocumentMove> moves = new ArrayList<>();
   ArchiveBatch batch;
+  boolean shouldFailOnMove = false;
 
   public CompletableFuture<ArchiveBatch> getNextBatch() {
     return CompletableFuture.completedFuture(batch);
@@ -53,6 +54,9 @@ final class TestRepository extends NoopArchiverRepository {
       final String idFieldName,
       final List<String> ids,
       final Executor executor) {
+    if (shouldFailOnMove) {
+      return CompletableFuture.failedFuture(new RuntimeException("Simulated archiving failure"));
+    }
     moves.add(new DocumentMove(sourceIndexName, destinationIndexName, idFieldName, ids, executor));
     return CompletableFuture.completedFuture(null);
   }
