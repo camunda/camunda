@@ -5974,6 +5974,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserTaskResult"
+      required:
+        - items
     UserTaskFilter:
       description: User task filter request.
       type: object
@@ -6113,6 +6115,8 @@ components:
             - $ref: "#/components/schemas/StringFilterProperty"
     UserTaskResult:
       type: object
+      required:
+        - userTaskKey
       properties:
         name:
           type: string
@@ -6287,9 +6291,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/VariableSearchResult"
+      required:
+        - items
     VariableSearchResult:
       description: Variable search response item.
       type: object
+      required:
+        - value
+        - isTruncated
       allOf:
         - $ref: "#/components/schemas/VariableResultBase"
       properties:
@@ -6308,9 +6317,17 @@ components:
         value:
           description: Full value of this variable.
           type: string
+      required:
+        - value
     VariableResultBase:
       description: Variable response item.
       type: object
+      required:
+        - name
+        - processInstanceKey
+        - tenantId
+        - variableKey
+        - scopeKey
       properties:
         name:
           description: Name of this variable.
@@ -9469,6 +9486,8 @@ components:
     UserTaskAssignmentRequest:
       type: object
       additionalProperties: false
+      required:
+        - assignee
       properties:
         assignee:
           description: The assignee for the user task. The assignee must not be empty or `null`.
@@ -10029,7 +10048,6 @@ components:
             - endTime
             - errorCode
             - errorMessage
-            - hasFailedWithRetriesLeft
             - isDenied
             - jobKey
             - kind
@@ -10133,6 +10151,8 @@ components:
     JobSearchQueryResult:
       description: Job search response.
       type: object
+      required:
+        - items
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
