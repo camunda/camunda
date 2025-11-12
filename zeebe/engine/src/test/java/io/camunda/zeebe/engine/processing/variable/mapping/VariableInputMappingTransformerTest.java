@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +125,8 @@ public final class VariableInputMappingTransformerTest {
         .isTrue();
 
     // when
-    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+    final var result =
+        expressionLanguage.evaluateExpression(expression, name -> Either.left(variables.get(name)));
 
     // then
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);

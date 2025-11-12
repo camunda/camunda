@@ -153,7 +153,9 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
 
   private void rescheduleTimer(final TimerRecord record, final ExecutableCatchEvent event) {
     final Either<Failure, Timer> timer =
-        event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
+        event
+            .getTimerFactory()
+            .apply(expressionProcessor, record.getElementInstanceKey(), record.getTenantId());
     if (timer.isLeft()) {
       final String message =
           "Expected to reschedule repeating timer for element with id '%s', but an error occurred: %s"

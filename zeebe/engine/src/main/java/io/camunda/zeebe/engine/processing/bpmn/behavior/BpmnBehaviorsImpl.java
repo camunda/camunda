@@ -16,6 +16,11 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.GlobalScopeClusterVariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -23,7 +28,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -67,10 +71,41 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+
+    final var tenantClusterScope =
+        new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
+    final var globalClusterScope =
+        new GlobalScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
+    final var mergedClusterScope =
+        CombinedEvaluationContext.withContexts(tenantClusterScope, globalClusterScope);
+
+    final var namespacedTenantClusterScope =
+        NamespacedEvaluationContext.create().register("tenant", tenantClusterScope);
+    final var namespacedGlobalClusterScope =
+        NamespacedEvaluationContext.create().register("cluster", globalClusterScope);
+    final var namespacedMergedClusterScope =
+        NamespacedEvaluationContext.create().register("env", mergedClusterScope);
+
+    final var namespaceFullClusterContext =
+        NamespacedEvaluationContext.create()
+            .register(
+                "camunda",
+                NamespacedEvaluationContext.create()
+                    .register(
+                        "vars",
+                        CombinedEvaluationContext.withContexts(
+                            namespacedMergedClusterScope,
+                            namespacedTenantClusterScope,
+                            namespacedGlobalClusterScope)));
+
+    final var processVariableContext =
+        new VariableEvaluationContext(processingState.getVariableState());
+
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
-            new VariableStateEvaluationContextLookup(processingState.getVariableState()));
+            CombinedEvaluationContext.withContexts(
+                processVariableContext, namespaceFullClusterContext));
 
     variableBehavior =
         new VariableBehavior(

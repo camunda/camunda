@@ -25,6 +25,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     implements ModelElementValidator<T> {
 
   private static final long NO_VARIABLE_SCOPE = -1L;
+  private static final String NO_TENANT_SCOPE = "";
 
   private static final Pattern PATH_PATTERN =
       Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*");
@@ -111,12 +112,16 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
 
   public static boolean isValidDateTime(
       final Expression staticExp, final ExpressionProcessor expressionProcessor) {
-    return expressionProcessor.evaluateDateTimeExpression(staticExp, NO_VARIABLE_SCOPE).isRight();
+    return expressionProcessor
+        .evaluateDateTimeExpression(staticExp, NO_VARIABLE_SCOPE, NO_TENANT_SCOPE)
+        .isRight();
   }
 
   public static boolean isValidInt(
       final Expression staticExp, final ExpressionProcessor expressionProcessor) {
-    return expressionProcessor.evaluateIntegerExpression(staticExp, NO_VARIABLE_SCOPE).isRight();
+    return expressionProcessor
+        .evaluateIntegerExpression(staticExp, NO_VARIABLE_SCOPE, NO_TENANT_SCOPE)
+        .isRight();
   }
 
   public static class Builder<T extends ModelElementInstance> {

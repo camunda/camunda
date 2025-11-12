@@ -347,7 +347,9 @@ public final class DeploymentCreateProcessor
         // we use a negative scope key to indicate this
         final long scopeKey = -1L;
         final Either<Failure, Timer> timerOrError =
-            startEvent.getTimerFactory().apply(expressionProcessor, scopeKey);
+            startEvent
+                .getTimerFactory()
+                .apply(expressionProcessor, scopeKey, processMetadata.getTenantId());
         if (timerOrError.isLeft()) {
           // todo(#4323): deal with this exceptional case without throwing an exception
           throw new EvaluationException(timerOrError.getLeft().getMessage());
