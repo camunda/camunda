@@ -20,6 +20,7 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.*;
 
 @AnalyzeClasses(
@@ -156,10 +157,9 @@ public final class ProcessorNamingArchTest {
                         final String pascal = toPascal(enumName);
                         VALUE_TYPES.add(pascal);
                         // attempt to load corresponding Intent enum
-                        final String intentEnumClassName =
-                            "io.camunda.zeebe.protocol.record.intent." + pascal + "Intent";
-                        try {
-                          final Class<?> intentEnumClass = Class.forName(intentEnumClassName);
+                        final Class<?> intentEnumClass =
+                            Intent.VALUE_TYPE_TO_INTENT_MAP.get(constant);
+                        if (intentEnumClass != null) {
                           final Object[] intentConstants = intentEnumClass.getEnumConstants();
                           final Set<String> intents = new HashSet<>();
                           if (intentConstants != null) {
@@ -169,7 +169,7 @@ public final class ProcessorNamingArchTest {
                             }
                           }
                           VALUE_TYPE_TO_INTENTS.put(pascal, intents);
-                        } catch (final ClassNotFoundException intentMissing) {
+                        } else {
                           // No intent enum available; leave empty set (some ValueTypes may be meta)
                           VALUE_TYPE_TO_INTENTS.put(pascal, Collections.emptySet());
                         }
