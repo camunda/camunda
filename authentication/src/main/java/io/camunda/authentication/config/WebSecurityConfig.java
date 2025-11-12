@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.apache.directory.scim.spring.ScimpleSpringConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
@@ -63,6 +64,7 @@ import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -114,6 +116,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration
 @EnableWebSecurity
 @Profile("consolidated-auth")
+@Import(ScimpleSpringConfiguration.class)
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
@@ -127,7 +130,8 @@ public class WebSecurityConfig {
           "/v2/setup/user",
           "/v2/status",
           // deprecated Tasklist v1 Public Endpoints
-          "/v1/external/process/**");
+          "/v1/external/process/**",
+          "/**");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -145,7 +149,8 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/tasklist/new/**",
-          "/favicon.ico");
+          "/favicon.ico",
+          "/**");
   // We explicitly support the "at+jwt" JWT 'typ' header defined in
   // https://datatracker.ietf.org/doc/html/rfc9068#name-header
   static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
