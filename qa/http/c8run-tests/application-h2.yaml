@@ -16,14 +16,14 @@ camunda:
       users:
         - username: demo
           password: demo
-          name: demo
+          name: Demo
           email: demo@example.com
       defaultRoles:
         admin:
           users:
             - demo
-    # By default authorization and api protection is disabled
     authentication:
+      method: BASIC
       unprotected-api: true
     authorizations:
       enabled: false
@@ -33,6 +33,11 @@ zeebe:
     network:
       host: localhost
       advertisedHost: localhost
+  gateway:
+    cluster:
+      initialContactPoints: zeebe:26502
+      memberId: identity
+
 spring:
   profiles:
-    active: "broker,consolidated-auth,identity,tasklist,operate"
+    active: "broker,consolidated-auth,identity,tasklist"
