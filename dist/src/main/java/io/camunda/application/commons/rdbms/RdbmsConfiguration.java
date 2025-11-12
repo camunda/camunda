@@ -260,13 +260,16 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader() {
-    return new ProcessDefinitionInstanceStatisticsDbReader();
+  public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader(
+      final ProcessDefinitionMapper processDefinitionMapper) {
+    return new ProcessDefinitionInstanceStatisticsDbReader(processDefinitionMapper);
   }
 
   @Bean
-  public ProcessDefinitionInstanceVersionStatisticsReader processDefinitionStatisticsDbReader() {
-    return new ProcessDefinitionInstanceVersionStatisticsDbReader();
+  public ProcessDefinitionInstanceVersionStatisticsReader
+      processDefinitionInstanceVersionStatisticsReader(
+          final ProcessDefinitionMapper processDefinitionMapper) {
+    return new ProcessDefinitionInstanceVersionStatisticsDbReader(processDefinitionMapper);
   }
 
   @Bean
