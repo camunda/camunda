@@ -83,8 +83,37 @@ func runDockerCommand(composeExtractedFolder string, args ...string) error {
 	return nil
 }
 
+var helpTemplate = `Usage:
+  %[1]s [command] [options]
+
+Commands:
+  start                 Start Camunda 8 Run
+  stop                  Stop any running Camunda 8 Run processes
+  help                  Show this help message
+
+Options:
+  --config <path>           Use a custom Zeebe application.yaml
+  --keystore <path>         Enable HTTPS with a TLS certificate (JKS format)
+  --keystorePassword <pw>  Password for the provided keystore
+  --port <number>           Set the main Camunda port (default: 8080)
+  --log-level <level>       Set log level (e.g., info, debug)
+  --docker                  Start using Docker Compose
+
+Examples:
+  %[1]s start
+  %[1]s start --docker
+  %[1]s start --config ./my-config.yaml
+  %[1]s stop
+  %[1]s stop --docker
+
+Docs & Support:
+  https://docs.camunda.io/docs/guides/getting-started-java-spring/
+  https://docs.camunda.io/docs/next/guides/getting-started-agentic-orchestration/
+  https://forum.camunda.io
+`
+
 func usage(exitcode int) {
-	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n", os.Args[0])
+	fmt.Printf(helpTemplate, os.Args[0])
 	os.Exit(exitcode)
 }
 
@@ -98,6 +127,8 @@ func getBaseCommand() (string, error) {
 		return "start", nil
 	case "stop":
 		return "stop", nil
+	case "help":
+		usage(0)
 	case "-h", "--help":
 		usage(0)
 	default:
