@@ -509,7 +509,7 @@ public class ClusterVariableEvaluationContextTest {
     // Given
     ENGINE
         .clusterVariables()
-        .withName("MY_ASSIGNEE")
+        .withName("MY_ASSIGNEE_2")
         .withValue("\"john_doe\"")
         .setGlobalScope()
         .create();
@@ -522,7 +522,7 @@ public class ClusterVariableEvaluationContextTest {
                 t ->
                     t.zeebeUserTask()
                         .zeebeAssigneeExpression(
-                            "if camunda.vars.cluster.MY_ASSIGNEE = null then \"default_assignee\" else camunda.vars.cluster.MY_ASSIGNEE"))
+                            "if camunda.vars.cluster.MY_ASSIGNEE = null then \"default_assignee\" else camunda.vars.cluster.MY_ASSIGNEE_2"))
             .endEvent()
             .done();
 
@@ -641,12 +641,7 @@ public class ClusterVariableEvaluationContextTest {
     ENGINE.deployment().withXmlResource(process).deploy();
 
     // When
-    final var processCreated =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId("PROCESS_ID_17")
-            .withVariable("test", "test")
-            .create();
+    final var processCreated = ENGINE.processInstance().ofBpmnProcessId("PROCESS_ID_17").create();
 
     assertThat(
             RecordingExporter.processInstanceRecords()
