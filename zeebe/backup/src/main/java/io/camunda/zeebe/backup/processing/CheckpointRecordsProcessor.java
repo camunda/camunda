@@ -122,9 +122,12 @@ public final class CheckpointRecordsProcessor
     }
     final CheckpointIntent intent = (CheckpointIntent) record.getIntent();
     switch (intent) {
-      case CREATED -> checkpointCreatedEventApplier.apply((CheckpointRecord) record.getValue());
+      case CREATED ->
+          checkpointCreatedEventApplier.apply(
+              (CheckpointRecord) record.getValue(), record.getTimestamp());
       case CONFIRMED_BACKUP ->
-          checkpointBackupConfirmedApplier.apply((CheckpointRecord) record.getValue());
+          checkpointBackupConfirmedApplier.apply(
+              (CheckpointRecord) record.getValue(), record.getTimestamp());
       default -> {
         // Don't apply intents CREATE and IGNORED
       }

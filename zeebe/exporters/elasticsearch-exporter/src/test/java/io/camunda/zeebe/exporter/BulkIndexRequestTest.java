@@ -36,7 +36,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
@@ -342,7 +341,7 @@ final class BulkIndexRequestTest {
     }
 
     @Test
-    void shouldIndexCheckpointRecordWithoutTypeAndTimestampOnPreviousVersion() {
+    void shouldIndexCheckpointRecordWithoutTypeOnPreviousVersion() {
       // given
       final var record =
           recordFactory.generateRecord(
@@ -351,7 +350,6 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CheckpointRecord()
                               .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
-                              .setCheckpointTimestamp(Instant.now().toEpochMilli())
                               .setCheckpointId(100)
                               .setCheckpointPosition(100L)));
 
@@ -365,15 +363,13 @@ final class BulkIndexRequestTest {
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
-          .extracting(
-              source -> ((Map<String, Object>) source).get("checkpointType"),
-              source -> ((Map<String, Object>) source).get("checkpointTimestamp"))
-          .describedAs("Expect that the records are serialized without type and timestamp")
-          .containsAll(Set.of(Tuple.tuple(null, null)));
+          .extracting(source -> ((Map<String, Object>) source).get("checkpointType"))
+          .describedAs("Expect that the records are serialized without type")
+          .containsExactly(new Object[] {null});
     }
 
     @Test
-    void shouldIndexCheckpointRecordWithTypeAndTimestamp() {
+    void shouldIndexCheckpointRecordWithType() {
       // given
       final var timestamp = Instant.now();
       final var record =
@@ -383,7 +379,6 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CheckpointRecord()
                               .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
-                              .setCheckpointTimestamp(timestamp.toEpochMilli())
                               .setCheckpointId(100)
                               .setCheckpointPosition(100L)));
 
@@ -397,13 +392,9 @@ final class BulkIndexRequestTest {
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
-          .extracting(
-              source -> ((Map<String, Object>) source).get("checkpointType"),
-              source -> ((Map<String, Object>) source).get("checkpointTimestamp"))
-          .describedAs("Expect that the records are serialized with type and timestamp")
-          .containsAll(
-              Set.of(
-                  Tuple.tuple(CheckpointType.SCHEDULED_BACKUP.name(), timestamp.toEpochMilli())));
+          .extracting(source -> ((Map<String, Object>) source).get("checkpointType"))
+          .describedAs("Expect that the records are serialized with type")
+          .containsExactly(CheckpointType.SCHEDULED_BACKUP.name());
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {

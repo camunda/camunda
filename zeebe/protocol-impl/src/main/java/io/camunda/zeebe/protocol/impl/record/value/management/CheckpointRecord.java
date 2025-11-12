@@ -17,22 +17,18 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
 
   private static final String CHECKPOINT_ID_KEY = "id";
   private static final String CHECKPOINT_POSITION_KEY = "position";
-  private static final String CHECKPOINT_TIMESTAMP_KEY = "timestamp";
   private static final String CHECKPOINT_TYPE_KEY = "type";
 
   private final LongProperty checkpointIdProperty = new LongProperty(CHECKPOINT_ID_KEY, -1L);
   private final LongProperty checkpointPositionProperty =
       new LongProperty(CHECKPOINT_POSITION_KEY, -1L);
-  private final LongProperty checkpointTimestampProperty =
-      new LongProperty(CHECKPOINT_TIMESTAMP_KEY, -1L);
   private final EnumProperty<CheckpointType> checkpointTypeProperty =
       new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.MANUAL_BACKUP);
 
   public CheckpointRecord() {
-    super(4);
+    super(3);
     declareProperty(checkpointIdProperty)
         .declareProperty(checkpointPositionProperty)
-        .declareProperty(checkpointTimestampProperty)
         .declareProperty(checkpointTypeProperty);
   }
 
@@ -53,16 +49,6 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
 
   public CheckpointRecord setCheckpointType(final CheckpointType checkpointType) {
     checkpointTypeProperty.setValue(checkpointType);
-    return this;
-  }
-
-  @Override
-  public long getCheckpointTimestamp() {
-    return checkpointTimestampProperty.getValue();
-  }
-
-  public CheckpointRecord setCheckpointTimestamp(final long checkpointTimestamp) {
-    checkpointTimestampProperty.setValue(checkpointTimestamp);
     return this;
   }
 

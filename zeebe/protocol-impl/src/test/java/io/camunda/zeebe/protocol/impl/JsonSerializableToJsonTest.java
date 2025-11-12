@@ -2150,20 +2150,17 @@ final class JsonSerializableToJsonTest {
                 new CheckpointRecord()
                     .setCheckpointId(1L)
                     .setCheckpointPosition(10L)
-                    .setCheckpointTimestamp(TIMESTAMP.toEpochMilli())
                     .setCheckpointType(CheckpointType.SCHEDULED_BACKUP),
         """
         {
           "checkpointId":1,
           "checkpointPosition":10,
-          "checkpointTimestamp":%d,
           "checkpointType":"SCHEDULED_BACKUP"
         }
         """
-            .formatted(TIMESTAMP.toEpochMilli())
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////// Checkpoint record without timestamp and type ///////////////////////
+      //////////////////////// Checkpoint record without type ///////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Checkpoint record without timestamp",
@@ -2173,7 +2170,6 @@ final class JsonSerializableToJsonTest {
           {
             "checkpointId":1,
             "checkpointPosition":10,
-            "checkpointTimestamp":-1,
             "checkpointType":"MANUAL_BACKUP"
           }
           """

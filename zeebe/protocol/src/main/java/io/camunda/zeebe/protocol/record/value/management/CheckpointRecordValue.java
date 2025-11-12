@@ -38,9 +38,4 @@ public interface CheckpointRecordValue extends RecordValue {
    * @return the type of the checkpoint
    */
   CheckpointType getCheckpointType();
-
-  /**
-   * @return the timestamp of the checkpoint
-   */
-  long getCheckpointTimestamp();
 }
