@@ -165,7 +165,9 @@ public class RepositoryNodeIdProviderIT {
 
     // then
     // verify that the lease status is not ready continuously
-    Awaitility.await().during(EXPIRY_DURATION).untilAsserted(this::assertLeaseIsNotReady);
+    Awaitility.await()
+        .during(EXPIRY_DURATION)
+        .untilAsserted(() -> assertThat(nodeIdProvider.getCurrentLease()).isNull());
     // all leases are unchanged
     final var currentLeases =
         IntStream.range(0, clusterSize).mapToObj(repository::getLease).toList();
@@ -219,8 +221,7 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldReleaseGracefullyWhenClosed()
-      throws ExecutionException, InterruptedException, TimeoutException {
+  public void shouldReleaseGracefullyWhenClosed() {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -229,7 +230,7 @@ public class RepositoryNodeIdProviderIT {
     final var lease = nodeIdProvider.getCurrentLease();
 
     // when
-    assertThatNoException().isThrownBy(() -> nodeIdProvider.close());
+    assertThatNoException().isThrownBy(nodeIdProvider::close);
 
     // then
     // clock is not moved, so the lease can only be acquired if released

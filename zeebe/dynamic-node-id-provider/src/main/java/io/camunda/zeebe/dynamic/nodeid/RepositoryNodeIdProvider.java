@@ -81,8 +81,9 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   public CompletableFuture<Boolean> isValid() {
     final var now = clock.millis();
     return CompletableFuture.supplyAsync(
-            () -> currentLease != null && currentLease.lease().isStillValid(now, leaseDuration))
-        .orTimeout(leaseDuration.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS)
+            () -> currentLease != null && currentLease.lease().isStillValid(now, leaseDuration),
+            executor)
+        .orTimeout(leaseDuration.dividedBy(3).toMillis(), TimeUnit.MILLISECONDS)
         .exceptionally(
             t -> {
               LOG.warn("Failed to check the status of the lease. Marking it as failed", t);
