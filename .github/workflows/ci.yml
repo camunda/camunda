@@ -266,7 +266,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [ root, modules, qa-integration, qa-update ]
+        group: [ root, modules, qa-integration, qa-update, qa-camunda-process-test ]
         include:
           - group: root
             name: "Root Integration Tests"
@@ -289,6 +289,12 @@ jobs:
           - group: qa-update
             name: "Zeebe QA - Update Tests"
             maven-modules: "zeebe/qa/update-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-8-default
+          - group: qa-camunda-process-test
+            name: "Camunda Process Test"
+            maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
@@ -680,6 +686,68 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  spring-boot-compatibility-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "[Spring-Boot-Compatibility] ${{ matrix.name }}"
+    needs: [detect-changes]
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [ spring-boot-3.5 ]
+        include:
+          - group: spring-boot-3.5
+            name: "3.5.x"
+            profile: "spring-boot-3.5"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        # we run unit and integration tests here as there aren't that many tests in the modules
+        run: >
+          ./mvnw -T2 -B --no-snapshot-updates
+          -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D junitThreadCount=8
+          -P parallel-tests,extract-flaky-tests,${{ matrix.profile }}
+          -pl 'clients/spring-boot-starter-camunda-sdk,testing/camunda-process-test-spring'
+          clean verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[Spring-Boot-Compatibility] ${{ matrix.name }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "spring-boot-compatibility/${{ matrix.name }}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -703,6 +771,7 @@ jobs:
       - java-unit-tests
       - maven-spotless-linter
       - protobuf-checks
+      - spring-boot-compatibility-tests
       - tasklist-docker-tests
       - tasklist-frontend-tests
       - zeebe-ci

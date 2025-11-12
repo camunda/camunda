@@ -55,9 +55,10 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
   }
 
   public ConnectorsContainer withOperateApi(final String operateRestApi) {
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_URL, operateRestApi);
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_USERNAME, "demo");
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_PASSWORD, "demo");
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_OPERATE_CLIENT_PROFILE, "simple");
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_OPERATE_CLIENT_BASE_URL, operateRestApi);
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_OPERATE_CLIENT_USERNAME, "demo");
+    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_OPERATE_CLIENT_PASSWORD, "demo");
     return this;
   }
 
