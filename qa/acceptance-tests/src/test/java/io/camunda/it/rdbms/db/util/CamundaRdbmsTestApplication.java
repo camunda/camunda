@@ -56,7 +56,7 @@ public final class CamundaRdbmsTestApplication
   // jdbc:postgresql://localhost:60108/camunda?loggerLevel=OFF
   public CamundaRdbmsTestApplication withAuroraPostgreSQL() {
     super.withProperty(
-        "camunda.database.url",
+        "camunda.data.secondary-storage.rdbms.url",
         "jdbc:postgresql://xcamunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/db-camunda-aurora-postgresql");
     return this;
   }
