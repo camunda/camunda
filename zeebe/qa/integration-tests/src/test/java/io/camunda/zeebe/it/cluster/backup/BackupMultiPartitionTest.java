@@ -10,17 +10,15 @@ package io.camunda.zeebe.it.cluster.backup;
 import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.configuration.Backup;
+import io.camunda.configuration.Backup.BackupStoreType;
 import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatusRequest;
@@ -93,10 +91,10 @@ class BackupMultiPartitionTest {
           .withBrokersCount(2)
           .withPartitionsCount(2)
           .withReplicationFactor(1)
-          .withBrokerConfig(b -> b.withBrokerConfig(this::configureBackupStore))
+          .withBrokerConfig(b -> b.withUnifiedConfig(this::configureBackupStore))
           .build();
 
-  private void configureBackupStore(final BrokerCfg config) {
+  private void configureBackupStore(final Camunda config) {
 
     final var backupConfig = config.getData().getBackup();
     backupConfig.setStore(BackupStoreType.S3);
@@ -185,6 +183,7 @@ class BackupMultiPartitionTest {
     waitUntilBackupIsCompleted(backupId);
   }
 
+  // TODO KPO check test
   @Test
   @Timeout(value = 120)
   void shouldTriggerBackupViaInterPartitionMessageCorrelationCommands() {
@@ -233,22 +232,25 @@ class BackupMultiPartitionTest {
   }
 
   private void deleteAndRestore(final TestStandaloneBroker broker, final int backupId) {
+    final var workingDirectory = broker.getWorkingDirectory();
+
     final var unifiedRestoreConfig = new Camunda();
-    unifiedRestoreConfig.getCluster().setNodeId(broker.brokerConfig().getCluster().getNodeId());
+    unifiedRestoreConfig.getCluster().setNodeId(broker.unifiedConfig().getCluster().getNodeId());
     unifiedRestoreConfig
         .getCluster()
-        .setPartitionCount(broker.brokerConfig().getCluster().getPartitionsCount());
-    unifiedRestoreConfig
-        .getData()
-        .getPrimaryStorage()
-        .setDirectory(broker.brokerConfig().getData().getDirectory());
-    unifiedRestoreConfig.getCluster().setSize(broker.brokerConfig().getCluster().getClusterSize());
+        .setPartitionCount(broker.unifiedConfig().getCluster().getPartitionCount());
+    final var dataDirectory =
+        ConfigurationUtil.toAbsolutePath(
+            broker.unifiedConfig().getData().getPrimaryStorage().getDirectory(),
+            workingDirectory.toString());
+    unifiedRestoreConfig.getData().getPrimaryStorage().setDirectory(dataDirectory);
+    unifiedRestoreConfig.getCluster().setSize(broker.unifiedConfig().getCluster().getSize());
 
     // backup config s3
     final var backupConfig = unifiedRestoreConfig.getData().getBackup();
-    backupConfig.setStore(Backup.BackupStoreType.S3);
+    backupConfig.setStore(BackupStoreType.S3);
     final var s3Config = backupConfig.getS3();
-    final var legacyBackupConfig = broker.brokerConfig().getData().getBackup().getS3();
+    final var legacyBackupConfig = broker.unifiedConfig().getData().getBackup().getS3();
     s3Config.setBucketName(legacyBackupConfig.getBucketName());
     s3Config.setEndpoint(legacyBackupConfig.getEndpoint());
     s3Config.setRegion(legacyBackupConfig.getRegion());
@@ -257,7 +259,7 @@ class BackupMultiPartitionTest {
     s3Config.setForcePathStyleAccess(legacyBackupConfig.isForcePathStyleAccess());
 
     try (final var restore = new TestRestoreApp(unifiedRestoreConfig).withBackupId(backupId)) {
-      FileUtil.deleteFolderIfExists(broker.bean(WorkingDirectory.class).path());
+      FileUtil.deleteFolderIfExists(workingDirectory);
       restore.start();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);

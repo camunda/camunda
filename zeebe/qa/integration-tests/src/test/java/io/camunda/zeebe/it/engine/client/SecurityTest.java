@@ -114,12 +114,10 @@ public final class SecurityTest {
     final String privateKeyPath = getResource("security/test-server.key.pem").getFile();
 
     // configure the gRPC server for TLS/SSL
-    gateway
-        .gatewayConfig()
-        .getSecurity()
-        .setEnabled(true)
-        .setCertificateChainPath(new File(certificatePath))
-        .setPrivateKeyPath(new File(privateKeyPath));
+    final var ssl = gateway.unifiedConfig().getApi().getGrpc().getSsl();
+    ssl.setEnabled(true);
+    ssl.setCertificate(new File(certificatePath));
+    ssl.setCertificatePrivateKey(new File(privateKeyPath));
 
     // configure the REST API server for TLS/SSL
     gateway

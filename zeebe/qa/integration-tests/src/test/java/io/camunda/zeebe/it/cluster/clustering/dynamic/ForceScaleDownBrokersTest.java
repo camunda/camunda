@@ -64,7 +64,7 @@ class ForceScaleDownBrokersTest {
       brokersToShutdown.forEach(
           brokerId ->
               ClusterActuatorAssert.assertThat(cluster)
-                  .doesNotHaveBroker(brokerId.brokerConfig().getCluster().getNodeId()));
+                  .doesNotHaveBroker(brokerId.unifiedConfig().getCluster().getNodeId()));
 
       // Changes are reflected in the topology returned by grpc query
       cluster.awaitCompleteTopology(
@@ -83,20 +83,19 @@ class ForceScaleDownBrokersTest {
             .withGatewaysCount(1)
             .withEmbeddedGateway(false)
             .withBrokersCount(clusterSize)
-            .withBrokerConfig(broker -> broker.withCreateSchema(false))
+            .withBrokerConfig(broker -> broker.withCreateSchema(true))
             .withPartitionsCount(PARTITIONS_COUNT)
             .withReplicationFactor(replicationFactor)
             .withGatewayConfig(
-                g ->
-                    g.withCreateSchema(false)
-                        .gatewayConfig()
-                        .getCluster()
-                        .getMembership()
-                        // Decrease the timeouts for fast convergence of gateway topology. When the
-                        // broker is shutdown, the topology update takes at least 10 seconds with
-                        // the default values.
-                        .setSyncInterval(Duration.ofSeconds(1))
-                        .setFailureTimeout(Duration.ofSeconds(2)))
+                g -> {
+                  g.withCreateSchema(false);
+                  // Decrease the timeouts for fast convergence of gateway topology. When the
+                  // broker is shutdown, the topology update takes at least 10 seconds with
+                  // the default values.
+                  final var membership = g.unifiedConfig().getCluster().getMembership();
+                  membership.setSyncInterval(Duration.ofSeconds(1));
+                  membership.setFailureTimeout(Duration.ofSeconds(2));
+                })
             .build()
             .start();
     cluster.awaitCompleteTopology();

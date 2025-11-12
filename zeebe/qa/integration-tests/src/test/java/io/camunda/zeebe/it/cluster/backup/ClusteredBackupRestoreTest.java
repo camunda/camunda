@@ -67,7 +67,7 @@ public class ClusteredBackupRestoreTest {
             .withBrokersCount(3)
             .withPartitionsCount(3)
             .withReplicationFactor(1)
-            .withBrokerConfig(broker -> configureBackupStore(broker.brokerConfig()))
+            .withBrokerConfig(broker -> configureBackupStore(broker.unifiedConfig()))
             .build()
             .start()
             .awaitCompleteTopology()) {
