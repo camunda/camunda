@@ -16,13 +16,10 @@ import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
@@ -36,13 +33,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.provider.Arguments;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
@@ -275,7 +270,7 @@ final class BulkIndexRequestTest {
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
       // when
-      request.index(actions.get(0), records.get(0), new RecordSequence(PARTITION_ID, 10));
+      request.index(actions.getFirst(), records.getFirst(), new RecordSequence(PARTITION_ID, 10));
 
       // then
       assertThat(request.bulkOperations())
@@ -301,7 +296,7 @@ final class BulkIndexRequestTest {
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
       // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
       assertThat(request.bulkOperations())
@@ -328,7 +323,7 @@ final class BulkIndexRequestTest {
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
       // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
       assertThat(request.bulkOperations())
@@ -356,7 +351,7 @@ final class BulkIndexRequestTest {
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
       // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
       assertThat(request.bulkOperations())
@@ -385,7 +380,7 @@ final class BulkIndexRequestTest {
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
       // when
-      request.index(actions.get(0), record, new RecordSequence(PARTITION_ID, 10));
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
 
       // then
       assertThat(request.bulkOperations())
@@ -395,6 +390,62 @@ final class BulkIndexRequestTest {
           .extracting(source -> ((Map<String, Object>) source).get("checkpointType"))
           .describedAs("Expect that the records are serialized with type")
           .containsExactly(CheckpointType.SCHEDULED_BACKUP.name());
+    }
+
+    @Test
+    void shouldIndexMessageSubscriptionRecordWithoutProcessDefinitionKeyOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new MessageSubscriptionRecord()
+                              .setProcessInstanceKey(1L)
+                              .setElementInstanceKey(2L)
+                              .setProcessDefinitionKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
+          .describedAs("Expect that the records are serialized without processDefinitionKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexMessageSubscriptionRecordWithProcessDefinitionKey() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new MessageSubscriptionRecord()
+                              .setProcessInstanceKey(1L)
+                              .setElementInstanceKey(2L)
+                              .setProcessDefinitionKey(12345L)));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("processDefinitionKey"))
+          .describedAs("Expect that the records are serialized without processDefinitionKey")
+          .containsExactly(12345);
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {
@@ -414,51 +465,6 @@ final class BulkIndexRequestTest {
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
-    }
-
-    static Stream<Arguments> recordsSupportingTagsPreviousVersion() {
-      final var version = VersionUtil.getPreviousVersion();
-      return tagRecordArguments(version);
-    }
-
-    static Stream<Arguments> recordsSupportingTags() {
-      final var version = VersionUtil.getVersion();
-      return tagRecordArguments(version);
-    }
-
-    static Stream<Arguments> tagRecordArguments(final String version) {
-      final ProtocolFactory recordFactory = new ProtocolFactory();
-      final var tags = List.of("t1", "t2");
-      return Stream.of(
-          Arguments.of(
-              recordFactory.generateRecord(
-                  r ->
-                      r.withBrokerVersion(version)
-                          .withValue(
-                              ImmutableProcessInstanceCreationRecordValue.builder()
-                                  .withTags(tags)
-                                  .build()))),
-          Arguments.of(
-              recordFactory.generateRecord(
-                  r ->
-                      r.withBrokerVersion(version)
-                          .withValue(
-                              ImmutableProcessInstanceRecordValue.builder()
-                                  .withTags(tags)
-                                  .build()))),
-          Arguments.of(
-              recordFactory.generateRecord(
-                  r ->
-                      r.withBrokerVersion(version)
-                          .withValue(
-                              ImmutableProcessInstanceResultRecordValue.builder()
-                                  .withTags(tags)
-                                  .build()))),
-          Arguments.of(
-              recordFactory.generateRecord(
-                  r ->
-                      r.withBrokerVersion(version)
-                          .withValue(ImmutableJobRecordValue.builder().withTags(tags).build()))));
     }
   }
 }
