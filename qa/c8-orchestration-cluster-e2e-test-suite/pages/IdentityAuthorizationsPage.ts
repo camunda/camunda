@@ -191,6 +191,7 @@ export class IdentityAuthorizationsPage {
         const item = this.getAuthorizationCell(authorization.ownerId);
         await waitForItemInList(this.page, item, {
           timeout: 30000,
+          clickNext: true,
           onAfterReload: () =>
             this.selectResourceTypeTab(authorization.resourceType),
         });
