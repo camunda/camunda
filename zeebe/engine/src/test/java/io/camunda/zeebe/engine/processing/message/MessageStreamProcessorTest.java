@@ -137,6 +137,7 @@ public final class MessageStreamProcessorTest {
         .openProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            eq(subscription.getProcessDefinitionKey()),
             any(),
             anyBoolean(),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
@@ -270,6 +271,7 @@ public final class MessageStreamProcessorTest {
         .closeProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            eq(subscription.getProcessDefinitionKey()),
             any(DirectBuffer.class),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
@@ -295,6 +297,7 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            eq(subscription.getProcessDefinitionKey()),
             any(),
             any(),
             eq(messageKey),
@@ -340,6 +343,7 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            eq(subscription.getProcessDefinitionKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             any(),
             eq(firstMessage.getKey()),
@@ -351,6 +355,7 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            eq(subscription.getProcessDefinitionKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             any(),
             eq(lastMessageKey),
@@ -453,6 +458,7 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(firstSubscription.getProcessInstanceKey()),
             eq(firstSubscription.getElementInstanceKey()),
+            eq(firstSubscription.getProcessDefinitionKey()),
             eq(firstSubscription.getBpmnProcessIdBuffer()),
             any(DirectBuffer.class),
             eq(messageKey),
@@ -464,6 +470,7 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(secondSubscription.getProcessInstanceKey()),
             eq(secondSubscription.getElementInstanceKey()),
+            eq(secondSubscription.getProcessDefinitionKey()),
             eq(secondSubscription.getBpmnProcessIdBuffer()),
             any(DirectBuffer.class),
             eq(messageKey),
@@ -491,6 +498,7 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            eq(subscription.getProcessDefinitionKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             eq(subscription.getMessageNameBuffer()),
             eq(firstMessageKey),
@@ -502,6 +510,7 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            eq(subscription.getProcessDefinitionKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             eq(subscription.getMessageNameBuffer()),
             eq(lastMessageKey),
@@ -515,6 +524,7 @@ public final class MessageStreamProcessorTest {
     subscription
         .setProcessInstanceKey(1L)
         .setElementInstanceKey(2L)
+        .setProcessDefinitionKey(3L)
         .setBpmnProcessId(wrapString("process"))
         .setMessageKey(-1L)
         .setMessageName(wrapString("order canceled"))

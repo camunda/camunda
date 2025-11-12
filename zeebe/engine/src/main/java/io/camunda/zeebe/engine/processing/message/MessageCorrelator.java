@@ -89,6 +89,7 @@ public final class MessageCorrelator {
     return commandSender.correlateProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
+        subscriptionRecord.getProcessDefinitionKey(),
         subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getMessageKey(),

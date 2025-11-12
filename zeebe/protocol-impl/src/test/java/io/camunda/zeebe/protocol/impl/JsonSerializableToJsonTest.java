@@ -1297,6 +1297,7 @@ final class JsonSerializableToJsonTest {
               final String bpmnProcessId = "process";
               final String messageName = "name";
               final long processInstanceKey = 2L;
+              final long processDefinitionKey = 6L;
               final String correlationKey = "key";
               final long messageKey = 3L;
               final long requestId = 4L;
@@ -1304,6 +1305,7 @@ final class JsonSerializableToJsonTest {
 
               return new MessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
+                  .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setMessageKey(messageKey)
                   .setMessageName(wrapString(messageName))
@@ -1315,6 +1317,7 @@ final class JsonSerializableToJsonTest {
         {
           "processInstanceKey": 2,
           "elementInstanceKey": 1,
+          "processDefinitionKey": 6,
           "messageName": "name",
           "correlationKey": "key",
           "bpmnProcessId": "process",
@@ -1346,6 +1349,7 @@ final class JsonSerializableToJsonTest {
         {
           "processInstanceKey": 1,
           "elementInstanceKey": 13,
+          "processDefinitionKey": -1,
           "messageName": "",
           "correlationKey": "",
           "bpmnProcessId": "",
@@ -1370,10 +1374,12 @@ final class JsonSerializableToJsonTest {
               final int subscriptionPartitionId = 2;
               final int messageKey = 3;
               final long processInstanceKey = 1345;
+              final long processDefinitionKey = 444;
               final String correlationKey = "key";
 
               return new ProcessMessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
+                  .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setMessageName(wrapString(messageName))
                   .setMessageKey(messageKey)
@@ -1388,6 +1394,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": 123,
           "messageName": "test-message",
           "processInstanceKey": 1345,
+          "processDefinitionKey": 444,
           "variables": {
             "foo": "bar"
           },
@@ -1420,6 +1427,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": 123,
           "messageName": "",
           "processInstanceKey": 1345,
+          "processDefinitionKey": -1,
           "variables": {},
           "bpmnProcessId": "",
           "messageKey": -1,

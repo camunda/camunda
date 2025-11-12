@@ -22,6 +22,9 @@
             "processInstancePartitionId": {
               "type": "integer"
             },
+            "processDefinitionKey": {
+              "type": "long"
+            },
             "processInstanceKey": {
               "type": "long"
             },

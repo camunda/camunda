@@ -42,6 +42,11 @@ public interface MessageSubscriptionRecordValue
   long getElementInstanceKey();
 
   /**
+   * @return the process definition key tied to the subscription
+   */
+  long getProcessDefinitionKey();
+
+  /**
    * @return the BPMN process id tied to the subscription
    */
   String getBpmnProcessId();

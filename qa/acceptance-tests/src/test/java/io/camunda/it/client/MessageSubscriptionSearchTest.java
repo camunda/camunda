@@ -91,6 +91,7 @@ public class MessageSubscriptionSearchTest {
                     f.messageSubscriptionKey(
                             expectedMessageSubscription.getMessageSubscriptionKey())
                         .processDefinitionId(expectedMessageSubscription.getProcessDefinitionId())
+                        .processDefinitionKey(expectedMessageSubscription.getProcessDefinitionKey())
                         .processInstanceKey(expectedMessageSubscription.getProcessInstanceKey())
                         .elementId(expectedMessageSubscription.getElementId())
                         .elementInstanceKey(expectedMessageSubscription.getElementInstanceKey())

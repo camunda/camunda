@@ -47,6 +47,7 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
     commandSender.sendDirectCorrelateProcessMessageSubscription(
         record.getProcessInstanceKey(),
         record.getElementInstanceKey(),
+        record.getProcessDefinitionKey(),
         record.getBpmnProcessIdBuffer(),
         record.getMessageNameBuffer(),
         record.getMessageKey(),

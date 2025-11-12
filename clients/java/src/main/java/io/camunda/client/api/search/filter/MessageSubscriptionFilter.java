@@ -43,6 +43,23 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
   MessageSubscriptionFilter messageSubscriptionKey(Consumer<BasicLongProperty> fn);
 
   /**
+   * Filter by process definition key.
+   *
+   * @param processDefinitionKey the process definition key
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionKey(Long processDefinitionKey);
+
+  /**
+   * Filter by process definition key using a {@link BasicLongProperty} consumer.
+   *
+   * @param fn the process definition key {@link BasicLongProperty} consumer for the message
+   *     subscription
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionKey(Consumer<BasicLongProperty> fn);
+
+  /**
    * Filter by process definition ID.
    *
    * @param processDefinitionId the process definition ID

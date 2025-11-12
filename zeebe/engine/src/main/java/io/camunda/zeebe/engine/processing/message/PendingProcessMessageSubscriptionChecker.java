@@ -104,6 +104,7 @@ public final class PendingProcessMessageSubscriptionChecker
         subscription.getRecord().getSubscriptionPartitionId(),
         subscription.getRecord().getProcessInstanceKey(),
         subscription.getRecord().getElementInstanceKey(),
+        subscription.getRecord().getProcessDefinitionKey(),
         subscription.getRecord().getBpmnProcessIdBuffer(),
         subscription.getRecord().getMessageNameBuffer(),
         subscription.getRecord().getCorrelationKeyBuffer(),
@@ -116,6 +117,7 @@ public final class PendingProcessMessageSubscriptionChecker
         subscription.getRecord().getSubscriptionPartitionId(),
         subscription.getRecord().getProcessInstanceKey(),
         subscription.getRecord().getElementInstanceKey(),
+        subscription.getRecord().getProcessDefinitionKey(),
         subscription.getRecord().getMessageNameBuffer(),
         subscription.getRecord().getTenantId());
   }
