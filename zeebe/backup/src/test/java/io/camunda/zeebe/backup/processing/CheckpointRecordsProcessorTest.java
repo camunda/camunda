@@ -47,8 +47,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 final class CheckpointRecordsProcessorTest {
+  static {
+    RocksDB.loadLibrary();
+  }
 
   @TempDir Path database;
   final BackupManager backupManager = mock(BackupManager.class);
@@ -65,12 +71,15 @@ final class CheckpointRecordsProcessorTest {
 
   @BeforeEach
   void setup() {
+    final LRUCache lruCache = new LRUCache(200 * 1024 * 1024);
     zeebedb =
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(),
                 new ConsistencyChecksSettings(true, true),
                 new AccessMetricsConfiguration(Kind.NONE, 1),
-                SimpleMeterRegistry::new)
+                SimpleMeterRegistry::new,
+                lruCache,
+                new WriteBufferManager(100 * 1024 * 1024, lruCache))
             .createDb(database.toFile());
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 

@@ -31,16 +31,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Answers;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 public class MigrationTransitionStepTest {
+  static {
+    RocksDB.loadLibrary();
+  }
 
   @TempDir Path tempDir;
+  final LRUCache lruCache = new LRUCache(200 * 1024 * 1024);
   ZeebeRocksDbFactory<?> factory =
       new ZeebeRocksDbFactory<ZbColumnFamilies>(
           new RocksDbConfiguration(),
           new ConsistencyChecksSettings(),
           new AccessMetricsConfiguration(Kind.NONE, 1),
-          SimpleMeterRegistry::new);
+          SimpleMeterRegistry::new,
+          lruCache,
+          new WriteBufferManager(100 * 1024 * 1024, lruCache));
 
   @AutoClose ZeebeDb zeebeDb;
   TestPartitionTransitionContext context;

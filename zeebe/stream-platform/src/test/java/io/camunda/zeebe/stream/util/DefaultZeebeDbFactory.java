@@ -15,16 +15,26 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 public final class DefaultZeebeDbFactory {
+
+  static {
+    RocksDB.loadLibrary();
+  }
 
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
+    final LRUCache lruCache = new LRUCache(200 * 1024 * 1024);
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         consistencyChecks,
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        SimpleMeterRegistry::new);
+        SimpleMeterRegistry::new,
+        lruCache,
+        new WriteBufferManager(100 * 1024 * 1024, lruCache));
   }
 }

@@ -37,8 +37,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.CompactionPriority;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 final class ZeebeRocksDbFactoryTest {
+  static {
+    RocksDB.loadLibrary();
+  }
 
   @Test
   void shouldCreateNewDb(final @TempDir File pathName) throws Exception {
@@ -83,12 +89,15 @@ final class ZeebeRocksDbFactoryTest {
     final var factoryWithDefaults =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+    final LRUCache lruCache = new LRUCache(200 * 1024 * 1024);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            lruCache,
+            new WriteBufferManager(100 * 1024 * 1024, lruCache));
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -167,12 +176,15 @@ final class ZeebeRocksDbFactoryTest {
     final var customProperties = new Properties();
     customProperties.put("notExistingProperty", String.valueOf(ByteValue.ofMegabytes(16)));
 
+    final LRUCache lruCache = new LRUCache(500_000_000L);
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            lruCache,
+            new WriteBufferManager(100 * 1024 * 1024, lruCache));
 
     // expect
     //noinspection resource

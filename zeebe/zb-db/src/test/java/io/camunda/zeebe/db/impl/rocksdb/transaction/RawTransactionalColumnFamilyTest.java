@@ -28,6 +28,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 public class RawTransactionalColumnFamilyTest {
   @TempDir static Path path;
@@ -35,14 +38,21 @@ public class RawTransactionalColumnFamilyTest {
   static Map<ZbColumnFamilies, RawTransactionalColumnFamily> columnFamilies = new HashMap<>();
   private static TransactionContext context;
 
+  static {
+    RocksDB.loadLibrary();
+  }
+
   @BeforeAll
   static void setup() {
+    final LRUCache lruCache = new LRUCache(200 * 1024 * 1024);
     final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            lruCache,
+            new WriteBufferManager(100 * 1024 * 1024, lruCache));
     db = factory.createDb(path.toFile());
     context = db.createContext();
 
