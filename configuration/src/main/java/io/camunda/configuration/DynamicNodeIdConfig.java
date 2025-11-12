@@ -101,13 +101,10 @@ public class DynamicNodeIdConfig {
     private Optional<String> secretKey = Optional.empty();
 
     /**
-     * Configure a maximum duration for all S3 client API calls. Lower values will ensure that
-     * failed or slow API calls don't block other backups but may increase the risk that backups
-     * can't be stored if uploading parts of the backup takes longer than the configured timeout.
-     * See <a
+     * Configure a maximum duration for all S3 client API calls. See <a
      * href="https://github.com/aws/aws-sdk-java-v2/blob/master/docs/BestPractices.md#utilize-timeout-configurations">...</a>
      */
-    private final Duration apiCallTimeout = Duration.ofSeconds(180);
+    private Duration apiCallTimeout = Duration.ofSeconds(10);
 
     public Optional<String> getEndpoint() {
       return endpoint;
@@ -143,6 +140,10 @@ public class DynamicNodeIdConfig {
 
     public Duration getApiCallTimeout() {
       return apiCallTimeout;
+    }
+
+    public void setApiCallTimeout(final Duration apiCallTimeout) {
+      this.apiCallTimeout = apiCallTimeout;
     }
 
     public String getBucketName() {
