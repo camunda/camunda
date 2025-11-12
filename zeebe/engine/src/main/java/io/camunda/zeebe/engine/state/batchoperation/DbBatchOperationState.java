@@ -80,7 +80,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void create(final long batchOperationKey, final BatchOperationCreationRecord record) {
+  public void deprecatedCreate(
+      final long batchOperationKey, final BatchOperationCreationRecord record) {
     LOGGER.trace("Creating batch operation with key {}", record.getBatchOperationKey());
     batchKey.wrapLong(record.getBatchOperationKey());
     final var batchOperation = new PersistedBatchOperation();
@@ -89,6 +90,18 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     // newly created batch operations are pending, so we add them to the pending column family
     pendingBatchOperationColumnFamily.upsert(batchKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void create(final long batchOperationKey, final BatchOperationCreationRecord record) {
+    LOGGER.trace("Creating batch operation with key {}", record.getBatchOperationKey());
+    batchKey.wrapLong(record.getBatchOperationKey());
+    final var batchOperation = new PersistedBatchOperation();
+    batchOperation.wrap(record).setStatus(BatchOperationStatus.CREATED);
+    batchOperationColumnFamily.insert(batchKey, batchOperation);
+
+    // newly created batch operations are pending, so we add them to the pending column family
+    pendingBatchOperationColumnFamily.insert(batchKey, DbNil.INSTANCE);
   }
 
   @Override
