@@ -88,7 +88,6 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.open(new ExporterTestController());
 
     recordsReaderHolder.resetCountEmptyBatches();
-    recordsReaderHolder.resetPartitionsCompletedImporting();
     registry.clear();
   }
 

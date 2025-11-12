@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -44,8 +43,6 @@ public class RecordsReaderHolder {
   @Autowired private PartitionHolder partitionHolder;
 
   @Autowired private OperateProperties operateProperties;
-
-  private final Set<Integer> partitionsCompletedImporting = ConcurrentHashMap.newKeySet();
 
   private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone = new HashMap<>();
 
@@ -70,14 +67,6 @@ public class RecordsReaderHolder {
     return recordsReaders;
   }
 
-  public void addPartitionCompletedImporting(final int partitionId) {
-    partitionsCompletedImporting.add(partitionId);
-  }
-
-  public boolean hasPartitionCompletedImporting(final int partitionId) {
-    return partitionsCompletedImporting.contains(partitionId);
-  }
-
   public void incrementEmptyBatches(final int partitionId, final ImportValueType importValueType) {
     final var reader = getRecordsReader(partitionId, importValueType);
     countEmptyBatchesAfterImportingDone.merge(reader, 1, Integer::sum);
@@ -85,14 +74,9 @@ public class RecordsReaderHolder {
 
   public boolean isRecordReaderCompletedImporting(
       final int partitionId, final ImportValueType importValueType) {
-    if (hasPartitionCompletedImporting(partitionId)) {
-
-      final var reader = getRecordsReader(partitionId, importValueType);
-      return countEmptyBatchesAfterImportingDone.get(reader)
-          >= operateProperties.getImporter().getCompletedReaderMinEmptyBatches();
-    }
-
-    return false;
+    final var reader = getRecordsReader(partitionId, importValueType);
+    return countEmptyBatchesAfterImportingDone.get(reader)
+        >= operateProperties.getImporter().getCompletedReaderMinEmptyBatches();
   }
 
   public void recordLatestLoadedPositionAsCompleted(
@@ -108,11 +92,6 @@ public class RecordsReaderHolder {
   @VisibleForTesting
   public void resetCountEmptyBatches() {
     countEmptyBatchesAfterImportingDone.replaceAll((k, v) -> v = 0);
-  }
-
-  @VisibleForTesting
-  public void resetPartitionsCompletedImporting() {
-    partitionsCompletedImporting.clear();
   }
 
   public RecordsReader getRecordsReader(
