@@ -22,9 +22,6 @@ import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
 import io.camunda.management.backups.StateCode;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
@@ -68,6 +65,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+// TODO KPO check tests
+
 @Testcontainers
 @ZeebeIntegration
 public class ScaleUpPartitionsTest {
@@ -91,26 +90,50 @@ public class ScaleUpPartitionsTest {
             .withBrokersCount(3)
             .withPartitionsCount(PARTITIONS_COUNT)
             .withReplicationFactor(3)
+            //            .withBrokerConfig(
+            //                b ->
+            //                    b.withBrokerConfig(
+            //                        cfg -> {
+            //                          final var backup = cfg.getData().getBackup();
+            //                          backup.setStore(BackupStoreType.FILESYSTEM);
+            //                          final var fs = new FilesystemBackupStoreConfig();
+            //                          fs.setBasePath(backupPath.toString());
+            //                          backup.setFilesystem(fs);
+            //
+            //                          cfg.getCluster()
+            //                              .getMembership()
+            //                              .setSyncInterval(Duration.ofSeconds(1))
+            //                              .setGossipInterval(Duration.ofMillis(500));
+            //
+            //                          final var engineDistribution =
+            //                              cfg.getExperimental().getEngine().getDistribution();
+            //
+            // engineDistribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+            //
+            // engineDistribution.setRedistributionInterval(Duration.ofMillis(200));
+            //                        }))
             .withBrokerConfig(
                 b ->
-                    b.withBrokerConfig(
-                        cfg -> {
-                          final var backup = cfg.getData().getBackup();
-                          backup.setStore(BackupStoreType.FILESYSTEM);
-                          final var fs = new FilesystemBackupStoreConfig();
-                          fs.setBasePath(backupPath.toString());
-                          backup.setFilesystem(fs);
+                    b.withUnifiedConfig(
+                            cfg -> {
+                              final var backup = cfg.getData().getBackup();
+                              backup.setStore(Backup.BackupStoreType.FILESYSTEM);
+                              final var fs = new Filesystem();
+                              fs.setBasePath(backupPath.toString());
+                              backup.setFilesystem(fs);
 
-                          cfg.getCluster()
-                              .getMembership()
-                              .setSyncInterval(Duration.ofSeconds(1))
-                              .setGossipInterval(Duration.ofMillis(500));
-
-                          final var engineDistribution =
-                              cfg.getExperimental().getEngine().getDistribution();
-                          engineDistribution.setMaxBackoffDuration(Duration.ofSeconds(1));
-                          engineDistribution.setRedistributionInterval(Duration.ofMillis(200));
-                        }))
+                              final var membership = cfg.getCluster().getMembership();
+                              membership.setSyncInterval(Duration.ofSeconds(1));
+                              membership.setGossipInterval(Duration.ofMillis(500));
+                            })
+                        // set distribution via properties because it is not yet supported in
+                        // unified config
+                        .withProperty(
+                            "zeebe.broker.experimental.engine.distribution.maxBackoffDuration",
+                            "1s")
+                        .withProperty(
+                            "zeebe.broker.experimental.engine.distribution.redistributionInterval",
+                            "200ms"))
             .build();
   }
 
@@ -121,20 +144,18 @@ public class ScaleUpPartitionsTest {
     backupActuator = BackupActuator.of(cluster.availableGateway());
   }
 
-  private Camunda getRestoreConfig(final BrokerCfg brokerCfg) {
+  private Camunda getRestoreConfig(final Camunda brokerCfg) {
     final var unifiedRestoreConfig = new Camunda();
     unifiedRestoreConfig.getCluster().setNodeId(brokerCfg.getCluster().getNodeId());
-    unifiedRestoreConfig
-        .getCluster()
-        .setPartitionCount(brokerCfg.getCluster().getPartitionsCount());
+    unifiedRestoreConfig.getCluster().setPartitionCount(brokerCfg.getCluster().getPartitionCount());
     unifiedRestoreConfig
         .getData()
         .getPrimaryStorage()
-        .setDirectory(brokerCfg.getData().getDirectory());
+        .setDirectory(brokerCfg.getData().getPrimaryStorage().getDirectory());
     unifiedRestoreConfig
         .getCluster()
         .setReplicationFactor(brokerCfg.getCluster().getReplicationFactor());
-    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getClusterSize());
+    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getSize());
 
     final var backupConfig = unifiedRestoreConfig.getData().getBackup();
     backupConfig.setStore(Backup.BackupStoreType.FILESYSTEM);
@@ -299,7 +320,8 @@ public class ScaleUpPartitionsTest {
 
     final var partition1Leader = cluster.leaderForPartition(1);
 
-    final var directory = Path.of(partition1Leader.brokerConfig().getData().getDirectory());
+    final var directory =
+        Path.of(partition1Leader.unifiedConfig().getData().getPrimaryStorage().getDirectory());
     final var bootstrapSnapshotDirectory =
         directory.resolve("raft-partition/partitions/1/bootstrap-snapshots/1-1-0-0-0");
     scaleToPartitions(targetPartitionCount);
@@ -579,13 +601,14 @@ public class ScaleUpPartitionsTest {
       throws IOException {
     for (final var broker : cluster.brokers().values()) {
       LOG.debug("Restoring broker: {}", broker.nodeId());
-      final var dataFolder = Path.of(broker.brokerConfig().getData().getDirectory());
+      final var dataFolder =
+          Path.of(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory());
       FileUtil.deleteFolderIfExists(dataFolder);
 
       Files.createDirectories(dataFolder);
-      broker.brokerConfig().getCluster().setPartitionsCount(desiredPartitionCount);
+      broker.unifiedConfig().getCluster().setPartitionCount(desiredPartitionCount);
       try (final var restoreApp =
-          new TestRestoreApp(getRestoreConfig(broker.brokerConfig())).withBackupId(backupId)) {
+          new TestRestoreApp(getRestoreConfig(broker.unifiedConfig())).withBackupId(backupId)) {
         assertThatNoException().isThrownBy(restoreApp::start);
       }
       FileUtil.flushDirectory(dataFolder);
