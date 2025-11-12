@@ -17,6 +17,7 @@ package io.camunda.zeebe.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +47,7 @@ public class PropertiesPostProcessorLoggingTest {
   class RestOverGrpcWarning {
 
     @Test
+    @Disabled("https://github.com/camunda/camunda/issues/40841")
     void shouldLogRestOverGrpcWarning(final CapturedOutput output) {
       assertThat(output)
           .contains(
