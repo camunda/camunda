@@ -74,6 +74,9 @@ const IncidentsWrapper: React.FC<Props> = observer(
             processInstanceKey={processInstance.processInstanceKey}
             setIsInTransition={setIsInTransition}
             isPanelVisible={isPanelVisible}
+            selectedElementName={
+              incidentsPanelStore.state.selectedElementId ?? undefined
+            }
           />
         )}
       </IncidentsByProcessInstance>
@@ -151,6 +154,7 @@ const IncidentsByProcessInstance: React.FC<
   const sort = useIncidentsSort();
   const filter = getIncidentsSearchFilter(
     incidentsPanelStore.state.selectedErrorTypes,
+    incidentsPanelStore.state.selectedElementId ?? undefined,
   );
 
   const result = useGetIncidentsByProcessInstancePaginated(
