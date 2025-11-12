@@ -7,9 +7,7 @@
  */
 
 import React, {useRef} from 'react';
-import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree/v2';
 import {observer} from 'mobx-react';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {
   Container,
   NodeContainer,
@@ -22,31 +20,10 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {Stack, TreeView} from '@carbon/react';
 import {Skeleton} from '../Skeleton';
 import {ExecutionCountToggle} from '../ExecutionCountToggle';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
-import {
-  useInstanceExecutionHistory,
-  useIsInstanceExecutionHistoryAvailable,
-} from 'modules/hooks/flowNodeInstance';
+import {ElementInstancesTree} from '../FlowNodeInstancesTree/v2/index.new';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
-const FlowNodeInstanceLog: React.FC = observer(() => {
-  const instanceExecutionHistory = useInstanceExecutionHistory();
-  const isInstanceExecutionHistoryAvailable =
-    useIsInstanceExecutionHistoryAvailable();
-  const {
-    state: {status: flowNodeInstanceStatus},
-  } = flowNodeInstanceStore;
-
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const {isSuccess, isError, isPending} = useProcessInstanceXml({
-    processDefinitionKey,
-  });
-
-  const LOADING_STATES = ['initial', 'first-fetch'];
-
-  const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
-  const instanceHistoryRef = useRef<HTMLDivElement>(null);
-
+const Layout: React.FC<{children: React.ReactNode}> = observer(({children}) => {
   return (
     <Container data-testid="instance-history">
       <PanelHeader title="Instance History" size="sm">
@@ -57,36 +34,50 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
           </Stack>
         )}
       </PanelHeader>
-      {isSuccess && isInstanceExecutionHistoryAvailable ? (
-        <InstanceHistory ref={instanceHistoryRef}>
-          <NodeContainer>
-            <TreeView
-              label={`${instanceExecutionHistory?.flowNodeId} instance history`}
-              hideLabel
-            >
-              {
-                <FlowNodeInstancesTree
-                  rowRef={flowNodeInstanceRowRef}
-                  scrollableContainerRef={instanceHistoryRef}
-                  flowNodeInstance={instanceExecutionHistory!}
-                  isRoot
-                />
-              }
-            </TreeView>
-          </NodeContainer>
-        </InstanceHistory>
-      ) : (
-        <>
-          {(flowNodeInstanceStatus === 'error' || isError) && (
-            //TODO update the message with 403 related error during v2 endpoint integration #33542
-            <ErrorMessage message="Instance History could not be fetched" />
-          )}
-          {(LOADING_STATES.includes(flowNodeInstanceStatus) || isPending) && (
-            <Skeleton />
-          )}
-        </>
-      )}
+      {children}
     </Container>
+  );
+});
+
+const FlowNodeInstanceLog: React.FC = observer(() => {
+  const {data: processInstance, status} = useProcessInstance();
+  const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
+  const instanceHistoryRef = useRef<HTMLDivElement>(null);
+
+  if (status === 'pending') {
+    return (
+      <Layout>
+        <Skeleton />
+      </Layout>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <Layout>
+        {/* TODO update the message with 403 related error during v2 endpoint integration #33542 */}
+        <ErrorMessage message="Instance History could not be fetched" />
+      </Layout>
+    );
+  }
+
+  const {processDefinitionId, processDefinitionName} = processInstance;
+  const name = processDefinitionName ?? processDefinitionId;
+
+  return (
+    <Layout>
+      <InstanceHistory ref={instanceHistoryRef}>
+        <NodeContainer>
+          <TreeView label={`${name} instance history`} hideLabel>
+            <ElementInstancesTree
+              processInstance={processInstance}
+              rowRef={flowNodeInstanceRowRef}
+              scrollableContainerRef={instanceHistoryRef}
+            />
+          </TreeView>
+        </NodeContainer>
+      </InstanceHistory>
+    </Layout>
   );
 });
 

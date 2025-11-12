@@ -10,6 +10,7 @@ import type {
   ElementInstance,
   ProcessInstance,
   QueryElementInstanceIncidentsRequestBody,
+  QueryElementInstancesRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   Variable,
@@ -106,9 +107,12 @@ const queryKeys = {
         pageSize,
       ];
     },
-    searcyByScope: (payload: {elementInstanceScopeKey: string}) => {
-      const {elementInstanceScopeKey} = payload;
-      return ['elementInstancesSearch', elementInstanceScopeKey];
+    searchByScope: (
+      payload: Pick<QueryElementInstancesRequestBody, 'page' | 'sort'> & {
+        elementInstanceScopeKey: string;
+      },
+    ) => {
+      return ['elementInstancesSearchByScope', ...Object.values(payload)];
     },
   },
   processInstances: {
