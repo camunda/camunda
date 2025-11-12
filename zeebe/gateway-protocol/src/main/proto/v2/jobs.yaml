@@ -280,6 +280,10 @@ components:
         fetchVariable:
           description: A list of variables to fetch as the job variables; if empty, all visible variables at the time of activation for the scope of the job will be returned.
           type: array
+          example:
+            - firstName
+            - lastName
+            - email
           items:
             type: string
         requestTimeout:
@@ -417,14 +421,17 @@ components:
           type: string
           nullable: true
         candidateGroups:
+          description: The groups eligible to claim the task.
           type: array
           items:
             type: string
         candidateUsers:
+          description: The users eligible to claim the task.
           type: array
           items:
             type: string
         changedAttributes:
+          description: The attributes that were changed in the task.
           type: array
           items:
             type: string
@@ -448,6 +455,7 @@ components:
           maximum: 100
           nullable: true
         userTaskKey:
+          description: The unique key identifying the user task.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
           nullable: true
@@ -711,6 +719,9 @@ components:
           format: int64
           default: 0
         variables:
+          description: >
+            JSON object that will instantiate the variables at the local scope of the job's
+            associated task.
           type: object
           additionalProperties: true
 
@@ -898,10 +909,12 @@ components:
           type: integer
           format: int32
           description: The new number of retries for the job.
+          nullable: true
         timeout:
           type: integer
           format: int64
           description: The new timeout for the job in milliseconds.
+          nullable: true
 
     ## Enums
 

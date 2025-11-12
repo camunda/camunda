@@ -111,6 +111,7 @@ components:
       oneOf:
         - type: integer
           format: int32
+          title: Exact match
           description: Matches the value exactly.
         - $ref: '#/components/schemas/AdvancedIntegerFilter'
 
@@ -159,6 +160,7 @@ components:
       oneOf:
         - type: string
           format: date-time
+          title: Exact match
           description: Matches the value exactly.
         - $ref: '#/components/schemas/AdvancedDateTimeFilter'
 

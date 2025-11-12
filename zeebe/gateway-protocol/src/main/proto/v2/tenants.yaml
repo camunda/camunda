@@ -760,9 +760,11 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         name:
           type: string
+          description: The name of the tenant.
           example: Customer Service Department
         description:
           type: string
+          description: The description of the tenant.
           example: Customer Service department business processes
 
     TenantUpdateRequest:

@@ -583,7 +583,9 @@ components:
         changeset:
           $ref: '#/components/schemas/Changeset'
         action:
-          description: The action performed.
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "update".
           type: string
           nullable: true
 
