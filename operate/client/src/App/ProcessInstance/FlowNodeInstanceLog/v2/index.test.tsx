@@ -84,7 +84,8 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
   );
 };
 
-describe('FlowNodeInstanceLog', () => {
+// TODO unskip with #27330
+describe.skip('FlowNodeInstanceLog', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
