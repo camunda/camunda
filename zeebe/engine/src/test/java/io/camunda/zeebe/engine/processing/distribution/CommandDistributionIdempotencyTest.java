@@ -22,7 +22,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycle
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycleManagementSuspendProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleCompletePartitionProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleFailPartitionProcessor;
-import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
+import io.camunda.zeebe.engine.processing.clock.ClockResetProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableDeleteProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
@@ -345,7 +345,7 @@ public class CommandDistributionIdempotencyTest {
           {
             "Clock.RESET is idempotent",
             new Scenario(ValueType.CLOCK, ClockIntent.RESET, () -> ENGINE.clock().reset()),
-            ClockProcessor.class
+            ClockResetProcessor.class
           },
           {
             "Deployment.CREATE is idempotent",
