@@ -19,7 +19,7 @@ import {mockResolveIncident} from 'modules/mocks/api/v2/incidents/resolveInciden
 import {tracking} from 'modules/tracking';
 import {mockUpdateJob} from 'modules/mocks/api/v2/jobs/updateJob';
 import {mockGetIncident} from 'modules/mocks/api/v2/incidents/getIncident';
-import {createIncidentV2} from 'modules/testUtils';
+import {createIncident} from 'modules/testUtils';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -35,14 +35,14 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-describe('IncidentOperationV2', () => {
+describe('IncidentOperation', () => {
   const retryButton = () =>
     screen.getByRole('button', {
       name: 'Retry Incident',
     });
 
   beforeEach(() => {
-    mockGetIncident().withSuccess(createIncidentV2({state: 'RESOLVED'}));
+    mockGetIncident().withSuccess(createIncident({state: 'RESOLVED'}));
   });
 
   it('should display an notification when retrying an incident fails', async () => {
@@ -140,13 +140,13 @@ describe('IncidentOperationV2', () => {
     const resolveSpy = vi.fn();
     mockResolveIncident().withSuccess(null, {mockResolverFn: resolveSpy});
     const getSpy = vi.fn();
-    mockGetIncident().withSuccess(createIncidentV2({state: 'RESOLVED'}), {
+    mockGetIncident().withSuccess(createIncident({state: 'RESOLVED'}), {
       mockResolverFn: getSpy,
     });
-    mockGetIncident().withSuccess(createIncidentV2({state: 'ACTIVE'}), {
+    mockGetIncident().withSuccess(createIncident({state: 'ACTIVE'}), {
       mockResolverFn: getSpy,
     });
-    const {user} = render(<IncidentOperationV2 incidentKey="123" />, {
+    const {user} = render(<IncidentOperation incidentKey="123" />, {
       wrapper: Wrapper,
     });
 
