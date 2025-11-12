@@ -95,7 +95,12 @@ const VariablesTable: React.FC<Props> = ({
 
                   if (!isProcessInstanceRunning) {
                     if (isTruncated) {
-                      return <ViewFullVariableButton variableName={name} />;
+                      return (
+                        <ViewFullVariableButton
+                          variableName={name}
+                          variableKey={variableKey}
+                        />
+                      );
                     }
                     return null;
                   }
@@ -112,7 +117,10 @@ const VariablesTable: React.FC<Props> = ({
                       }}
                       fallback={
                         isTruncated ? (
-                          <ViewFullVariableButton variableName={name} />
+                          <ViewFullVariableButton
+                            variableName={name}
+                            variableKey={variableKey}
+                          />
                         ) : null
                       }
                     >
