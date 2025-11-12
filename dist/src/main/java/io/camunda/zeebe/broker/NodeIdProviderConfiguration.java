@@ -84,7 +84,10 @@ public class NodeIdProviderConfiguration {
                 Clock.systemUTC(),
                 config.getLeaseDuration(),
                 taskId,
-                () -> System.exit(-1));
+                () -> {
+                  LOG.warn("NodeIdProvider terminating the process");
+                  System.exit(-1);
+                });
           }
         };
     nodeIdProvider.initialize(cluster.getSize()).join();
