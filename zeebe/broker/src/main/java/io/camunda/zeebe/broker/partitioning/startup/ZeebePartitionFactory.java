@@ -153,9 +153,7 @@ public final class ZeebePartitionFactory {
       final FileBasedSnapshotStore snapshotStore,
       final DynamicPartitionConfig initialPartitionConfig,
       final BrokerHealthCheckService brokerHealthCheckService,
-      final MeterRegistry partitionMeterRegistry,
-      final LRUCache lruCache,
-      final WriteBufferManager writeBufferManager) {
+      final MeterRegistry partitionMeterRegistry) {
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
