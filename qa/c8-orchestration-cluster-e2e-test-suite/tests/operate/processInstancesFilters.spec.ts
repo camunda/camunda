@@ -6,23 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
-import {expect} from '@playwright/test';
-import {deploy, createInstances, createSingleInstance, searchByProcessInstanceKey, checkUpdateOnVersion} from 'utils/zeebeClient';
-import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
-import {waitForAssertion} from 'utils/waitForAssertion';
-import {sleep} from 'utils/sleep';
+import { test } from 'fixtures';
+import { expect } from '@playwright/test';
+import { deploy, createInstances, createSingleInstance, searchByProcessInstanceKey, checkUpdateOnVersion } from 'utils/zeebeClient';
+import { captureScreenshot, captureFailureVideo } from '@setup';
+import { navigateToApp } from '@pages/UtilitiesPage';
+import { waitForAssertion } from 'utils/waitForAssertion';
+import { sleep } from 'utils/sleep';
 import { OperateOperationPanelPage } from '@pages/OperateOperationPanelPage';
 import { time } from 'console';
 import { OperateProcessesPage } from '@pages/OperateProcessesPage';
+import { CamundaJobWorker } from '@camunda8/sdk';
+import { activateJobToObtainAValidJobKey, failJob } from '@requestHelpers';
+import { OperateFiltersPanelPage } from '@pages/OperateFiltersPanelPage';
 
-type ProcessInstance = {processInstanceKey: number};
+type ProcessInstance = { processInstanceKey: number };
 
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
 let variableProcessInstance: ProcessInstance;
 let processWithMultVerV2Key: string;
+let flakyWorkerProcessInstanceKey: string;
+// let flakyWorker: CamundaJobWorker<any, any>;
 
 test.beforeAll(async () => {
   await deploy([
@@ -55,7 +60,7 @@ test.beforeAll(async () => {
 
   callActivityProcessInstance = {
     processInstanceKey: Number(
-      (await createSingleInstance('CallActivityProcess', 1, {filtersTest: 456}))
+      (await createSingleInstance('CallActivityProcess', 1, { filtersTest: 456 }))
         .processInstanceKey,
     ),
   };
@@ -63,24 +68,34 @@ test.beforeAll(async () => {
   await deploy(['./resources/Variable_Process.bpmn']);
   variableProcessInstance = {
     processInstanceKey: Number(
-      (await createSingleInstance('Variable_Process', 1, {filtersTest: 604}))
+      (await createSingleInstance('Variable_Process', 1, { filtersTest: 604 }))
         .processInstanceKey,
     ),
   };
 
-    await deploy(['./resources/Versioned Process.bpmn']);
-    await deploy(['./resources/Versioned Process_2.bpmn']);
+  await deploy(['./resources/Versioned Process.bpmn']);
+  await deploy(['./resources/Versioned Process_2.bpmn']);
+
+  // await deploy(['./resources/FlakyWorker.bpmn']);
+  // const flakyWorkerInstance = await createSingleInstance('ProcessFlakyWorker', 1, {});
+  // flakyWorkerProcessInstanceKey = flakyWorkerInstance.processInstanceKey.toString();
 });
+// test.afterAll(async ({ }) => {
+// if (flakyWorker) {
+//   flakyWorker.stop();
+// }
+// })
+
 
 test.describe('Process Instances Filters', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+  test.beforeEach(async ({ page, loginPage, operateHomePage }) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
 
-  test.afterEach(async ({page}, testInfo) => {
+  test.afterEach(async ({ page }, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
@@ -194,12 +209,12 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
       await operateFiltersPanelPage.fillVariableValueFilter('604');
-    
+
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
 
       await sleep(1_000);
-        
+
       await waitForAssertion({
         assertion: async () => {
           const variableProcessInstanceKeys = new Set<string>();
@@ -260,17 +275,17 @@ test.describe('Process Instances Filters', () => {
 
   });
 
-  test('Migration Operation test', async ({ 
+  test('Migration Operation test', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
     operateProcessMigrationModePage,
     operateOperationPanelPage,
-   }, testInfo) => {
+  }, testInfo) => {
 
     const runId = `${testInfo.project.name}-${testInfo.workerIndex}-${Date.now()}`;
 
-    const [processInstanceKey ] = await createInstances('versionedProcess', 1, 1, { runId });
+    const [processInstanceKey] = await createInstances('versionedProcess', 1, 1, { runId });
     const keyStr = String(processInstanceKey.processInstanceKey);
 
     await expect
@@ -297,7 +312,7 @@ test.describe('Process Instances Filters', () => {
     await operateProcessesPage.clickMigrateSelectedProcessesButton();
     await operateProcessesPage.clickContinueMigrationDialogButton();
     await operateProcessMigrationModePage.migrateProcessToVersion('2');
-    
+
     await operateOperationPanelPage.collapseOperationIdField();
 
     await operateFiltersPanelPage.resetFiltersButton.click();
@@ -334,8 +349,8 @@ test.describe('Process Instances Filters', () => {
     const bottomN = Array.from({ length: take }, (_, i) => rows.nth(start + i));
 
     const last3or2 = await Promise.all(bottomN.map(async (row) => ({
-    id: await OperateOperationPanelPage.getOperationID(row).innerText(),
-    type: await OperateOperationPanelPage.getOperationType(row).innerText(),
+      id: await OperateOperationPanelPage.getOperationID(row).innerText(),
+      type: await OperateOperationPanelPage.getOperationType(row).innerText(),
     })));
 
     await operateOperationPanelPage.collapseOperationIdField();
@@ -345,18 +360,43 @@ test.describe('Process Instances Filters', () => {
         for (const operation of last3or2) {
           await operateFiltersPanelPage.filterByOperationId(operation.id);
           const row = OperateProcessesPage.getRowByProcessInstanceKey(page, keyStr);
-        if (await row.count()) {
-          const versionText = (await OperateProcessesPage.getProcessVersion(row).innerText()).trim();
-          if (versionText === String(targetVersion)) {
-            return operation.id;
+          if (await row.count()) {
+            const versionText = (await OperateProcessesPage.getProcessVersion(row).innerText()).trim();
+            if (versionText === String(targetVersion)) {
+              return operation.id;
+            }
           }
         }
-      }
-    return '';
-    }, { timeout: 10_000, intervals: [1_000] })
-    .not.toBe('');
+        return '';
+      }, { timeout: 10_000, intervals: [1_000] })
+      .not.toBe('');
   })
-  
+
+  // test('retries left filter test', async ({
+  //   page,
+  //   request,
+  //   operateProcessesPage,
+  //   operateFiltersPanelPage,
+  // }) => {
+  //   const flakyWorkerProcessInstanceKeyStr = flakyWorkerProcessInstanceKey.toString();
+  //   console.log('Flaky Worker PIK:', flakyWorkerProcessInstanceKeyStr);
+  //   await operateFiltersPanelPage.selectProcess('FailedWorker');
+  //   expect(operateProcessesPage.tableHasInstanceKey(flakyWorkerProcessInstanceKeyStr)).toBeTruthy();
+
+
+  //   const jobKey = await activateJobToObtainAValidJobKey(request, 'flaky-worker');
+  //   console.log('Obtained Job Key:', jobKey);
+  //   const jKeyStr = jobKey.toString();
+  //   await failJob(request, jKeyStr, 2, 'Intentional failure for testing purposes');
+  //   // const { worker, jobKey: workerJobKey } = createFailingWorker('flaky-worker');
+
+  //   // await sleep(20_000);
+  //   // failJob(request, jobKey as string, 3, 'Intentional failure for testing purposes');
+  //   // flakyWorker = worker;
+  //   // worker.stop();
+  // })
+
+
 
   test('Interaction between diagram and filters', async ({
     operateProcessesPage,
@@ -390,7 +430,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 60000});
+          ).toBeVisible({ timeout: 60000 });
         },
         onFailure: async () => {
           await page.reload();
@@ -476,11 +516,11 @@ test.describe('Process Instances Filters', () => {
             exact: true,
           },
         ),
-      ).toBeVisible({timeout: 60000});
+      ).toBeVisible({ timeout: 60000 });
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           callActivityProcessInstanceKey.toString(),
-          {exact: true},
+          { exact: true },
         ),
       ).toBeHidden();
     });
@@ -507,7 +547,7 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Check that process instances table is filtered correctly', async () => {
-      await expect(page.getByText('2 results')).toBeVisible({timeout: 60000});
+      await expect(page.getByText('2 results')).toBeVisible({ timeout: 60000 });
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           orderProcessInstanceKey.toString(),
@@ -519,7 +559,7 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           callActivityProcessInstanceKey.toString(),
-          {exact: true},
+          { exact: true },
         ),
       ).toBeVisible();
     });

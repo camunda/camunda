@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import { Camunda8 } from '@camunda8/sdk';
+import { JSONDoc } from '@camunda8/sdk/dist/zeebe/types.js';
+import { sleep } from './sleep';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -70,24 +71,63 @@ const createSingleInstance = async (
   return zeebe.createProcessInstance({
     processDefinitionId,
     processDefinitionVersion,
-    variables: {...(variables ?? {})},
+    variables: { ...(variables ?? {}) },
   });
 };
 
 const cancelProcessInstance = async (processInstanceKey: string) => {
-  return zeebe.cancelProcessInstance({processInstanceKey});
+  return zeebe.cancelProcessInstance({ processInstanceKey });
 };
 
 async function searchByProcessInstanceKey(processInstanceKey: string) {
   return zeebe.searchProcessInstances({ filter: { processInstanceKey } });
 }
-async function checkUpdateOnVersion(targetVersion:string, processInstanceKey: string) {
-    const res = await zeebe.searchProcessInstances({ filter: { processInstanceKey } });
-    const item = res?.items?.[0];
-    console.log(`Target Version ${targetVersion}, Current Version ${item?.processDefinitionVersion}`);
-    console.log(!!item, item?.processDefinitionVersion == targetVersion);
-    return !!item && item.processDefinitionVersion == targetVersion;
+async function checkUpdateOnVersion(targetVersion: string, processInstanceKey: string) {
+  const res = await zeebe.searchProcessInstances({ filter: { processInstanceKey } });
+  const item = res?.items?.[0];
+  console.log(`Target Version ${targetVersion}, Current Version ${item?.processDefinitionVersion}`);
+  console.log(!!item, item?.processDefinitionVersion == targetVersion);
+  return !!item && item.processDefinitionVersion == targetVersion;
 }
+
+// function createFailingWorker(type: string) {
+//   const localState: Record<string, unknown> = {};
+//   const worker = zeebe.createJobWorker({
+//     jobHandler: async (job, log) => {
+//       log.info(`Processing job with key ${job.jobKey}`);
+//       // return job.fail({
+//       //   errorMessage: `Intentional failure for testing purposes on job key ${job.jobKey}`,
+//       //   retries: 4,
+//       //   retryBackOff: 1000,
+//       // })
+//       // throw new Error(`Intentional failure for testing purposes on job key ${job.jobKey}`);
+
+//       // return job.error( {
+//       //   variables: {},
+//       //   errorCode: 'FLAKY_WORKER_ERROR',
+//       //   errorMessage: `Intentional failure for testing purposes on job key ${job.jobKey}`,
+//       // });
+
+
+//       // return await zeebe.failJob({
+//       //   jobKey: job.jobKey as string,
+//       //   errorMessage: `Intentional failure for testing purposes on job key ${job.jobKey}`,
+//       //   retries: 4,
+//       //   retryBackOff: 1000,
+//       // })
+//       localState['lastProcessedJobKey'] = job.jobKey;
+//       sleep(5000);
+
+//       return job.complete();
+//     },
+//     type,
+//     worker: type + '-worker',
+//     timeout: 10000,
+//     maxJobsToActivate: 1,
+//   })
+//   return { worker, jobKey: localState['lastProcessedJobKey'] }
+// }
+
 
 export {
   deploy,
@@ -97,4 +137,5 @@ export {
   cancelProcessInstance,
   searchByProcessInstanceKey,
   checkUpdateOnVersion,
+  // createFailingWorker,
 };
