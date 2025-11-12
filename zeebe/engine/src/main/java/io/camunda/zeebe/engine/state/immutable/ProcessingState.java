@@ -94,4 +94,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   AsyncRequestState getAsyncRequestState();
 
   MultiInstanceState getMultiInstanceState();
+
+  ConditionSubscriptionState getConditionSubscriptionState();
 }

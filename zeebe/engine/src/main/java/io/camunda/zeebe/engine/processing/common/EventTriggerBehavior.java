@@ -48,7 +48,8 @@ public class EventTriggerBehavior {
       final CatchEventBehavior catchEventBehavior,
       final Writers writers,
       final ProcessingState processingState,
-      final BpmnStateBehavior stateBehavior) {
+      final BpmnStateBehavior stateBehavior,
+      final ExpressionProcessor expressionProcessor) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     commandWriter = writers.command();
@@ -58,7 +59,15 @@ public class EventTriggerBehavior {
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
 
     variableBehavior =
-        new VariableBehavior(processingState.getVariableState(), writers.state(), keyGenerator);
+        new VariableBehavior(
+            processingState.getVariableState(),
+            writers.state(),
+            writers.command(),
+            keyGenerator,
+            expressionProcessor,
+            processingState.getElementInstanceState(),
+            processingState.getConditionSubscriptionState(),
+            processingState.getProcessState());
     this.stateBehavior = stateBehavior;
   }
 
