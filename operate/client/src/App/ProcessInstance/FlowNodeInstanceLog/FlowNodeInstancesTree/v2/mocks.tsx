@@ -13,7 +13,6 @@ import {
 } from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {
   createEventSubProcessFlowNodeInstances,
   createInstance,
@@ -24,6 +23,9 @@ import {TreeView} from '@carbon/react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
@@ -36,6 +38,18 @@ const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
   }),
 );
 
+const mockMultiInstanceProcessInstance: ProcessInstance = {
+  processInstanceKey: '2251799813686118',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2251799813686038',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'multiInstanceProcess',
+  tenantId: '<default>',
+  processDefinitionName: 'Multi-Instance Process',
+  hasIncident: true,
+};
+
 const eventSubprocessProcessInstance: ProcessInstanceEntity = Object.freeze(
   createInstance({
     id: '2251799813686118',
@@ -45,6 +59,18 @@ const eventSubprocessProcessInstance: ProcessInstanceEntity = Object.freeze(
     bpmnProcessId: 'eventSubprocessProcess',
   }),
 );
+
+const mockEventSubprocessInstance: ProcessInstance = {
+  processInstanceKey: '2251799813686118',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2251799813686038',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'eventSubprocessProcess',
+  tenantId: '<default>',
+  processDefinitionName: 'Event subprocess Process',
+  hasIncident: true,
+};
 
 const nestedSubProcessesInstance = Object.freeze(
   createInstance({
@@ -56,6 +82,18 @@ const nestedSubProcessesInstance = Object.freeze(
   }),
 );
 
+const mockNestedSubProcessesInstance: ProcessInstance = {
+  processInstanceKey: '227539842356787',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '39480256723678',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'NestedSubProcesses',
+  tenantId: '<default>',
+  processDefinitionName: 'Nested Sub Processes',
+  hasIncident: false,
+};
+
 const adHocSubProcessesInstance = Object.freeze(
   createInstance({
     id: '222734982389310',
@@ -65,6 +103,18 @@ const adHocSubProcessesInstance = Object.freeze(
     bpmnProcessId: 'AdHocProcess',
   }),
 );
+
+const mockAdHocSubProcessesInstance: ProcessInstance = {
+  processInstanceKey: '222734982389310',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '12517992348923884',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'AdHocProcess',
+  tenantId: '<default>',
+  processDefinitionName: 'Ad Hoc Process',
+  hasIncident: false,
+};
 
 const nestedSubProcessFlowNodeInstances: FlowNodeInstances = {
   [nestedSubProcessesInstance.id]: {
@@ -759,7 +809,6 @@ const adHocNodeFlowNodeInstances: {
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
-      processInstanceDetailsStore.reset();
       flowNodeInstanceStore.reset();
       modificationsStore.reset();
       instanceHistoryModificationStore.reset();
@@ -769,17 +818,28 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
   return (
     <ProcessDefinitionKeyContext.Provider value="123">
       <QueryClientProvider client={getMockQueryClient()}>
-        <TreeView label={'instance history'} hideLabel>
-          {children}
-        </TreeView>
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          <Routes>
+            <Route
+              path={Paths.processInstance()}
+              element={
+                <TreeView label={'instance history'} hideLabel>
+                  {children}
+                </TreeView>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
       </QueryClientProvider>
     </ProcessDefinitionKeyContext.Provider>
   );
 };
 
 export {
+  mockMultiInstanceProcessInstance,
   multiInstanceProcessInstance,
   nestedSubProcessesInstance,
+  mockNestedSubProcessesInstance,
   adHocSubProcessesInstance,
   processInstanceId,
   flowNodeInstances,
@@ -787,6 +847,7 @@ export {
   nestedSubProcessFlowNodeInstances,
   nestedSubProcessFlowNodeInstance,
   adHocNodeFlowNodeInstances,
+  mockAdHocSubProcessesInstance,
   mockFlowNodeInstance,
   multipleFlowNodeInstances,
   multipleSubprocessesWithOneRunningScopeMock,
@@ -794,5 +855,6 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockRunningNodeInstance,
   eventSubprocessProcessInstance,
+  mockEventSubprocessInstance,
   Wrapper,
 };

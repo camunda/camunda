@@ -12,7 +12,7 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
-import {FlowNodeInstancesTree} from '..';
+import {FlowNodeInstancesTree} from '../index';
 import {
   processInstanceId,
   multipleSubprocessesWithTwoRunningScopesMock,

@@ -7,7 +7,7 @@
  */
 
 import React, {useRef} from 'react';
-import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
+import {FlowNodeInstancesTree} from './FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {
@@ -24,11 +24,16 @@ import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {
+  useInstanceExecutionHistory,
+  useIsInstanceExecutionHistoryAvailable,
+} from 'modules/hooks/flowNodeInstance';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
+  const instanceExecutionHistory = useInstanceExecutionHistory();
+  const isInstanceExecutionHistoryAvailable =
+    useIsInstanceExecutionHistoryAvailable();
   const {
-    instanceExecutionHistory,
-    isInstanceExecutionHistoryAvailable,
     state: {status: flowNodeInstanceStatus},
   } = flowNodeInstanceStore;
 
@@ -56,7 +61,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
         <InstanceHistory ref={instanceHistoryRef}>
           <NodeContainer>
             <TreeView
-              label={`${instanceExecutionHistory!.flowNodeId} instance history`}
+              label={`${instanceExecutionHistory?.flowNodeId} instance history`}
               hideLabel
             >
               {
@@ -73,6 +78,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
       ) : (
         <>
           {(flowNodeInstanceStatus === 'error' || isError) && (
+            //TODO update the message with 403 related error during v2 endpoint integration #33542
             <ErrorMessage message="Instance History could not be fetched" />
           )}
           {(LOADING_STATES.includes(flowNodeInstanceStatus) || isPending) && (

@@ -7,7 +7,7 @@
  */
 
 import React, {useRef} from 'react';
-import {FlowNodeInstancesTree} from '../../FlowNodeInstancesTree/v2';
+import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree/v2';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {
