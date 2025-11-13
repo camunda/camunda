@@ -18,13 +18,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.AggregationResult;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchMetricsStore;
 import io.camunda.operate.store.elasticsearch.dao.Query;
 import io.camunda.operate.store.elasticsearch.dao.UsageMetricDAO;
-import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
 import java.time.OffsetDateTime;
-import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,8 +45,7 @@ public class MetricReaderTest {
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
     // When
-    when(dao.searchWithAggregation(any()))
-        .thenReturn(new AggregationResponse(false, List.of(), 99L));
+    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResult(false, 99L));
     final Long result = subject.retrieveProcessInstanceCount(oneHourBefore, now);
 
     // Then
@@ -61,8 +59,7 @@ public class MetricReaderTest {
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
     // When
-    when(dao.searchWithAggregation(any()))
-        .thenReturn(new AggregationResponse(false, List.of(), 99L));
+    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResult(false, 99L));
     subject.retrieveProcessInstanceCount(oneHourBefore, now);
 
     // Then
@@ -73,7 +70,7 @@ public class MetricReaderTest {
         Query.whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED)
             .or(whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_STARTED))
             .and(range(EVENT_TIME, oneHourBefore, now))
-            .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, VALUE, 1);
+            .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, VALUE, 40_000);
     final Query calledValue = entityCaptor.getValue();
     assertEquals(expected, calledValue);
   }
@@ -81,7 +78,7 @@ public class MetricReaderTest {
   @Test
   public void throwExceptionIfProcessResponseHasError() {
     // When
-    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResponse(true));
+    when(dao.searchWithAggregation(any())).thenReturn(AggregationResult.ERROR);
 
     // Then
     Assertions.assertThrows(
@@ -96,8 +93,7 @@ public class MetricReaderTest {
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
     // When
-    when(dao.searchWithAggregation(any()))
-        .thenReturn(new AggregationResponse(false, List.of(), 99L));
+    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResult(false, 99L));
     final Long result = subject.retrieveDecisionInstanceCount(oneHourBefore, now);
 
     // Then
@@ -111,8 +107,7 @@ public class MetricReaderTest {
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
     // When
-    when(dao.searchWithAggregation(any()))
-        .thenReturn(new AggregationResponse(false, List.of(), 99L));
+    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResult(false, 99L));
     subject.retrieveDecisionInstanceCount(oneHourBefore, now);
 
     // Then
@@ -122,7 +117,7 @@ public class MetricReaderTest {
     final Query expected =
         Query.whereEquals(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED)
             .and(range(EVENT_TIME, oneHourBefore, now))
-            .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, VALUE, 1);
+            .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, VALUE, 40_000);
     final Query calledValue = entityCaptor.getValue();
     assertEquals(expected, calledValue);
   }
@@ -130,7 +125,7 @@ public class MetricReaderTest {
   @Test
   public void throwExceptionIfDecisionResponseHasError() {
     // When
-    when(dao.searchWithAggregation(any())).thenReturn(new AggregationResponse(true));
+    when(dao.searchWithAggregation(any())).thenReturn(AggregationResult.ERROR);
 
     // Then
     Assertions.assertThrows(
