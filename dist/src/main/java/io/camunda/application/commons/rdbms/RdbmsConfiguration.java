@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
+import io.camunda.db.rdbms.read.service.ClusterVariableDbReader;
 import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
@@ -44,6 +45,7 @@ import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
@@ -93,6 +95,12 @@ public class RdbmsConfiguration {
   @Bean
   public VariableDbReader variableRdbmsReader(final VariableMapper variableMapper) {
     return new VariableDbReader(variableMapper);
+  }
+
+  @Bean
+  public ClusterVariableDbReader clusterVariableRdbmsReader(
+      final ClusterVariableMapper clusterVariableMapper) {
+    return new ClusterVariableDbReader(clusterVariableMapper);
   }
 
   @Bean
@@ -282,7 +290,8 @@ public class RdbmsConfiguration {
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
-      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper) {
+      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
+      final ClusterVariableMapper clusterVariableMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -302,13 +311,15 @@ public class RdbmsConfiguration {
         usageMetricTUMapper,
         batchOperationMapper,
         messageSubscriptionMapper,
-        correlatedMessageSubscriptionMapper);
+        correlatedMessageSubscriptionMapper,
+        clusterVariableMapper);
   }
 
   @Bean
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final VariableDbReader variableReader,
+      final ClusterVariableDbReader clusterVariableDbReader,
       final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionDbReader decisionDefinitionReader,
       final DecisionInstanceDbReader decisionInstanceReader,
@@ -348,6 +359,7 @@ public class RdbmsConfiguration {
         processDefinitionReader,
         processInstanceReader,
         variableReader,
+        clusterVariableDbReader,
         roleReader,
         roleMemberReader,
         tenantReader,
