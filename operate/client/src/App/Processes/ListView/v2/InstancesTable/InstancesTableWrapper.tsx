@@ -15,6 +15,8 @@ import type {
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {InstancesTable} from './index';
+import {getSortFromUrl} from 'modules/utils/filter/v2/mapSortFieldsToV2';
+import {useLocation} from 'react-router-dom';
 
 const ROW_HEIGHT = 34;
 const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -39,11 +41,15 @@ type ProcessInstancesHandle = {
 
 const InstancesTableWrapper: React.FC<InstancesTableWrapperProps> = observer(
   (props) => {
+    const location = useLocation();
+    const sort = getSortFromUrl(location.search);
+
     const result = useProcessInstancesPaginated({
       filters: props.filters,
       processDefinitionKeys: props.processDefinitionKeys,
       enablePeriodicRefetch: props.enablePeriodicRefetch,
       enabled: true,
+      sort,
     });
 
     const handle = mapQueryResultToProcessInstancesHandle(result);
@@ -95,26 +101,27 @@ function computeDisplayStateFromQueryResult(
   result: UseInfiniteQueryResult<InfiniteData<unknown>>,
   totalItems: number,
 ): React.ComponentProps<typeof InstancesTable>['state'] {
-  switch (true) {
-    case result.status === 'pending': {
-      return 'skeleton';
-    }
-    case result.isFetching &&
-      !result.isRefetching &&
-      !result.isFetchingPreviousPage &&
-      !result.isFetchingNextPage: {
-      return 'loading';
-    }
-    case result.status === 'error': {
-      return 'error';
-    }
-    case result.status === 'success' && totalItems === 0: {
-      return 'empty';
-    }
-    default: {
-      return 'content';
-    }
+  if (result.status === 'error') {
+    return 'error';
   }
+
+  if (result.status === 'pending' && !result.data) {
+    return 'skeleton';
+  }
+
+  if (
+    result.isFetching &&
+    !result.isFetchingPreviousPage &&
+    !result.isFetchingNextPage
+  ) {
+    return 'loading';
+  }
+
+  if (result.status === 'success' && totalItems === 0) {
+    return 'empty';
+  }
+
+  return 'content';
 }
 
 export {InstancesTableWrapper};

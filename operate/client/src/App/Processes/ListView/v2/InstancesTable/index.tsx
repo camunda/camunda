@@ -175,15 +175,17 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
             {
               header: 'Name',
               key: 'processName',
+              sortKey: 'processDefinitionName',
             },
             {
               header: 'Process Instance Key',
               key: 'processInstanceKey',
-              sortKey: 'id',
+              sortKey: 'processInstanceKey',
             },
             {
               header: 'Version',
               key: 'processVersion',
+              sortKey: 'processDefinitionVersion',
             },
             ...(hasVersionTags
               ? [
@@ -199,12 +201,14 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                   {
                     header: 'Tenant',
                     key: 'tenant',
+                    sortKey: 'tenantId',
                   },
                 ]
               : []),
             {
               header: 'Start Date',
               key: 'startDate',
+              sortKey: 'startDate',
               isDefault: true,
             },
             {
@@ -215,6 +219,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
             {
               header: 'Parent Process Instance Key',
               key: 'parentInstanceId',
+              sortKey: 'parentProcessInstanceKey',
             },
           ]}
           batchOperationId={batchOperationId}
