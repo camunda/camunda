@@ -116,13 +116,11 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
         callActivityProcessInstanceKey,
       );
-      await expect(
-        operateProcessesPage.noMatchingInstancesMessage,
-      ).toBeVisible();
+      await expect(page.getByText('1 result')).toBeVisible();
       await operateProcessesPage.clickProcessCompletedCheckbox();
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('1 result')).toBeVisible();
+          await expect(page.getByText('2 result')).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -131,7 +129,7 @@ test.describe('Process Instances Filters', () => {
       await expect(operateProcessesPage.parentInstanceIdCell).toHaveText(
         callActivityProcessInstanceKey,
       );
-      expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
+      expect(await operateProcessesPage.processInstancesTable.count()).toBe(2);
     });
 
     await test.step('Reset filter', async () => {
