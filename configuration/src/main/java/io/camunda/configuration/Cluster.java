@@ -11,14 +11,12 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 
-import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.core.ResolvableType;
@@ -27,7 +25,8 @@ public class Cluster implements Cloneable {
 
   // Property names for initial contact points configuration
   public static final String LEGACY_INITIAL_CONTACT_POINTS_PROPERTY;
-  private static final String PREFIX = "camunda.cluster";
+  public static final String LEGACY_NODE_ID_PROPERTY;
+  static final String PREFIX = "camunda.cluster";
   public static final String UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY =
       PREFIX + ".initial-contact-points";
 
@@ -53,6 +52,7 @@ public class Cluster implements Cloneable {
   static {
     LEGACY_INITIAL_CONTACT_POINTS_PROPERTY =
         Objects.requireNonNull(LEGACY_BROKER_PROPERTIES.get("initialContactPoints"));
+    LEGACY_NODE_ID_PROPERTY = Objects.requireNonNull(LEGACY_BROKER_PROPERTIES.get("nodeId"));
   }
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
@@ -76,18 +76,8 @@ public class Cluster implements Cloneable {
    */
   private List<String> initialContactPoints = Collections.emptyList();
 
-  /**
-   * Specifies the unique id of this broker node in a cluster. The id should be between 0 and number
-   * of nodes in the cluster (exclusive).
-   */
-  private Integer nodeId;
-
-  /**
-   * Configuration to use when deploying camunda in a stateless setup, i.e. when each node cannot be
-   * assigned a static {@link #nodeId}.
-   */
-  @NestedConfigurationProperty
-  private NodeIdProvider dynamicNodeId = new NodeIdProvider();
+  /** Configuration for node ID management, supporting both static and dynamic node IDs. */
+  @NestedConfigurationProperty private NodeIdProvider nodeIdProvider = new NodeIdProvider();
 
   /** The number of partitions in the cluster. */
   private int partitionCount = 1;
@@ -131,12 +121,12 @@ public class Cluster implements Cloneable {
   @NestedConfigurationProperty
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
 
-  public NodeIdProvider getDynamicNodeId() {
-    return dynamicNodeId;
+  public NodeIdProvider getNodeIdProvider() {
+    return nodeIdProvider;
   }
 
-  public void setDynamicNodeId(final NodeIdProvider dynamicNodeId) {
-    this.dynamicNodeId = dynamicNodeId;
+  public void setNodeIdProvider(final NodeIdProvider nodeIdProvider) {
+    this.nodeIdProvider = nodeIdProvider;
   }
 
   public Metadata getMetadata() {
@@ -169,29 +159,12 @@ public class Cluster implements Cloneable {
   }
 
   public Integer getNodeId() {
-    if (dynamicNodeId.getType() != Type.NONE && nodeId != null) {
-      throw new UnifiedConfigurationException(
-          String.format(
-              "Both %s.dynamic-node-id and %s.node-id are set at the same time. Only one of them can be set as they are mutually exclusive",
-              PREFIX, PREFIX));
-    }
-    if (dynamicNodeId.getType() == Type.NONE) {
-      final var id =
-          UnifiedConfigurationHelper.validateLegacyConfiguration(
-              PREFIX + ".node-id",
-              nodeId,
-              Integer.class,
-              UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-              Set.of(legacyPropertiesMap.get("nodeId")));
-
-      return Optional.ofNullable(id).orElse(0);
-    } else {
-      return null;
-    }
+    return nodeIdProvider.staticConfig().getNodeId();
   }
 
   public void setNodeId(final int nodeId) {
-    this.nodeId = nodeId;
+    final var staticConfig = nodeIdProvider.staticConfig();
+    staticConfig.setNodeId(nodeId);
   }
 
   public int getPartitionCount() {
@@ -303,10 +276,8 @@ public class Cluster implements Cloneable {
         + network
         + ", initialContactPoints="
         + initialContactPoints
-        + ", nodeId="
-        + nodeId
-        + ", nodeIdProviderConfig="
-        + dynamicNodeId
+        + ", nodeIdProvider="
+        + nodeIdProvider
         + ", partitionCount="
         + partitionCount
         + ", replicationFactor="
