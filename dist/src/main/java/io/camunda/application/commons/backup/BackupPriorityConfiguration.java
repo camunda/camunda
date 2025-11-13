@@ -20,6 +20,7 @@ import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
@@ -136,7 +137,9 @@ public class BackupPriorityConfiguration {
             new UserIndex(indexPrefix, isElasticsearch),
             // USAGE METRICS
             new UsageMetricTemplate(indexPrefix, isElasticsearch),
-            new UsageMetricTUTemplate(indexPrefix, isElasticsearch));
+            new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
+            // CAMUNDA
+            new ClusterVariableIndex(indexPrefix, isElasticsearch));
 
     LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);
