@@ -57,7 +57,7 @@ public class SaaSIdentityMigrationWithRBAIT extends AbstractSaaSIdentityMigratio
                       .map(Authorization::getOwnerId)
                       .filter(ROLE_IDS::contains)
                       .toList();
-              assertThat(migratedAuthorizations.size()).isEqualTo(7);
+              assertThat(migratedAuthorizations.size()).isEqualTo(10);
             });
 
     // then
@@ -87,6 +87,12 @@ public class SaaSIdentityMigrationWithRBAIT extends AbstractSaaSIdentityMigratio
                 ResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
             tuple(
+                DEVELOPER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.CREATE, PermissionType.READ)),
+            tuple(
                 OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
@@ -98,6 +104,12 @@ public class SaaSIdentityMigrationWithRBAIT extends AbstractSaaSIdentityMigratio
                 "tasklist",
                 ResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
+            tuple(
+                TASK_USER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.CREATE, PermissionType.READ)),
             tuple(
                 TASK_USER_ROLE_ID,
                 OwnerType.ROLE,
@@ -115,6 +127,12 @@ public class SaaSIdentityMigrationWithRBAIT extends AbstractSaaSIdentityMigratio
                 OwnerType.ROLE,
                 "tasklist",
                 ResourceType.COMPONENT,
-                Set.of(PermissionType.ACCESS)));
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                VISITOR_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.READ)));
   }
 }

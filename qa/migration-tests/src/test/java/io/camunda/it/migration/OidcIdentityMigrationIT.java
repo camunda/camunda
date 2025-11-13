@@ -302,6 +302,10 @@ public class OidcIdentityMigrationIT {
             tuple("zeebe", ResourceType.SYSTEM, Set.of(PermissionType.READ, PermissionType.UPDATE)),
             tuple(
                 "tasklist",
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)),
+            tuple(
+                "tasklist",
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.READ_USER_TASK,

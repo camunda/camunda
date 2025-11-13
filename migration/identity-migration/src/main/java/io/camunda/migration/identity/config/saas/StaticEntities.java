@@ -73,6 +73,12 @@ public class StaticEntities {
               DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
+              AuthorizationResourceType.DOCUMENT,
+              Set.of(PermissionType.CREATE, PermissionType.READ)),
+          new CreateAuthorizationRequest(
+              DEVELOPER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
               AuthorizationResourceType.MESSAGE,
               Set.of(PermissionType.READ)),
           new CreateAuthorizationRequest(
@@ -149,6 +155,12 @@ public class StaticEntities {
               TASK_USER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
+              AuthorizationResourceType.DOCUMENT,
+              Set.of(PermissionType.CREATE, PermissionType.READ)),
+          new CreateAuthorizationRequest(
+              TASK_USER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
               AuthorizationResourceType.PROCESS_DEFINITION,
               Set.of(
                   PermissionType.READ_PROCESS_DEFINITION,
@@ -186,6 +198,12 @@ public class StaticEntities {
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+              Set.of(PermissionType.READ)),
+          new CreateAuthorizationRequest(
+              VISITOR_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.DOCUMENT,
               Set.of(PermissionType.READ)),
           new CreateAuthorizationRequest(
               VISITOR_ROLE_ID,
@@ -306,6 +324,12 @@ public class StaticEntities {
             "*",
             AuthorizationResourceType.RESOURCE,
             Set.of(PermissionType.READ)),
+        new CreateAuthorizationRequest(
+            ownerId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.DOCUMENT,
+            AuthorizationResourceType.DOCUMENT.getSupportedPermissionTypes()),
         new CreateAuthorizationRequest(
             ownerId,
             AuthorizationOwnerType.CLIENT,
