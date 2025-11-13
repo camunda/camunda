@@ -20,7 +20,10 @@ import {
   deploy,
 } from '../../../../utils/zeebeClient';
 import {validateResponseShape} from '../../../../json-body-assertions';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  batchOperationAssertionOptions,
+} from '../../../../utils/constants';
 import {
   failJob,
   searchJobKeysForProcessInstance,
@@ -236,6 +239,7 @@ test.describe
         request,
         localState.processInstanceKey2,
         0,
+        batchOperationAssertionOptions,
       );
     });
 
@@ -320,12 +324,14 @@ test.describe
         request,
         localState.processInstanceKey1,
         0,
+        batchOperationAssertionOptions,
       );
 
       await verifyIncidentsForProcessInstance(
         request,
         localState.processInstanceKey2,
         0,
+        batchOperationAssertionOptions,
       );
     });
 

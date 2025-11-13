@@ -89,6 +89,7 @@ export async function verifyIncidentsForProcessInstance(
   request: APIRequestContext,
   processInstanceKey: string,
   expectedIncidentCount: number,
+  assertionOptions = defaultAssertionOptions,
 ) {
   return await expect(async () => {
     const res = await request.post(
@@ -104,5 +105,5 @@ export async function verifyIncidentsForProcessInstance(
       json.page.totalItems,
       `Unexpected number of incident items. Found: ${JSON.stringify(json)}`,
     ).toBe(expectedIncidentCount);
-  }).toPass(defaultAssertionOptions);
+  }).toPass(assertionOptions);
 }
