@@ -202,7 +202,7 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
           operation,
           sourceIndexName);
       bulkFailures.stream().forEach(f -> LOGGER.error(f.toString()));
-      return Either.left(new ArchiverException(String.format("Operation % failed", operation)));
+      return Either.left(new ArchiverException(String.format("Operation %s failed", operation)));
     }
 
     LOGGER.debug(
@@ -233,7 +233,7 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
           operation,
           sourceIndexName);
       bulkFailures.stream().forEach(f -> LOGGER.error(f.toString()));
-      return Either.left(new ArchiverException(String.format("Operation % failed", operation)));
+      return Either.left(new ArchiverException(String.format("Operation %s failed", operation)));
     }
 
     LOGGER.debug(

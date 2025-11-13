@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -31,59 +29,65 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(SCOPE_PROTOTYPE)
 @Conditional(ElasticSearchCondition.class)
-public class ImportJobElasticSearch extends ImportJobAbstract {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ImportJobElasticSearch.class);
+public class ImportJobElasticsearch extends ImportJobAbstract {
 
   @Autowired
   @Qualifier("tasklistZeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  public ImportJobElasticSearch(ImportBatch importBatch, ImportPositionEntity previousPosition) {
+  public ImportJobElasticsearch(
+      final ImportBatch importBatch, final ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
     this.previousPosition = previousPosition;
-    this.creationTime = OffsetDateTime.now();
+    creationTime = OffsetDateTime.now();
   }
 
-  public List<ImportBatch> createSubBatchesPerIndexName() {
-    final List<ImportBatch> subBatches = new ArrayList<>();
-    if (importBatch.getHits().size() <= 1) {
-      subBatches.add(importBatch);
-      return subBatches;
-    } else {
-      String previousIndexName = null;
-      List<SearchHit> subBatchHits = new ArrayList<>();
-      final List<SearchHit> importResult = importBatch.getHits();
-      for (SearchHit hit : importResult) {
-        final String indexName = hit.getIndex();
-        if (previousIndexName != null && !indexName.equals(previousIndexName)) {
-          // start new sub-batch
-          subBatches.add(
-              new ImportBatchElasticSearch(
-                  importBatch.getPartitionId(),
-                  importBatch.getImportValueType(),
-                  subBatchHits,
-                  previousIndexName));
-          subBatchHits = new ArrayList<>();
-        }
-        subBatchHits.add(hit);
-        previousIndexName = indexName;
-      }
-      subBatches.add(
-          new ImportBatchElasticSearch(
-              importBatch.getPartitionId(),
-              importBatch.getImportValueType(),
-              subBatchHits,
-              previousIndexName));
-      return subBatches;
-    }
-  }
-
+  @Override
   public void refreshZeebeIndices() {
     final String indexPattern =
         importBatch
             .getImportValueType()
             .getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
     ElasticsearchUtil.refreshIndicesFor(zeebeEsClient, indexPattern);
+  }
+
+  @Override
+  public List<ImportBatch> createSizeLimitedSubBatchesPerIndexName() {
+    final List<SearchHit> hits = importBatch.getHits();
+    final long maxBatchSizeBytes = tasklistProperties.getImporter().getMaxBatchSizeBytes();
+    final BatchFlusher<ImportBatchElasticSearch, SearchHit> flusher = new BatchFlusher<>();
+    ImportBatchElasticSearch currentBatch = null;
+
+    List<SearchHit> currentHits = new ArrayList<>();
+    int currentBatchSize = 0;
+    String currentIndexName = null;
+
+    for (final SearchHit hit : hits) {
+      final String hitIndexName = hit.getIndex();
+      final int hitSize = EntitySizeEstimator.estimateSize(hit);
+      final boolean shouldFlush =
+          currentBatch == null
+              || !hitIndexName.equals(currentIndexName)
+              || currentBatchSize + hitSize > maxBatchSizeBytes;
+      if (shouldFlush) {
+        // Flush the current batch if needed
+        flusher.flush(currentBatch, currentHits, currentIndexName);
+        // Start a new batch
+        currentBatch =
+            new ImportBatchElasticSearch(
+                importBatch.getPartitionId(),
+                importBatch.getImportValueType(),
+                new ArrayList<>(),
+                hitIndexName);
+        currentHits = new ArrayList<>();
+        currentBatchSize = 0;
+        currentIndexName = hitIndexName;
+      }
+      currentHits.add(hit);
+      currentBatchSize += hitSize;
+    }
+    // Flush the last batch if it has hits
+    flusher.flush(currentBatch, currentHits, currentIndexName);
+    return flusher.getSubBatches();
   }
 }
