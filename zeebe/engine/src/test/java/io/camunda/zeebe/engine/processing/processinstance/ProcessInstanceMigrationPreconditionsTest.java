@@ -165,7 +165,7 @@ public class ProcessInstanceMigrationPreconditionsTest {
     final DeployedProcess deployedProcess =
         processState.getProcessByKeyAndTenant(processDefinitionKey, "<default>");
 
-    // when/then - should return true for the multi-instance body wrapping non ad-hoc subprocess
+    // when/then - should return false for the multi-instance body wrapping non ad-hoc subprocess
     assertThat(isAdHocRelatedProcess(deployedProcess, "task")).isFalse();
   }
 }
