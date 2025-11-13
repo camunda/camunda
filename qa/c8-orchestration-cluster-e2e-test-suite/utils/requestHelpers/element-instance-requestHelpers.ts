@@ -6,6 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {defaultAssertionOptions} from '../constants';
+import {APIRequestContext} from 'playwright-core';
+import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
+import {expect} from '@playwright/test';
+import {SearchElementInstancesResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+
 export function createFilter(
   filterKey: string,
   filterValue: string,
@@ -19,4 +25,63 @@ export function createFilter(
       return {key: filterKey, value: state.processInstanceKey};
     else throw new Error('Unsupported filter key for empty value');
   } else return {key: filterKey, value: filterValue};
+}
+
+export async function searchActiveElementInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  return (
+    await searchElementInstanceByFilter(request, {
+      processInstanceKey: processInstanceKey,
+      state: 'ACTIVE',
+    })
+  ).body.items[0].elementInstanceKey;
+}
+
+export async function searchElementInstanceByElementIdAndState(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  elementId: string,
+  state: string,
+) {
+  return (
+    await searchElementInstanceByFilter(request, {
+      processInstanceKey: processInstanceKey,
+      elementId: elementId,
+      state: state,
+    })
+  ).body.items[0].elementInstanceKey;
+}
+
+export async function searchElementInstanceByProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  return searchElementInstanceByFilter(request, {
+    processInstanceKey: processInstanceKey,
+  });
+}
+
+async function searchElementInstanceByFilter(
+  request: APIRequestContext,
+  filter: Record<string, string>,
+) {
+  const result: Record<string, SearchElementInstancesResponse> = {};
+  await expect(async () => {
+    const res = await request.post(buildUrl('/element-instances/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: filter,
+      },
+    });
+    await assertStatusCode(res, 200);
+    const body = await res.json();
+    expect(body.items.length, `Received JSON: ${JSON.stringify(body)}`).toBe(1);
+    Object.keys(filter).forEach((filterKey) => {
+      expect(body.items[0][filterKey]).toBe(filter[filterKey]);
+    });
+    result.body = body;
+  }).toPass(defaultAssertionOptions);
+  return result;
 }
