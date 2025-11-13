@@ -325,7 +325,6 @@ public final class ZeebeRocksDbFactory<
 
   private TableFormatConfig createTableFormatConfig(final List<AutoCloseable> closeables) {
     final var filter = new BloomFilter(10, false);
-    closeables.add(lruCache);
     closeables.add(filter);
 
     return new BlockBasedTableConfig()
