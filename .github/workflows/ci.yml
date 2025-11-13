@@ -1287,8 +1287,8 @@ jobs:
       - general-unit-tests
       - integration-tests
       - opensearch-integration-tests
-      - rdbms-h2-integration-tests
       - rdbms-aurora-integration-tests
+      - rdbms-h2-integration-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
     runs-on: ubuntu-latest
