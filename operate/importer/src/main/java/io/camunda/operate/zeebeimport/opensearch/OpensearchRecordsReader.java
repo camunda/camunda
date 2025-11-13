@@ -547,7 +547,7 @@ public class OpensearchRecordsReader implements RecordsReader {
   }
 
   private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
-    if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+    if (isPartitionCompletedImporting(partitionId)) {
       recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
     }
 
@@ -563,6 +563,22 @@ public class OpensearchRecordsReader implements RecordsReader {
             e);
       }
     }
+  }
+
+  private boolean isPartitionCompletedImporting(final int partitionId) {
+    try {
+      final var tenantImportPosition =
+          importPositionHolder.getLatestLoadedPosition("tenant", partitionId);
+
+      return tenantImportPosition.getIndexName() != null
+          && tenantImportPosition.getIndexName().contains("8.8");
+    } catch (final IOException e) {
+      LOGGER.error(
+          "Failed to check import position of tenant alias in partition [{}], this may block importers from being marked as completed",
+          partitionId,
+          e);
+    }
+    return false;
   }
 
   private void executeNext() {
