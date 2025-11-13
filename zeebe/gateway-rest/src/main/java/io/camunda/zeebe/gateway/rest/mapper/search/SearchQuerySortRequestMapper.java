@@ -265,6 +265,7 @@ public class SearchQuerySortRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
+        case BATCH_OPERATION_KEY -> builder.batchOperationKey();
         case STATE -> builder.state();
         case OPERATION_TYPE -> builder.operationType();
         case START_DATE -> builder.startDate();
