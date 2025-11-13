@@ -21,8 +21,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -51,7 +52,7 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationCreateProcessor
-    implements CommandProcessor<ProcessInstanceCreationRecord> {
+    implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
@@ -80,6 +81,7 @@ public final class ProcessInstanceCreationCreateProcessor
 
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
+  private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
 
@@ -99,6 +101,7 @@ public final class ProcessInstanceCreationCreateProcessor
     variableBehavior = bpmnBehaviors.variableBehavior();
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
+    stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.metrics = metrics;
@@ -107,20 +110,18 @@ public final class ProcessInstanceCreationCreateProcessor
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
-
+  public void processRecord(final TypedRecord<ProcessInstanceCreationRecord> command) {
     final ProcessInstanceCreationRecord record = command.getValue();
 
     getProcess(record)
         .flatMap(process -> isAuthorized(command, process))
         .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(controller, record, process),
-            rejection -> controller.reject(rejection.type(), rejection.reason()));
-
-    return true;
+            process -> createProcessInstance(command, record, process),
+            rejection -> {
+              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+            });
   }
 
   @Override
@@ -166,7 +167,7 @@ public final class ProcessInstanceCreationCreateProcessor
   }
 
   private void createProcessInstance(
-      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final TypedRecord<ProcessInstanceCreationRecord> command,
       final ProcessInstanceCreationRecord record,
       final DeployedProcess process) {
     final long processInstanceKey = keyGenerator.nextKey();
@@ -193,7 +194,10 @@ public final class ProcessInstanceCreationCreateProcessor
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
         .setProcessDefinitionKey(process.getKey());
-    controller.accept(ProcessInstanceCreationIntent.CREATED, record);
+    stateWriter.appendFollowUpEvent(
+        processInstanceKey, ProcessInstanceCreationIntent.CREATED, record);
+    responseWriter.writeEventOnCommand(
+        processInstanceKey, ProcessInstanceCreationIntent.CREATED, record, command);
 
     metrics.processInstanceCreated(record);
   }
