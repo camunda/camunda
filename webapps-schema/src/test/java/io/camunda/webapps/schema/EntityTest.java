@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
@@ -59,6 +60,9 @@ public class EntityTest {
     final Field[] fields = entityClass.getDeclaredFields();
 
     for (final Field field : fields) {
+      if (hasJsonIgnoreAnnotation(field)) {
+        continue;
+      }
       final var sinceVersion = getSinceVersionAnnotation(field);
       if (sinceVersion == null) {
         throw new RuntimeException(
@@ -68,7 +72,7 @@ public class EntityTest {
                 + field.getName()
                 + "]");
       }
-      if (!sinceVersion.nullable()) {
+      if (sinceVersion.requireDefault()) {
         Assertions.assertThat(hasValidDefault(field))
             .withFailMessage(
                 "Field '%s' in class '%s' introduced in version '%s' must have a default value",
@@ -78,6 +82,10 @@ public class EntityTest {
             .isTrue();
       }
     }
+  }
+
+  private boolean hasJsonIgnoreAnnotation(final Field field) {
+    return field.getAnnotation(JsonIgnore.class) != null;
   }
 
   private SinceVersion getSinceVersionAnnotation(final Field field) {
