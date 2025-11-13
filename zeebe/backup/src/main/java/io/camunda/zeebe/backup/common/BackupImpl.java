@@ -14,4 +14,9 @@ import io.camunda.zeebe.backup.api.NamedFileSet;
 
 public record BackupImpl(
     BackupIdentifier id, BackupDescriptor descriptor, NamedFileSet snapshot, NamedFileSet segments)
-    implements Backup {}
+    implements Backup {
+
+  public BackupImpl {
+    descriptor = BackupDescriptorImpl.from(descriptor, id.checkpointId());
+  }
+}

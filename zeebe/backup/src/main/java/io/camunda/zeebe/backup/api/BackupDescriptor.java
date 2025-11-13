@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.Optional;
@@ -20,6 +21,12 @@ public interface BackupDescriptor {
    * @return id of the snapshot included in the backup
    */
   Optional<String> snapshotId();
+
+  /**
+   * @return the checkpoint id related to that backup
+   */
+  @JsonIgnore
+  long checkpointId();
 
   /**
    * @return the checkpoint position of the checkpoint included in the backup

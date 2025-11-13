@@ -33,6 +33,7 @@ final class ManifestStateTransitionTest {
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
                     Optional.empty(),
+                    43,
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",
@@ -57,6 +58,7 @@ final class ManifestStateTransitionTest {
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
                     Optional.empty(),
+                    43,
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",
@@ -75,6 +77,7 @@ final class ManifestStateTransitionTest {
     assertThat(completed.createdAt()).isBefore(completed.modifiedAt());
     assertThat(completed.createdAt()).isEqualTo(created.modifiedAt());
     assertThat(completed.modifiedAt()).isNotEqualTo(created.modifiedAt());
+    assertThat(completed.descriptor().checkpointId()).isEqualTo(created.id().checkpointId());
   }
 
   @Test
@@ -86,6 +89,7 @@ final class ManifestStateTransitionTest {
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
                     Optional.empty(),
+                    43,
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",
@@ -104,6 +108,7 @@ final class ManifestStateTransitionTest {
     assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
     assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
     assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
+    assertThat(failed.descriptor().checkpointId()).isEqualTo(created.id().checkpointId());
     assertThat(failed.failureReason()).isEqualTo("expected failure reason");
   }
 
@@ -116,6 +121,7 @@ final class ManifestStateTransitionTest {
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
                     Optional.empty(),
+                    43,
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",
@@ -136,6 +142,7 @@ final class ManifestStateTransitionTest {
     assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
     assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
     assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
+    assertThat(failed.descriptor().checkpointId()).isEqualTo(created.id().checkpointId());
     assertThat(failed.failureReason()).isEqualTo("expected failure reason");
   }
 }

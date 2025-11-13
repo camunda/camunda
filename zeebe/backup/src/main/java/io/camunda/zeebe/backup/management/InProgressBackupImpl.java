@@ -8,12 +8,12 @@
 package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -25,7 +25,6 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -47,8 +46,7 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   private final PersistedSnapshotStore snapshotStore;
   private final BackupIdentifier backupId;
-  private final long checkpointPosition;
-  private final int numberOfPartitions;
+  private final BackupDescriptor backupDescriptor;
   private final ConcurrencyControl concurrencyControl;
 
   private final Path segmentsDirectory;
@@ -66,15 +64,13 @@ final class InProgressBackupImpl implements InProgressBackup {
   InProgressBackupImpl(
       final PersistedSnapshotStore snapshotStore,
       final BackupIdentifier backupId,
-      final long checkpointPosition,
-      final int numberOfPartitions,
+      final BackupDescriptor backupDescriptor,
       final ConcurrencyControl concurrencyControl,
       final Path segmentsDirectory,
       final JournalInfoProvider journalInfoProvider) {
     this.snapshotStore = snapshotStore;
     this.backupId = backupId;
-    this.checkpointPosition = checkpointPosition;
-    this.numberOfPartitions = numberOfPartitions;
+    this.backupDescriptor = backupDescriptor;
     this.concurrencyControl = concurrencyControl;
     this.segmentsDirectory = segmentsDirectory;
     this.journalInfoProvider = journalInfoProvider;
@@ -86,8 +82,8 @@ final class InProgressBackupImpl implements InProgressBackup {
   }
 
   @Override
-  public long checkpointPosition() {
-    return checkpointPosition;
+  public BackupDescriptor backupDescriptor() {
+    return backupDescriptor;
   }
 
   @Override
@@ -223,11 +219,12 @@ final class InProgressBackupImpl implements InProgressBackup {
     final var backupDescriptor =
         new BackupDescriptorImpl(
             snapshotId,
-            checkpointPosition,
-            numberOfPartitions,
+            checkpointId(),
+            backupDescriptor().checkpointPosition(),
+            backupDescriptor().numberOfPartitions(),
             VersionUtil.getVersion(),
-            Instant.now(),
-            CheckpointType.MANUAL_BACKUP);
+            backupDescriptor().checkpointTimestamp(),
+            backupDescriptor().checkpointType());
     return new BackupImpl(backupId, backupDescriptor, snapshotFileSet, segmentsFileSet);
   }
 
@@ -243,14 +240,23 @@ final class InProgressBackupImpl implements InProgressBackup {
       final Set<PersistedSnapshot> snapshots) {
     final var validSnapshots =
         snapshots.stream()
-            .filter(s -> s.getMetadata().processedPosition() < checkpointPosition) // &&
-            .filter(s -> s.getMetadata().lastFollowupEventPosition() < checkpointPosition)
+            .filter(
+                s ->
+                    s.getMetadata().processedPosition()
+                        < backupDescriptor().checkpointPosition()) // &&
+            .filter(
+                s ->
+                    s.getMetadata().lastFollowupEventPosition()
+                        < backupDescriptor().checkpointPosition())
             .collect(Collectors.toSet());
 
     if (validSnapshots.isEmpty()) {
       return Either.left(
           String.format(
-              ERROR_MSG_NO_VALID_SNAPSHOT, checkpointId(), snapshots, checkpointPosition));
+              ERROR_MSG_NO_VALID_SNAPSHOT,
+              checkpointId(),
+              snapshots,
+              backupDescriptor().checkpointPosition()));
     } else {
       return Either.right(validSnapshots);
     }

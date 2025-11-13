@@ -24,7 +24,7 @@ public sealed interface Manifest {
     final var creationTime = Instant.now();
     return new ManifestImpl(
         BackupIdentifierImpl.from(backup.id()),
-        BackupDescriptorImpl.from(backup.descriptor()),
+        BackupDescriptorImpl.from(backup.descriptor(), backup.id().checkpointId()),
         StatusCode.IN_PROGRESS,
         FileSet.of(backup.snapshot()),
         FileSet.of(backup.segments()),
