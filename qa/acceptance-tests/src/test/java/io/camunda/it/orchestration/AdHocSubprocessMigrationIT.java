@@ -81,6 +81,76 @@ public class AdHocSubprocessMigrationIT {
           assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-ahsp-process_v2");
           assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(1);
         });
+    processInstanceHasVariables(
+        client,
+        processInstanceKey,
+        Map.of(
+            AD_HOC_SUB_PROCESS_ELEMENTS,
+            v -> v.getValue().equals("[{\"elementId\":\"D\"," + "\"elementName\":\"D\"}]")));
+  }
+
+  @Test
+  void shouldMigrateProcessWithActiveAdHocSubprocessAndVariables() {
+    // given
+    final var sourceProcess =
+        deployProcessFromClasspath(client, "process/migration-ahsp-process_v1.bpmn");
+
+    final var targetProcess =
+        deployProcessFromClasspath(client, "process/migration-ahsp-process_v2.bpmn");
+
+    final var processInstanceKey =
+        startProcessInstance(
+            client,
+            "migration-ahsp-process_v1",
+            Map.of(
+                "foo", "bar",
+                "alice", "bob"));
+    processInstanceHasVariables(
+        client,
+        processInstanceKey,
+        Map.of(
+            AD_HOC_SUB_PROCESS_ELEMENTS,
+            v -> v.getValue().equals("[{\"elementId\":\"A\",\"elementName\":\"A\"}]"),
+            "foo",
+            v -> v.getValue().equals("\"bar\""),
+            "alice",
+            v -> v.getValue().equals("\"bob\"")));
+
+    // when
+    migrateProcessInstance(
+        client,
+        processInstanceKey,
+        MigrationPlan.newBuilder()
+            .withTargetProcessDefinitionKey(targetProcess)
+            .addMappingInstruction("AD_HOC_SUBPROCESS", "AD_HOC_SUBPROCESS")
+            .addMappingInstruction("A", "D")
+            .build());
+
+    // then
+    processInstanceExistAndMatches(
+        client,
+        f ->
+            f.processInstanceKey(processInstanceKey)
+                .processDefinitionId("migration-ahsp-process_v2"),
+        f -> assertThat(f).hasSize(1));
+    processInstanceHasUserTask(
+        client,
+        processInstanceKey,
+        userTask -> {
+          assertThat(userTask.getElementId()).isEqualTo("D");
+          assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-ahsp-process_v2");
+          assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(1);
+        });
+    processInstanceHasVariables(
+        client,
+        processInstanceKey,
+        Map.of(
+            AD_HOC_SUB_PROCESS_ELEMENTS,
+            v -> v.getValue().equals("[{\"elementId\":\"D\",\"elementName\":\"D\"}]"),
+            "foo",
+            v -> v.getValue().equals("\"bar\""),
+            "alice",
+            v -> v.getValue().equals("\"bob\"")));
   }
 
   //

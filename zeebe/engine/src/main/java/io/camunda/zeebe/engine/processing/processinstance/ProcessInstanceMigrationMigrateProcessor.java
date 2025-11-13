@@ -9,12 +9,16 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -439,6 +443,9 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
 
+    handleAdHocSubProcess(
+        elementInstance, elementInstanceRecord, targetProcessDefinition, targetElementId);
+
     if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
       // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
       // elements to events during migration either. For elements that have been ACTIVATED, a
@@ -689,6 +696,64 @@ public class ProcessInstanceMigrationMigrateProcessor
         .resetProcessDefinitionPath();
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), intent, sequenceFlowRecord);
+  }
+
+  /**
+   * Handles ad-hoc subprocess migration by updating the {@code adHocSubProcessElements} variable,
+   * defined in {@link io.camunda.zeebe.model.bpmn.impl.ZeebeConstants#AD_HOC_SUB_PROCESS_ELEMENTS},
+   * to reflect the target process definition.
+   *
+   * <p>When an ad-hoc subprocess is migrated to a different process definition version, the {@code
+   * adHocSubProcessElements} variable, which contains metadata about available ad-hoc activities,
+   * must be updated to match the target definition.
+   *
+   * <p>This ensures that the metadata accurately reflects the available activities in the target
+   * process definition, preventing stale references to activities that may have been added,
+   * removed, or modified in the new version.
+   *
+   * @param elementInstance the ad-hoc subprocess element instance being migrated
+   * @param elementInstanceRecord the process instance record of the ad-hoc subprocess
+   * @param targetProcessDefinition the target process definition to migrate to
+   * @param targetElementId the ID of the ad-hoc subprocess element in the target process definition
+   */
+  private void handleAdHocSubProcess(
+      final ElementInstance elementInstance,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId) {
+
+    if (isAdHocSubProcess(elementInstanceRecord.getBpmnElementType())) {
+      final AbstractFlowElement element =
+          targetProcessDefinition.getProcess().getElementById(targetElementId);
+
+      final ExecutableAdHocSubProcess targetAhsp;
+      if (element instanceof ExecutableMultiInstanceBody) {
+        throw new UnsupportedOperationException(
+            "Multi-Instance for ad-hoc subprocesses is not supported yet");
+      } else {
+        targetAhsp = (ExecutableAdHocSubProcess) element;
+      }
+
+      variableState.getVariablesLocal(elementInstance.getKey()).stream()
+          .filter(
+              variable ->
+                  BufferUtil.equals(
+                      variable.name(), BufferUtil.wrapString(AD_HOC_SUB_PROCESS_ELEMENTS)))
+          .findFirst()
+          .ifPresent(
+              variable ->
+                  stateWriter.appendFollowUpEvent(
+                      variable.key(),
+                      VariableIntent.UPDATED,
+                      variableRecord
+                          .setScopeKey(elementInstance.getKey())
+                          .setName(variable.name())
+                          .setValue(targetAhsp.getAdHocActivitiesMetadata())
+                          .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                          .setProcessDefinitionKey(targetProcessDefinition.getKey())
+                          .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                          .setTenantId(elementInstance.getValue().getTenantId())));
+    }
   }
 
   /**

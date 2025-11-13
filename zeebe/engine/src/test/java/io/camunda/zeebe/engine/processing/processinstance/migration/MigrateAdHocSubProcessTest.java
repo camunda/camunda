@@ -17,6 +17,8 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -39,7 +41,7 @@ public class MigrateAdHocSubProcessTest {
   // ==================== Basic Ad-Hoc Sub-Process Migration Tests ====================
 
   @Test
-  public void shouldAcceptMigrationWhenInnerInstanceSuffixCorrectlyUsedOnBothSourceAndTarget() {
+  public void shouldMigrateAdHocSubProcessAndUpdateVariables() {
     // given
     final String sourceProcessId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -67,26 +69,51 @@ public class MigrateAdHocSubProcessTest {
         .activateElement("adHocSubProcess")
         .modify();
 
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("adHocSubProcess")
-        .await();
+    final long adHocSubProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("adHocSubProcess")
+            .getFirst()
+            .getKey();
 
-    // when - correctly using suffix on both source and target with proper ad-hoc mapping
-    final var migrationResult =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("adHocSubProcess", "adHocSubProcess")
-            .addMappingInstruction("adHocSubProcess#innerInstance", "adHocSubProcess#innerInstance")
-            .migrate();
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("adHocSubProcess", "adHocSubProcess")
+        .migrate();
 
-    // then - migration should succeed
-    assertThat(migrationResult)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
+    // then - verify element migrated and variables were updated for ad-hoc subprocess
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("adHocSubProcess")
+                .getFirst()
+                .getValue())
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("adHocSubProcess")
+        .hasBpmnElementType(BpmnElementType.AD_HOC_SUB_PROCESS);
+
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withScopeKey(adHocSubProcessInstanceKey)
+                .withName("adHocSubProcessElements")
+                .exists())
+        .isTrue();
+
+    final var updatedVariable =
+        RecordingExporter.variableRecords(VariableIntent.UPDATED)
+            .withScopeKey(adHocSubProcessInstanceKey)
+            .withName("adHocSubProcessElements")
+            .getFirst()
+            .getValue();
+
+    assertThat(updatedVariable)
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId);
   }
 
   // ==================== mapElementIds Method Tests ====================
@@ -273,6 +300,72 @@ public class MigrateAdHocSubProcessTest {
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId("adHoc2")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldMigrateAdHocSubProcessWithDifferentActivities() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                createProcessWithAdHocSubProcess(sourceProcessId, "adHocSubProcess", "taskA"))
+            .withXmlResource(
+                createProcessWithAdHocSubProcess(
+                    targetProcessId, "adHocSubProcess", "taskB", "taskC"))
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    // Activate the ad-hoc subprocess
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("adHocSubProcess")
+        .modify();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("adHocSubProcess")
+        .await();
+
+    // when - migrate to ad-hoc subprocess with different set of activities
+    final var migrationResult =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("adHocSubProcess", "adHocSubProcess")
+            .migrate();
+
+    // then
+    assertThat(migrationResult)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
+
+    // Verify the ad-hoc subprocess variables were updated with new activities metadata
+    final long adHocSubProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("adHocSubProcess")
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withScopeKey(adHocSubProcessInstanceKey)
+                .withName("adHocSubProcessElements")
                 .exists())
         .isTrue();
   }
