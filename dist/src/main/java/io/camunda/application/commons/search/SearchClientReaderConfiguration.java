@@ -44,6 +44,8 @@ import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsDocumentReader;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
@@ -262,6 +264,16 @@ public class SearchClientReaderConfiguration {
       final IndexDescriptors descriptors,
       final IncidentErrorHashCodeNormalizer normalizer) {
     return new ProcessDefinitionInstanceStatisticsDocumentReader(
+        executor, descriptors.get(ListViewTemplate.class), normalizer) {};
+  }
+
+  @Bean
+  public ProcessDefinitionInstanceVersionStatisticsReader
+      processDefinitionInstanceVersionStatisticsReader(
+          final SearchClientBasedQueryExecutor executor,
+          final IndexDescriptors descriptors,
+          final IncidentErrorHashCodeNormalizer normalizer) {
+    return new ProcessDefinitionInstanceVersionStatisticsDocumentReader(
         executor, descriptors.get(ListViewTemplate.class), normalizer) {};
   }
 

@@ -7,8 +7,6 @@
  */
 package io.camunda.search.query;
 
-import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
-
 import io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -54,14 +52,6 @@ public record ProcessDefinitionInstanceStatisticsQuery(
       return new ProcessDefinitionInstanceStatisticsQuery(filter, newSort, page);
     }
     return this;
-  }
-
-  public ProcessDefinitionInstanceStatisticsQuery withUnlimitedPage() {
-    return ProcessDefinitionInstanceStatisticsQuery.of(
-        b ->
-            b.filter(filter)
-                .sort(sort)
-                .page(p -> p.size(AGGREGATION_TERMS_SIZE).from(0).after(null).before(null)));
   }
 
   public static final class Builder
