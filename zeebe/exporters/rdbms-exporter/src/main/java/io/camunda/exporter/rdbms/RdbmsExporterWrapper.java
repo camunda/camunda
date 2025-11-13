@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
+import io.camunda.exporter.rdbms.handlers.ClusterVariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
@@ -171,6 +172,9 @@ public class RdbmsExporterWrapper implements Exporter {
         new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter(), processCache));
     builder.withHandler(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
+    builder.withHandler(
+        ValueType.CLUSTER_VARIABLE,
+        new ClusterVariableExportHandler(rdbmsWriter.getClusterVariableWriter()));
     builder.withHandler(
         ValueType.USER_TASK,
         new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter(), processCache));
