@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.io.IOException;
 import java.time.Instant;
@@ -34,6 +36,17 @@ public record BackupDescriptorImpl(
         descriptor.brokerVersion(),
         descriptor.checkpointTimestamp(),
         descriptor.checkpointType());
+  }
+
+  public static BackupDescriptorImpl from(
+      final Record<CheckpointRecord> record, final int partitionCount) {
+    return new BackupDescriptorImpl(
+        Optional.empty(),
+        record.getPosition(),
+        partitionCount,
+        record.getBrokerVersion(),
+        Instant.ofEpochMilli(record.getTimestamp()),
+        record.getValue().getCheckpointType());
   }
 
   /**

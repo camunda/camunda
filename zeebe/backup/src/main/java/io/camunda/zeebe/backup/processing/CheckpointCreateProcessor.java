@@ -69,15 +69,16 @@ public final class CheckpointCreateProcessor {
     final var checkpointRecord = record.getValue();
     // Get current partition count from routing information if available
     final int currentPartitionCount = partitionCountSupplier.getCurrentPartitionCount();
+    final long checkpointId = checkpointRecord.getCheckpointId();
     final var descriptor = BackupDescriptorImpl.from(record, currentPartitionCount);
 
     // Create backup (either normal or failed based on scaling state)
     if (scalingInProgress) {
       // We want to mark the backup as failed for observability
       backupManager.createFailedBackup(
-          descriptor, "Cannot create checkpoint while scaling is in progress");
+          checkpointId, descriptor, "Cannot create checkpoint while scaling is in progress");
     } else if (checkpointRecord.getCheckpointType().shouldCreateBackup()) {
-      backupManager.takeBackup(descriptor);
+      backupManager.takeBackup(checkpointId, descriptor);
     }
 
     // Create follow-up record

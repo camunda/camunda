@@ -128,7 +128,7 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is triggered with dynamic partition count
-    verify(backupManager, times(1)).takeBackup(eq(backupDescriptor));
+    verify(backupManager, times(1)).takeBackup(eq(checkpointId), eq(backupDescriptor));
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -169,7 +169,7 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(eq(backupDescriptor));
+    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(backupDescriptor));
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -206,7 +206,7 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(eq(backupDescriptor));
+    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(backupDescriptor));
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -599,11 +599,13 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(eq(backupDescriptor));
+    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(backupDescriptor));
     // verify that failed backup is taken
     verify(backupManager, times(1))
         .createFailedBackup(
-            backupDescriptor, "Cannot create checkpoint while scaling is in progress");
+            checkpointId,
+            backupDescriptor,
+            "Cannot create checkpoint while scaling is in progress");
 
     // rejection response is sent
     assertThat(result.response()).isNotNull();
@@ -640,7 +642,7 @@ final class CheckpointRecordsProcessorTest {
     processor.process(firstRecord, resultBuilder);
 
     // then - first backup uses first partition count
-    verify(backupManager, times(1)).takeBackup(eq(backupDescriptor));
+    verify(backupManager, times(1)).takeBackup(eq(firstCheckpointId), eq(backupDescriptor));
 
     // given - change partition count
     final long secondCheckpointId = 2;
@@ -661,7 +663,7 @@ final class CheckpointRecordsProcessorTest {
     processor.process(secondRecord, resultBuilder);
 
     // then - second backup uses updated partition count
-    verify(backupManager, times(1)).takeBackup(eq(backupDescriptor));
+    verify(backupManager, times(1)).takeBackup(eq(secondCheckpointId), eq(backupDescriptor));
   }
 
   @Test
@@ -692,7 +694,7 @@ final class CheckpointRecordsProcessorTest {
   @Test
   void shouldNotTakeBackupOnMarkerCheckpoints() {
     // given
-    final var backupId = 15;
+    final var backupId = 15L;
     final var backupPosition = 150;
     final var value =
         new CheckpointRecord()
@@ -703,19 +705,18 @@ final class CheckpointRecordsProcessorTest {
         new MockTypedCheckpointRecord(
             backupPosition + 1, backupPosition, CheckpointIntent.CREATE, RecordType.COMMAND, value);
 
-    // when
     // when - second checkpoint creation
     processor.process(record, resultBuilder);
 
     // then - second backup uses updated partition count
-    verify(backupManager, times(0)).takeBackup(any());
+    verify(backupManager, times(0)).takeBackup(eq(backupId), any());
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"SCHEDULED_BACKUP", "MANUAL_BACKUP"})
   void shouldTakeBackupOnBackupType(final String checkpointType) {
     // given
-    final var backupId = 15;
+    final var backupId = 15L;
     final var backupPosition = 150;
     final var value =
         new CheckpointRecord()
@@ -731,6 +732,6 @@ final class CheckpointRecordsProcessorTest {
     processor.process(record, resultBuilder);
 
     // then - second backup uses updated partition count
-    verify(backupManager, times(1)).takeBackup(any());
+    verify(backupManager, times(1)).takeBackup(eq(backupId), any());
   }
 }

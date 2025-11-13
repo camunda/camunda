@@ -255,13 +255,12 @@ class PartitionRestoreServiceTest {
     final var descriptor =
         new BackupDescriptorImpl(
             Optional.empty(),
-            backupId,
             checkpointPosition,
             1, // Use partition count of 1 for tests
             "test",
             Instant.now(),
             CheckpointType.MANUAL_BACKUP);
-    backupService.takeBackup(descriptor);
+    backupService.takeBackup(backupId, descriptor);
     return backup.orTimeout(30, TimeUnit.SECONDS).join();
   }
 

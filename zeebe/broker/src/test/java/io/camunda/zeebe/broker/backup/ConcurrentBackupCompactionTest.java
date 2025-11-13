@@ -147,7 +147,6 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
         new BackupDescriptorImpl(
             Optional.of(snapshot.getId()),
             3L,
-            3L,
             1,
             "1.0.0",
             Instant.now(),
@@ -160,7 +159,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     // when
     // a backup is taken (but the snapshot store does not complete it,
     // because the BackupStore it's blocked)
-    final var backupResultFut = backupService.takeBackup(descriptor);
+    final var backupResultFut = backupService.takeBackup(backupIdx, descriptor);
 
     Awaitility.await("snapshot is reserved")
         .until(

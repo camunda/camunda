@@ -31,7 +31,8 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Void> takeBackup(final BackupDescriptor backupDescriptor) {
+  public ActorFuture<Void> takeBackup(
+      final long checkpointId, final BackupDescriptor backupDescriptor) {
     final var result = new CompletableActorFuture<Void>();
     result.completeExceptionally(new UnsupportedOperationException(errorMessage));
     return result;
@@ -70,7 +71,9 @@ public class NoopBackupManager implements BackupManager {
 
   @Override
   public void createFailedBackup(
-      final BackupDescriptor backupDescriptor, final String failureReason) {
+      final long checkpointId,
+      final BackupDescriptor backupDescriptor,
+      final String failureReason) {
     LOG.warn("Attempted to create failed backup, but cannot do it. {}", errorMessage);
   }
 }

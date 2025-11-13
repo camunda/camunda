@@ -70,14 +70,15 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Void> takeBackup(final BackupDescriptor backupDescriptor) {
+  public ActorFuture<Void> takeBackup(
+      final long checkpointId, final BackupDescriptor backupDescriptor) {
     final ActorFuture<Void> result = createFuture();
     actor.run(
         () -> {
           final InProgressBackupImpl inProgressBackup =
               new InProgressBackupImpl(
                   snapshotStore,
-                  getBackupId(backupDescriptor.checkpointId()),
+                  getBackupId(checkpointId),
                   backupDescriptor,
                   actor,
                   segmentsDirectory,
@@ -92,13 +93,13 @@ public final class BackupService extends Actor implements BackupManager {
                 if (error != null) {
                   LOG.warn(
                       "Failed to take backup {} at position {}",
-                      inProgressBackup.checkpointId(),
+                      inProgressBackup.id().checkpointId(),
                       inProgressBackup.backupDescriptor().checkpointPosition(),
                       error);
                 } else {
                   LOG.info(
                       "Backup {} at position {} completed with {} partitions",
-                      inProgressBackup.checkpointId(),
+                      inProgressBackup.id().checkpointId(),
                       inProgressBackup.backupDescriptor().checkpointPosition(),
                       inProgressBackup.backupDescriptor().numberOfPartitions());
                 }
@@ -177,10 +178,12 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public void createFailedBackup(
-      final BackupDescriptor backupDescriptor, final String failureReason) {
+      final long checkpointId,
+      final BackupDescriptor backupDescriptor,
+      final String failureReason) {
     actor.run(
         () -> {
-          final var backupId = getBackupId(backupDescriptor.checkpointId());
+          final var backupId = getBackupId(checkpointId);
           internalBackupManager.createFailedBackup(
               backupId, backupDescriptor.checkpointPosition(), failureReason, actor);
         });
