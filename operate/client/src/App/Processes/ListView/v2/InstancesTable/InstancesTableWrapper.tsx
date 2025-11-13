@@ -15,7 +15,7 @@ import type {
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {InstancesTable} from './index';
-import {getSortFromUrl} from 'modules/utils/filter/v2/mapSortFieldsToV2';
+import {getSortFromUrl} from 'modules/utils/filter/v2/getSortFromUrl';
 import {useLocation} from 'react-router-dom';
 
 const ROW_HEIGHT = 34;

@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, it, expect} from 'vitest';
-import {getSortFromUrl} from './mapSortFieldsToV2';
+import {getSortFromUrl} from './getSortFromUrl';
 
 function createSortUrl(field: string, order: string): string {
   const params = new URLSearchParams();
@@ -15,7 +14,7 @@ function createSortUrl(field: string, order: string): string {
   return `?${params.toString()}`;
 }
 
-describe('mapSortFieldsToV2', () => {
+describe('getSortFromUrl', () => {
   it('should return default sort when no sort parameter present', () => {
     const result = getSortFromUrl('?active=true');
     expect(result).toEqual([{field: 'startDate', order: 'desc'}]);

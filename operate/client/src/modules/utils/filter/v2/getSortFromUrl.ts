@@ -27,6 +27,10 @@ const DEFAULT_SORT: SortItem = {
   order: 'desc',
 };
 
+const isValidSortField = (field: string): field is SortField => {
+  return VALID_SORTABLE_FIELDS.has(field);
+};
+
 const normalizeSortOrder = (
   order: string | undefined,
 ): SortOrder | undefined => {
@@ -41,17 +45,17 @@ const getSortFromUrl = (
 ): QueryProcessInstancesRequestBody['sort'] => {
   const sortParams = getSortParams(urlSearch);
 
-  if (!sortParams) {
+  if (!sortParams || !isValidSortField(sortParams.sortBy)) {
     return [DEFAULT_SORT];
   }
 
-  const field = VALID_SORTABLE_FIELDS.has(sortParams.sortBy)
-    ? (sortParams.sortBy as SortField)
-    : DEFAULT_SORT.field;
+  const order = normalizeSortOrder(sortParams.sortOrder);
 
-  const order = normalizeSortOrder(sortParams.sortOrder) ?? DEFAULT_SORT.order;
+  if (!order) {
+    return [DEFAULT_SORT];
+  }
 
-  return [{field, order}];
+  return [{field: sortParams.sortBy, order}];
 };
 
 export {getSortFromUrl, VALID_SORTABLE_FIELDS, DEFAULT_SORT};
