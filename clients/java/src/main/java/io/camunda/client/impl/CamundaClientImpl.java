@@ -516,7 +516,8 @@ public final class CamundaClientImpl implements CamundaClient {
       scheduledExecutor = configuration.jobWorkerSchedulingExecutor();
       ownsScheduledExecutor = configuration.ownsJobWorkerSchedulingExecutor();
     } else {
-      scheduledExecutor = Executors.newScheduledThreadPool(1);
+      // default to using a scheduled executor with 0 core pool, which creates threads as needed
+      scheduledExecutor = Executors.newScheduledThreadPool(0);
       ownsScheduledExecutor = true;
     }
 
