@@ -10,8 +10,6 @@ import {observer} from 'mobx-react';
 import isNil from 'lodash/isNil';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
-import {Restricted} from 'modules/components/Restricted';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {
   PanelHeader,
   Description,
@@ -31,21 +29,15 @@ type DiagramHeaderProps = {
   processDetails: ProcessDetails;
   processDefinitionId?: string;
   tenant?: string;
-  isVersionSelected: boolean;
   panelHeaderRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
-  ({
-    processDetails,
-    processDefinitionId,
-    tenant,
-    isVersionSelected,
-    panelHeaderRef,
-  }) => {
+  ({processDetails, processDefinitionId, panelHeaderRef}) => {
     const {processName, bpmnProcessId, version, versionTag} = processDetails;
     const hasVersionTag = !isNil(versionTag);
     const hasSelectedProcess = bpmnProcessId !== undefined;
+    const hasSelectedVersion = version !== undefined && version !== 'all';
 
     return (
       <PanelHeader
@@ -84,21 +76,12 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
           </>
         )}
 
-        {isVersionSelected && processDefinitionId !== undefined && (
-          <Restricted
-            resourceBasedRestrictions={{
-              scopes: ['DELETE'],
-              permissions: processesStore.getPermissions(bpmnProcessId, tenant),
-            }}
-          >
-            {version !== undefined && (
-              <ProcessOperations
-                processDefinitionId={processDefinitionId}
-                processName={processName}
-                processVersion={version}
-              />
-            )}
-          </Restricted>
+        {hasSelectedVersion && processDefinitionId !== undefined && (
+          <ProcessOperations
+            processDefinitionId={processDefinitionId}
+            processName={processName}
+            processVersion={version}
+          />
         )}
       </PanelHeader>
     );
