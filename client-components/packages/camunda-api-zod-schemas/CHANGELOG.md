@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.16
+
+### 🚀 Enhancements
+
+- update decision-instances search with more advanced filters ([#40895](https://github.com/camunda/camunda/pull/40895))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.15
 
 ### 🩹 Fixes
