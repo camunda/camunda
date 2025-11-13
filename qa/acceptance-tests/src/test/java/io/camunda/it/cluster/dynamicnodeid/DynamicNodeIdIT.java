@@ -52,12 +52,12 @@ public class DynamicNodeIdIT {
   private static final int CLUSTER_SIZE = 3;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Duration LEASE_DURATION = Duration.ofSeconds(10);
-  private static final String TASK_ID_PROPERTY = "camunda.cluster.dynamic-node-id.s3.taskId";
+  private static final String TASK_ID_PROPERTY = "camunda.cluster.node-id-provider.s3.taskId";
 
   @TestZeebe
   private final TestCluster testCluster =
       TestCluster.builder()
-          .withName("dynamic-node-id-test")
+          .withName("node-id-provider-test")
           .withBrokersCount(CLUSTER_SIZE)
           .withPartitionsCount(1)
           .withReplicationFactor(CLUSTER_SIZE)
@@ -70,21 +70,21 @@ public class DynamicNodeIdIT {
                           "none",
                           "camunda.cluster.size",
                           CLUSTER_SIZE,
-                          "camunda.cluster.dynamic-node-id.type",
+                          "camunda.cluster.node-id-provider.type",
                           "s3",
                           TASK_ID_PROPERTY,
                           UUID.randomUUID().toString(),
-                          "camunda.cluster.dynamic-node-id.s3.bucketName",
+                          "camunda.cluster.node-id-provider.s3.bucketName",
                           BUCKET_NAME,
-                          "camunda.cluster.dynamic-node-id.s3.leaseDuration",
+                          "camunda.cluster.node-id-provider.s3.leaseDuration",
                           LEASE_DURATION,
-                          "camunda.cluster.dynamic-node-id.s3.endpoint",
+                          "camunda.cluster.node-id-provider.s3.endpoint",
                           S3.getEndpoint(),
-                          "camunda.cluster.dynamic-node-id.s3.region",
+                          "camunda.cluster.node-id-provider.s3.region",
                           S3.getRegion(),
-                          "camunda.cluster.dynamic-node-id.s3.accessKey",
+                          "camunda.cluster.node-id-provider.s3.accessKey",
                           S3.getAccessKey(),
-                          "camunda.cluster.dynamic-node-id.s3.secretKey",
+                          "camunda.cluster.node-id-provider.s3.secretKey",
                           S3.getSecretKey())))
           .build();
 
