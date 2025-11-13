@@ -232,9 +232,11 @@ public abstract class ImportJobAbstract implements ImportJob {
 
   protected static class BatchFlusher<B extends ImportBatch, H> {
     private final List<ImportBatch> subBatches;
+
     public BatchFlusher(final List<ImportBatch> subBatches) {
       this.subBatches = subBatches;
     }
+
     public void flush(final B batch, final List<H> batchHits, final String index) {
       if (batch != null && batchHits != null && !batchHits.isEmpty()) {
         batch.setHits(batchHits);
