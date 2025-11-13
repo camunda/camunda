@@ -77,11 +77,6 @@ final class InProgressBackupImpl implements InProgressBackup {
   }
 
   @Override
-  public long checkpointId() {
-    return backupId.checkpointId();
-  }
-
-  @Override
   public BackupDescriptor backupDescriptor() {
     return backupDescriptor;
   }
@@ -219,7 +214,6 @@ final class InProgressBackupImpl implements InProgressBackup {
     final var backupDescriptor =
         new BackupDescriptorImpl(
             snapshotId,
-            checkpointId(),
             backupDescriptor().checkpointPosition(),
             backupDescriptor().numberOfPartitions(),
             VersionUtil.getVersion(),
@@ -254,7 +248,7 @@ final class InProgressBackupImpl implements InProgressBackup {
       return Either.left(
           String.format(
               ERROR_MSG_NO_VALID_SNAPSHOT,
-              checkpointId(),
+              id().checkpointId(),
               snapshots,
               backupDescriptor().checkpointPosition()));
     } else {

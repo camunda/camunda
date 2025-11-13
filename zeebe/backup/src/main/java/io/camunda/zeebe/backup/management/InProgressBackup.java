@@ -14,8 +14,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 interface InProgressBackup {
 
-  long checkpointId();
-
   BackupDescriptor backupDescriptor();
 
   BackupIdentifier id();
