@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 
-import io.camunda.configuration.DynamicNodeIdConfig.Type;
+import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import java.util.Collections;
@@ -87,7 +87,7 @@ public class Cluster implements Cloneable {
    * assigned a static {@link #nodeId}.
    */
   @NestedConfigurationProperty
-  private DynamicNodeIdConfig dynamicNodeId = new DynamicNodeIdConfig();
+  private NodeIdProvider dynamicNodeId = new NodeIdProvider();
 
   /** The number of partitions in the cluster. */
   private int partitionCount = 1;
@@ -131,11 +131,11 @@ public class Cluster implements Cloneable {
   @NestedConfigurationProperty
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
 
-  public DynamicNodeIdConfig getDynamicNodeId() {
+  public NodeIdProvider getDynamicNodeId() {
     return dynamicNodeId;
   }
 
-  public void setDynamicNodeId(final DynamicNodeIdConfig dynamicNodeId) {
+  public void setDynamicNodeId(final NodeIdProvider dynamicNodeId) {
     this.dynamicNodeId = dynamicNodeId;
   }
 

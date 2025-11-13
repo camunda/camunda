@@ -10,8 +10,8 @@ package io.camunda.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.configuration.DynamicNodeIdConfig.S3;
-import io.camunda.configuration.DynamicNodeIdConfig.Type;
+import io.camunda.configuration.NodeIdProvider.S3;
+import io.camunda.configuration.NodeIdProvider.Type;
 import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
@@ -42,7 +42,7 @@ public class ClusterDynamicNodeIdTest {
     @Test
     void shouldSetWithOnlyRequiredProperties() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getDynamicNodeId()).returns(Type.S3, DynamicNodeIdConfig::getType);
+      assertThat(cluster.getDynamicNodeId()).returns(Type.S3, NodeIdProvider::getType);
       assertThat(cluster.getDynamicNodeId().s3())
           .returns("bucketExample", S3::getBucketName)
           .returns(Duration.ofSeconds(10), S3::getLeaseDuration);
@@ -72,7 +72,7 @@ public class ClusterDynamicNodeIdTest {
     @Test
     void shouldSetWithAllProperties() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getDynamicNodeId()).returns(Type.S3, DynamicNodeIdConfig::getType);
+      assertThat(cluster.getDynamicNodeId()).returns(Type.S3, NodeIdProvider::getType);
       assertThat(cluster.getDynamicNodeId().s3())
           .returns("bucketExample", S3::getBucketName)
           .returns(Duration.ofSeconds(10), S3::getLeaseDuration)
@@ -96,7 +96,7 @@ public class ClusterDynamicNodeIdTest {
     @Test
     void shouldDefaultToNoneType() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getDynamicNodeId()).returns(Type.NONE, DynamicNodeIdConfig::getType);
+      assertThat(cluster.getDynamicNodeId()).returns(Type.NONE, NodeIdProvider::getType);
     }
 
     @Test
@@ -121,7 +121,7 @@ public class ClusterDynamicNodeIdTest {
     @Test
     void shouldSetTypeToNone() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getDynamicNodeId()).returns(Type.NONE, DynamicNodeIdConfig::getType);
+      assertThat(cluster.getDynamicNodeId()).returns(Type.NONE, NodeIdProvider::getType);
     }
 
     @Test
