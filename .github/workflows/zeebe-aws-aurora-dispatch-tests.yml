@@ -83,7 +83,6 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B --no-snapshot-updates
-#          -D forkCount=2
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
