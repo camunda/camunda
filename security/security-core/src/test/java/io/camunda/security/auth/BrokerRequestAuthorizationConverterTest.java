@@ -37,8 +37,8 @@ public class BrokerRequestAuthorizationConverterTest {
     // then
     assertThat(brokerRequestAuth).hasSize(3);
     assertThat(brokerRequestAuth).containsEntry(AUTHORIZED_ANONYMOUS_USER, true);
-    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, true);
-    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, true);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_GROUPS_ENABLED, false);
+    assertThat(brokerRequestAuth).containsEntry(IS_CAMUNDA_USERS_ENABLED, false);
   }
 
   @Test
