@@ -39,6 +39,7 @@ class OperateProcessInstancePage {
   readonly editVariableButton: Locator;
   readonly variableValueInput: Locator;
   readonly variableAddedBanner: Locator;
+  readonly migratedTag: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -80,6 +81,9 @@ class OperateProcessInstancePage {
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
     this.variableAddedBanner = this.page.getByText('Variable added');
+    this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
+      hasText: /^Migrated/,
+    });
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {

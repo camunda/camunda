@@ -26,10 +26,25 @@ class OperateProcessesPage {
   readonly processInstanceKeySortButton: Locator;
   readonly versionSortButton: Locator;
   readonly processNameSortButton: Locator;
+  readonly dataList: Locator;
   readonly processInstancesTable: Locator;
   readonly parentInstanceIdCell: Locator;
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
+  readonly continueButton: Locator;
+  readonly processInstancesPanel: Locator;
+  readonly migrateButton: Locator;
+  readonly operationsPanel: Locator;
+  readonly operationsList: Locator;
+  readonly latestOperationEntry: Locator;
+  readonly latestOperationLink: Locator;
+  readonly latestOperationMigrateHeading: Locator;
+  readonly latestOperationProgressBar: Locator;
+  readonly latestOperationEntryBeforeCompletion: Locator;
+  readonly operationSuccessMessage: Locator;
+  readonly collapsedOperationsPanel: Locator;
+  readonly expandOperationsButton: Locator;
+
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
 
   constructor(page: Page) {
@@ -75,16 +90,55 @@ class OperateProcessesPage {
     this.processNameSortButton = page.getByRole('button', {
       name: 'sort by name',
     });
-    this.processInstancesTable = page.getByTestId('data-list').getByRole('row');
-    this.parentInstanceIdCell = page
-      .getByTestId('data-list')
+    this.dataList = page.getByTestId('data-list');
+    this.processInstancesTable = this.dataList.getByRole('row');
+    this.parentInstanceIdCell = this.dataList
       .getByTestId('cell-parentInstanceId')
       .first();
-    this.endDateCell = page
-      .getByTestId('data-list')
-      .getByTestId('cell-endDate')
-      .first();
+    this.endDateCell = this.dataList.getByTestId('cell-endDate').first();
     this.versionCell = page.getByTestId('process-version-select');
+    this.continueButton = page.getByRole('button', {name: 'continue'});
+    this.processInstancesPanel = page.getByRole('region', {
+      name: 'process instances panel',
+    });
+    this.migrateButton = this.processInstancesPanel.getByRole('button', {
+      name: /^migrate$/i,
+    });
+    this.operationsPanel = page.getByRole('region', {
+      name: 'Operations',
+    });
+    this.operationsList = page.getByTestId('operations-list');
+    this.latestOperationEntry = this.operationsList
+      .getByRole('listitem')
+      .first();
+    this.latestOperationEntryBeforeCompletion = this.operationsList
+      .getByRole('listitem')
+      .last();
+    this.latestOperationLink = page.getByTestId('operation-id').first();
+    this.latestOperationMigrateHeading = this.latestOperationEntry.getByRole(
+      'heading',
+      {name: 'Migrate'},
+    );
+    this.latestOperationProgressBar =
+      this.latestOperationEntry.getByRole('progressbar');
+    this.operationSuccessMessage = page
+      .getByText(/\d+ operations? succeeded/)
+      .first();
+    this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
+    this.expandOperationsButton = page.getByRole('button', {
+      name: 'Expand Operations',
+    });
+  }
+
+  async selectProcessInstances(count: number): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      await this.processInstancesPanel
+        .getByRole('row', {name: 'select row'})
+        .nth(i)
+        .locator('label')
+        .click();
+      await sleep(100);
+    }
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -155,6 +209,49 @@ class OperateProcessesPage {
 
   async clickProcessNameSortButton(): Promise<void> {
     await this.processNameSortButton.click();
+  }
+
+  async clickMigrateButton(): Promise<void> {
+    await this.migrateButton.click();
+  }
+
+  async clickContinueButton(): Promise<void> {
+    await this.continueButton.click();
+  }
+
+  async startMigration(): Promise<void> {
+    await this.clickMigrateButton();
+    await this.clickContinueButton();
+  }
+
+  async clickLatestOperationLink(): Promise<void> {
+    await this.latestOperationLink.click({timeout: 60000});
+  }
+
+  getVersionCells(version: string): Locator {
+    return this.dataList.getByRole('cell', {name: version, exact: true});
+  }
+
+  async expandOperationsPanel(): Promise<void> {
+    const isCollapsed = await this.collapsedOperationsPanel.isVisible();
+    if (isCollapsed) {
+      await this.expandOperationsButton.click();
+      await this.operationsList.waitFor({state: 'visible', timeout: 10000});
+    }
+  }
+
+  async waitForOperationToComplete(): Promise<void> {
+    // New operations appear at the bottom while in progress, then move to top when complete
+    // Look for any progress bar with aria-busy="true" in the operations list
+    const inProgressBar = this.operationsList.locator(
+      '[role="progressbar"][aria-busy="true"]',
+    );
+
+    // Wait for the in-progress bar to appear (operation started)
+    await expect(inProgressBar).toBeVisible({timeout: 10000});
+
+    // Wait for it to disappear (operation completed and moved to top)
+    await expect(inProgressBar).not.toBeVisible({timeout: 120000});
   }
 }
 
