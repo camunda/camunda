@@ -29,6 +29,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -58,6 +59,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(URI)
 @Tag(name = "ProcessInstance", description = "Process Instance API")
 @Validated
+@ConditionalOnRdbmsDisabled
 public class ProcessInstanceController extends ErrorController
     implements SearchController<ProcessInstance> {
 

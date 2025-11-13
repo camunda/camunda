@@ -13,6 +13,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import jakarta.annotation.PreDestroy;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
+@ConditionalOnRdbmsDisabled
 public class OperationExecutor extends Thread {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationExecutor.class);
