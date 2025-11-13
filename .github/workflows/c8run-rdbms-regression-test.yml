@@ -6,8 +6,8 @@ name: C8Run RDBMS Regression Tests
 
 on:
   pull_request:
-    branches:
-      - main
+    paths:
+      - "c8run/**"
   workflow_dispatch:
     inputs:
       branch:
@@ -39,7 +39,7 @@ jobs:
   build_and_test_c8run:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 2
+      max-parallel: 1
       fail-fast: false
       matrix:
         env: [ 'local' ]
