@@ -16,9 +16,13 @@ test.beforeAll(async () => {
   await deploy([
     './resources/usertask_with_variables.bpmn',
     './resources/usertask_without_variables.bpmn',
+    './resources/usertask_with_variables_for_completion.bpmn',
   ]);
   await createInstances('usertask_without_variables', 1, 1);
-  await createInstances('usertask_with_variables', 1, 4, {
+  await createInstances('usertask_with_variables', 1, 3, {
+    testData: 'something',
+  });
+  await createInstances('usertask_with_variables_to_complete', 1, 1, {
     testData: 'something',
   });
 });
@@ -171,7 +175,7 @@ test.describe('variables page', () => {
     taskPanelPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('usertask_with_variables');
+    await taskPanelPage.openTask('usertask_with_variables_to_complete');
 
     await expect(taskDetailsPage.addVariableButton).toBeHidden();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
@@ -194,7 +198,7 @@ test.describe('variables page', () => {
     await page.reload();
 
     await taskPanelPage.filterBy('Completed');
-    await taskPanelPage.openTask('usertask_with_variables');
+    await taskPanelPage.openTask('usertask_with_variables_to_complete');
 
     await expect(page.getByText('newVariableName')).toBeVisible();
     await expect(page.getByText('newVariableValue')).toBeVisible();
