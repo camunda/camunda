@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -38,12 +37,6 @@ public final class TypedRecordProcessors {
       final ValueType valueType, final Intent intent, final TypedRecordProcessor<?> processor) {
     recordProcessorMap.put(RecordType.COMMAND, valueType, intent.value(), processor);
     return this;
-  }
-
-  public <T extends UnifiedRecordValue> TypedRecordProcessors onCommand(
-      final ValueType valueType, final Intent intent, final CommandProcessor<T> commandProcessor) {
-    final var processor = new CommandProcessorImpl<>(commandProcessor, keyGenerator, writers);
-    return onCommand(valueType, intent, processor);
   }
 
   public TypedRecordProcessors withListener(final StreamProcessorLifecycleAware listener) {
