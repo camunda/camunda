@@ -15,6 +15,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirement
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementActivatingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getGlobalClusterVariableRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getIncidentRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRuleRecord;
@@ -22,6 +23,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCr
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getRoleRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantClusterVariableRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatingRecord;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -56,6 +59,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -206,6 +210,56 @@ class RdbmsExporterIT {
         (VariableRecordValue) variableCreatedRecord.getValue();
     assertThat(variable).isNotNull();
     assertThat(variable.value()).isEqualTo(variableRecordValue.getValue());
+  }
+
+  @Test
+  public void shouldExportGlobalClusterVariables() {
+    // given
+    final Record<RecordValue> clusterVariableCreatedRecord =
+        getGlobalClusterVariableRecord(ClusterVariableIntent.CREATED);
+
+    // when
+    exporter.export(clusterVariableCreatedRecord);
+
+    final ClusterVariableRecordValue clusterVariableRecordValue =
+        (ClusterVariableRecordValue) clusterVariableCreatedRecord.getValue();
+
+    // then
+    final var variable =
+        rdbmsService
+            .getClusterVariableReader()
+            .getGloballyScopedClusterVariable(clusterVariableRecordValue.getName());
+
+    assertThat(variable).isNotNull();
+    assertThat(variable.value()).isEqualTo(clusterVariableRecordValue.getValue());
+    assertThat(variable.name()).isEqualTo(clusterVariableRecordValue.getName());
+    assertThat(variable.scope()).isEqualTo(clusterVariableRecordValue.getScope().toString());
+  }
+
+  @Test
+  public void shouldExportTenantClusterVariables() {
+    // given
+    final Record<RecordValue> clusterVariableCreatedRecord =
+        getTenantClusterVariableRecord("tenant-1", ClusterVariableIntent.CREATED);
+
+    // when
+    exporter.export(clusterVariableCreatedRecord);
+
+    final ClusterVariableRecordValue clusterVariableRecordValue =
+        (ClusterVariableRecordValue) clusterVariableCreatedRecord.getValue();
+
+    // then
+    final var variable =
+        rdbmsService
+            .getClusterVariableReader()
+            .getTenantScopedClusterVariable(
+                clusterVariableRecordValue.getTenantId(), clusterVariableRecordValue.getName());
+
+    assertThat(variable).isNotNull();
+    assertThat(variable.value()).isEqualTo(clusterVariableRecordValue.getValue());
+    assertThat(variable.resourceId()).isEqualTo(clusterVariableRecordValue.getTenantId());
+    assertThat(variable.name()).isEqualTo(clusterVariableRecordValue.getName());
+    assertThat(variable.scope()).isEqualTo(clusterVariableRecordValue.getScope().toString());
   }
 
   @Test
