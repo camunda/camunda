@@ -152,7 +152,6 @@ const DiagramPanel: React.FC = observer(() => {
       <DiagramHeader
         processDetails={processDetails}
         processDefinitionId={processId}
-        isVersionSelected={isVersionSelected}
         panelHeaderRef={panelHeaderRef}
         tenant={tenant}
       />
