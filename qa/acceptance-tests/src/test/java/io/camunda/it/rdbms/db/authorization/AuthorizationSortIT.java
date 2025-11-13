@@ -83,6 +83,22 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::resourceType).reversed());
   }
 
+  @TestTemplate
+  public void shouldSortByResourceIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.resourceId().asc(),
+        Comparator.comparing(AuthorizationEntity::resourceId));
+  }
+
+  @TestTemplate
+  public void shouldSortByResourceIdDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.resourceId().desc(),
+        Comparator.comparing(AuthorizationEntity::resourceId).reversed());
+  }
+
   private void testSorting(
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<AuthorizationSort>> sortBuilder,
