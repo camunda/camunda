@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
+import static io.camunda.search.schema.config.IndexConfiguration.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
@@ -35,6 +36,9 @@ import org.junit.jupiter.api.Test;
 @MultiDbTest
 class UserTaskSearchTest {
   private static Long userTaskKeyTaskAssigned;
+  private static Long userTaskSubprocessKey;
+  private static final String LARGE_VAR_NAME = "largeVariable";
+  private static final String LARGE_VALUE = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 10);
 
   private static CamundaClient camundaClient;
 
@@ -58,12 +62,16 @@ class UserTaskSearchTest {
     startProcessInstance("process-3");
     startProcessInstance("bpmProcessVariable");
     startProcessInstance("processWithForm");
-    startProcessInstance("processWithSubProcess");
+    startProcessInstanceWithVariables("processWithSubProcess", Map.of(LARGE_VAR_NAME, LARGE_VALUE));
     startProcessInstance(
         "jobWorkerProcess"); // Start a Job Worker instance in order to validate if User Tasks
     // queries has the same result
 
     waitForTasksBeingExported();
+
+    final var userTaskList =
+        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
+    userTaskSubprocessKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
   }
 
   @Test
@@ -698,35 +706,26 @@ class UserTaskSearchTest {
   @Test
   void shouldReturnUserTaskVariablesWithSubProcessVariables() {
     // when
-    final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
-
-    final var userTaskKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
-
     final var result =
         camundaClient
-            .newUserTaskVariableSearchRequest(userTaskKey)
+            .newUserTaskVariableSearchRequest(userTaskSubprocessKey)
             .sort(s -> s.name().asc())
             .send()
             .join();
     // then
-    assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items().get(0).getName()).isEqualTo("localVariable");
-    assertThat(result.items().get(1).getName()).isEqualTo("processVariable");
-    assertThat(result.items().get(2).getName()).isEqualTo("subProcessVariable");
+    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().get(0).getName()).isEqualTo(LARGE_VAR_NAME);
+    assertThat(result.items().get(1).getName()).isEqualTo("localVariable");
+    assertThat(result.items().get(2).getName()).isEqualTo("processVariable");
+    assertThat(result.items().get(3).getName()).isEqualTo("subProcessVariable");
   }
 
   @Test
   void shouldReturnUserTaskVariablesFilteredByNameEq() {
     // when
-    final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
-
-    final var userTaskKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
-
     final var result =
         camundaClient
-            .newUserTaskVariableSearchRequest(userTaskKey)
+            .newUserTaskVariableSearchRequest(userTaskSubprocessKey)
             .filter(f -> f.name(b -> b.eq("localVariable")))
             .send()
             .join();
@@ -738,15 +737,9 @@ class UserTaskSearchTest {
   @Test
   void shouldReturnUserTaskVariablesFilteredByNameLike() {
     // When
-    final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
-
-    final var userTaskKey =
-        userTaskList.items().stream().findFirst().orElseThrow().getUserTaskKey();
-
     final var result =
         camundaClient
-            .newUserTaskVariableSearchRequest(userTaskKey)
+            .newUserTaskVariableSearchRequest(userTaskSubprocessKey)
             .filter(f -> f.name(b -> b.like("*rocess*")))
             .send()
             .join();
@@ -760,15 +753,9 @@ class UserTaskSearchTest {
   @Test
   void shouldReturnUserTaskVariablesFilteredByIn() {
     // When
-    final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
-
-    final var userTaskKey =
-        userTaskList.items().stream().findFirst().orElseThrow().getUserTaskKey();
-
     final var result =
         camundaClient
-            .newUserTaskVariableSearchRequest(userTaskKey)
+            .newUserTaskVariableSearchRequest(userTaskSubprocessKey)
             .filter(f -> f.name(b -> b.in(List.of("processVariable", "subProcessVariable"))))
             .send()
             .join();
@@ -777,6 +764,43 @@ class UserTaskSearchTest {
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().stream().map(Variable::getName))
         .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
+  }
+
+  @Test
+  void shouldReturnLargeUserTaskVariableUntruncated() {
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskVariableSearchRequest(userTaskSubprocessKey)
+            .filter(f -> f.name(LARGE_VAR_NAME))
+            .withFullValues()
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final var resultVar = result.items().getFirst();
+    assertThat(resultVar.getName()).isEqualTo(LARGE_VAR_NAME);
+    assertThat(resultVar.isTruncated()).isFalse();
+    assertThat(resultVar.getValue()).isEqualTo("\"" + LARGE_VALUE + "\"");
+  }
+
+  @Test
+  void shouldReturnLargeUserTaskVariableTruncated() {
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskVariableSearchRequest(userTaskSubprocessKey)
+            .filter(f -> f.name(LARGE_VAR_NAME))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final var resultVar = result.items().getFirst();
+    assertThat(resultVar.getName()).isEqualTo(LARGE_VAR_NAME);
+    assertThat(resultVar.isTruncated()).isTrue();
+    assertThat(resultVar.getValue()).hasSizeLessThan(DEFAULT_VARIABLE_SIZE_THRESHOLD + 1);
   }
 
   @Test
@@ -1403,6 +1427,17 @@ class UserTaskSearchTest {
 
   private static void startProcessInstance(final String processId) {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
+  }
+
+  private static void startProcessInstanceWithVariables(
+      final String processId, final Map<String, Object> variables) {
+    camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(variables)
+        .send()
+        .join();
   }
 
   private static void waitForTasksBeingExported() {

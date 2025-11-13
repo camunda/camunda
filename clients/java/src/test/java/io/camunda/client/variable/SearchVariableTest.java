@@ -17,10 +17,12 @@ package io.camunda.client.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.http.QueryParameter;
 import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import io.camunda.client.protocol.rest.VariableFilter;
 import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayService;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
@@ -123,6 +125,29 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
     assertThat(request.getFilter().getIsTruncated()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldSearchVariablesWithoutParamsByDefault() {
+    // when
+    client.newVariableSearchRequest().send().join();
+
+    // then
+    final QueryParameter param =
+        RestGatewayService.getLastRequest().getQueryParams().get("truncateValues");
+    assertThat(param).isNull();
+  }
+
+  @Test
+  void shouldSearchVariablesWithoutTruncating() {
+    // when
+    client.newVariableSearchRequest().withFullValues().send().join();
+
+    // then
+    final QueryParameter param =
+        RestGatewayService.getLastRequest().getQueryParams().get("truncateValues");
+    assertThat(param.isSingleValued()).isTrue();
+    assertThat(param.firstValue()).isEqualTo("false");
   }
 
   @Test
