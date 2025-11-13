@@ -59,6 +59,7 @@ final class ManifestSerializationTest {
     assertThat(descriptor.brokerVersion()).isEqualTo("1.2.0-SNAPSHOT");
     assertThat(descriptor.checkpointPosition()).isEqualTo(2345234L);
     assertThat(descriptor.numberOfPartitions()).isEqualTo(3);
+    assertThat(descriptor.checkpointId()).isEqualTo(43);
     assertThat(descriptor.snapshotId()).isNotPresent();
 
     assertThat(manifest.statusCode()).isEqualTo(IN_PROGRESS);
@@ -74,6 +75,7 @@ final class ManifestSerializationTest {
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(
                 Optional.empty(),
+                43,
                 2345234L,
                 3,
                 "1.2.0-SNAPSHOT",
@@ -115,6 +117,7 @@ final class ManifestSerializationTest {
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
                     Optional.empty(),
+                    43,
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",
@@ -339,6 +342,7 @@ final class ManifestSerializationTest {
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(
                 Optional.empty(),
+                43,
                 2345234L,
                 3,
                 "1.2.0-SNAPSHOT",

@@ -20,11 +20,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
@@ -40,6 +42,7 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -320,7 +323,7 @@ class BackupServiceImplTest {
             new BackupIdentifierWildcardImpl(
                 Optional.empty(),
                 Optional.of(inProgressBackup.id.partitionId()),
-                CheckpointPattern.of(inProgressBackup.checkpointId()))))
+                CheckpointPattern.of(inProgressBackup.id.checkpointId()))))
         .thenReturn(CompletableFuture.completedFuture(List.of(status)));
 
     // when
@@ -449,7 +452,8 @@ class BackupServiceImplTest {
                             assertThat(checkpointRecord.getCheckpointId())
                                 .isEqualTo(inProgressBackup.checkpointId());
                             assertThat(checkpointRecord.getCheckpointPosition())
-                                .isEqualTo(inProgressBackup.checkpointPosition());
+                                .isEqualTo(
+                                    inProgressBackup.backupDescriptor().checkpointPosition());
                           });
                 }));
   }
@@ -503,6 +507,7 @@ class BackupServiceImplTest {
   class ControllableInProgressBackup implements InProgressBackup {
 
     private final BackupIdentifier id;
+    private final BackupDescriptor checkpointDescriptor;
     private ActorFuture<Void> findValidSnapshotFuture = TestActorFuture.completedFuture(null);
     private ActorFuture<Void> reserveSnapshotFuture = TestActorFuture.completedFuture(null);
     private ActorFuture<Void> findSnapshotFilesFuture = TestActorFuture.completedFuture(null);
@@ -511,6 +516,9 @@ class BackupServiceImplTest {
 
     ControllableInProgressBackup() {
       id = new BackupIdentifierImpl(1, 2, 3);
+      checkpointDescriptor =
+          new BackupDescriptorImpl(
+              Optional.empty(), id.checkpointId(), 1L, 2, "1.2.0", Instant.now(), null);
     }
 
     @Override
@@ -519,8 +527,8 @@ class BackupServiceImplTest {
     }
 
     @Override
-    public long checkpointPosition() {
-      return 1;
+    public BackupDescriptor backupDescriptor() {
+      return checkpointDescriptor;
     }
 
     @Override

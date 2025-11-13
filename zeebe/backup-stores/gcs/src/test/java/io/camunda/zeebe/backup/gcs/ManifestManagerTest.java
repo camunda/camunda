@@ -40,7 +40,7 @@ final class ManifestManagerTest {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                Optional.empty(), 3, 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(
                 Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2"))),
             new NamedFileSetImpl(Map.of("segmentFile1", Path.of("file3"))));
@@ -72,7 +72,7 @@ final class ManifestManagerTest {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                Optional.empty(), 3, 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(
                 Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2"))),
             new NamedFileSetImpl(Map.of("segmentFile1", Path.of("file3"))));
@@ -113,7 +113,7 @@ final class ManifestManagerTest {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                Optional.empty(), 3, 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -137,7 +137,7 @@ final class ManifestManagerTest {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                Optional.empty(), 3, 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -161,7 +161,7 @@ final class ManifestManagerTest {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                Optional.empty(), 3, 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -194,7 +194,7 @@ final class ManifestManagerTest {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                Optional.empty(), 3, 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 

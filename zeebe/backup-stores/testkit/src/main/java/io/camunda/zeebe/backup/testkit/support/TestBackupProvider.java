@@ -50,6 +50,7 @@ public final class TestBackupProvider implements ArgumentsProvider {
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
             Optional.empty(),
+            3,
             4,
             5,
             "test",
@@ -81,6 +82,7 @@ public final class TestBackupProvider implements ArgumentsProvider {
         id,
         new BackupDescriptorImpl(
             Optional.of("test-snapshot-id"),
+            id.checkpointId(),
             4,
             5,
             "test",
@@ -100,6 +102,7 @@ public final class TestBackupProvider implements ArgumentsProvider {
         id,
         new BackupDescriptorImpl(
             Optional.empty(),
+            id.checkpointId(),
             4,
             5,
             "test",

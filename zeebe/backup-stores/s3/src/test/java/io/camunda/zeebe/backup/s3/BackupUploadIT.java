@@ -130,6 +130,7 @@ final class BackupUploadIT {
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
             Optional.of("test-snapshot-id"),
+            3,
             4,
             5,
             "test",
@@ -157,6 +158,7 @@ final class BackupUploadIT {
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
             Optional.of("test-snapshot-id"),
+            3,
             4,
             5,
             "test",
