@@ -35,6 +35,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ToxiproxyContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
@@ -67,9 +69,9 @@ public class HealthCheckIT {
   protected static final Duration LEASE_DURATION = Duration.ofSeconds(5);
   protected static final String TASK_ID_PROPERTY = "camunda.cluster.dynamic-node-id.s3.taskId";
   private static final ProxyRegistry PROXY_REGISTRY = new ProxyRegistry(TOXIPROXY);
-  private static final int TOXI_PROXY_PORT = 8474;
   private static URI toxiproxyS3Endpoint;
   private static ContainerProxy proxy;
+  private static final Logger LOG = LoggerFactory.getLogger(HealthCheckIT.class);
 
   @TestZeebe
   protected TestCluster testCluster =
@@ -139,13 +141,14 @@ public class HealthCheckIT {
 
   @Test
   public void shouldNotReturnHealthyWhenS3IsNotAvailable() throws IOException {
-    // Given: Toxiproxy introduces 10 second latency (timeout is 5 seconds)
     final var actuators =
         testCluster.brokers().values().stream()
             .collect(Collectors.toMap(TestStandaloneBroker::nodeId, BrokerHealthActuator::of));
     assertThat(actuators.values())
         .allSatisfy(actuator -> assertThatNoException().isThrownBy(actuator::ready));
-    // When: broker tries to check health & s3 is not able to reply in time
+    // When:
+    // - toxiproxy introduces 10s latency in the HTTP calls
+    // - broker tries to check health & s3 is not able to reply in time
     proxy.proxy().toxics().latency("latency", ToxicDirection.UPSTREAM, 10000L);
     // Then: health check should fail
     // check is run in parallel because the repository is timing out
