@@ -213,6 +213,9 @@ public class CamundaMultiDBExtension
       "test.integration.opensearch.aws.url";
   public static final String PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT =
       "test.integration.opensearch.aws.timeout.seconds";
+  public static final String TEST_INTEGRATION_AURORA_AWS_URL = "test.integration.aurora.aws.url";
+  public static final String TEST_INTEGRATION_AURORA_AWS_USERNAME = "test.integration.aurora.aws.username";
+  public static final String TEST_INTEGRATION_AURORA_AWS_PASSWORD = "test.integration.aurora.aws.password";
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
@@ -321,10 +324,9 @@ public class CamundaMultiDBExtension
       case RDBMS_AURORA ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest,
-              "jdbc:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/db-camunda-aurora-postgresql"
-                  + UUID.randomUUID(),
-              "",
-              "",
+              System.getProperty(TEST_INTEGRATION_AURORA_AWS_URL),
+              System.getProperty(TEST_INTEGRATION_AURORA_AWS_USERNAME),
+              System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD),
               "org.postgresql.Driver");
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);

@@ -750,8 +750,9 @@ jobs:
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
         env:
-          SPRING_DATASOURCE_USERNAME: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
-          SPRING_DATASOURCE_PASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
+          TEST_INTEGRATION_AURORA_AWS_URL: jdbc:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/db-camunda-aurora-postgresql
+          TEST_INTEGRATION_AURORA_AWS_USERNAME: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
+          TEST_INTEGRATION_AURORA_AWS_PASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
       - name: Tear down database
         if: always()
         run: ./.github/actions/rdbms/drop-aurora-database.sh

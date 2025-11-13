@@ -291,12 +291,8 @@ public class MultiDbConfigurator {
 
     testApplication.withProperty("spring.datasource.url", url);
     testApplication.withProperty("spring.datasource.driver-class-name", driverClass);
-    if (username != null) {
-      testApplication.withProperty("spring.datasource.username", username);
-    }
-    if (password != null) {
-      testApplication.withProperty("spring.datasource.password", password);
-    }
+    testApplication.withProperty("spring.datasource.username", username);
+    testApplication.withProperty("spring.datasource.password", password);
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
 
