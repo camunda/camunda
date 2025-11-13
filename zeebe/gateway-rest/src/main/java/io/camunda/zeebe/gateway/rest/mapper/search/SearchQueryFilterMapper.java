@@ -666,6 +666,15 @@ public class SearchQueryFilterMapper {
           builder.localVariables(either.get());
         }
       }
+      if (!CollectionUtils.isEmpty(filter.getCustomHeaders())) {
+        final Either<List<String>, List<io.camunda.search.filter.HeaderValueFilter>> either =
+            toHeaderValueFilters(filter.getCustomHeaders());
+        if (either.isLeft()) {
+          validationErrors.addAll(either.getLeft());
+        } else {
+          builder.customHeaders(either.get());
+        }
+      }
       Optional.ofNullable(filter.getCreationDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::creationDateOperations);
@@ -871,6 +880,50 @@ public class SearchQueryFilterMapper {
     return new VariableValueFilter.Builder()
         .name(name)
         .valueTypedOperations(operations)
+        .buildList();
+  }
+
+  private static Either<List<String>, List<io.camunda.search.filter.HeaderValueFilter>>
+      toHeaderValueFilters(
+          final List<io.camunda.zeebe.gateway.protocol.rest.HeaderValueFilterProperty> filters) {
+    if (CollectionUtils.isEmpty(filters)) {
+      return Either.right(List.of());
+    }
+
+    final List<String> validationErrors = new ArrayList<>();
+    final List<io.camunda.search.filter.HeaderValueFilter> headerValueFilters =
+        filters.stream()
+            .flatMap(
+                filter -> {
+                  if (filter.getName() == null) {
+                    validationErrors.add("Header name cannot be null");
+                  }
+                  if (filter.getValue() == null
+                      || filter
+                          .getValue()
+                          .equals(SearchQueryRequestMapper.EMPTY_ADVANCED_STRING_FILTER)
+                      || filter
+                          .getValue()
+                          .equals(SearchQueryRequestMapper.EMPTY_BASIC_STRING_FILTER)) {
+                    validationErrors.add("Header value cannot be null");
+                  }
+                  // if there is no validation error overall, process the filter
+                  return validationErrors.isEmpty()
+                      ? toHeaderValueFilters(filter.getName(), filter.getValue()).stream()
+                      : Stream.empty();
+                })
+            .toList();
+    return validationErrors.isEmpty()
+        ? Either.right(headerValueFilters)
+        : Either.left(validationErrors);
+  }
+
+  private static List<io.camunda.search.filter.HeaderValueFilter> toHeaderValueFilters(
+      final String name, final StringFilterProperty value) {
+    final List<Operation<String>> operations = mapToOperations(String.class).apply(value);
+    return new io.camunda.search.filter.HeaderValueFilter.Builder()
+        .name(name)
+        .valueOperations(operations)
         .buildList();
   }
 

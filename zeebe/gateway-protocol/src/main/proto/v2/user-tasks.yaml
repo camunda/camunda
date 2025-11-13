@@ -419,6 +419,11 @@ components:
           type: array
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
+        customHeaders:
+          type: array
+          description: Filter by custom headers. Only user-defined headers are searchable (system headers like 'io.camunda.zeebe:formKey' are excluded).
+          items:
+            $ref: 'headers.yaml#/components/schemas/HeaderValueFilterProperty'
         userTaskKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
