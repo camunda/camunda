@@ -10,9 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.IS_PREVIEW;
 import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -49,7 +47,7 @@ public final class ClusterVariableFilterTransformer
   }
 
   private Collection<SearchQuery> getResourceIdQuery(final List<Operation<String>> operations) {
-    return stringOperations(ClusterVariableIndex.SCOPE, operations);
+    return stringOperations(ClusterVariableIndex.RESOURCE_ID, operations);
   }
 
   private Collection<SearchQuery> getScopeQuery(final List<Operation<String>> operations) {
@@ -58,12 +56,5 @@ public final class ClusterVariableFilterTransformer
 
   private List<SearchQuery> getVariablesQuery(final List<UntypedOperation> variableFilters) {
     return variableOperations(ClusterVariableIndex.VALUE, variableFilters);
-  }
-
-  private SearchQuery getIsTruncatedQuery(final Boolean isTruncated) {
-    if (isTruncated == null) {
-      return null;
-    }
-    return term(IS_PREVIEW, isTruncated);
   }
 }
