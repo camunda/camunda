@@ -532,7 +532,7 @@ public final class CamundaClientImpl implements CamundaClient {
       if (threadCount == 0) {
         // fallback to using the scheduled executor for both purposes
         // this ensures backward compatibility with the old behavior when 0 was accepted
-        // as a valid value for "use default number of threads"
+        // as a valid value; this reuses the single-threaded scheduled executor for job handling
         jobHandlingExecutor = scheduledExecutor;
         ownsJobHandlingExecutor = false; // since both executors are the same
       } else {
