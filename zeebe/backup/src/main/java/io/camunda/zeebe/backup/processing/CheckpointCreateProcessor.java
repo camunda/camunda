@@ -84,7 +84,7 @@ public final class CheckpointCreateProcessor {
     final var followupRecord =
         new CheckpointRecord()
             .setCheckpointId(checkpointRecord.getCheckpointId())
-            .setCheckpointPosition(checkpointRecord.getCheckpointPosition())
+            .setCheckpointPosition(record.getPosition())
             .setCheckpointType(checkpointRecord.getCheckpointType());
 
     // Checkpoint should be created even if we don't take a backup for checkpoint-consistency

@@ -46,7 +46,7 @@ public record BackupDescriptorImpl(
     return new BackupDescriptorImpl(
         Optional.empty(),
         record.getValue().getCheckpointId(),
-        record.getValue().getCheckpointPosition(),
+        record.getPosition(),
         partitionCount,
         record.getBrokerVersion(),
         Instant.ofEpochMilli(record.getTimestamp()),
