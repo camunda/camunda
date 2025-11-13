@@ -12,6 +12,11 @@ on:
       name:
         description: 'Specifies the name of the load test'
         required: true
+      ttl:
+        description: 'Specifies after how many days the load test namespace should be deleted'
+        type: number
+        default: 7
+        required: false
       reuse-tag:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
@@ -48,6 +53,11 @@ on:
         description: 'Specifies the name of the load test'
         type: string
         required: true
+      ttl:
+        description: 'Specifies after how many days the load test namespace should be deleted'
+        type: number
+        default: 7
+        required: false
       reuse-tag:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
@@ -261,10 +271,22 @@ jobs:
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/refs/heads/${{ inputs.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
+<<<<<<< HEAD
           ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
       - name: Label namespace
+=======
+          ${{ inputs.stable-vms && '-f load-tests/setup/default/values-stable.yaml' || '' }}
+      - name: Label namespace with creator
+>>>>>>> 5670c635 (ci: add deadline for load tests)
         run: >
             kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
+      - name: Label namespace with deadline
+        run: |
+          # Calculate deadline date with the TTL days from now
+          # Use basic ISO date format (YYYY-MM-DD), as it is compatible with kubectl label values
+          # Must use minus (-) instead of / to be compatible with kubectl label value restrictions
+          deadlineDate=$(date -d "+${{ inputs.ttl }} days" +%Y-%m-%d)
+          kubectl label namespace ${{ inputs.name }} deadline-date="$deadlineDate" --overwrite
       - name: Summarize deployment
         if: success()
         run: |
