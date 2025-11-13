@@ -13,8 +13,6 @@ import java.util.Set;
 
 public class NodeIdProvider {
 
-  static final String PREFIX = Cluster.PREFIX + ".node-id-provider";
-
   /**
    * Set the {@link Type} of the implementation for the provider of dynamic node id. {@link
    * Type#STATIC} refers to no provider.
@@ -224,12 +222,11 @@ public class NodeIdProvider {
   }
 
   public static final class StaticConfig {
-    static final String PREFIX = NodeIdProvider.PREFIX + ".static";
     private int nodeId;
 
     public int getNodeId() {
       return UnifiedConfigurationHelper.validateLegacyConfiguration(
-          PREFIX + ".node-id",
+          Cluster.PREFIX + ".node-id",
           nodeId,
           Integer.class,
           UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,

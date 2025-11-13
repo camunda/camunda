@@ -163,8 +163,7 @@ public class Cluster implements Cloneable {
   }
 
   public void setNodeId(final int nodeId) {
-    final var staticConfig = nodeIdProvider.staticConfig();
-    staticConfig.setNodeId(nodeId);
+    nodeIdProvider.staticConfig().setNodeId(nodeId);
   }
 
   public int getPartitionCount() {
