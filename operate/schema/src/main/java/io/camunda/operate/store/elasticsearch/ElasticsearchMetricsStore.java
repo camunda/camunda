@@ -21,7 +21,6 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.dao.Query;
 import io.camunda.operate.store.elasticsearch.dao.UsageMetricDAO;
-import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
 import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,40 +39,38 @@ public class ElasticsearchMetricsStore implements MetricsStore {
 
   @Override
   public Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime) {
-    final int limit = 1; // limiting to one, as we just care about the total documents number
     final Query query =
         Query.whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED)
             .or(whereEquals(EVENT, EVENT_PROCESS_INSTANCE_STARTED))
             .and(range(EVENT_TIME, startTime, endTime))
-            .aggregate(PROCESS_INSTANCES_AGG_NAME, VALUE, limit);
+            .aggregate(PROCESS_INSTANCES_AGG_NAME, VALUE, PRECISION_THRESHOLD);
 
-    final AggregationResponse response = dao.searchWithAggregation(query);
+    final var response = dao.searchWithAggregation(query);
     if (response.hasError()) {
       final String message = "Error while retrieving process instance count between dates";
       LOGGER.error(message);
       throw new OperateRuntimeException(message);
     }
 
-    return response.getSumOfTotalDocs();
+    return response.totalDocs();
   }
 
   @Override
   public Long retrieveDecisionInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime) {
-    final int limit = 1; // limiting to one, as we just care about the total documents number
     final Query query =
         Query.whereEquals(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED)
             .and(range(EVENT_TIME, startTime, endTime))
-            .aggregate(DECISION_INSTANCES_AGG_NAME, VALUE, limit);
+            .aggregate(DECISION_INSTANCES_AGG_NAME, VALUE, PRECISION_THRESHOLD);
 
-    final AggregationResponse response = dao.searchWithAggregation(query);
+    final var response = dao.searchWithAggregation(query);
     if (response.hasError()) {
       final String message = "Error while retrieving decision instance count between dates";
       LOGGER.error(message);
       throw new OperateRuntimeException(message);
     }
 
-    return response.getSumOfTotalDocs();
+    return response.totalDocs();
   }
 
   @Override

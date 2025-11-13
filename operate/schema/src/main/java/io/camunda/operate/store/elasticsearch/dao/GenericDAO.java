@@ -12,14 +12,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
+import io.camunda.operate.store.AggregationResult;
 import io.camunda.operate.store.elasticsearch.dao.response.InsertResponse;
 import io.camunda.operate.store.elasticsearch.dao.response.SearchResponse;
 import io.camunda.operate.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -29,7 +28,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.metrics.ParsedCardinality;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -126,7 +125,7 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
     return new SearchResponse<>(true);
   }
 
-  public AggregationResponse searchWithAggregation(Query query) {
+  public AggregationResult searchWithAggregation(final Query query) {
     final SearchSourceBuilder source =
         SearchSourceBuilder.searchSource()
             .query(query.getQueryBuilder())
@@ -144,30 +143,15 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
       }
 
       final Aggregation group = aggregations.get(query.getGroupName());
-      if (!(group instanceof ParsedStringTerms)) {
+      if (!(group instanceof final ParsedCardinality cardinality)) {
         throw new OperateRuntimeException("Unexpected response for aggregations");
       }
 
-      final ParsedStringTerms terms = (ParsedStringTerms) group;
-      final List<ParsedStringTerms.ParsedBucket> buckets =
-          (List<ParsedStringTerms.ParsedBucket>) terms.getBuckets();
-
-      final List<AggregationResponse.AggregationValue> values =
-          buckets.stream()
-              .map(
-                  it ->
-                      new AggregationResponse.AggregationValue(
-                          String.valueOf(it.getKey()), it.getDocCount()))
-              .collect(Collectors.toList());
-
-      final long sumOfOtherDocCounts =
-          ((ParsedStringTerms) group).getSumOfOtherDocCounts(); // size of documents not in result
-      final long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
-      return new AggregationResponse(false, values, total);
+      return new AggregationResult(false, cardinality.getValue());
     } catch (IOException e) {
       LOGGER.error("Error searching at index: " + index, e);
     }
-    return new AggregationResponse(true);
+    return AggregationResult.ERROR;
   }
 
   /**
