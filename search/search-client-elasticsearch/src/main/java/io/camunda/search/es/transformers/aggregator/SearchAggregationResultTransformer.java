@@ -118,6 +118,7 @@ public class SearchAggregationResultTransformer<T>
     final var map = new LinkedHashMap<String, AggregationResult>();
     final var buckets = aggregate.buckets();
     final var searchAfter = extractSearchAfter(aggregate);
+    final var builder = new Builder().aggregations(map).endCursor(Cursor.encode(searchAfter));
     if (buckets.isKeyed()) {
       buckets
           .keyed()
@@ -132,6 +133,7 @@ public class SearchAggregationResultTransformer<T>
               });
     } else if (buckets.isArray()) {
       final List<B> array = buckets.array();
+      builder.docCount((long) array.size());
       array.forEach(
           bucket -> {
             final String key =
@@ -155,11 +157,7 @@ public class SearchAggregationResultTransformer<T>
             map.put(key, result);
           });
     }
-    return new Builder()
-        .docCount((long) buckets.array().size())
-        .aggregations(map)
-        .endCursor(Cursor.encode(searchAfter))
-        .build();
+    return builder.build();
   }
 
   private <B extends MultiBucketBase> Object[] extractSearchAfter(
