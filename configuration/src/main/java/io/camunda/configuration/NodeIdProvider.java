@@ -11,7 +11,7 @@ import java.time.Duration;
 import java.util.Optional;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class DynamicNodeIdConfig {
+public class NodeIdProvider {
 
   /**
    * Set the {@link Type} of the implementation for the provider of dynamic node id. {@link
