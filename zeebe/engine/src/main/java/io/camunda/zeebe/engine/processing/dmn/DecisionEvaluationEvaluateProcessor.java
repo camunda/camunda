@@ -30,7 +30,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 
-public class DecisionEvaluationEvaluteProcessor
+public class DecisionEvaluationEvaluateProcessor
     implements TypedRecordProcessor<DecisionEvaluationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
@@ -43,7 +43,7 @@ public class DecisionEvaluationEvaluteProcessor
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
 
-  public DecisionEvaluationEvaluteProcessor(
+  public DecisionEvaluationEvaluateProcessor(
       final DecisionBehavior decisionBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,

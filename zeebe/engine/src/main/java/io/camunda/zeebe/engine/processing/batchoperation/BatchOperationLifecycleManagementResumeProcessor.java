@@ -43,10 +43,11 @@ import org.slf4j.LoggerFactory;
  * authorization. The RESUME command is then distributed to all other partitions.
  */
 @ExcludeAuthorizationCheck
-public final class BatchOperationResumeProcessor
+public final class BatchOperationLifecycleManagementResumeProcessor
     implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationResumeProcessor.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationLifecycleManagementResumeProcessor.class);
 
   private static final String MESSAGE_PREFIX =
       "Expected to resume a batch operation with key '%d', but ";
@@ -66,7 +67,7 @@ public final class BatchOperationResumeProcessor
 
   private final BatchOperationState batchOperationState;
 
-  public BatchOperationResumeProcessor(
+  public BatchOperationLifecycleManagementResumeProcessor(
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final ProcessingState processingState,

@@ -30,10 +30,11 @@ import org.slf4j.LoggerFactory;
 
 /** Local command processor which sends the FAIL_PARTITION command to the lead partition. */
 @ExcludeAuthorizationCheck
-public final class BatchOperationFailProcessor
+public final class BatchOperationPartitionLifecycleFailProcessor
     implements TypedRecordProcessor<BatchOperationPartitionLifecycleRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationFailProcessor.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationPartitionLifecycleFailProcessor.class);
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -42,7 +43,7 @@ public final class BatchOperationFailProcessor
   private final BatchOperationMetrics metrics;
   private final BatchOperationState batchOperationState;
 
-  public BatchOperationFailProcessor(
+  public BatchOperationPartitionLifecycleFailProcessor(
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final KeyGenerator keyGenerator,
