@@ -440,11 +440,13 @@
       <column name="ENTITY_TYPE" type="VARCHAR(255)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}TENANT_MEMBER" indexName="${prefix}idx_tenant_member_tenant_id">
+    <createIndex tableName="${prefix}TENANT_MEMBER"
+      indexName="${prefix}idx_tenant_member_tenant_id">
       <column name="TENANT_ID"/>
     </createIndex>
 
-    <createIndex tableName="${prefix}TENANT_MEMBER" indexName="${prefix}idx_tenant_member_entity_id">
+    <createIndex tableName="${prefix}TENANT_MEMBER"
+      indexName="${prefix}idx_tenant_member_entity_id">
       <column name="ENTITY_ID"/>
     </createIndex>
   </changeSet>
@@ -703,7 +705,8 @@
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
-    <createIndex tableName="${prefix}USAGE_METRIC_TU" indexName="${prefix}IDX_USAGE_METRIC_TU_END_TIME">
+    <createIndex tableName="${prefix}USAGE_METRIC_TU"
+      indexName="${prefix}IDX_USAGE_METRIC_TU_END_TIME">
       <column name="END_TIME"/>
     </createIndex>
 
@@ -783,6 +786,33 @@
     </modifySql>
     <modifySql dbms="mssql">
       <replace replace="datetime2" with="DATETIMEOFFSET"/>
+    </modifySql>
+  </changeSet>
+
+  <changeSet id="create_cluster_variable_table" author="camunda">
+    <createTable tableName="${prefix}CLUSTER_VARIABLE">
+      <column name="CLUSTER_VARIABLE_ID" type="VARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="VAR_NAME" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TYPE" type="VARCHAR(255)"/>
+      <column name="DOUBLE_VALUE" type="DOUBLE"/>
+      <column name="LONG_VALUE" type="BIGINT"/>
+      <column name="VAR_VALUE" type="VARCHAR(8192)"/>
+      <column name="VAR_FULL_VALUE" type="CLOB"/>
+      <column name="IS_PREVIEW" type="BOOLEAN"/>
+      <column name="RESOURCE_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="SCOPE" type="VARCHAR(${userCharColumnSize})"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}CLUSTER_VARIABLE"
+      indexName="${prefix}IDX_CLUSTER_VARIABLE_RESOURCE_ID">
+      <column name="RESOURCE_ID"/>
+    </createIndex>
+
+    <modifySql dbms="oracle">
+      <!-- Oracle only supports a size 4000 characters in varchar2 -->
+      <replace replace="VARCHAR2(8192)" with="VARCHAR2(4000)"/>
     </modifySql>
   </changeSet>
 
