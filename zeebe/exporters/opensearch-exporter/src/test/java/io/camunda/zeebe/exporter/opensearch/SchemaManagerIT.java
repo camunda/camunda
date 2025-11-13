@@ -13,7 +13,6 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -58,8 +57,8 @@ public class SchemaManagerIT {
 
     // when
     // we create an 8.5 component template
-    osClient.putComponentTemplate();
-    osClient.putIndexTemplate(ValueType.PROCESS_INSTANCE);
+    final var schemaManager = new OpensearchExporterSchemaManager(osClient, CONFIG);
+    schemaManager.createSchema("8.5.0");
 
     // create the 8.6 component template
     final var upgradedVersion = "8.6.0";
@@ -67,14 +66,15 @@ public class SchemaManagerIT {
       mockedVersionUtil.when(VersionUtil::getVersion).thenReturn(upgradedVersion);
       mockedVersionUtil.when(VersionUtil::getVersionLowerCase).thenReturn(upgradedVersion);
 
-      osClient.putComponentTemplate();
-      osClient.putIndexTemplate(ValueType.PROCESS_INSTANCE);
+      // trigger schema manager for 8.6
+      final var schemaManager2 = new OpensearchExporterSchemaManager(osClient, CONFIG);
+      schemaManager2.createSchema(upgradedVersion);
     }
 
     // Use a new schema manager to mock 8.5 broker restart which then triggers schema manager.
     // 8.5 schema manager runs again and attempts to create old component template
-    osClient.putComponentTemplate();
-    osClient.putIndexTemplate(ValueType.PROCESS_INSTANCE);
+    final var schemaManager3 = new OpensearchExporterSchemaManager(osClient, CONFIG);
+    schemaManager3.createSchema("8.5.0");
 
     // then
     // 8.6.0 component template exists
