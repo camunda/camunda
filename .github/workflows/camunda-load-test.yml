@@ -101,6 +101,12 @@ on:
 env:
   HELM_CHART: camunda-platform-8.9
 
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
 jobs:
   calculate-image-tag:
     name: Calculate Image Tag
