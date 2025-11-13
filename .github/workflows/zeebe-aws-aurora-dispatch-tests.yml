@@ -91,7 +91,7 @@ jobs:
           -D test.integration.aurora.aws.password=${{env.AURORA_PASSWORD}}
           -D test.integration.camunda.database.type=RDBMS_AURORA
           -P parallel-tests,extract-flaky-tests,multi-db-test
-          -pl "'io.camunda:camunda-qa-acceptance-tests'"
+          -pl "io.camunda:camunda-qa-acceptance-tests"
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Tear down database
