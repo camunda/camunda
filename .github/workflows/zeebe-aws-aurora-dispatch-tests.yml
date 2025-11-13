@@ -45,6 +45,7 @@ jobs:
             echo "AWS_ROLE_ARN=$AWS_ROLE_ARN"
             echo "AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE"
             echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
+            echo "AURORA_DATABASE=db-camunda-it-$(uuidgen | tr '[:upper:]' '[:lower:]')
             echo "AURORA_USERNAME=${{steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME}}"
             echo "AURORA_PASSWORD=${{steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD}}"
           } >> "$GITHUB_ENV"
@@ -59,7 +60,7 @@ jobs:
       - name: Set up database
         run: ./.github/actions/rdbms/create-aurora-database.sh
         env:
-          PGDATABASE: db-camunda-aurora-postgresql
+          PGDATABASE: ${{env.AURORA_DATABASE}}
           # PGDATABASE: db-${{ github.sha }}
           PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
@@ -86,7 +87,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
-          -D test.integration.aurora.aws.url="jdbc:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/db-camunda-aurora-postgresql"
+          -D test.integration.aurora.aws.url="jdbc:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}"
           -D test.integration.aurora.aws.username=${{env.AURORA_USERNAME}}
           -D test.integration.aurora.aws.password=${{env.AURORA_PASSWORD}}
           -D test.integration.camunda.database.type=RDBMS_AURORA
@@ -98,7 +99,7 @@ jobs:
         if: always()
         run: ./.github/actions/rdbms/drop-aurora-database.sh
         env:
-          PGDATABASE: db-camunda-aurora-postgresql
+          PGDATABASE: ${{env.AURORA_DATABASE}}
           # PGDATABASE: db-${{ github.sha }}
           PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
