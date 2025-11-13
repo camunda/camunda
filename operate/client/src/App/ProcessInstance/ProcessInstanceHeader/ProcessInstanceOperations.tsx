@@ -13,6 +13,7 @@ import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Operations} from 'modules/components/Operations';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
+import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
@@ -82,13 +83,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
 
   const handleOperationError: ErrorHandler = ({statusCode}) => {
     invalidateQueries();
-
-    notificationsStore.displayNotification({
-      kind: 'error',
-      title: 'Operation could not be created',
-      subtitle: statusCode === 403 ? 'You do not have permission' : undefined,
-      isDismissable: true,
-    });
+    handleOperationErrorUtil(statusCode === 403);
   };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {

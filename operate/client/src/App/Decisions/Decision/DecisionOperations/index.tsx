@@ -19,6 +19,7 @@ import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/st
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
+import {handleOperationError} from 'modules/utils/notifications';
 
 type Props = {
   decisionDefinitionId: string;
@@ -131,14 +132,7 @@ const DecisionOperations: React.FC<Props> = ({
             },
             onError: (statusCode: number) => {
               setIsOperationRunning(false);
-
-              notificationsStore.displayNotification({
-                kind: 'error',
-                title: 'Operation could not be created',
-                subtitle:
-                  statusCode === 403 ? 'You do not have permission' : undefined,
-                isDismissable: true,
-              });
+              handleOperationError(statusCode === 403);
             },
           });
         }}

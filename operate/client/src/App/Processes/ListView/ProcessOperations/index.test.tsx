@@ -224,13 +224,11 @@ describe('<ProcessOperations />', () => {
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
-    await waitFor(() => {
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Operation could not be created',
-        subtitle: 'You do not have permission',
-        isDismissable: true,
-      });
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'warning',
+      title: "You don't have permission to perform this operation",
+      subtitle: 'Please contact the administrator if you need access.',
+      isDismissable: true,
     });
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
   });

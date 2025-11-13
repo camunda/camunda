@@ -17,7 +17,7 @@ import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
-import {notificationsStore} from 'modules/stores/notifications';
+import {handleOperationError} from 'modules/utils/notifications';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
 import {panelStatesStore} from 'modules/stores/panelStates';
@@ -34,15 +34,7 @@ const Footer: React.FC = observer(() => {
         operationType: 'MIGRATE_PROCESS_INSTANCE',
       });
     },
-    onError: ({message}) =>
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Operation could not be created',
-        subtitle: message.includes('403')
-          ? 'You do not have permission'
-          : undefined,
-        isDismissable: true,
-      }),
+    onError: ({message}) => handleOperationError(message.includes('403')),
   });
 
   return (

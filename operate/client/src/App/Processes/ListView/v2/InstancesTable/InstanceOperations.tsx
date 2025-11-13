@@ -8,6 +8,7 @@
 
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
+import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {tracking} from 'modules/tracking';
 import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
@@ -49,12 +50,7 @@ const InstanceOperations: React.FC<Props> = ({
   });
 
   const handleOperationError: ErrorHandler = ({statusCode}) => {
-    notificationsStore.displayNotification({
-      kind: 'error',
-      title: 'Operation could not be created',
-      subtitle: statusCode === 403 ? 'You do not have permission' : undefined,
-      isDismissable: true,
-    });
+    handleOperationErrorUtil(statusCode === 403);
   };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {
