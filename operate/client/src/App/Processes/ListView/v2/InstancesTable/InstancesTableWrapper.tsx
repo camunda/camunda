@@ -18,6 +18,8 @@ import {useFilters} from 'modules/hooks/useFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {InstancesTable} from './index';
+import {getSortFromUrl} from 'modules/utils/filter/v2/getSortFromUrl';
+import {useLocation} from 'react-router-dom';
 
 const ROW_HEIGHT = 34;
 const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -35,9 +37,12 @@ type ProcessInstancesHandle = {
 };
 
 const InstancesTableWrapper: React.FC = observer(() => {
+  const location = useLocation();
   const {getFilters} = useFilters();
   const filters = getFilters();
+
   const {process, tenant, version, active, incidents} = filters;
+  const sort = getSortFromUrl(location.search);
 
   const processDefinitionKey = processesStore.getProcessId({
     process,
@@ -60,6 +65,7 @@ const InstancesTableWrapper: React.FC = observer(() => {
     filters,
     processDefinitionKeys,
     enablePeriodicRefetch,
+    sort,
     enabled: true,
   });
 
@@ -111,26 +117,27 @@ function computeDisplayStateFromQueryResult(
   result: UseInfiniteQueryResult<InfiniteData<unknown>>,
   totalItems: number,
 ): React.ComponentProps<typeof InstancesTable>['state'] {
-  switch (true) {
-    case result.status === 'pending': {
-      return 'skeleton';
-    }
-    case result.isFetching &&
-      !result.isRefetching &&
-      !result.isFetchingPreviousPage &&
-      !result.isFetchingNextPage: {
-      return 'loading';
-    }
-    case result.status === 'error': {
-      return 'error';
-    }
-    case result.status === 'success' && totalItems === 0: {
-      return 'empty';
-    }
-    default: {
-      return 'content';
-    }
+  if (result.status === 'error') {
+    return 'error';
   }
+
+  if (result.status === 'pending' && !result.data) {
+    return 'skeleton';
+  }
+
+  if (
+    result.isFetching &&
+    !result.isFetchingPreviousPage &&
+    !result.isFetchingNextPage
+  ) {
+    return 'loading';
+  }
+
+  if (result.status === 'success' && totalItems === 0) {
+    return 'empty';
+  }
+
+  return 'content';
 }
 
 export {InstancesTableWrapper};

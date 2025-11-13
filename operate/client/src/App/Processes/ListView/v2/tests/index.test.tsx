@@ -196,9 +196,12 @@ describe('Instances', () => {
       expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
     });
 
-    expect(
-      withinRow.getByRole('checkbox', {name: /select row/i}),
-    ).toBeChecked();
+    const updatedRow = await screen.findByRole('row', {
+      name: /2251799813685594/i,
+    });
+    const updatedCheckbox = within(updatedRow).getByRole('checkbox');
+
+    expect(updatedCheckbox).toBeChecked();
   });
 
   it('should refetch data when navigated from header', async () => {
