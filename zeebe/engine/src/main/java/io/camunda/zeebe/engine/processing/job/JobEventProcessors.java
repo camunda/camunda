@@ -54,6 +54,7 @@ public final class JobEventProcessors {
             JobIntent.COMPLETE,
             new JobCompleteProcessor(
                 processingState,
+                writers,
                 jobMetrics,
                 eventHandle,
                 authCheckBehavior,
