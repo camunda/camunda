@@ -300,6 +300,14 @@
         <artifactId>logback-classic</artifactId>
         <version>${logback.version}</version>
       </dependency>
+
+      <!-- Override Spring Boot's commons-lang3 version to address CVEs -->
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.18.0</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
