@@ -30,7 +30,8 @@ public enum ContextType {
   USAGE_METRIC_TU(false),
   USER(false),
   USER_TASK(true),
-  VARIABLE(false);
+  VARIABLE(false),
+  CLUSTER_VARIABLE(false);
 
   private final boolean preserveOrder;
 
