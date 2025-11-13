@@ -57,7 +57,7 @@ public class ProcessInstanceForListViewEntity
   @SinceVersion880 private Long position;
   @SinceVersion880 private Set<String> tags;
 
-  @SinceVersion880 @JsonIgnore private Object[] sortValues;
+  @JsonIgnore private Object[] sortValues;
 
   @Override
   public String getId() {

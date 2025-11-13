@@ -19,41 +19,25 @@ public class IncidentEntity
     implements ExporterEntity<IncidentEntity>, PartitionedEntity<IncidentEntity>, TenantOwned {
 
   @SinceVersion880 private String id;
-
   @SinceVersion880 private long key;
-
   @SinceVersion880 private int partitionId;
-
   @SinceVersion880 private ErrorType errorType;
-
   @SinceVersion880 private String errorMessage;
-
   // Is only used by binding to ES results
   @SinceVersion880 private Integer errorMessageHash;
-
   @SinceVersion880 private IncidentState state;
-
   @SinceVersion880 private String flowNodeId;
-
   @SinceVersion880 private Long flowNodeInstanceKey;
-
   @SinceVersion880 private Long jobKey;
-
   @SinceVersion880 private Long processInstanceKey;
-
   @SinceVersion880 private OffsetDateTime creationTime;
-
   @SinceVersion880 private Long processDefinitionKey;
-
   @SinceVersion880 private String bpmnProcessId;
-
   @SinceVersion880 private String treePath;
-
   @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-
   @SinceVersion880 private Long position;
 
-  @SinceVersion880 @Deprecated @JsonIgnore private boolean pending = true;
+  @Deprecated @JsonIgnore private boolean pending = true;
 
   @Override
   public String getId() {

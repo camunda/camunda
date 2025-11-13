@@ -37,7 +37,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   @SinceVersion880 private List<BatchOperationErrorEntity> errors = List.of();
 
-  @SinceVersion880 @JsonIgnore private Object[] sortValues;
+  @JsonIgnore private Object[] sortValues;
 
   public String getName() {
     return name;

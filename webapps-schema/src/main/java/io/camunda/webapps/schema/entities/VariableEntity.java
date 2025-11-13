@@ -35,7 +35,7 @@ public class VariableEntity
 
   @SinceVersion880 private Long position;
 
-  @SinceVersion880 @JsonIgnore private Object[] sortValues;
+  @JsonIgnore private Object[] sortValues;
 
   @Override
   public String getId() {

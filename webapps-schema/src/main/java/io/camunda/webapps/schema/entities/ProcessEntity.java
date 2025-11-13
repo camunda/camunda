@@ -24,7 +24,7 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
   @SinceVersion880 private String bpmnXml;
   @SinceVersion880 private String resourceName;
   @SinceVersion880 private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
-  @SinceVersion880 @JsonIgnore private List<String> callActivityIds = new ArrayList<>();
+  @JsonIgnore private List<String> callActivityIds = new ArrayList<>();
   @SinceVersion880 private String formId;
   @SinceVersion880 private String formKey;
   @SinceVersion880 private Boolean isFormEmbedded;

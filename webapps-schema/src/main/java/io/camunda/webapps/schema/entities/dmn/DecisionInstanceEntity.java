@@ -66,7 +66,7 @@ public class DecisionInstanceEntity
   @SinceVersion880 private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
   @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  @SinceVersion880 @JsonIgnore private Object[] sortValues;
+  @JsonIgnore private Object[] sortValues;
 
   @Override
   public String getId() {

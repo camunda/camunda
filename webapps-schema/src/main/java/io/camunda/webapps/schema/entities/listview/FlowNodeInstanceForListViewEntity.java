@@ -31,14 +31,14 @@ public class FlowNodeInstanceForListViewEntity
   @SinceVersion880 private String activityId;
   @SinceVersion880 private FlowNodeState activityState;
   @SinceVersion880 private FlowNodeType activityType;
-  @SinceVersion880 @Deprecated @JsonIgnore private List<Long> incidentKeys = new ArrayList<>();
+  @Deprecated @JsonIgnore private List<Long> incidentKeys = new ArrayList<>();
   @SinceVersion880 private String errorMessage;
   @SinceVersion880 private boolean incident;
   @SinceVersion880 private boolean jobFailedWithRetriesLeft = false;
 
   @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  @SinceVersion880 @Deprecated @JsonIgnore private boolean pendingIncident;
+  @Deprecated @JsonIgnore private boolean pendingIncident;
 
   @SinceVersion880 private Long position;
   @SinceVersion880 private Long positionIncident;
@@ -48,8 +48,8 @@ public class FlowNodeInstanceForListViewEntity
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
-  @SinceVersion880 @JsonIgnore private Long startTime;
-  @SinceVersion880 @JsonIgnore private Long endTime;
+  @JsonIgnore private Long startTime;
+  @JsonIgnore private Long endTime;
 
   @Override
   public String getId() {

@@ -16,19 +16,12 @@ public class DecisionDefinitionEntity
     implements ExporterEntity<DecisionDefinitionEntity>, TenantOwned {
 
   @SinceVersion880 private String id;
-
   @SinceVersion880 private long key;
-
   @SinceVersion880 private String decisionId;
-
   @SinceVersion880 private String name;
-
   @SinceVersion880 private int version;
-
   @SinceVersion880 private String decisionRequirementsId;
-
   @SinceVersion880 private long decisionRequirementsKey;
-
   @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Override

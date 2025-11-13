@@ -46,7 +46,7 @@ public class FlowNodeInstanceEntity
   @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   @SinceVersion880 private Long scopeKey;
 
-  @SinceVersion880 @JsonIgnore private Object[] sortValues;
+  @JsonIgnore private Object[] sortValues;
 
   @Override
   public String getId() {
