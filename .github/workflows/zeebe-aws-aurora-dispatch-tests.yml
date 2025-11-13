@@ -5,6 +5,7 @@
 name: AWS Aurora Manual/Scheduled Run Integration Tests
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 4 * * Mon-Fri"
 
