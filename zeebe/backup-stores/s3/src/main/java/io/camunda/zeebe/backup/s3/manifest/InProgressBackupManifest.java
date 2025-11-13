@@ -26,7 +26,7 @@ public record InProgressBackupManifest(
     implements ValidBackupManifest {
 
   public InProgressBackupManifest {
-      descriptor = BackupDescriptorImpl.from(descriptor, id.checkpointId());
+    descriptor = BackupDescriptorImpl.from(descriptor, id.checkpointId());
   }
 
   @Override
