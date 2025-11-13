@@ -1,7 +1,7 @@
 # description: Runs regression tests on C8Run. Tests are defined as .http files
 # test location: /qa/http/c8run-tests
 # type: CI
-# owner: @camunda/identity
+# owner: @camunda/qa-engineering
 name: C8Run RDBMS Regression Tests
 
 on:
@@ -39,7 +39,7 @@ jobs:
   build_and_test_c8run:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      max-parallel: 2
       fail-fast: false
       matrix:
         env: [ 'local' ]
