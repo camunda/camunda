@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -310,7 +311,21 @@ public class CamundaMultiDBExtension
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
-      case RDBMS -> multiDbConfigurator.configureRDBMSSupport(isHistoryRelatedTest);
+      case RDBMS ->
+          multiDbConfigurator.configureRDBMSSupport(
+              isHistoryRelatedTest,
+              "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+              "sa",
+              "",
+              "org.h2.Driver");
+      case RDBMS_AURORA ->
+          multiDbConfigurator.configureRDBMSSupport(
+              isHistoryRelatedTest,
+              "jdbc:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/db-camunda-aurora-postgresql"
+                  + UUID.randomUUID(),
+              "",
+              "",
+              "org.postgresql.Driver");
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(
@@ -669,6 +684,7 @@ public class CamundaMultiDBExtension
     ES,
     OS,
     RDBMS,
+    RDBMS_AURORA,
     AWS_OS
   }
 }

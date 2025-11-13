@@ -17,7 +17,6 @@ import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
@@ -277,7 +276,12 @@ public class MultiDbConfigurator {
         });
   }
 
-  public void configureRDBMSSupport(final boolean retentionEnabled) {
+  public void configureRDBMSSupport(
+      final boolean retentionEnabled,
+      final String url,
+      final String username,
+      final String password,
+      final String driverClass) {
     // db type
     testApplication.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
     testApplication.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
@@ -285,12 +289,14 @@ public class MultiDbConfigurator {
     testApplication.withProperty("camunda.tasklist.database", DB_TYPE_RDBMS); // compatibility
     // --
 
-    testApplication.withProperty(
-        "spring.datasource.url",
-        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-    testApplication.withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
-    testApplication.withProperty("spring.datasource.username", "sa");
-    testApplication.withProperty("spring.datasource.password", "");
+    testApplication.withProperty("spring.datasource.url", url);
+    testApplication.withProperty("spring.datasource.driver-class-name", driverClass);
+    if (username != null) {
+      testApplication.withProperty("spring.datasource.username", username);
+    }
+    if (password != null) {
+      testApplication.withProperty("spring.datasource.password", password);
+    }
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
 
