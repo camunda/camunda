@@ -7,7 +7,6 @@
  */
 
 import {observer} from 'mobx-react';
-import {Restricted} from 'modules/components/Restricted';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {useEffect, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
@@ -142,21 +141,11 @@ const Decision: React.FC = observer(() => {
             />
           )}
           {isVersionSelected && decisionDefinitionId !== null && (
-            <Restricted
-              resourceBasedRestrictions={{
-                scopes: ['DELETE'],
-                permissions: groupedDecisionsStore.getPermissions(
-                  decisionId ?? undefined,
-                  tenant,
-                ),
-              }}
-            >
-              <DecisionOperations
-                decisionDefinitionId={decisionDefinitionId}
-                decisionName={decisionName}
-                decisionVersion={version}
-              />
-            </Restricted>
+            <DecisionOperations
+              decisionDefinitionId={decisionDefinitionId}
+              decisionName={decisionName}
+              decisionVersion={version}
+            />
           )}
         </>
       </PanelHeader>

@@ -13,8 +13,6 @@ import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupe
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {Decision} from '..';
 import {createWrapper} from './mocks';
-import {mockMe} from 'modules/mocks/api/v2/me';
-import {createUser} from 'modules/testUtils';
 
 vi.mock('modules/feature-flags', () => ({
   IS_DECISION_DEFINITION_DELETION_ENABLED: true,
@@ -55,25 +53,6 @@ describe('<Decision /> - operations', () => {
   it('should not show delete button when no version is selected', () => {
     render(<Decision />, {
       wrapper: createWrapper('/decisions?name=invoiceClassification'),
-    });
-
-    expect(
-      screen.queryByRole('button', {
-        name: /delete decision definition/i,
-      }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should not show delete button when user has no resource based permissions', async () => {
-    vi.stubGlobal('clientConfig', {
-      resourcePermissionsEnabled: true,
-    });
-    mockMe().withSuccess(createUser());
-
-    render(<Decision />, {
-      wrapper: createWrapper(
-        '/decisions?name=invoice-assign-approver&version=1',
-      ),
     });
 
     expect(
