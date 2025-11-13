@@ -20,10 +20,7 @@ import {
   deploy,
 } from '../../../../utils/zeebeClient';
 import {validateResponseShape} from '../../../../json-body-assertions';
-import {
-  defaultAssertionOptions,
-  batchOperationAssertionOptions,
-} from '../../../../utils/constants';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   failJob,
   searchJobKeysForProcessInstance,
@@ -228,6 +225,11 @@ test.describe
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
+
+    await test.step('Wait for batch operation to complete', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    });
+
     await test.step('Verify that the process instances have no incidents', async () => {
       await verifyIncidentsForProcessInstance(
         request,
@@ -239,7 +241,6 @@ test.describe
         request,
         localState.processInstanceKey2,
         0,
-        batchOperationAssertionOptions,
       );
     });
 
@@ -319,19 +320,22 @@ test.describe
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
+
+    await test.step('Wait for batch operation to complete', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    });
+
     await test.step('Verify that the process instances have no incidents', async () => {
       await verifyIncidentsForProcessInstance(
         request,
         localState.processInstanceKey1,
         0,
-        batchOperationAssertionOptions,
       );
 
       await verifyIncidentsForProcessInstance(
         request,
         localState.processInstanceKey2,
         0,
-        batchOperationAssertionOptions,
       );
     });
 
