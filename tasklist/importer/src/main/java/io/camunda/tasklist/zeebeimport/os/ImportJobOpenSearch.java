@@ -55,21 +55,24 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
     final List<Hit> hits = importBatch.getHits();
     final long maxBatchSizeBytes = tasklistProperties.getImporter().getMaxBatchSizeBytes();
     final List<ImportBatch> subBatches = new ArrayList<>();
+    final BatchFlusher<ImportBatchOpenSearch, Hit> flusher = new BatchFlusher<>(subBatches);
+
     ImportBatchOpenSearch currentBatch = null;
+    List<Hit> currentHits = new ArrayList<>();
     int currentBatchSize = 0;
     String currentIndex = null;
-    List<Hit> currentHits = null;
-    for (final Hit hit : hits) {
+
+    for (final Hit<?> hit : hits) {
       final String hitIndex = hit.index();
       final int hitSize = EntitySizeEstimator.estimateSize(hit);
-      if (currentBatch == null
-          || !hitIndex.equals(currentIndex)
-          || currentBatchSize + hitSize > maxBatchSizeBytes) {
-        if (currentBatch != null) {
-          currentBatch.setHits(currentHits);
-          currentBatch.setLastRecordIndexName(currentIndex);
-          subBatches.add(currentBatch);
-        }
+      final boolean shouldFlush =
+          currentBatch == null
+              || !hitIndex.equals(currentIndex)
+              || currentBatchSize + hitSize > maxBatchSizeBytes;
+      if (shouldFlush) {
+        // Flush the current batch if needed
+        flusher.flush(currentBatch, currentHits, currentIndex);
+        // Start a new batch
         currentBatch =
             new ImportBatchOpenSearch(
                 importBatch.getPartitionId(),
@@ -83,11 +86,8 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
       currentHits.add(hit);
       currentBatchSize += hitSize;
     }
-    if (currentBatch != null && currentHits != null && !currentHits.isEmpty()) {
-      currentBatch.setHits(currentHits);
-      currentBatch.setLastRecordIndexName(currentIndex);
-      subBatches.add(currentBatch);
-    }
+    // Flush the last batch if it has hits
+    flusher.flush(currentBatch, currentHits, currentIndex);
     return subBatches;
   }
 }

@@ -33,7 +33,7 @@ import io.camunda.operate.store.elasticsearch.ElasticsearchImportStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchZeebeStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
-import io.camunda.operate.util.NoBeansIT;
+import io.camunda.operate.util.NoBeansTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.processors.ImportBulkProcessor;
@@ -56,7 +56,7 @@ import org.springframework.stereotype.Component;
     classes = {
       TestApplicationWithNoBeans.class,
       ImportJob.class,
-      ImportListenerIT.TestImportListener.class,
+      ImportListenerTest.TestImportListener.class,
       ImportStore.class,
       ElasticsearchImportStore.class,
       RetryElasticsearchClient.class,
@@ -71,7 +71,7 @@ import org.springframework.stereotype.Component;
       ZeebeStore.class,
       ElasticsearchZeebeStore.class
     })
-public class ImportListenerIT extends NoBeansIT {
+public class ImportListenerTest extends NoBeansTest {
 
   @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
   @MockBean private ImportBulkProcessor elasticsearchBulkProcessor;

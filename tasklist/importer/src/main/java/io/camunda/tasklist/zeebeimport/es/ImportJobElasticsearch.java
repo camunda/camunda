@@ -56,39 +56,53 @@ public class ImportJobElasticsearch extends ImportJobAbstract {
     final List<SearchHit> hits = importBatch.getHits();
     final long maxBatchSizeBytes = tasklistProperties.getImporter().getMaxBatchSizeBytes();
     final List<ImportBatch> subBatches = new ArrayList<>();
+    final BatchFlusher<ImportBatchElasticSearch, SearchHit> flusher =
+        new BatchFlusher<>(subBatches);
     ImportBatchElasticSearch currentBatch = null;
+
+    List<SearchHit> currentHits = new ArrayList<>();
     int currentBatchSize = 0;
-    String currentIndex = null;
-    List<SearchHit> currentHits = null;
+    String currentIndexName = null;
+
     for (final SearchHit hit : hits) {
-      final String hitIndex = hit.getIndex();
+      final String hitIndexName = hit.getIndex();
       final int hitSize = EntitySizeEstimator.estimateSize(hit);
-      if (currentBatch == null
-          || !hitIndex.equals(currentIndex)
-          || currentBatchSize + hitSize > maxBatchSizeBytes) {
-        if (currentBatch != null) {
-          currentBatch.setHits(currentHits);
-          currentBatch.setLastRecordIndexName(currentIndex);
-          subBatches.add(currentBatch);
-        }
+      final boolean shouldFlush =
+          currentBatch == null
+              || !hitIndexName.equals(currentIndexName)
+              || currentBatchSize + hitSize > maxBatchSizeBytes;
+      if (shouldFlush) {
+        // Flush the current batch if needed
+        flusher.flush(currentBatch, currentHits, currentIndexName);
+        // Start a new batch
         currentBatch =
             new ImportBatchElasticSearch(
                 importBatch.getPartitionId(),
                 importBatch.getImportValueType(),
                 new ArrayList<>(),
-                hitIndex);
+                hitIndexName);
         currentHits = new ArrayList<>();
         currentBatchSize = 0;
-        currentIndex = hitIndex;
+        currentIndexName = hitIndexName;
       }
       currentHits.add(hit);
       currentBatchSize += hitSize;
     }
-    if (currentBatch != null && currentHits != null && !currentHits.isEmpty()) {
-      currentBatch.setHits(currentHits);
-      currentBatch.setLastRecordIndexName(currentIndex);
-      subBatches.add(currentBatch);
-    }
+    // Flush the last batch if it has hits
+    flusher.flush(currentBatch, currentHits, currentIndexName);
     return subBatches;
   }
+
+  //  private record BatchFlusher(List<ImportBatch> subBatches) {
+  //
+  //    void flush(
+  //        final ImportBatchElasticSearch batch, final List<SearchHit> batchHits, final String
+  // index) {
+  //      if (batch != null && batchHits != null && !batchHits.isEmpty()) {
+  //        batch.setHits(batchHits);
+  //        batch.setLastRecordIndexName(index);
+  //        subBatches.add(batch);
+  //      }
+  //    }
+  //  }
 }
