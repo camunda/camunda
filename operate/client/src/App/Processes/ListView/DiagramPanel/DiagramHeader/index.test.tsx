@@ -28,7 +28,6 @@ describe('DiagramHeader', () => {
           versionTag: 'MyVersionTag',
         }}
         processDefinitionId=""
-        tenant=""
       />,
     );
 
@@ -55,7 +54,6 @@ describe('DiagramHeader', () => {
           version: '1',
         }}
         processDefinitionId=""
-        tenant=""
       />,
     );
 
@@ -79,7 +77,6 @@ describe('DiagramHeader', () => {
           processName: 'My Process',
         }}
         processDefinitionId=""
-        tenant=""
       />,
     );
 

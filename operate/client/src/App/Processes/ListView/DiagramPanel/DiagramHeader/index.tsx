@@ -27,7 +27,6 @@ type ProcessDetails = {
 type DiagramHeaderProps = {
   processDetails: ProcessDetails;
   processDefinitionId?: string;
-  tenant?: string;
   panelHeaderRef?: React.RefObject<HTMLDivElement | null>;
 };
 
