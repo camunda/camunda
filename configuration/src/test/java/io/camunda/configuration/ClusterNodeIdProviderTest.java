@@ -157,7 +157,7 @@ public class ClusterNodeIdProviderTest {
   }
 
   @Nested
-  @TestPropertySource(properties = {"camunda.cluster.node-id-provider.static.node-id=99"})
+  @TestPropertySource(properties = {"camunda.cluster.node-id=99"})
   class WithStaticNodeIdProperty {
     final Camunda camunda;
 
