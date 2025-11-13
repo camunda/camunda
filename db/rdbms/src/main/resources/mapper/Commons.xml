@@ -198,6 +198,46 @@
                    LIMIT #{limit})
   </sql>
 
+  <!-- JSON Field Accessor - extracts database-specific JSON field access expression -->
+  <!-- Expects: headerFilter (with name), columnName (e.g., 'ut.CUSTOM_HEADERS') -->
+  <!-- Returns the SQL expression to access a JSON field value -->
+  <sql id="jsonFieldAccessor">
+    <choose>
+      <when test="_databaseId == 'postgresql'">${columnName} ->> #{headerFilter.name}</when>
+      <when test="_databaseId == 'mysql'">JSON_UNQUOTE(JSON_EXTRACT(${columnName}, CONCAT('$.', #{headerFilter.name})))</when>
+      <when test="_databaseId == 'mariadb'">JSON_UNQUOTE(JSON_EXTRACT(${columnName}, CONCAT('$.', #{headerFilter.name})))</when>
+      <when test="_databaseId == 'h2'">JSON_VALUE(${columnName}, CONCAT('$.', #{headerFilter.name}))</when>
+      <when test="_databaseId == 'mssql'">JSON_VALUE(${columnName}, CONCAT('$.', #{headerFilter.name}))</when>
+      <when test="_databaseId == 'oracle'">JSON_VALUE(${columnName}, '$.${headerFilter.name}')</when>
+      <otherwise>NULL</otherwise> <!-- Unsupported database -->
+    </choose>
+  </sql>
+
+  <!-- JSON Header Operation Condition - applies operations to JSON fields -->
+  <!-- Expects: headerFilter, columnName, operation (with operator and value/values) -->
+  <sql id="jsonHeaderOperationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        <include refid="io.camunda.db.rdbms.sql.Commons.jsonFieldAccessor"/> = #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        <include refid="io.camunda.db.rdbms.sql.Commons.jsonFieldAccessor"/> != #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        <include refid="io.camunda.db.rdbms.sql.Commons.jsonFieldAccessor"/>
+        LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+        ESCAPE ${escapeChar}
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        <include refid="io.camunda.db.rdbms.sql.Commons.jsonFieldAccessor"/>
+        IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        <include refid="io.camunda.db.rdbms.sql.Commons.jsonFieldAccessor"/> IS NOT NULL
+      </when>
+    </choose>
+  </sql>
+
   <resultMap id="flowNodeStatisticsResultMap"
     type="io.camunda.search.entities.ProcessFlowNodeStatisticsEntity">
     <constructor>
