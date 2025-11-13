@@ -37,6 +37,7 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
+import io.camunda.client.api.search.filter.HeaderValueFilter;
 import io.camunda.client.api.search.sort.AuthorizationSort;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
@@ -86,6 +87,7 @@ import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
+import io.camunda.client.impl.search.filter.HeaderValueFilterImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
 import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationItemSortImpl;
@@ -252,6 +254,12 @@ public final class SearchRequestBuilders {
 
   public static VariableValueFilter variableValueFilter(final Consumer<VariableValueFilter> fn) {
     final VariableValueFilterImpl filter = new VariableValueFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static HeaderValueFilter headerValueFilter(final Consumer<HeaderValueFilter> fn) {
+    final HeaderValueFilterImpl filter = new HeaderValueFilterImpl();
     fn.accept(filter);
     return filter;
   }

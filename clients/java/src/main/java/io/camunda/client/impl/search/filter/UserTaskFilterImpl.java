@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.HeaderValueFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
@@ -190,6 +191,21 @@ public class UserTaskFilterImpl
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
       filter.setLocalVariables(
           VariableFilterMapper.toVariableValueFilterProperty(variableValueFilters));
+    }
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter customHeaders(final List<Consumer<HeaderValueFilter>> headerValueFilters) {
+    filter.setCustomHeaders(HeaderFilterMapper.toHeaderValueFilterProperty(headerValueFilters));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter customHeaders(final Map<String, Object> headerValueFilters) {
+    if (headerValueFilters != null && !headerValueFilters.isEmpty()) {
+      filter.setCustomHeaders(
+          HeaderFilterMapper.toHeaderValueFilterProperty(headerValueFilters));
     }
     return this;
   }
