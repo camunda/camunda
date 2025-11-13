@@ -608,32 +608,35 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.bpmnDiagram).toBeVisible();
   });
 
-  test('task completion with large variable form', async ({
+  test('task completion with large variable form @v1-only', async ({
     taskPanelPage,
     taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Big Variable Usertask');
+
+    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assertFieldValue(
+      'Process input variable',
+      'name:"Adeel Solangi"',
+      {contains: true},
+    );
+    await taskDetailsPage.assertFieldValue(
+      'Process input variable',
+      'Maecenas quis nisi nunc.", version:2.69',
+      {contains: true},
+    );
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+  });
+
+  test('task completion with large variable form @v2-only', async ({
+    taskPanelPage,
     page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Big Variable Usertask');
 
-    const isV1Mode = process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED === 'false';
-
-    if (isV1Mode) {
-      await taskDetailsPage.clickAssignToMeButton();
-      await taskDetailsPage.assertFieldValue(
-        'Process input variable',
-        'name:"Adeel Solangi"',
-        {contains: true},
-      );
-      await taskDetailsPage.assertFieldValue(
-        'Process input variable',
-        'Maecenas quis nisi nunc.", version:2.69',
-        {contains: true},
-      );
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-    } else {
-      await expect(page.getByText('Variables are too large')).toBeVisible();
-    }
+    await expect(page.getByText('Variables are too large')).toBeVisible();
   });
 });

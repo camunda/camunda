@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.3-SNAPSHOT</version>
+    <version>8.8.4-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -371,6 +371,7 @@
     <dependency>
       <groupId>com.oracle.database.jdbc</groupId>
       <artifactId>ojdbc8</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -1046,6 +1047,30 @@
                 <java.version>${java.version}</java.version>
                 <description>${project.description}</description>
               </additionalProperties>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <configuration>
+              <!-- See https://logging.apache.org/log4j/2.x/manual/plugins.html#plugin-registry -->
+              <annotationProcessorPaths>
+                <!-- Include `log4j-core` providing `org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor` that generates `Log4j2Plugins.dat`-->
+                <path>
+                  <groupId>org.apache.logging.log4j</groupId>
+                  <artifactId>log4j-core</artifactId>
+                  <version>${version.log4j}</version>
+                </path>
+              </annotationProcessorPaths>
+              <annotationProcessors>
+                <!-- Process sources using `PluginProcessor` to generate `Log4j2Plugins.dat` -->
+                <processor>org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor</processor>
+              </annotationProcessors>
             </configuration>
           </execution>
         </executions>

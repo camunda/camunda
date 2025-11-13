@@ -138,6 +138,7 @@ public class HttpClientFactory {
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
+            .setMaxConnPerRoute(config.getMaxHttpConnections())
             .build();
 
     final HttpAsyncClientBuilder builder =

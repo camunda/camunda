@@ -181,6 +181,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
     return camundaClientConfiguration.preferRestOverGrpc();
   }
 
+  @Override
+  public int getMaxHttpConnections() {
+    return camundaClientConfiguration.getMaxHttpConnections();
+  }
+
   private static class CredentialsProviderCompat implements CredentialsProvider {
     private final io.camunda.client.CredentialsProvider credentialsProvider;
 

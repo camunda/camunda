@@ -37,12 +37,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @SpringBootTest
 @TestPropertySource(
     properties = {
-      "zeebe.client.gateway.address=localhost12345",
-      "zeebe.client.broker.grpcAddress=https://localhost:1234",
-      "zeebe.client.broker.restAddress=https://localhost:8080",
-      "zeebe.client.job.pollinterval=99s",
-      "zeebe.client.worker.name=testName",
-      "zeebe.client.cloud.secret=processOrchestration"
+      "camunda.client.grpcAddress=https://localhost:1234",
+      "camunda.client.restAddress=https://localhost:8080",
+      "camunda.client.max-http-connections=1234",
+      "camunda.client.worker.defaults.poll-interval=99s",
+      "camunda.client.worker.defaults.name=testName",
+      "camunda.client.auth.client-secret=processOrchestration"
     })
 @ContextConfiguration(classes = JavaClientPropertiesTest.TestConfig.class)
 public class JavaClientPropertiesTest {
@@ -57,6 +57,11 @@ public class JavaClientPropertiesTest {
   @Test
   public void hasRestAddress() {
     assertThat(properties.getRestAddress().toString()).isEqualTo("https://localhost:8080");
+  }
+
+  @Test
+  public void hasMaxHttpConnections() {
+    assertThat(properties.getMaxHttpConnections()).isEqualTo(1234);
   }
 
   @Test

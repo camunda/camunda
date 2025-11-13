@@ -415,7 +415,7 @@ describe('Processes', () => {
     );
   });
 
-  it('should handle pagination correctly', async () => {
+  it('should handle load more correctly', async () => {
     const processesPage1 = [
       getProcessDefinitionMock({
         name: 'Process A',
@@ -432,7 +432,7 @@ describe('Processes', () => {
         processDefinitionId: 'procC',
       }),
     ];
-    const TOTAL_ITEMS = 24;
+    const TOTAL_ITEMS = 3;
 
     nodeMockServer.use(
       http.post<PathParams, QueryProcessDefinitionsRequestBody>(
@@ -442,17 +442,22 @@ describe('Processes', () => {
           const after = body.page?.after;
 
           if (typeof after === 'string') {
-            return HttpResponse.json(
-              getQueryProcessDefinitionsResponseMock(
-                processesPage2,
-                TOTAL_ITEMS,
-              ),
-            );
+            return HttpResponse.json({
+              items: processesPage2,
+              page: {
+                totalItems: TOTAL_ITEMS,
+                endCursor: undefined,
+              },
+            });
           }
 
-          return HttpResponse.json(
-            getQueryProcessDefinitionsResponseMock(processesPage1, TOTAL_ITEMS),
-          );
+          return HttpResponse.json({
+            items: processesPage1,
+            page: {
+              totalItems: TOTAL_ITEMS,
+              endCursor: 'cursor2',
+            },
+          });
         },
       ),
     );
@@ -470,30 +475,15 @@ describe('Processes', () => {
     expect(screen.queryByText('Process C')).not.toBeInTheDocument();
     expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
 
-    const nextButton = screen.getByRole('button', {name: /next page/i});
-    const prevButton = screen.getByRole('button', {name: /previous page/i});
-
-    expect(nextButton).toBeEnabled();
-    expect(prevButton).toBeDisabled();
-
-    await user.click(nextButton);
+    await user.click(screen.getByRole('button', {name: /load more/i}));
 
     expect(await screen.findByText('Process C')).toBeVisible();
-    expect(screen.queryByText('Process A')).not.toBeInTheDocument();
-    expect(screen.queryByText('Process B')).not.toBeInTheDocument();
-    expect(screen.getAllByTestId('process-tile')).toHaveLength(1);
-
-    expect(nextButton).toBeDisabled();
-    expect(prevButton).toBeEnabled();
-
-    await user.click(prevButton);
-
-    expect(await screen.findByText('Process A')).toBeVisible();
+    expect(screen.getByText('Process A')).toBeVisible();
     expect(screen.getByText('Process B')).toBeVisible();
-    expect(screen.queryByText('Process C')).not.toBeInTheDocument();
-    expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
+    expect(screen.getAllByTestId('process-tile')).toHaveLength(3);
 
-    expect(nextButton).toBeEnabled();
-    expect(prevButton).toBeDisabled();
+    expect(
+      screen.queryByRole('button', {name: /load more/i}),
+    ).not.toBeInTheDocument();
   });
 });

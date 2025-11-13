@@ -62,7 +62,6 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -642,17 +641,23 @@ public final class EngineRule extends ExternalResource {
   }
 
   public void awaitIdentitySetup() {
-    final var totalAmountOfAuthorizationsCreated =
-        AuthorizationResourceType.getUserProvidedResourceTypes().size();
+    final var identitySetup =
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).getFirst();
 
+    /*
+     * We'll need to await for the identity setup to be completed before proceeding, but it's not
+     * easy to know what to wait for. The INITIALIZED event is written before all the follow-up
+     * commands are processed, so we can't wait just for that. Instead, we need to wait for all the
+     * authorizations to be created on all partitions as well.
+     */
+    final int totalAmountOfAuthorizationsCreated =
+        identitySetup.getValue().getAuthorizations().size();
     if (partitionCount > 1) {
-      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
       RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
           .withDistributionIntent(AuthorizationIntent.CREATE)
           .skip(totalAmountOfAuthorizationsCreated - 1)
           .await();
     } else {
-      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
       RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
           .skip(totalAmountOfAuthorizationsCreated - 1)
           .await();

@@ -68,5 +68,6 @@ public class CamundaClientConfigurationDefaultPropertiesTest {
     assertThat(configuration.getOverrideAuthority()).isNull();
     assertThat(configuration.getRestAddress()).isEqualTo(new URI("http://0.0.0.0:8080"));
     assertThat(configuration.preferRestOverGrpc()).isTrue();
+    assertThat(configuration.getMaxHttpConnections()).isEqualTo(100);
   }
 }

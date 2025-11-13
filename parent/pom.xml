@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.8.3-SNAPSHOT</version>
+    <version>8.8.4-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -64,7 +64,7 @@
     <version.httpclient5>5.5</version.httpclient5>
     <version.httpcore5>5.3.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.8.0</version.identity>
+    <version.identity>8.8.1</version.identity>
     <version.instancio>5.5.0</version.instancio>
     <version.surefire>3.5.3</version.surefire>
     <version.jackson>2.19.4</version.jackson>
@@ -75,7 +75,7 @@
     <version.mockito>5.18.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.10</version.msgpack>
-    <version.netty>4.1.127.Final</version.netty>
+    <version.netty>4.1.128.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.17.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
@@ -83,7 +83,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.31.1</version.protobuf>
     <version.protobuf-common>2.59.2</version.protobuf-common>
-    <version.micrometer>1.15.2</version.micrometer>
+    <version.micrometer>1.15.6</version.micrometer>
     <version.rocksdbjni>10.2.1</version.rocksdbjni>
     <version.sbe>1.35.6</version.sbe>
     <version.scala>2.13.16</version.scala>
@@ -104,8 +104,8 @@
     <version.rest-assured>5.5.5</version.rest-assured>
     <version.spring>6.2.11</version.spring>
     <version.spring-security>6.5.5</version.spring-security>
-    <version.spring-boot>3.5.5</version.spring-boot>
-    <version.tomcat>10.1.44</version.tomcat>
+    <version.spring-boot>3.5.6</version.spring-boot>
+    <version.tomcat>10.1.48</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -119,7 +119,7 @@
     <version.resilience4j>2.3.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.181</version.classgraph>
+    <version.classgraph>4.8.184</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -235,7 +235,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.8.2</backwards.compat.version>
+    <backwards.compat.version>8.8.3</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -1183,6 +1183,12 @@
         <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-annotations-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>

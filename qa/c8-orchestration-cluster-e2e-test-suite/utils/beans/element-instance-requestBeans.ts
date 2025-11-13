@@ -33,3 +33,18 @@ export const filterCases = (resourceId: string) => [
     expectedTotal: 2,
   },
 ];
+
+export const EXPECTED_ELEMENT_INSTANCE_GET_SUCCESS = (
+  processInstanceKey: string,
+  elementInstanceKey: string,
+) => ({
+  processDefinitionId: 'element_instance_get_update_tests',
+  elementId: 'prepare_work_task',
+  elementName: 'prepare work',
+  type: 'USER_TASK',
+  state: 'ACTIVE',
+  hasIncident: false,
+  tenantId: '<default>',
+  elementInstanceKey: elementInstanceKey,
+  processInstanceKey: processInstanceKey,
+});

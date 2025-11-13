@@ -354,9 +354,8 @@
     "relativeDateYearsFmt_speech": "do 'of' MMMM, yyyy",
     "relativeDateYearsFmt_time_speech": "do 'of' MMMM, yyyy 'at' p",
     "relativeDateUnknown": "'Unknown'",
-    "processesTabPreviousPageButtonLabel": "Previous page",
-    "processesTabNextPageButtonLabel": "Next page",
-    "processesTabPaginationOfLabel": "{{currentPage}} of {{totalPages}}",
+    "processesLoadMore": "Load more",
+    "processesLoadingMore": "Loading...",
     "deniedReason": "The task {{type}} was rejected by the system."
   }
 }

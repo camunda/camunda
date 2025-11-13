@@ -111,6 +111,9 @@ public class CamundaClientProperties {
    */
   private Duration requestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
 
+  /** The maximum number of concurrent HTTP connections the client can open. */
+  private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
+
   public CamundaClientCloudProperties getCloud() {
     return cloud;
   }
@@ -265,6 +268,14 @@ public class CamundaClientProperties {
     this.enabled = enabled;
   }
 
+  public int getMaxHttpConnections() {
+    return maxHttpConnections;
+  }
+
+  public void setMaxHttpConnections(final int maxHttpConnections) {
+    this.maxHttpConnections = maxHttpConnections;
+  }
+
   @Override
   public String toString() {
     return "CamundaClientProperties{"
@@ -296,6 +307,8 @@ public class CamundaClientProperties {
         + worker
         + ", preferRestOverGrpc="
         + preferRestOverGrpc
+        + ", maxHttpConnections="
+        + maxHttpConnections
         + ", grpcAddress="
         + grpcAddress
         + ", restAddress="

@@ -80,6 +80,21 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
 
   @Test
   @Order(1)
+  void shouldApplyLifecyclePolicyToRuntimeIndex() throws IOException, InterruptedException {
+    final var indexName = String.format("%s-tasklist-task-8.5.0_", PROVIDER.getIndexPrefix());
+    if (PROVIDER.isElasticSearch()) {
+      assertThatIlmPolicyIsPresent();
+      assertIndexHasIlmPolicy(indexName);
+      assertIndexDeletionPolicyIsNotTriggeredElasticsearch(indexName);
+    } else {
+      assertThatIsmPolicyIsPresent();
+      assertIndexHasIsmPolicy(indexName);
+      assertIndexDeletionPolicyIsNotTriggeredOpensearch(indexName);
+    }
+  }
+
+  @Test
+  @Order(2)
   void shouldReturnReindexedTasks(final CamundaMigrator migrator) {
     final var searchResponse = migrator.getCamundaClient().newUserTaskSearchRequest().send().join();
 
@@ -141,7 +156,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
   }
 
   @Test
-  @Order(2)
+  @Order(3)
   void shouldApplyLifecyclePolicyToDatedIndices() {
     Awaitility.await("wait until lifecycle policies are applied and initialized")
         .atMost(Duration.ofSeconds(30))
@@ -150,16 +165,12 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
   }
 
   @Test
-  @Order(3)
-  void shouldApplyLifecyclePolicyToRuntimeIndex() throws IOException, InterruptedException {
+  @Order(4)
+  void shouldTriggerLifecyclePolicyForRuntimeIndex() throws IOException, InterruptedException {
     final var indexName = String.format("%s-tasklist-task-8.5.0_", PROVIDER.getIndexPrefix());
     if (PROVIDER.isElasticSearch()) {
-      assertThatIlmPolicyIsPresent();
-      assertIndexHasIlmPolicy(indexName);
       assertIndexDeletionPolicyIsTriggeredElasticsearch(indexName);
     } else {
-      assertThatIsmPolicyIsPresent();
-      assertIndexHasIsmPolicy(indexName);
       assertIndexDeletionPolicyIsTriggeredOpensearch(indexName);
     }
   }
@@ -169,7 +180,6 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
         URI.create(String.format("%s/%s/_ilm/explain", PROVIDER.getDatabaseUrl(), indexName));
     Awaitility.await("wait until runtime index is deleted after retention period")
         .atMost(Duration.ofSeconds(215))
-        .atLeast(Duration.ofSeconds(15))
         .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
@@ -194,7 +204,6 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
             String.format("%s/_plugins/_ism/explain/%s", PROVIDER.getDatabaseUrl(), indexName));
     Awaitility.await("wait until runtime index is deleted after retention period")
         .atMost(Duration.ofSeconds(235))
-        .atLeast(Duration.ofSeconds(15))
         .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
@@ -212,7 +221,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
   }
 
   @Test
-  @Order(4)
+  @Order(5)
   void shouldCreateNewTask(final CamundaMigrator migrator) {
     final var zeebeProcessDefinitionKey =
         deployProcess(migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee(null));
@@ -375,5 +384,52 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
       fail("Failed to get dated task index names", e);
       throw new RuntimeException(e);
     }
+  }
+
+  private void assertIndexDeletionPolicyIsNotTriggeredElasticsearch(final String indexName) {
+    final var uri =
+        URI.create(String.format("%s/%s/_ilm/explain", PROVIDER.getDatabaseUrl(), indexName));
+    Awaitility.await("Assert the deletion policy is not triggered for a given duration")
+        .during(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(15))
+        .pollInterval(Duration.ofSeconds(1))
+        .untilAsserted(
+            () -> {
+              final HttpRequest request =
+                  HttpRequest.newBuilder()
+                      .uri(uri)
+                      .header("Content-Type", "application/json")
+                      .GET()
+                      .build();
+              final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+              final var jsonResponse = OBJECT_MAPPER.readTree(response.body());
+              assertThat(jsonResponse.at("/indices/" + indexName + "/phase").asText())
+                  .isNotEqualTo("delete");
+              assertThat(jsonResponse.at("/indices/" + indexName + "/action").asText())
+                  .isNotEqualTo("delete");
+            });
+  }
+
+  private void assertIndexDeletionPolicyIsNotTriggeredOpensearch(final String indexName) {
+    final var uri =
+        URI.create(
+            String.format("%s/_plugins/_ism/explain/%s", PROVIDER.getDatabaseUrl(), indexName));
+    Awaitility.await("Assert the deletion policy is not triggered for a given duration")
+        .during(Duration.ofSeconds(110))
+        .atMost(Duration.ofSeconds(120))
+        .pollInterval(Duration.ofSeconds(1))
+        .untilAsserted(
+            () -> {
+              final HttpRequest request =
+                  HttpRequest.newBuilder()
+                      .uri(uri)
+                      .header("Content-Type", "application/json")
+                      .GET()
+                      .build();
+              final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+              final var jsonResponse = OBJECT_MAPPER.readTree(response.body());
+              assertThat(jsonResponse.at("/" + indexName + "/transition_to").asText())
+                  .isNotEqualTo("deleted");
+            });
   }
 }
