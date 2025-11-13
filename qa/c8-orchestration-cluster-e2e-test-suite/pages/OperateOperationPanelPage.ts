@@ -6,14 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 
 export class OperateOperationPanelPage {
   private page: Page;
   readonly expandButton: Locator;
   readonly collapseButton: Locator;
   readonly operationList: Locator;
-  
+
   constructor(page: Page) {
     this.page = page;
     this.expandButton = page.getByRole('button', { name: 'Expand Operations' })
@@ -21,7 +21,7 @@ export class OperateOperationPanelPage {
     this.operationList = page.getByTestId('operations-list')
   }
 
-   selectAllOperationEntries(): Locator {
+  getAllOperationEntries(): Locator {
     return this.operationList.getByTestId('operations-entry');
   }
 
@@ -38,13 +38,13 @@ export class OperateOperationPanelPage {
   }
 
   async expandOperationIdField(): Promise<void> {
-    await this.expandButton.click({timeout: 30000});
+    await this.expandButton.click({ timeout: 30000 });
   }
 
   async collapseOperationIdField(): Promise<void> {
     await this.collapseButton.click();
   }
 
-  
+
 
 }

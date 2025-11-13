@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
-import {OperateDiagramPage} from './OperateDiagramPage';
-import {sleep} from '../utils/sleep';
+import { Page, Locator, expect } from '@playwright/test';
+import { OperateDiagramPage } from './OperateDiagramPage';
+import { sleep } from '../utils/sleep';
 import { checkUpdateOnVersion } from 'utils/zeebeClient';
 
 class OperateProcessesPage {
@@ -32,7 +32,9 @@ class OperateProcessesPage {
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
   readonly processInstanceKeyCell: Locator;
-  readonly migrateSelectedProcessesButton: Locator;
+  readonly migrateBatchOperationButton: Locator;
+  readonly cancelBatchOperationButton: Locator;
+  readonly applyCancelBatchOperationDialogButton: Locator;
   readonly continueMigrationDialogButton: Locator;
   readonly cancelProcessInstanceButton: Locator;
   readonly cancelProcessInstanceDialogButton: Locator;
@@ -46,26 +48,26 @@ class OperateProcessesPage {
     this.processResultCount = page.getByTestId('result-count');
     this.processActiveCheckbox = page
       .locator('label')
-      .filter({hasText: 'Active'});
+      .filter({ hasText: 'Active' });
     this.processCompletedCheckbox = page
       .locator('label')
-      .filter({hasText: 'Completed'});
+      .filter({ hasText: 'Completed' });
     this.processRunningInstancesCheckbox = page
       .locator('label')
-      .filter({hasText: 'Running Instances'});
+      .filter({ hasText: 'Running Instances' });
     this.processIncidentsCheckbox = page
       .locator('label')
-      .filter({hasText: 'Incidents'});
+      .filter({ hasText: 'Incidents' });
     this.processPageHeading = page
       .getByTestId('expanded-panel')
-      .getByRole('heading', {name: 'Process'});
+      .getByRole('heading', { name: 'Process' });
     this.noMatchingInstancesMessage = page.getByText(
       'There are no Instances matching this filter set',
     );
     this.processFinishedInstancesCheckbox = page
       .getByTestId('filter-finished-instances')
       .getByRole('checkbox');
-    this.processNameFilter = page.getByRole('combobox', {name: 'name'});
+    this.processNameFilter = page.getByRole('combobox', { name: 'name' });
     this.processInstanceLink = page
       .getByRole('link', {
         name: 'view instance',
@@ -97,10 +99,14 @@ class OperateProcessesPage {
       .getByTestId('cell-endDate')
       .first();
     this.versionCell = page.getByTestId('cell-processVersion');
-    this.migrateSelectedProcessesButton = page.getByRole('button', {name: 'Migrate',});
+    this.migrateBatchOperationButton = page.getByRole('button', { name: 'Migrate', });
+    this.cancelBatchOperationButton = page.getByTestId('cancel-batch-operation');
+    this.applyCancelBatchOperationDialogButton = page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Apply', });
     this.continueMigrationDialogButton = page
       .getByRole('dialog')
-      .getByRole('button', {name: 'Continue',});
+      .getByRole('button', { name: 'Continue', });
     this.cancelProcessInstanceButton = page.getByRole('button', { name: 'Cancel Instance' }).first();
     this.cancelProcessInstanceDialogButton = page
       .getByRole('dialog')
@@ -114,26 +120,26 @@ class OperateProcessesPage {
   }
 
   async clickProcessCompletedCheckbox(): Promise<void> {
-    await this.processCompletedCheckbox.click({timeout: 120000});
+    await this.processCompletedCheckbox.click({ timeout: 120000 });
   }
 
   async clickProcessIncidentsCheckbox(): Promise<void> {
-    await this.processIncidentsCheckbox.click({timeout: 90000});
+    await this.processIncidentsCheckbox.click({ timeout: 90000 });
   }
 
   async clickRunningProcessInstancesCheckbox(): Promise<void> {
-    await this.processRunningInstancesCheckbox.click({timeout: 90000});
+    await this.processRunningInstancesCheckbox.click({ timeout: 90000 });
   }
 
   async clickFinishedProcessInstancesCheckbox(): Promise<void> {
-    await this.processFinishedInstancesCheckbox.click({timeout: 90000});
+    await this.processFinishedInstancesCheckbox.click({ timeout: 90000 });
   }
 
   async filterByProcessName(name: string): Promise<void> {
     await this.processNameFilter.click();
     await this.processNameFilter.fill(name);
     await this.page.keyboard.press('Enter');
-    await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
+    await this.page.getByRole('heading', { name }).waitFor({ state: 'visible' });
   }
 
   async clickProcessInstanceLink(): Promise<void> {
@@ -197,17 +203,22 @@ class OperateProcessesPage {
     await this.processNameSortButton.click();
   }
 
-  async selectNthProcessCheckbox(row: number): Promise<void> {
-    const id = await this.page.getByRole('checkbox', { name: 'Select row' }).nth(row).getAttribute('id');
-    await this.page.locator(`label[for="${id}"]`).click();
+  async selectProcessCheckboxByPIK(...PIK: string[]): Promise<void> {
+    for (const key of PIK) {
+      await this.page.locator(`label[for$="${key}"]`).click();
+    }
   }
 
-  async selectProcessCheckboxByPIK(PIK: string): Promise<void> {
-    await this.page.locator(`label[for$="${PIK}"]`).click();
+  async clickCancelBatchOperationButton(): Promise<void> {
+    await this.cancelBatchOperationButton.click();
   }
 
-  async clickMigrateSelectedProcessesButton(): Promise<void> {
-    await this.migrateSelectedProcessesButton.click();
+  async clickApplyCancelBatchOperationDialogButton(): Promise<void> {
+    await this.applyCancelBatchOperationDialogButton.click();
+  }
+
+  async clickMigrateBatchOperationButton(): Promise<void> {
+    await this.migrateBatchOperationButton.click();
   }
 
   async clickContinueMigrationDialogButton(): Promise<void> {
@@ -219,7 +230,7 @@ class OperateProcessesPage {
   }
 
   async clickCancelProcessInstanceDialogButton(): Promise<void> {
-    await this.cancelProcessInstanceDialogButton.click( {timeout: 6000} );
+    await this.cancelProcessInstanceDialogButton.click({ timeout: 6000 });
   }
 
   async tableHasInstanceKey(keyStr: string): Promise<boolean> {
@@ -241,13 +252,13 @@ class OperateProcessesPage {
 
   static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
     return page
-          .getByTestId('data-list')
-          .getByRole('row')
-          .filter({
-            has: page.getByTestId('cell-processInstanceKey').filter({ hasText: keyStr }),
-          });
+      .getByTestId('data-list')
+      .getByRole('row')
+      .filter({
+        has: page.getByTestId('cell-processInstanceKey').filter({ hasText: keyStr }),
+      });
   }
 }
 
 
-export {OperateProcessesPage};
+export { OperateProcessesPage };

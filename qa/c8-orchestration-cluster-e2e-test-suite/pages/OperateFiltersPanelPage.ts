@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 import { sleep } from 'utils/sleep';
 
 type OptionalFilter =
@@ -32,6 +32,7 @@ export class OperateFiltersPanelPage {
   readonly processInstanceKeysFilter: Locator;
   readonly processInstanceKeysFilterOption: Locator;
   readonly parentProcessInstanceKey: Locator;
+  readonly processInstanceKey: Locator;
   readonly flowNodeFilter: Locator;
   readonly operationIdFilter: Locator;
   readonly resetFiltersButton: Locator;
@@ -54,7 +55,7 @@ export class OperateFiltersPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.activeCheckbox = this.page.getByRole('checkbox', {name: 'Active'});
+    this.activeCheckbox = this.page.getByRole('checkbox', { name: 'Active' });
     this.incidentsCheckbox = this.page.getByRole('checkbox', {
       name: 'Incidents',
     });
@@ -79,6 +80,7 @@ export class OperateFiltersPanelPage {
     this.parentProcessInstanceKey = page.getByRole('textbox', {
       name: 'parent process instance key',
     });
+    this.processInstanceKey = page.locator('textarea#ids');
     this.flowNodeFilter = this.page.getByRole('combobox', {
       name: 'flow node',
     });
@@ -146,23 +148,23 @@ export class OperateFiltersPanelPage {
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
-    await this.page.getByLabel(filterName, {exact: true}).hover();
+    await this.page.getByLabel(filterName, { exact: true }).hover();
     await this.page.getByLabel(`Remove ${filterName} Filter`).click();
   }
 
   async selectProcess(option: string) {
     await this.processNameFilter.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    await this.page.getByRole('option', { name: option, exact: true }).click();
   }
 
   async selectVersion(option: string) {
     await this.processVersionFilter.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    await this.page.getByRole('option', { name: option, exact: true }).click();
   }
 
   async selectFlowNode(option: string) {
     await this.flowNodeFilter.click();
-    await this.page.getByRole('option', {name: option}).click();
+    await this.page.getByRole('option', { name: option }).click();
   }
 
   async fillVariableNameFilter(name: string) {
@@ -205,7 +207,7 @@ export class OperateFiltersPanelPage {
     await expect(this.dateFilterDialog).toBeVisible();
 
     const date = new Date();
-    const monthName = date.toLocaleString('default', {month: 'long'});
+    const monthName = date.toLocaleString('default', { month: 'long' });
     const year = date.getFullYear();
 
     await this.fromDateInput.click();
@@ -246,7 +248,7 @@ export class OperateFiltersPanelPage {
   }
 
   async clickMultipleVariablesSwitch() {
-    await this.multipleVariablesSwitch.click({force: true});
+    await this.multipleVariablesSwitch.click({ force: true });
   }
 
   async filterByOperationId(opId: string) {
