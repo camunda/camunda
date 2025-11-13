@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -33,7 +34,6 @@ public final class BackupService extends Actor implements BackupManager {
   private final JournalInfoProvider journalInfoProvider;
   private final int nodeId;
   private final int partitionId;
-  private final int numberOfPartitions;
   private final BackupServiceImpl internalBackupManager;
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
@@ -42,7 +42,6 @@ public final class BackupService extends Actor implements BackupManager {
   public BackupService(
       final int nodeId,
       final int partitionId,
-      final int numberOfPartitions,
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
@@ -51,7 +50,6 @@ public final class BackupService extends Actor implements BackupManager {
       final LogStreamWriter logStreamWriter) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
-    this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     metrics = new BackupManagerMetrics(partitionRegistry);
@@ -72,17 +70,15 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Void> takeBackup(
-      final long checkpointId, final long checkpointPosition, final int partitionCount) {
+  public ActorFuture<Void> takeBackup(final BackupDescriptor backupDescriptor) {
     final ActorFuture<Void> result = createFuture();
     actor.run(
         () -> {
           final InProgressBackupImpl inProgressBackup =
               new InProgressBackupImpl(
                   snapshotStore,
-                  getBackupId(checkpointId),
-                  checkpointPosition,
-                  partitionCount,
+                  getBackupId(backupDescriptor.checkpointId()),
+                  backupDescriptor,
                   actor,
                   segmentsDirectory,
                   journalInfoProvider);
@@ -97,14 +93,14 @@ public final class BackupService extends Actor implements BackupManager {
                   LOG.warn(
                       "Failed to take backup {} at position {}",
                       inProgressBackup.checkpointId(),
-                      inProgressBackup.checkpointPosition(),
+                      inProgressBackup.backupDescriptor().checkpointPosition(),
                       error);
                 } else {
                   LOG.info(
                       "Backup {} at position {} completed with {} partitions",
                       inProgressBackup.checkpointId(),
-                      inProgressBackup.checkpointPosition(),
-                      partitionCount);
+                      inProgressBackup.backupDescriptor().checkpointPosition(),
+                      inProgressBackup.backupDescriptor().numberOfPartitions());
                 }
               });
           backupResult.onComplete(result);
@@ -181,12 +177,12 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public void createFailedBackup(
-      final long checkpointId, final long checkpointPosition, final String failureReason) {
+      final BackupDescriptor backupDescriptor, final String failureReason) {
     actor.run(
         () -> {
-          final var backupId = getBackupId(checkpointId);
+          final var backupId = getBackupId(backupDescriptor.checkpointId());
           internalBackupManager.createFailedBackup(
-              backupId, checkpointPosition, failureReason, actor);
+              backupId, backupDescriptor.checkpointPosition(), failureReason, actor);
         });
   }
 
