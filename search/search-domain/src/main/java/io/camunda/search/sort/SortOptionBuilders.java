@@ -44,6 +44,10 @@ public final class SortOptionBuilders {
     return new VariableSort.Builder();
   }
 
+  public static ClusterVariableSort.Builder clusterVariable() {
+    return new ClusterVariableSort.Builder();
+  }
+
   public static DecisionDefinitionSort.Builder decisionDefinition() {
     return new DecisionDefinitionSort.Builder();
   }
@@ -114,6 +118,11 @@ public final class SortOptionBuilders {
   public static VariableSort variable(
       final Function<VariableSort.Builder, ObjectBuilder<VariableSort>> fn) {
     return fn.apply(variable()).build();
+  }
+
+  public static ClusterVariableSort clusterVariable(
+      final Function<ClusterVariableSort.Builder, ObjectBuilder<ClusterVariableSort>> fn) {
+    return fn.apply(clusterVariable()).build();
   }
 
   public static DecisionDefinitionSort decisionDefinition(
