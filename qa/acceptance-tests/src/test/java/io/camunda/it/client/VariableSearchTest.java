@@ -8,6 +8,7 @@
 package io.camunda.it.client;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.*;
+import static io.camunda.search.schema.config.IndexConfiguration.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
@@ -19,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -29,8 +31,10 @@ import org.junit.jupiter.api.Test;
 class VariableSearchTest {
 
   private static CamundaClient camundaClient;
-
   private static Variable variable;
+  private static final String NORMAL_VAR_NAME = "process01";
+  private static final String LARGE_VAR_NAME = "largeVariable";
+  private static final String LARGE_VALUE = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 10);
 
   @BeforeAll
   static void beforeAll() {
@@ -40,7 +44,14 @@ class VariableSearchTest {
 
     waitForTasksBeingExported();
 
-    variable = camundaClient.newVariableSearchRequest().send().join().items().get(0);
+    variable =
+        camundaClient
+            .newVariableSearchRequest()
+            .filter(f -> f.name(NORMAL_VAR_NAME))
+            .send()
+            .join()
+            .items()
+            .get(0);
   }
 
   @Test
@@ -49,7 +60,7 @@ class VariableSearchTest {
     final var result = camundaClient.newVariableSearchRequest().send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items().size()).isEqualTo(6);
   }
 
   @Test
@@ -68,12 +79,12 @@ class VariableSearchTest {
   }
 
   @Test
-  void shouldQueryByScopeKey() {
+  void shouldQueryByNameAndScopeKey() {
     // when
     final var result =
         camundaClient
             .newVariableSearchRequest()
-            .filter(f -> f.scopeKey(variable.getScopeKey()))
+            .filter(f -> f.scopeKey(variable.getScopeKey()).name(variable.getName()))
             .send()
             .join();
 
@@ -190,7 +201,7 @@ class VariableSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items().size()).isEqualTo(6);
     assertThat(
             result.items().stream()
                 .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
@@ -208,7 +219,7 @@ class VariableSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items().size()).isEqualTo(6);
     assertThat(
             result.items().stream()
                 .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
@@ -240,7 +251,7 @@ class VariableSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items().size()).isEqualTo(6);
     assertThat(
             result.items().stream().allMatch(v -> v.getTenantId().equals(variable.getTenantId())))
         .isTrue();
@@ -265,7 +276,24 @@ class VariableSearchTest {
         camundaClient.newVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
 
     // then
-    assertThat(resultTruncatedTrue.items().size()).isEqualTo(0);
+    assertThat(resultTruncatedTrue.items().size()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldReturnUntruncatedValues() {
+    // when
+    final var result =
+        camundaClient
+            .newVariableSearchRequest()
+            .filter(f -> f.name(LARGE_VAR_NAME))
+            .withFullValues()
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    final var resultVar = result.items().getFirst();
+    assertThat(resultVar.isTruncated()).isFalse();
   }
 
   private static void delpoyProcessFromResourcePath(
@@ -286,7 +314,7 @@ class VariableSearchTest {
     final var result =
         camundaClient.newVariableSearchRequest().sort(s -> s.name().asc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items().size()).isEqualTo(6);
 
     final List<String> names =
         result.items().stream().map(item -> item.getName()).collect(Collectors.toList());
@@ -325,7 +353,7 @@ class VariableSearchTest {
         camundaClient.newVariableSearchRequest().sort(s -> s.value().desc()).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items().size()).isEqualTo(6);
 
     final List<String> values =
         result.items().stream().map(item -> item.getValue()).collect(Collectors.toList());
@@ -358,11 +386,17 @@ class VariableSearchTest {
               assertThat(result.items().size()).isEqualTo(2);
 
               final var resultVariable = camundaClient.newVariableSearchRequest().send().join();
-              assertThat(resultVariable.items().size()).isEqualTo(5);
+              assertThat(resultVariable.items().size()).isEqualTo(6);
             });
   }
 
   private static void startProcessInstance(final String processId) {
-    camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
+    camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(processId)
+        .latestVersion()
+        .variables(Map.of(LARGE_VAR_NAME, LARGE_VALUE))
+        .send()
+        .join();
   }
 }
