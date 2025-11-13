@@ -45,7 +45,7 @@ jobs:
             echo "AWS_ROLE_ARN=$AWS_ROLE_ARN"
             echo "AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE"
             echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
-            echo "AURORA_DATABASE=db-camunda-it-$(uuidgen | tr '[:upper:]' '[:lower:]')"
+            echo "AURORA_DATABASE=db-camunda-it-${{github.sha}}"
             echo "AURORA_USERNAME=${{steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME}}"
             echo "AURORA_PASSWORD=${{steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD}}"
           } >> "$GITHUB_ENV"
