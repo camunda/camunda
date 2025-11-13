@@ -16,7 +16,46 @@
 package io.camunda.zeebe.protocol.record.value.management;
 
 public enum CheckpointType {
-  MARKER,
-  SCHEDULED_BACKUP,
-  MANUAL_BACKUP
+  MARKER((short) 0),
+  SCHEDULED_BACKUP((short) 1),
+  MANUAL_BACKUP((short) 2);
+
+  private final short value;
+
+  CheckpointType(final short value) {
+    this.value = value;
+  }
+
+  public short getValue() {
+    return value;
+  }
+
+  public static CheckpointType valueOf(final short value) {
+    switch (value) {
+      case 0:
+        {
+          return MARKER;
+        }
+      case 1:
+        {
+          return SCHEDULED_BACKUP;
+        }
+      case 2:
+        {
+          return MANUAL_BACKUP;
+        }
+      default:
+        {
+          return null;
+        }
+    }
+  }
+
+  public boolean shouldCreateBackup() {
+    return this == SCHEDULED_BACKUP || this == MANUAL_BACKUP;
+  }
+
+  public boolean isManual() {
+    return this == MANUAL_BACKUP;
+  }
 }

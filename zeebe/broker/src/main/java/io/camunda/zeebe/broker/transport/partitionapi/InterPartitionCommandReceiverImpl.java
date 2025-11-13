@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.ReflectUtil;
@@ -36,6 +37,7 @@ final class InterPartitionCommandReceiverImpl {
   private final LogStreamWriter logStreamWriter;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
+  private CheckpointType checkpointType = null;
 
   InterPartitionCommandReceiverImpl(final LogStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
@@ -105,7 +107,10 @@ final class InterPartitionCommandReceiverImpl {
             .recordType(RecordType.COMMAND)
             .intent(CheckpointIntent.CREATE)
             .valueType(ValueType.CHECKPOINT);
-    final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
+    final var checkpointRecord =
+        new CheckpointRecord()
+            .setCheckpointId(decoded.checkpointId)
+            .setCheckpointType(decoded.checkpointType);
     return logStreamWriter.tryWrite(
         WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
   }
@@ -124,12 +129,14 @@ final class InterPartitionCommandReceiverImpl {
     diskSpaceAvailable = available;
   }
 
-  void setCheckpointId(final long checkpointId) {
+  void setCheckpointInfo(final long checkpointId, final CheckpointType checkpointType) {
     this.checkpointId = checkpointId;
+    this.checkpointType = checkpointType;
   }
 
   private record DecodedMessage(
       long checkpointId,
+      CheckpointType checkpointType,
       Optional<Long> recordKey,
       RecordMetadata metadata,
       UnifiedRecordValue command) {}
@@ -150,8 +157,9 @@ final class InterPartitionCommandReceiverImpl {
       final var recordMetadata = new RecordMetadata();
       final var value = decodeCommand(messageDecoder, recordMetadata);
       decodeAuthInfo(messageDecoder, recordMetadata);
+      final var checkpointType = CheckpointType.valueOf(messageDecoder.checkpointType());
 
-      return new DecodedMessage(checkpointId, recordKey, recordMetadata, value);
+      return new DecodedMessage(checkpointId, checkpointType, recordKey, recordMetadata, value);
     }
 
     /**
