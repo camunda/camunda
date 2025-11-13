@@ -43,6 +43,7 @@ const useDecisionInstancesSearchPaginated = <
 
       throw error;
     },
+    placeholderData: (prevData) => prevData,
     maxPages: 2,
     initialPageParam: 0,
     getNextPageParam: (lastPage, _, lastPageParam) => {
