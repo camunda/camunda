@@ -21,7 +21,7 @@ Implement two related features:
 - **Elasticsearch**: Object field `customHeaders` (currently `enabled: false` - **requires migration**)
 - **OpenSearch**: Object field `customHeaders` (currently `enabled: false` - **requires migration**)
 
-**Timing**: 
+**Timing**:
 - **Expression Parsing**: At deployment time (one-time cost)
 - **Expression Evaluation**: At task creation time (runtime, with access to process variables)
 - **Storage**: Evaluated string values (post-evaluation) are persisted to all backends
@@ -59,14 +59,17 @@ Complete list from `Protocol.java`:
 | Null | **Skip header** | Not added to map |
 
 **Complex Type Handling**: Headers must evaluate to String, Number, or Boolean. If expression returns Object/List/Array → **fail task creation** with error:
+
 ```
 "Custom header '{headerName}' must evaluate to String, Number, or Boolean. Got: {actualType}"
 ```
+
 Rationale: Prevents confusing JSON-string values; maintains header simplicity as key-value pairs.
 
 **Error Handling**: Expression evaluation failure → **Task creation fails** with `EXPRESSION_EVALUATION_FAILURE` incident (consistent with assignee failures)
 
 **Static Value Wrapping**: During parsing, static string values are wrapped as FEEL string literals to ensure they're treated as strings, not variable references:
+
 ```java
 // For static value "department-A":
 final var assigneeExpression = expressionLanguage.parseExpression(value);
@@ -84,21 +87,21 @@ if (assigneeExpression.isStatic()) {
 
 All backends support these operations:
 
-| Operator | RDBMS | ES | OS | Description |
-|----------|-------|----|----|-------------|
-| `$eq` | ✓ | ✓ | ✓ | Exact match |
-| `$neq` | ✓ | ✓ | ✓ | Not equal |
-| `$like` | ✓ | ✓ | ✓ | Wildcard (use `*`) |
-| `$exists` | ✓ | ✓ | ✓ | Header name exists |
-| `$in` | ✓ | ✓ | ✓ | Value in list |
+| Operator  | RDBMS | ES | OS |    Description     |
+|-----------|-------|----|----|--------------------|
+| `$eq`     | ✓     | ✓  | ✓  | Exact match        |
+| `$neq`    | ✓     | ✓  | ✓  | Not equal          |
+| `$like`   | ✓     | ✓  | ✓  | Wildcard (use `*`) |
+| `$exists` | ✓     | ✓  | ✓  | Header name exists |
+| `$in`     | ✓     | ✓  | ✓  | Value in list      |
 
 Backend-specific implementations:
 - **RDBMS**: All 6 databases supported with database-specific JSON syntax:
-  - PostgreSQL: JSONB operators (`->>`, `@>`, `?`)
-  - MySQL/MariaDB: JSON functions (`JSON_EXTRACT`, `JSON_UNQUOTE`)
-  - H2: JSON functions (`JSON_VALUE`)
-  - SQL Server: JSON functions (`JSON_VALUE`)
-  - Oracle: JSON functions (`JSON_VALUE`)
+- PostgreSQL: JSONB operators (`->>`, `@>`, `?`)
+- MySQL/MariaDB: JSON functions (`JSON_EXTRACT`, `JSON_UNQUOTE`)
+- H2: JSON functions (`JSON_VALUE`)
+- SQL Server: JSON functions (`JSON_VALUE`)
+- Oracle: JSON functions (`JSON_VALUE`)
 - **Elasticsearch**: Object field queries with `term`/`match`/`wildcard`
 - **OpenSearch**: Same as Elasticsearch
 
@@ -125,6 +128,7 @@ Backend-specific implementations:
 **File**: `zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/deployment/model/element/UserTaskProperties.java`
 
 Add fields:
+
 ```java
 private Map<String, Expression> taskHeaderExpressions = Map.of();
 ```
@@ -146,6 +150,7 @@ In `collectModelTaskHeaders()`:
 **File**: `zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnUserTaskBehavior.java`
 
 Add method:
+
 ```java
 private Either<Failure, Map<String, String>> evaluateCustomHeaderExpressions(
     Map<String, Expression> headerExpressions, long scopeKey) {
@@ -223,6 +228,7 @@ Add tests:
 **File**: `webapps-schema/src/main/resources/schema/elasticsearch/create/template/tasklist-task.json`
 
 Change (around line 94-130):
+
 ```json
 "customHeaders": {
   "type": "object",
@@ -231,6 +237,7 @@ Change (around line 94-130):
 ```
 
 To:
+
 ```json
 "customHeaders": {
   "type": "object",
@@ -266,6 +273,7 @@ public record HeaderValueFilter(String name, List<UntypedOperation> valueOperati
 **File**: `search/search-domain/src/main/java/io/camunda/search/filter/UserTaskFilter.java`
 
 Add field (line 41):
+
 ```java
 List<HeaderValueFilter> customHeaderFilters,
 ```
@@ -277,6 +285,7 @@ Update constructor and Builder methods.
 **File**: `zeebe/gateway-protocol/src/main/proto/v2/user-tasks.yaml`
 
 In `UserTaskFilter` (after line 421):
+
 ```yaml
 customHeaders:
   type: array
@@ -310,6 +319,7 @@ components:
 **File**: `client-components/packages/camunda-api-zod-schemas/src/schemas/user-tasks.ts`
 
 Add to UserTaskFilter schema:
+
 ```typescript
 customHeaders: z.array(HeaderValueFilterProperty).optional()
 ```
@@ -321,6 +331,7 @@ Create HeaderValueFilterProperty schema similar to VariableValueFilterProperty p
 **File**: `zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/mapper/search/SearchQueryFilterMapper.java`
 
 Add method (similar to `toVariableValueFilters` pattern at line 824-877):
+
 ```java
 private static List<HeaderValueFilter> toHeaderValueFilters(final List<Map<String, Object>> filters) {
   // Parse name and value operations
@@ -359,6 +370,7 @@ public final class HeaderValueFilterTransformer implements FilterTransformer<Hea
 **File**: `search/search-client-query-transformer/src/main/java/io/camunda/search/clients/transformers/filter/UserTaskFilterTransformer.java`
 
 Add method (after line 185):
+
 ```java
 private SearchQuery getCustomHeadersQuery(List<HeaderValueFilter> headerFilters) {
   if (headerFilters == null || headerFilters.isEmpty()) return null;
@@ -381,6 +393,7 @@ private SearchQuery getCustomHeadersQuery(List<HeaderValueFilter> headerFilters)
 ```
 
 In `toSearchQuery()` (line 77):
+
 ```java
 ofNullable(getCustomHeadersQuery(filter.customHeaderFilters())).ifPresent(queries::add);
 ```
@@ -392,6 +405,7 @@ ofNullable(getCustomHeadersQuery(filter.customHeaderFilters())).ifPresent(querie
 Query structure for `object` type (NOT `nested`):
 
 Single header filter:
+
 ```json
 {
   "term": {
@@ -401,6 +415,7 @@ Single header filter:
 ```
 
 Wildcard:
+
 ```json
 {
   "wildcard": {
@@ -410,6 +425,7 @@ Wildcard:
 ```
 
 Multiple headers with AND logic:
+
 ```json
 {
   "bool": {
@@ -434,6 +450,7 @@ Implement same query builders as Elasticsearch.
 **File**: `db/rdbms/src/main/java/io/camunda/db/rdbms/read/domain/UserTaskDbQuery.java`
 
 Add field:
+
 ```java
 private List<HeaderValueFilter> customHeaderFilters;
 ```
@@ -644,14 +661,14 @@ Add query fragment (after line 294):
 
 **Database-Specific Implementation Details**:
 
-| Database | JSON Query Syntax | Index Support | Notes |
-|----------|------------------|---------------|-------|
-| **PostgreSQL** | `CUSTOM_HEADERS ->> 'key'` | GIN index on JSONB column | Best performance, native JSONB type |
-| **MySQL 8.0+** | `JSON_UNQUOTE(JSON_EXTRACT(CUSTOM_HEADERS, '$.key'))` | Functional indexes or virtual columns | Use JSON_UNQUOTE to remove quotes |
-| **MariaDB 10.2.7+** | `JSON_UNQUOTE(JSON_EXTRACT(CUSTOM_HEADERS, '$.key'))` | JSON indexes (similar to MySQL) | Compatible with MySQL JSON syntax |
-| **H2 2.0+** | `JSON_VALUE(CUSTOM_HEADERS, '$.key')` | Limited JSON indexing | Primarily for testing, not production |
-| **SQL Server 2016+** | `JSON_VALUE(CUSTOM_HEADERS, '$.key')` | Computed columns with indexes | JSON stored as NVARCHAR |
-| **Oracle 12c+** | `JSON_VALUE(CUSTOM_HEADERS, '$.key')` | Function-based indexes | Requires Oracle 12c or higher |
+|       Database       |                   JSON Query Syntax                   |             Index Support             |                 Notes                 |
+|----------------------|-------------------------------------------------------|---------------------------------------|---------------------------------------|
+| **PostgreSQL**       | `CUSTOM_HEADERS ->> 'key'`                            | GIN index on JSONB column             | Best performance, native JSONB type   |
+| **MySQL 8.0+**       | `JSON_UNQUOTE(JSON_EXTRACT(CUSTOM_HEADERS, '$.key'))` | Functional indexes or virtual columns | Use JSON_UNQUOTE to remove quotes     |
+| **MariaDB 10.2.7+**  | `JSON_UNQUOTE(JSON_EXTRACT(CUSTOM_HEADERS, '$.key'))` | JSON indexes (similar to MySQL)       | Compatible with MySQL JSON syntax     |
+| **H2 2.0+**          | `JSON_VALUE(CUSTOM_HEADERS, '$.key')`                 | Limited JSON indexing                 | Primarily for testing, not production |
+| **SQL Server 2016+** | `JSON_VALUE(CUSTOM_HEADERS, '$.key')`                 | Computed columns with indexes         | JSON stored as NVARCHAR               |
+| **Oracle 12c+**      | `JSON_VALUE(CUSTOM_HEADERS, '$.key')`                 | Function-based indexes                | Requires Oracle 12c or higher         |
 
 **Testing Requirements**: Integration tests must run against ALL 6 supported databases to verify JSON query syntax compatibility
 
@@ -682,6 +699,7 @@ Implement interface similar to `VariableValueFilterImpl.java`.
 **File**: `clients/java/src/main/java/io/camunda/client/api/search/filter/UserTaskFilter.java`
 
 Add methods:
+
 ```java
 UserTaskFilter customHeaders(List<HeaderValueFilter> filters);
 UserTaskFilter customHeader(Consumer<HeaderValueFilter> fn);  // Single header convenience method
@@ -747,7 +765,7 @@ Add section: "Using FEEL Expressions in Custom Headers"
 
 **Auto-generated from OpenAPI schema** (`user-tasks.yaml`, `headers.yaml`)
 
-**Swagger UI**: 
+**Swagger UI**:
 - **Location**: `http://localhost:8080/swagger-ui.html` (when running locally)
 - **Updates automatically**: Changes to YAML files are reflected in Swagger UI on startup
 - **No manual steps needed**: OpenAPI spec is read by Spring Boot automatically
@@ -756,6 +774,7 @@ Add section: "Using FEEL Expressions in Custom Headers"
 **Published Documentation**: `https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-user-tasks/`
 
 **Example Request in Swagger**:
+
 ```json
 {
   "filter": {
@@ -780,6 +799,7 @@ Add section: "Using FEEL Expressions in Custom Headers"
 **JavaDoc** in client interfaces + external developer guide
 
 Example usage:
+
 ```java
 // Shorthand for exact match
 client.newUserTaskQuery()
@@ -835,7 +855,7 @@ client.newUserTaskQuery()
 ## Backward Compatibility
 
 - **Existing processes**: Static headers work unchanged (backward compatible)
-- **Existing tasks**: 
+- **Existing tasks**:
   - Old tasks remain functional with static headers
   - Old tasks will NOT be searchable by custom headers (as intended)
   - Only new tasks created after deployment will support FEEL expressions and filtering
@@ -856,7 +876,7 @@ client.newUserTaskQuery()
 3. **`clients/java/.../api/.../HeaderValueFilter.java`** - Public Java client API interface for header filtering
 4. **`clients/java/.../impl/.../HeaderValueFilterImpl.java`** - Implementation of Java client HeaderValueFilter interface
 5. **`zeebe/gateway-protocol/.../headers.yaml`** - OpenAPI schema definitions for header filter (HeaderValueFilterProperty)
-6-14. **Additional test files** - Comprehensive new test classes to cover expression evaluation and custom header filtering across all backends
+   6-14. **Additional test files** - Comprehensive new test classes to cover expression evaluation and custom header filtering across all backends
 
 ### Modified Files (15+ files)
 
@@ -888,3 +908,4 @@ client.newUserTaskQuery()
 5. **Expression evaluation**: At task creation time (runtime, not deployment) with access to process variables
 6. **Multi-RDBMS support**: Use MyBatis databaseId to handle all 6 databases (PostgreSQL, MySQL, MariaDB, H2, SQL Server, Oracle) with database-specific JSON syntax
 7. **No old task migration**: Only new tasks created after deployment will use expression evaluation
+
