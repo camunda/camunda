@@ -6,9 +6,9 @@ name: AWS Aurora Manual/Scheduled Run Integration Tests
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - holi-kpo-rdbms**
+  pull_request:
+    paths:
+      - ".github/workflows/zeebe-aws-aurora-dispatch-tests.yml"
   schedule:
     - cron: "0 4 * * Mon-Fri"
 
