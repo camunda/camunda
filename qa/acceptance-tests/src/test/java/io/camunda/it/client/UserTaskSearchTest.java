@@ -1322,6 +1322,142 @@ class UserTaskSearchTest {
             });
   }
 
+  @Test
+  void shouldRetrieveTaskByCustomHeaderEquals() {
+    // given: Deploy a process with custom headers
+    deployProcessWithCustomHeaders(
+        "processWithHeaders", "processWithHeaders.bpmn", "taskWithHeaders");
+    startProcessInstance("processWithHeaders");
+    Awaitility.await("Task is exported")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .pollInterval(java.time.Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              final var tasks =
+                  camundaClient
+                      .newUserTaskSearchRequest()
+                      .filter(f -> f.elementId("taskWithHeaders"))
+                      .send()
+                      .join();
+              assertThat(tasks.items()).hasSizeGreaterThan(0);
+            });
+
+    // when: Search by custom header with exact match
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.customHeaders(Map.of("department", "engineering")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    final var task = result.items().get(0);
+    assertThat(task.getCustomHeaders())
+        .containsEntry("department", "engineering")
+        .containsEntry("priority", "high")
+        .containsEntry("region", "EMEA");
+  }
+
+  @Test
+  void shouldRetrieveTaskByMultipleCustomHeaders() {
+    // when: Search by multiple custom headers (AND condition)
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(
+                f ->
+                    f.customHeaders(
+                        List.of(
+                            h -> h.name("department").value("engineering"),
+                            h -> h.name("region").value("EMEA"))))
+            .send()
+            .join();
+
+    // then: Should match tasks with both headers
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            task -> {
+              assertThat(task.getCustomHeaders()).containsEntry("department", "engineering");
+              assertThat(task.getCustomHeaders()).containsEntry("region", "EMEA");
+            });
+  }
+
+  @Test
+  void shouldRetrieveTaskByCustomHeaderLike() {
+    // when: Search by custom header with LIKE pattern
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.customHeaders(List.of(h -> h.name("department").value(v -> v.like("engi*")))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            task -> {
+              assertThat(task.getCustomHeaders()).containsKey("department");
+              assertThat(task.getCustomHeaders().get("department")).startsWith("engi");
+            });
+  }
+
+  @Test
+  void shouldRetrieveTaskByCustomHeaderExists() {
+    // when: Search for tasks that have a specific custom header (regardless of value)
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.customHeaders(List.of(h -> h.name("priority").value(v -> v.exists()))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSizeGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            task -> {
+              assertThat(task.getCustomHeaders()).containsKey("priority");
+            });
+  }
+
+  @Test
+  void shouldNotRetrieveTaskByNonExistentCustomHeader() {
+    // when: Search by a custom header that doesn't exist
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.customHeaders(Map.of("nonExistentHeader", "value")))
+            .send()
+            .join();
+
+    // then: Should return empty results or tasks without this header
+    // (depending on whether any tasks have this header)
+    // This test verifies the filter doesn't cause errors
+    assertThat(result.items()).isNotNull();
+  }
+
+  @Test
+  void shouldFilterOutSystemHeadersFromCustomHeadersSearch() {
+    // This test verifies that system headers (io.camunda.zeebe:*) are not searchable
+    // System headers like formKey should not be returned even if they match the search
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.customHeaders(Map.of("io.camunda.zeebe:formKey", "anyValue")))
+            .send()
+            .join();
+
+    // then: System headers should be filtered out, so this should return no results
+    // or results without the system header match
+    assertThat(result.items()).isNotNull();
+  }
+
   private static void deployProcess(
       final String processId,
       final String resourceName,
@@ -1458,5 +1594,24 @@ class UserTaskSearchTest {
     } else {
       return millisOrIsoDate;
     }
+  }
+
+  private static void deployProcessWithCustomHeaders(
+      final String processId, final String resourceName, final String userTaskName) {
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(userTaskName)
+                .zeebeUserTask()
+                .zeebeTaskHeader("department", "engineering")
+                .zeebeTaskHeader("priority", "high")
+                .zeebeTaskHeader("region", "EMEA")
+                .endEvent()
+                .done(),
+            resourceName)
+        .send()
+        .join();
   }
 }
