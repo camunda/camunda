@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -49,6 +51,19 @@ public class SearchColumnTest {
               List.of(
                   Tuple.of(BatchOperationItemState.ACTIVE, BatchOperationItemState.ACTIVE),
                   Tuple.of(BatchOperationItemState.ACTIVE, "ACTIVE"))),
+          Map.entry(
+              BatchOperationState.class,
+              List.of(
+                  Tuple.of(BatchOperationState.ACTIVE, BatchOperationState.ACTIVE),
+                  Tuple.of(BatchOperationState.ACTIVE, "ACTIVE"))),
+          Map.entry(
+              BatchOperationType.class,
+              List.of(
+                  Tuple.of(
+                      BatchOperationType.MIGRATE_PROCESS_INSTANCE,
+                      BatchOperationType.MIGRATE_PROCESS_INSTANCE),
+                  Tuple.of(
+                      BatchOperationType.MIGRATE_PROCESS_INSTANCE, "MIGRATE_PROCESS_INSTANCE"))),
           Map.entry(
               ProcessInstanceState.class,
               List.of(
