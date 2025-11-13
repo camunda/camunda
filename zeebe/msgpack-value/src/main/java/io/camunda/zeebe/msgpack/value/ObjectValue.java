@@ -103,7 +103,10 @@ public class ObjectValue extends BaseValue {
       BaseProperty<? extends BaseValue> prop = null;
 
       for (int k = 0; k < declaredProperties.size(); ++k) {
-        final BaseProperty<?> declaredProperty = declaredProperties.get(k);
+        // optimistically start from the same index as the map
+        // we serialize the keys in order, it's our best guess
+        final var index = (i + k) % declaredProperties.size();
+        final BaseProperty<?> declaredProperty = declaredProperties.get(index);
         final StringValue declaredKey = declaredProperty.getKey();
 
         if (declaredKey.equals(decodedKey)) {
@@ -142,6 +145,18 @@ public class ObjectValue extends BaseValue {
     length += getEncodedLength(undeclaredProperties);
 
     return length;
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("{");
+
+    writeJson(builder, declaredProperties);
+    writeJson(builder, undeclaredProperties);
+
+    builder.append("}");
+    return builder.toString();
   }
 
   private <T extends BaseProperty<?>> void writeJson(
