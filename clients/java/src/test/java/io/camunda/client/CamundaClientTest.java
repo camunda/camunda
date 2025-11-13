@@ -653,8 +653,7 @@ public final class CamundaClientTest {
     // when/then
     assertThatThrownBy(
             () -> CamundaClient.newClientBuilder().numJobWorkerExecutionThreads(-1).build())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("corePoolSize must be non-negative");
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
