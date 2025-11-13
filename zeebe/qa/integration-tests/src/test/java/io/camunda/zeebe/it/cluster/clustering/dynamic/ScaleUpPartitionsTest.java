@@ -118,9 +118,7 @@ public class ScaleUpPartitionsTest {
                             cfg -> {
                               final var backup = cfg.getData().getBackup();
                               backup.setStore(Backup.BackupStoreType.FILESYSTEM);
-                              final var fs = new Filesystem();
-                              fs.setBasePath(backupPath.toString());
-                              backup.setFilesystem(fs);
+                              backup.getFilesystem().setBasePath(backupPath.toString());
 
                               final var membership = cfg.getCluster().getMembership();
                               membership.setSyncInterval(Duration.ofSeconds(1));
@@ -603,7 +601,7 @@ public class ScaleUpPartitionsTest {
       LOG.debug("Restoring broker: {}", broker.nodeId());
       final var dataFolder =
           Path.of(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory());
-      FileUtil.deleteFolderIfExists(dataFolder);
+      FileUtil.deleteFolder(dataFolder);
 
       Files.createDirectories(dataFolder);
       broker.unifiedConfig().getCluster().setPartitionCount(desiredPartitionCount);

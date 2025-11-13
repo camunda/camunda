@@ -10,9 +10,7 @@ package io.camunda.zeebe.it.cluster.backup;
 import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.configuration.Backup;
 import io.camunda.configuration.Backup.BackupStoreType;
 import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -238,15 +236,13 @@ class BackupMultiPartitionTest {
     unifiedRestoreConfig
         .getCluster()
         .setPartitionCount(broker.unifiedConfig().getCluster().getPartitionCount());
-    unifiedRestoreConfig
-        .getData()
-        .getPrimaryStorage()
-        .setDirectory(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory());
+    final var primaryStorage = broker.unifiedConfig().getData().getPrimaryStorage().getDirectory();
+    unifiedRestoreConfig.getData().getPrimaryStorage().setDirectory(primaryStorage);
     unifiedRestoreConfig.getCluster().setSize(broker.unifiedConfig().getCluster().getSize());
 
     // backup config s3
     final var backupConfig = unifiedRestoreConfig.getData().getBackup();
-    backupConfig.setStore(Backup.BackupStoreType.S3);
+    backupConfig.setStore(BackupStoreType.S3);
     final var s3Config = backupConfig.getS3();
     final var legacyBackupConfig = broker.unifiedConfig().getData().getBackup().getS3();
     s3Config.setBucketName(legacyBackupConfig.getBucketName());
@@ -257,7 +253,7 @@ class BackupMultiPartitionTest {
     s3Config.setForcePathStyleAccess(legacyBackupConfig.isForcePathStyleAccess());
 
     try (final var restore = new TestRestoreApp(unifiedRestoreConfig).withBackupId(backupId)) {
-      FileUtil.deleteFolderIfExists(broker.bean(WorkingDirectory.class).path());
+      FileUtil.deleteFolder(primaryStorage);
       restore.start();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
