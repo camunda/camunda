@@ -219,7 +219,6 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     tester.performOneRoundOfImport();
 
     waitForTenantImportPositionToNotNull(1);
-    ;
 
     // then
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
