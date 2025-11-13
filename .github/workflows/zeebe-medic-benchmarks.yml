@@ -15,40 +15,6 @@ on:
     - cron: 0 1 * * 1
 
 jobs:
-  delete-old-benchmarks:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.4
-        with:
-          cluster_name: zeebe-cluster
-          location: europe-west1-b
-      - name: Collect benchmark data
-        id: data
-        run: |
-          # Count normal weekly namespaces
-          echo "count=$(kubectl get ns -o name | grep -c -E "namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$")" >> "$GITHUB_OUTPUT"
-          # Get all namespaces, filter for medic benchmarks and select the oldest one
-          echo "normal=$(kubectl get ns -o name | grep -E "namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$" | sort -V | head -n1)" >> "$GITHUB_OUTPUT"
-      - name: Delete benchmarks
-        run: |
-          COUNT="${{ steps.data.outputs.count }}"
-          if [[  $COUNT -ge 4 ]];
-          then
-            # We want to have always at least 4 benchmarks running
-            echo "Delete namespaces for ${{ steps.data.outputs.normal }}"
-            kubectl delete ${{ steps.data.outputs.normal }}
-            kubectl delete ${{ steps.data.outputs.normal }}-mixed
-            kubectl delete ${{ steps.data.outputs.normal }}-latency
-          else
-            echo "Detected only ${{ steps.data.outputs.count }} benchmarks. Do not delete the oldest."
-          fi
   benchmark-data:
     name: Collect benchmark data
     runs-on: ubuntu-latest
@@ -83,11 +49,11 @@ jobs:
     name: Normal Benchmark
     needs:
       - benchmark-data
-      - delete-old-benchmarks
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
+      ttl: '28'
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
@@ -99,9 +65,9 @@ jobs:
     secrets: inherit
     needs:
       - benchmark-data
-      - delete-old-benchmarks
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-mixed
+      ttl: '28'
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
@@ -113,9 +79,9 @@ jobs:
     secrets: inherit
     needs:
       - benchmark-data
-      - delete-old-benchmarks
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-latency
+      ttl: '28'
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
@@ -127,7 +93,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ delete-old-benchmarks, setup-normal-benchmark, setup-mixed-benchmark, setup-latency-benchmark ]
+    needs: [ setup-normal-benchmark, setup-mixed-benchmark, setup-latency-benchmark ]
     if: failure()
     steps:
       - uses: actions/checkout@v4
