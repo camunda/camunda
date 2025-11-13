@@ -99,9 +99,11 @@ final class InterPartitionCommandReceiverImpl {
     }
 
     LOG.debug(
-        "Received command with checkpoint {}, current checkpoint is {}",
+        "Received command with checkpoint id {} and type {} , current checkpoint id {} and type {}",
         decoded.checkpointId,
-        checkpointId);
+        decoded.checkpointType,
+        checkpointId,
+        checkpointType);
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
@@ -157,7 +159,13 @@ final class InterPartitionCommandReceiverImpl {
       final var recordMetadata = new RecordMetadata();
       final var value = decodeCommand(messageDecoder, recordMetadata);
       decodeAuthInfo(messageDecoder, recordMetadata);
-      final var checkpointType = CheckpointType.valueOf(messageDecoder.checkpointType());
+
+      // Default to MANUAL_BACKUP if no checkpoint type is set for backward compatibility
+      CheckpointType checkpointType = CheckpointType.MANUAL_BACKUP;
+      if (messageDecoder.checkpointType()
+          != InterPartitionMessageDecoder.checkpointTypeNullValue()) {
+        checkpointType = CheckpointType.valueOf(messageDecoder.checkpointType());
+      }
 
       return new DecodedMessage(checkpointId, checkpointType, recordKey, recordMetadata, value);
     }
