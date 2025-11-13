@@ -34,8 +34,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_PASSWORD;
-            secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_USERNAME;
+            secret/data/products/zeebe/ci/common AURORA_POSTGRESQL_PASSWORD;
+            secret/data/products/zeebe/ci/common AURORA_POSTGRESQL_USERNAME;
       - name: Set temp GH envs
         id: temp-vars
         run: |
@@ -65,7 +65,7 @@ jobs:
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
           PGPORT: 5432
           PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
-          PGUSER_IRSA: web-modeler-irsa
+          PGUSER_IRSA: zeebe-irsa
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: camunda-qa-acceptance-tests
