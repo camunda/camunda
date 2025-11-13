@@ -9,7 +9,6 @@ package io.camunda.zeebe.backup.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -18,6 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.Event;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingResultBuilder;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -45,10 +45,13 @@ import java.time.InstantSource;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class CheckpointRecordsProcessorTest {
 
@@ -110,10 +113,14 @@ final class CheckpointRecordsProcessorTest {
     // given
     final long checkpointId = 1;
     final long checkpointPosition = 10;
-    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final CheckpointRecord value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+    final var backupDescriptor = BackupDescriptorImpl.from(record, dynamicPartitionCount.get());
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -121,8 +128,7 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is triggered with dynamic partition count
-    verify(backupManager, times(1))
-        .takeBackup(checkpointId, checkpointPosition, dynamicPartitionCount.get());
+    verify(backupManager, times(1)).takeBackup(eq(backupDescriptor));
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -148,10 +154,14 @@ final class CheckpointRecordsProcessorTest {
     state.setLatestCheckpointInfo(
         checkpointId, checkpointPosition, Instant.now().toEpochMilli(), CheckpointType.MARKER);
 
-    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final CheckpointRecord value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition + 10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+    final var backupDescriptor = BackupDescriptorImpl.from(record, dynamicPartitionCount.get());
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -159,7 +169,7 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(checkpointPosition), anyInt());
+    verify(backupManager, never()).takeBackup(eq(backupDescriptor));
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -181,10 +191,14 @@ final class CheckpointRecordsProcessorTest {
         checkpointId, checkpointPosition, Instant.now().toEpochMilli(), CheckpointType.MARKER);
 
     final int lowerCheckpointId = 1;
-    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(lowerCheckpointId);
+    final CheckpointRecord value =
+        new CheckpointRecord()
+            .setCheckpointId(lowerCheckpointId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition + 10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+    final var backupDescriptor = BackupDescriptorImpl.from(record, dynamicPartitionCount.get());
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -192,8 +206,7 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never())
-        .takeBackup(eq(lowerCheckpointId), eq(checkpointPosition + 10), anyInt());
+    verify(backupManager, never()).takeBackup(eq(backupDescriptor));
 
     // followup event is written
     assertThat(result.records()).hasSize(1);
@@ -267,11 +280,19 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerWhenNewCheckpointCreated() {
     // given
     final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener(checkpoint::set);
+    final AtomicReference<CheckpointType> checkpointType = new AtomicReference<>();
+    processor.addCheckpointListener(
+        (checkpointId, type) -> {
+          checkpoint.set(checkpointId);
+          checkpointType.set(type);
+        });
 
     final long checkpointId = 2;
     final long checkpointPosition = 20;
-    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final CheckpointRecord value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
@@ -281,20 +302,27 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     assertThat(checkpoint).hasValue(checkpointId);
+    assertThat(checkpointType).hasValue(CheckpointType.MANUAL_BACKUP);
   }
 
   @Test
   void shouldNotifyListenerWhenReplayed() {
     // given
     final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener(checkpoint::set);
+    final AtomicReference<CheckpointType> checkpointType = new AtomicReference<>();
+    processor.addCheckpointListener(
+        (checkpointId, type) -> {
+          checkpoint.set(checkpointId);
+          checkpointType.set(type);
+        });
 
     final long checkpointId = 3;
     final long checkpointPosition = 10;
     final CheckpointRecord value =
         new CheckpointRecord()
             .setCheckpointId(checkpointId)
-            .setCheckpointPosition(checkpointPosition);
+            .setCheckpointPosition(checkpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition + 1,
@@ -308,6 +336,7 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     assertThat(checkpoint).hasValue(checkpointId);
+    assertThat(checkpointType).hasValue(CheckpointType.MANUAL_BACKUP);
   }
 
   @Test
@@ -324,11 +353,17 @@ final class CheckpointRecordsProcessorTest {
 
     // when
     final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener(checkpoint::set);
+    final AtomicReference<CheckpointType> checkpointType = new AtomicReference<>();
+    processor.addCheckpointListener(
+        (id, type) -> {
+          checkpoint.set(id);
+          checkpointType.set(type);
+        });
     processor.init(context);
 
     // then
     assertThat(checkpoint).hasValue(checkpointId);
+    assertThat(checkpointType).hasValue(CheckpointType.MARKER);
   }
 
   @Test
@@ -350,10 +385,16 @@ final class CheckpointRecordsProcessorTest {
 
     // when
     final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener(checkpoint::set);
+    final AtomicReference<CheckpointType> checkpointType = new AtomicReference<>();
+    processor.addCheckpointListener(
+        (id, type) -> {
+          checkpoint.set(id);
+          checkpointType.set(type);
+        });
 
     // then
     assertThat(checkpoint).hasValue(checkpointId);
+    assertThat(checkpointType).hasValue(CheckpointType.MARKER);
   }
 
   @Test
@@ -541,10 +582,14 @@ final class CheckpointRecordsProcessorTest {
     // given
     final long checkpointId = 1;
     final long checkpointPosition = 10;
-    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final CheckpointRecord value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(
             checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value, 1, 1);
+    final var backupDescriptor = BackupDescriptorImpl.from(record, dynamicPartitionCount.get());
 
     // Set up scaling in progress supplier to return true
     scalingInProgress.set(true);
@@ -554,13 +599,11 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(eq(checkpointId), eq(checkpointPosition), anyInt());
+    verify(backupManager, never()).takeBackup(eq(backupDescriptor));
     // verify that failed backup is taken
     verify(backupManager, times(1))
         .createFailedBackup(
-            checkpointId,
-            checkpointPosition,
-            "Cannot create checkpoint while scaling is in progress");
+            backupDescriptor, "Cannot create checkpoint while scaling is in progress");
 
     // rejection response is sent
     assertThat(result.response()).isNotNull();
@@ -584,17 +627,20 @@ final class CheckpointRecordsProcessorTest {
     final int firstPartitionCount = 3;
     dynamicPartitionCount.set(firstPartitionCount);
 
-    final CheckpointRecord firstValue = new CheckpointRecord().setCheckpointId(firstCheckpointId);
+    final CheckpointRecord firstValue =
+        new CheckpointRecord()
+            .setCheckpointId(firstCheckpointId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final MockTypedCheckpointRecord firstRecord =
         new MockTypedCheckpointRecord(
             firstCheckpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, firstValue);
+    var backupDescriptor = BackupDescriptorImpl.from(firstRecord, firstPartitionCount);
 
     // when - first checkpoint creation
     processor.process(firstRecord, resultBuilder);
 
     // then - first backup uses first partition count
-    verify(backupManager, times(1))
-        .takeBackup(firstCheckpointId, firstCheckpointPosition, firstPartitionCount);
+    verify(backupManager, times(1)).takeBackup(eq(backupDescriptor));
 
     // given - change partition count
     final long secondCheckpointId = 2;
@@ -602,17 +648,20 @@ final class CheckpointRecordsProcessorTest {
     final int secondPartitionCount = 7; // Changed partition count
     dynamicPartitionCount.set(secondPartitionCount);
 
-    final CheckpointRecord secondValue = new CheckpointRecord().setCheckpointId(secondCheckpointId);
+    final CheckpointRecord secondValue =
+        new CheckpointRecord()
+            .setCheckpointId(secondCheckpointId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final MockTypedCheckpointRecord secondRecord =
         new MockTypedCheckpointRecord(
             secondCheckpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, secondValue);
+    backupDescriptor = BackupDescriptorImpl.from(secondRecord, secondPartitionCount);
 
     // when - second checkpoint creation
     processor.process(secondRecord, resultBuilder);
 
     // then - second backup uses updated partition count
-    verify(backupManager, times(1))
-        .takeBackup(secondCheckpointId, secondCheckpointPosition, secondPartitionCount);
+    verify(backupManager, times(1)).takeBackup(eq(backupDescriptor));
   }
 
   @Test
@@ -638,5 +687,50 @@ final class CheckpointRecordsProcessorTest {
     assertThat(state.getLatestBackupPosition()).isEqualTo(backupPosition);
     assertThat(state.getLatestBackupTimestamp()).isEqualTo(record.getTimestamp());
     assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
+  }
+
+  @Test
+  void shouldNotTakeBackupOnMarkerCheckpoints() {
+    // given
+    final var backupId = 15;
+    final var backupPosition = 150;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(backupId)
+            .setCheckpointPosition(backupPosition)
+            .setCheckpointType(CheckpointType.MARKER);
+    final var record =
+        new MockTypedCheckpointRecord(
+            backupPosition + 1, backupPosition, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    // when - second checkpoint creation
+    processor.process(record, resultBuilder);
+
+    // then - second backup uses updated partition count
+    verify(backupManager, times(0)).takeBackup(any());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"SCHEDULED_BACKUP", "MANUAL_BACKUP"})
+  void shouldTakeBackupOnBackupType(final String checkpointType) {
+    // given
+    final var backupId = 15;
+    final var backupPosition = 150;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(backupId)
+            .setCheckpointPosition(backupPosition)
+            .setCheckpointType(CheckpointType.valueOf(checkpointType));
+    final var record =
+        new MockTypedCheckpointRecord(
+            backupPosition + 1, backupPosition, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    // when - second checkpoint creation
+    processor.process(record, resultBuilder);
+
+    // then - second backup uses updated partition count
+    verify(backupManager, times(1)).takeBackup(any());
   }
 }
