@@ -555,4 +555,102 @@ class UserTaskTransformerTest {
     private record ExpectedTaskListener(
         ZeebeTaskListenerEventType eventType, String type, String retries) {}
   }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class CustomHeadersTests {
+
+    Stream<Arguments> customHeaders() {
+      return Stream.of(
+          // Static values wrapped as string literals
+          Arguments.of("department", "engineering", "\"engineering\""),
+          Arguments.of("priority", "high", "\"high\""),
+          Arguments.of("region", "EMEA", "\"EMEA\""),
+          Arguments.of("numericValue", "42", "\"42\""),
+          // FEEL expressions
+          Arguments.of("calculatedPriority", "=priority + 1", "priority + 1"),
+          Arguments.of("dynamicDepartment", "=departmentVariable", "departmentVariable"),
+          Arguments.of("complexExpression", "=if x > 10 then \"high\" else \"low\"", "if x > 10 then \"high\" else \"low\""));
+    }
+
+    @DisplayName("Should transform user task with custom headers (static and FEEL)")
+    @ParameterizedTest
+    @MethodSource("customHeaders")
+    void shouldTransformCustomHeaders(
+        final String headerName, final String headerValue, final String expectedExpression) {
+      // when
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(b -> b.zeebeTaskHeader(headerName, headerValue).zeebeUserTask()));
+
+      // then
+      assertThat(userTask.getUserTaskProperties().getTaskHeaders())
+          .containsEntry(headerName, headerValue);
+      assertThat(userTask.getUserTaskProperties().getTaskHeaderExpressions())
+          .containsKey(headerName);
+      assertThat(userTask.getUserTaskProperties().getTaskHeaderExpressions().get(headerName).getExpression())
+          .isEqualTo(expectedExpression);
+    }
+
+    @Test
+    @DisplayName("Should transform user task with multiple custom headers (mixed static and FEEL)")
+    void shouldTransformMultipleCustomHeaders() {
+      // when
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(
+                  b ->
+                      b.zeebeTaskHeader("staticHeader", "value1")
+                          .zeebeTaskHeader("feelHeader", "=variableA")
+                          .zeebeTaskHeader("anotherStatic", "value2")
+                          .zeebeUserTask()));
+
+      // then
+      assertThat(userTask.getUserTaskProperties().getTaskHeaders())
+          .containsEntry("staticHeader", "value1")
+          .containsEntry("feelHeader", "=variableA")
+          .containsEntry("anotherStatic", "value2");
+
+      assertThat(userTask.getUserTaskProperties().getTaskHeaderExpressions())
+          .containsKeys("staticHeader", "feelHeader", "anotherStatic");
+
+      // Static values wrapped as string literals
+      assertThat(
+              userTask
+                  .getUserTaskProperties()
+                  .getTaskHeaderExpressions()
+                  .get("staticHeader")
+                  .getExpression())
+          .isEqualTo("\"value1\"");
+
+      // FEEL expressions remain as-is
+      assertThat(
+              userTask
+                  .getUserTaskProperties()
+                  .getTaskHeaderExpressions()
+                  .get("feelHeader")
+                  .getExpression())
+          .isEqualTo("variableA");
+
+      assertThat(
+              userTask
+                  .getUserTaskProperties()
+                  .getTaskHeaderExpressions()
+                  .get("anotherStatic")
+                  .getExpression())
+          .isEqualTo("\"value2\"");
+    }
+
+    @Test
+    @DisplayName("Should transform user task with empty custom headers")
+    void shouldTransformEmptyCustomHeaders() {
+      // when
+      final var userTask =
+          transformZeebeUserTask(processWithUserTask(AbstractUserTaskBuilder::zeebeUserTask));
+
+      // then
+      assertThat(userTask.getUserTaskProperties().getTaskHeaders()).isEmpty();
+      assertThat(userTask.getUserTaskProperties().getTaskHeaderExpressions()).isEmpty();
+    }
+  }
 }
