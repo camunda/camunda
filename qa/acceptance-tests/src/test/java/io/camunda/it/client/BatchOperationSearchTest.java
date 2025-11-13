@@ -18,6 +18,7 @@ import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_F
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
@@ -29,19 +30,26 @@ import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.sort.BatchOperationSort;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -340,6 +348,37 @@ public class BatchOperationSearchTest {
         .containsExactlyInAnyOrderElementsOf(ACTIVE_PROCESS_INSTANCES_1);
   }
 
+  @ParameterizedTest(name = "{argumentSetName}")
+  @MethodSource("sortOptions")
+  <T extends Comparable<? super T>> void shouldSortBatchOperationByAttribute(
+      final Function<BatchOperation, T> attributeExtractor,
+      final Function<BatchOperationSort, BatchOperationSort> sortOption) {
+    // given
+    final var all =
+        camundaClient.newBatchOperationSearchRequest().execute().items().stream()
+            .map(attributeExtractor)
+            .toList();
+    // when
+    final var resultAsc =
+        camundaClient
+            .newBatchOperationSearchRequest()
+            .sort(s -> sortOption.apply(s).asc())
+            .execute();
+    final var resultDesc =
+        camundaClient
+            .newBatchOperationSearchRequest()
+            .sort(s -> sortOption.apply(s).desc())
+            .execute();
+
+    // then
+    assertThat(resultAsc.items().stream().map(attributeExtractor).filter(Objects::nonNull))
+        .containsExactlyElementsOf(
+            all.stream().filter(Objects::nonNull).sorted(Comparator.naturalOrder()).toList());
+    assertThat(resultDesc.items().stream().map(attributeExtractor).filter(Objects::nonNull))
+        .containsExactlyElementsOf(
+            all.stream().filter(Objects::nonNull).sorted(Comparator.reverseOrder()).toList());
+  }
+
   private static void assertCancelBatchOperation(final BatchOperation batch) {
     assertThat(batch).isNotNull();
     assertThat(batch.getBatchOperationKey()).isEqualTo(batchOperationKey1);
@@ -416,5 +455,39 @@ public class BatchOperationSearchTest {
     assertThat(result).isNotNull();
 
     return result.getBatchOperationKey();
+  }
+
+  static Stream<Arguments> sortOptions() {
+    return Stream.of(
+        argumentSet(
+            "batchOperationKey",
+            new SortTestArguments<>(
+                    BatchOperation::getBatchOperationKey, BatchOperationSort::batchOperationKey)
+                .get()),
+        argumentSet(
+            "endDate",
+            new SortTestArguments<>(BatchOperation::getEndDate, BatchOperationSort::endDate).get()),
+        argumentSet(
+            "type",
+            new SortTestArguments<>(BatchOperation::getType, BatchOperationSort::operationType)
+                .get()),
+        argumentSet(
+            "startDate",
+            new SortTestArguments<>(BatchOperation::getStartDate, BatchOperationSort::startDate)
+                .get()),
+        argumentSet(
+            "state",
+            new SortTestArguments<>(BatchOperation::getStatus, BatchOperationSort::state).get()));
+  }
+
+  record SortTestArguments<T extends Comparable<? super T>>(
+      Function<BatchOperation, T> attributeExtractor,
+      Function<BatchOperationSort, BatchOperationSort> sortOption)
+      implements Arguments {
+
+    @Override
+    public Object[] get() {
+      return new Object[] {attributeExtractor, sortOption};
+    }
   }
 }
