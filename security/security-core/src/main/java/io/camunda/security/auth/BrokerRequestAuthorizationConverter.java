@@ -44,12 +44,16 @@ public class BrokerRequestAuthorizationConverter {
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
 
     final var authorization = new HashMap<String, Object>();
-    authorization.put(IS_CAMUNDA_GROUPS_ENABLED, camundaGroupsEnabled);
-    authorization.put(IS_CAMUNDA_USERS_ENABLED, camundaUsersEnabled);
     if (authentication.isAnonymous()) {
       authorization.put(AUTHORIZED_ANONYMOUS_USER, true);
+      // workaround for skip checking existence of user/group during migration
+      authorization.put(IS_CAMUNDA_GROUPS_ENABLED, false);
+      authorization.put(IS_CAMUNDA_USERS_ENABLED, false);
       return authorization;
     }
+
+    authorization.put(IS_CAMUNDA_GROUPS_ENABLED, camundaGroupsEnabled);
+    authorization.put(IS_CAMUNDA_USERS_ENABLED, camundaUsersEnabled);
 
     final var username = authentication.authenticatedUsername();
     final var clientId = authentication.authenticatedClientId();
