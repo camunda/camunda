@@ -53,11 +53,11 @@ import org.springframework.stereotype.Component;
       ImportJobOpenSearch.class,
       JacksonConfig.class,
       TasklistProperties.class,
-      ImportListenerOpenSearchIT.TestImportListener.class
+      ImportListenerOpenSearchTest.TestImportListener.class
     },
     properties = "camunda.tasklist.database=opensearch")
 @EnabledIfSystemProperty(named = "camunda.tasklist.database", matches = "opensearch")
-public class ImportListenerOpenSearchIT extends NoBeansTest {
+public class ImportListenerOpenSearchTest extends NoBeansTest {
 
   @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 

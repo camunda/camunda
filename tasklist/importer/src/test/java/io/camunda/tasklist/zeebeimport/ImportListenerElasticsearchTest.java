@@ -52,10 +52,10 @@ import org.springframework.stereotype.Component;
       ImportJobElasticsearch.class,
       JacksonConfig.class,
       TasklistProperties.class,
-      ImportListenerElasticsearchIT.TestImportListener.class
+      ImportListenerElasticsearchTest.TestImportListener.class
     })
 @EnabledIfSystemProperty(named = "camunda.tasklist.database", matches = "elasticsearch")
-public class ImportListenerElasticsearchIT extends NoBeansTest {
+public class ImportListenerElasticsearchTest extends NoBeansTest {
 
   @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 

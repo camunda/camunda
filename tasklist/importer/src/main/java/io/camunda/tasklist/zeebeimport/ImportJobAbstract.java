@@ -210,7 +210,7 @@ public abstract class ImportJobAbstract implements ImportJob {
     }
   }
 
-  public static class EntitySizeEstimator {
+  protected static class EntitySizeEstimator {
     private static final int INITIAL_BUFFER_SIZE = 1024;
     private static final int MAX_BUFFER_SIZE = 1024 * 1024;
     private static final ThreadLocal<Kryo> KYRO_THREAD_LOCAL =
@@ -226,6 +226,20 @@ public abstract class ImportJobAbstract implements ImportJob {
       try (final Output output = new Output(INITIAL_BUFFER_SIZE, MAX_BUFFER_SIZE)) {
         kryo.writeClassAndObject(output, entity);
         return output.position();
+      }
+    }
+  }
+
+  protected static class BatchFlusher<B extends ImportBatch, H> {
+    private final List<ImportBatch> subBatches;
+    public BatchFlusher(final List<ImportBatch> subBatches) {
+      this.subBatches = subBatches;
+    }
+    public void flush(final B batch, final List<H> batchHits, final String index) {
+      if (batch != null && batchHits != null && !batchHits.isEmpty()) {
+        batch.setHits(batchHits);
+        batch.setLastRecordIndexName(index);
+        subBatches.add(batch);
       }
     }
   }

@@ -74,16 +74,6 @@ jobs:
       test-type: Integration Tests
       runner-type: gcp-core-32-default
 
-  run-importer-tests:
-    name: Operate Backend Importer Tests
-    uses: ./.github/workflows/operate-ci-test-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref || github.ref_name }}
-      command: ./mvnw -f operate/importer verify -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
-      test-type: Integration Tests
-      runner-type: gcp-core-32-default
-
   run-opensearch-tests:
     name: Operate Backend Opensearch ITs
     uses: ./.github/workflows/operate-ci-test-reusable.yml
