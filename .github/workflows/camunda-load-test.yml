@@ -38,11 +38,6 @@ on:
         type: boolean
         required: false
         default: false
-      operate-tag:
-        description: 'Specifies the tag of operate, when Operate should be included in the load test'
-        type: string
-        default: ""
-        required: false
       realistic:
         description: 'Should run a realistic load test, with real-world process and load'
         type: boolean
@@ -88,11 +83,6 @@ on:
         type: boolean
         required: false
         default: false
-      operate-tag:
-        description: 'Specifies the tag of operate, when Operate should be included in the load test'
-        type: string
-        default: ""
-        required: false
       realistic:
         description: 'Should run a realistic load test, with real-world process and load'
         type: boolean
