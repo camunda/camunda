@@ -52,14 +52,14 @@ public class NodeIdProviderConfiguration {
   @Bean
   /** Create the S3NodeReposiotry as a separate bean so it's lifecycle is managed by spring */
   public S3NodeIdRepository s3NodeIdRepository() {
-    return switch (cluster.getDynamicNodeId().getType()) {
-      case NONE -> null;
+    return switch (cluster.getNodeIdProvider().getType()) {
+      case STATIC -> null;
       case S3 -> {
-        final var clientConfig = makeS3ClientConfig(cluster.getDynamicNodeId().s3());
+        final var clientConfig = makeS3ClientConfig(cluster.getNodeIdProvider().s3());
         final var config =
             new S3NodeIdRepository.Config(
-                cluster.getDynamicNodeId().s3().getBucketName(),
-                cluster.getDynamicNodeId().s3().getLeaseDuration());
+                cluster.getNodeIdProvider().s3().getBucketName(),
+                cluster.getNodeIdProvider().s3().getLeaseDuration());
         yield S3NodeIdRepository.of(clientConfig, config, Clock.systemUTC());
       }
     };
@@ -70,13 +70,13 @@ public class NodeIdProviderConfiguration {
       final Optional<NodeIdRepository> nodeIdRepository,
       final BrokerShutdownHelper shutdownHelper) {
     final var nodeIdProvider =
-        switch (cluster.getDynamicNodeId().getType()) {
-          case NONE -> {
+        switch (cluster.getNodeIdProvider().getType()) {
+          case STATIC -> {
             final var nodeId = cluster.getNodeId();
             yield NodeIdProvider.staticProvider(nodeId);
           }
           case S3 -> {
-            final var config = cluster.getDynamicNodeId().s3();
+            final var config = cluster.getNodeIdProvider().s3();
             if (nodeIdRepository.isEmpty()) {
               throw new IllegalStateException(
                   "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");

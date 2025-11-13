@@ -23,13 +23,13 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @SpringJUnitConfig({UnifiedConfiguration.class, UnifiedConfigurationHelper.class})
 @ActiveProfiles("broker")
-public class ClusterDynamicNodeIdTest {
+public class ClusterNodeIdProviderTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.cluster.dynamic-node-id.type=s3",
-        "camunda.cluster.dynamic-node-id.s3.bucketName=bucketExample",
-        "camunda.cluster.dynamic-node-id.s3.leaseDuration=PT10s",
+        "camunda.cluster.node-id-provider.type=s3",
+        "camunda.cluster.node-id-provider.s3.bucketName=bucketExample",
+        "camunda.cluster.node-id-provider.s3.leaseDuration=PT10s",
       })
   class WithOnlyRequiredProperties {
 
@@ -42,8 +42,8 @@ public class ClusterDynamicNodeIdTest {
     @Test
     void shouldSetWithOnlyRequiredProperties() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getDynamicNodeId()).returns(Type.S3, NodeIdProvider::getType);
-      assertThat(cluster.getDynamicNodeId().s3())
+      assertThat(cluster.getNodeIdProvider()).returns(Type.S3, NodeIdProvider::getType);
+      assertThat(cluster.getNodeIdProvider().s3())
           .returns("bucketExample", S3::getBucketName)
           .returns(Duration.ofSeconds(10), S3::getLeaseDuration);
     }
@@ -52,14 +52,14 @@ public class ClusterDynamicNodeIdTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.cluster.dynamic-node-id.type=s3",
-        "camunda.cluster.dynamic-node-id.s3.bucketName=bucketExample",
-        "camunda.cluster.dynamic-node-id.s3.leaseDuration=PT10s",
-        "camunda.cluster.dynamic-node-id.s3.task-id=example-task-id",
-        "camunda.cluster.dynamic-node-id.s3.endpoint=https://s3.example.com",
-        "camunda.cluster.dynamic-node-id.s3.region=us-east-1",
-        "camunda.cluster.dynamic-node-id.s3.accessKey=myAccessKey",
-        "camunda.cluster.dynamic-node-id.s3.secretKey=mySecretKey",
+        "camunda.cluster.node-id-provider.type=s3",
+        "camunda.cluster.node-id-provider.s3.bucketName=bucketExample",
+        "camunda.cluster.node-id-provider.s3.leaseDuration=PT10s",
+        "camunda.cluster.node-id-provider.s3.task-id=example-task-id",
+        "camunda.cluster.node-id-provider.s3.endpoint=https://s3.example.com",
+        "camunda.cluster.node-id-provider.s3.region=us-east-1",
+        "camunda.cluster.node-id-provider.s3.accessKey=myAccessKey",
+        "camunda.cluster.node-id-provider.s3.secretKey=mySecretKey",
       })
   class WithAllProperties {
 
@@ -72,8 +72,8 @@ public class ClusterDynamicNodeIdTest {
     @Test
     void shouldSetWithAllProperties() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getDynamicNodeId()).returns(Type.S3, NodeIdProvider::getType);
-      assertThat(cluster.getDynamicNodeId().s3())
+      assertThat(cluster.getNodeIdProvider()).returns(Type.S3, NodeIdProvider::getType);
+      assertThat(cluster.getNodeIdProvider().s3())
           .returns("bucketExample", S3::getBucketName)
           .returns(Duration.ofSeconds(10), S3::getLeaseDuration)
           .returns(Optional.of("example-task-id"), S3::getTaskId)
@@ -96,20 +96,21 @@ public class ClusterDynamicNodeIdTest {
     @Test
     void shouldDefaultToNoneType() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getDynamicNodeId()).returns(Type.NONE, NodeIdProvider::getType);
+      assertThat(cluster.getNodeIdProvider()).returns(Type.STATIC, NodeIdProvider::getType);
     }
 
     @Test
     void shouldThrowExceptionWhenAccessingS3Config() {
       final var cluster = camunda.getCluster();
-      assertThatThrownBy(() -> cluster.getDynamicNodeId().s3())
+      assertThatThrownBy(() -> cluster.getNodeIdProvider().s3())
           .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("Cannot access S3 configuration when dynamic node ID type is NONE");
+          .hasMessageContaining(
+              "Cannot access S3 configuration when dynamic node ID type is STATIC");
     }
   }
 
   @Nested
-  @TestPropertySource(properties = {"camunda.cluster.dynamic-node-id.type=none"})
+  @TestPropertySource(properties = {"camunda.cluster.node-id-provider.type=static"})
   class WithTypeSetToNone {
 
     private final Camunda camunda;
@@ -121,15 +122,16 @@ public class ClusterDynamicNodeIdTest {
     @Test
     void shouldSetTypeToNone() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getDynamicNodeId()).returns(Type.NONE, NodeIdProvider::getType);
+      assertThat(cluster.getNodeIdProvider()).returns(Type.STATIC, NodeIdProvider::getType);
     }
 
     @Test
     void shouldThrowExceptionWhenAccessingS3Config() {
       final var cluster = camunda.getCluster();
-      assertThatThrownBy(() -> cluster.getDynamicNodeId().s3())
+      assertThatThrownBy(() -> cluster.getNodeIdProvider().s3())
           .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("Cannot access S3 configuration when dynamic node ID type is NONE");
+          .hasMessageContaining(
+              "Cannot access S3 configuration when dynamic node ID type is STATIC");
     }
   }
 }

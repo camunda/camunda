@@ -9,18 +9,27 @@ package io.camunda.configuration;
 
 import java.time.Duration;
 import java.util.Optional;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import java.util.Set;
 
 public class NodeIdProvider {
 
+  static final String PREFIX = Cluster.PREFIX + ".node-id-provider";
+
   /**
    * Set the {@link Type} of the implementation for the provider of dynamic node id. {@link
-   * Type#NONE} refers to no provider.
+   * Type#STATIC} refers to no provider.
    */
-  private Type type = Type.NONE;
+  private Type type = Type.STATIC;
 
   /** Configuration to use S3 for dynamic node id. */
-  private @NestedConfigurationProperty S3 s3 = new S3();
+  private S3 s3 = new S3();
+
+  /**
+   * This field is bound to "static" as property name. Unfortunately it cannot be called static
+   * because it's a reserved keyword in java. However, the getter is called `getStatic`, so this
+   * field is bound as if it was name `static`.
+   */
+  private final StaticConfig staticConfig = new StaticConfig();
 
   public Type getType() {
     return type;
@@ -51,13 +60,33 @@ public class NodeIdProvider {
    * @throws IllegalStateException if the type is not S3
    */
   public S3 s3() {
-    if (type != Type.S3) {
-      throw new IllegalStateException(
-          "Cannot access S3 configuration when dynamic node ID type is "
-              + type
-              + ". Use s3() method to access S3 configuration, which validates the type.");
-    }
+    assertType(Type.S3);
     return s3;
+  }
+
+  public StaticConfig staticConfig() {
+    assertType(Type.STATIC);
+    return staticConfig;
+  }
+
+  /**
+   * Getter for spring configuration binding, do not use it, as it does not check the type. Note
+   * that it's called `getStatic` and not `getStaticConfig` since we want to bind it to the property
+   * "static", not "static-config"
+   */
+  StaticConfig getStatic() {
+    return staticConfig;
+  }
+
+  private void assertType(final Type expected) {
+    if (type != expected) {
+      throw new IllegalStateException(
+          "Cannot access "
+              + expected
+              + " configuration in NodeIdProvider configuration, type is "
+              + type
+              + ".");
+    }
   }
 
   public static class S3 {
@@ -194,8 +223,31 @@ public class NodeIdProvider {
     }
   }
 
+  public static final class StaticConfig {
+    static final String PREFIX = NodeIdProvider.PREFIX + ".static";
+    private int nodeId;
+
+    public int getNodeId() {
+      return UnifiedConfigurationHelper.validateLegacyConfiguration(
+          PREFIX + ".node-id",
+          nodeId,
+          Integer.class,
+          UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+          Set.of(Cluster.LEGACY_NODE_ID_PROPERTY));
+    }
+
+    public void setNodeId(final int nodeId) {
+      this.nodeId = nodeId;
+    }
+
+    @Override
+    public String toString() {
+      return "StaticConfig{" + "nodeId=" + nodeId + '}';
+    }
+  }
+
   public enum Type {
-    NONE,
+    STATIC,
     S3;
   }
 }
