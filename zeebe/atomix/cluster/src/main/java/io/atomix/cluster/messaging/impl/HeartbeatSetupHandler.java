@@ -82,11 +82,18 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
       // check if it's the response to our HeartbeatRequest
       if (msg instanceof final ProtocolReply reply && reply.id() == heartbeatRequestId) {
-        final var isHeartbeatEnabled = heartbeatEnabled(reply.payload());
+        final var decoder = responseDecoder(reply.payload());
+        boolean isHeartbeatEnabled = false;
+        boolean isPayloadEnabled = false;
+        if (decoder != null) {
+          isHeartbeatEnabled = decoder.heartbeatEnabled() == BooleanType.TRUE;
+          isPayloadEnabled = decoder.sendPayload() == BooleanType.TRUE;
+        }
         log.trace(
-            "Received HeartbeatResponse: id={}, heartbeatEnabled={}",
+            "Received HeartbeatResponse: id={}, heartbeatEnabled={}, isPayloadEnabled={}",
             reply.id(),
-            isHeartbeatEnabled);
+            isHeartbeatEnabled,
+            isPayloadEnabled);
         if (isHeartbeatEnabled) {
           ctx.pipeline()
               .addAfter(
@@ -98,7 +105,8 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
                       advertisedAddress,
                       heartbeatTimeout,
                       heartbeatInterval,
-                      forwardHeartbeats));
+                      forwardHeartbeats,
+                      isPayloadEnabled));
         }
         // the heartbeat setup is done, no need to stay in the pipeline
         ctx.pipeline().remove(this);
@@ -118,20 +126,20 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
       final var bytes = allocateRequestBuffer();
       final var buffer = new UnsafeBuffer(bytes);
       requestEncoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
-      requestEncoder.heartbeatTimeout(heartbeatTimeout.toMillis());
+      requestEncoder.heartbeatTimeout(heartbeatTimeout.toMillis()).sendPayload(BooleanType.TRUE);
       heartbeatRequestId = messageIdGenerator.incrementAndGet();
       return new ProtocolRequest(
           heartbeatRequestId, advertisedAddress, HEARTBEAT_SETUP_SUBJECT, bytes);
     }
 
-    private boolean heartbeatEnabled(final byte[] bytes) {
+    private HeartbeatSetupResponseDecoder responseDecoder(final byte[] bytes) {
       final var buffer = new UnsafeBuffer(bytes);
       try {
         responseDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
-        return responseDecoder.heartbeatEnabled().equals(BooleanType.TRUE);
+        return responseDecoder;
       } catch (final IllegalStateException e) {
         log.warn("Unable to decode heartbeat response, heartbeats are disabled.", e);
-        return false;
+        return null;
       }
     }
   }
@@ -155,7 +163,13 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
       // check if it's a heartbeat request
       if (msg instanceof final ProtocolRequest request
           && request.subject().equals(HEARTBEAT_SETUP_SUBJECT)) {
-        final var timeout = heartbeatTimeout(request.payload());
+        final var decoder = heartbeatTimeout(request.payload());
+        long timeout = 0;
+        boolean sendPayload = false;
+        if (decoder != null) {
+          timeout = decoder.heartbeatTimeout();
+          sendPayload = decoder.sendPayload() == BooleanType.TRUE;
+        }
         if (timeout > 0) {
           log.trace(
               "Received heartbeat request: id:{}, heartbeatTimeout={} millis",
@@ -165,7 +179,8 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
               .addAfter(
                   afterHandler,
                   HeartbeatHandler.HEARTBEAT_HANDLER_NAME,
-                  new HeartbeatHandler.Server(log, Duration.ofMillis(timeout), forwardHeartbeats));
+                  new HeartbeatHandler.Server(
+                      log, Duration.ofMillis(timeout), forwardHeartbeats, sendPayload));
         }
         // the heartbeat setup is done, no need to stay in the pipeline
         ctx.pipeline().remove(this);
@@ -177,15 +192,15 @@ public abstract sealed class HeartbeatSetupHandler extends ChannelDuplexHandler 
       }
     }
 
-    private long heartbeatTimeout(final byte[] payload) {
+    private HeartbeatSetupRequestDecoder heartbeatTimeout(final byte[] payload) {
       final var buffer = new UnsafeBuffer(payload);
       try {
         requestDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
         // it's a u32 on the wire
-        return requestDecoder.heartbeatTimeout();
+        return requestDecoder;
       } catch (final IllegalStateException e) {
         log.warn("Unable to decode heartbeat request from client, heartbeats are disabled.", e);
-        return 0;
+        return null;
       }
     }
 
