@@ -142,6 +142,44 @@ test.describe('Process Instances Filters', () => {
         .toBeGreaterThan(1);
     });
 
+    // TODO: think about DRY here (first part repeat first test.step())
+    // But on the other side we don't want tests to be interdependent
+    await test.step('Filter by Parent Instance Key and by Error Message and assert results', async () => {
+      const callActivityProcessInstanceKey =
+        callActivityProcessInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Parent Process Instance Key',
+      );
+      await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
+        callActivityProcessInstanceKey,
+      );
+      await expect(page.getByText('1 result')).toBeVisible();
+      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      const errorMessage = "Failed to extract the correlation key for 'nonExistingClientId'";
+      await operateFiltersPanelPage.displayOptionalFilter('Error Message');
+      await operateFiltersPanelPage.fillErrorMessageFilter(errorMessage);
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+    });
+
     await test.step('Filter by End Date Range and assert results', async () => {
       await operateProcessesPage.clickProcessCompletedCheckbox();
 
