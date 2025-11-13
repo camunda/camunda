@@ -516,7 +516,8 @@ public final class CamundaClientImpl implements CamundaClient {
       scheduledExecutor = configuration.jobWorkerSchedulingExecutor();
       ownsScheduledExecutor = configuration.ownsJobWorkerSchedulingExecutor();
     } else {
-      scheduledExecutor = Executors.newScheduledThreadPool(1);
+      // default to using a scheduled executor with 0 core pool, which creates threads as needed
+      scheduledExecutor = Executors.newScheduledThreadPool(0);
       ownsScheduledExecutor = true;
     }
 
@@ -528,8 +529,17 @@ public final class CamundaClientImpl implements CamundaClient {
       ownsJobHandlingExecutor = configuration.ownsJobHandlingExecutor();
     } else {
       final int threadCount = configuration.getNumJobWorkerExecutionThreads();
-      jobHandlingExecutor = Executors.newFixedThreadPool(threadCount);
-      ownsJobHandlingExecutor = true;
+
+      if (threadCount == 0) {
+        // fallback to using the scheduled executor for both purposes
+        // this ensures backward compatibility with the old behavior when 0 was accepted
+        // as a valid value; this reuses the single-threaded scheduled executor for job handling
+        jobHandlingExecutor = scheduledExecutor;
+        ownsJobHandlingExecutor = false; // since both executors are the same
+      } else {
+        jobHandlingExecutor = Executors.newFixedThreadPool(threadCount);
+        ownsJobHandlingExecutor = true;
+      }
     }
 
     return new JobWorkerExecutors(

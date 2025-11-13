@@ -46,6 +46,7 @@ import static io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables.ZEEBE
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -639,6 +640,20 @@ public final class CamundaClientTest {
       verify(executor)
           .schedule(any(Runnable.class), eq(pollInterval.toMillis()), eq(TimeUnit.MILLISECONDS));
     }
+  }
+
+  @Test
+  public void shouldNotThrowWhenNumExecutionThreadsIsZero() {
+    assertThatNoException()
+        .isThrownBy(() -> CamundaClient.newClientBuilder().numJobWorkerExecutionThreads(0).build());
+  }
+
+  @Test
+  public void shouldThrowWhenNumExecutionThreadsIsNegative() {
+    // when/then
+    assertThatThrownBy(
+            () -> CamundaClient.newClientBuilder().numJobWorkerExecutionThreads(-1).build())
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
