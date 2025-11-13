@@ -101,8 +101,10 @@ public final class CheckpointRecordsProcessor
     checkpointBackupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
+    final var checkpointType = checkpointState.getLatestCheckpointType();
     if (checkpointId != CheckpointState.NO_CHECKPOINT) {
-      checkpointListeners.forEach(listener -> listener.onNewCheckpointCreated(checkpointId));
+      checkpointListeners.forEach(
+          listener -> listener.onNewCheckpointCreated(checkpointId, checkpointType));
       metrics.setCheckpointId(checkpointId, checkpointState.getLatestCheckpointPosition());
     }
 
@@ -178,8 +180,9 @@ public final class CheckpointRecordsProcessor
           Duration.ZERO,
           () -> {
             final var checkpointId = checkpointState.getLatestCheckpointId();
+            final var checkpointType = checkpointState.getLatestCheckpointType();
             if (checkpointId != CheckpointState.NO_CHECKPOINT) {
-              checkpointListener.onNewCheckpointCreated(checkpointState.getLatestCheckpointId());
+              checkpointListener.onNewCheckpointCreated(checkpointId, checkpointType);
             }
           });
     }
