@@ -50,7 +50,7 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.COMPLETE,
-            new JobCompleteProcessor(processingState, jobMetrics, eventHandle))
+            new JobCompleteProcessor(processingState, writers, jobMetrics, eventHandle))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,
@@ -92,7 +92,9 @@ public final class JobEventProcessors {
             JobIntent.UPDATE,
             new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
-            ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(processingState, jobMetrics))
+            ValueType.JOB,
+            JobIntent.CANCEL,
+            new JobCancelProcessor(processingState, jobMetrics, writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.RECUR_AFTER_BACKOFF,
