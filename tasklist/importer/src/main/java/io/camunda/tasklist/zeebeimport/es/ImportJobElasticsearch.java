@@ -55,9 +55,7 @@ public class ImportJobElasticsearch extends ImportJobAbstract {
   public List<ImportBatch> createSizeLimitedSubBatchesPerIndexName() {
     final List<SearchHit> hits = importBatch.getHits();
     final long maxBatchSizeBytes = tasklistProperties.getImporter().getMaxBatchSizeBytes();
-    final List<ImportBatch> subBatches = new ArrayList<>();
-    final BatchFlusher<ImportBatchElasticSearch, SearchHit> flusher =
-        new BatchFlusher<>(subBatches);
+    final BatchFlusher<ImportBatchElasticSearch, SearchHit> flusher = new BatchFlusher<>();
     ImportBatchElasticSearch currentBatch = null;
 
     List<SearchHit> currentHits = new ArrayList<>();
@@ -90,19 +88,6 @@ public class ImportJobElasticsearch extends ImportJobAbstract {
     }
     // Flush the last batch if it has hits
     flusher.flush(currentBatch, currentHits, currentIndexName);
-    return subBatches;
+    return flusher.getSubBatches();
   }
-
-  //  private record BatchFlusher(List<ImportBatch> subBatches) {
-  //
-  //    void flush(
-  //        final ImportBatchElasticSearch batch, final List<SearchHit> batchHits, final String
-  // index) {
-  //      if (batch != null && batchHits != null && !batchHits.isEmpty()) {
-  //        batch.setHits(batchHits);
-  //        batch.setLastRecordIndexName(index);
-  //        subBatches.add(batch);
-  //      }
-  //    }
-  //  }
 }

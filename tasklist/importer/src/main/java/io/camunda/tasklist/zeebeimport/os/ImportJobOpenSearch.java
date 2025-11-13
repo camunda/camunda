@@ -54,8 +54,7 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
   public List<ImportBatch> createSizeLimitedSubBatchesPerIndexName() {
     final List<Hit> hits = importBatch.getHits();
     final long maxBatchSizeBytes = tasklistProperties.getImporter().getMaxBatchSizeBytes();
-    final List<ImportBatch> subBatches = new ArrayList<>();
-    final BatchFlusher<ImportBatchOpenSearch, Hit> flusher = new BatchFlusher<>(subBatches);
+    final BatchFlusher<ImportBatchOpenSearch, Hit> flusher = new BatchFlusher<>();
 
     ImportBatchOpenSearch currentBatch = null;
     List<Hit> currentHits = new ArrayList<>();
@@ -88,6 +87,6 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
     }
     // Flush the last batch if it has hits
     flusher.flush(currentBatch, currentHits, currentIndex);
-    return subBatches;
+    return flusher.getSubBatches();
   }
 }

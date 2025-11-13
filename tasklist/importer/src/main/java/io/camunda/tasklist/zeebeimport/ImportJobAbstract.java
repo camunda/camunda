@@ -17,6 +17,7 @@ import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -231,10 +232,12 @@ public abstract class ImportJobAbstract implements ImportJob {
   }
 
   protected static class BatchFlusher<B extends ImportBatch, H> {
-    private final List<ImportBatch> subBatches;
+    private final List<ImportBatch> subBatches = new ArrayList<>();
 
-    public BatchFlusher(final List<ImportBatch> subBatches) {
-      this.subBatches = subBatches;
+    public BatchFlusher() {}
+
+    public List<ImportBatch> getSubBatches() {
+      return subBatches;
     }
 
     public void flush(final B batch, final List<H> batchHits, final String index) {
