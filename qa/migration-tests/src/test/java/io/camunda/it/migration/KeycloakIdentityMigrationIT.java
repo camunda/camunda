@@ -16,6 +16,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.RoleGroup;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.TenantUser;
@@ -287,7 +288,7 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
               final var authorizations = client.newAuthorizationSearchRequest().send().join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
-                  .contains("groupa", "groupb");
+                  .contains("groupA", "groupB");
             });
 
     // then
@@ -302,7 +303,7 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
             a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple(
-                "groupa",
+                "groupA",
                 OwnerType.GROUP,
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
@@ -310,13 +311,55 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
                     PermissionType.READ_PROCESS_INSTANCE,
                     PermissionType.DELETE_PROCESS_INSTANCE)),
             tuple(
-                "groupb",
+                "groupB",
                 OwnerType.GROUP,
                 ResourceType.DECISION_DEFINITION,
                 Set.of(
                     PermissionType.DELETE_DECISION_INSTANCE,
                     PermissionType.READ_DECISION_INSTANCE,
                     PermissionType.READ_DECISION_DEFINITION)));
+  }
+
+  @Test
+  public void canMigrateGroupsRolesMembership()
+      throws URISyntaxException, IOException, InterruptedException {
+    // given
+    // we need to add the group-role memberships here via API calls, because there is no support to
+    // do that via configuration
+    addGroupToRoleInManagementIdentity("group C", "Zeebe");
+    addGroupToRoleInManagementIdentity("groupB", "Tasklist");
+    addGroupToRoleInManagementIdentity("groupB", "Operate");
+    addGroupToRoleInManagementIdentity("groupA", "Identity");
+
+    // when
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var groups = client.newGroupsByRoleSearchRequest("zeebe").send().join();
+              assertThat(groups.items()).extracting(RoleGroup::getGroupId).contains("group C");
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var zeebeGroups = client.newGroupsByRoleSearchRequest("zeebe").send().join().items();
+    assertThat(zeebeGroups).extracting(RoleGroup::getGroupId).containsExactlyInAnyOrder("group C");
+    final var operateGroups = client.newGroupsByRoleSearchRequest("operate").send().join().items();
+    assertThat(operateGroups).extracting(RoleGroup::getGroupId).containsExactlyInAnyOrder("groupB");
+    final var tasklistGroups =
+        client.newGroupsByRoleSearchRequest("tasklist").send().join().items();
+    assertThat(tasklistGroups)
+        .extracting(RoleGroup::getGroupId)
+        .containsExactlyInAnyOrder("groupB");
+    final var identityGroups =
+        client.newGroupsByRoleSearchRequest("identity").send().join().items();
+    assertThat(identityGroups)
+        .extracting(RoleGroup::getGroupId)
+        .containsExactlyInAnyOrder("groupA");
   }
 
   @Test
@@ -537,11 +580,11 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     final var tenant1Groups = searchGroupsInTenant(restAddress, "tenant1");
     assertThat(tenant1Groups.items())
         .extracting(TenantGroup::groupId)
-        .containsExactlyInAnyOrder("groupa");
+        .containsExactlyInAnyOrder("groupA");
     final var tenant2Groups = searchGroupsInTenant(restAddress, "TenanT2");
     assertThat(tenant2Groups.items())
         .extracting(TenantGroup::groupId)
-        .containsExactlyInAnyOrder("groupb");
+        .containsExactlyInAnyOrder("groupB");
     final var tenant1Clients = searchClientsInTenant(restAddress, "tenant1");
     assertThat(tenant1Clients.items())
         .extracting(TenantClient::clientId)

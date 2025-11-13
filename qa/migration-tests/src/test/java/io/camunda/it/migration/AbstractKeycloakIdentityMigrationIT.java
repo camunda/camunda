@@ -14,12 +14,17 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentity
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalKeycloakUrl;
 import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
+import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.identity.sdk.IdentityConfiguration.Type;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
+import io.camunda.migration.identity.dto.Group;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneIdentityMigration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -27,9 +32,11 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -75,7 +82,7 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
           // create groups
           .withEnv("KEYCLOAK_GROUPS_0_NAME", "groupA")
           .withEnv("KEYCLOAK_GROUPS_1_NAME", "groupB")
-          .withEnv("KEYCLOAK_GROUPS_2_NAME", "groupC")
+          .withEnv("KEYCLOAK_GROUPS_2_NAME", "group C")
           // create users and assign them to groups and roles
           .withEnv("KEYCLOAK_USERS_0_EMAIL", "user0@email.com")
           .withEnv("KEYCLOAK_USERS_0_FIRST-NAME", "user0")
@@ -93,7 +100,7 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
           .withEnv("KEYCLOAK_USERS_1_LAST-NAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_USERNAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_PASSWORD", "password")
-          .withEnv("KEYCLOAK_USERS_1_GROUPS_0", "groupC")
+          .withEnv("KEYCLOAK_USERS_1_GROUPS_0", "group C")
           .withEnv("KEYCLOAK_USERS_1_ROLES_0", "Zeebe")
           // assign authorizations to groups
           .withEnv("IDENTITY_AUTHORIZATIONS_0_GROUP_NAME", "groupA")
@@ -156,6 +163,7 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   protected TestStandaloneIdentityMigration migration;
   protected CamundaClient client;
+  protected Identity identitySdk;
   @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @BeforeAll
@@ -205,6 +213,17 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
         .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
     migration = new TestStandaloneIdentityMigration(migrationProperties);
 
+    identitySdk =
+        new Identity(
+            new IdentityConfiguration(
+                migrationProperties.getManagementIdentity().getBaseUrl(),
+                migrationProperties.getManagementIdentity().getIssuerBackendUrl(),
+                migrationProperties.getManagementIdentity().getIssuerBackendUrl(),
+                migrationProperties.getManagementIdentity().getClientId(),
+                migrationProperties.getManagementIdentity().getClientSecret(),
+                migrationProperties.getManagementIdentity().getAudience(),
+                Type.KEYCLOAK.name()));
+
     client = BROKER.newClientBuilder().build();
   }
 
@@ -248,6 +267,66 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
     final HttpResponse<String> response =
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), ClientsTenantResponse.class);
+  }
+
+  protected void addGroupToRoleInManagementIdentity(final String groupName, final String roleName)
+      throws URISyntaxException, IOException, InterruptedException {
+
+    final String groupId = getGroupIdByName(groupName);
+
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            externalIdentityUrl(IDENTITY_88), "/api/groups/" + groupId + "/roles")))
+            .POST(
+                HttpRequest.BodyPublishers.ofString("{ \"roleName\": \"%s\" }".formatted(roleName)))
+            .header("Content-Type", "application/json")
+            .header("Authorization", getManagementIdentityBearerToken())
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    if (response.statusCode() != 204) {
+      throw new IllegalStateException(
+          "Expected 204 to be returned as status code but got " + response.statusCode());
+    }
+  }
+
+  private String getGroupIdByName(final String groupName)
+      throws URISyntaxException, IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            externalIdentityUrl(IDENTITY_88),
+                            "/api/groups?search="
+                                + URLEncoder.encode(groupName, StandardCharsets.UTF_8))))
+            .GET()
+            .header("Authorization", getManagementIdentityBearerToken())
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    final List<Group> groups = OBJECT_MAPPER.readValue(response.body(), new TypeReference<>() {});
+    return groups.stream()
+        .findFirst()
+        .map(Group::id)
+        .orElseThrow(
+            () -> new IllegalStateException("Expected to find group with name " + groupName));
+  }
+
+  private String getManagementIdentityBearerToken() {
+    return "Bearer %s"
+        .formatted(
+            identitySdk
+                .authentication()
+                .requestToken(CAMUNDA_IDENTITY_RESOURCE_SERVER)
+                .getAccessToken());
   }
 
   protected record GroupsTenantResponse(List<TenantGroup> items) {}
