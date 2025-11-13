@@ -685,114 +685,12 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  rdbms-aurora-integration-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
-    name: "General / Integration / RDBMS - AWS Aurora ITs"
-    timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: aws-core-8-default
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: it-elasticsearch
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      # Build the platform before running the integration tests; skipping frontend
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      - name: Import secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        id: secrets
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_PASSWORD;
-            secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_USERNAME;
-      # The self-hosted runner doesn't provide a postgres client, so we need to install them manually
-      - name: Install required packages
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Set up database
-        run: ./.github/actions/rdbms/create-aurora-database.sh
-        env:
-          PGDATABASE: db-camunda-aurora-postgresql
-          # PGDATABASE: db-${{ github.sha }}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
-          PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
-          PGPORT: 5432
-          PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
-          PGUSER_IRSA: web-modeler-irsa
-      - name: Run integration test with AWS Aurora
-        shell: bash
-        timeout-minutes: 10
-        run: >
-          ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=3
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D test.integration.camunda.database.type=rdbms_aurora
-          -pl 'qa/acceptance-tests'
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-        env:
-          TEST_INTEGRATION_AURORA_AWS_URL: jdbc:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/db-camunda-aurora-postgresql
-          TEST_INTEGRATION_AURORA_AWS_USERNAME: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
-          TEST_INTEGRATION_AURORA_AWS_PASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
-      - name: Tear down database
-        if: always()
-        run: ./.github/actions/rdbms/drop-aurora-database.sh
-        env:
-          PGDATABASE: db-camunda-aurora-postgresql
-          # PGDATABASE: db-${{ github.sha }}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
-          PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
-          PGPORT: 5432
-          PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
-      - name: Analyze Test Runs
-        id: analyze-test-run
-        if: always()
-        uses: ./.github/actions/analyze-test-runs
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
-        with:
-          name: "[IT] RDBMS - AWS Aurora"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
-          detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS ITs"
-    timeout-minutes: 15
-    runs-on: aws-core-8-default
+    timeout-minutes: 10
+    runs-on: gcp-perf-core-8-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions: { }  # no GITHUB_TOKEN is needed
@@ -810,30 +708,6 @@ jobs:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      - name: Import secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
-        id: secrets
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_PASSWORD;
-            secret/data/products/web-modeler/ci/common AURORA_POSTGRESQL_USERNAME;
-      # The self-hosted runner doesn't provide a postgres client, so we need to install them manually
-      - name: Install required packages
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-      - name: Set up database
-        run: ./.github/actions/rdbms/create-aurora-database.sh
-        env:
-          PGDATABASE: db-camunda-aurora-postgresql
-          # PGDATABASE: db-${{ github.sha }}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
-          PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
-          PGPORT: 5432
-          PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
-          PGUSER_IRSA: web-modeler-irsa
       # Run integration tests with RDBMS database
       - name: Maven Test Build DataLayer
         shell: bash
@@ -847,16 +721,6 @@ jobs:
           -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Tear down database
-        if: always()
-        run: ./.github/actions/rdbms/drop-aurora-database.sh
-        env:
-          PGDATABASE: db-camunda-aurora-postgresql
-          # PGDATABASE: db-${{ github.sha }}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
-          PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
-          PGPORT: 5432
-          PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -1287,7 +1151,6 @@ jobs:
       - general-unit-tests
       - integration-tests
       - opensearch-integration-tests
-      - rdbms-aurora-integration-tests
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
@@ -1573,7 +1436,6 @@ jobs:
       - optimize-ci
       - protobuf-checks
       - rdbms-h2-integration-tests
-      - rdbms-aurora-integration-tests
       - rdbms-integration-tests
       - renovatelint
       - setup-unit-tests
