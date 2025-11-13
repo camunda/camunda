@@ -129,7 +129,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*${{ steps.check-issues.outputs.active-issues-found }}* active licensing issue(s) found across projects and tracked branches:\n\n${{ steps.check-issues.outputs.active-issues-list }}"
+                  "text": "*${{ steps.check-issues.outputs.active-issues-found }}* active licensing issue(s) found across projects and tracked branches:\n\n${{ steps.check-issues.outputs.active-issues-list }}\n\nDRI: <!subteam^S07D6C6B18T|monorepo-ci-medic>"
                 }
               }
             ]
