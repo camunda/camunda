@@ -48,7 +48,8 @@ const useProcessInstancesPaginated = <
     staleTime: 5000,
     enabled: options?.enabled ?? true,
     select: options?.select,
-    placeholderData: (previousData) => previousData,
+    placeholderData:
+      (options?.enabled ?? true) ? (previousData) => previousData : undefined,
     queryFn: async ({pageParam}) => {
       const {response, error} = await searchProcessInstances({
         ...payload,

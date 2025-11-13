@@ -20,6 +20,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {InstancesTable} from './index';
 import {getSortFromUrl} from 'modules/utils/filter/v2/getSortFromUrl';
 import {useLocation} from 'react-router-dom';
+import {useProcessInstancesStoreSync} from 'modules/hooks/useProcessInstancesStoreSync';
 
 const ROW_HEIGHT = 34;
 const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -38,7 +39,7 @@ type ProcessInstancesHandle = {
 
 const InstancesTableWrapper: React.FC = observer(() => {
   const location = useLocation();
-  const {getFilters} = useFilters();
+  const {getFilters, areProcessInstanceStatesApplied} = useFilters();
   const filters = getFilters();
 
   const {process, tenant, version, active, incidents} = filters;
@@ -66,10 +67,16 @@ const InstancesTableWrapper: React.FC = observer(() => {
     processDefinitionKeys,
     enablePeriodicRefetch,
     sort,
-    enabled: true,
+    enabled: !!areProcessInstanceStatesApplied(),
   });
 
   const handle = mapQueryResultToProcessInstancesHandle(result);
+
+  useProcessInstancesStoreSync(
+    handle.processInstances,
+    handle.totalProcessInstancesCount,
+    result.isSuccess,
+  );
 
   return (
     <InstancesTable
@@ -122,13 +129,14 @@ function computeDisplayStateFromQueryResult(
   }
 
   if (result.status === 'pending' && !result.data) {
-    return 'skeleton';
+    return result.fetchStatus === 'idle' ? 'empty' : 'skeleton';
   }
 
   if (
     result.isFetching &&
     !result.isFetchingPreviousPage &&
-    !result.isFetchingNextPage
+    !result.isFetchingNextPage &&
+    result.isPlaceholderData
   ) {
     return 'loading';
   }

@@ -1241,6 +1241,19 @@ const mockProcessInstancesV2 = {
   },
 };
 
+const mockSingleProcessInstanceV2 = {
+  items: [
+    createProcessInstance({
+      processInstanceKey: '2251799813685594',
+      processDefinitionKey: '2251799813685592',
+      processDefinitionId: 'someKey',
+      processDefinitionName: 'demoProcess',
+      state: 'ACTIVE',
+    }),
+  ],
+  page: {totalItems: 1},
+};
+
 export {
   createIncident,
   createEnhancedIncident,
@@ -1264,6 +1277,7 @@ export {
   multiInstanceProcess,
   eventSubProcess,
   mockProcessInstancesV2,
+  mockSingleProcessInstanceV2,
   createMultiInstanceFlowNodeInstances,
   createEventSubProcessFlowNodeInstances,
   createvariable,
