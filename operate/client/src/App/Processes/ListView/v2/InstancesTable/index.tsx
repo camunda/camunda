@@ -19,15 +19,14 @@ import {useFilters} from 'modules/hooks/useFilters';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 /** Stores */
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Toolbar} from '../../InstancesTable/Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useSearchParams} from 'react-router-dom';
 import {BatchModificationFooter} from '../../InstancesTable/BatchModificationFooter';
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import type {InstanceEntityState} from 'modules/types/operate';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
@@ -51,6 +50,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
 
     const filters = useFilters();
     const location = useLocation();
+    const [searchParams] = useSearchParams();
 
     const {canceled, completed, tenant} = getProcessInstanceFilters(
       location.search,
@@ -61,7 +61,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       window.clientConfig?.multiTenancyEnabled &&
       (tenant === undefined || tenant === 'all');
 
-    const {batchOperationId} = getProcessInstancesRequestFilters();
+    const batchOperationId = searchParams.get('operationId') ?? undefined;
 
     const getEmptyListMessage = () => {
       return {
@@ -98,7 +98,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
             processInstancesSelectionStore.selectedProcessInstanceCount > 0
           }
           checkIsRowSelected={(rowId) => {
-            return processInstancesSelectionStore.isProcessInstanceChecked(
+            return processInstancesSelectionStore.checkedProcessInstanceIds.includes(
               rowId,
             );
           }}

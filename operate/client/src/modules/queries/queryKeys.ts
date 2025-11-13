@@ -142,6 +142,11 @@ const queryKeys = {
       'paginated',
       payload,
     ],
+    runningInstancesCount: (processDefinitionKey: string) => [
+      'processInstances',
+      'runningInstancesCount',
+      processDefinitionKey,
+    ],
   },
   batchOperations: {
     query: (payload?: QueryBatchOperationsRequestBody) =>
