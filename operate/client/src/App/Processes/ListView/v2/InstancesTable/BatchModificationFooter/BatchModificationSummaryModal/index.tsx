@@ -85,13 +85,13 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
             operationType: 'MODIFY_PROCESS_INSTANCE',
           });
         },
-        onError: ({message}) => {
+        onError: (error) => {
           processInstancesStore.unmarkProcessInstancesWithActiveOperations({
             instanceIds: ids,
             operationType: 'MODIFY_PROCESS_INSTANCE',
             shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
           });
-          handleOperationError(message.includes('403'));
+          handleOperationError(error.response?.status);
         },
       });
 

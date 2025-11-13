@@ -85,7 +85,7 @@ function useOperationApply() {
             operationType,
             shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
           });
-          handleOperationError(statusCode === 403);
+          handleOperationError(statusCode);
         },
       });
 

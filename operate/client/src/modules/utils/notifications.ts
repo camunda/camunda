@@ -8,8 +8,8 @@
 
 import {notificationsStore} from 'modules/stores/notifications';
 
-const handleOperationError = (isPermissionError: boolean) => {
-  if (isPermissionError) {
+const handleOperationError = (statusCode?: number) => {
+  if (statusCode === 403) {
     return notificationsStore.displayNotification({
       kind: 'warning',
       title: "You don't have permission to perform this operation",

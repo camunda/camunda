@@ -32,7 +32,7 @@ const IncidentOperation: React.FC<Props> = observer(
 
     const handleError: ErrorHandler = ({statusCode}) => {
       setHasActiveOperation(false);
-      handleOperationError(statusCode === 403);
+      handleOperationError(statusCode);
     };
 
     const handleOnClick = async (e: React.MouseEvent<HTMLButtonElement>) => {

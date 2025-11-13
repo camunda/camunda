@@ -147,7 +147,7 @@ const ProcessOperations: React.FC<Props> = observer(
               },
               onError: (statusCode: number) => {
                 setIsOperationRunning(false);
-                handleOperationError(statusCode === 403);
+                handleOperationError(statusCode);
               },
             });
           }}

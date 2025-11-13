@@ -53,9 +53,9 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       });
       processInstancesSelectionStore.reset();
     },
-    onError: ({message}) => {
+    onError: (error) => {
       panelStatesStore.expandOperationsPanel();
-      handleOperationError(message.includes('403'));
+      handleOperationError(error.response?.status);
     },
   });
 
@@ -68,9 +68,9 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       });
       processInstancesSelectionStore.reset();
     },
-    onError: ({message}) => {
+    onError: (error) => {
       panelStatesStore.expandOperationsPanel();
-      handleOperationError(message.includes('403'));
+      handleOperationError(error.response?.status);
     },
   });
 

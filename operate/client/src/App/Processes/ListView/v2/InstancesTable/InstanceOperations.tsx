@@ -50,7 +50,7 @@ const InstanceOperations: React.FC<Props> = ({
   });
 
   const handleOperationError: ErrorHandler = ({statusCode}) => {
-    handleOperationErrorUtil(statusCode === 403);
+    handleOperationErrorUtil(statusCode);
   };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {

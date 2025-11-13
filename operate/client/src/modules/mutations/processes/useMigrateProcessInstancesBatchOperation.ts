@@ -17,12 +17,13 @@ import type {
   CreateMigrationBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations.ts';
+import type {RequestError} from 'modules/request';
 
 const useMigrateProcessInstancesBatchOperation = (
   options?: Partial<
     UseMutationOptions<
       CreateMigrationBatchOperationResponseBody,
-      Error,
+      RequestError,
       CreateMigrationBatchOperationRequestBody
     >
   >,

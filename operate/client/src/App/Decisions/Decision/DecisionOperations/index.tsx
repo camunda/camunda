@@ -132,7 +132,7 @@ const DecisionOperations: React.FC<Props> = ({
             },
             onError: (statusCode: number) => {
               setIsOperationRunning(false);
-              handleOperationError(statusCode === 403);
+              handleOperationError(statusCode);
             },
           });
         }}

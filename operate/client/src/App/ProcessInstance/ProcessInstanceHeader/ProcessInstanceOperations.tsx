@@ -83,7 +83,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
 
   const handleOperationError: ErrorHandler = ({statusCode}) => {
     invalidateQueries();
-    handleOperationErrorUtil(statusCode === 403);
+    handleOperationErrorUtil(statusCode);
   };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {

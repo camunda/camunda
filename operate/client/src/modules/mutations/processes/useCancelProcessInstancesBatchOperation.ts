@@ -17,12 +17,13 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {createCancellationBatchOperation} from 'modules/api/v2/processInstances/createCancellationBatchOperation';
 import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
+import type {RequestError} from 'modules/request';
 
 const useCancelProcessInstancesBatchOperation = (
   options?: Partial<
     UseMutationOptions<
       CreateCancellationBatchOperationResponseBody,
-      Error,
+      RequestError,
       CreateCancellationBatchOperationRequestBody
     >
   >,

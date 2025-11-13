@@ -34,7 +34,9 @@ const Footer: React.FC = observer(() => {
         operationType: 'MIGRATE_PROCESS_INSTANCE',
       });
     },
-    onError: ({message}) => handleOperationError(message.includes('403')),
+    onError: (error) => {
+      return handleOperationError(error.response?.status);
+    },
   });
 
   return (
