@@ -80,7 +80,6 @@ public final class PartitionManagerImpl
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
-  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
@@ -116,7 +115,6 @@ public final class PartitionManagerImpl
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
