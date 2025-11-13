@@ -13,24 +13,17 @@ import {
   groupedProcessesMock,
   mockProcessXML,
   createUser,
+  mockSingleProcessInstanceV2,
 } from 'modules/testUtils';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockQueryBatchOperations().withSuccess({
@@ -39,6 +32,14 @@ describe('<ListView /> - operations', () => {
         totalItems: 0,
       },
     });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });
@@ -46,6 +47,8 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should show delete button when version is selected', async () => {
+    mockSearchProcessInstances().withSuccess(mockSingleProcessInstanceV2);
+
     const queryString = '?process=demoProcess&version=1';
 
     vi.stubGlobal('location', {
@@ -121,6 +124,8 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should show delete button when user has resource based permissions', async () => {
+    mockSearchProcessInstances().withSuccess(mockSingleProcessInstanceV2);
+
     const queryString = '?process=demoProcess&version=1';
 
     vi.stubGlobal('location', {
@@ -143,6 +148,8 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when user has no resource based permissions', async () => {
+    mockSearchProcessInstances().withSuccess(mockSingleProcessInstanceV2);
+
     const queryString = '?process=demoProcess&version=1';
 
     vi.stubGlobal('location', {

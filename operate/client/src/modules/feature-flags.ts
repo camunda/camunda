@@ -7,7 +7,7 @@
  */
 
 const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_PROCESSES_PAGE_V2 = false;
+const IS_PROCESSES_PAGE_V2 = true;
 const IS_ELEMENT_INSTANCE_HISTORY_V2 = false;
 
 export {
