@@ -1,0 +1,42 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useQuery} from '@tanstack/react-query';
+import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
+
+type UseRunningInstancesCountParams = {
+  processDefinitionKey?: string;
+  enabled?: boolean;
+};
+
+const useRunningInstancesCount = ({
+  processDefinitionKey,
+  enabled = true,
+}: UseRunningInstancesCountParams) => {
+  return useQuery({
+    queryKey: ['runningInstancesCount', processDefinitionKey],
+    queryFn: async () => {
+      const {response} = await searchProcessInstances({
+        filter: {
+          processDefinitionKey: processDefinitionKey
+            ? {$eq: processDefinitionKey}
+            : undefined,
+          $or: [{state: {$eq: 'ACTIVE'}}, {hasIncident: true}],
+        },
+        page: {from: 0, limit: 0},
+      });
+
+      return response?.page.totalItems ?? 0;
+    },
+    enabled: enabled && processDefinitionKey !== undefined,
+    refetchOnWindowFocus: true,
+    placeholderData: (previousData) => previousData,
+  });
+};
+
+export {useRunningInstancesCount};
