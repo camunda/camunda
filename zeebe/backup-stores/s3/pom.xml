@@ -102,12 +102,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-testkit</artifactId>
       <scope>test</scope>
     </dependency>
@@ -171,6 +165,11 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

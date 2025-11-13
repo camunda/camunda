@@ -69,7 +69,7 @@ public class GcsBucketIT {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 3, 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(
                 Map.of(
                     "snapshotFile1",
@@ -117,7 +117,7 @@ public class GcsBucketIT {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 3, 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(
                 Map.of(
                     "snapshotFile1",

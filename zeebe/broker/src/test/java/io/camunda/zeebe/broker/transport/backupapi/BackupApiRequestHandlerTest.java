@@ -183,7 +183,6 @@ final class BackupApiRequestHandlerTest {
             Optional.of(
                 new BackupDescriptorImpl(
                     Optional.of("s-id"),
-                    checkpointId,
                     100,
                     3,
                     "test",
@@ -301,7 +300,6 @@ final class BackupApiRequestHandlerTest {
             Optional.of(
                 new BackupDescriptorImpl(
                     Optional.of("s-id"),
-                    3,
                     100,
                     3,
                     "test",
