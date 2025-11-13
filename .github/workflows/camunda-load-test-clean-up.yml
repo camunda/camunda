@@ -38,19 +38,51 @@ jobs:
           cluster_name: zeebe-cluster
           location: europe-west1-b
       - name: Delete namespaces eligible for deletion
-<<<<<<< HEAD
-        shell: bash
-=======
         id: delete-namespaces
->>>>>>> 5179e2ad28b (update clean up workflow)
         run: |
           currentDate=$(date -d ${{ inputs.date }} +%Y-%m-%d)
           echo "Date used for deletion: $currentDate"
+          namespacesDeleted=""
           for ns in $(kubectl get namespace --selector=deadline-date="$currentDate" -o json | jq -r '.items[].metadata.name');
           do
-            echo "Deleting namespace: $ns"
             kubectl delete namespace "$ns" --wait=false
+            namespacesDeleted+=" * $ns\n"
           done
+
+          echo -e "Namespaces deleted:\n$namespacesDeleted"
+          # With multiline strings the output needs to be set differently.
+          #
+          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
+          #
+          {
+            echo 'NAMESPACES<<EOF'
+            echo "$namespacesDeleted"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":meow_trash: *Load tests have been cleaned up:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.delete-namespaces.outputs.namespaces }}"
+                  }
+                }
+              ]
+            }
       - name: Observe build status
         if: always()
         continue-on-error: true
