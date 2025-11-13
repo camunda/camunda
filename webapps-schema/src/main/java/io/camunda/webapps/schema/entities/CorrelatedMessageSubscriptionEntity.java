@@ -16,22 +16,22 @@ public class CorrelatedMessageSubscriptionEntity
         PartitionedEntity<CorrelatedMessageSubscriptionEntity>,
         TenantOwned {
 
-  @SinceVersion880 private String id;
+  @BeforeVersion880 private String id;
 
-  @SinceVersion880 private String bpmnProcessId;
-  @SinceVersion880 private String correlationKey;
-  @SinceVersion880 private OffsetDateTime correlationTime;
-  @SinceVersion880 private String flowNodeId;
-  @SinceVersion880 private Long flowNodeInstanceKey;
-  @SinceVersion880 private long messageKey;
-  @SinceVersion880 private String messageName;
-  @SinceVersion880 private int partitionId;
-  @SinceVersion880 private Long position;
-  @SinceVersion880 private Long processDefinitionKey;
-  @SinceVersion880 private Long processInstanceKey;
-  @SinceVersion880 private long subscriptionKey;
-  @SinceVersion880 private String subscriptionType;
-  @SinceVersion880 private String tenantId;
+  @BeforeVersion880 private String bpmnProcessId;
+  @BeforeVersion880 private String correlationKey;
+  @BeforeVersion880 private OffsetDateTime correlationTime;
+  @BeforeVersion880 private String flowNodeId;
+  @BeforeVersion880 private Long flowNodeInstanceKey;
+  @BeforeVersion880 private long messageKey;
+  @BeforeVersion880 private String messageName;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Long position;
+  @BeforeVersion880 private Long processDefinitionKey;
+  @BeforeVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private long subscriptionKey;
+  @BeforeVersion880 private String subscriptionType;
+  @BeforeVersion880 private String tenantId;
 
   @Override
   public String getId() {

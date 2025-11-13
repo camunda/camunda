@@ -8,9 +8,9 @@
 package io.camunda.webapps.schema.entities.usertask;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
-import io.camunda.webapps.schema.entities.SinceVersion880;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
 public class TaskVariableEntity
@@ -18,40 +18,40 @@ public class TaskVariableEntity
         PartitionedEntity<TaskVariableEntity>,
         TenantOwned {
 
-  @SinceVersion880 private String id;
-  @SinceVersion880 private long key;
-  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  @SinceVersion880 private int partitionId;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private int partitionId;
 
-  @SinceVersion880
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String name;
 
-  @SinceVersion880
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String value;
 
-  @SinceVersion880
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String fullValue;
 
-  @SinceVersion880
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Boolean isTruncated;
 
-  @SinceVersion880
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long scopeKey;
 
-  @SinceVersion880
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long processInstanceId;
 
-  @SinceVersion880
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long position;
 
-  @SinceVersion880
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 

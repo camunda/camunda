@@ -40,5 +40,5 @@ import java.lang.annotation.Target;
 public @interface SinceVersion {
   String value();
 
-  boolean nullable() default false;
+  boolean requireDefault() default true;
 }

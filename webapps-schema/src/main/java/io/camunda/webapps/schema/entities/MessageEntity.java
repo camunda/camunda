@@ -13,16 +13,16 @@ import java.util.Objects;
 
 public class MessageEntity implements ExporterEntity<MessageEntity>, TenantOwned {
 
-  @SinceVersion880 private String id;
-  @SinceVersion880 private String messageName;
-  @SinceVersion880 private String correlationKey;
-  @SinceVersion880 private OffsetDateTime publishDate;
-  @SinceVersion880 private OffsetDateTime expireDate;
-  @SinceVersion880 private OffsetDateTime deadline;
-  @SinceVersion880 private Long timeToLive;
-  @SinceVersion880 private String messageId;
-  @SinceVersion880 private String variables;
-  @SinceVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private String messageName;
+  @BeforeVersion880 private String correlationKey;
+  @BeforeVersion880 private OffsetDateTime publishDate;
+  @BeforeVersion880 private OffsetDateTime expireDate;
+  @BeforeVersion880 private OffsetDateTime deadline;
+  @BeforeVersion880 private Long timeToLive;
+  @BeforeVersion880 private String messageId;
+  @BeforeVersion880 private String variables;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Override
   public String getId() {

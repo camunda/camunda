@@ -7,7 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.messagesubscription;
 
-import io.camunda.webapps.schema.entities.SinceVersion880;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -16,9 +16,9 @@ import java.util.Objects;
 public class MessageSubscriptionMetadataEntity {
 
   /** Message data. */
-  @SinceVersion880 private String messageName;
+  @BeforeVersion880 private String messageName;
 
-  @SinceVersion880 private String correlationKey;
+  @BeforeVersion880 private String correlationKey;
 
   /**
    * @deprecated since 8.9

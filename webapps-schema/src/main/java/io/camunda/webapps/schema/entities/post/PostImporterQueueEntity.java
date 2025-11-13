@@ -7,28 +7,28 @@
  */
 package io.camunda.webapps.schema.entities.post;
 
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import io.camunda.webapps.schema.entities.SinceVersion880;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public class PostImporterQueueEntity implements ExporterEntity<PostImporterQueueEntity> {
 
-  @SinceVersion880 private String id;
+  @BeforeVersion880 private String id;
 
-  @SinceVersion880 private Long key;
+  @BeforeVersion880 private Long key;
 
-  @SinceVersion880 private PostImporterActionType actionType;
+  @BeforeVersion880 private PostImporterActionType actionType;
 
-  @SinceVersion880 private String intent;
+  @BeforeVersion880 private String intent;
 
-  @SinceVersion880 private OffsetDateTime creationTime;
+  @BeforeVersion880 private OffsetDateTime creationTime;
 
-  @SinceVersion880 private Integer partitionId;
+  @BeforeVersion880 private Integer partitionId;
 
-  @SinceVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private Long processInstanceKey;
 
-  @SinceVersion880 private Long position;
+  @BeforeVersion880 private Long position;
 
   @Override
   public String getId() {
