@@ -1,0 +1,140 @@
+---
+alwaysApply: true
+---
+The Zeebe code style is a fork of the [Google Java Style](https://google.github.io/styleguide/javaguide.html); it is essentially a direct copy with a few modifications; for anything not mentioned here, refer to their original guide.
+
+## Zeebe Java Code Style
+
+### Logging
+
+Refer to https://github.com/camunda-cloud/zeebe/wiki/Logging for logging guidelines.
+
+### Source File Structure
+
+#### Ordering of Class Content
+
+Top-level class/interface/enum contents should be ordered according to a slightly modified version of the [Oracle Java Convention](https://www.oracle.com/technetwork/java/codeconventions-141855.html#1852), that is:
+
+1. Static fields, in order of visibility
+1. Static initialization block
+1. Instance fields, in order of visibility
+1. Instance initialization block
+1. Constructors
+1. Methods
+    1. Overridden methods must be grouped together
+1. Inner static classes, in order of visibility
+1. Inner interfaces, in order of visibility 
+1. Inner enums, in order of visibility
+1. Inner classes, in order of visibility
+
+Note that while we don't enforce an ordering for instance methods, it's recommended to group them together based on functionality.
+
+### Programming Practices
+
+Note that Atomix is a hard fork and the style guide is not applied comprehensively to the Atomix modules. We try to improve the situation step-by-step.
+
+#### Favor final modifier
+
+To be consistent and to make it easy, we decided to mark everything as final, if possible.
+This includes concrete classes, fields, parameters, local variables.
+For classes, we prefer composition over inheritance. For fields/parameters/variables, we prefer immutability over mutability.
+
+#### Var keyword usage
+
+We consider `var` a useful keyword. Use it according to the [recommended guidelines](https://openjdk.java.net/projects/amber/LVTIstyle.html).
+
+#### This keyword usage
+
+We don't use `this` when it is not required.
+
+#### Default/Package-Private visibility
+
+We consider default (package-private) visibility of classes as useful to limit the visibility within a module and from other modules (as long as we find something better like Java's Jigsaw). 
+
+Be careful when using the default visibility for testing purposes. It can couple tests too close to the implementation. 
+
+#### Equals/Hashcode implementations
+
+When generating the Equals/Hashcode implementations make sure to choose the `java.util.Objects.equals() and hashcode() (java 7+)` template. This exists in IntelliJ IDEA but also in [Eclipse since 4.9](https://bugs.eclipse.org/bugs/show_bug.cgi?id=424214).
+
+> [!Important]
+>  
+> If you encounter issues with checkstyle, make sure that you have set up the Save actions plugin properly in Intellij IDEA, 
+> such that it generates brackets on safe. There is currently no other way of reformating, until [google-java-format#51](https://github.com/google/google-java-format/issues/51) is implemented.
+
+#### Garbage free
+
+Favor maintenance over performance.
+In the beginning of the project, Zeebe followed a garbage-free approach (pre-allocating objects and re-using these).
+With the evolution of Java and garbage-collection, we realized this is no longer necessary.
+Since, we've stepped back from this approach.
+However, we still do this for heavy objects (i.e. it takes a long time to create these objects, e.g. Record objects, big buffers, etc).
+
+#### Deprecate home grown solutions
+
+Favor mature well-maintained solutions over homegrown code.
+Historically, Zeebe tried to be dependency-free.
+This is hard to maintain and takes focus away from what matters.
+When we find well-maintained mature solutions, we deprecate our home grown solution and document how to replace it.
+
+#### Favor functional-style [engine-speficic]
+
+We favor a functional programming style in the engine. To support this, we implemented our own `Either` type. 
+If we need more operators for the type, we can always enhance it or switch to a library.
+
+#### Favor text blocks [engine-speficic]
+
+We favor Java's [text blocks](https://docs.oracle.com/en/java/javase/15/text-blocks/index.html) over string concatenations for multi-line strings or strings that are longer than our usual column length. For example, JSON representations or error/rejection messages. 
+
+A new line in the text block results in a string with a new line. The new line can be suppressed by adding a trailing `\` at the end of the line. 
+
+```
+final String message = 
+    """
+    First line \
+    continue on the same line.
+    Second line."""
+```
+
+#### Avoid unbounded recursion
+
+Often times when we've had a case of unbounded recursion it inevitably results in a support case with a `StackOverflowException`. As a result we avoid unbounded recursion entirely and rely on iterative approaches instead. Recursion is fine, as long as you are 100% sure that there's some reasonable limit to it.
+
+### Programming Practices in Tests
+These practices are specific to the tests. The practices above also apply here.
+
+#### Given-When-Then Tests
+
+We structure our tests according to Given-When-Then.
+See: https://martinfowler.com/bliki/GivenWhenThen.html
+
+#### Descriptive tests
+
+Carefully consider assertion failure messages when writing tests.
+AssertJ supports adding custom failure messages to assertion statements to help with this.
+
+#### Favour the BPMN Model API over BPMN files
+
+With the BPMN Model API it's easy to create a process using code. This is preferable over adding BPMN files to the resources. With the model API it's easy to see in a test case what the process under test looks like.
+
+#### Keep processes minimal
+
+Focus on the piece of a process that you want to test. Extract this piece and only include this in the test. This keeps the test cases simple and readable. If there are multiple parts of a process that need to be tested, extract this into separate test cases.
+
+#### Favour JUnit5 over JUnit4
+
+When writing a test write it using JUnit5 where possible. If the test class is using JUnit4, where JUnit5 is supported, refactor the test class to JUnit5 is this is reasonable.
+
+Tests using the [EngineRule](https://github.com/camunda/zeebe/blob/main/engine/src/test/java/io/camunda/zeebe/engine/util/EngineRule.java) cannot use JUnit5 at this time.
+
+## Integration with IntelliJ
+
+For IntelliJ-IDEA users, [some configurations](https://github.com/camunda-cloud/zeebe/tree/develop/.idea)
+are tracked in version control to assist in applying a consistent code style:
+- the code style scheme is 
+  [pre-configured](https://github.com/camunda-cloud/zeebe/blob/develop/.idea/codeStyles/Project.xml) 
+  and [enabled](https://github.com/camunda-cloud/zeebe/blob/develop/.idea/codeStyles/codeStyleConfig.xml)
+- [the google-java-format plugin](https://plugins.jetbrains.com/plugin/8527-google-java-format/)
+  is [pre-configured](https://github.com/camunda-cloud/zeebe/blob/develop/.idea/google-java-format.xml) and
+  [required](https://github.com/camunda-cloud/zeebe/blob/develop/.idea/externalDependencies.xml)
+- [the save-actions plugin](https://plugins.jetbrains.com/plugin/22113-save-actions--xdev-edition) is [pre-configured](https://github.com/camunda-cloud/zeebe/blob/develop/.idea/saveactions_settings.xml) and [required](https://github.com/camunda-cloud/zeebe/blob/develop/.idea/externalDependencies.xml) (requires IntelliJ-IDEA 2023.1+ build 231+)

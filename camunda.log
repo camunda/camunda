@@ -1,0 +1,549 @@
+[INFO] Scanning for projects...
+[INFO] Inspecting build with total of 1 modules...
+[INFO] Not installing Nexus Staging features:
+[INFO]  * Preexisting staging related goal bindings found in 1 modules.
+[INFO] ------------------------------------------------------------------------
+[INFO] Detecting the operating system and CPU architecture
+[INFO] ------------------------------------------------------------------------
+[INFO] os.detected.name: osx
+[INFO] os.detected.arch: aarch_64
+[INFO] os.detected.bitness: 64
+[INFO] os.detected.version: 15.7
+[INFO] os.detected.version.major: 15
+[INFO] os.detected.version.minor: 7
+[INFO] os.detected.classifier: osx-aarch_64
+[INFO] 
+[INFO] ----------------------< io.camunda:camunda-zeebe >----------------------
+[INFO] Building Zeebe Distribution 8.9.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.6:run (default-cli) > test-compile @ camunda-zeebe >>>
+[INFO] 
+[INFO] --- checkstyle:3.6.0:check (validate-java) @ camunda-zeebe ---
+[INFO] You have 0 Checkstyle violations.
+[INFO] 
+[INFO] --- enforcer:3.6.1:enforce (enforce-dependency-convergence) @ camunda-zeebe ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.dependency.DependencyConvergence passed
+[INFO] 
+[INFO] --- enforcer:3.6.1:enforce (enforce-unique-dependencies) @ camunda-zeebe ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.BanDuplicatePomDependencyVersions passed
+[INFO] 
+[INFO] --- jacoco:0.8.13:prepare-agent (coverage-initialize) @ camunda-zeebe ---
+[INFO] argLine set to -javaagent:/Users/aleksander.dytko/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=/Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/jacoco.exec
+[INFO] 
+[INFO] --- git-commit-id:9.0.2:revision (resolve-git-info) @ camunda-zeebe ---
+[INFO] 
+[INFO] --- openapi-generator:7.12.0:generate (backups) @ camunda-zeebe ---
+[INFO] Generating with dryRun=false
+[INFO] No .openapi-generator-ignore file found.
+[INFO] OpenAPI Generator: spring (server)
+[INFO] Generator 'spring' is considered stable.
+[INFO] ----------------------------------
+[INFO] Environment variable JAVA_POST_PROCESS_FILE not defined so the Java code may not be properly formatted. To define it, try 'export JAVA_POST_PROCESS_FILE="/usr/local/bin/clang-format -i"' (Linux/Mac)
+[INFO] NOTE: To enable file post-processing, 'enablePostProcessFile' must be set to `true` (--enable-post-process-file for CLI).
+[INFO] Invoker Package Name, originally not set, is now derived from model package name: io.camunda.management
+[INFO] Inline schema created as _backupRuntime__backupIdOrPrefix__get_backupIdOrPrefix_parameter. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _backupRuntime__backupIdOrPrefix__get_backupIdOrPrefix_parameter=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _backupRuntime__backupIdOrPrefix__get_backupIdOrPrefix_parameter=NewModel,ModelA=NewModelA in CLI).
+[INFO] Inline schema created as _backupRuntime__backupIdOrPrefix__get_200_response. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings _backupRuntime__backupIdOrPrefix__get_200_response=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings _backupRuntime__backupIdOrPrefix__get_200_response=NewModel,ModelA=NewModelA in CLI).
+[WARNING] Empty operationId found for path: GET /backupRuntime. Renamed to auto-generated operationId: backupRuntimeGET
+[WARNING] Empty operationId found for path: POST /backupRuntime. Renamed to auto-generated operationId: backupRuntimePOST
+[WARNING] Empty operationId found for path: GET /backupRuntime/{backupIdOrPrefix}. Renamed to auto-generated operationId: backupRuntimeBackupIdOrPrefixGET
+[WARNING] Empty operationId found for path: DELETE /backupRuntime/{backupIdOrPrefix}. Renamed to auto-generated operationId: backupRuntimeBackupIdOrPrefixDELETE
+[WARNING] Empty operationId found for path: GET /backupHistory. Renamed to auto-generated operationId: backupHistoryGET
+[WARNING] Empty operationId found for path: POST /backupHistory. Renamed to auto-generated operationId: backupHistoryPOST
+[WARNING] Empty operationId found for path: GET /backupHistory/{backupId}. Renamed to auto-generated operationId: backupHistoryBackupIdGET
+[WARNING] Empty operationId found for path: DELETE /backupHistory/{backupId}. Renamed to auto-generated operationId: backupHistoryBackupIdDELETE
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Model BackupList not generated since it's an alias to array (without property) and `generateAliasAsModel` is set to false (default)
+[INFO] Model HistoryBackupList not generated since it's an alias to array (without property) and `generateAliasAsModel` is set to false (default)
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/BackupInfo.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/BackupRuntimeBackupIdOrPrefixGet200Response.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/BackupRuntimeBackupIdOrPrefixGetBackupIdOrPrefixParameter.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/Error.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/HistoryBackupDetail.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/HistoryBackupInfo.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/HistoryStateCode.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/PartitionBackupInfo.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/StateCode.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/TakeBackupHistoryRequest.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/TakeBackupHistoryResponse.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/TakeBackupRuntimeRequest.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/management/backups/TakeBackupRuntimeResponse.java
+[INFO] Skipping generation of APIs.
+[INFO] Skipping generation of Webhooks.
+[INFO] Skipping generation of supporting files.
+################################################################################
+# Thanks for using OpenAPI Generator.                                          #
+# Please consider donation to help us maintain this project 🙏                 #
+# https://opencollective.com/openapi_generator/donate                          #
+################################################################################
+[INFO] 
+[INFO] --- openapi-generator:7.12.0:generate (cluster) @ camunda-zeebe ---
+[INFO] Generating with dryRun=false
+[INFO] No .openapi-generator-ignore file found.
+[INFO] OpenAPI Generator: spring (server)
+[INFO] Generator 'spring' is considered stable.
+[INFO] ----------------------------------
+[INFO] Environment variable JAVA_POST_PROCESS_FILE not defined so the Java code may not be properly formatted. To define it, try 'export JAVA_POST_PROCESS_FILE="/usr/local/bin/clang-format -i"' (Linux/Mac)
+[INFO] NOTE: To enable file post-processing, 'enablePostProcessFile' must be set to `true` (--enable-post-process-file for CLI).
+[INFO] Invoker Package Name, originally not set, is now derived from model package name: io.camunda.zeebe.management
+[INFO] Inline schema created as TopologyChange_completed_inner. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings TopologyChange_completed_inner=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings TopologyChange_completed_inner=NewModel,ModelA=NewModelA in CLI).
+[INFO] Inline schema created as ClusterConfigPatchRequest_brokers. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings ClusterConfigPatchRequest_brokers=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings ClusterConfigPatchRequest_brokers=NewModel,ModelA=NewModelA in CLI).
+[INFO] Inline schema created as ClusterConfigPatchRequest_partitions. To have complete control of the model name, set the `title` field or use the modelNameMapping option (e.g. --model-name-mappings ClusterConfigPatchRequest_partitions=NewModel,ModelA=NewModelA in CLI) or inlineSchemaNameMapping option (--inline-schema-name-mappings ClusterConfigPatchRequest_partitions=NewModel,ModelA=NewModelA in CLI).
+[WARNING] Empty operationId found for path: POST /brokers/{brokerId}. Renamed to auto-generated operationId: brokersBrokerIdPOST
+[WARNING] Empty operationId found for path: DELETE /brokers/{brokerId}. Renamed to auto-generated operationId: brokersBrokerIdDELETE
+[WARNING] Empty operationId found for path: POST /brokers. Renamed to auto-generated operationId: brokersPOST
+[WARNING] Empty operationId found for path: POST /purge. Renamed to auto-generated operationId: purgePOST
+[WARNING] Empty operationId found for path: GET /. Renamed to auto-generated operationId: rootGET
+[WARNING] Empty operationId found for path: PATCH /. Renamed to auto-generated operationId: rootPATCH
+[WARNING] Empty operationId found for path: PATCH /routing-state. Renamed to auto-generated operationId: routing_statePATCH
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Model ScaleRequest not generated since it's an alias to array (without property) and `generateAliasAsModel` is set to false (default)
+[WARNING] 'RequestHandling' defines discriminator 'strategy', but the referenced schema 'RequestHandlingAllPartitions' is incorrect. invalid optional definition of strategy, include it in required
+[WARNING] 'RequestHandling' defines discriminator 'strategy', but the referenced schema 'RequestHandlingActivePartitions' is incorrect. invalid optional definition of strategy, include it in required
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/BrokerState.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/BrokerStateCode.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ClusterConfigPatchRequest.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ClusterConfigPatchRequestBrokers.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ClusterConfigPatchRequestPartitions.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/CompletedChange.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/Error.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ExporterConfig.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ExporterStateCode.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ExportingConfig.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/GetTopologyResponse.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/MessageCorrelation.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/MessageCorrelationHashMod.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/Operation.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/PartitionConfig.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/PartitionState.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/PartitionStateCode.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/PlannedOperationsResponse.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/RequestHandling.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/RequestHandlingActivePartitions.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/RequestHandlingAllPartitions.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/RoutingState.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/TopologyChange.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/TopologyChangeCompletedInner.java
+[INFO] Skipping generation of APIs.
+[INFO] Skipping generation of Webhooks.
+[INFO] Skipping generation of supporting files.
+################################################################################
+# Thanks for using OpenAPI Generator.                                          #
+# Please consider donation to help us maintain this project 🙏                 #
+# https://opencollective.com/openapi_generator/donate                          #
+################################################################################
+[INFO] 
+[INFO] --- openapi-generator:7.12.0:generate (exporter) @ camunda-zeebe ---
+[INFO] Generating with dryRun=false
+[INFO] No .openapi-generator-ignore file found.
+[INFO] OpenAPI Generator: spring (server)
+[INFO] Generator 'spring' is considered stable.
+[INFO] ----------------------------------
+[INFO] Environment variable JAVA_POST_PROCESS_FILE not defined so the Java code may not be properly formatted. To define it, try 'export JAVA_POST_PROCESS_FILE="/usr/local/bin/clang-format -i"' (Linux/Mac)
+[INFO] NOTE: To enable file post-processing, 'enablePostProcessFile' must be set to `true` (--enable-post-process-file for CLI).
+[INFO] Invoker Package Name, originally not set, is now derived from model package name: io.camunda.zeebe.management
+[WARNING] Empty operationId found for path: POST /{exporterId}/disable. Renamed to auto-generated operationId: exporterIdDisablePOST
+[WARNING] Empty operationId found for path: POST /{exporterId}/enable. Renamed to auto-generated operationId: exporterIdEnablePOST
+[WARNING] Empty operationId found for path: DELETE /{exporterId}. Renamed to auto-generated operationId: exporterIdDELETE
+[WARNING] Empty operationId found for path: GET /. Renamed to auto-generated operationId: rootGET
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Processing operation null
+[INFO] Model ExporterList not generated since it's an alias to array (without property) and `generateAliasAsModel` is set to false (default)
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/BrokerState.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/BrokerStateCode.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/EnableExporterRequest.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/Error.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ExporterConfig.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ExporterStateCode.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ExporterStatus.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/ExportingConfig.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/Operation.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/PartitionConfig.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/PartitionState.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/PartitionStateCode.java
+[INFO] writing file /Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/generated-sources/openapi/src/main/io/camunda/zeebe/management/cluster/PlannedOperationsResponse.java
+[INFO] Skipping generation of APIs.
+[INFO] Skipping generation of Webhooks.
+[INFO] Skipping generation of supporting files.
+################################################################################
+# Thanks for using OpenAPI Generator.                                          #
+# Please consider donation to help us maintain this project 🙏                 #
+# https://opencollective.com/openapi_generator/donate                          #
+################################################################################
+[INFO] 
+[INFO] --- spotless:2.46.1:apply (spotless-format) @ camunda-zeebe ---
+[INFO] Spotless.Java is keeping 148 files clean - 0 were changed to be clean, 0 were already clean, 148 were skipped because caching determined they were already clean
+[INFO] Spotless.Pom is keeping 1 files clean - 0 were changed to be clean, 0 were already clean, 1 were skipped because caching determined they were already clean
+[INFO] 
+[INFO] --- license:5.0.0:format (add-license) @ camunda-zeebe ---
+[INFO] Updating license headers...
+[INFO] 
+[INFO] --- spring-boot:3.5.6:build-info (build-info) @ camunda-zeebe ---
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ camunda-zeebe ---
+[INFO] Copying 25 resources from src/main/resources to target/classes
+[INFO] The encoding used to copy filtered properties files have not been set. This means that the same encoding will be used to copy filtered properties files as when copying other filtered resources. This might not be what you want! Run your build with --debug to see which files might be affected. Read more at https://maven.apache.org/plugins/maven-resources-plugin/examples/filtering-properties-files.html
+[INFO] 
+[INFO] --- flatten:1.7.2:flatten (flatten) @ camunda-zeebe ---
+[INFO] Generating flattened POM of project io.camunda:camunda-zeebe:jar:8.9.0-SNAPSHOT...
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ camunda-zeebe ---
+[INFO] Compiling 39 source files with javac [debug parameters release 21] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ camunda-zeebe ---
+[INFO] skip non existing resourceDirectory /Users/aleksander.dytko/Documents/GitHub/camunda/dist/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ camunda-zeebe ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:3.5.6:run (default-cli) < test-compile @ camunda-zeebe <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.6:run (default-cli) @ camunda-zeebe ---
+[INFO] Attaching agents: []
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+   ___   _   __  __ _   _ _  _ ___   _
+  / __| /_\ |  \/  | | | | \| |   \ /_\
+ | (__ / _ \| |\/| | |_| | .` | |) / _ \
+  \___/_/ \_\_|  |_|\___/|_|\_|___/_/ \_\
+11:44:33.502 [] [background-preinit] [] INFO  org.hibernate.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.3.Final
+11:44:33.535 [] [main] [] INFO  io.camunda.application.StandaloneCamunda - Starting StandaloneCamunda v8.9.0-SNAPSHOT using Java 23.0.2 with PID 54288 (/Users/aleksander.dytko/Documents/GitHub/camunda/dist/target/classes started by aleksander.dytko in /Users/aleksander.dytko/Documents/GitHub/camunda/dist)
+11:44:33.536 [] [main] [] INFO  io.camunda.application.StandaloneCamunda - The following 7 profiles are active: "operate", "tasklist", "broker", "identity", "consolidated-auth", "dev", "insecure"
+11:44:34.724 [] [main] [] INFO  org.springframework.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+11:44:34.732 [] [main] [] INFO  org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
+11:44:34.733 [] [main] [] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+11:44:34.733 [] [main] [] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.48]
+11:44:34.766 [] [main] [] INFO  org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+11:44:34.766 [] [main] [] INFO  org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1181 ms
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+11:44:34.814 [] [main] [] INFO  io.camunda.zeebe.broker.system - Started with development/test mode; data will be deleted on shutdown
+11:44:34.857 [] [main] [] WARN  io.camunda.configuration.UnifiedConfigurationHelper - The following legacy configuration properties should be removed in favor of 'camunda.api.grpc.ssl.enabled': zeebe.broker.gateway.security.enabled
+11:44:34.859 [] [main] [] WARN  io.camunda.configuration.UnifiedConfigurationHelper - The following legacy properties are no longer supported and should be removed in favor of 'camunda.data.secondary-storage.elasticsearch.url': camunda.operate.elasticsearch.url, camunda.tasklist.elasticsearch.url, camunda.database.url, zeebe.broker.exporters.camundaexporter.args.connect.url
+11:44:34.861 [] [main] [] WARN  io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride - The following legacy property is no longer supported and should be removed in favor of 'camunda.data.exporters': zeebe.broker.exporters
+11:44:35.044 [Broker-0] [netty-messaging-event-nio-server-0] [] WARN  io.atomix.cluster.messaging.impl.NettyMessagingService - Failed to bind TCP server to port 0.0.0.0:26502 due to java.net.BindException: Address already in use
+11:44:35.069 [] [main] [] WARN  io.camunda.configuration.UnifiedConfigurationHelper - The following legacy properties are no longer supported and should be removed in favor of 'camunda.data.secondary-storage.elasticsearch.url': camunda.operate.elasticsearch.url, camunda.tasklist.elasticsearch.url, camunda.database.url, zeebe.broker.exporters.camundaexporter.args.connect.url
+11:44:35.070 [] [main] [] WARN  io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride - The following legacy property is no longer supported and should be removed in favor of 'camunda.data.secondary-storage.elasticsearch.interceptor-plugins': camunda.database.interceptorPlugins
+11:44:35.163 [] [main] [] WARN  io.camunda.search.connect.es.ElasticsearchConnector - Username and/or password for are empty. Basic authentication for elasticsearch is not used.
+11:44:35.314 [] [main] [] WARN  io.camunda.zeebe.broker.system - No backup store is configured. Backups will not be taken
+11:44:35.325 [] [main] [] INFO  io.camunda.zeebe.broker.exporter - Use default exporter factory to create instance of class io.camunda.exporter.CamundaExporter
+11:44:35.373 [] [main] [] INFO  io.camunda.exporter.CamundaExporter - Configuring exporter with ExporterConfiguration{connect=io.camunda.search.connect.configuration.ConnectConfiguration@2a4bee4e, index=IndexConfiguration{numberOfShards=1, numberOfReplicas=1, templatePriority=null, replicasByIndexName={}, shardsByIndexName={}, variableSizeThreshold=8191}, bulk=BulkConfiguration{delay=5, size=1000, memoryLimit=20}, history=ArchiverConfiguration{, elsRolloverDateFormat='date', rolloverInterval='1d', rolloverBatchSize=100, waitPeriodBeforeArchiving='1h', delayBetweenRuns=2000, maxDelayBetweenRuns=60000, retention=RetentionConfiguration{enabled=false, minimumAge='30d', policyName='camunda-retention-policy', usageMetricsMinimumAge='730d', usageMetricsPolicyName='camunda-usage-metrics-retention-policy', applyPolicyJobInterval=PT1H}, trackArchivalMetricsForProcessInstance=true}, createSchema=true, batchOperationCache=CacheConfiguration{cacheSize=10000}, processCache=CacheConfiguration{cacheSize=10000}, formCache=CacheConfiguration{cacheSize=10000}, postExport=PostExportConfiguration{batchSize=100, delayBetweenRuns=2000, maxDelayBetweenRuns=60000, ignoreMissingData=false}, batchOperation=BatchOperationConfiguration{exportItemsOnCreation=true}}
+11:44:35.382 [] [main] [] WARN  io.camunda.search.connect.es.ElasticsearchConnector - Username and/or password for are empty. Basic authentication for elasticsearch is not used.
+11:44:35.429 [] [main] [] WARN  io.camunda.search.connect.es.ElasticsearchConnector - Username and/or password for are empty. Basic authentication for elasticsearch is not used.
+11:44:35.464 [] [main] [] INFO  io.camunda.exporter.CamundaExporter - Exporter resources closed
+11:44:35.464 [] [main] [] INFO  io.camunda.exporter.CamundaExporter - Exporter resources closed
+11:44:35.471 [] [main] [] INFO  io.camunda.zeebe.broker.system - Starting broker 0 version 8.9.0-SNAPSHOT
+11:44:35.472 [Broker-0] [zb-actors-1] [Startup] DEBUG io.camunda.zeebe.broker.system - Startup was called with context: BrokerStartupContextImpl{broker=0}
+11:44:35.472 [Broker-0] [zb-actors-1] [Startup] INFO  io.camunda.zeebe.broker.system - Startup Cluster Services
+11:44:35.473 [Broker-0] [zb-actors-1] [Startup] DEBUG io.camunda.zeebe.broker.system - StartupStep Cluster Services startup completed (error=true) took 1.077209 millis 
+11:44:35.474 [Broker-0] [zb-actors-1] [Startup] WARN  io.camunda.zeebe.broker.system - Aborting startup process due to exception during step Cluster Services
+java.util.concurrent.CompletionException: java.net.BindException: Address already in use
+	at java.base/java.util.concurrent.CompletableFuture.wrapInCompletionException(CompletableFuture.java:323)
+	at java.base/java.util.concurrent.CompletableFuture.encodeRelay(CompletableFuture.java:412)
+	at java.base/java.util.concurrent.CompletableFuture.completeRelay(CompletableFuture.java:421)
+	at java.base/java.util.concurrent.CompletableFuture$UniRelay.tryFire(CompletableFuture.java:1141)
+	at java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:554)
+	at java.base/java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2238)
+	at io.atomix.cluster.messaging.impl.NettyMessagingService.lambda$43(NettyMessagingService.java:940)
+	at io.netty.util.concurrent.DefaultPromise.notifyListener0(DefaultPromise.java:603)
+	at io.netty.util.concurrent.DefaultPromise.notifyListenersNow(DefaultPromise.java:570)
+	at io.netty.util.concurrent.DefaultPromise.notifyListeners(DefaultPromise.java:505)
+	at io.netty.util.concurrent.DefaultPromise.setValue0(DefaultPromise.java:649)
+	at io.netty.util.concurrent.DefaultPromise.setFailure0(DefaultPromise.java:642)
+	at io.netty.util.concurrent.DefaultPromise.tryFailure(DefaultPromise.java:131)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.safeSetFailure(AbstractChannel.java:997)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:563)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.bind(DefaultChannelPipeline.java:1281)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeBind(AbstractChannelHandlerContext.java:600)
+	at io.netty.channel.AbstractChannelHandlerContext.bind(AbstractChannelHandlerContext.java:579)
+	at io.netty.channel.DefaultChannelPipeline.bind(DefaultChannelPipeline.java:922)
+	at io.netty.channel.AbstractChannel.bind(AbstractChannel.java:259)
+	at io.netty.bootstrap.AbstractBootstrap$2.run(AbstractBootstrap.java:380)
+	at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:569)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.atomix.utils.concurrent.AtomixThreadFactory.lambda$0(AtomixThreadFactory.java:46)
+	at java.base/java.lang.Thread.run(Thread.java:1575)
+Caused by: java.net.BindException: Address already in use
+	at java.base/sun.nio.ch.Net.bind0(Native Method)
+	at java.base/sun.nio.ch.Net.bind(Net.java:565)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.netBind(ServerSocketChannelImpl.java:344)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:301)
+	at io.netty.channel.socket.nio.NioServerSocketChannel.doBind(NioServerSocketChannel.java:141)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:561)
+	... 14 more
+11:44:35.474 [] [main] [] ERROR io.camunda.zeebe.broker.system - Failed to start broker 0!
+java.util.concurrent.ExecutionException: Startup failed in the following steps: [Cluster Services]. See suppressed exceptions for details.
+	at io.camunda.zeebe.scheduler.future.CompletableActorFuture.get(CompletableActorFuture.java:175)
+	at io.camunda.zeebe.scheduler.future.CompletableActorFuture.get(CompletableActorFuture.java:142)
+	at io.camunda.zeebe.scheduler.FutureUtil.join(FutureUtil.java:21)
+	at io.camunda.zeebe.scheduler.future.CompletableActorFuture.join(CompletableActorFuture.java:231)
+	at io.camunda.zeebe.broker.Broker.internalStart(Broker.java:122)
+	at io.camunda.zeebe.util.LogUtil.doWithMDC(LogUtil.java:23)
+	at io.camunda.zeebe.broker.Broker.start(Broker.java:105)
+	at io.camunda.zeebe.broker.BrokerModuleConfiguration.startBroker(BrokerModuleConfiguration.java:141)
+	at io.camunda.zeebe.broker.BrokerModuleConfiguration.broker(BrokerModuleConfiguration.java:135)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:172)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiateWithFactoryMethod(SimpleInstantiationStrategy.java:89)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:169)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:653)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:645)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1375)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1205)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1698)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1643)
+	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
+	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
+	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1221)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1187)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1123)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at io.camunda.application.StandaloneCamunda.main(StandaloneCamunda.java:90)
+Caused by: io.camunda.zeebe.scheduler.startup.StartupProcessException: Startup failed in the following steps: [Cluster Services]. See suppressed exceptions for details.
+	at io.camunda.zeebe.scheduler.startup.StartupProcess.aggregateExceptionsSynchronized(StartupProcess.java:333)
+	at io.camunda.zeebe.scheduler.startup.StartupProcess.completeStartupFutureExceptionallySynchronized(StartupProcess.java:221)
+	at io.camunda.zeebe.scheduler.startup.StartupProcess.lambda$3(StartupProcess.java:203)
+	at io.camunda.zeebe.scheduler.future.FutureContinuationRunnable.run(FutureContinuationRunnable.java:33)
+	at io.camunda.zeebe.scheduler.ActorJob.invoke(ActorJob.java:86)
+	at io.camunda.zeebe.scheduler.ActorJob.execute(ActorJob.java:43)
+	at io.camunda.zeebe.scheduler.ActorTask.execute(ActorTask.java:125)
+	at io.camunda.zeebe.scheduler.ActorThread.executeCurrentTask(ActorThread.java:127)
+	at io.camunda.zeebe.scheduler.ActorThread.doWork(ActorThread.java:104)
+	at io.camunda.zeebe.scheduler.ActorThread.run(ActorThread.java:224)
+	Suppressed: io.camunda.zeebe.scheduler.startup.StartupProcessStepException: Bootstrap step Cluster Services failed
+		at io.camunda.zeebe.scheduler.startup.StartupProcess.completeStartupFutureExceptionallySynchronized(StartupProcess.java:223)
+		... 8 more
+	Caused by: java.util.concurrent.CompletionException: java.net.BindException: Address already in use
+		at java.base/java.util.concurrent.CompletableFuture.wrapInCompletionException(CompletableFuture.java:323)
+		at java.base/java.util.concurrent.CompletableFuture.encodeRelay(CompletableFuture.java:412)
+		at java.base/java.util.concurrent.CompletableFuture.completeRelay(CompletableFuture.java:421)
+		at java.base/java.util.concurrent.CompletableFuture$UniRelay.tryFire(CompletableFuture.java:1141)
+		at java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:554)
+		at java.base/java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2238)
+		at io.atomix.cluster.messaging.impl.NettyMessagingService.lambda$43(NettyMessagingService.java:940)
+		at io.netty.util.concurrent.DefaultPromise.notifyListener0(DefaultPromise.java:603)
+		at io.netty.util.concurrent.DefaultPromise.notifyListenersNow(DefaultPromise.java:570)
+		at io.netty.util.concurrent.DefaultPromise.notifyListeners(DefaultPromise.java:505)
+		at io.netty.util.concurrent.DefaultPromise.setValue0(DefaultPromise.java:649)
+		at io.netty.util.concurrent.DefaultPromise.setFailure0(DefaultPromise.java:642)
+		at io.netty.util.concurrent.DefaultPromise.tryFailure(DefaultPromise.java:131)
+		at io.netty.channel.AbstractChannel$AbstractUnsafe.safeSetFailure(AbstractChannel.java:997)
+		at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:563)
+		at io.netty.channel.DefaultChannelPipeline$HeadContext.bind(DefaultChannelPipeline.java:1281)
+		at io.netty.channel.AbstractChannelHandlerContext.invokeBind(AbstractChannelHandlerContext.java:600)
+		at io.netty.channel.AbstractChannelHandlerContext.bind(AbstractChannelHandlerContext.java:579)
+		at io.netty.channel.DefaultChannelPipeline.bind(DefaultChannelPipeline.java:922)
+		at io.netty.channel.AbstractChannel.bind(AbstractChannel.java:259)
+		at io.netty.bootstrap.AbstractBootstrap$2.run(AbstractBootstrap.java:380)
+		at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
+		at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
+		at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
+		at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:569)
+		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
+		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+		at io.atomix.utils.concurrent.AtomixThreadFactory.lambda$0(AtomixThreadFactory.java:46)
+		at java.base/java.lang.Thread.run(Thread.java:1575)
+	Caused by: java.net.BindException: Address already in use
+		at java.base/sun.nio.ch.Net.bind0(Native Method)
+		at java.base/sun.nio.ch.Net.bind(Net.java:565)
+		at java.base/sun.nio.ch.ServerSocketChannelImpl.netBind(ServerSocketChannelImpl.java:344)
+		at java.base/sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:301)
+		at io.netty.channel.socket.nio.NioServerSocketChannel.doBind(NioServerSocketChannel.java:141)
+		at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:561)
+		... 14 more
+11:44:35.475 [] [main] [] WARN  org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'operateModuleConfiguration': Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'broker' defined in io.camunda.zeebe.broker.BrokerModuleConfiguration: Failed to instantiate [io.camunda.zeebe.broker.Broker]: Factory method 'broker' threw exception with message: Failed to start broker
+11:44:35.475 [] [main] [] DEBUG io.camunda.zeebe.broker.system - Deleting broker temporary working directory /var/folders/5n/4njy9ym502n42s8qzb6dqtlh0000gn/T/zeebe17198660670405868001
+11:44:35.477 [] [main] [] WARN  org.springframework.beans.factory.support.DisposableBeanAdapter - Invocation of close method failed on bean with name 'brokerModuleConfiguration': java.util.concurrent.CompletionException: io.camunda.zeebe.util.exception.UncheckedExecutionException: Failed to start broker
+11:44:35.477 [] [main] [] DEBUG io.camunda.zeebe.broker.client.impl.BrokerClientImpl - Closing gateway broker client ...
+11:44:35.478 [] [main] [] DEBUG io.camunda.zeebe.broker.client.impl.BrokerClientImpl - request manager closed
+11:44:35.478 [] [main] [] DEBUG io.camunda.zeebe.broker.client.impl.BrokerClientImpl - transport client closed
+11:44:35.478 [] [main] [] DEBUG io.camunda.zeebe.broker.client.impl.BrokerClientImpl - Gateway broker client closed.
+11:44:35.479 [] [main] [] DEBUG io.camunda.zeebe.util.actor - Closing actor thread ground 'zb-fs-workers'
+11:44:35.479 [] [main] [] DEBUG io.camunda.zeebe.util.actor - Closing actor thread ground 'zb-actors'
+11:44:35.483 [Broker-0] [zb-actors-1] [] DEBUG io.camunda.zeebe.util.actor - Closing actor thread ground 'zb-actors': closed successfully
+11:44:35.499 [Broker-0] [zb-fs-workers-1] [] DEBUG io.camunda.zeebe.util.actor - Closing actor thread ground 'zb-fs-workers': closed successfully
+11:44:35.501 [] [main] [] INFO  org.apache.catalina.core.StandardService - Stopping service [Tomcat]
+11:44:35.592 [] [main] [] ERROR io.camunda.application - Failed to start application with message: Error creating bean with name 'operateModuleConfiguration': Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'broker' defined in io.camunda.zeebe.broker.BrokerModuleConfiguration: Failed to instantiate [io.camunda.zeebe.broker.Broker]: Factory method 'broker' threw exception with message: Failed to start broker
+org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'operateModuleConfiguration': Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'broker' defined in io.camunda.zeebe.broker.BrokerModuleConfiguration: Failed to instantiate [io.camunda.zeebe.broker.Broker]: Factory method 'broker' threw exception with message: Failed to start broker
+	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:804)
+	at org.springframework.beans.factory.support.ConstructorResolver.autowireConstructor(ConstructorResolver.java:240)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.autowireConstructor(AbstractAutowireCapableBeanFactory.java:1395)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1232)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.instantiateSingleton(DefaultListableBeanFactory.java:1221)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingleton(DefaultListableBeanFactory.java:1187)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:1123)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:987)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:627)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:752)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:439)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:318)
+	at io.camunda.application.StandaloneCamunda.main(StandaloneCamunda.java:90)
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'broker' defined in io.camunda.zeebe.broker.BrokerModuleConfiguration: Failed to instantiate [io.camunda.zeebe.broker.Broker]: Factory method 'broker' threw exception with message: Failed to start broker
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:657)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:645)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1375)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1205)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:569)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:529)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:339)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:373)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:337)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1698)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1643)
+	at org.springframework.beans.factory.support.ConstructorResolver.resolveAutowiredArgument(ConstructorResolver.java:913)
+	at org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:791)
+	... 19 more
+Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [io.camunda.zeebe.broker.Broker]: Factory method 'broker' threw exception with message: Failed to start broker
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:200)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiateWithFactoryMethod(SimpleInstantiationStrategy.java:89)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:169)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:653)
+	... 32 more
+Caused by: io.camunda.zeebe.util.exception.UncheckedExecutionException: Failed to start broker
+	at io.camunda.zeebe.broker.Broker.internalStart(Broker.java:132)
+	at io.camunda.zeebe.util.LogUtil.doWithMDC(LogUtil.java:23)
+	at io.camunda.zeebe.broker.Broker.start(Broker.java:105)
+	at io.camunda.zeebe.broker.BrokerModuleConfiguration.startBroker(BrokerModuleConfiguration.java:141)
+	at io.camunda.zeebe.broker.BrokerModuleConfiguration.broker(BrokerModuleConfiguration.java:135)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.lambda$instantiate$0(SimpleInstantiationStrategy.java:172)
+	... 35 more
+Caused by: java.util.concurrent.ExecutionException: Startup failed in the following steps: [Cluster Services]. See suppressed exceptions for details.
+	at io.camunda.zeebe.scheduler.future.CompletableActorFuture.get(CompletableActorFuture.java:175)
+	at io.camunda.zeebe.scheduler.future.CompletableActorFuture.get(CompletableActorFuture.java:142)
+	at io.camunda.zeebe.scheduler.FutureUtil.join(FutureUtil.java:21)
+	at io.camunda.zeebe.scheduler.future.CompletableActorFuture.join(CompletableActorFuture.java:231)
+	at io.camunda.zeebe.broker.Broker.internalStart(Broker.java:122)
+	... 42 more
+Caused by: io.camunda.zeebe.scheduler.startup.StartupProcessException: Startup failed in the following steps: [Cluster Services]. See suppressed exceptions for details.
+	at io.camunda.zeebe.scheduler.startup.StartupProcess.aggregateExceptionsSynchronized(StartupProcess.java:333)
+	at io.camunda.zeebe.scheduler.startup.StartupProcess.completeStartupFutureExceptionallySynchronized(StartupProcess.java:221)
+	at io.camunda.zeebe.scheduler.startup.StartupProcess.lambda$3(StartupProcess.java:203)
+	at io.camunda.zeebe.scheduler.future.FutureContinuationRunnable.run(FutureContinuationRunnable.java:33)
+	at io.camunda.zeebe.scheduler.ActorJob.invoke(ActorJob.java:86)
+	at io.camunda.zeebe.scheduler.ActorJob.execute(ActorJob.java:43)
+	at io.camunda.zeebe.scheduler.ActorTask.execute(ActorTask.java:125)
+	at io.camunda.zeebe.scheduler.ActorThread.executeCurrentTask(ActorThread.java:127)
+	at io.camunda.zeebe.scheduler.ActorThread.doWork(ActorThread.java:104)
+	at io.camunda.zeebe.scheduler.ActorThread.run(ActorThread.java:224)
+	Suppressed: io.camunda.zeebe.scheduler.startup.StartupProcessStepException: Bootstrap step Cluster Services failed
+		at io.camunda.zeebe.scheduler.startup.StartupProcess.completeStartupFutureExceptionallySynchronized(StartupProcess.java:223)
+		... 8 more
+	Caused by: java.util.concurrent.CompletionException: java.net.BindException: Address already in use
+		at java.base/java.util.concurrent.CompletableFuture.wrapInCompletionException(CompletableFuture.java:323)
+		at java.base/java.util.concurrent.CompletableFuture.encodeRelay(CompletableFuture.java:412)
+		at java.base/java.util.concurrent.CompletableFuture.completeRelay(CompletableFuture.java:421)
+		at java.base/java.util.concurrent.CompletableFuture$UniRelay.tryFire(CompletableFuture.java:1141)
+		at java.base/java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:554)
+		at java.base/java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:2238)
+		at io.atomix.cluster.messaging.impl.NettyMessagingService.lambda$43(NettyMessagingService.java:940)
+		at io.netty.util.concurrent.DefaultPromise.notifyListener0(DefaultPromise.java:603)
+		at io.netty.util.concurrent.DefaultPromise.notifyListenersNow(DefaultPromise.java:570)
+		at io.netty.util.concurrent.DefaultPromise.notifyListeners(DefaultPromise.java:505)
+		at io.netty.util.concurrent.DefaultPromise.setValue0(DefaultPromise.java:649)
+		at io.netty.util.concurrent.DefaultPromise.setFailure0(DefaultPromise.java:642)
+		at io.netty.util.concurrent.DefaultPromise.tryFailure(DefaultPromise.java:131)
+		at io.netty.channel.AbstractChannel$AbstractUnsafe.safeSetFailure(AbstractChannel.java:997)
+		at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:563)
+		at io.netty.channel.DefaultChannelPipeline$HeadContext.bind(DefaultChannelPipeline.java:1281)
+		at io.netty.channel.AbstractChannelHandlerContext.invokeBind(AbstractChannelHandlerContext.java:600)
+		at io.netty.channel.AbstractChannelHandlerContext.bind(AbstractChannelHandlerContext.java:579)
+		at io.netty.channel.DefaultChannelPipeline.bind(DefaultChannelPipeline.java:922)
+		at io.netty.channel.AbstractChannel.bind(AbstractChannel.java:259)
+		at io.netty.bootstrap.AbstractBootstrap$2.run(AbstractBootstrap.java:380)
+		at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
+		at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
+		at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
+		at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:569)
+		at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
+		at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+		at io.atomix.utils.concurrent.AtomixThreadFactory.lambda$0(AtomixThreadFactory.java:46)
+		at java.base/java.lang.Thread.run(Thread.java:1575)
+	Caused by: java.net.BindException: Address already in use
+		at java.base/sun.nio.ch.Net.bind0(Native Method)
+		at java.base/sun.nio.ch.Net.bind(Net.java:565)
+		at java.base/sun.nio.ch.ServerSocketChannelImpl.netBind(ServerSocketChannelImpl.java:344)
+		at java.base/sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:301)
+		at io.netty.channel.socket.nio.NioServerSocketChannel.doBind(NioServerSocketChannel.java:141)
+		at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:561)
+		... 14 more
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.837 s
+[INFO] Finished at: 2025-11-07T11:44:35+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.5.6:run (default-cli) on project camunda-zeebe: Process terminated with exit code: 255 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           11:47:22.148 [Broker-0] [zb-actors-1] [StreamProcessor-1] DEBUG io.camunda.zeebe.engine.processing.metrics.UsageMetricsExportProcessor - Creating usage metric EXPORTED event for -1 NONE
+11:47:22.149 [Broker-0] [zb-actors-1] [StreamProcessor-1] DEBUG io.camunda.zeebe.engine.state.appliers.UsageMetricsExportedApplier - Reset active bucket 1762512442147
+11:48:20.152 [Broker-0] [zb-fs-workers-0] [SnapshotStore-1] DEBUG io.camunda.zeebe.logstreams.snapshot - Taking temporary snapshot into /var/folders/5n/4njy9ym502n42s8qzb6dqtlh0000gn/T/zeebe964499378336538550/data/raft-partition/partitions/1/snapshots/transient-460bf4fd223430d7.
+11:48:20.242 [Broker-0] [zb-fs-workers-1] [SnapshotStore-1] INFO  io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl - Committed new snapshot 62-1-115-116-0-7b8b1982, isBoostrap: false
+11:48:20.244 [Broker-0] [zb-fs-workers-1] [SnapshotStore-1] DEBUG io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl - Deleting previous snapshot 60-1-113-114-0-758be62
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  23:33 min
+[INFO] Finished at: 2025-11-07T11:50:43+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.5.6:run (default-cli) on project camunda-zeebe: Process terminated with exit code: 137 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

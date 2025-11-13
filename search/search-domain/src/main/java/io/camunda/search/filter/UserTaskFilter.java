@@ -33,6 +33,7 @@ public record UserTaskFilter(
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> processInstanceVariableFilter,
     List<VariableValueFilter> localVariableFilters,
+    List<HeaderValueFilter> customHeaderFilters,
     List<Long> elementInstanceKeys,
     List<Operation<OffsetDateTime>> creationDateOperations,
     List<Operation<OffsetDateTime>> completionDateOperations,
@@ -57,6 +58,7 @@ public record UserTaskFilter(
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> processInstanceVariableFilters;
     private List<VariableValueFilter> localVariableFilters;
+    private List<HeaderValueFilter> customHeaderFilters;
     private List<Long> elementInstanceKeys;
     private List<Operation<OffsetDateTime>> creationDateOperations;
     private List<Operation<OffsetDateTime>> completionDateOperations;
@@ -222,6 +224,11 @@ public record UserTaskFilter(
       return this;
     }
 
+    public Builder customHeaders(final List<HeaderValueFilter> values) {
+      customHeaderFilters = addValuesToList(customHeaderFilters, values);
+      return this;
+    }
+
     public Builder elementInstanceKeys(final Long... values) {
       return elementInstanceKeys(collectValuesAsList(values));
     }
@@ -297,6 +304,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceVariableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(localVariableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(customHeaderFilters, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(creationDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(completionDateOperations, Collections.emptyList()),

@@ -21,6 +21,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.filter.HeaderValueFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
@@ -28,6 +29,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.zeebe.protocol.Protocol;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +75,9 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     // Local Variable Query: Check if localVariable with specified varName and varValue exists
     // No need validate parent as the localVariable is the only children from Task
     ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
+
+    // Custom Headers Query: Check if custom headers (excluding system headers) match
+    ofNullable(getCustomHeadersQuery(filter.customHeaderFilters())).ifPresent(queries::add);
 
     queries.add(exists("flowNodeInstanceId")); // Default to task
     queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
@@ -184,7 +189,31 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return null;
   }
 
+  private SearchQuery getCustomHeadersQuery(final List<HeaderValueFilter> headerFilters) {
+    if (headerFilters != null && !headerFilters.isEmpty()) {
+      // Filter out system headers (those starting with the reserved prefix)
+      final var userDefinedHeaders =
+          headerFilters.stream()
+              .filter(h -> !h.name().startsWith(Protocol.RESERVED_HEADER_NAME_PREFIX))
+              .collect(Collectors.toList());
+
+      if (userDefinedHeaders.isEmpty()) {
+        return null;
+      }
+
+      final var transformer = getHeaderValueFilterTransformer();
+      final var queries =
+          userDefinedHeaders.stream().map(transformer::apply).collect(Collectors.toList());
+      return and(queries);
+    }
+    return null;
+  }
+
   private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {
     return transformers.getFilterTransformer(VariableValueFilter.class);
+  }
+
+  private FilterTransformer<HeaderValueFilter> getHeaderValueFilterTransformer() {
+    return transformers.getFilterTransformer(HeaderValueFilter.class);
   }
 }

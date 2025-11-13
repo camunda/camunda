@@ -40,7 +40,9 @@ import java.time.InstantSource;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -133,7 +135,12 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             p ->
                 evaluatePriorityExpression(userTaskProps.getPriority(), scopeKey, tenantId)
-                    .map(p::priority));
+                    .map(p::priority))
+        .flatMap(
+            p ->
+                evaluateCustomHeaderExpressions(
+                        userTaskProps.getTaskHeaderExpressions(), scopeKey, tenantId)
+                    .map(p::customHeaders));
   }
 
   public UserTaskRecord createNewUserTask(
@@ -142,8 +149,7 @@ public final class BpmnUserTaskBehavior {
       final UserTaskProperties userTaskProperties) {
     final var userTaskKey = keyGenerator.nextKey();
 
-    final var encodedHeaders =
-        headerEncoder.encode(element.getUserTaskProperties().getTaskHeaders());
+    final var encodedHeaders = headerEncoder.encode(userTaskProperties.getCustomHeaders());
 
     final var userTaskRecord =
         new UserTaskRecord()
@@ -330,6 +336,53 @@ public final class BpmnUserTaskBehavior {
             });
   }
 
+  public Either<Failure, Map<String, String>> evaluateCustomHeaderExpressions(
+      final Map<String, Expression> headerExpressions, final long scopeKey) {
+    if (headerExpressions == null || headerExpressions.isEmpty()) {
+      return Either.right(Map.of());
+    }
+
+    final Map<String, String> evaluatedHeaders = new HashMap<>();
+
+    for (final var entry : headerExpressions.entrySet()) {
+      final var headerName = entry.getKey();
+      final var expression = entry.getValue();
+
+      // Evaluate the expression
+      final var evaluationResult = expressionBehavior.evaluateAnyExpression(expression, scopeKey);
+
+      if (evaluationResult.isLeft()) {
+        // Expression evaluation failed - fail task creation
+        return Either.left(evaluationResult.getLeft());
+      }
+
+      final var value = evaluationResult.get();
+
+      // Handle null: skip this header
+      if (value == null) {
+        continue;
+      }
+
+      // Type coercion: convert to String
+      if (value instanceof String stringValue) {
+        evaluatedHeaders.put(headerName, stringValue);
+      } else if (value instanceof Number || value instanceof Boolean) {
+        evaluatedHeaders.put(headerName, value.toString());
+      } else {
+        // Object or List types are not allowed - fail task creation
+        return Either.left(
+            new Failure(
+                String.format(
+                    "Expected custom header '%s' to evaluate to String, Number, or Boolean, but got: %s",
+                    headerName, value.getClass().getSimpleName()),
+                ErrorType.EXTRACT_VALUE_ERROR,
+                scopeKey));
+      }
+    }
+
+    return Either.right(evaluatedHeaders);
+  }
+
   public void cancelUserTask(final ElementInstance elementInstance) {
     userTaskCanceling(elementInstance).ifPresent(this::userTaskCanceled);
   }
@@ -442,6 +495,7 @@ public final class BpmnUserTaskBehavior {
     private String followUpDate;
     private Long formKey;
     private Integer priority;
+    private Map<String, String> customHeaders;
 
     public String getAssignee() {
       return getOrEmpty(assignee);
@@ -512,6 +566,15 @@ public final class BpmnUserTaskBehavior {
 
     public UserTaskProperties priority(final Integer priority) {
       this.priority = priority;
+      return this;
+    }
+
+    public Map<String, String> getCustomHeaders() {
+      return customHeaders == null ? Map.of() : customHeaders;
+    }
+
+    public UserTaskProperties customHeaders(final Map<String, String> customHeaders) {
+      this.customHeaders = customHeaders;
       return this;
     }
 

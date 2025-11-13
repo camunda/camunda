@@ -112,9 +112,11 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   private void transformModelTaskHeaders(
       final UserTask element, final UserTaskProperties userTaskProperties) {
     final Map<String, String> taskHeaders = new HashMap<>();
+    final Map<String, Expression> taskHeaderExpressions = new HashMap<>();
 
-    collectModelTaskHeaders(element, taskHeaders);
+    collectModelTaskHeaders(element, taskHeaders, taskHeaderExpressions);
     userTaskProperties.setTaskHeaders(taskHeaders);
+    userTaskProperties.setTaskHeaderExpressions(taskHeaderExpressions);
   }
 
   private void addZeebeUserTaskFormKeyHeader(
@@ -128,7 +130,9 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   }
 
   private void collectModelTaskHeaders(
-      final UserTask element, final Map<String, String> taskHeaders) {
+      final UserTask element,
+      final Map<String, String> taskHeaders,
+      final Map<String, Expression> taskHeaderExpressions) {
     final ZeebeTaskHeaders modelTaskHeaders =
         element.getSingleExtensionElement(ZeebeTaskHeaders.class);
 
@@ -142,7 +146,25 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
             element.getName());
       }
 
-      validHeaders.forEach(h -> taskHeaders.put(h.getKey(), h.getValue()));
+      validHeaders.forEach(
+          h -> {
+            final var key = h.getKey();
+            final var value = h.getValue();
+            taskHeaders.put(key, value);
+
+            // Parse header value as FEEL expression (same pattern as assignee)
+            final var headerExpression = expressionLanguage.parseExpression(value);
+            if (headerExpression.isStatic()) {
+              // static header values are always treated as string literals
+              taskHeaderExpressions.put(
+                  key,
+                  expressionLanguage.parseExpression(
+                      ExpressionTransformer.asFeelExpressionString(
+                          ExpressionTransformer.asStringLiteral(value))));
+            } else {
+              taskHeaderExpressions.put(key, headerExpression);
+            }
+          });
     }
   }
 
