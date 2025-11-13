@@ -92,37 +92,6 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldMarkRecordReadersAsCompletedIf880RecordReceived() throws IOException {
-
-    // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    EXPORTER.export(record);
-    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-    tester.performOneRoundOfImport();
-
-    // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    EXPORTER.export(record2);
-    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    // receives 8.7 record and marks partition as finished importing
-    tester.performOneRoundOfImport();
-
-    // then
-    // require multiple checks to avoid race condition. If records are written to zeebe indices and
-    // before a refresh, the record reader pulls the import batch is empty so it then says that the
-    // record reader is done when it is not.
-    for (int i = 0; i < emptyBatches; i++) {
-      tester.performOneRoundOfImport();
-    }
-
-    // the import position for
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderCompleted("1-process-instance"));
-  }
-
-  @Test
   public void shouldMarkRecordReadersAsCompletedIfTenantRecordReceived() throws IOException {
 
     // given
@@ -136,8 +105,9 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(record2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    // receives 8.7 record and marks partition as finished importing
     tester.performOneRoundOfImport();
+
+    waitForTenantImportPositionToNotNull(1);
 
     // then
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
@@ -152,32 +122,26 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldMarkMultiplePositionIndexAsCompletedIf880RecordReceived() throws IOException {
+  public void shouldMarkRecordReadersInSamePartitionAsTenantRecordAsCompleted() throws IOException {
 
     final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    final var decisionEvalRecord = generateRecord(ValueType.DECISION_EVALUATION, "8.7.0", 1);
-    final var decisionRecord = generateRecord(ValueType.DECISION, "8.7.0", 2);
+    final var processInstance2Record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(processInstanceRecord);
-    EXPORTER.export(decisionEvalRecord);
-    EXPORTER.export(decisionRecord);
+    EXPORTER.export(processInstance2Record);
 
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
     tester.performOneRoundOfImport();
 
     // when
-    final var newVersionProcessInstanceRecord =
-        generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    EXPORTER.export(newVersionProcessInstanceRecord);
-    final var newVersionDecisionEvalRecord =
-        generateRecord(ValueType.DECISION_EVALUATION, "8.8.0", 1);
-    EXPORTER.export(newVersionDecisionEvalRecord);
+    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    EXPORTER.export(tenantRecord);
+
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    tester.performOneRoundOfImport();
+
+    waitForTenantImportPositionToNotNull(1);
 
     for (int i = 0; i <= emptyBatches; i++) {
-      // simulate existing decision records left to process so it is not marked as completed
-      final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.7.0", 2);
-      EXPORTER.export(decisionRecord2);
-      esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
       tester.performOneRoundOfImport();
     }
 
@@ -186,12 +150,12 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .until(
             () ->
                 isRecordReaderCompleted("1-process-instance")
-                    && isRecordReaderCompleted("1-decision-evaluation")
-                    && !isRecordReaderCompleted("2-decision"));
+                    && !isRecordReaderCompleted("2-process-instance"));
   }
 
   @Test
-  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
+  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880TenantRecord()
+      throws IOException {
     // given
 
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
@@ -202,13 +166,16 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     tester.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
-    EXPORTER.export(record2);
-    EXPORTER.export(partitionTwoRecord2);
+    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    final var tenant2Record = generateRecord(ValueType.TENANT, "8.8.0", 2);
+    EXPORTER.export(tenantRecord);
+    EXPORTER.export(tenant2Record);
+
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-    // Import 8.8 records to trigger importer's counting of empty batches
     tester.performOneRoundOfImport();
+
+    waitForTenantImportPositionToNotNull(1);
+    waitForTenantImportPositionToNotNull(2);
 
     // Import empty batches
     for (int i = 0; i < emptyBatches; i++) {
@@ -218,10 +185,10 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // the import position for
     await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderCompleted("1-process-instance"));
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderCompleted("2-process-instance"));
+        .until(
+            () ->
+                isRecordReaderCompleted("1-process-instance")
+                    && isRecordReaderCompleted("2-process-instance"));
   }
 
   @Test
@@ -267,14 +234,16 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     tester.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
-    EXPORTER.export(record2);
-    EXPORTER.export(partitionTwoRecord2);
-    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    final var tenant2Record = generateRecord(ValueType.TENANT, "8.8.0", 2);
+    EXPORTER.export(tenantRecord);
+    EXPORTER.export(tenant2Record);
 
-    // Import 8.8 records to trigger importer's counting of empty batches
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
     tester.performOneRoundOfImport();
+
+    waitForTenantImportPositionToNotNull(1);
+    waitForTenantImportPositionToNotNull(2);
 
     // Import empty batches
     for (int i = 0; i < emptyBatches; i++) {
@@ -323,12 +292,13 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     tester.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    EXPORTER.export(record2);
+    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    EXPORTER.export(tenantRecord);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    // receives 8.7 record and marks partition as finished importing
     tester.performOneRoundOfImport();
+
+    waitForTenantImportPositionToNotNull(1);
 
     // then
     // Require multiple checks to avoid race condition.
@@ -408,10 +378,12 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
     // given
 
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    final var record = generateRecord(ValueType.TENANT, "8.8.0", 1);
     EXPORTER.export(record);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
+    tester.performOneRoundOfImport();
+    waitForTenantImportPositionToNotNull(1);
     // when
     for (int i = 0; i <= emptyBatches; i++) {
       tester.performOneRoundOfImport();
@@ -447,6 +419,12 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   private boolean isRecordReaderCompleted(final String partitionIdFieldValue) throws IOException {
+    final var importPosition = getImportPosition(partitionIdFieldValue);
+    return (Boolean) importPosition.getOrDefault(ImportPositionIndex.COMPLETED, false);
+  }
+
+  private Map<String, Object> getImportPosition(final String partitionIdFieldValue)
+      throws IOException {
     final var hits =
         Arrays.stream(
                 esClient
@@ -458,15 +436,25 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
                     .getHits())
             .map(SearchHit::getSourceAsMap)
             .toList();
-    if (hits.isEmpty()) {
-      return false;
-    }
-    return (Boolean)
-        hits.stream()
-            .filter(hit -> hit.get(ImportPositionIndex.ID).equals(partitionIdFieldValue))
-            .findFirst()
-            .orElse(Map.of())
-            .getOrDefault(ImportPositionIndex.COMPLETED, false);
+
+    return hits.stream()
+        .filter(hit -> hit.get(ImportPositionIndex.ID).equals(partitionIdFieldValue))
+        .findFirst()
+        .orElse(Map.of());
+  }
+
+  private void waitForTenantImportPositionToNotNull(final int partitionId) {
+    // the empty batch must occur after the import position is updated for tenant
+    // because the logic on if a partition is completed relies on the 8.8 tenant record being
+    // imported.
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var importPosition = getImportPosition(partitionId + "-tenant");
+              return importPosition.get("indexName") != null
+                  && ((String) importPosition.get("indexName")).contains("8.8");
+            });
   }
 
   private <T extends RecordValue> Record<T> generateRecord(
