@@ -85,8 +85,7 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder defaultJobWorkerMaxJobsActive(int maxJobsActive);
 
   /**
-   * @param numThreads The number of threads for invocation of job workers. Setting this value to 0
-   *     effectively disables subscriptions and workers. Default value is 1.
+   * @param numThreads The number of threads for invocation of job workers. Default value is 1.
    */
   CamundaClientBuilder numJobWorkerExecutionThreads(int numThreads);
 
