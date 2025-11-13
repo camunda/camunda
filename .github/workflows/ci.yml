@@ -1287,6 +1287,7 @@ jobs:
       - integration-tests
       - opensearch-integration-tests
       - rdbms-h2-integration-tests
+      - rdbms-aurora-integration-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
     runs-on: ubuntu-latest
@@ -1571,6 +1572,7 @@ jobs:
       - optimize-ci
       - protobuf-checks
       - rdbms-h2-integration-tests
+      - rdbms-aurora-integration-tests
       - rdbms-integration-tests
       - renovatelint
       - setup-unit-tests
