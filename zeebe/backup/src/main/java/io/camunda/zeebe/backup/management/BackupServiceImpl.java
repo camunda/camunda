@@ -166,7 +166,7 @@ final class BackupServiceImpl {
 
   private void confirmBackup(final InProgressBackup inProgressBackup) {
     final var checkpointId = inProgressBackup.checkpointId();
-    final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
+    final var checkpointPosition = inProgressBackup.checkpointPosition();
     final var confirmationWritten =
         logStreamWriter.tryWrite(
             WriteContext.internal(),

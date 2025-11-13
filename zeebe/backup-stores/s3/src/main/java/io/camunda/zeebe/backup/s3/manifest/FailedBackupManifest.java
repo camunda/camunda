@@ -27,12 +27,6 @@ public record FailedBackupManifest(
     Instant modifiedAt)
     implements ValidBackupManifest {
 
-  public FailedBackupManifest {
-    if (descriptor.isPresent()) {
-      descriptor = Optional.of(BackupDescriptorImpl.from(descriptor.get(), id.checkpointId()));
-    }
-  }
-
   @Override
   public BackupStatusCode statusCode() {
     return BackupStatusCode.FAILED;

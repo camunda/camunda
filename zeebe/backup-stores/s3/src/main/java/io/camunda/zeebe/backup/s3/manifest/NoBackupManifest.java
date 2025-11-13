@@ -40,7 +40,7 @@ public record NoBackupManifest(BackupIdentifierImpl id) implements Manifest {
     final var now = Instant.now();
     return new InProgressBackupManifest(
         BackupIdentifierImpl.from(backup.id()),
-        BackupDescriptorImpl.from(backup.descriptor(), backup.id().checkpointId()),
+        BackupDescriptorImpl.from(backup.descriptor()),
         FileSet.withoutMetadata(backup.snapshot().names()),
         FileSet.withoutMetadata(backup.segments().names()),
         now,

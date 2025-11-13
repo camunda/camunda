@@ -34,7 +34,6 @@ public record ManifestImpl(
       throw new InvalidPersistedManifestState(
           ERROR_MSG_WRONG_STATE.formatted(failureReason, statusCode));
     }
-    descriptor = BackupDescriptorImpl.from(descriptor, id.checkpointId());
   }
 
   public ManifestImpl(

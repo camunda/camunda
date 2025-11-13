@@ -31,7 +31,6 @@ final class ManifestStateCastingTest {
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
                     Optional.empty(),
-                    43,
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",
@@ -57,7 +56,6 @@ final class ManifestStateCastingTest {
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
                     Optional.empty(),
-                    43,
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",
@@ -81,7 +79,6 @@ final class ManifestStateCastingTest {
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
                     Optional.empty(),
-                    43,
                     2345234L,
                     3,
                     "1.2.0-SNAPSHOT",

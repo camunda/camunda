@@ -25,24 +25,14 @@ public record InProgressBackupManifest(
     Instant modifiedAt)
     implements ValidBackupManifest {
 
-  public InProgressBackupManifest {
-    descriptor = BackupDescriptorImpl.from(descriptor, id.checkpointId());
-  }
-
   @Override
   public BackupStatusCode statusCode() {
     return BackupStatusCode.IN_PROGRESS;
   }
 
-  @Override
-  public BackupStatus toStatus() {
-    return new BackupStatusImpl(
-        id,
-        Optional.of(descriptor),
-        statusCode(),
-        Optional.empty(),
-        Optional.of(createdAt),
-        Optional.of(modifiedAt));
+  public CompletedBackupManifest asCompleted(final FileSet snapshot, final FileSet segments) {
+    return new CompletedBackupManifest(
+        id, descriptor, snapshot, segments, createdAt, Instant.now());
   }
 
   @Override
@@ -57,8 +47,14 @@ public record InProgressBackupManifest(
         Instant.now());
   }
 
-  public CompletedBackupManifest asCompleted(final FileSet snapshot, final FileSet segments) {
-    return new CompletedBackupManifest(
-        id, descriptor, snapshot, segments, createdAt, Instant.now());
+  @Override
+  public BackupStatus toStatus() {
+    return new BackupStatusImpl(
+        id,
+        Optional.of(descriptor),
+        statusCode(),
+        Optional.empty(),
+        Optional.of(createdAt),
+        Optional.of(modifiedAt));
   }
 }

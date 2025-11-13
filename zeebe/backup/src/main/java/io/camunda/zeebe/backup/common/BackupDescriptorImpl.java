@@ -12,8 +12,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
-import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.io.IOException;
 import java.time.Instant;
@@ -21,7 +19,6 @@ import java.util.Optional;
 
 public record BackupDescriptorImpl(
     Optional<String> snapshotId,
-    long checkpointId,
     long checkpointPosition,
     int numberOfPartitions,
     String brokerVersion,
@@ -29,28 +26,14 @@ public record BackupDescriptorImpl(
     @JsonDeserialize(using = CheckpointTypeDeserializer.class) CheckpointType checkpointType)
     implements BackupDescriptor {
 
-  public static BackupDescriptorImpl from(
-      final BackupDescriptor descriptor, final long checkpointId) {
+  public static BackupDescriptorImpl from(final BackupDescriptor descriptor) {
     return new BackupDescriptorImpl(
         descriptor.snapshotId(),
-        checkpointId,
         descriptor.checkpointPosition(),
         descriptor.numberOfPartitions(),
         descriptor.brokerVersion(),
         descriptor.checkpointTimestamp(),
         descriptor.checkpointType());
-  }
-
-  public static BackupDescriptorImpl from(
-      final Record<CheckpointRecord> record, final int partitionCount) {
-    return new BackupDescriptorImpl(
-        Optional.empty(),
-        record.getValue().getCheckpointId(),
-        record.getPosition(),
-        partitionCount,
-        record.getBrokerVersion(),
-        Instant.ofEpochMilli(record.getTimestamp()),
-        record.getValue().getCheckpointType());
   }
 
   /**

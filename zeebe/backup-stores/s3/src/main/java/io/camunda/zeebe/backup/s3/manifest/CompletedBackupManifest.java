@@ -25,10 +25,6 @@ public record CompletedBackupManifest(
     Instant modifiedAt)
     implements ValidBackupManifest {
 
-  public CompletedBackupManifest {
-    descriptor = BackupDescriptorImpl.from(descriptor, id.checkpointId());
-  }
-
   @Override
   public BackupStatusCode statusCode() {
     return BackupStatusCode.COMPLETED;

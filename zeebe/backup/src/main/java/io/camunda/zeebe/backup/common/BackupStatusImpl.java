@@ -23,12 +23,6 @@ public record BackupStatusImpl(
     Optional<Instant> lastModified)
     implements BackupStatus {
 
-  public BackupStatusImpl {
-    if (descriptor.isPresent()) {
-      descriptor = Optional.of(BackupDescriptorImpl.from(descriptor.get(), id.checkpointId()));
-    }
-  }
-
   public static BackupStatusImpl doesNotExist(final BackupIdentifier id) {
     return new BackupStatusImpl(
         id,
