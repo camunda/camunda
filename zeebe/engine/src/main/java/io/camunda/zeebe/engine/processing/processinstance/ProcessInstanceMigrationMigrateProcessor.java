@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -172,7 +173,8 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
 
     final Map<String, String> mappedElementIds =
-        mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
+        mapElementIds(
+            mappingInstructions, processInstance, sourceProcessDefinition, targetProcessDefinition);
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
@@ -214,6 +216,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private Map<String, String> mapElementIds(
       final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
       final ElementInstance processInstance,
+      final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition) {
     final Map<String, String> mappedElementIds =
         mappingInstructions.stream()
@@ -221,6 +224,18 @@ public class ProcessInstanceMigrationMigrateProcessor
                 Collectors.toMap(
                     ProcessInstanceMigrationMappingInstructionValue::getSourceElementId,
                     ProcessInstanceMigrationMappingInstructionValue::getTargetElementId));
+
+    mappingInstructions.stream()
+        .filter(
+            instruction ->
+                isAdHocRelatedProcess(sourceProcessDefinition, instruction.getSourceElementId()))
+        .forEach(
+            instruction ->
+                mappedElementIds.putIfAbsent(
+                    instruction.getSourceElementId() + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX,
+                    instruction.getTargetElementId()
+                        + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX));
+
     // users don't provide a mapping instruction for the bpmn process id
     mappedElementIds.put(
         processInstance.getValue().getBpmnProcessId(),
