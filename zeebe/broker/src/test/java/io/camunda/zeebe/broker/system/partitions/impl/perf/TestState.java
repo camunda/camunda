@@ -31,11 +31,18 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 final class TestState {
-
   private static final int BATCH_INSERT_SIZE = 10_000;
   private static final int KEY_VALUE_SIZE = 8096;
+  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
+
+  static {
+    RocksDB.loadLibrary();
+  }
 
   TestContext generateContext(final long sizeInBytes) throws Exception {
     final var meterRegistry = new SimpleMeterRegistry();
@@ -82,11 +89,14 @@ final class TestState {
   }
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
+    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         new ConsistencyChecksSettings(false, false),
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        SimpleMeterRegistry::new);
+        SimpleMeterRegistry::new,
+        lruCache,
+        new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE, lruCache));
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {

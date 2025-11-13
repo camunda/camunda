@@ -33,8 +33,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 public class RocksDBSnapshotCopyTest {
+  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
+
+  static {
+    RocksDB.loadLibrary();
+  }
+
   final long rowsPerCF = 100;
   @TempDir Path destinationPath;
   @TempDir Path sourceDBPath;
@@ -46,12 +55,15 @@ public class RocksDBSnapshotCopyTest {
 
   @BeforeEach
   void setup() {
+    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
     factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
             new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+            SimpleMeterRegistry::new,
+            lruCache,
+            new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE / 4, lruCache));
     copy = new RocksDBSnapshotCopy(factory);
     random = new Random(1212331);
     sourceSnapshotPath = sourcePath.resolve("snapshot");
