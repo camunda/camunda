@@ -21,6 +21,7 @@ import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +33,7 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.TotalHits;
+import org.springframework.lang.NonNull;
 
 @ExtendWith(MockitoExtension.class)
 public class OpensearchSearchableDaoTest {
@@ -64,7 +66,10 @@ public class OpensearchSearchableDaoTest {
           }
 
           @Override
-          protected void buildFiltering(final Query query, final SearchRequest.Builder request) {}
+          protected Stream<org.opensearch.client.opensearch._types.query_dsl.Query>
+              collectFilterQueryTerms(@NonNull final Object filter) {
+            return Stream.empty();
+          }
 
           @Override
           protected Object convertInternalToApiResult(final Object internalResult) {

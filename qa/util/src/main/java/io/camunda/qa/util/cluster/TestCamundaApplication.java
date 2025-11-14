@@ -29,6 +29,7 @@ import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.operate.tenant.TenantCheckApplierHolder;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -156,6 +158,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   public TestCamundaApplication stop() {
     // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
+    // Clean up static contexts such as the TenantCheckApplierHolder
+    resetStaticContexts();
     return super.stop();
   }
 
@@ -184,6 +188,22 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     // config bean
     withProperty("zeebe.broker.gateway.enable", brokerProperties.getGateway().isEnable());
     return super.createSpringBuilder();
+  }
+
+  private void resetStaticContexts() {
+    resetTenantCheckApplierHolder();
+  }
+
+  private void resetTenantCheckApplierHolder() {
+    try {
+      final Field tenantCheckApplier =
+          TenantCheckApplierHolder.class.getDeclaredField("tenantCheckApplier");
+      tenantCheckApplier.setAccessible(true);
+      tenantCheckApplier.set(null, null);
+    } catch (final NoSuchFieldException | IllegalAccessException ex) {
+      // Depending on the test setup, the condition "OpenSearchCondition" may not be active and
+      // the singleton doesn't exist. Simply ignore the error.
+    }
   }
 
   public TestCamundaApplication withAuthorizationsEnabled() {
