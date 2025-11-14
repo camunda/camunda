@@ -29,6 +29,8 @@ import {
   assignApproverGroup,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {createUser} from 'modules/testUtils';
 
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
@@ -273,9 +275,17 @@ describe('<InstancesTable />', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
   });
 
-  it.skip('should refetch data when navigated from header', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-    mockSearchDecisionInstances().withDelay(mockDecisionInstancesSearchResult);
+  it('should refetch data when navigated from header', async () => {
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
+    const resolver = vi.fn();
+    mockSearchDecisionInstances().withSuccess(
+      mockDecisionInstancesSearchResult,
+      {mockResolverFn: resolver},
+    );
+    mockSearchDecisionInstances().withSuccess(
+      mockDecisionInstancesSearchResult,
+      {mockResolverFn: resolver},
+    );
 
     const {user} = render(
       <>
@@ -289,8 +299,6 @@ describe('<InstancesTable />', () => {
       screen.queryByTestId('data-table-skeleton'),
     );
 
-    // search query has a 5s stale time
-    vi.advanceTimersByTime(10_000);
     await user.click(
       within(
         screen.getByRole('navigation', {
@@ -303,11 +311,8 @@ describe('<InstancesTable />', () => {
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument(),
-    );
-    vi.clearAllTimers();
-    vi.useRealTimers();
+    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
+    expect(resolver).toHaveBeenCalledTimes(2);
   });
 
   it.each(['all', undefined])(
