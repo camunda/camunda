@@ -64,7 +64,7 @@ final class BackupServiceImpl {
             new BackupIdentifierWildcardImpl(
                 Optional.empty(),
                 Optional.of(inProgressBackup.id().partitionId()),
-                CheckpointPattern.of(inProgressBackup.checkpointId())));
+                CheckpointPattern.of(inProgressBackup.id().checkpointId())));
 
     final ActorFuture<Void> backupSaved = concurrencyControl.createFuture();
 
@@ -165,8 +165,8 @@ final class BackupServiceImpl {
   }
 
   private void confirmBackup(final InProgressBackup inProgressBackup) {
-    final var checkpointId = inProgressBackup.checkpointId();
-    final var checkpointPosition = inProgressBackup.checkpointPosition();
+    final var checkpointId = inProgressBackup.id().checkpointId();
+    final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
     final var confirmationWritten =
         logStreamWriter.tryWrite(
             WriteContext.internal(),
