@@ -45,7 +45,7 @@ public final class BatchOperationCreateProcessor
   private static final String EMPTY_JSON_OBJECT = "{}";
   private static final String MESSAGE_GIVEN_FILTER_IS_EMPTY = "Given filter is empty";
   private static final String BATCH_OPERATION_ALREADY_EXISTS =
-      "Expected to create a batch operation with key: '%d', but a batch operation with this key already exists";
+      "Expected to create a batch operation with key: '%d', but a batch operation command with this key already exists";
 
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior commandDistributionBehavior;
@@ -132,7 +132,10 @@ public final class BatchOperationCreateProcessor
         .get(recordKey)
         .ifPresentOrElse(
             bo -> {
-              final var message = BATCH_OPERATION_ALREADY_EXISTS.formatted(bo.getKey());
+              final var message =
+                  "Distributed: "
+                      + BATCH_OPERATION_ALREADY_EXISTS.formatted(bo.getKey())
+                      + " on this partition";
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
             },
             () ->
