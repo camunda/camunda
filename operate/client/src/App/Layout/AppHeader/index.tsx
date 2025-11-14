@@ -185,6 +185,21 @@ const AppHeader: React.FC = observer(() => {
                   },
                 },
               },
+              {
+                key: 'auditLog',
+                label: 'Audit Log',
+                isCurrentPage: currentPage === 'auditLog',
+                routeProps: {
+                  to: Paths.auditLog(),
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-audit-log',
+                      currentPage,
+                    });
+                  },
+                },
+              },
             ],
         licenseTag: {
           show: licenseTagStore.state.isTagVisible,
