@@ -51,10 +51,10 @@ public class ClusterMultiplePartitionsBatchOperationIT {
   private static final TestStandaloneApplication<?> APPLICATION =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          .withBrokerConfig(
+          .withUnifiedConfig(
               b -> {
                 final var cluster = b.getCluster();
-                cluster.setPartitionsCount(3);
+                cluster.setPartitionCount(3);
                 b.setCluster(cluster);
               });
 

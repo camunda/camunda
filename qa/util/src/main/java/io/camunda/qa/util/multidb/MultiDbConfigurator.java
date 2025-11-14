@@ -11,6 +11,7 @@ import static io.camunda.application.commons.search.SearchEngineDatabaseConfigur
 import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
@@ -69,17 +70,20 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
     // indexPrefix
-    elasticsearchProperties.put(
-        "camunda.data.secondary-storage.elasticsearch.index-prefix", indexPrefix);
+    // TODO KPO remove?
+    //    elasticsearchProperties.put(
+    //        "camunda.data.secondary-storage.elasticsearch.index-prefix", indexPrefix);
     // db type
     elasticsearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
-    elasticsearchProperties.put(
-        UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
+    // TODO KPO remove?
+    //    elasticsearchProperties.put(
+    //        UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
     elasticsearchProperties.put("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
     elasticsearchProperties.put("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
     // url
-    elasticsearchProperties.put(
-        "camunda.data.secondary-storage.elasticsearch.url", elasticsearchUrl);
+    // TODO KPO remove?
+    //    elasticsearchProperties.put(
+    //        "camunda.data.secondary-storage.elasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.tasklist.elasticsearch.url", elasticsearchUrl);
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.url", elasticsearchUrl);
@@ -96,7 +100,13 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
 
     testApplication.withAdditionalProperties(elasticsearchProperties);
-
+    // TODO KPO replace setting these properties?
+    testApplication.withUnifiedConfig(
+        cfg -> {
+          cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+          cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(elasticsearchUrl);
+          cfg.getData().getSecondaryStorage().getElasticsearch().setIndexPrefix(indexPrefix);
+        });
     testApplication.withExporter(
         CamundaExporter.class.getSimpleName().toLowerCase(),
         cfg -> {

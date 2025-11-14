@@ -25,6 +25,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.util.unit.DataSize;
 
+// TODO KPO check test
 @ZeebeIntegration
 public final class CreateLargeDeploymentTest {
 
@@ -36,8 +37,11 @@ public final class CreateLargeDeploymentTest {
   final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withBrokerConfig(
-              b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(MAX_MSG_SIZE_MB)));
+          .withUnifiedConfig(
+              b ->
+                  b.getCluster()
+                      .getNetwork()
+                      .setMaxMessageSize(DataSize.ofMegabytes(MAX_MSG_SIZE_MB)));
 
   ZeebeResourcesHelper resourcesHelper;
 
