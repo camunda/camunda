@@ -31,7 +31,6 @@ public enum Profile {
 
   // authentication profiles
   CONSOLIDATED_AUTH("consolidated-auth"),
-  IDENTITY_AUTH("identity-auth"),
 
   // indicating legacy standalone application
   STANDALONE("standalone");

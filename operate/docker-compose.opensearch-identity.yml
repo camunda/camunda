@@ -129,7 +129,7 @@ services:
     environment:
       - SERVER_PORT=8081
       - SERVER_SERVLET_CONTEXT_PATH=/operate
-      - SPRING_PROFILES_ACTIVE=identity-auth,dev-data
+      - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082/tasklist
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
