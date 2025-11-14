@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities.usertask;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -19,92 +20,119 @@ import java.util.Map;
 public class TaskEntity
     implements ExporterEntity<TaskEntity>, PartitionedEntity<TaskEntity>, TenantOwned {
 
-  private String id;
+  @BeforeVersion880 private String id;
 
-  private long key;
+  @BeforeVersion880 private long key;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  private int partitionId;
+  @BeforeVersion880 private int partitionId;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeBpmnId;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String name;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeInstanceId;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime completionTime;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String processInstanceId;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long position;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskState state;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime creationTime;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String bpmnProcessId;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String processDefinitionId;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String assignee;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String[] candidateGroups;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String[] candidateUsers;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String formKey;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String formId;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long formVersion;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Boolean isFormEmbedded;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime followUpDate;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime dueDate;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String externalFormReference;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer processDefinitionVersion;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Map<String, String> customHeaders;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer priority;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String action;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private List<String> changedAttributes;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 
+  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskImplementation implementation;
 
@@ -377,10 +405,10 @@ public class TaskEntity
   }
 
   public TaskEntity addChangedAttribute(final String changedAttribute) {
-    if (this.changedAttributes == null) {
-      this.changedAttributes = new ArrayList<>();
+    if (changedAttributes == null) {
+      changedAttributes = new ArrayList<>();
     }
-    this.changedAttributes.add(changedAttribute);
+    changedAttributes.add(changedAttribute);
     return this;
   }
 

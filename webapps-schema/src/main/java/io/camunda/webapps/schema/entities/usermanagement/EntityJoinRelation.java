@@ -7,9 +7,10 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 
-public record EntityJoinRelation(String name, String parent) {
+public record EntityJoinRelation(@BeforeVersion880 String name, @BeforeVersion880 String parent) {
 
   public static class EntityJoinRelationFactory {
 

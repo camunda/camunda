@@ -7,13 +7,14 @@
  */
 package io.camunda.webapps.schema.entities.dmn;
 
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import java.util.Objects;
 
 public class DecisionInstanceInputEntity {
 
-  private String id;
-  private String name;
-  private String value;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private String name;
+  @BeforeVersion880 private String value;
 
   public String getId() {
     return id;

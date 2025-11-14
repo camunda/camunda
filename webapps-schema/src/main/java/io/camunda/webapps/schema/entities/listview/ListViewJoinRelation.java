@@ -7,11 +7,13 @@
  */
 package io.camunda.webapps.schema.entities.listview;
 
+import io.camunda.webapps.schema.entities.BeforeVersion880;
+
 public class ListViewJoinRelation {
 
-  private String name;
+  @BeforeVersion880 private String name;
 
-  private Long parent;
+  @BeforeVersion880 private Long parent;
 
   public ListViewJoinRelation() {}
 

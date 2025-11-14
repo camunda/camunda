@@ -35,10 +35,10 @@ import java.lang.annotation.Target;
  *   }
  * </code></pre>
  */
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SinceVersion {
   String value();
 
-  boolean nullable() default false;
+  boolean requireDefault() default true;
 }

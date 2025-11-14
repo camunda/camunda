@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.metrics;
 
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -18,13 +19,13 @@ public final class UsageMetricsEntity
         PartitionedEntity<UsageMetricsEntity>,
         TenantOwned {
 
-  private String id;
-  private OffsetDateTime startTime;
-  private OffsetDateTime endTime;
-  private UsageMetricsEventType eventType;
-  private Long eventValue;
-  private String tenantId;
-  private int partitionId;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private OffsetDateTime startTime;
+  @BeforeVersion880 private OffsetDateTime endTime;
+  @BeforeVersion880 private UsageMetricsEventType eventType;
+  @BeforeVersion880 private Long eventValue;
+  @BeforeVersion880 private String tenantId;
+  @BeforeVersion880 private int partitionId;
 
   @Override
   public String getId() {
