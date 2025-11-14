@@ -182,7 +182,6 @@ class BackupMultiPartitionTest {
     waitUntilBackupIsCompleted(backupId);
   }
 
-  // TODO KPO check test
   @Test
   @Timeout(value = 120)
   void shouldTriggerBackupViaInterPartitionMessageCorrelationCommands() {
