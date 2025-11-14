@@ -530,7 +530,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+              $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleSearchQueryRequest'
       responses:
         "200":
           description: The mapping rules assigned to the group.
@@ -573,7 +573,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+              $ref: 'roles.yaml#/components/schemas/RoleSearchQueryRequest'
       responses:
         "200":
           description: The roles assigned to the group.
