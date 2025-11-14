@@ -56,4 +56,16 @@ public interface BackupDescriptor {
    * @return the type of the checkpoint that triggered the backup
    */
   CheckpointType checkpointType();
+
+  /**
+   * When continuous backups are enabled, this points to the previous backup in the chain if there
+   * is one.
+   */
+  BackupIdentifier previousBackup();
+
+  /**
+   * When continuous backups are enabled, this points to the next backup in the chain, if there is
+   * one. This is set only when the next backup is created.
+   */
+  BackupIdentifier nextBackup();
 }
