@@ -17,10 +17,6 @@ on:
         type: string
         default: ""
         required: false
-      ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
-        default: 'stable/8.7'
-        required: false
       cluster:
         description: 'Specifies which cluster to deploy the load test on'
         default: 'zeebe-cluster'
@@ -57,11 +53,6 @@ on:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
         default: ""
-        required: false
-      ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
-        default: 'main'
-        type: string
         required: false
       cluster:
         description: 'Specifies which cluster to deploy the load test on'
@@ -116,7 +107,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
       - name: Get image tag
         id: image-tag
         run: |
@@ -143,7 +134,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -186,7 +177,7 @@ jobs:
         name: Build Camunda Docker Image
         with:
           repository: 'gcr.io/zeebe-io/zeebe'
-          revision: ${{ inputs.ref }}
+          revision: ${{ github.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
@@ -213,7 +204,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         id: auth
@@ -346,7 +337,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'

@@ -34,7 +34,6 @@ jobs:
     name: Collect benchmark data
     runs-on: ubuntu-latest
     outputs:
-      full-ref: ${{ steps.data.outputs.full-ref }}
       benchmark: ${{ steps.data.outputs.benchmark }}
       operate: ${{ steps.data.outputs.operate }}
     steps:
@@ -42,7 +41,6 @@ jobs:
       - name: Collect benchmark data
         id: data
         run: |
-          echo "full-ref"=$(git rev-parse HEAD) >> $GITHUB_OUTPUT
           echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> $GITHUB_OUTPUT
           echo "operate=operate-y-$(date +%Y)-cw-$(date +%V)" >> $GITHUB_OUTPUT
 
@@ -58,7 +56,6 @@ jobs:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.full-ref }}
       publish: "slack"
   setup-mixed-benchmark:
     name: Mixed Benchmark
@@ -71,7 +68,6 @@ jobs:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-mixed
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.full-ref }}
       realistic: 'true'
   setup-latency-benchmark:
     name: Latency Benchmark
@@ -84,7 +80,6 @@ jobs:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-latency
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.full-ref }}
       load-test-load: >
         --set starter.rate=1
         --set workers.benchmark.replicas=1
