@@ -121,9 +121,9 @@ public class AdHocSubProcessInstructionActivateProcessor
                 adHocSubProcessElementInstance.getValue().getTenantId())
             .getProcess();
     final var adHocSubProcessElement =
-        (ExecutableAdHocSubProcess)
-            adHocSubProcessDefinition.getElementById(
-                adHocSubProcessElementInstance.getValue().getElementId());
+        adHocSubProcessDefinition.getElementById(
+            adHocSubProcessElementInstance.getValue().getElementId(),
+            ExecutableAdHocSubProcess.class);
 
     // check that the given elements exist within the ad-hoc sub-process
     final var activateElements =
