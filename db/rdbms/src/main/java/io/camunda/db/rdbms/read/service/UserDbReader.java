@@ -55,6 +55,11 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
 
     LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
     final var totalHits = userMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = userMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

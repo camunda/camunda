@@ -12,49 +12,33 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.rdbms.sql.GroupMapper;
-import io.camunda.search.query.GroupQuery;
+import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
+import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class GroupDbReaderTest {
+class DecisionInstanceDbReaderTest {
 
-  private final GroupMapper mapper = mock(GroupMapper.class);
-  private final GroupDbReader reader = new GroupDbReader(mapper);
-
-  @Test
-  void shouldImmediatelyReturnEmptyResultWhenMemberIdsFilterIsEmpty() {
-    // When
-    final var result =
-        reader.search(
-            GroupQuery.of(
-                b -> b.filter(f -> f.memberIds(Set.of()).childMemberType(EntityType.USER))),
-            null);
-
-    // Then
-    assertThat(result.total()).isZero();
-    verifyNoInteractions(mapper);
-  }
+  private final DecisionInstanceMapper decisionInstanceMapper = mock(DecisionInstanceMapper.class);
+  private final DecisionInstanceDbReader decisionInstanceDbReader =
+      new DecisionInstanceDbReader(decisionInstanceMapper);
 
   @Test
   void shouldReturnEmptyPageWhenPageSizeIsZero() {
-    when(mapper.count(any())).thenReturn(21L);
+    when(decisionInstanceMapper.count(any())).thenReturn(21L);
 
-    final GroupQuery query = GroupQuery.of(b -> b.page(p -> p.size(0)));
+    final DecisionInstanceQuery query = DecisionInstanceQuery.of(b -> b.page(p -> p.size(0)));
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
 
-    final var result = reader.search(query, resourceAccessChecks);
+    final var result = decisionInstanceDbReader.search(query, resourceAccessChecks);
 
     assertThat(result.total()).isEqualTo(21L);
     assertThat(result.items()).isEmpty();
-    verify(mapper, times(0)).search(any());
+    verify(decisionInstanceMapper, times(0)).search(any());
   }
 }

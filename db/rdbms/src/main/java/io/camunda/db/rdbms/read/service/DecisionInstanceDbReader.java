@@ -66,6 +66,11 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = decisionInstanceMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(query.page())) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = enhanceEntities(decisionInstanceMapper.search(dbQuery), query.resultConfig());
 
     return buildSearchQueryResult(totalHits, hits, dbSort);
