@@ -22,8 +22,8 @@ import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutatio
 import {tracking} from 'modules/tracking';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {notificationsStore} from 'modules/stores/notifications';
 import {buildMutationRequestBody} from './buildMutationRequestBody';
+import {handleOperationError} from 'modules/utils/notifications';
 
 type Props = {
   selectedInstancesCount: number;
@@ -53,16 +53,9 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       });
       processInstancesSelectionStore.reset();
     },
-    onError: ({message}) => {
+    onError: (error) => {
       panelStatesStore.expandOperationsPanel();
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Operation could not be created',
-        subtitle: message.includes('403')
-          ? 'You do not have permission'
-          : undefined,
-        isDismissable: true,
-      });
+      handleOperationError(error.response?.status);
     },
   });
 
@@ -75,16 +68,9 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       });
       processInstancesSelectionStore.reset();
     },
-    onError: ({message}) => {
+    onError: (error) => {
       panelStatesStore.expandOperationsPanel();
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Operation could not be created',
-        subtitle: message.includes('403')
-          ? 'You do not have permission'
-          : undefined,
-        isDismissable: true,
-      });
+      handleOperationError(error.response?.status);
     },
   });
 

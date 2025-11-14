@@ -11,7 +11,7 @@ import {operationsStore} from 'modules/stores/operations';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {tracking} from 'modules/tracking';
-import {notificationsStore} from 'modules/stores/notifications';
+import {handleOperationError} from 'modules/utils/notifications';
 import {type Modifications} from 'modules/api/processInstances/operations';
 import type {OperationEntityType} from 'modules/types/operate';
 
@@ -85,13 +85,7 @@ function useOperationApply() {
             operationType,
             shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
           });
-          notificationsStore.displayNotification({
-            kind: 'error',
-            title: 'Operation could not be created',
-            subtitle:
-              statusCode === 403 ? 'You do not have permission' : undefined,
-            isDismissable: true,
-          });
+          handleOperationError(statusCode);
         },
       });
 

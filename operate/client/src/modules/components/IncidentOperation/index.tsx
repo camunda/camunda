@@ -17,6 +17,7 @@ import {tracking} from 'modules/tracking';
 import {InlineLoading} from '@carbon/react';
 import {Container} from './styled';
 import {notificationsStore} from 'modules/stores/notifications';
+import {handleOperationError} from 'modules/utils/notifications';
 import {useResolveIncident} from 'modules/mutations/incidents/useResolveIncident';
 
 type Props = {
@@ -31,12 +32,7 @@ const IncidentOperation: React.FC<Props> = observer(
 
     const handleError: ErrorHandler = ({statusCode}) => {
       setHasActiveOperation(false);
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Operation could not be created',
-        subtitle: statusCode === 403 ? 'You do not have permission' : undefined,
-        isDismissable: true,
-      });
+      handleOperationError(statusCode);
     };
 
     const handleOnClick = async (e: React.MouseEvent<HTMLButtonElement>) => {

@@ -17,12 +17,13 @@ import type {
   CreateModificationBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
+import type {RequestError} from 'modules/request';
 
 const useModifyProcessInstancesBatchOperation = (
   options?: Partial<
     UseMutationOptions<
       CreateModificationBatchOperationResponseBody,
-      Error,
+      RequestError,
       CreateModificationBatchOperationRequestBody
     >
   >,

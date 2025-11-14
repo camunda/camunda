@@ -24,7 +24,7 @@ import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useI
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
-import {notificationsStore} from 'modules/stores/notifications';
+import {handleOperationError} from 'modules/utils/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
@@ -85,20 +85,13 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
             operationType: 'MODIFY_PROCESS_INSTANCE',
           });
         },
-        onError: ({message}) => {
+        onError: (error) => {
           processInstancesStore.unmarkProcessInstancesWithActiveOperations({
             instanceIds: ids,
             operationType: 'MODIFY_PROCESS_INSTANCE',
             shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
           });
-          notificationsStore.displayNotification({
-            kind: 'error',
-            title: 'Operation could not be created',
-            subtitle: message.includes('403')
-              ? 'You do not have permission'
-              : undefined,
-            isDismissable: true,
-          });
+          handleOperationError(error.response?.status);
         },
       });
 
