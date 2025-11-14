@@ -36,6 +36,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+<<<<<<< HEAD:clients/camunda-spring-boot-starter/src/test/java/io/camunda/client/spring/config/CredentialsProviderOidcWithSSLTest.java
+=======
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.DirtiesContext;
+>>>>>>> 8f5a7b08 (test: stabilize CredentialsProvider tests):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/CredentialsProviderSelfManagedTest.java
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -111,6 +116,8 @@ public class CredentialsProviderOidcWithSSLTest {
   }
 
   @Test
+  // this allows to run the test in a loop, as the in memory auth cache is cleared
+  @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
   void shouldHaveZeebeAuth() throws IOException {
     final Map<String, String> headers = new HashMap<>();
     final String accessToken = "access-token";
