@@ -36,9 +36,6 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mo
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
-import {mockIncidents} from 'modules/mocks/incidents';
-import {incidentsStore} from 'modules/stores/incidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
@@ -143,7 +140,6 @@ describe('MetadataPopover', () => {
         },
       ],
     });
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
     mockSearchJobs().withSuccess({
       items: [],
@@ -176,7 +172,6 @@ describe('MetadataPopover', () => {
   afterEach(() => {
     processInstanceDetailsStore.reset();
     flowNodeSelectionStore.reset();
-    incidentsStore.reset();
   });
 
   it('should render meta data for completed flow node', async () => {

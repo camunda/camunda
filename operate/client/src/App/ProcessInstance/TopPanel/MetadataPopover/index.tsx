@@ -23,9 +23,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {Incidents} from './Incidents';
-import {incidentsStore} from 'modules/stores/incidents';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -169,12 +167,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             <MultiIncidents
               count={incidentCount}
               onButtonClick={() => {
-                if (IS_INCIDENTS_PANEL_V2) {
-                  return incidentsPanelStore.setPanelOpen(true);
-                }
-                incidentsStore.clearSelection();
-                incidentsStore.toggleFlowNodeSelection(elementId);
-                incidentsStore.setIncidentBarOpen(true);
+                incidentsPanelStore.setPanelOpen(true);
               }}
             />
           </>

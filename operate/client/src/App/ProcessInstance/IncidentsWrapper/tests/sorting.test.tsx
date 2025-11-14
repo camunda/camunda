@@ -6,32 +6,42 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {IncidentsWrapper} from '../index';
 import {Wrapper, mockIncidents} from './mocks';
-import {incidentsStore} from 'modules/stores/incidents';
-import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {createInstance, createProcessInstance} from 'modules/testUtils';
+import {createInstance} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
+import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 
-describe('Sorting', {skip: IS_INCIDENTS_PANEL_V2}, () => {
-  beforeEach(async () => {
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+describe('Sorting', () => {
+  beforeEach(() => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstance().withSuccess(createInstance());
-    mockFetchProcessInstanceV2().withSuccess(
-      createProcessInstance({
-        hasIncident: true,
-      }),
+    mockFetchProcessInstanceV2().withSuccess(mockProcessInstance);
+    mockSearchProcessInstances().withSuccess({
+      page: {totalItems: 1},
+      items: [mockProcessInstance],
+    });
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      mockIncidents,
+    );
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      mockIncidents,
+    );
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      mockIncidents,
     );
 
-    await incidentsStore.fetchIncidents('1');
-    incidentsStore.setIncidentBarOpen(true);
+    incidentsPanelStore.setPanelOpen(true);
   });
 
   it('should sort by incident type', async () => {
@@ -40,17 +50,17 @@ describe('Sorting', {skip: IS_INCIDENTS_PANEL_V2}, () => {
         processInstance={mockProcessInstance}
         setIsInTransition={vi.fn()}
       />,
-      {
-        wrapper: Wrapper,
-      },
+      {wrapper: Wrapper},
     );
 
-    let [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/Condition errortype/);
-    expect(secondRow).toHaveTextContent(/Extract value errortype/);
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    expect(screen.getByTestId('search')).toHaveTextContent('');
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /sort by incident type/i,
       }),
     );
@@ -59,12 +69,8 @@ describe('Sorting', {skip: IS_INCIDENTS_PANEL_V2}, () => {
       /^\?sort=errorType%2Bdesc$/,
     );
 
-    [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/Extract value errortype/);
-    expect(secondRow).toHaveTextContent(/Condition errortype/);
-
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /sort by incident type/i,
       }),
     );
@@ -72,54 +78,6 @@ describe('Sorting', {skip: IS_INCIDENTS_PANEL_V2}, () => {
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?sort=errorType%2Basc$/,
     );
-
-    [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/Condition errortype/);
-    expect(secondRow).toHaveTextContent(/Extract value errortype/);
-  });
-
-  it('should sort by flow node', async () => {
-    const {user} = render(
-      <IncidentsWrapper
-        processInstance={mockProcessInstance}
-        setIsInTransition={vi.fn()}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    let [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
-    expect(secondRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /sort by failing flow node/i,
-      }),
-    );
-
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=flowNodeName%2Bdesc$/,
-    );
-
-    [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
-    expect(secondRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /sort by failing flow node/i,
-      }),
-    );
-
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?sort=flowNodeName%2Basc$/,
-    );
-
-    [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
-    expect(secondRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
   });
 
   it('should sort by creation time', async () => {
@@ -133,12 +91,14 @@ describe('Sorting', {skip: IS_INCIDENTS_PANEL_V2}, () => {
       },
     );
 
-    let [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
-    expect(secondRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('data-table-skeleton'),
+    );
+
+    expect(screen.getByTestId('search')).toHaveTextContent('');
 
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /sort by creation date/i,
       }),
     );
@@ -147,12 +107,8 @@ describe('Sorting', {skip: IS_INCIDENTS_PANEL_V2}, () => {
       /^\?sort=creationTime%2Basc$/,
     );
 
-    [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/2019-03-01 14:26:19/);
-    expect(secondRow).toHaveTextContent(/2022-03-01 14:26:19/);
-
     await user.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /sort by creation date/i,
       }),
     );
@@ -160,9 +116,5 @@ describe('Sorting', {skip: IS_INCIDENTS_PANEL_V2}, () => {
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?sort=creationTime%2Bdesc$/,
     );
-
-    [, firstRow, secondRow] = screen.getAllByRole('row');
-    expect(firstRow).toHaveTextContent(/2022-03-01 14:26:19/);
-    expect(secondRow).toHaveTextContent(/2019-03-01 14:26:19/);
   });
 });

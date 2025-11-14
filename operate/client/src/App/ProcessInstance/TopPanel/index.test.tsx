@@ -22,21 +22,13 @@ import {
   incidentFlowNodeMetaData,
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
-import {
-  createInstance,
-  createIncident,
-  createIncidentV2,
-} from 'modules/testUtils';
+import {createInstance, createIncident} from 'modules/testUtils';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_INCIDENTS_PANEL_V2,
-} from 'modules/feature-flags';
+import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -62,35 +54,10 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
 const mockIncidents = {
-  count: 1,
-  incidents: [
-    createIncident({
-      errorType: {
-        name: 'Condition error',
-        id: 'CONDITION_ERROR',
-      },
-      flowNodeId: 'Service5678',
-    }),
-  ],
-  errorTypes: [
-    {
-      id: 'Condition error',
-      name: 'Condition error',
-      count: 1,
-    },
-  ],
-  flowNodes: [
-    {
-      id: 'Service5678',
-      name: 'Do something',
-      count: 1,
-    },
-  ],
-};
-
-const mockIncidentsV2 = {
   page: {totalItems: 1},
-  items: [createIncidentV2()],
+  items: [
+    createIncident({errorType: 'CONDITION_ERROR', elementId: 'Service5678'}),
+  ],
 };
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
@@ -216,15 +183,14 @@ describe('TopPanel', () => {
       createInstance({id: 'instance_id', state: 'INCIDENT'}),
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidentsV2,
+      mockIncidents,
     );
     mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidentsV2,
+      mockIncidents,
     );
     mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidentsV2,
+      mockIncidents,
     );
     mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
     mockFetchFlownodeInstancesStatistics().withSuccess({
@@ -371,20 +337,19 @@ describe('TopPanel', () => {
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
 
-    const tableHeading = IS_INCIDENTS_PANEL_V2
-      ? 'Incidents - 1 result'
-      : 'Incidents View - 1 result';
     await waitFor(() =>
-      expect(screen.queryByText(tableHeading)).not.toBeInTheDocument(),
+      expect(
+        screen.queryByText('Incidents - 1 result'),
+      ).not.toBeInTheDocument(),
     );
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(await screen.findByText(tableHeading)).toBeInTheDocument();
+    expect(await screen.findByText('Incidents - 1 result')).toBeInTheDocument();
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(screen.queryByText(tableHeading)).not.toBeInTheDocument();
+    expect(screen.queryByText('Incidents - 1 result')).not.toBeInTheDocument();
   });
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {
@@ -418,7 +383,6 @@ describe('TopPanel', () => {
         },
       ],
     });
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
     flowNodeMetaDataStore.setMetaData({
       ...calledInstanceMetadata,

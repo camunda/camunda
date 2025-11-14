@@ -7,11 +7,9 @@
  */
 
 import {Loading} from '@carbon/react';
-import {incidentsStore} from 'modules/stores/incidents';
 import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
 import {MultiIncidents} from './multiIncidents';
 import {SingleIncident} from './singleIncident';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {Divider} from '../styled';
 
@@ -21,11 +19,7 @@ type Props = {
   elementId: string;
 };
 
-const Incidents: React.FC<Props> = ({
-  elementInstanceKey,
-  elementName,
-  elementId,
-}) => {
+const Incidents: React.FC<Props> = ({elementInstanceKey, elementName}) => {
   const {data, isLoading: isSearchingIncidents} =
     useGetIncidentsByElementInstance(elementInstanceKey, {
       select: (data) => ({
@@ -46,16 +40,10 @@ const Incidents: React.FC<Props> = ({
           <SingleIncident
             incident={singleIncident}
             onButtonClick={() => {
-              if (IS_INCIDENTS_PANEL_V2) {
-                return incidentsPanelStore.showIncidentsForElementInstance(
-                  elementInstanceKey,
-                  elementName,
-                );
-              }
-              incidentsStore.clearSelection();
-              incidentsStore.toggleFlowNodeSelection(elementId);
-              incidentsStore.toggleErrorTypeSelection(singleIncident.errorType);
-              incidentsStore.setIncidentBarOpen(true);
+              incidentsPanelStore.showIncidentsForElementInstance(
+                elementInstanceKey,
+                elementName,
+              );
             }}
           />
         </>
@@ -65,15 +53,10 @@ const Incidents: React.FC<Props> = ({
           <MultiIncidents
             count={totalIncidents}
             onButtonClick={() => {
-              if (IS_INCIDENTS_PANEL_V2) {
-                return incidentsPanelStore.showIncidentsForElementInstance(
-                  elementInstanceKey,
-                  elementName,
-                );
-              }
-              incidentsStore.clearSelection();
-              incidentsStore.toggleFlowNodeSelection(elementId);
-              incidentsStore.setIncidentBarOpen(true);
+              incidentsPanelStore.showIncidentsForElementInstance(
+                elementInstanceKey,
+                elementName,
+              );
             }}
           />
         </>
