@@ -225,7 +225,7 @@
     <plugin.version.spotbugs>4.9.8.1</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.2</plugin.version.surefire>
     <plugin.version.versions>2.18.0</plugin.version.versions>
-    <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
+    <plugin.version.frontend-maven>1.15.4</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
