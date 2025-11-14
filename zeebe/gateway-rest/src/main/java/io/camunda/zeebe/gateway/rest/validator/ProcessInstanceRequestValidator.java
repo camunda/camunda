@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
@@ -114,12 +113,7 @@ public class ProcessInstanceRequestValidator {
                 violations);
           }
 
-          if (migrationPlan.getMappingInstructions() == null
-              || migrationPlan.getMappingInstructions().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
-          } else {
-            validateMappingInstructions(migrationPlan.getMappingInstructions(), violations);
-          }
+          validateMappingInstructions(migrationPlan.getMappingInstructions(), violations);
         });
   }
 
@@ -134,12 +128,8 @@ public class ProcessInstanceRequestValidator {
             validateKeyFormat(
                 request.getTargetProcessDefinitionKey(), "targetProcessDefinitionKey", violations);
           }
-          if (request.getMappingInstructions() == null
-              || request.getMappingInstructions().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
-          } else {
-            validateMappingInstructions(request.getMappingInstructions(), violations);
-          }
+
+          validateMappingInstructions(request.getMappingInstructions(), violations);
           validateOperationReference(request.getOperationReference(), violations);
         });
   }
@@ -172,15 +162,7 @@ public class ProcessInstanceRequestValidator {
   private static void validateMappingInstructions(
       final List<MigrateProcessInstanceMappingInstruction> mappingInstructions,
       final List<String> violations) {
-    validateInstructions(
-        mappingInstructions,
-        (instruction) ->
-            (instruction.getSourceElementId() != null
-                    && !instruction.getSourceElementId().isEmpty())
-                && (instruction.getTargetElementId() != null
-                    && !instruction.getTargetElementId().isEmpty()),
-        violations,
-        ERROR_MESSAGE_ALL_REQUIRED_FIELD.formatted(List.of("sourceElementId", "targetElementId")));
+    violations.addAll(MigrationInstructionValidator.validate(mappingInstructions));
   }
 
   private static void validateActivateInstructions(

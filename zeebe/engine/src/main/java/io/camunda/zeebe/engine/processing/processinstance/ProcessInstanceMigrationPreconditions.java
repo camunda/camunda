@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
@@ -96,6 +98,12 @@ public final class ProcessInstanceMigrationPreconditions {
       but mapping instructions contain a non-existing target element id '%s'. \
       Elements provided in mapping instructions must exist \
       in the target process definition.""";
+  private static final String ERROR_INNER_INSTANCE_MISS_USE =
+      """
+      Expected to migrate process instance '%s'. \
+      Found reference of '%s' suffix on element id, but there are no other mapping instruction element ids \
+      that point correctly to an Ad-Hoc Sub-Process element type. \
+      Please remove the suffix from all the element ids and retry.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE =
       """
       Expected to migrate process instance '%s' \
@@ -362,6 +370,62 @@ public final class ProcessInstanceMigrationPreconditions {
                     ERROR_TARGET_ELEMENT_ID_NOT_FOUND, processInstanceKey, targetElementId);
             throw new ProcessInstanceMigrationPreconditionFailedException(
                 reason, RejectionType.INVALID_ARGUMENT);
+          }
+        });
+  }
+
+  /**
+   * This validation applies ONLY to Ad-Hoc Sub-Processes when the {@code #innerInstance} suffix is
+   * present in element IDs. If you're not working with Ad-Hoc Sub-Processes or the {@code
+   * #innerInstance} suffix, you can skip this validation.
+   *
+   * <p>This validation should never trigger when requests originate from the UI side. However,
+   * experienced API users might attempt to create requests using the {@code #innerInstance} suffix
+   * in mapping instruction element IDs.
+   *
+   * <p>If this occurs, the suffix is accepted only when used correctly. The following constraints
+   * are validated:
+   *
+   * <ul>
+   *   <li>Both source and target element IDs must consistently use the {@code #innerInstance}
+   *       suffix. Already validated at {@link
+   *       io.camunda.zeebe.gateway.rest.validator.MigrationInstructionValidator}, should fast fail
+   *       before reaching this method.
+   *   <li>If using {@code adHocSubProcessId#innerInstance}, the base element ID {@code
+   *       adHocSubProcessId} must reference an Ad-Hoc Sub-Process or a Multi-Instance with inner
+   *       activity of type Ad-Hoc Sub-Process
+   * </ul>
+   *
+   * @param sourceProcessDefinition the source process definition
+   * @param targetProcessDefinition the target process definition
+   * @param mappingInstructions the mapping instructions to validate
+   * @param processInstanceKey the process instance key for error logging
+   */
+  public static void requireValidAdHocSubprocessInnerInstanceMapping(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
+      final long processInstanceKey) {
+
+    mappingInstructions.forEach(
+        instruction -> {
+          final String sourceElementId = instruction.getSourceElementId();
+          final String targetElementId = instruction.getTargetElementId();
+
+          if (bothElementsUseInnerInstanceSuffix(sourceElementId, targetElementId)) {
+            final String sourceBaseElementId = extractBaseElementId(sourceElementId);
+            final String targetBaseElementId = extractBaseElementId(targetElementId);
+
+            if (!isAdHocRelatedProcess(sourceProcessDefinition, sourceBaseElementId)
+                || !isAdHocRelatedProcess(targetProcessDefinition, targetBaseElementId)) {
+              final String reason =
+                  String.format(
+                      ERROR_INNER_INSTANCE_MISS_USE,
+                      processInstanceKey,
+                      AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX);
+              throw new ProcessInstanceMigrationPreconditionFailedException(
+                  reason, RejectionType.INVALID_ARGUMENT);
+            }
           }
         });
   }
@@ -1243,6 +1307,17 @@ public final class ProcessInstanceMigrationPreconditions {
 
   public static boolean isAdHocSubProcess(final BpmnElementType elementType) {
     return BpmnElementType.AD_HOC_SUB_PROCESS == elementType;
+  }
+
+  private static boolean bothElementsUseInnerInstanceSuffix(
+      final String sourceElementId, final String targetElementId) {
+    return sourceElementId.endsWith(AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX)
+        && targetElementId.endsWith(AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX);
+  }
+
+  private static String extractBaseElementId(final String elementId) {
+    final int suffixIndex = elementId.indexOf(AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX);
+    return suffixIndex >= 0 ? elementId.substring(0, suffixIndex) : elementId;
   }
 
   /**

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
+import static io.camunda.zeebe.gateway.rest.validator.MigrationInstructionValidator.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+
 public final class ErrorMessages {
 
   public static final String ERROR_MESSAGE_DATE_PARSING =
@@ -42,4 +44,15 @@ public final class ErrorMessages {
       "The provided tag '%s' is not valid. %s";
   public static final String ERROR_MESSAGE_INVALID_TAGS_COUNT =
       "The provided number of tags '%s' is not supported. Ensure to not add more than %s tags.";
+  public static final String ERROR_MESSAGE_INVALID_AHSP_REQUIRED_FIELD =
+      "If %s: '%s' is provided, ad-hoc sub-process element id is also required in mappingInstructions: '%s'.";
+  public static final String ERROR_MESSAGE_INVALID_AHSP_VALUE =
+      "On %s: %s baseElementId is blank. "
+          + "A format like <adHocSubProcessId>"
+          + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX
+          + " is expected.";
+  public static final String ERROR_MESSAGE_AHSP_VALUE_INCONSISTENT =
+      "Both %s and %s must consistently use or not use the "
+          + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX
+          + " suffix for Ad-Hoc Sub-Processes.";
 }
