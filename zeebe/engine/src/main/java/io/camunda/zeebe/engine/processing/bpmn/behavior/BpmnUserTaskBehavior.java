@@ -337,7 +337,7 @@ public final class BpmnUserTaskBehavior {
   }
 
   public Either<Failure, Map<String, String>> evaluateCustomHeaderExpressions(
-      final Map<String, Expression> headerExpressions, final long scopeKey) {
+      final Map<String, Expression> headerExpressions, final long scopeKey, final String tenantId) {
     if (headerExpressions == null || headerExpressions.isEmpty()) {
       return Either.right(Map.of());
     }
@@ -348,8 +348,9 @@ public final class BpmnUserTaskBehavior {
       final var headerName = entry.getKey();
       final var expression = entry.getValue();
 
-      // Evaluate the expression
-      final var evaluationResult = expressionBehavior.evaluateAnyExpression(expression, scopeKey);
+      // Evaluate the expression as a string (handles all type conversions)
+      final var evaluationResult =
+          expressionBehavior.evaluateStringExpression(expression, scopeKey, tenantId);
 
       if (evaluationResult.isLeft()) {
         // Expression evaluation failed - fail task creation
@@ -359,13 +360,13 @@ public final class BpmnUserTaskBehavior {
       final var value = evaluationResult.get();
 
       // Handle null: skip this header
-      if (value == null) {
-        continue;
+      if (value != null) {
+        evaluatedHeaders.put(headerName, value);
       }
+    }
 
-      // Type coercion: convert to String
-      if (value instanceof String stringValue) {
-        evaluatedHeaders.put(headerName, stringValue);
+    return Either.right(evaluatedHeaders);
+  }
       } else if (value instanceof Number || value instanceof Boolean) {
         evaluatedHeaders.put(headerName, value.toString());
       } else {

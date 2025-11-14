@@ -9,7 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.HeaderValueFilter;
@@ -34,7 +34,7 @@ public final class HeaderValueFilterTransformer implements FilterTransformer<Hea
 
     // Apply string operations to the header value field
     final var queries = new ArrayList<SearchQuery>();
-    queries.addAll(stringOperations(headerFieldName, value.valueOperations()));
+    queries.addAll(variableOperations(headerFieldName, value.valueOperations()));
     return and(queries);
   }
 }

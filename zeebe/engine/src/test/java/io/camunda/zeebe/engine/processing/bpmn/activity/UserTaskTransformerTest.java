@@ -570,7 +570,10 @@ class UserTaskTransformerTest {
           // FEEL expressions
           Arguments.of("calculatedPriority", "=priority + 1", "priority + 1"),
           Arguments.of("dynamicDepartment", "=departmentVariable", "departmentVariable"),
-          Arguments.of("complexExpression", "=if x > 10 then \"high\" else \"low\"", "if x > 10 then \"high\" else \"low\""));
+          Arguments.of(
+              "complexExpression",
+              "=if x > 10 then \"high\" else \"low\"",
+              "if x > 10 then \"high\" else \"low\""));
     }
 
     @DisplayName("Should transform user task with custom headers (static and FEEL)")
@@ -588,7 +591,12 @@ class UserTaskTransformerTest {
           .containsEntry(headerName, headerValue);
       assertThat(userTask.getUserTaskProperties().getTaskHeaderExpressions())
           .containsKey(headerName);
-      assertThat(userTask.getUserTaskProperties().getTaskHeaderExpressions().get(headerName).getExpression())
+      assertThat(
+              userTask
+                  .getUserTaskProperties()
+                  .getTaskHeaderExpressions()
+                  .get(headerName)
+                  .getExpression())
           .isEqualTo(expectedExpression);
     }
 
