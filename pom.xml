@@ -43,6 +43,7 @@
     <module>configuration</module>
     <module>load-tests/load-tester</module>
     <module>debug-cli</module>
+    <module>microbenchmarks</module>
   </modules>
 
   <scm>
