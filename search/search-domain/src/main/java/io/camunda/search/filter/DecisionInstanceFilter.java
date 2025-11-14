@@ -23,8 +23,8 @@ import java.util.function.Function;
 
 public record DecisionInstanceFilter(
     List<Long> decisionInstanceKeys,
-    List<String> decisionInstanceIds,
-    List<DecisionInstanceState> states,
+    List<Operation<String>> decisionInstanceIdOperations,
+    List<Operation<String>> stateOperations,
     List<Operation<OffsetDateTime>> evaluationDateOperations,
     List<String> evaluationFailures,
     List<Long> processDefinitionKeys,
@@ -47,8 +47,8 @@ public record DecisionInstanceFilter(
   public static final class Builder implements ObjectBuilder<DecisionInstanceFilter> {
 
     private List<Long> decisionInstanceKeys;
-    private List<String> decisionInstanceIds;
-    private List<DecisionInstanceState> states;
+    private List<Operation<String>> decisionInstanceIdOperations;
+    private List<Operation<String>> stateOperations;
     private List<Operation<OffsetDateTime>> evaluationDateOperations;
     private List<String> evaluationFailures;
     private List<Long> processDefinitionKeys;
@@ -72,7 +72,7 @@ public record DecisionInstanceFilter(
     }
 
     public Builder decisionInstanceIds(final List<String> values) {
-      decisionInstanceIds = addValuesToList(decisionInstanceIds, values);
+      decisionInstanceIdOperations = addValuesToList(decisionInstanceIdOperations, FilterUtil.mapDefaultToOperation(values));
       return this;
     }
 
@@ -80,13 +80,36 @@ public record DecisionInstanceFilter(
       return decisionInstanceIds(collectValuesAsList(values));
     }
 
+    public Builder decisionInstanceIdOperations(final List<Operation<String>> operations) {
+      decisionInstanceIdOperations = addValuesToList(decisionInstanceIdOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder decisionInstanceIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return decisionInstanceIdOperations(collectValues(operation, operations));
+    }
+
     public Builder states(final List<DecisionInstanceState> values) {
-      states = addValuesToList(states, values);
+      stateOperations = addValuesToList(stateOperations, FilterUtil.mapDefaultToOperation(
+          values != null ? values.stream().map(Enum::name).toList() : null));
       return this;
     }
 
     public Builder states(final DecisionInstanceState... values) {
       return states(collectValuesAsList(values));
+    }
+
+    public Builder stateOperations(final List<Operation<String>> operations) {
+      stateOperations = addValuesToList(stateOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder stateOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return stateOperations(collectValues(operation, operations));
     }
 
     public Builder evaluationDateOperations(final List<Operation<OffsetDateTime>> operations) {
@@ -223,8 +246,8 @@ public record DecisionInstanceFilter(
     public DecisionInstanceFilter build() {
       return new DecisionInstanceFilter(
           Objects.requireNonNullElse(decisionInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionInstanceIds, Collections.emptyList()),
-          Objects.requireNonNullElse(states, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionInstanceIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(evaluationDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
