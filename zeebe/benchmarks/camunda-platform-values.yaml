@@ -100,8 +100,6 @@ zeebe:
   # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
   extraConfiguration:
     application.yml: |
-      zeebe.gateway.monitoring.enabled: "true"
-      zeebe.gateway.threads.managementThreads: "1"
       zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
       zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
       zeebe.broker.executionMetricsExporterEnabled: "true"
@@ -196,17 +194,6 @@ zeebeGateway:
     application.yml: |
       zeebe.gateway.monitoring.enabled: "true"
       zeebe.gateway.threads.managementThreads: "1"
-      zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
-      zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
-      zeebe.broker.executionMetricsExporterEnabled: "true"
-      zeebe.broker.data.diskUsageCommandWatermark: "0.8"
-      zeebe.broker.data.diskUsageReplicationWatermark: "0.9"
-      # Configure index suffix with hour pattern, so we create every hour a new index
-      # such that ILM can clean it up quickly
-      zeebe.broker.exporters.elasticsearch.args.index.indexSuffixDatePattern: "yyyy-MM-dd_HH"
-      # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-      zeebe.broker.flowControl.write.enabled: "true"
-      zeebe.broker.flowControl.write.limit: 4000
 
   # Zeebe config
   extraVolumes:
