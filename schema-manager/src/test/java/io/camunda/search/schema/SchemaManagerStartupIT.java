@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
@@ -49,6 +50,7 @@ class SchemaManagerStartupIT {
   @AutoClose
   private final GenericContainer<?> camunda =
       new GenericContainer<>(CAMUNDA_TEST_IMAGE_NAME)
+          .withLogConsumer(new Slf4jLogConsumer(LOG))
           .withEnv("SPRING_PROFILES_ACTIVE", "broker,dev")
           // Unified Configuration: DB type
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
@@ -128,16 +130,19 @@ class SchemaManagerStartupIT {
     shutDownContainerGracefully(Duration.ofSeconds(30)); // as default Kubernetes shutdown timeout
     shutdownLatch.countDown();
 
-    thread.join(Duration.ofSeconds(5));
+    assertThat(thread.join(Duration.ofSeconds(10))).isTrue();
 
     // then
-    final var logs = camunda.getLogs();
-    assertThat(logs)
-        .contains(
-            "org.springframework.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete");
-    assertThat(logs).contains("io.camunda.zeebe.broker.system - Broker shut down");
-    assertThat(logs).doesNotContain("Failed to start application");
-    assertThat(logs).doesNotContain("BeanCreationException");
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(camunda.getLogs())
+                    .contains(
+                        "org.springframework.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete")
+                    .contains("io.camunda.zeebe.broker.system - Broker shut down"));
+    assertThat(camunda.getLogs())
+        .doesNotContain("Failed to start application")
+        .doesNotContain("BeanCreationException");
   }
 
   @Test
