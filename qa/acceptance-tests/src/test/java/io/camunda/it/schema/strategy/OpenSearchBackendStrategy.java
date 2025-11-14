@@ -10,6 +10,7 @@ package io.camunda.it.schema.strategy;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_OPENSEARCH_VERSION;
 
 import io.camunda.application.Profile;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
@@ -89,8 +90,12 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
         .withUnauthenticatedAccess()
         .withProperty("camunda.database.url", url)
         .withProperty("camunda.database.type", "opensearch")
-        .withProperty("camunda.data.secondary-storage.type", "opensearch")
-        .withProperty("camunda.data.secondary-storage.opensearch.url", url)
+        .withSecondaryStorageType(SecondaryStorageType.opensearch)
+        .withUnifiedConfig(
+            cfg -> {
+              cfg.getData().getSecondaryStorage().getOpensearch().setUrl(url);
+              cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
+            })
         .withExporter(
             CamundaExporter.class.getSimpleName(),
             cfg -> {

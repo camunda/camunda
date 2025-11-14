@@ -58,7 +58,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
     unifiedConfig.getApi().getGrpc().setAddress("0.0.0.0");
     unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
-    // unifiedConfig.getCluster().getNetwork().setHost("0.0.0.0");
     unifiedConfig
         .getCluster()
         .getNetwork()
@@ -117,6 +116,18 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
             + "Use withProperty() to set zeebe.gateway.* properties instead.");
   }
 
+  /**
+   * Modifies the unified configuration (camunda.* properties).
+   *
+   * @param modifier a configuration function that accepts the Camunda configuration object
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneGateway withUnifiedConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(unifiedConfig);
+    return this;
+  }
+
   @Override
   public GatewayCfg gatewayConfig() {
     throw new UnsupportedOperationException(
@@ -133,18 +144,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   @Override
   public Camunda unifiedConfig() {
     return unifiedConfig;
-  }
-
-  /**
-   * Modifies the unified configuration (camunda.* properties).
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneGateway withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
   }
 
   /**
