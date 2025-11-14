@@ -10,11 +10,11 @@ package io.camunda.zeebe.it.cluster.network;
 import io.atomix.utils.net.Address;
 import io.camunda.client.api.response.Topology;
 import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
@@ -53,8 +53,8 @@ final class SecureClusteredMessagingIT {
   @MethodSource("provideTestCases")
   void shouldFormAClusterWithTlsWithCertChain(final TestCase testCase) {
     // given - a cluster with 2 standalone brokers, and 1 standalone gateway
-    cluster.brokers().values().forEach(node -> node.withBrokerConfig(testCase.brokerConfig));
-    cluster.gateways().values().forEach(node -> node.withGatewayConfig(testCase.gatewayConfig));
+    cluster.brokers().values().forEach(node -> testCase.broker().accept(node));
+    cluster.gateways().values().forEach(node -> testCase.gateway().accept(node));
     cluster.start().awaitCompleteTopology();
 
     // when - note the client is using plaintext since we only care about inter-cluster TLS
@@ -88,17 +88,25 @@ final class SecureClusteredMessagingIT {
 
   /** Verifies that both the command and internal APIs of the broker are correctly secured. */
   private void assertBrokerMessagingServicesAreSecured(final TestStandaloneBroker broker) {
+    // Use BrokerBasedProperties instead of unified configuration here because the
+    // advertised addresses are not initialized. The unified configuration does not
+    // provide an applyDefaults() method like NetworkCfg does for setting the addresses.
+    final var brokerBasedProperties = broker.bean(BrokerBasedProperties.class);
     final var commandApiAddress =
-        broker.brokerConfig().getNetwork().getCommandApi().getAdvertisedAddress();
+        brokerBasedProperties.getNetwork().getCommandApi().getAdvertisedAddress();
     final var internalApiAddress =
-        broker.brokerConfig().getNetwork().getInternalApi().getAdvertisedAddress();
+        brokerBasedProperties.getNetwork().getInternalApi().getAdvertisedAddress();
 
-    assertAddressIsSecured(broker.brokerConfig().getCluster().getNodeId(), commandApiAddress);
-    assertAddressIsSecured(broker.brokerConfig().getCluster().getNodeId(), internalApiAddress);
+    assertAddressIsSecured(brokerBasedProperties.getCluster().getNodeId(), commandApiAddress);
+    assertAddressIsSecured(brokerBasedProperties.getCluster().getNodeId(), internalApiAddress);
   }
 
   private InetSocketAddress getGatewayAddress(final TestCluster cluster) {
-    final ClusterCfg clusterConfig = cluster.availableGateway().gatewayConfig().getCluster();
+    // Use GatewayBasedProperties instead of the unified configuration to resolve the
+    // advertised address and port via ClusterCfg, because the getters contain logic
+    // that is not available in the unified configuration.
+    final ClusterCfg clusterConfig =
+        cluster.availableGateway().bean(GatewayBasedProperties.class).getCluster();
     final var address =
         Address.from(clusterConfig.getAdvertisedHost(), clusterConfig.getAdvertisedPort());
     return address.socketAddress();
@@ -137,30 +145,41 @@ final class SecureClusteredMessagingIT {
     }
   }
 
-  private static void configureCertChainGateway(final GatewayCfg gatewayConfig) {
-    gatewayConfig.getCluster().getSecurity().setEnabled(true);
-    gatewayConfig.getCluster().getSecurity().setCertificateChainPath(CERTIFICATE.certificate());
-    gatewayConfig.getCluster().getSecurity().setPrivateKeyPath(CERTIFICATE.privateKey());
+  private static void configureCertChainGateway(final TestStandaloneGateway gateway) {
+    // set security via properties because it is not yet supported in unified config
+    gateway.withProperty("zeebe.gateway.cluster.security.enabled", true);
+    gateway.withProperty(
+        "zeebe.gateway.cluster.security.certificateChainPath", CERTIFICATE.certificate());
+    gateway.withProperty("zeebe.gateway.cluster.security.privateKeyPath", CERTIFICATE.privateKey());
   }
 
-  private static void configureCertChainBroker(final BrokerCfg config) {
-    config.getNetwork().getSecurity().setEnabled(true);
-    config.getNetwork().getSecurity().setCertificateChainPath(CERTIFICATE.certificate());
-    config.getNetwork().getSecurity().setPrivateKeyPath(CERTIFICATE.privateKey());
+  private static void configureCertChainBroker(final TestStandaloneBroker broker) {
+    // set security via properties because it is not yet supported in unified config
+    broker.withProperty("zeebe.broker.network.security.enabled", true);
+    broker.withProperty(
+        "zeebe.broker.network.security.certificateChainPath", CERTIFICATE.certificate());
+    broker.withProperty("zeebe.broker.network.security.privateKeyPath", CERTIFICATE.privateKey());
   }
 
-  private static void configureKeyStoreGateway(final GatewayCfg config, final File pkcs12) {
-    config.getCluster().getSecurity().setEnabled(true);
-    config.getCluster().getSecurity().getKeyStore().setFilePath(pkcs12);
-    config.getCluster().getSecurity().getKeyStore().setPassword("password");
+  private static void configureKeyStoreGateway(
+      // set security via properties because it is not yet supported in unified config
+      final TestStandaloneGateway gateway,
+      final File pkcs12) {
+    gateway.withProperty("zeebe.gateway.cluster.security.enabled", true);
+    gateway.withProperty(
+        "zeebe.gateway.cluster.security.keyStore.filePath", pkcs12.getAbsolutePath());
+    gateway.withProperty("zeebe.gateway.cluster.security.keyStore.password", "password");
   }
 
-  private static void configureKeyStoreBroker(final BrokerCfg config, final File pkcs12) {
-    config.getNetwork().getSecurity().setEnabled(true);
-    config.getNetwork().getSecurity().getKeyStore().setFilePath(pkcs12);
-    config.getNetwork().getSecurity().getKeyStore().setPassword("password");
+  private static void configureKeyStoreBroker(
+      final TestStandaloneBroker broker, final File pkcs12) {
+    // set security via properties because it is not yet supported in unified config
+    broker.withProperty("zeebe.broker.network.security.enabled", true);
+    broker.withProperty(
+        "zeebe.broker.network.security.keyStore.filePath", pkcs12.getAbsoluteFile());
+    broker.withProperty("zeebe.broker.network.security.keyStore.password", "password");
   }
 
   private record TestCase(
-      Consumer<BrokerBasedProperties> brokerConfig, Consumer<GatewayCfg> gatewayConfig) {}
+      Consumer<TestStandaloneBroker> broker, Consumer<TestStandaloneGateway> gateway) {}
 }

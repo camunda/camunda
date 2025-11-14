@@ -16,6 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
@@ -48,14 +49,14 @@ final class ContinuousBackupIT {
   @Container private static final GcsContainer GCS = new GcsContainer();
 
   private final String basePath = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+  private Path workingDirectory;
 
   @TestZeebe
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
+          .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
           .withUnifiedConfig(this::configureBroker)
           .withProperty("zeebe.broker.experimental.continuousBackups", true);
-
-  //   .withProperty("zeebe.broker.network.maxMessageSize", DataSize.ofKilobytes(500));
 
   private BackupActuator backupActuator;
   private PartitionsActuator partitionsActuator;
@@ -66,6 +67,8 @@ final class ContinuousBackupIT {
     partitionsActuator = PartitionsActuator.of(broker);
     // Some tests stop GCS, make sure it's always started again
     GCS.start();
+
+    workingDirectory = broker.getWorkingDirectory();
   }
 
   @BeforeAll
@@ -126,14 +129,13 @@ final class ContinuousBackupIT {
 
     // when - restoring from all three backups
     broker.stop();
-    final var dataDirectory =
-        Path.of(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory()).getParent();
-    FileUtil.deleteFolder(dataDirectory);
-    FileUtil.ensureDirectoryExists(dataDirectory);
+
+    FileUtil.deleteFolder(workingDirectory);
+    FileUtil.ensureDirectoryExists(workingDirectory);
     final var restore =
         new TestRestoreApp()
             .withConfig(this::configureRestoreApp)
-            .withWorkingDirectory(dataDirectory)
+            .withWorkingDirectory(workingDirectory)
             .withBackupId(1, 2, 3)
             .start();
     restore.close();
@@ -170,14 +172,12 @@ final class ContinuousBackupIT {
 
     // when/then - restoring from backup 1 and 3, but skipping backup 2
     broker.stop();
-    final var dataDirectory =
-        Path.of(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory()).getParent();
-    FileUtil.deleteFolder(dataDirectory);
-    FileUtil.ensureDirectoryExists(dataDirectory);
+    FileUtil.deleteFolder(workingDirectory);
+    FileUtil.ensureDirectoryExists(workingDirectory);
     final var restore =
         new TestRestoreApp()
             .withConfig(this::configureRestoreApp)
-            .withWorkingDirectory(dataDirectory)
+            .withWorkingDirectory(workingDirectory)
             .withBackupId(1, 3);
 
     // then restore will fail
@@ -261,6 +261,7 @@ final class ContinuousBackupIT {
     cfg.getData().getBackup().setStore(Backup.BackupStoreType.GCS);
     cfg.getData().getPrimaryStorage().getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
     cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
+    cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
   }
 
   private void configureRestoreApp(final Camunda cfg) {

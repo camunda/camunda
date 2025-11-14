@@ -270,8 +270,10 @@ public class CamundaMultiDBExtension
     final var application = applicationUnderTest.application();
     multiDbConfigurator = new MultiDbConfigurator(application);
     application
-        .withBrokerConfig(cfg -> cfg.getData().setDirectory(DataCfg.DEFAULT_DIRECTORY))
-        .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
+        .withUnifiedConfig(
+            cfg -> {
+              cfg.getData().getPrimaryStorage().setDirectory(DataCfg.DEFAULT_DIRECTORY);
+            })
         .withExporter(
             "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
   }
@@ -477,7 +479,7 @@ public class CamundaMultiDBExtension
     closeables.add(application);
     application.start();
     application.awaitCompleteTopology(
-        application.brokerConfig(), authenticatedClientFactory.getAdminCamundaClient());
+        application.unifiedConfig(), authenticatedClientFactory.getAdminCamundaClient());
 
     Awaitility.await("Await exporter readiness")
         .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)

@@ -19,6 +19,7 @@ import io.camunda.configuration.Cluster;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -50,6 +51,14 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
   T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
 
   /**
+   * Sets the secondary storage type to use.
+   *
+   * @param type the secondary storage type
+   * @return itself for chaining
+   */
+  T withSecondaryStorageType(SecondaryStorageType type);
+
+  /**
    * Modifies the unified configuration (camunda.* properties). This is the recommended way to
    * configure test brokers going forward.
    *
@@ -60,6 +69,42 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
   default T withUnifiedConfig(final Consumer<Camunda> modifier) {
     throw new UnsupportedOperationException(
         "Unified configuration is not supported by this implementation");
+  }
+
+  /**
+   * Returns the unified configuration object. This provides access to the camunda.* configuration
+   * structure.
+   *
+   * @return the Camunda unified configuration object
+   */
+  @Override
+  default Camunda unifiedConfig() {
+    throw new UnsupportedOperationException(
+        "Unified configuration is not supported by this implementation");
+  }
+
+  @Override
+  default CamundaClientBuilder newClientBuilder() {
+    if (!isGateway()) {
+      throw new IllegalStateException(
+          "Cannot create a new client for this application, as it does not have an embedded gateway");
+    }
+
+    final CamundaClientBuilder camundaClientBuilder = TestGateway.super.newClientBuilder();
+
+    clientAuthenticationMethod()
+        .ifPresent(
+            method -> {
+              if (method == AuthenticationMethod.BASIC) {
+                camundaClientBuilder.credentialsProvider(
+                    new BasicAuthCredentialsProviderBuilder()
+                        .username(DEFAULT_USER_USERNAME)
+                        .password(DEFAULT_USER_PASSWORD)
+                        .build());
+              }
+            });
+
+    return camundaClientBuilder;
   }
 
   /**
@@ -120,43 +165,7 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
 
   BrokerBasedProperties brokerConfig();
 
-  /**
-   * Returns the unified configuration object. This provides access to the camunda.* configuration
-   * structure.
-   *
-   * @return the Camunda unified configuration object
-   */
-  @Override
-  default Camunda unifiedConfig() {
-    throw new UnsupportedOperationException(
-        "Unified configuration is not supported by this implementation");
-  }
-
   default Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return Optional.empty();
-  }
-
-  @Override
-  default CamundaClientBuilder newClientBuilder() {
-    if (!isGateway()) {
-      throw new IllegalStateException(
-          "Cannot create a new client for this application, as it does not have an embedded gateway");
-    }
-
-    final CamundaClientBuilder camundaClientBuilder = TestGateway.super.newClientBuilder();
-
-    clientAuthenticationMethod()
-        .ifPresent(
-            method -> {
-              if (method == AuthenticationMethod.BASIC) {
-                camundaClientBuilder.credentialsProvider(
-                    new BasicAuthCredentialsProviderBuilder()
-                        .username(DEFAULT_USER_USERNAME)
-                        .password(DEFAULT_USER_PASSWORD)
-                        .build());
-              }
-            });
-
-    return camundaClientBuilder;
   }
 }

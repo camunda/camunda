@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.it.shared.smoke;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -39,10 +37,7 @@ final class NoSecondaryStorageSmokeIT {
 
   @TestZeebe
   private final TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withUnauthenticatedAccess()
-          .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
-          .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
+      new TestStandaloneBroker().withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
 

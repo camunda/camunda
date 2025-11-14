@@ -16,6 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
@@ -48,15 +49,19 @@ public class BasicAuthOverGrpcIT {
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withAuthorizationsEnabled()
-          .withAuthenticationMethod(AuthenticationMethod.BASIC);
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withSecondaryStorageType(SecondaryStorageType.elasticsearch);
 
   @BeforeEach
   void beforeEach() {
     broker
         .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
-        .withProperty(
-            "camunda.data.secondary-storage.elasticsearch.url",
-            "http://" + CONTAINER.getHttpHostAddress());
+        .withUnifiedConfig(
+            cfg ->
+                cfg.getData()
+                    .getSecondaryStorage()
+                    .getElasticsearch()
+                    .setUrl("http://" + CONTAINER.getHttpHostAddress()));
     broker.start();
 
     final var defaultUsername = "demo";

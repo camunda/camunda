@@ -225,8 +225,6 @@ final class IdentitySetupInitializerIT {
             .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
             .withSecurityConfig(securityCfg)
             .withClusterConfig(cluster -> cluster.setPartitionCount(partitionCount))
-            .withUnifiedConfig(
-                uc -> uc.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false))
             .withRecordingExporter(true);
 
     if (tempDir != null) {
