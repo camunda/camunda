@@ -126,7 +126,8 @@ test.describe('Identity User Flows', () => {
     });
   });
 
-  test('Admin user can grant and revoke component authorization for user', async ({
+  // Skipped due to bug 40968:  https://github.com/camunda/camunda/issues/40968
+  test.skip('Admin user can grant and revoke component authorization for user', async ({
     page,
     loginPage,
     identityUsersPage,
@@ -244,7 +245,8 @@ test.describe('Identity User Flows', () => {
     });
   });
 
-  test('New user can inherit permissions when assigned to a group', async ({
+  // Skipped due to bug 40968:  https://github.com/camunda/camunda/issues/40968
+  test.skip('New user can inherit permissions when assigned to a group', async ({
     page,
     identityGroupsPage,
     identityAuthorizationsPage,
