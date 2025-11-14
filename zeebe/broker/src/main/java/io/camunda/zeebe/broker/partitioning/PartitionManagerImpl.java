@@ -154,13 +154,12 @@ public final class PartitionManagerImpl
   }
 
   private static SharedCache getSharedCache(final BrokerCfg brokerCfg) {
-    // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
-    // and filters into the block cache, so we don't need to account for more memory there
     final long blockCacheBytes =
-        brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes() / 3;
+        brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes()
+            * brokerCfg.getCluster().getPartitionsCount();
     // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM limit,
     // with headroom for memtable bloom/filter overhead.
-    final long wbmLimitBytes = blockCacheBytes / 4;
+    final long wbmLimitBytes = blockCacheBytes / 2;
     final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
     final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
     return new SharedCache(sharedCache, sharedWbm);
