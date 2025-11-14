@@ -18,8 +18,16 @@ import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.function.Supplier;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 
 public final class DefaultZeebeDbFactory {
+  private static final long DEFAULT_TEST_CACHE_SIZE = 100 * 1024 * 1024;
+
+  static {
+    RocksDB.loadLibrary();
+  }
 
   public static <
           ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
@@ -33,10 +41,13 @@ public final class DefaultZeebeDbFactory {
           final Supplier<MeterRegistry> meterRegistry) {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
+    final LRUCache lruCache = new LRUCache(DEFAULT_TEST_CACHE_SIZE);
     return new ZeebeRocksDbFactory<>(
         new RocksDbConfiguration(),
         consistencyChecks,
         new AccessMetricsConfiguration(Kind.NONE, 1),
-        meterRegistry);
+        meterRegistry,
+        lruCache,
+        new WriteBufferManager(DEFAULT_TEST_CACHE_SIZE, lruCache));
   }
 }

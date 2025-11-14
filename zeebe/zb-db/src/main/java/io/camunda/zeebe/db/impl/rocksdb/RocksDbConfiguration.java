@@ -11,7 +11,7 @@ import java.util.Properties;
 
 public final class RocksDbConfiguration {
 
-  public static final long DEFAULT_MEMORY_LIMIT = 512 * 1024 * 1024L;
+  public static final long DEFAULT_MEMORY_LIMIT = 1024 * 1024 * 1024L;
   public static final int DEFAULT_UNLIMITED_MAX_OPEN_FILES = -1;
   public static final int DEFAULT_MAX_WRITE_BUFFER_NUMBER = 6;
   public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 3;

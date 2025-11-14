@@ -57,6 +57,9 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.rocksdb.LRUCache;
+import org.rocksdb.RocksDB;
+import org.rocksdb.WriteBufferManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,15 +68,18 @@ public final class PartitionManagerImpl
 
   public static final String GROUP_NAME = "raft-partition";
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
-  private final ConcurrencyControl concurrencyControl;
 
+  static {
+    RocksDB.loadLibrary();
+  }
+
+  private final ConcurrencyControl concurrencyControl;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
   private final TopologyManagerImpl topologyManager;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
-  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
@@ -109,7 +115,6 @@ public final class PartitionManagerImpl
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
-    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
@@ -119,6 +124,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
+    final SharedCache sharedCache = getSharedCache(brokerCfg);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
@@ -138,11 +144,26 @@ public final class PartitionManagerImpl
             featureFlags,
             securityConfig,
             searchClientsProxy,
-            brokerRequestAuthorizationConverter);
+            brokerRequestAuthorizationConverter,
+            sharedCache.sharedCache(),
+            sharedCache.sharedWbm());
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
     raftPartitionFactory = new RaftPartitionFactory(brokerCfg);
+  }
+
+  private static SharedCache getSharedCache(final BrokerCfg brokerCfg) {
+    // recommended by RocksDB, but we could tweak it; keep in mind we're also caching the indexes
+    // and filters into the block cache, so we don't need to account for more memory there
+    final long blockCacheBytes =
+        brokerCfg.getExperimental().getRocksdb().getMemoryLimit().toBytes() / 3;
+    // (#DBs) × write_buffer_size × max_write_buffer_number should be comfortably ≤ your WBM limit,
+    // with headroom for memtable bloom/filter overhead.
+    final long wbmLimitBytes = blockCacheBytes / 4;
+    final LRUCache sharedCache = new LRUCache(blockCacheBytes, 8, false, 0.15);
+    final WriteBufferManager sharedWbm = new WriteBufferManager(wbmLimitBytes, sharedCache);
+    return new SharedCache(sharedCache, sharedWbm);
   }
 
   public void start() {
@@ -654,6 +675,8 @@ public final class PartitionManagerImpl
       return CompletableActorFuture.completed();
     }
   }
+
+  private record SharedCache(LRUCache sharedCache, WriteBufferManager sharedWbm) {}
 
   public final class PartitionAlreadyExistsException extends RuntimeException {
 
