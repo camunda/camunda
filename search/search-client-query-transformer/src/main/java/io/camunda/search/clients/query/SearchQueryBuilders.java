@@ -143,6 +143,20 @@ public final class SearchQueryBuilders {
     return fn.apply(hasChild()).build();
   }
 
+  public static SearchNestedQuery.Builder nested() {
+    return new SearchNestedQuery.Builder();
+  }
+
+  public static SearchNestedQuery nested(
+      final Function<SearchNestedQuery.Builder, ObjectBuilder<SearchNestedQuery>> fn) {
+    return SearchQueryBuilders.nested().build(fn);
+  }
+
+  public static SearchQuery nested(final String path, final SearchQuery query) {
+    return SearchNestedQuery.of(b -> b.path(path).query(query));
+  }
+
+
   public static SearchIdsQuery.Builder ids() {
     return new SearchIdsQuery.Builder();
   }

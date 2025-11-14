@@ -8,13 +8,22 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
+import static io.camunda.search.clients.query.SearchQueryBuilders.nested;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.HeaderValueFilter;
 import java.util.ArrayList;
 
+/**
+ * Transforms {@link HeaderValueFilter} to search queries for nested array format.
+ *
+ * <p>Custom headers are stored as nested arrays in ES/OS:
+ * <pre>[{"name": "department", "value": "engineering"}]</pre>
+ *
+ * <p>This transformer generates nested queries that match on both name and value fields.
+ */
 public final class HeaderValueFilterTransformer implements FilterTransformer<HeaderValueFilter> {
 
   @Override
@@ -24,17 +33,17 @@ public final class HeaderValueFilterTransformer implements FilterTransformer<Hea
   }
 
   public SearchQuery toSearchQuery(final HeaderValueFilter value, final String fieldPrefix) {
-    // Build the full field path (e.g., "customHeaders.headerName")
-    final var headerFieldName = fieldPrefix + "." + value.name();
+    final var queries = new ArrayList<SearchQuery>();
 
-    if (value.valueOperations().isEmpty()) {
-      // If no value operations, just check for existence
-      return exists(headerFieldName);
+    // Match the header name
+    queries.add(term(fieldPrefix + ".name", value.name()));
+
+    // Match the header value with operations
+    if (!value.valueOperations().isEmpty()) {
+      queries.addAll(variableOperations(fieldPrefix + ".value", value.valueOperations()));
     }
 
-    // Apply string operations to the header value field
-    final var queries = new ArrayList<SearchQuery>();
-    queries.addAll(variableOperations(headerFieldName, value.valueOperations()));
-    return and(queries);
+    // Wrap in nested query
+    return nested(fieldPrefix, and(queries));
   }
 }

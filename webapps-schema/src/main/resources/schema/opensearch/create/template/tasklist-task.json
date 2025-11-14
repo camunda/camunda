@@ -94,9 +94,15 @@
         "type": "integer"
       },
       "customHeaders": {
-        "type": "object",
-        "enabled": true,
-        "dynamic": true
+        "type": "nested",
+        "properties": {
+          "name": {
+            "type": "keyword"
+          },
+          "value": {
+            "type": "keyword"
+          }
+        }
       },
       "priority": {
         "type": "integer"

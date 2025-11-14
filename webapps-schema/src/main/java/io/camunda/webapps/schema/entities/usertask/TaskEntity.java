@@ -8,6 +8,8 @@
 package io.camunda.webapps.schema.entities.usertask;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -91,6 +93,10 @@ public class TaskEntity
   private Integer processDefinitionVersion;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonSerialize(using = CustomHeadersSerializer.class)
+
+  @JsonDeserialize(using = CustomHeadersDeserializer.class)
+
   private Map<String, String> customHeaders;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
