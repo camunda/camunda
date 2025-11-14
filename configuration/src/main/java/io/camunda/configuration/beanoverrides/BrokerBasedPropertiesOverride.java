@@ -628,14 +628,17 @@ public class BrokerBasedPropertiesOverride {
     }
 
     final DocumentBasedSecondaryStorageDatabase database;
-    if (SecondaryStorageType.elasticsearch == secondaryStorage.getType()) {
-      database =
-          unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
-    } else if (SecondaryStorageType.opensearch == secondaryStorage.getType()) {
-      database = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
-    } else {
-      // RDBMS and NONE are not supported.
-      return;
+    switch (secondaryStorage.getType()) {
+      case elasticsearch ->
+          database =
+              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
+      case opensearch ->
+          database =
+              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
+      default -> {
+        // RDBMS and NONE are not supported.
+        return;
+      }
     }
 
     /* Load exporter config map */
@@ -658,9 +661,15 @@ public class BrokerBasedPropertiesOverride {
       exporter.setArgs(args);
     }
 
+    setArg(args, "history.retention.enabled", secondaryStorage.getRetention().isEnabled());
+    setArg(args, "history.retention.minimumAge", secondaryStorage.getRetention().getMinimumAge());
+
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
     setArg(args, "connect.clusterName", database.getClusterName());
+    setArg(args, "connect.dateFormat", database.getDateFormat());
+    setArg(args, "connect.socketTimeout", database.getSocketTimeout());
+    setArg(args, "connect.connectTimeout", database.getConnectionTimeout());
 
     // Add security configuration mapping
     if (database.getSecurity() != null) {
@@ -676,10 +685,24 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "connect.password", database.getPassword());
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
+
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
+    setArg(args, "index.numberOfReplicas", database.getNumberOfReplicas());
+    setArg(args, "index.variableSizeThreshold", database.getVariableSizeThreshold());
+    if (database.getTemplatePriority() != null) {
+      setArg(args, "index.templatePriority", database.getTemplatePriority());
+    }
+    if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
+      setArg(args, "index.replicasByIndexName", database.getNumberOfReplicasPerIndex());
+    }
+    if (!database.getNumberOfShardsPerIndex().isEmpty()) {
+      setArg(args, "index.shardsByIndexName", database.getNumberOfShardsPerIndex());
+    }
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+
+    setArg(args, "history.retention.policyName", database.getHistory().getPolicyName());
     setArg(args, "history.elsRolloverDateFormat", database.getHistory().getElsRolloverDateFormat());
     setArg(args, "history.rolloverInterval", database.getHistory().getRolloverInterval());
     setArg(args, "history.rolloverBatchSize", database.getHistory().getRolloverBatchSize());
