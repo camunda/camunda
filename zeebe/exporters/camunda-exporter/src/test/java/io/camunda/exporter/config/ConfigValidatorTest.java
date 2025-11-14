@@ -248,6 +248,19 @@ public class ConfigValidatorTest {
 
   @ParameterizedTest(name = "{0}")
   @ValueSource(ints = {-1, 0})
+  void shouldForbidNonPositiveMaxDecisionRequirementsCacheSize(final int maxCacheSize) {
+    // given
+    config.getDecisionRequirementsCache().setMaxCacheSize(maxCacheSize);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter decisionRequirementsCache.maxCacheSize must be >= 1.");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(ints = {-1, 0})
   void shouldForbidNonPositiveMaxBatchOperationCacheSize(final int maxCacheSize) {
     // given
     config.getBatchOperationCache().setMaxCacheSize(maxCacheSize);

@@ -57,6 +57,10 @@ public class DecisionDefinitionIT {
         .isEqualTo(decisionDefinition.decisionRequirementsId());
     assertThat(instance.decisionRequirementsKey())
         .isEqualTo(decisionDefinition.decisionRequirementsKey());
+    assertThat(instance.decisionRequirementsName())
+        .isEqualTo(decisionDefinition.decisionRequirementsName());
+    assertThat(instance.decisionRequirementsVersion())
+        .isEqualTo(decisionDefinition.decisionRequirementsVersion());
   }
 
   @TestTemplate
@@ -96,6 +100,10 @@ public class DecisionDefinitionIT {
         .isEqualTo(decisionDefinition.decisionRequirementsId());
     assertThat(instance.decisionRequirementsKey())
         .isEqualTo(decisionDefinition.decisionRequirementsKey());
+    assertThat(instance.decisionRequirementsName())
+        .isEqualTo(decisionDefinition.decisionRequirementsName());
+    assertThat(instance.decisionRequirementsVersion())
+        .isEqualTo(decisionDefinition.decisionRequirementsVersion());
   }
 
   @TestTemplate
@@ -217,6 +225,8 @@ public class DecisionDefinitionIT {
                     .tenantIds(decisionDefinition.tenantId())
                     .decisionRequirementsIds(decisionDefinition.decisionRequirementsId())
                     .decisionRequirementsKeys(decisionDefinition.decisionRequirementsKey())
+                    .decisionRequirementsNames(decisionDefinition.decisionRequirementsName())
+                    .decisionRequirementsVersions(decisionDefinition.decisionRequirementsVersion())
                     .build(),
                 DecisionDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));

@@ -25,7 +25,9 @@
     TENANT_ID,
     VERSION,
     DECISION_REQUIREMENTS_KEY,
-    DECISION_REQUIREMENTS_ID
+    DECISION_REQUIREMENTS_ID,
+    DECISION_REQUIREMENTS_NAME,
+    DECISION_REQUIREMENTS_VERSION
     FROM ${prefix}DECISION_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
     ) t
@@ -96,6 +98,22 @@
           #{value}
         </foreach>
       </if>
+      <if
+        test="filter.decisionRequirementsNames != null and !filter.decisionRequirementsNames.isEmpty()">
+        AND DECISION_REQUIREMENTS_NAME IN
+        <foreach collection="filter.decisionRequirementsNames" item="value" open="(" separator=", "
+          close=")">
+          #{value}
+        </foreach>
+      </if>
+      <if
+        test="filter.decisionRequirementsVersions != null and !filter.decisionRequirementsVersions.isEmpty()">
+        AND DECISION_REQUIREMENTS_VERSION IN
+        <foreach collection="filter.decisionRequirementsVersions" item="value" open="(" separator=", "
+          close=")">
+          #{value}
+        </foreach>
+      </if>
     </where>
   </sql>
 
@@ -107,13 +125,15 @@
       <arg column="VERSION" javaType="java.lang.Integer"/>
       <arg column="DECISION_REQUIREMENTS_ID" javaType="java.lang.String"/>
       <arg column="DECISION_REQUIREMENTS_KEY" javaType="java.lang.Long"/>
+      <arg column="DECISION_REQUIREMENTS_NAME" javaType="java.lang.String"/>
+      <arg column="DECISION_REQUIREMENTS_VERSION" javaType="java.lang.Integer"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel">
-    INSERT INTO ${prefix}DECISION_DEFINITION (DECISION_DEFINITION_KEY, DECISION_DEFINITION_ID, NAME, TENANT_ID, VERSION, DECISION_REQUIREMENTS_ID, DECISION_REQUIREMENTS_KEY)
+    INSERT INTO ${prefix}DECISION_DEFINITION (DECISION_DEFINITION_KEY, DECISION_DEFINITION_ID, NAME, TENANT_ID, VERSION, DECISION_REQUIREMENTS_ID, DECISION_REQUIREMENTS_KEY, DECISION_REQUIREMENTS_NAME, DECISION_REQUIREMENTS_VERSION)
     VALUES (#{decisionDefinitionKey}, #{decisionDefinitionId}, #{name},
-            #{tenantId}, #{version}, #{decisionRequirementsId}, #{decisionRequirementsKey})
+            #{tenantId}, #{version}, #{decisionRequirementsId}, #{decisionRequirementsKey}, #{decisionRequirementsName}, #{decisionRequirementsVersion})
   </insert>
 </mapper>
