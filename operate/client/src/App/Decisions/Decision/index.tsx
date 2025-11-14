@@ -7,7 +7,6 @@
  */
 
 import {observer} from 'mobx-react';
-import {Restricted} from 'modules/components/Restricted';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
@@ -143,21 +142,11 @@ const Decision: React.FC = observer(() => {
             />
           )}
           {isVersionSelected && decisionDefinitionId !== null && (
-            <Restricted
-              resourceBasedRestrictions={{
-                scopes: ['DELETE'],
-                permissions: groupedDecisionsStore.getPermissions(
-                  decisionId ?? undefined,
-                  tenant,
-                ),
-              }}
-            >
-              <DecisionOperations
-                decisionDefinitionId={decisionDefinitionId}
-                decisionName={decisionName}
-                decisionVersion={version}
-              />
-            </Restricted>
+            <DecisionOperations
+              decisionDefinitionId={decisionDefinitionId}
+              decisionName={decisionName}
+              decisionVersion={version}
+            />
           )}
         </>
       </PanelHeader>

@@ -21,7 +21,6 @@ describe('DiagramHeader', () => {
   it('should render header with full data', async () => {
     render(
       <DiagramHeader
-        isVersionSelected
         processDetails={{
           processName: 'My Process',
           bpmnProcessId: 'MyProcess',
@@ -29,7 +28,6 @@ describe('DiagramHeader', () => {
           versionTag: 'MyVersionTag',
         }}
         processDefinitionId=""
-        tenant=""
       />,
     );
 
@@ -50,14 +48,12 @@ describe('DiagramHeader', () => {
   it('should render header without version tag', async () => {
     render(
       <DiagramHeader
-        isVersionSelected
         processDetails={{
           processName: 'My Process',
           bpmnProcessId: 'MyProcess',
           version: '1',
         }}
         processDefinitionId=""
-        tenant=""
       />,
     );
 
@@ -77,12 +73,10 @@ describe('DiagramHeader', () => {
   it('should render header without data', async () => {
     render(
       <DiagramHeader
-        isVersionSelected
         processDetails={{
           processName: 'My Process',
         }}
         processDefinitionId=""
-        tenant=""
       />,
     );
 
