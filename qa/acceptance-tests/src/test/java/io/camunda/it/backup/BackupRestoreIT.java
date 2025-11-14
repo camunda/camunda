@@ -14,6 +14,7 @@ import feign.FeignException.NotFound;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.Backup;
+import io.camunda.configuration.Backup.BackupStoreType;
 import io.camunda.configuration.Camunda;
 import io.camunda.it.document.DocumentClient;
 import io.camunda.management.backups.StateCode;
@@ -29,8 +30,6 @@ import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
@@ -76,6 +75,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * Furthermore, this test will not apply to RDBMS.
  */
+// TODO KPO check test
 @Testcontainers
 @ZeebeIntegration
 public class BackupRestoreIT {
@@ -125,7 +125,8 @@ public class BackupRestoreIT {
             .withAuthenticationMethod(AuthenticationMethod.BASIC)
             .withUnauthenticatedAccess();
     configurator = new MultiDbConfigurator(testStandaloneApplication);
-    testStandaloneApplication.withBrokerConfig(this::configureZeebeBackupStore);
+    // testStandaloneApplication.withBrokerConfig(this::configureZeebeBackupStore);
+    testStandaloneApplication.withUnifiedConfig(this::configureZeebeBackupStore);
     final String dbUrl;
     searchContainer =
         switch (config.databaseType) {
@@ -160,7 +161,8 @@ public class BackupRestoreIT {
                   "Unsupported database type: " + config.databaseType);
         };
 
-    testStandaloneApplication.withProperty("camunda.data.backup.repository-name", REPOSITORY_NAME);
+    // testStandaloneApplication.withProperty("camunda.data.backup.repository-name",
+    // REPOSITORY_NAME);
 
     testStandaloneApplication.start().awaitCompleteTopology();
 
@@ -232,13 +234,15 @@ public class BackupRestoreIT {
     generator.verifyAllExported(ProcessInstanceState.COMPLETED);
   }
 
-  private void configureZeebeBackupStore(final BrokerCfg cfg) {
+  private void configureZeebeBackupStore(final Camunda cfg) {
     final var backup = cfg.getData().getBackup();
     final var azure = backup.getAzure();
 
     backup.setStore(BackupStoreType.AZURE);
     azure.setBasePath(containerName);
     azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
+
+    cfg.getData().getBackup().setRepositoryName(REPOSITORY_NAME);
   }
 
   private void restoreZeebe() {
@@ -249,16 +253,14 @@ public class BackupRestoreIT {
     backup.getAzure().setBasePath(containerName);
     backup.getAzure().setConnectionString(AZURITE_CONTAINER.getConnectString());
 
-    final var brokerCfg = testStandaloneApplication.brokerConfig();
+    final var brokerCfg = testStandaloneApplication.unifiedConfig();
     unifiedRestoreConfig.getCluster().setNodeId(brokerCfg.getCluster().getNodeId());
-    unifiedRestoreConfig
-        .getCluster()
-        .setPartitionCount(brokerCfg.getCluster().getPartitionsCount());
+    unifiedRestoreConfig.getCluster().setPartitionCount(brokerCfg.getCluster().getPartitionCount());
     unifiedRestoreConfig
         .getData()
         .getPrimaryStorage()
-        .setDirectory(brokerCfg.getData().getDirectory());
-    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getClusterSize());
+        .setDirectory(brokerCfg.getData().getPrimaryStorage().getDirectory());
+    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getSize());
 
     try (final var restoreApp = new TestRestoreApp(unifiedRestoreConfig).withBackupId(BACKUP_ID)) {
       assertThatNoException().isThrownBy(restoreApp::start);

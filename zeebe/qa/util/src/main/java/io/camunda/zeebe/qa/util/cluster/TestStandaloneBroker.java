@@ -199,9 +199,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public String host() {
-    return unifiedConfig.getCluster().getNetwork().getHost() != null
-        ? unifiedConfig.getCluster().getNetwork().getHost()
-        : "0.0.0.0";
+    final var host = unifiedConfig.getCluster().getNetwork().getHost();
+    return host != null ? host : "0.0.0.0";
   }
 
   @Override

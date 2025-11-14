@@ -349,7 +349,7 @@ public final class TestClusterBuilder {
                   final var cluster = uc.getCluster();
                   if (setNodeId) {
                     cluster.setNodeId(index);
-                    }
+                  }
                   cluster.setPartitionCount(partitionsCount);
                   cluster.setReplicationFactor(replicationFactor);
                   cluster.setSize(brokersCount);

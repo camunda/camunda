@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.Profile;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -84,12 +85,13 @@ final class StandaloneSchemaManagerIT {
           .withProperty(CREATE_SCHEMA_PROPERTY, "false")
           .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
           .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
-          .withProperty(
-              "zeebe.broker.exporters.elasticsearch.class-name",
-              ElasticsearchExporter.class.getName())
-          .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
-          .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
-          .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
+          .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
+          .withUnifiedConfig(
+              cfg -> {
+                cfg.getData().getSecondaryStorage().getElasticsearch().setUsername(APP_USER);
+                cfg.getData().getSecondaryStorage().getElasticsearch().setPassword(APP_PASSWORD);
+                cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
+              })
           .withExporter(
               CamundaExporter.class.getSimpleName(),
               cfg -> {
@@ -173,7 +175,8 @@ final class StandaloneSchemaManagerIT {
 
     // Connect to ES in Camunda
     camunda
-        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
+        .withUnifiedConfig(
+            cfg -> cfg.getData().getSecondaryStorage().getElasticsearch().setUrl(esUrl))
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
             args -> ((Map) args.get("connect")).put("url", esUrl))
