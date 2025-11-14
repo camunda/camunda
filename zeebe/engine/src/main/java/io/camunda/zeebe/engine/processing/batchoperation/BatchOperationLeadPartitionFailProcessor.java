@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -36,7 +35,6 @@ public final class BatchOperationLeadPartitionFailProcessor
       LoggerFactory.getLogger(BatchOperationLeadPartitionFailProcessor.class);
 
   private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
   private final BatchOperationState batchOperationState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final BatchOperationMetrics batchOperationMetrics;
@@ -47,7 +45,6 @@ public final class BatchOperationLeadPartitionFailProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final BatchOperationMetrics batchOperationMetrics) {
     stateWriter = writers.state();
-    commandWriter = writers.command();
     batchOperationState = processingState.getBatchOperationState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.batchOperationMetrics = batchOperationMetrics;
@@ -79,43 +76,55 @@ public final class BatchOperationLeadPartitionFailProcessor
         command.getValue().getError().getType());
 
     final var oBatchOperation = batchOperationState.get(batchOperationKey);
-    if (oBatchOperation.isPresent()) {
-      final var bo = oBatchOperation.get();
-      if (bo.getFinishedPartitions().contains(command.getValue().getSourcePartitionId())) {
-        LOGGER.debug(
-            "Batch operation {} already contains partition {} as finished, ignoring command",
-            batchOperationKey,
-            command.getValue().getSourcePartitionId());
-      } else {
+    if (oBatchOperation.isEmpty()) {
+      LOGGER.debug(
+          "Expected to mark batch operation {} as failed, but it does not exist",
+          batchOperationKey);
+      return;
+    }
 
-        // we need this event for every partition that failed, so that the lead partition state can
-        // collect all of them. That's why in this case, we don't append this event in the normal
-        // FailProcessor. (Would be duplicated otherwise)
-        // This information is directly applied and present in the batch operation state
-        stateWriter.appendFollowUpEvent(
-            batchOperationKey,
-            BatchOperationIntent.PARTITION_FAILED,
-            command.getValue(),
-            FollowUpEventMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+    final var bo = oBatchOperation.get();
+    if (bo.getFinishedPartitions().contains(command.getValue().getSourcePartitionId())) {
+      LOGGER.debug(
+          "Batch operation {} already contains partition {} as finished, ignoring command",
+          batchOperationKey,
+          command.getValue().getSourcePartitionId());
+      return;
+    }
 
-        // after the source partition is marked as finished, we check if now all partitions are
-        // finished (either completed or failed). If yes, we can append the final COMPLETED event
-        if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
-          LOGGER.debug(
-              "All partitions finished, but some with errors, appending COMPLETED event with errors for batch operation {}",
-              batchOperationKey);
-          final var batchFinished = new BatchOperationLifecycleManagementRecord();
-          batchFinished.setBatchOperationKey(batchOperationKey);
-          batchFinished.setErrors(bo.getErrors());
-          stateWriter.appendFollowUpEvent(
-              batchOperationKey,
-              BatchOperationIntent.COMPLETED,
-              batchFinished,
-              FollowUpEventMetadata.of(
-                  b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
-          batchOperationMetrics.recordFailed(oBatchOperation.get().getBatchOperationType());
-        }
+    // we need this event for every partition that failed, so that the lead partition state can
+    // collect all of them. That's why in this case, we don't append this event in the normal
+    // FailProcessor. (Would be duplicated otherwise)
+    // This information is directly applied and present in the batch operation state
+    stateWriter.appendFollowUpEvent(
+        batchOperationKey,
+        BatchOperationIntent.PARTITION_FAILED,
+        command.getValue(),
+        FollowUpEventMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+
+    // after the source partition is marked as finished, we check if now all partitions are
+    // finished (either completed or failed). If yes, we can append the final COMPLETED event
+    if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
+      BatchOperationIntent intent = BatchOperationIntent.COMPLETED;
+      if (bo.getPartitions().size() == bo.getErrors().size()) {
+        // all partitions failed
+        intent = BatchOperationIntent.FAILED;
       }
+
+      LOGGER.debug(
+          "All partitions finished, but some with errors, appending {} event with errors for batch operation {}",
+          intent.name(),
+          batchOperationKey);
+      final var batchFinished = new BatchOperationLifecycleManagementRecord();
+      batchFinished.setBatchOperationKey(batchOperationKey);
+      batchFinished.setErrors(bo.getErrors());
+      stateWriter.appendFollowUpEvent(
+          batchOperationKey,
+          intent,
+          batchFinished,
+          FollowUpEventMetadata.of(
+              b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
+      batchOperationMetrics.recordFailed(oBatchOperation.get().getBatchOperationType());
     }
   }
 }
