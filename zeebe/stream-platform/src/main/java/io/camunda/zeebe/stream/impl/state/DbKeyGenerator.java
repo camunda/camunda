@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 
 public final class DbKeyGenerator implements KeyGeneratorControls {
 
@@ -22,6 +23,7 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
 
   private final long keyStartValue;
   private final NextValueManager nextValueManager;
+  private final int partitionId;
 
   /**
    * Initializes the key state with the corresponding partition id, so that unique keys are
@@ -31,14 +33,32 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
    */
   public DbKeyGenerator(
       final int partitionId, final ZeebeDb zeebeDb, final TransactionContext transactionContext) {
+    this.partitionId = partitionId;
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
     nextValueManager =
         new NextValueManager(keyStartValue, zeebeDb, transactionContext, ZbColumnFamilies.KEY);
+
+    final var currentKey = nextValueManager.getCurrentValue(LATEST_KEY);
+    if (Protocol.decodePartitionId(currentKey) != partitionId) {
+      throw new UnrecoverableException(
+          new IllegalStateException(
+              String.format(
+                  "Current key in the state %d does not belong to partition %d, but belongs to %d. Potential data corruption suspected.",
+                  currentKey, partitionId, Protocol.decodePartitionId(currentKey))));
+    }
   }
 
   @Override
   public long nextKey() {
-    return nextValueManager.getNextValue(LATEST_KEY);
+    final var nextKey = nextValueManager.getNextValue(LATEST_KEY);
+    if (Protocol.decodePartitionId(nextKey) != partitionId) {
+      throw new UnrecoverableException(
+          new IllegalStateException(
+              String.format(
+                  "Generated key %d does not belong to partition %d, but belongs to %d",
+                  nextKey, partitionId, Protocol.decodePartitionId(nextKey))));
+    }
+    return nextKey;
   }
 
   /**
@@ -57,6 +77,13 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
     final var currentKey = nextValueManager.getCurrentValue(LATEST_KEY);
 
     if (key > currentKey) {
+      if (Protocol.decodePartitionId(key) != partitionId) {
+        throw new UnrecoverableException(
+            new IllegalArgumentException(
+                String.format(
+                    "Provided key %d does not belong to partition %d, it belongs to %d",
+                    key, partitionId, Protocol.decodePartitionId(key))));
+      }
       nextValueManager.setValue(LATEST_KEY, key);
     }
   }
