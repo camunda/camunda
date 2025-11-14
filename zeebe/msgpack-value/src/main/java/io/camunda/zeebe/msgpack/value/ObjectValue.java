@@ -17,6 +17,7 @@ import java.util.Objects;
 
 public class ObjectValue extends BaseValue {
   private final List<BaseProperty<? extends BaseValue>> declaredProperties;
+  private final boolean serializeDefaultProperties;
   private final List<UndeclaredProperty> undeclaredProperties = new ArrayList<>(0);
   private final List<UndeclaredProperty> recycledProperties = new ArrayList<>(0);
 
@@ -28,8 +29,14 @@ public class ObjectValue extends BaseValue {
    * @param expectedDeclaredProperties a size hint for the number of declared properties. Providing
    *     the correct number helps to avoid allocations and memory copies.
    */
-  public ObjectValue(final int expectedDeclaredProperties) {
+  public ObjectValue(
+      final int expectedDeclaredProperties, final boolean serializeDefaultProperties) {
     declaredProperties = new ArrayList<>(expectedDeclaredProperties);
+    this.serializeDefaultProperties = serializeDefaultProperties;
+  }
+
+  public ObjectValue(final int expectedDeclaredProperties) {
+    this(expectedDeclaredProperties, true);
   }
 
   public ObjectValue declareProperty(final BaseProperty<? extends BaseValue> prop) {
@@ -86,7 +93,11 @@ public class ObjectValue extends BaseValue {
    */
   @Override
   public void write(final MsgPackWriter writer) {
-    final int size = declaredProperties.size() + undeclaredProperties.size();
+    final int size =
+        serializeDefaultProperties
+            ? declaredProperties.size() + undeclaredProperties.size()
+            : (int) declaredProperties.stream().filter(p -> p.hasValue() || p.isRequired()).count()
+                + undeclaredProperties.size();
 
     writer.writeMapHeader(size);
     write(writer, declaredProperties);
@@ -105,7 +116,7 @@ public class ObjectValue extends BaseValue {
       for (int k = 0; k < declaredProperties.size(); ++k) {
         // optimistically start from the same index as the map
         // we serialize the keys in order, it's our best guess
-        final var index = (i + k) % declaredProperties.size();
+        final var index = k; // (i + k) % declaredProperties.size();
         final BaseProperty<?> declaredProperty = declaredProperties.get(index);
         final StringValue declaredKey = declaredProperty.getKey();
 
@@ -178,7 +189,9 @@ public class ObjectValue extends BaseValue {
       final MsgPackWriter writer, final List<T> properties) {
     for (int i = 0; i < properties.size(); ++i) {
       final BaseProperty<? extends BaseValue> prop = properties.get(i);
-      prop.write(writer);
+      if (serializeDefaultProperties || prop.hasValue() || prop.isRequired()) {
+        prop.write(writer);
+      }
     }
   }
 

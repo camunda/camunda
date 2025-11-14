@@ -30,6 +30,11 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
     super(expectedDeclaredProperties);
   }
 
+  public UnpackedObject(
+      final int expectedDeclaredProperties, final boolean serializeDefaultFields) {
+    super(expectedDeclaredProperties, serializeDefaultFields);
+  }
+
   public void wrap(final DirectBuffer buff) {
     wrap(buff, 0, buff.capacity());
   }

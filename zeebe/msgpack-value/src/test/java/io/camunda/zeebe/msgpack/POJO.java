@@ -28,7 +28,11 @@ public final class POJO extends UnpackedObject {
       new ObjectProperty<>("objectProp", new POJONested());
 
   public POJO() {
-    super(7);
+    this(false);
+  }
+
+  public POJO(final boolean serializeDefaultFields) {
+    super(7, serializeDefaultFields);
     declareProperty(enumProp)
         .declareProperty(longProp)
         .declareProperty(intProp)

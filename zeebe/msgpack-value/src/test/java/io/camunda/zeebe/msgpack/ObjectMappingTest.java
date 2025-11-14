@@ -15,6 +15,8 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.msgpack.POJO.POJOEnum;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -22,7 +24,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public final class ObjectMappingTest {
   public static final DirectBuffer BUF1 = wrapString("foo");
   public static final DirectBuffer BUF2 = wrapString("bar");
@@ -58,10 +65,18 @@ public final class ObjectMappingTest {
 
   @Rule public final ExpectedException exception = ExpectedException.none();
 
+  @Parameter(0)
+  public boolean serializeDefaultFields;
+
+  @Parameters
+  public static Collection<Object[]> parameters() {
+    return List.of(new Object[] {true}, new Object[] {false});
+  }
+
   @Test
   public void shouldSerializePOJO() {
     // given
-    final POJO pojo = new POJO();
+    final POJO pojo = new POJO(serializeDefaultFields);
     pojo.setEnum(POJOEnum.BAR);
     pojo.setLong(456456L);
     pojo.setInt(123);
@@ -99,7 +114,7 @@ public final class ObjectMappingTest {
   @Test
   public void shouldDeserializePOJO() {
     // given
-    final POJO pojo = new POJO();
+    final POJO pojo = new POJO(serializeDefaultFields);
 
     final DirectBuffer buffer =
         encodeMsgPack(
@@ -109,8 +124,11 @@ public final class ObjectMappingTest {
               w.writeString(wrapString("enumProp"));
               w.writeString(wrapString(POJOEnum.BAR.toString()));
 
-              w.writeString(wrapString("binaryProp"));
-              w.writeBinary(BUF1);
+              w.writeString(wrapString("longProp"));
+              w.writeInteger(88888L);
+
+              w.writeString(wrapString("intProp"));
+              w.writeInteger(123L);
 
               w.writeString(wrapString("stringProp"));
               w.writeString(BUF2);
@@ -118,12 +136,8 @@ public final class ObjectMappingTest {
               w.writeString(wrapString("packedProp"));
               w.writeRaw(MSGPACK_BUF1);
 
-              w.writeString(wrapString("longProp"));
-              w.writeInteger(88888L);
-
-              w.writeString(wrapString("intProp"));
-              w.writeInteger(123L);
-
+              w.writeString(wrapString("binaryProp"));
+              w.writeBinary(BUF1);
               w.writeString(wrapString("objectProp"));
               w.writeRaw(MSGPACK_BUF1);
             });
@@ -144,7 +158,7 @@ public final class ObjectMappingTest {
   @Test
   public void shouldNotDeserializePOJOWithWrongValueType() {
     // given
-    final POJO pojo = new POJO();
+    final POJO pojo = new POJO(serializeDefaultFields);
 
     final DirectBuffer buffer =
         encodeMsgPack(
@@ -167,7 +181,7 @@ public final class ObjectMappingTest {
   @Test
   public void shouldNotDeserializePOJOWithWrongKeyType() {
     // given
-    final POJO pojo = new POJO();
+    final POJO pojo = new POJO(serializeDefaultFields);
 
     final DirectBuffer buffer =
         encodeMsgPack(
@@ -190,7 +204,7 @@ public final class ObjectMappingTest {
   @Test
   public void shouldNotDeserializePOJOFromNonMap() {
     // given
-    final POJO pojo = new POJO();
+    final POJO pojo = new POJO(serializeDefaultFields);
 
     final DirectBuffer buffer =
         encodeMsgPack(
@@ -211,7 +225,7 @@ public final class ObjectMappingTest {
   @Test
   public void shouldFailDeserializationWithMissingRequiredValues() {
     // given
-    final POJO pojo = new POJO();
+    final POJO pojo = new POJO(serializeDefaultFields);
 
     final DirectBuffer buf1 = encodeMsgPack((w) -> w.writeMapHeader(0));
 
@@ -228,7 +242,7 @@ public final class ObjectMappingTest {
   @Test
   public void shouldFailDeserializationWithOversizedIntegerValue() {
     // given
-    final POJO pojo = new POJO();
+    final POJO pojo = new POJO(serializeDefaultFields);
 
     final DirectBuffer buffer =
         encodeMsgPack(
@@ -287,7 +301,7 @@ public final class ObjectMappingTest {
   @Test
   public void shouldFailSerializationWithMissingRequiredValues() {
     // given
-    final POJO pojo = new POJO();
+    final POJO pojo = new POJO(serializeDefaultFields);
 
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[1024]);
 
