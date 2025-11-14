@@ -27,8 +27,6 @@ type InstanceEntityState =
   | 'INCIDENT'
   | 'TERMINATED';
 
-type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
-
 interface OperationEntity {
   id: string;
   name: null | string;
@@ -80,17 +78,6 @@ interface ProcessInstanceEntity {
   tenantId: string;
 }
 
-interface DecisionInstanceEntity {
-  id: string;
-  decisionName: string;
-  decisionVersion: number;
-  tenantId: string;
-  evaluationDate: string;
-  processInstanceId: string | null;
-  state: DecisionInstanceEntityState;
-  sortValues: [string, string];
-}
-
 type SortOrder = 'asc' | 'desc';
 
 export type {
@@ -101,6 +88,5 @@ export type {
   InstanceOperationEntity,
   ResourceBasedPermissionDto,
   ProcessInstanceEntity,
-  DecisionInstanceEntity,
   SortOrder,
 };
