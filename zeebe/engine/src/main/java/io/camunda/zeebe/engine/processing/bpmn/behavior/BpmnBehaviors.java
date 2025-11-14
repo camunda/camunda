@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
+import io.camunda.zeebe.engine.processing.processinstance.behavior.ProcessInstanceCreateBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 
 public interface BpmnBehaviors {
@@ -32,6 +33,8 @@ public interface BpmnBehaviors {
   BpmnStateBehavior stateBehavior();
 
   ProcessInstanceStateTransitionGuard stateTransitionGuard();
+
+  ProcessInstanceCreateBehavior processInstanceCreateBehavior();
 
   BpmnProcessResultSenderBehavior processResultSenderBehavior();
 

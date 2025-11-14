@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.processinstance.behavior.ProcessInstanceCreateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
@@ -51,6 +52,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final CatchEventBehavior catchEventBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
+  private final ProcessInstanceCreateBehavior processInstanceCreateBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnSignalBehavior signalBehavior;
@@ -248,6 +250,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             variableBehavior,
             processingState);
+
+    processInstanceCreateBehavior =
+        new ProcessInstanceCreateBehavior(
+            processingState.getKeyGenerator(),
+            writers,
+            elementActivationBehavior,
+            variableBehavior);
   }
 
   @Override
@@ -288,6 +297,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public ProcessInstanceStateTransitionGuard stateTransitionGuard() {
     return stateTransitionGuard;
+  }
+
+  @Override
+  public ProcessInstanceCreateBehavior processInstanceCreateBehavior() {
+    return null;
   }
 
   @Override

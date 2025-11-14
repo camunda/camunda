@@ -257,12 +257,7 @@ public final class BpmnProcessors {
 
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            processingState.getProcessState(),
-            keyGenerator,
-            writers,
-            bpmnBehaviors,
-            metrics,
-            authCheckBehavior);
+            processingState.getProcessState(), writers, bpmnBehaviors, metrics, authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
@@ -270,7 +265,7 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
         new ProcessInstanceCreationCreateWithResultProcessor(
-            createProcessor, elementInstanceState));
+            createProcessor, elementInstanceState, metrics));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(

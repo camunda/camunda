@@ -54,6 +54,7 @@ public final class JobEventProcessors {
             JobIntent.COMPLETE,
             new JobCompleteProcessor(
                 processingState,
+                writers,
                 jobMetrics,
                 eventHandle,
                 authCheckBehavior,
@@ -81,7 +82,8 @@ public final class JobEventProcessors {
                 bpmnBehaviors.eventPublicationBehavior(),
                 keyGenerator,
                 jobMetrics,
-                authCheckBehavior))
+                authCheckBehavior,
+                writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,
@@ -100,7 +102,9 @@ public final class JobEventProcessors {
             JobIntent.UPDATE,
             new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
-            ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(processingState, jobMetrics))
+            ValueType.JOB,
+            JobIntent.CANCEL,
+            new JobCancelProcessor(processingState, jobMetrics, writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.RECUR_AFTER_BACKOFF,
