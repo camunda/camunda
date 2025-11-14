@@ -27,10 +27,8 @@ final class ClusterEndpointResponseIT {
   static void initTestStandaloneBroker() {
     broker =
         new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg -> {
-                  cfg.getCluster().setClusterId("cluster-id");
-                });
+            // set clusterId via properties because it is not yet supported in unified config
+            .withProperty("zeebe.broker.cluster.clusterId", "cluster-id");
   }
 
   @Test

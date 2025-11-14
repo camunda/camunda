@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import eu.rekawek.toxiproxy.model.ToxicDirection;
+import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.awaitility.Awaitility;
@@ -58,36 +58,26 @@ public class HealthCheckIT {
   @AutoClose private static S3Client s3Client;
   private static final String BUCKET_NAME = UUID.randomUUID().toString();
   private static final Duration LEASE_DURATION = Duration.ofSeconds(5);
-  private static final String TASK_ID_PROPERTY = "camunda.cluster.node-id-provider.s3.taskId";
   private static final ProxyRegistry PROXY_REGISTRY = new ProxyRegistry(TOXIPROXY);
   private static URI toxiproxyS3Endpoint;
   private static ContainerProxy proxy;
 
   @TestZeebe
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
-          .withAdditionalProperties(
-              Map.of(
-                  "camunda.data.secondary-storage.type",
-                  "none",
-                  "camunda.cluster.node-id-provider.type",
-                  "s3",
-                  TASK_ID_PROPERTY,
-                  UUID.randomUUID().toString(),
-                  "camunda.cluster.node-id-provider.s3.bucketName",
-                  BUCKET_NAME,
-                  "camunda.cluster.node-id-provider.s3.leaseDuration",
-                  LEASE_DURATION,
-                  "camunda.cluster.node-id-provider.s3.endpoint",
-                  toxiproxyS3Endpoint,
-                  "camunda.cluster.node-id-provider.s3.region",
-                  S3.getRegion(),
-                  "camunda.cluster.node-id-provider.s3.accessKey",
-                  S3.getAccessKey(),
-                  "camunda.cluster.node-id-provider.s3.secretKey",
-                  S3.getSecretKey(),
-                  "camunda.cluster.node-id-provider.s3.apiCallTimeout",
-                  LEASE_DURATION.dividedBy(2).toString()));
+          .withUnifiedConfig(
+              cfg -> {
+                cfg.getCluster().getNodeIdProvider().setType(Type.S3);
+                final var s3 = cfg.getCluster().getNodeIdProvider().s3();
+                s3.setTaskId(UUID.randomUUID().toString());
+                s3.setBucketName(BUCKET_NAME);
+                s3.setLeaseDuration(LEASE_DURATION);
+                s3.setEndpoint(toxiproxyS3Endpoint.toString());
+                s3.setRegion(S3.getRegion());
+                s3.setAccessKey(S3.getAccessKey());
+                s3.setSecretKey(S3.getSecretKey());
+                s3.setApiCallTimeout(LEASE_DURATION.dividedBy(2));
+              });
 
   @BeforeAll
   public static void setupAll() throws URISyntaxException {
