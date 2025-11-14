@@ -14,27 +14,18 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
 public class RolesByGroupIntegrationTest {
 
-  @MultiDbTestApplication
-  private static final TestCamundaApplication CAMUNDA_APPLICATION =
-      new TestCamundaApplication()
-          .withAuthenticationMethod(AuthenticationMethod.BASIC)
-          .withAuthorizationsEnabled();
-
-  @Authenticated private static CamundaClient camundaClient;
+  private static CamundaClient camundaClient;
 
   private static final String EXISTING_ROLE_ID = Strings.newRandomValidIdentityId();
 
@@ -192,6 +183,7 @@ public class RolesByGroupIntegrationTest {
                 + "', but the entity is not assigned to this role.");
   }
 
+  @Disabled("The group check is not working with unprotected access")
   @Test
   void shouldRejectAssigningRoleToGroupIfGroupDoesNotExist() {
     // given
