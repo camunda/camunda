@@ -367,22 +367,6 @@ public final class BpmnUserTaskBehavior {
 
     return Either.right(evaluatedHeaders);
   }
-      } else if (value instanceof Number || value instanceof Boolean) {
-        evaluatedHeaders.put(headerName, value.toString());
-      } else {
-        // Object or List types are not allowed - fail task creation
-        return Either.left(
-            new Failure(
-                String.format(
-                    "Expected custom header '%s' to evaluate to String, Number, or Boolean, but got: %s",
-                    headerName, value.getClass().getSimpleName()),
-                ErrorType.EXTRACT_VALUE_ERROR,
-                scopeKey));
-      }
-    }
-
-    return Either.right(evaluatedHeaders);
-  }
 
   public void cancelUserTask(final ElementInstance elementInstance) {
     userTaskCanceling(elementInstance).ifPresent(this::userTaskCanceled);
