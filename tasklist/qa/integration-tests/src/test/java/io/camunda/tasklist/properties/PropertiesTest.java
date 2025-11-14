@@ -49,7 +49,8 @@ public class PropertiesTest {
     assertThat(tasklistProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");
     assertThat(tasklistProperties.getElasticsearch().getHost()).isEqualTo("localhost");
     assertThat(tasklistProperties.getElasticsearch().getPort()).isEqualTo(9200);
-    assertThat(tasklistProperties.getElasticsearch().getDateFormat()).isEqualTo("yyyy-MM-dd");
+    assertThat(tasklistProperties.getElasticsearch().getDateFormat())
+        .isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
     assertThat(tasklistProperties.getElasticsearch().getBatchSize()).isEqualTo(111);
     assertThat(tasklistProperties.getZeebe().getGatewayAddress()).isEqualTo("someZeebeHost:999");
   }
