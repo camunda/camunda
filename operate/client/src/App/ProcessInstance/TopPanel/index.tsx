@@ -273,7 +273,6 @@ const TopPanel: React.FC = observer(() => {
     return 'content';
   };
 
-  console.log(modificationsStore.state.status);
   const {data: totalRunningInstancesByFlowNode} =
     useTotalRunningInstancesByFlowNode();
 
