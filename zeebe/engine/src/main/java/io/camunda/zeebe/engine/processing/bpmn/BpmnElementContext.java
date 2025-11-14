@@ -27,6 +27,8 @@ public interface BpmnElementContext {
 
   long getParentElementInstanceKey();
 
+  long getRootProcessInstanceKey();
+
   long getProcessDefinitionKey();
 
   int getProcessVersion();

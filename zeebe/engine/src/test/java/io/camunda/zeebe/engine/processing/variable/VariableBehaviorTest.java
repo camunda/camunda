@@ -70,6 +70,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -118,6 +119,7 @@ final class VariableBehaviorTest {
         scopeKey,
         processDefinitionKey,
         scopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -148,6 +150,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         rootScopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -189,6 +192,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         rootScopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -241,6 +245,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         rootScopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -282,6 +287,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -323,6 +329,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -349,6 +356,7 @@ final class VariableBehaviorTest {
     behavior.setLocalVariable(
         childScopeKey,
         processDefinitionKey,
+        parentScopeKey,
         parentScopeKey,
         bpmnProcessId,
         tenantId,
@@ -393,6 +401,7 @@ final class VariableBehaviorTest {
     behavior.setLocalVariable(
         parentScopeKey,
         processDefinitionKey,
+        parentScopeKey,
         parentScopeKey,
         bpmnProcessId,
         tenantId,
@@ -439,6 +448,7 @@ final class VariableBehaviorTest {
         parentScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        parentScopeKey,
         bpmnProcessId,
         tenantId,
         variableName,
@@ -471,6 +481,7 @@ final class VariableBehaviorTest {
     behavior.setLocalVariable(
         childScopeKey,
         processDefinitionKey,
+        parentScopeKey,
         parentScopeKey,
         bpmnProcessId,
         tenantId,
@@ -520,6 +531,7 @@ final class VariableBehaviorTest {
         parentScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        parentScopeKey,
         bpmnProcessId,
         tenantId,
         variableName,
@@ -568,6 +580,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         parentScopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));
@@ -625,6 +638,7 @@ final class VariableBehaviorTest {
         childScopeKey,
         processDefinitionKey,
         rootScopeKey,
+        processDefinitionKey,
         bpmnProcessId,
         tenantId,
         MsgPackUtil.asMsgPack(document));

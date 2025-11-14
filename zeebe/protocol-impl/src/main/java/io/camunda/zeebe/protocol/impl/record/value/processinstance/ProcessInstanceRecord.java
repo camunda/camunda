@@ -80,6 +80,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new LongProperty(PARENT_PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty parentElementInstanceKeyProp =
       new LongProperty(PARENT_ELEMENT_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey");
 
   private final ArrayProperty<ArrayValue<LongValue>> elementInstancePathProp =
       new ArrayProperty<>(ELEMENT_INSTANCE_PATH_KEY, () -> new ArrayValue<>(LongValue::new));
@@ -103,6 +105,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(bpmnEventTypeProp)
         .declareProperty(parentProcessInstanceKeyProp)
         .declareProperty(parentElementInstanceKeyProp)
+        .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
@@ -121,6 +124,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     bpmnEventTypeProp.setValue(record.getBpmnEventType());
     parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
+    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
   }
 
@@ -310,6 +314,15 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
+
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 

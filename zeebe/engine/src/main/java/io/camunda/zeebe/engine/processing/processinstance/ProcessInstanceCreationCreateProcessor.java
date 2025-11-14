@@ -175,6 +175,7 @@ public final class ProcessInstanceCreationCreateProcessor
         record,
         process.getKey(),
         processInstanceKey,
+        processInstanceKey,
         process.getBpmnProcessId(),
         process.getTenantId());
 
@@ -409,6 +410,7 @@ public final class ProcessInstanceCreationCreateProcessor
       final ProcessInstanceCreationRecord record,
       final long processDefinitionKey,
       final long processInstanceKey,
+      final long rootProcessInstanceKey,
       final DirectBuffer bpmnProcessId,
       final String tenantId) {
 
@@ -416,6 +418,7 @@ public final class ProcessInstanceCreationCreateProcessor
         processInstanceKey,
         processDefinitionKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         bpmnProcessId,
         tenantId,
         record.getVariablesBuffer());
@@ -433,6 +436,7 @@ public final class ProcessInstanceCreationCreateProcessor
     newProcessInstance.setFlowScopeKey(-1);
     newProcessInstance.setTenantId(process.getTenantId());
     newProcessInstance.setTags(tags);
+    newProcessInstance.setRootProcessInstanceKey(processInstanceKey);
     return newProcessInstance;
   }
 

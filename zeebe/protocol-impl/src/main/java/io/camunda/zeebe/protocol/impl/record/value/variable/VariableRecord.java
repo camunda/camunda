@@ -42,6 +42,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty("rootProcessInstanceKey");
 
   public VariableRecord() {
     super(7);
@@ -141,6 +143,15 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   public VariableRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public VariableRecord setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 }

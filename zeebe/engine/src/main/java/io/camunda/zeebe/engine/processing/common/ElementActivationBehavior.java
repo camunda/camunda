@@ -425,6 +425,7 @@ public final class ElementActivationBehavior {
         .setFlowScopeKey(flowScopeKey)
         .setParentProcessInstanceKey(-1L)
         .setParentElementInstanceKey(-1L)
+        .setRootProcessInstanceKey(-1L)
         .setBpmnEventType(elementToActivate.getEventType())
         .setTenantId(processInstanceRecord.getTenantId());
 

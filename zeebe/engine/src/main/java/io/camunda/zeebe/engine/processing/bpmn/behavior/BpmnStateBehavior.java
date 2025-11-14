@@ -220,6 +220,7 @@ public final class BpmnStateBehavior {
         context.getElementInstanceKey(),
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
+        context.getRootProcessInstanceKey(),
         context.getBpmnProcessId(),
         context.getTenantId(),
         variableName,
@@ -240,6 +241,7 @@ public final class BpmnStateBehavior {
         targetScope,
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
+        context.getRootProcessInstanceKey(),
         context.getBpmnProcessId(),
         context.getTenantId(),
         variablesAsDocument);
@@ -248,17 +250,21 @@ public final class BpmnStateBehavior {
   public void copyAllVariablesToProcessInstance(
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
+      final long targetRootProcessInstanceKey,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesAsDocument(sourceScopeKey);
-    copyVariablesToProcessInstance(targetProcessInstanceKey, targetProcess, variables);
+    copyVariablesToProcessInstance(
+        targetProcessInstanceKey, targetRootProcessInstanceKey, targetProcess, variables);
   }
 
   public void copyLocalVariablesToProcessInstance(
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
+      final long targetRootProcessInstanceKey,
       final DeployedProcess targetProcess) {
     final var variables = variablesState.getVariablesLocalAsDocument(sourceScopeKey);
-    copyVariablesToProcessInstance(targetProcessInstanceKey, targetProcess, variables);
+    copyVariablesToProcessInstance(
+        targetProcessInstanceKey, targetRootProcessInstanceKey, targetProcess, variables);
   }
 
   /**
@@ -275,12 +281,14 @@ public final class BpmnStateBehavior {
 
   private void copyVariablesToProcessInstance(
       final long targetProcessInstanceKey,
+      final long targetRootProcessInstanceKey,
       final DeployedProcess targetProcess,
       final DirectBuffer variables) {
     variableBehavior.mergeDocument(
         targetProcessInstanceKey,
         targetProcess.getKey(),
         targetProcessInstanceKey,
+        targetRootProcessInstanceKey,
         targetProcess.getBpmnProcessId(),
         targetProcess.getTenantId(),
         variables);
