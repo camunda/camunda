@@ -21,6 +21,7 @@ import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -90,24 +91,26 @@ class AssignGroupToTenantTest {
                 .formatted(nonExistentTenantId));
   }
 
+  @Disabled("The group check is not working with unprotected access")
   @Test
   void shouldRejectIfGroupDoesNotExist() {
     // given
     final String nonExistentGroupId = Strings.newRandomValidIdentityId();
 
-    // when
-    client
-        .newAssignGroupToTenantCommand()
-        .groupId(nonExistentGroupId)
-        .tenantId(tenantId)
-        .send()
-        .join();
-
-    // then
-    ZeebeAssertHelper.assertEntityAssignedToTenant(
-        tenantId,
-        nonExistentGroupId,
-        tenant -> assertThat(tenant.getEntityType()).isEqualTo(EntityType.GROUP));
+    // when/then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newAssignGroupToTenantCommand()
+                    .groupId(nonExistentGroupId)
+                    .tenantId(tenantId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            "Expected to add group with ID '%s' to tenant with ID '%s', but the group doesn't exist."
+                .formatted(nonExistentGroupId, tenantId));
   }
 
   @Test

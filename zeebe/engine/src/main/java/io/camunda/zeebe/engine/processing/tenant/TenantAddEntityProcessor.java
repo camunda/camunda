@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -39,11 +40,15 @@ import java.util.Map;
 
 public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
+  public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
+  public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
+
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists.";
   private final TenantState tenantState;
   private final MappingRuleState mappingRuleState;
   private final GroupState groupState;
+  private final UserState userState;
   private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -64,6 +69,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();
     roleState = state.getRoleState();
+    userState = state.getUserState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -151,9 +157,14 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final Map<String, Object> authorizations,
       final EntityType entityType,
       final String entityId) {
+    final boolean localUserEnabled =
+        (boolean) authorizations.getOrDefault(IS_CAMUNDA_USERS_ENABLED, false);
+    final boolean localGroupEnabled =
+        (boolean) authorizations.getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, false);
     return switch (entityType) {
-      case USER, CLIENT, GROUP ->
-          true; // With simple mapping rules, any username, client id or group can be assigned
+      case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
+      case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
+      case CLIENT -> true;
       case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
