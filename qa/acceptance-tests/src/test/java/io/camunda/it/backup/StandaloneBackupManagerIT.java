@@ -105,7 +105,10 @@ final class StandaloneBackupManagerIT {
                         Map.of("username", APP_USER, "password", APP_PASSWORD),
                         "createSchema",
                         false));
-              });
+              })
+          // TODO KPO remove
+          .withUnifiedConfig(
+              cfg -> cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false));
 
   @Container
   private final ElasticsearchContainer es =
