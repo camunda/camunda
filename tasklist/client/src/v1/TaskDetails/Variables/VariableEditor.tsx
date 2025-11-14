@@ -87,7 +87,7 @@ const VariableEditor: React.FC<Props> = ({
               >
                 <div className={styles.singleLineValue}>
                   {variable.isValueTruncated
-                    ? variable.previewValue
+                    ? `${variable.previewValue}...`
                     : variable.value}
                 </div>
               </StructuredListCell>
