@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect} from 'react';
+import {useLocation, type Location} from 'react-router-dom';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {SortableTable} from 'modules/components/SortableTable';
 import {StateIcon} from 'modules/components/StateIcon';
@@ -26,11 +28,13 @@ const ROW_HEIGHT = 34;
 const InstancesTable: React.FC = observer(() => {
   const filter = useDecisionInstancesSearchFilter();
   const sort = useDecisionInstancesSearchSort();
+  const location = useLocation() as Location<{refreshContent?: boolean}>;
 
   const {
     data,
     status,
     isFetching,
+    refetch,
     isFetchingPreviousPage,
     hasPreviousPage,
     fetchPreviousPage,
@@ -54,6 +58,12 @@ const InstancesTable: React.FC = observer(() => {
   });
   const decisionInstances = data?.decisionInstances ?? [];
   const filteredDecisionInstancesCount = data?.totalCount ?? 0;
+
+  useEffect(() => {
+    if (location.state?.refreshContent) {
+      refetch();
+    }
+  }, [location.state, refetch]);
 
   const getTableState = () => {
     switch (true) {
