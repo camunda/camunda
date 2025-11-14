@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.camunda.optimize</groupId>
         <artifactId>optimize-parent</artifactId>
-        <version>8.6.20-SNAPSHOT</version>
+        <version>8.6.21-SNAPSHOT</version>
     </parent>
 
     <artifactId>util</artifactId>
