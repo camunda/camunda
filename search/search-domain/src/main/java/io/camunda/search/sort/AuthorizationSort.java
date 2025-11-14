@@ -40,6 +40,11 @@ public record AuthorizationSort(List<FieldSorting> orderings) implements SortOpt
       return this;
     }
 
+    public Builder resourcePropertyName() {
+      currentOrdering = new FieldSorting("resourcePropertyName", null);
+      return this;
+    }
+
     public Builder resourceType() {
       currentOrdering = new FieldSorting("resourceType", null);
       return this;

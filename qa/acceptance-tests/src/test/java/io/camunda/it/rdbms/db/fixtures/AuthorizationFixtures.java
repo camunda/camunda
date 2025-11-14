@@ -40,6 +40,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
             .resourceType(randomEnum(ResourceType.class).name())
             .resourceMatcher(randomEnum(AuthorizationResourceMatcher.class).value())
             .resourceId(nextStringId())
+            .resourcePropertyName(nextStringId())
             .permissionTypes(Set.of(randomPermissionType1, randomPermissionType2));
 
     return builderFunction.apply(builder).build();
