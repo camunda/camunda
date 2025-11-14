@@ -60,13 +60,10 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ_DECISION_DEFINITION,
     PermissionType.READ_DECISION_INSTANCE,
   ],
-  DECISION_REQUIREMENTS_DEFINITION: [
-    PermissionType.DELETE,
-    PermissionType.READ,
-    PermissionType.UPDATE,
-  ],
+  DECISION_REQUIREMENTS_DEFINITION: [PermissionType.READ],
   RESOURCE: [
     PermissionType.CREATE,
+    PermissionType.READ,
     PermissionType.DELETE_DRD,
     PermissionType.DELETE_FORM,
     PermissionType.DELETE_PROCESS,
