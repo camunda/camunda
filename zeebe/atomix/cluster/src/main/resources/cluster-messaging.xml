@@ -8,7 +8,7 @@
   -->
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.atomix.cluster.messaging" id="10" version="1"
+  package="io.atomix.cluster.messaging" id="10" version="2"
   semanticVersion="0.1.0" description="Broker messages" byteOrder="littleEndian"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://fixprotocol.io/2016/sbe http://fixprotocol.io/2016/sbe/sbe.xsd">
@@ -17,10 +17,20 @@
 
   <sbe:message name="HeartbeatSetupRequest" id="1">
     <field name="heartbeatTimeout" id="0" type="uint32"/>
+    <field name="sendPayload" id="1" type="BooleanType" defaultValue="false" optional="true" sinceVersion="2"/>
   </sbe:message>
 
   <sbe:message name="HeartbeatSetupResponse" id="2">
     <field name="heartbeatEnabled" id="0" type="BooleanType" />
+    <field name="sendPayload" id="1" type="BooleanType" defaultValue="false" optional="true" sinceVersion="2"/>
+  </sbe:message>
+
+  <sbe:message name="HeartbeatRequest" id="3" sinceVersion="2">
+    <field name="sentAt" id="0" type="uint64" />
+  </sbe:message>
+
+  <sbe:message name="HeartbeatResponse" id="4" sinceVersion="2">
+    <field name="receivedAt" id="0" type="uint64" />
   </sbe:message>
 
 </sbe:messageSchema>
