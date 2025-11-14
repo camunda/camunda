@@ -10,7 +10,6 @@ import {render, screen, waitFor, within} from 'modules/testing-library';
 import {testData} from './index.setup';
 import {ProcessInstance} from '../index';
 import {storeStateLocally} from 'modules/utils/localStorage';
-import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import * as flowNodeInstanceUtils from 'modules/utils/flowNodeInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
@@ -27,7 +26,6 @@ import {act} from 'react';
 vi.mock('modules/utils/bpmn');
 
 const clearPollingStates = () => {
-  incidentsStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
 
@@ -207,8 +205,6 @@ describe('ProcessInstance', () => {
   it('should stop polling if document is not visible', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const handlePollingIncidentsSpy = vi.spyOn(incidentsStore, 'handlePolling');
-
     const initFlowNodeInstanceSpy = vi.spyOn(flowNodeInstanceUtils, 'init');
     const startPollingFlowNodeInstanceSpy = vi.spyOn(
       flowNodeInstanceUtils,
@@ -218,7 +214,6 @@ describe('ProcessInstance', () => {
     mockRequests();
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
@@ -231,9 +226,6 @@ describe('ProcessInstance', () => {
     act(() => {
       vi.runOnlyPendingTimers();
     });
-    await waitFor(() =>
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
-    );
 
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
@@ -246,14 +238,11 @@ describe('ProcessInstance', () => {
 
     vi.runOnlyPendingTimers();
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-
     clearPollingStates();
     mockRequests();
 
     vi.runOnlyPendingTimers();
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
 
     mockRequests();
@@ -264,10 +253,6 @@ describe('ProcessInstance', () => {
     mockRequests();
 
     vi.runOnlyPendingTimers();
-
-    await waitFor(() => {
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(3);
-    });
 
     await waitFor(() => {
       expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
@@ -283,8 +268,6 @@ describe('ProcessInstance', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     triggerVisibilityChange('hidden');
 
-    const handlePollingIncidentsSpy = vi.spyOn(incidentsStore, 'handlePolling');
-
     const initFlowNodeInstanceSpy = vi.spyOn(flowNodeInstanceUtils, 'init');
     const startPollingFlowNodeInstanceSpy = vi.spyOn(
       flowNodeInstanceUtils,
@@ -295,7 +278,6 @@ describe('ProcessInstance', () => {
 
     mockRequests();
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
@@ -303,7 +285,6 @@ describe('ProcessInstance', () => {
       await vi.runOnlyPendingTimersAsync();
     });
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
 
     triggerVisibilityChange('visible');
@@ -314,18 +295,11 @@ describe('ProcessInstance', () => {
       await vi.runOnlyPendingTimersAsync();
     });
 
-    await waitFor(() => {
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2);
-    });
-
     mockRequests();
     await act(async () => {
       await vi.runOnlyPendingTimersAsync();
     });
 
-    await waitFor(() => {
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(3);
-    });
     expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
 
     await waitForPollingsToBeComplete();
@@ -341,8 +315,6 @@ describe('ProcessInstance', () => {
 
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const handlePollingIncidentsSpy = vi.spyOn(incidentsStore, 'handlePolling');
-
     const handlePollingFlowNodeInstanceSpy = vi.spyOn(
       flowNodeInstanceStore,
       'pollInstances',
@@ -352,7 +324,6 @@ describe('ProcessInstance', () => {
 
     mockRequests();
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
 
     triggerVisibilityChange('hidden');
@@ -362,7 +333,6 @@ describe('ProcessInstance', () => {
 
     vi.runOnlyPendingTimers();
 
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
 
     vi.clearAllTimers();

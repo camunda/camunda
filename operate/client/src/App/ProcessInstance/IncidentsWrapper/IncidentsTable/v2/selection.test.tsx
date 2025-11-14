@@ -7,80 +7,57 @@
  */
 
 import {IncidentsTable} from '.';
-import {
-  createEnhancedIncidentV2,
-  createInstance,
-  createProcessInstance,
-} from 'modules/testUtils';
+import {createInstance, createProcessInstance} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
-import {Wrapper, firstIncident} from './mocks';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {Wrapper, firstIncident, secondIncident} from './mocks';
+import * as selectionUtils from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
-// TODO: This test will no longer work because the selection state if an incident is
-// stored on the incident for rendering. Since they are now passed as prop, they
-// are not controlled by the "flowNodeSelectionStore" in this test.
-// Do we have to move away from passing data as props?
+// TanStack query is still fetching the data when the test executes, so "useRootNode"
+// falls back to undefined for the flowNodeInstanceId.
+const rootNode = {flowNodeInstanceId: undefined, isMultiInstance: false};
 
-describe('Selection', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
-  it('should deselect selected incident', async () => {
+describe('Selection', () => {
+  beforeEach(() => {
     mockFetchProcessInstance().withSuccess(createInstance());
-    mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
         hasIncident: true,
       }),
     );
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: firstIncident.elementId,
-        isMultiInstance: false,
-      },
-    );
+  });
+
+  it('should deselect selected incident', async () => {
+    const spy = vi.spyOn(selectionUtils, 'clearSelection');
 
     const {user} = render(
       <IncidentsTable
         state="content"
         processInstanceKey="1"
-        incidents={[firstIncident]}
+        incidents={[{...firstIncident, isSelected: true}]}
       />,
       {wrapper: Wrapper},
     );
     expect(screen.getByRole('row', {selected: true})).toBeInTheDocument();
 
     await user.click(screen.getByRole('row', {selected: true}));
-    expect(screen.getByRole('row', {selected: false})).toBeInTheDocument();
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(rootNode);
   });
 
   it('should select single incident when multiple incidents are selected', async () => {
-    mockFetchProcessInstance().withSuccess(createInstance());
-    mockFetchProcessDefinitionXml().withSuccess('');
-    mockFetchProcessInstanceV2().withSuccess(
-      createProcessInstance({
-        hasIncident: true,
-      }),
-    );
-    const incidents = [
-      createEnhancedIncidentV2({elementId: 'myTask'}),
-      createEnhancedIncidentV2({elementId: 'myTask'}),
-    ];
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'myTask',
-        isMultiInstance: false,
-      },
-    );
+    const spy = vi.spyOn(selectionUtils, 'selectFlowNode');
 
     const {user} = render(
       <IncidentsTable
         state="content"
         processInstanceKey="1"
-        incidents={incidents}
+        incidents={[
+          {...firstIncident, isSelected: true, errorType: 'CONDITION_ERROR'},
+          {...secondIncident, isSelected: true, errorType: 'CONDITION_ERROR'},
+        ]}
       />,
       {wrapper: Wrapper},
     );
@@ -91,19 +68,13 @@ describe('Selection', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     });
 
     expect(firstRow).toBeInTheDocument();
-    await user.click(firstRow!);
+    await user.click(firstRow);
 
-    expect(
-      screen.getByRole('row', {
-        name: /condition error/i,
-        selected: true,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('row', {
-        name: /condition error/i,
-        selected: false,
-      }),
-    ).toBeInTheDocument();
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(rootNode, {
+      flowNodeId: firstIncident.elementId,
+      flowNodeInstanceId: firstIncident.elementInstanceKey,
+      isMultiInstance: false,
+    });
   });
 });

@@ -22,14 +22,21 @@ import {
   incidentFlowNodeMetaData,
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
-import {createInstance, createIncident} from 'modules/testUtils';
+import {
+  createInstance,
+  createIncident,
+  createIncidentV2,
+} from 'modules/testUtils';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
+import {
+  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
+  IS_INCIDENTS_PANEL_V2,
+} from 'modules/feature-flags';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -79,6 +86,11 @@ const mockIncidents = {
       count: 1,
     },
   ],
+};
+
+const mockIncidentsV2 = {
+  page: {totalItems: 1},
+  items: [createIncidentV2()],
 };
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
@@ -205,6 +217,15 @@ describe('TopPanel', () => {
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
+      mockIncidentsV2,
+    );
+    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
+      mockIncidentsV2,
+    );
+    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
+      mockIncidentsV2,
+    );
     mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
@@ -223,10 +244,6 @@ describe('TopPanel', () => {
           canceled: 0,
         },
       ],
-    });
-    mockSearchIncidentsByProcessInstance('instance_id').withSuccess({
-      items: [],
-      page: {totalItems: 0},
     });
 
     mockSearchJobs().withSuccess({
@@ -344,29 +361,30 @@ describe('TopPanel', () => {
   });
 
   it('should toggle incident bar', async () => {
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      createInstance({id: 'instance_id', state: 'INCIDENT'}),
+    );
+
     const {user} = render(<TopPanel />, {
       wrapper: getWrapper(),
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
 
+    const tableHeading = IS_INCIDENTS_PANEL_V2
+      ? 'Incidents - 1 result'
+      : 'Incidents View - 1 result';
     await waitFor(() =>
-      expect(
-        screen.queryByText('Incidents View - 1 result'),
-      ).not.toBeInTheDocument(),
+      expect(screen.queryByText(tableHeading)).not.toBeInTheDocument(),
     );
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(
-      await screen.findByText('Incidents View - 1 result'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(tableHeading)).toBeInTheDocument();
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(
-      screen.queryByText('Incidents View - 1 result'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(tableHeading)).not.toBeInTheDocument();
   });
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {

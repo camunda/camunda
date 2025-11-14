@@ -17,6 +17,7 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
 const {reset, fetchIncidents} = incidentsStore;
 
@@ -49,12 +50,16 @@ describe('IncidentsFilter', () => {
       screen.getByRole('combobox', {name: /filter by incident type/i}),
     );
     expect(
-      screen.getByRole('option', {name: 'Condition error'}),
+      screen.getByRole('option', {name: 'Condition error.'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('option', {name: 'Extract value error'}),
+      screen.getByRole('option', {name: 'Extract value error.'}),
     ).toBeInTheDocument();
 
+    if (IS_INCIDENTS_PANEL_V2) {
+      // TODO: V2 has no flow node filter. Remove code below with full v2 migration in issue https://github.com/camunda/camunda/issues/39548
+      return;
+    }
     await user.click(
       screen.getByRole('combobox', {name: /filter by flow node/i}),
     );
@@ -84,14 +89,14 @@ describe('IncidentsFilter', () => {
 
     await user.click(
       screen.getByRole('option', {
-        name: 'Condition error',
+        name: 'Condition error.',
       }),
     );
     expect(screen.getByRole('button', {name: 'Reset Filters'})).toBeEnabled();
 
     expect(
       screen.getByRole('option', {
-        name: 'Condition error',
+        name: 'Condition error.',
         selected: true,
       }),
     ).toBeInTheDocument();
