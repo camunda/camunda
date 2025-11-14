@@ -243,11 +243,7 @@ final class ZeebeIntegrationExtension
       throw new UncheckedIOException(e);
     }
 
-    broker
-        .withWorkingDirectory(workingDirectory)
-        .withUnifiedConfig(
-            camunda ->
-                camunda.getData().getPrimaryStorage().setDirectory(workingDirectory.toString()));
+    broker.withWorkingDirectory(workingDirectory);
   }
 
   private Path createManagedDirectory(final Store store, final String prefix) {

@@ -231,9 +231,9 @@ final class ScaleUpBrokersTest {
       final int newClusterSize, final int newBrokerId, final Optional<Path> dataDirectory) {
     final var newBroker =
         new TestStandaloneBroker()
-            .withBrokerConfig(
+            .withUnifiedConfig(
                 b -> {
-                  b.getCluster().setClusterSize(newClusterSize);
+                  b.getCluster().setSize(newClusterSize);
                   b.getCluster().setNodeId(newBrokerId);
                   b.getCluster()
                       .setInitialContactPoints(

@@ -63,6 +63,42 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
   }
 
   /**
+   * Returns the unified configuration object. This provides access to the camunda.* configuration
+   * structure.
+   *
+   * @return the Camunda unified configuration object
+   */
+  @Override
+  default Camunda unifiedConfig() {
+    throw new UnsupportedOperationException(
+        "Unified configuration is not supported by this implementation");
+  }
+
+  @Override
+  default CamundaClientBuilder newClientBuilder() {
+    if (!isGateway()) {
+      throw new IllegalStateException(
+          "Cannot create a new client for this application, as it does not have an embedded gateway");
+    }
+
+    final CamundaClientBuilder camundaClientBuilder = TestGateway.super.newClientBuilder();
+
+    clientAuthenticationMethod()
+        .ifPresent(
+            method -> {
+              if (method == AuthenticationMethod.BASIC) {
+                camundaClientBuilder.credentialsProvider(
+                    new BasicAuthCredentialsProviderBuilder()
+                        .username(DEFAULT_USER_USERNAME)
+                        .password(DEFAULT_USER_PASSWORD)
+                        .build());
+              }
+            });
+
+    return camundaClientBuilder;
+  }
+
+  /**
    * Convenience method to modify cluster configuration using the unified configuration API.
    *
    * @param modifier a configuration function for cluster settings
@@ -120,43 +156,7 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
 
   BrokerBasedProperties brokerConfig();
 
-  /**
-   * Returns the unified configuration object. This provides access to the camunda.* configuration
-   * structure.
-   *
-   * @return the Camunda unified configuration object
-   */
-  @Override
-  default Camunda unifiedConfig() {
-    throw new UnsupportedOperationException(
-        "Unified configuration is not supported by this implementation");
-  }
-
   default Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return Optional.empty();
-  }
-
-  @Override
-  default CamundaClientBuilder newClientBuilder() {
-    if (!isGateway()) {
-      throw new IllegalStateException(
-          "Cannot create a new client for this application, as it does not have an embedded gateway");
-    }
-
-    final CamundaClientBuilder camundaClientBuilder = TestGateway.super.newClientBuilder();
-
-    clientAuthenticationMethod()
-        .ifPresent(
-            method -> {
-              if (method == AuthenticationMethod.BASIC) {
-                camundaClientBuilder.credentialsProvider(
-                    new BasicAuthCredentialsProviderBuilder()
-                        .username(DEFAULT_USER_USERNAME)
-                        .password(DEFAULT_USER_PASSWORD)
-                        .build());
-              }
-            });
-
-    return camundaClientBuilder;
   }
 }

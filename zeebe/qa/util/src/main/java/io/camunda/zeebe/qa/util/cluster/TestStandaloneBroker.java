@@ -16,6 +16,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
@@ -189,12 +190,17 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public MemberId nodeId() {
+    if (unifiedConfig.getCluster().getNodeIdProvider().getType() == Type.S3) {
+      return MemberId.from("0");
+    }
     return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
   }
 
   @Override
   public String host() {
-    return unifiedConfig.getCluster().getNetwork().getHost();
+    return unifiedConfig.getCluster().getNetwork().getHost() != null
+        ? unifiedConfig.getCluster().getNetwork().getHost()
+        : "0.0.0.0";
   }
 
   @Override
@@ -237,6 +243,22 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "Gateway configuration via withGatewayConfig is not supported. "
             + "Gateway is not yet fully migrated to unified configuration. "
             + "Use withProperty() to set zeebe.broker.gateway.* properties instead.");
+  }
+
+  /**
+   * Modifies the unified configuration (camunda.* properties). This is the recommended way to
+   * configure test brokers going forward.
+   *
+   * <p>The unified configuration will be merged into BrokerBasedProperties at Spring application
+   * startup via BrokerBasedPropertiesOverride, with unified config taking precedence.
+   *
+   * @param modifier a configuration function that accepts the Camunda configuration object
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneBroker withUnifiedConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(unifiedConfig);
+    return this;
   }
 
   @Override
@@ -338,22 +360,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "withBrokerConfig() is no longer supported. "
             + "Use withUnifiedConfig() or convenience methods like withClusterConfig(), withDataConfig(), etc. "
             + "BrokerBasedProperties is created from UnifiedConfiguration at Spring startup.");
-  }
-
-  /**
-   * Modifies the unified configuration (camunda.* properties). This is the recommended way to
-   * configure test brokers going forward.
-   *
-   * <p>The unified configuration will be merged into BrokerBasedProperties at Spring application
-   * startup via BrokerBasedPropertiesOverride, with unified config taking precedence.
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneBroker withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
   }
 
   /**
@@ -510,8 +516,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .getInternalApi()
         .setPort(SocketUtil.getNextAddress().getPort());
     unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
-
-    unifiedConfig.getCluster().getNetwork().setHost("0.0.0.0");
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {

@@ -16,6 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
@@ -48,14 +49,13 @@ final class ContinuousBackupIT {
   @Container private static final GcsContainer GCS = new GcsContainer();
 
   private final String basePath = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+  private Path dataDirectory;
 
   @TestZeebe
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnifiedConfig(this::configureBroker)
           .withProperty("zeebe.broker.experimental.continuousBackups", true);
-
-  //   .withProperty("zeebe.broker.network.maxMessageSize", DataSize.ofKilobytes(500));
 
   private BackupActuator backupActuator;
   private PartitionsActuator partitionsActuator;
@@ -66,6 +66,12 @@ final class ContinuousBackupIT {
     partitionsActuator = PartitionsActuator.of(broker);
     // Some tests stop GCS, make sure it's always started again
     GCS.start();
+
+    // Obtain dataDirectory from the BrokerBasedProperties bean instead of the unified configuration
+    // because the dataDirectory is overridden by the BrokerCfg.init method during application
+    // startup.
+    final var brokerBasedProperties = broker.bean(BrokerBasedProperties.class);
+    dataDirectory = Path.of(brokerBasedProperties.getData().getDirectory()).getParent();
   }
 
   @BeforeAll
@@ -126,8 +132,7 @@ final class ContinuousBackupIT {
 
     // when - restoring from all three backups
     broker.stop();
-    final var dataDirectory =
-        Path.of(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory()).getParent();
+
     FileUtil.deleteFolder(dataDirectory);
     FileUtil.ensureDirectoryExists(dataDirectory);
     final var restore =
@@ -170,8 +175,6 @@ final class ContinuousBackupIT {
 
     // when/then - restoring from backup 1 and 3, but skipping backup 2
     broker.stop();
-    final var dataDirectory =
-        Path.of(broker.unifiedConfig().getData().getPrimaryStorage().getDirectory()).getParent();
     FileUtil.deleteFolder(dataDirectory);
     FileUtil.ensureDirectoryExists(dataDirectory);
     final var restore =
@@ -261,6 +264,10 @@ final class ContinuousBackupIT {
     cfg.getData().getBackup().setStore(Backup.BackupStoreType.GCS);
     cfg.getData().getPrimaryStorage().getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
     cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
+
+    // TODO KPO why disable camunda exporter? otherwise restoreFailsOnGapsBetweenBackups will fail
+    // There is no exporter active when running the test with legacy config
+    cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
   }
 
   private void configureRestoreApp(final Camunda cfg) {

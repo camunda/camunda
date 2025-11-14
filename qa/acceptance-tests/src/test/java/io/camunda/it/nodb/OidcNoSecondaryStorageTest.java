@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -68,6 +69,8 @@ public class OidcNoSecondaryStorageTest {
       new TestStandaloneBroker()
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
+          .withUnifiedConfig(
+              cfg -> cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none))
           .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE)
           .withProperty("camunda.security.authentication.method", "oidc")
           .withSecurityConfig(

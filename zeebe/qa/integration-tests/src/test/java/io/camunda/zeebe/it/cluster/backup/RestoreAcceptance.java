@@ -49,7 +49,7 @@ public interface RestoreAcceptance {
   private void takeBackup(final long backupId) {
     try (final var zeebe =
         new TestStandaloneBroker()
-            .withBrokerConfig(this::configureBackupStore)
+            .withUnifiedConfig(this::configureBackupStore)
             .start()
             .awaitCompleteTopology()) {
       final var actuator = BackupActuator.of(zeebe);
