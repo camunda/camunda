@@ -1,306 +1,345 @@
-# Local Testing Guide - Custom Headers Feature
+# Custom Headers Local Testing Guide
 
-## 📋 Prerequisites
+This guide provides step-by-step instructions for testing the new custom headers functionality locally.
 
-- **Java**: JDK 21+
-- **Maven**: 3.9+
-- **Docker**: For running Elasticsearch/OpenSearch (optional)
+## Prerequisites
+
+- Java 21+
+- Maven 3.9+
+- Docker (for local Elasticsearch/OpenSearch/PostgreSQL)
+- Camunda 8 source code on branch `ad-extend-custom-headers-for-user-tasks`
+
+## Part 1: Build and Start Camunda Locally
+
+### 1. Build the Project
 
 ```bash
-java -version    # Should show Java 21+
-mvn -version     # Should show Maven 3.9+
-docker --version # Optional, for ES/OS testing
+cd /path/to/camunda
+mvn clean install -DskipTests -T 1C
 ```
 
-## 🚀 Quick Start - Test with H2 (In-Memory)
+### 2. Start Infrastructure (Elasticsearch + PostgreSQL)
 
-Fastest way to test without external dependencies.
-
-### Build the Project
 ```bash
-cd /Users/aleksander.dytko/Documents/GitHub/camunda
-./mvnw clean install -DskipTests -T 1C
+docker-compose up -d elasticsearch postgres
 ```
 
-### Run Integration Tests
+### 3. Run Zeebe Broker
+
 ```bash
-./mvnw test -pl qa/acceptance-tests -Dtest=UserTaskSearchTest
+cd zeebe/broker
+mvn exec:java
 ```
 
-## 🧪 Manual Testing Steps
+### 4. Run Tasklist (in another terminal)
+
+```bash
+cd tasklist/webapp
+mvn spring-boot:run
+```
+
+## Part 2: Test FEEL Expressions in Custom Headers
 
 ### 1. Deploy Process with FEEL Expressions
 
-Create `test-custom-headers.bpmn`:
+Create a process file `test-headers-feel.bpmn`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
                    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0">
-  <bpmn:process id="testCustomHeaders" isExecutable="true">
-    <bpmn:startEvent id="start">
-      <bpmn:outgoing>flow1</bpmn:outgoing>
-    </bpmn:startEvent>
-    
-    <bpmn:userTask id="taskStatic" name="Static Headers">
+  <bpmn:process id="testHeadersFeel" isExecutable="true">
+    <bpmn:startEvent id="start"/>
+    <bpmn:userTask id="taskWithFeel" name="Task with FEEL Headers">
       <bpmn:extensionElements>
         <zeebe:taskHeaders>
-          <zeebe:header key="department" value="engineering" />
-          <zeebe:header key="priority" value="high" />
-          <zeebe:header key="region" value="EMEA" />
+          <zeebe:header key="department" value="engineering"/>
+          <zeebe:header key="priority" value="=priorityVariable"/>
+          <zeebe:header key="dueDate" value="=now() + duration(&quot;P3D&quot;)"/>
+          <zeebe:header key="numericCalc" value="=baseValue + 10"/>
         </zeebe:taskHeaders>
       </bpmn:extensionElements>
-      <bpmn:incoming>flow1</bpmn:incoming>
-      <bpmn:outgoing>flow2</bpmn:outgoing>
     </bpmn:userTask>
-    
-    <bpmn:userTask id="taskFeel" name="FEEL Expressions">
-      <bpmn:extensionElements>
-        <zeebe:taskHeaders>
-          <zeebe:header key="department" value="=deptVar" />
-          <zeebe:header key="priority" value="=if urgency > 5 then &quot;high&quot; else &quot;low&quot;" />
-          <zeebe:header key="score" value="=baseScore * 2" />
-        </zeebe:taskHeaders>
-      </bpmn:extensionElements>
-      <bpmn:incoming>flow2</bpmn:incoming>
-      <bpmn:outgoing>flow3</bpmn:outgoing>
-    </bpmn:userTask>
-    
-    <bpmn:endEvent id="end">
-      <bpmn:incoming>flow3</bpmn:incoming>
-    </bpmn:endEvent>
-    
-    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="taskStatic" />
-    <bpmn:sequenceFlow id="flow2" sourceRef="taskStatic" targetRef="taskFeel" />
-    <bpmn:sequenceFlow id="flow3" sourceRef="taskFeel" targetRef="end" />
+    <bpmn:endEvent id="end"/>
+    <bpmn:sequenceFlow sourceRef="start" targetRef="taskWithFeel"/>
+    <bpmn:sequenceFlow sourceRef="taskWithFeel" targetRef="end"/>
   </bpmn:process>
 </bpmn:definitions>
 ```
 
-### 2. Deploy via REST API
+Deploy it:
+
 ```bash
-curl -X POST http://localhost:8080/v2/deployments \
-  -H "Content-Type: multipart/form-data" \
-  -F "resources=@test-custom-headers.bpmn"
+zbctl deploy test-headers-feel.bpmn
 ```
 
-### 3. Start Process Instance
+### 2. Start Process Instance with Variables
+
 ```bash
-curl -X POST http://localhost:8080/v2/process-instances \
-  -H "Content-Type: application/json" \
-  -d '{
-    "processDefinitionKey": "<KEY>",
-    "variables": {
-      "deptVar": "sales",
-      "urgency": 8,
-      "baseScore": 25
-    }
-  }'
+zbctl create instance testHeadersFeel \
+  --variables '{"priorityVariable": "high", "baseValue": 5}'
 ```
 
-### 4. Search Tests
+### 3. Verify Expression Evaluation
 
-#### Exact Match
+Query the task via REST API:
+
 ```bash
 curl -X POST http://localhost:8080/v2/user-tasks/search \
   -H "Content-Type: application/json" \
   -d '{
     "filter": {
-      "customHeaders": [
-        { "name": "department", "value": { "$eq": "engineering" } }
-      ]
+      "bpmnProcessId": "testHeadersFeel"
     }
-  }' | jq
+  }' | jq '.items[0].customHeaders'
 ```
 
-#### Multiple Headers (AND)
-```bash
-curl -X POST http://localhost:8080/v2/user-tasks/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "filter": {
-      "customHeaders": [
-        { "name": "department", "value": { "$eq": "engineering" } },
-        { "name": "region", "value": { "$eq": "EMEA" } }
-      ]
-    }
-  }' | jq
-```
-
-#### LIKE Pattern
-```bash
-curl -X POST http://localhost:8080/v2/user-tasks/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "filter": {
-      "customHeaders": [
-        { "name": "department", "value": { "$like": "engi*" } }
-      ]
-    }
-  }' | jq
-```
-
-#### EXISTS
-```bash
-curl -X POST http://localhost:8080/v2/user-tasks/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "filter": {
-      "customHeaders": [
-        { "name": "priority", "value": { "$exists": true } }
-      ]
-    }
-  }' | jq
-```
-
-#### Verify System Headers NOT Searchable
-```bash
-curl -X POST http://localhost:8080/v2/user-tasks/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "filter": {
-      "customHeaders": [
-        { "name": "io.camunda.zeebe:formKey", "value": { "$eq": "any" } }
-      ]
-    }
-  }' | jq
-```
-
-Expected: No results (system headers filtered out)
-
-### 5. Verify Evaluated FEEL Expressions
-
-```bash
-curl http://localhost:8080/v2/user-tasks/<KEY> | jq '.customHeaders'
-```
-
-Expected:
+**Expected Output**:
 ```json
 {
-  "department": "sales",
+  "department": "engineering",
   "priority": "high",
-  "score": "50"
+  "dueDate": "2025-11-17T10:00:00Z",
+  "numericCalc": "15"
 }
 ```
 
-## 🧪 Java Client Testing
+✅ Verify that:
+- Static value `department` is preserved
+- Expression `=priorityVariable` resolved to `"high"`
+- FEEL function `=now() + duration("P3D")` calculated correctly
+- Numeric expression `=baseValue + 10` converted to string `"15"`
+
+## Part 3: Test Custom Header Filtering
+
+### 1. Deploy Multiple Processes with Different Headers
+
+```xml
+<!-- Process 1: Engineering department -->
+<zeebe:header key="department" value="engineering"/>
+<zeebe:header key="region" value="EMEA"/>
+<zeebe:header key="priority" value="high"/>
+
+<!-- Process 2: Sales department -->
+<zeebe:header key="department" value="sales"/>
+<zeebe:header key="region" value="APAC"/>
+<zeebe:header key="priority" value="medium"/>
+
+<!-- Process 3: HR department -->
+<zeebe:header key="department" value="hr"/>
+<zeebe:header key="region" value="EMEA"/>
+<zeebe:header key="priority" value="low"/>
+```
+
+Start instances of all three processes.
+
+### 2. Test Filter by Exact Match ($eq)
+
+```bash
+curl -X POST http://localhost:8080/v2/user-tasks/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": {
+      "customHeaders": [
+        {
+          "name": "department",
+          "value": {"$eq": "engineering"}
+        }
+      ]
+    }
+  }' | jq '.items | length'
+```
+
+**Expected**: 1 task (only engineering)
+
+### 3. Test Filter by Multiple Headers (AND logic)
+
+```bash
+curl -X POST http://localhost:8080/v2/user-tasks/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": {
+      "customHeaders": [
+        {
+          "name": "region",
+          "value": {"$eq": "EMEA"}
+        },
+        {
+          "name": "priority",
+          "value": {"$eq": "high"}
+        }
+      ]
+    }
+  }' | jq '.items[].customHeaders'
+```
+
+**Expected**: 1 task (engineering in EMEA with high priority)
+
+### 4. Test Filter by Pattern Matching ($like)
+
+```bash
+curl -X POST http://localhost:8080/v2/user-tasks/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": {
+      "customHeaders": [
+        {
+          "name": "department",
+          "value": {"$like": "eng*"}
+        }
+      ]
+    }
+  }' | jq '.items | length'
+```
+
+**Expected**: 1 task (matches "engineering")
+
+### 5. Test Filter by Existence ($exists)
+
+```bash
+curl -X POST http://localhost:8080/v2/user-tasks/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": {
+      "customHeaders": [
+        {
+          "name": "priority",
+          "value": {"$exists": true}
+        }
+      ]
+    }
+  }' | jq '.items | length'
+```
+
+**Expected**: 3 tasks (all have priority header)
+
+### 6. Test Filter by Multiple Values ($in)
+
+```bash
+curl -X POST http://localhost:8080/v2/user-tasks/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": {
+      "customHeaders": [
+        {
+          "name": "department",
+          "value": {"$in": ["engineering", "hr"]}
+        }
+      ]
+    }
+  }' | jq '.items | length'
+```
+
+**Expected**: 2 tasks (engineering and hr)
+
+### 7. Verify System Headers are NOT Searchable
+
+```bash
+curl -X POST http://localhost:8080/v2/user-tasks/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": {
+      "customHeaders": [
+        {
+          "name": "io.camunda.zeebe:formKey",
+          "value": {"$eq": "anyValue"}
+        }
+      ]
+    }
+  }' | jq '.items | length'
+```
+
+**Expected**: 0 tasks (system headers filtered out in Java code)
+
+## Part 4: Test with Java Client API
 
 ```java
-import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.util.Map;
-import java.util.List;
+import io.camunda.zeebe.client.ZeebeClient;
 
 public class CustomHeadersTest {
-  public static void main(String[] args) throws Exception {
-    CamundaClient client = CamundaClient.newClient();
-    
-    // Deploy
-    var deployment = client.newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("test")
-                .startEvent()
-                .userTask("task1")
-                .zeebeUserTask()
-                .zeebeTaskHeader("dept", "engineering")
-                .zeebeTaskHeader("priority", "=basePriority + 1")
-                .endEvent()
-                .done(),
-            "test.bpmn")
-        .send().join();
-    
-    // Start instance
-    client.newCreateInstanceCommand()
-        .bpmnProcessId("test")
-        .latestVersion()
-        .variable("basePriority", 5)
-        .send().join();
-    
-    Thread.sleep(2000); // Wait for export
-    
-    // Search by exact match
-    var result = client.newUserTaskSearchRequest()
-        .filter(f -> f.customHeaders(Map.of("dept", "engineering")))
-        .send().join();
-    
-    System.out.println("Found: " + result.items().size());
-    
-    // Search with LIKE
-    result = client.newUserTaskSearchRequest()
-        .filter(f -> f.customHeaders(List.of(
-            h -> h.name("dept").value(v -> v.like("engi*"))
-        )))
-        .send().join();
-    
-    System.out.println("Found with LIKE: " + result.items().size());
-    
-    // Print custom headers
-    if (!result.items().isEmpty()) {
-      result.items().get(0).getCustomHeaders()
-          .forEach((k, v) -> System.out.println(k + " = " + v));
-    }
-    
-    client.close();
+  public static void main(String[] args) {
+    final ZeebeClient client = ZeebeClient.newClientBuilder()
+        .gatewayAddress("localhost:26500")
+        .usePlaintext()
+        .build();
+
+    // Search by custom headers
+    final var result = client.newUserTaskSearchRequest()
+        .filter(f -> f
+            .customHeaders(List.of(
+                h -> h.name("department").value("engineering"),
+                h -> h.name("region").value(v -> v.like("EM*"))
+            ))
+        )
+        .send()
+        .join();
+
+    System.out.println("Found " + result.items().size() + " tasks");
+    result.items().forEach(task -> {
+      System.out.println("Task: " + task.getUserTaskKey());
+      System.out.println("Headers: " + task.getCustomHeaders());
+    });
   }
 }
 ```
 
-## ✅ Verification Checklist
+## Part 5: Verify Database Storage
 
-- [ ] Process deploys with custom headers
-- [ ] Static headers show correct values
-- [ ] FEEL expressions show evaluated values
-- [ ] Search by exact match works
-- [ ] Search by multiple headers (AND) works
-- [ ] Search with LIKE works
-- [ ] Search with EXISTS works
-- [ ] System headers NOT searchable
-- [ ] Custom headers visible in task response
+### Elasticsearch
 
-## 🐛 Troubleshooting
-
-### Tests Skip
-**Issue**: Integration tests show "Tests are skipped"  
-**Solution**: Tests require full Camunda cluster. Use manual testing.
-
-### Connection Refused
-**Issue**: `Connection refused to localhost:26500`  
-**Solution**: Start broker with `./bin/camunda start`
-
-### Custom Headers Not Searchable
-**Possible Causes**:
-1. Task not exported yet - wait a few seconds
-2. Index not updated - check ES template
-3. System header - they're not searchable
-
-**Debug**:
 ```bash
-# Check if task in Elasticsearch
-curl http://localhost:9200/tasklist-task-*/_search | jq
-
-# Verify mapping
-curl http://localhost:9200/tasklist-task-*/_mapping | \
-  jq '.[] | .mappings.properties.customHeaders'
+curl -X GET "localhost:9200/tasklist-task-*/_search?pretty" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": {
+      "term": {
+        "customHeaders.department": "engineering"
+      }
+    }
+  }'
 ```
 
-### FEEL Expression Fails
-**Solution**: Check expression syntax and variables:
-```bash
-curl http://localhost:8080/v2/process-instances/<KEY> | jq '.variables'
+✅ Verify `customHeaders` is stored as a flattened field (not nested array)
+
+### PostgreSQL
+
+```sql
+SELECT 
+  key,
+  custom_headers->>'department' as department,
+  custom_headers->>'priority' as priority
+FROM user_task
+WHERE custom_headers IS NOT NULL;
 ```
 
-## 🔍 Success Criteria
+✅ Verify `custom_headers` column contains JSON with evaluated values
 
-✅ All these should work:
-1. Process deploys with static and FEEL headers
-2. Static headers show original values
-3. FEEL expressions show computed values
-4. All search operators work
-5. Multiple header filters work (AND)
-6. System headers excluded from search
-7. Performance acceptable (< 100ms)
+## Troubleshooting
 
----
+### Issue: Expressions Not Evaluated
+- **Check**: Process deployed after code changes?
+- **Fix**: Redeploy process definition
 
-**Questions?** See implementation summary for architecture details.
+### Issue: Custom Headers Not Searchable
+- **Check**: Index template applied?
+- **Fix**: Delete indices and restart: `curl -X DELETE "localhost:9200/tasklist-task-*"`
 
+### Issue: System Headers Appearing in Search
+- **Check**: Using correct header name (no `io.camunda.zeebe:` prefix)?
+- **Fix**: System headers are automatically filtered; use user-defined headers only
+
+## Success Criteria
+
+✅ FEEL expressions in header values are evaluated at task creation  
+✅ Evaluated values are stored in all backends (RDBMS, ES, OS)  
+✅ Custom header filtering works with all operators ($eq, $like, $exists, $in)  
+✅ Multiple header filters use AND logic  
+✅ System headers are excluded from search  
+✅ Java client API works correctly  
+✅ No dynamic fields in Elasticsearch schema  
+
+## Additional Resources
+
+- [Implementation Summary](./custom-headers-implementation-summary.md)
+- [Camunda FEEL Documentation](https://docs.camunda.io/docs/components/modeler/feel/what-is-feel/)
+- [User Task Search API](https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-user-tasks/)
