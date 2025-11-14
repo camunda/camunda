@@ -9,9 +9,12 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.core.ResolvableType;
 
 public abstract class DocumentBasedSecondaryStorageDatabase
     extends SecondaryStorageDatabase<DocumentBasedHistory> {
@@ -22,8 +25,32 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Name of the cluster */
   private String clusterName = databaseName().toLowerCase();
 
+  /** The date format for ES and OS */
+  private String dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+
+  /** The socket timeout for ES and OS connector */
+  private Integer socketTimeout;
+
+  /** The connection timeout for ES and OS connector */
+  private Integer connectionTimeout;
+
   /** How many shards Elasticsearch uses for all Tasklist indices. */
   private int numberOfShards = 1;
+
+  /** How many replicas Elasticsearch uses for all indices. */
+  private int numberOfReplicas = 0;
+
+  /** Variable size threshold for the database configured as secondary storage. */
+  private int variableSizeThreshold = 8191;
+
+  /** Per-index replica overrides. */
+  private Map<String, Integer> numberOfReplicasPerIndex = new HashMap<>();
+
+  /** Per-index shard overrides. */
+  private Map<String, Integer> numberOfShardsPerIndex = new HashMap<>();
+
+  /** Template priority for index templates. */
+  private Integer templatePriority;
 
   @NestedConfigurationProperty private Security security = new Security(databaseName());
 
@@ -217,6 +244,110 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.incidentNotifier = incidentNotifier;
   }
 
+  public String getDateFormat() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".date-format",
+        dateFormat,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyDateFormatProperties());
+  }
+
+  public void setDateFormat(final String dateFormat) {
+    this.dateFormat = dateFormat;
+  }
+
+  public Integer getSocketTimeout() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".socket-timeout",
+        socketTimeout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacySocketTimeoutProperties());
+  }
+
+  public void setSocketTimeout(final Integer socketTimeout) {
+    this.socketTimeout = socketTimeout;
+  }
+
+  public Integer getConnectionTimeout() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".connection-timeout",
+        connectionTimeout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyConnectionTimeoutProperties());
+  }
+
+  public void setConnectionTimeout(final Integer connectionTimeout) {
+    this.connectionTimeout = connectionTimeout;
+  }
+
+  public int getNumberOfReplicas() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".number-of-replicas",
+        numberOfReplicas,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyNumberOfReplicasProperties());
+  }
+
+  public void setNumberOfReplicas(final int numberOfReplicas) {
+    this.numberOfReplicas = numberOfReplicas;
+  }
+
+  public int getVariableSizeThreshold() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".variable-size-threshold",
+        variableSizeThreshold,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyVariableSizeThresholdProperties());
+  }
+
+  public void setVariableSizeThreshold(final int variableSizeThreshold) {
+    this.variableSizeThreshold = variableSizeThreshold;
+  }
+
+  public Map<String, Integer> getNumberOfReplicasPerIndex() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".number-of-replicas-per-index",
+        numberOfReplicasPerIndex,
+        ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyReplicasByIndexNameProperties());
+  }
+
+  public void setNumberOfReplicasPerIndex(final Map<String, Integer> numberOfReplicasPerIndex) {
+    this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
+  }
+
+  public Map<String, Integer> getNumberOfShardsPerIndex() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".number-of-shards-per-index",
+        numberOfShardsPerIndex,
+        ResolvableType.forClassWithGenerics(Map.class, String.class, Integer.class),
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyShardsByIndexNameProperties());
+  }
+
+  public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
+    this.numberOfShardsPerIndex = numberOfShardsPerIndex;
+  }
+
+  public Integer getTemplatePriority() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".template-priority",
+        templatePriority,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyTemplatePriorityProperties());
+  }
+
+  public void setTemplatePriority(final Integer templatePriority) {
+    this.templatePriority = templatePriority;
+  }
+
   private String prefix() {
     return "camunda.data.secondary-storage." + databaseName().toLowerCase();
   }
@@ -270,5 +401,62 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.index.numberOfShards",
         "zeebe.broker.exporters.camundaexporter.args.index.numberOfShards");
+  }
+
+  private Set<String> legacyDateFormatProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.dateFormat",
+        "camunda.operate." + dbName + ".dateFormat",
+        "camunda.tasklist." + dbName + ".dateFormat",
+        "zeebe.broker.exporters.camundaexporter.args.connect.dateFormat");
+  }
+
+  private Set<String> legacySocketTimeoutProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.socketTimeout",
+        "camunda.operate." + dbName + ".socketTimeout",
+        "camunda.tasklist." + dbName + ".socketTimeout",
+        "zeebe.broker.exporters.camundaexporter.args.connect.socketTimeout");
+  }
+
+  private Set<String> legacyConnectionTimeoutProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.connectionTimeout",
+        "camunda.operate." + dbName + ".connectionTimeout",
+        "camunda.tasklist." + dbName + ".connectionTimeout",
+        "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout");
+  }
+
+  private Set<String> legacyNumberOfReplicasProperties() {
+    return Set.of(
+        "camunda.database.index.numberOfReplicas",
+        "zeebe.broker.exporters.camundaexporter.args.index.numberOfReplicas");
+  }
+
+  private Set<String> legacyVariableSizeThresholdProperties() {
+    return Set.of(
+        "camunda.database.index.variableSizeThreshold",
+        "zeebe.broker.exporters.camundaexporter.args.index.variableSizeThreshold");
+  }
+
+  private Set<String> legacyReplicasByIndexNameProperties() {
+    return Set.of(
+        "camunda.database.index.replicasByIndexName",
+        "zeebe.broker.exporters.camundaexporter.args.index.replicasByIndexName");
+  }
+
+  private Set<String> legacyShardsByIndexNameProperties() {
+    return Set.of(
+        "camunda.database.index.shardsByIndexName",
+        "zeebe.broker.exporters.camundaexporter.args.index.shardsByIndexName");
+  }
+
+  private Set<String> legacyTemplatePriorityProperties() {
+    return Set.of(
+        "camunda.database.index.templatePriority",
+        "zeebe.broker.exporters.camundaexporter.args.index.templatePriority");
   }
 }
