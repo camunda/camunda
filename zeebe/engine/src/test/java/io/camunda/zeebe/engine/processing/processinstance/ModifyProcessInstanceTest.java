@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -1318,6 +1319,9 @@ public class ModifyProcessInstanceTest {
   @Test
   public void shouldTerminateProcessIfProcessInstanceKeyIsPassedAsTerminateInstruction() {
     // regression test for https://github.com/camunda/camunda/issues/11413
+    // This is now handled by https://github.com/camunda/camunda/pull/38179, which enforces
+    // that an element cannot be activated if its flow scope is being terminated.
+    // This follows option 1 of the solution proposal in issue #11413.
     // given
     ENGINE
         .deployment()
@@ -1334,23 +1338,27 @@ public class ModifyProcessInstanceTest {
     getElementInstanceKeyOfElement(processInstanceKey, "A");
 
     // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .modification()
-        .activateElement("B")
-        .terminateElement(processInstanceKey)
-        .modify();
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B")
+            .terminateElement(processInstanceKey)
+            .expectRejection()
+            .modify();
 
     // then
-    assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .onlyCommandRejections()
-                .limit("B", ProcessInstanceIntent.ACTIVATE_ELEMENT))
-        .describedAs("Activation of User Task B should be rejected")
-        .isNotEmpty();
+    io.camunda.zeebe.protocol.record.Assertions.assertThat(rejection)
+        .describedAs(
+            "Expect that activation is rejected when flow scope (e.g process instance) is terminated")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate instructions "
+                    + "for elements whose required flow scope instance is also being terminated: "
+                    + "element 'B' requires flow scope instance '%s' which is being terminated. "
+                    + "Please provide a valid ancestor scope key for the activation or avoid terminating the required flow scope.")
+                .formatted(PROCESS_ID, processInstanceKey));
   }
 
   @Test
