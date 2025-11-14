@@ -17,6 +17,7 @@ import {
   mockDecisionXml,
   mockResponses as mockDecisionsResponses,
   mockDeleteDecision,
+  mockEmptyDecisionInstances,
   mockGroupedDecisions,
 } from '../mocks/decisions.mocks';
 import {openFile} from '@/utils/openFile';
@@ -124,7 +125,7 @@ test.describe.skip('delete resource definitions', () => {
       mockDecisionsResponses({
         groupedDecisions: mockGroupedDecisions,
         batchOperations: {items: [], page: {totalItems: 0}},
-        decisionInstances: {totalCount: 0, decisionInstances: []},
+        decisionInstances: mockEmptyDecisionInstances,
         decisionXml: mockDecisionXml,
         deleteDecision: mockDeleteDecision,
       }),
