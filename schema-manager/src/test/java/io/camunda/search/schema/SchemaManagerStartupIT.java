@@ -126,7 +126,7 @@ class SchemaManagerStartupIT {
     shutDownContainerGracefully(Duration.ofSeconds(30)); // as default Kubernetes shutdown timeout
     shutdownLatch.countDown();
 
-    thread.join(Duration.ofSeconds(5));
+    assertThat(thread.join(Duration.ofSeconds(10))).isTrue();
 
     // then
     final var logs = camunda.getLogs();
