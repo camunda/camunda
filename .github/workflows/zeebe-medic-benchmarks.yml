@@ -19,7 +19,6 @@ jobs:
     name: Collect benchmark data
     runs-on: ubuntu-latest
     outputs:
-      full-ref: ${{ steps.data.outputs.full-ref }}
       benchmark: ${{ steps.data.outputs.benchmark }}
       operate: ${{ steps.data.outputs.operate }}
     steps:
@@ -56,8 +55,6 @@ jobs:
       ttl: 28
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.full-ref }}
-      reuse-tag: ${{ inputs.reuse-tag || '' }}
       publish: "slack"
   setup-mixed-benchmark:
     name: Mixed Benchmark
@@ -70,9 +67,7 @@ jobs:
       ttl: 28
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.full-ref }}
-      reuse-tag: ${{ inputs.reuse-tag || '' }}
-      realistic: true
+      realistic: 'true'
   setup-latency-benchmark:
     name: Latency Benchmark
     uses: ./.github/workflows/camunda-load-test.yml
@@ -84,8 +79,6 @@ jobs:
       ttl: 28
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.full-ref }}
-      reuse-tag: ${{ inputs.reuse-tag || '' }}
       load-test-load: >
         --set starter.rate=1
         --set workers.worker.replicas=1
