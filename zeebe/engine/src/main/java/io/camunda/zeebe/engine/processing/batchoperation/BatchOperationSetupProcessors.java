@@ -95,6 +95,7 @@ public final class BatchOperationSetupProcessors {
             BatchOperationIntent.CREATE,
             new BatchOperationCreateProcessor(
                 writers,
+                processingState,
                 keyGenerator,
                 commandDistributionBehavior,
                 authorizationCheckBehavior,
