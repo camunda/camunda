@@ -40,7 +40,7 @@ jobs:
       - name: Delete namespaces eligible for deletion
         id: delete-namespaces
         run: |
-          currentDate=$(date -d ${{ inputs.date }} +%Y-%m-%d)
+          currentDate=$(date -d "${{ inputs.date }}" +'%Y-%m-%d')
           echo "Date used for deletion: $currentDate"
           namespacesDeleted=""
           for ns in $(kubectl get namespace --selector=deadline-date="$currentDate" -o json | jq -r '.items[].metadata.name');
