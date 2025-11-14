@@ -1210,6 +1210,37 @@ const createEventSubProcessFlowNodeInstances = (
   };
 };
 
+const mockProcessInstancesV2 = {
+  items: [
+    createProcessInstance({
+      processInstanceKey: '2251799813685594',
+      processDefinitionKey: '2251799813685592',
+      processDefinitionId: 'someKey',
+      processDefinitionName: 'someProcessName',
+      state: 'ACTIVE',
+    }),
+    createProcessInstance({
+      processInstanceKey: '2251799813685596',
+      processDefinitionKey: '2251799813685592',
+      processDefinitionId: 'someKey',
+      processDefinitionName: 'someProcessName',
+      state: 'ACTIVE',
+      hasIncident: true,
+    }),
+    createProcessInstance({
+      processInstanceKey: '2251799813685598',
+      processDefinitionKey: '2251799813685592',
+      processDefinitionId: 'someKey',
+      processDefinitionName: 'someProcessName',
+      state: 'TERMINATED',
+      endDate: '2018-06-22',
+    }),
+  ],
+  page: {
+    totalItems: 912,
+  },
+};
+
 export {
   createIncident,
   createEnhancedIncident,
@@ -1232,6 +1263,7 @@ export {
   operations,
   multiInstanceProcess,
   eventSubProcess,
+  mockProcessInstancesV2,
   createMultiInstanceFlowNodeInstances,
   createEventSubProcessFlowNodeInstances,
   createvariable,

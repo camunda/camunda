@@ -11,6 +11,7 @@ import type {
   ProcessInstance,
   QueryElementInstanceIncidentsRequestBody,
   QueryProcessInstanceIncidentsRequestBody,
+  QueryProcessInstancesRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
@@ -109,6 +110,14 @@ const queryKeys = {
       const {elementInstanceScopeKey} = payload;
       return ['elementInstancesSearch', elementInstanceScopeKey];
     },
+  },
+  processInstances: {
+    searchPaginated: (payload: QueryProcessInstancesRequestBody) => [
+      'processInstances',
+      'search',
+      'paginated',
+      payload,
+    ],
   },
 };
 
