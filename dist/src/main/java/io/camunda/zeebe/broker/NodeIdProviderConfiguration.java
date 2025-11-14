@@ -31,12 +31,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.regions.Region;
 
 @Configuration(proxyBeanMethods = false)
 @Profile(value = {"broker", "restore"})
 @DependsOn("unifiedConfigurationHelper")
+@Import(BrokerShutdownHelper.class)
 public class NodeIdProviderConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
 
@@ -64,7 +66,9 @@ public class NodeIdProviderConfiguration {
   }
 
   @Bean
-  public NodeIdProvider nodeIdProvider(final Optional<NodeIdRepository> nodeIdRepository) {
+  public NodeIdProvider nodeIdProvider(
+      final Optional<NodeIdRepository> nodeIdRepository,
+      final BrokerShutdownHelper shutdownHelper) {
     final var nodeIdProvider =
         switch (cluster.getDynamicNodeId().getType()) {
           case NONE -> {
@@ -84,7 +88,10 @@ public class NodeIdProviderConfiguration {
                 Clock.systemUTC(),
                 config.getLeaseDuration(),
                 taskId,
-                () -> System.exit(-1));
+                () -> {
+                  LOG.warn("NodeIdProvider terminating the process");
+                  shutdownHelper.initiateShutdown(1);
+                });
           }
         };
     nodeIdProvider.initialize(cluster.getSize()).join();

@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private long currentDelay;
   private final Duration renewalDelay;
   private ScheduledFuture<?> renewalTask;
+  private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -102,6 +104,11 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   private void renew() {
+    if (currentLease == null) {
+      LOG.warn(
+          "No current lease found, skipping renew. The process is shutting down already {}",
+          shutdownInitiated.get());
+    }
     try {
       final var newLease = currentLease.lease().renew(clock.millis(), leaseDuration);
       LOG.trace("Renewing lease with {}", newLease);
@@ -185,23 +192,36 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   @Override
   public void close() throws Exception {
     // use the executor status to avoid closing multiple times
-    if (!executor.isShutdown()) {
+    if (!executor.isShutdown() && !shutdownInitiated.compareAndExchange(false, true)) {
+      LOG.debug("Shutting down RepositoryNodeIdProvider");
+      final var shutdownFuture = executor.submit(this::closeInternal);
+      // closeInternal is already submitted to the executor, we can shut it down gracefully.
+      executor.shutdown();
       try {
-        if (renewalTask != null) {
-          renewalTask.cancel(true);
-        }
-        if (currentLease != null) {
-          nodeIdRepository.release(currentLease);
-        }
+        shutdownFuture.get(5, TimeUnit.SECONDS);
+      } catch (final Exception e) {
+        LOG.warn("Failed to gracefully shutdown NodeIdProvider, interrupting.", e);
       } finally {
-        currentLease = null;
-        // release is already submitted to the executor, we can shut it down gracefully.
-        executor.shutdown();
         // shutdown is taking too much time, let's shut it down by interrupting running tasks.
-        if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+        if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
           executor.shutdownNow();
         }
       }
+    }
+  }
+
+  // To be run in the executor
+  private void closeInternal() {
+    try {
+      if (renewalTask != null) {
+        renewalTask.cancel(true);
+      }
+      if (currentLease != null
+          && currentLease.lease().isStillValid(clock.millis(), leaseDuration)) {
+        nodeIdRepository.release(currentLease);
+      }
+    } finally {
+      currentLease = null;
     }
   }
 }
