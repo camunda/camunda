@@ -12,7 +12,6 @@ import {OperationItem} from 'modules/components/OperationItem';
 import {tracking} from 'modules/tracking';
 import {InlineLoading} from '@carbon/react';
 import {Container} from './styled';
-import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useResolveIncident} from 'modules/mutations/incidents/useResolveIncident';
 
@@ -31,13 +30,7 @@ const IncidentOperation: React.FC<IncidentOperationProps> = (props) => {
     e.stopPropagation();
     mutate(undefined, {
       onError: (error) => {
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Incident could not be resolved',
-          subtitle:
-            error.status === 403 ? 'You do not have permission' : undefined,
-          isDismissable: true,
-        });
+        handleOperationError(error.status);
       },
       onSuccess: () => {
         tracking.track({
