@@ -156,7 +156,7 @@ zeebe:
     - name: SPRING_CONFIG_ADDITIONALLOCATION
       value: "/usr/local/zeebe/config/application.yml"
 
-  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limitsS
+  # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
     limits:
       cpu: 1700m
