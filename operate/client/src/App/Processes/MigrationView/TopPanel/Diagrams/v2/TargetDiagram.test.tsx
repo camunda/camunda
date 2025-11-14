@@ -22,17 +22,20 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TargetDiagram} from './TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Wrapper} from '../tests/mocks';
-import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 vi.mock('modules/hooks/useFilters');
-vi.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
 
 describe('Target Diagram', () => {
   beforeEach(() => {
-    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    vi.spyOn(
+      filterModule,
+      'useProcessInstanceStatisticsFilters',
+    ).mockReturnValue({filter: {}});
   });
 
   it('should display initial state in the diagram header and diagram panel', async () => {

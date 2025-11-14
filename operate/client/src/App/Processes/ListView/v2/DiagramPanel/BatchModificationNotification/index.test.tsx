@@ -13,12 +13,12 @@ import {BatchModificationNotification} from '.';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockProcessXML} from 'modules/testUtils';
 
-vi.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
 vi.mock('modules/stores/processes/processes.list', () => ({
   processesStore: {
     getProcessIdByLocation: () => '123',
@@ -54,7 +54,10 @@ describe('BatchModificationNotification', () => {
       ...window.location,
       search: queryString,
     });
-    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    vi.spyOn(
+      filterModule,
+      'useProcessInstanceStatisticsFilters',
+    ).mockReturnValue({filter: {}});
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });
