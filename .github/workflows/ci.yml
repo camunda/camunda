@@ -47,6 +47,7 @@ jobs:
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
+      stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -586,6 +587,8 @@ jobs:
     needs: [detect-changes]
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
+    with:
+      stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
 
   build-operate-backend:
     if: needs.detect-changes.outputs.operate-backend-changes == 'true'
