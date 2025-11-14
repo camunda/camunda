@@ -161,10 +161,12 @@ final class InterPartitionCommandReceiverImpl {
       decodeAuthInfo(messageDecoder, recordMetadata);
 
       // Default to MANUAL_BACKUP if no checkpoint type is set for backward compatibility
-      CheckpointType checkpointType = CheckpointType.MANUAL_BACKUP;
+      final CheckpointType checkpointType;
       if (messageDecoder.checkpointType()
           != InterPartitionMessageDecoder.checkpointTypeNullValue()) {
         checkpointType = CheckpointType.valueOf(messageDecoder.checkpointType());
+      } else {
+        checkpointType = CheckpointType.MANUAL_BACKUP;
       }
 
       return new DecodedMessage(checkpointId, checkpointType, recordKey, recordMetadata, value);

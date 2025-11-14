@@ -705,10 +705,10 @@ final class CheckpointRecordsProcessorTest {
         new MockTypedCheckpointRecord(
             backupPosition + 1, backupPosition, CheckpointIntent.CREATE, RecordType.COMMAND, value);
 
-    // when - second checkpoint creation
+    // when
     processor.process(record, resultBuilder);
 
-    // then - second backup uses updated partition count
+    // then
     verify(backupManager, times(0)).takeBackup(eq(backupId), any());
   }
 
@@ -728,10 +728,9 @@ final class CheckpointRecordsProcessorTest {
             backupPosition + 1, backupPosition, CheckpointIntent.CREATE, RecordType.COMMAND, value);
 
     // when
-    // when - second checkpoint creation
     processor.process(record, resultBuilder);
 
-    // then - second backup uses updated partition count
+    // then
     verify(backupManager, times(1)).takeBackup(eq(backupId), any());
   }
 }
