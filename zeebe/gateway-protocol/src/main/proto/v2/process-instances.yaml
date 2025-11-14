@@ -211,7 +211,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessInstanceIncidentSearchQuery'
+              $ref: '#/components/schemas/IncidentSearchQuery'
       responses:
         "200":
           description: The process instance search result.
@@ -888,7 +888,7 @@ components:
             - $ref: '#/components/schemas/ProcessInstanceFilter'
           description: The process instance search filters.
 
-    ProcessInstanceIncidentSearchQuery:
+    IncidentSearchQuery:
       type: object
       additionalProperties: false
       allOf:
@@ -899,6 +899,10 @@ components:
           type: array
           items:
             $ref: 'incidents.yaml#/components/schemas/IncidentSearchQuerySortRequest'
+        filter:
+          description: The incident search filters.
+          allOf:
+            - $ref: "#/components/schemas/IncidentFilter"
 
     BaseProcessInstanceFilterFields:
       description: Base process instance search filter.
@@ -1380,3 +1384,56 @@ components:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceStateEnum"
         - $ref: '#/components/schemas/AdvancedProcessInstanceStateFilter'
+
+    IncidentFilter:
+      description: Incident search filter.
+      type: object
+      properties:
+        processDefinitionId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The process definition ID associated to this incident.
+        errorType:
+          description: Incident error type with a defined set of values.
+          allOf:
+            - $ref: 'incidents.yaml#/components/schemas/IncidentErrorTypeFilterProperty'
+        errorMessage:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Error message which describes the error in more detail.
+        elementId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The element ID associated to this incident.
+        creationTime:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: Date of incident creation.
+        state:
+          description: State of this incident with a defined set of values.
+          allOf:
+            - $ref: 'incidents.yaml#/components/schemas/IncidentStateFilterProperty'
+        tenantId:
+          description: The tenant ID of the incident.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        incidentKey:
+          description: The assigned key, which acts as a unique identifier for this incident.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+        processDefinitionKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+          description: The process definition key associated to this incident.
+        processInstanceKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+          description: The process instance key associated to this incident.
+        elementInstanceKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+          description: The element instance key associated to this incident.
+        jobKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/JobKeyFilterProperty'
+          description: The job key, if exists, associated with this incident.
