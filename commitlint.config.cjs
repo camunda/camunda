@@ -9,7 +9,6 @@ module.exports = {
     // - Value: value to use for this rule.
     rules: {
         // error rules
-        'body-max-line-length': [2, 'always', 120],
         'header-max-length': [2, 'always', 120],
         'type-case': [2, 'always', 'lower-case'],
         'type-empty': [2, 'never'],
@@ -40,6 +39,7 @@ module.exports = {
         'body-full-stop': [0, 'never', '.'],
         'body-leading-blank': [0, 'always'],
         'body-empty': [0, 'never'],
+        'body-max-line-length': [0, 'never', Infinity],
         'body-max-length': [0, 'always', Infinity],
         'body-min-length': [0, 'always', 0],
         'body-case': [0, 'always', 'lower-case'],
