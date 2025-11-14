@@ -244,7 +244,8 @@ test.describe('Identity User Flows', () => {
     });
   });
 
-  test('New user can inherit permissions when assigned to a group', async ({
+  // Skipped due to bug 40968:  https://github.com/camunda/camunda/issues/40968
+  test.skip('New user can inherit permissions when assigned to a group', async ({
     page,
     identityGroupsPage,
     identityAuthorizationsPage,
