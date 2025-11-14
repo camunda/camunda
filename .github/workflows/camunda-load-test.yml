@@ -301,7 +301,7 @@ jobs:
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/refs/heads/${{ inputs.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
-          ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
+          ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/refs/heads/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', inputs.ref) || '' }}
       - name: Label namespace
         run: >
             kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
