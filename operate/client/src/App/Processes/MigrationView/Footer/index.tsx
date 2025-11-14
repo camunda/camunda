@@ -18,12 +18,12 @@ import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
+import {useProcessInstanceQueryFilters} from 'modules/hooks/useProcessInstanceQueryFilters';
 import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
 const Footer: React.FC = observer(() => {
-  const baseFilter = useProcessInstanceFilters().filter;
+  const baseFilter = useProcessInstanceQueryFilters().filter;
 
   const navigate = useNavigate();
 

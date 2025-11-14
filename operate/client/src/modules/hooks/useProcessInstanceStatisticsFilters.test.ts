@@ -9,15 +9,15 @@
 import {renderHook} from 'modules/testing-library';
 import {useFilters} from 'modules/hooks/useFilters';
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
-import {useProcessInstanceFilters} from './useProcessInstancesFilters';
+import {useProcessInstanceStatisticsFilters} from './useProcessInstanceStatisticsFilters';
 import {type GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 vi.mock('modules/hooks/useFilters');
 
 const mockedUseFilters = vi.mocked(useFilters);
 
-describe('useProcessInstanceFilters', () => {
-  it('should correctly map filters to request', () => {
+describe('useProcessInstanceStatisticsFilters', () => {
+  it('should correctly map filters to request and exclude processDefinitionVersionTag', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
       startDateBefore: '2023-01-31',
@@ -36,6 +36,7 @@ describe('useProcessInstanceFilters', () => {
       flowNodeId: 'flowNode1',
       errorMessage: 'some error message',
       incidentErrorHashCode: 321456,
+      version: 'v1.0', // This should be excluded
     };
 
     mockedUseFilters.mockReturnValue({
@@ -86,8 +87,11 @@ describe('useProcessInstanceFilters', () => {
       },
     };
 
-    const {result} = renderHook(() => useProcessInstanceFilters());
+    const {result} = renderHook(() => useProcessInstanceStatisticsFilters());
     expect(result.current).toEqual(expectedRequest);
+    expect(result.current.filter).not.toHaveProperty(
+      'processDefinitionVersionTag',
+    );
   });
 
   it('should map filters to request correctly with only state', () => {
@@ -112,29 +116,7 @@ describe('useProcessInstanceFilters', () => {
       },
     };
 
-    const {result} = renderHook(() => useProcessInstanceFilters());
-    expect(result.current).toEqual(expectedRequest);
-  });
-
-  it('should map filters to request correctly with only incidents', () => {
-    const mockFilters: ProcessInstanceFilters = {
-      incidents: true,
-    };
-
-    mockedUseFilters.mockReturnValue({
-      getFilters: () => mockFilters,
-      setFilters: vi.fn(),
-      areProcessInstanceStatesApplied: vi.fn(),
-      areDecisionInstanceStatesApplied: vi.fn(),
-    });
-
-    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
-      filter: {
-        hasIncident: true,
-      },
-    };
-
-    const {result} = renderHook(() => useProcessInstanceFilters());
+    const {result} = renderHook(() => useProcessInstanceStatisticsFilters());
     expect(result.current).toEqual(expectedRequest);
   });
 
@@ -152,14 +134,15 @@ describe('useProcessInstanceFilters', () => {
       filter: {},
     };
 
-    const {result} = renderHook(() => useProcessInstanceFilters());
+    const {result} = renderHook(() => useProcessInstanceStatisticsFilters());
     expect(result.current).toEqual(expectedRequest);
   });
 
-  it('should handle partial filters', () => {
+  it('should exclude processDefinitionVersionTag even when version is provided', () => {
     const mockFilters: ProcessInstanceFilters = {
-      startDateAfter: '2023-01-01',
+      version: 'v1.0',
       active: true,
+      tenant: 'tenant1',
     };
 
     mockedUseFilters.mockReturnValue({
@@ -171,8 +154,8 @@ describe('useProcessInstanceFilters', () => {
 
     const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
       filter: {
-        startDate: {
-          $gt: '2023-01-01T00:00:00.000Z',
+        tenantId: {
+          $eq: 'tenant1',
         },
         state: {
           $eq: 'ACTIVE',
@@ -180,7 +163,10 @@ describe('useProcessInstanceFilters', () => {
       },
     };
 
-    const {result} = renderHook(() => useProcessInstanceFilters());
+    const {result} = renderHook(() => useProcessInstanceStatisticsFilters());
     expect(result.current).toEqual(expectedRequest);
+    expect(result.current.filter).not.toHaveProperty(
+      'processDefinitionVersionTag',
+    );
   });
 });
