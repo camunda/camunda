@@ -204,8 +204,7 @@ public class UserTaskFilterImpl
   @Override
   public UserTaskFilter customHeaders(final Map<String, Object> headerValueFilters) {
     if (headerValueFilters != null && !headerValueFilters.isEmpty()) {
-      filter.setCustomHeaders(
-          HeaderFilterMapper.toHeaderValueFilterProperty(headerValueFilters));
+      filter.setCustomHeaders(HeaderFilterMapper.toHeaderValueFilterProperty(headerValueFilters));
     }
     return this;
   }

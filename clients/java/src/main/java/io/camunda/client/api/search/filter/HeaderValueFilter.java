@@ -30,4 +30,3 @@ public interface HeaderValueFilter extends SearchRequestFilter {
   /** Filter by header value with filter criteria */
   HeaderValueFilter value(final Consumer<StringProperty> stringFilter);
 }
-

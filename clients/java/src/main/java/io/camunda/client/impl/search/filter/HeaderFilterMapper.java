@@ -75,4 +75,3 @@ public class HeaderFilterMapper {
     return filter;
   }
 }
-
