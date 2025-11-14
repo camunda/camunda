@@ -56,7 +56,7 @@ describe('IncidentOperation', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Incident could not be resolved',
+      title: 'Operation could not be created',
       isDismissable: true,
     });
   });
