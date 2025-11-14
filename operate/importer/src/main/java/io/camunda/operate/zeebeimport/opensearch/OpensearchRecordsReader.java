@@ -52,6 +52,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -112,6 +113,10 @@ public class OpensearchRecordsReader implements RecordsReader {
   @Autowired
   @Qualifier("recordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler readersExecutor;
+
+  @Autowired
+  @Qualifier("importerCompletionThreadPoolExecutor")
+  private ThreadPoolTaskExecutor importerCompletionExecutor;
 
   @Autowired private ImportPositionHolder importPositionHolder;
 
@@ -566,19 +571,38 @@ public class OpensearchRecordsReader implements RecordsReader {
   }
 
   private boolean isPartitionCompletedImporting(final int partitionId) {
-    try {
-      final var tenantImportPosition =
-          importPositionHolder.getLatestLoadedPosition("tenant", partitionId);
+    final var importPositionFutures =
+        Arrays.stream(ImportValueType.IMPORT_VALUE_TYPES)
+            .map(
+                valueType ->
+                    CompletableFuture.supplyAsync(
+                        () -> getLatestLoadedPosition(valueType, partitionId),
+                        importerCompletionExecutor))
+            .toList();
 
-      return tenantImportPosition.getIndexName() != null
-          && tenantImportPosition.getIndexName().contains("8.8");
+    CompletableFuture.allOf(importPositionFutures.toArray(new CompletableFuture[0])).join();
+
+    final List<ImportPositionEntity> importPositions =
+        importPositionFutures.stream().map(CompletableFuture::join).toList();
+
+    return importPositions.stream()
+        .anyMatch(
+            position -> position.getIndexName() != null && position.getIndexName().contains("8.8"));
+  }
+
+  private ImportPositionEntity getLatestLoadedPosition(
+      final ImportValueType valueType, final int partitionId) {
+    try {
+      return importPositionHolder.getLatestLoadedPosition(
+          valueType.getAliasTemplate(), partitionId);
     } catch (final IOException e) {
       LOGGER.error(
-          "Failed to check import position of tenant alias in partition [{}], this may block importers from being marked as completed",
+          "Failed to check import position of [{}] alias in partition [{}], this may block importers from being marked as completed",
+          valueType.getAliasTemplate(),
           partitionId,
           e);
+      throw new OperateRuntimeException(e);
     }
-    return false;
   }
 
   private void executeNext() {
