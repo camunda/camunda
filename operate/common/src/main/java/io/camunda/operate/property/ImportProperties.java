@@ -18,7 +18,7 @@ public class ImportProperties {
   private static final int DEFAULT_SCHEDULER_BACKOFF = 5000;
   private static final int DEFAULT_FLOW_NODE_TREE_CACHE_SIZE = 1000;
   private static final int DEFAULT_MAX_EMPTY_RUNS = 10;
-  private static final int DEFAULT_MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
+  private static final int DEFAULT_MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 1;
 
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
