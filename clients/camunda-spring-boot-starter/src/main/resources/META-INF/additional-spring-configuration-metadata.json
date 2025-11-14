@@ -33,6 +33,10 @@
       "description": "Properties for overriding settings of individual job workers registered to the Camunda client. Overrides are specified as key-value pairs, where the key is the worker's job type and the values have the same properties as `camunda.client.worker.defaults` each: `camunda.client.worker.override.<job-type>.<property-name>: <property-value>`."
     },
     {
+      "name": "management.endpoint.jobworkers",
+      "description": "Properties for configuring the `jobworkers` management endpoint."
+    },
+    {
       "name": "camunda.client.zeebe",
       "type": "io.camunda.spring.client.properties.common.ZeebeClientProperties",
       "description": "Properties for Zeebe client settings."
