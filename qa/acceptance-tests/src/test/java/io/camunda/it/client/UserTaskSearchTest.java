@@ -1391,7 +1391,9 @@ class UserTaskSearchTest {
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(f -> f.customHeaders(List.of(h -> h.name("department").value(v -> v.like("engi*")))))
+            .filter(
+                f ->
+                    f.customHeaders(List.of(h -> h.name("department").value(v -> v.like("engi*")))))
             .send()
             .join();
 
