@@ -353,7 +353,7 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('2 results')).toBeVisible({ timeout: 5000 });
+          await expect(page.getByText("2 results")).toBeVisible({ timeout: 5000 });
         },
         onFailure: async () => {
           await page.reload();
@@ -366,18 +366,17 @@ test.describe('Process Instances Filters', () => {
 
       await operateProcessesPage.clickCancelProcessInstanceDialogButton();
 
-      const operationsRows = operateOperationPanelPage.getAllOperationEntries();
-
       await waitForAssertion({
         assertion: async () => {
-          await expect(operationsRows).toHaveText('Cancel');
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({ timeout: 30000 });
         },
         onFailure: async () => {
           await page.reload();
-        }
+        },
       });
 
-      await expect(operateOperationPanelPage.getAllOperationEntries()).toBeVisible();
       const lastOperation = operateOperationPanelPage.getAllOperationEntries().last();
 
       const operationId = await OperateOperationPanelPage.getOperationID(lastOperation).innerText();
@@ -386,7 +385,7 @@ test.describe('Process Instances Filters', () => {
 
       await operateFiltersPanelPage.clickResetFilters();
       await operateFiltersPanelPage.runningInstancesCheckbox.click();
-      await operateFiltersPanelPage.canceledCheckbox.click();
+      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
       await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
       await operateFiltersPanelPage.fillOperationIdFilter(operationId);
 
@@ -401,7 +400,7 @@ test.describe('Process Instances Filters', () => {
 
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('sound');
-      await operateFiltersPanelPage.fillVariableValueFilter('meow');
+      await operateFiltersPanelPage.fillVariableValueFilter('"meow"');
 
       await waitForAssertion({
         assertion: async () => {
@@ -411,12 +410,6 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         }
       });
-
-      /**
-       * TODO: fix last waitFoAssertion: after reload filters are not applied anymore
-       * fix problem with lsat operation, because it's flaky
-       * for now works only as first test run.
-       */
 
     });
 

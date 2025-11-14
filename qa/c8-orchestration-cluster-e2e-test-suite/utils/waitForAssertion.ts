@@ -11,10 +11,10 @@ async function waitForAssertion(options: {
   onFailure: () => Promise<void>;
   maxRetries?: number;
 }) {
-  const {assertion, onFailure: fallback, maxRetries = 3} = options;
+  const { assertion, onFailure: fallback, maxRetries = 3 } = options;
   let retries = 1;
 
-  while (retries < maxRetries) {
+  while (retries <= maxRetries) {
     try {
       await assertion();
       break;
@@ -31,4 +31,4 @@ async function waitForAssertion(options: {
   }
 }
 
-export {waitForAssertion};
+export { waitForAssertion };
