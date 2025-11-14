@@ -85,7 +85,7 @@ public class ClientMigrationHandlerTest {
     // then
     final ArgumentCaptor<CreateAuthorizationRequest> request =
         ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(9)).createAuthorization(request.capture());
+    verify(authorizationServices, times(10)).createAuthorization(request.capture());
     final var requests = request.getAllValues();
     assertThat(requests)
         .extracting(
@@ -153,6 +153,11 @@ public class ClientMigrationHandlerTest {
             tuple(
                 "tasklist-client-id",
                 AuthorizationOwnerType.CLIENT,
+                AuthorizationResourceType.DOCUMENT,
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)),
+            tuple(
+                "tasklist-client-id",
+                AuthorizationOwnerType.CLIENT,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
@@ -185,7 +190,7 @@ public class ClientMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(authorizationServices, times(9)).createAuthorization(any());
+    verify(authorizationServices, times(10)).createAuthorization(any());
   }
 
   @Test
@@ -210,6 +215,6 @@ public class ClientMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(authorizationServices, times(10)).createAuthorization(any());
+    verify(authorizationServices, times(11)).createAuthorization(any());
   }
 }

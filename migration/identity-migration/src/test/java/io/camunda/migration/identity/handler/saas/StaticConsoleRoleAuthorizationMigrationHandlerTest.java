@@ -61,7 +61,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(25)).createAuthorization(results.capture());
+    verify(authorizationServices, times(28)).createAuthorization(results.capture());
     final var requests = results.getAllValues();
     assertThat(requests).containsExactlyElementsOf(ROLE_PERMISSIONS);
   }
@@ -82,7 +82,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
 
     // then
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(7)).createAuthorization(results.capture());
+    verify(authorizationServices, times(10)).createAuthorization(results.capture());
     final var requests = results.getAllValues();
     final List<CreateAuthorizationRequest> expectedAuthorizations =
         ROLE_PERMISSIONS.stream()
@@ -90,11 +90,32 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
             .collect(Collectors.toList());
     expectedAuthorizations.add(
         new CreateAuthorizationRequest(
+            "developer",
+            AuthorizationOwnerType.ROLE,
+            "*",
+            AuthorizationResourceType.DOCUMENT,
+            Set.of(PermissionType.CREATE, PermissionType.READ)));
+    expectedAuthorizations.add(
+        new CreateAuthorizationRequest(
             "taskuser",
             AuthorizationOwnerType.ROLE,
             "*",
             AuthorizationResourceType.PROCESS_DEFINITION,
             Set.of(PermissionType.READ_USER_TASK, PermissionType.UPDATE_USER_TASK)));
+    expectedAuthorizations.add(
+        new CreateAuthorizationRequest(
+            "taskuser",
+            AuthorizationOwnerType.ROLE,
+            "*",
+            AuthorizationResourceType.DOCUMENT,
+            Set.of(PermissionType.CREATE, PermissionType.READ)));
+    expectedAuthorizations.add(
+        new CreateAuthorizationRequest(
+            "visitor",
+            AuthorizationOwnerType.ROLE,
+            "*",
+            AuthorizationResourceType.DOCUMENT,
+            Set.of(PermissionType.READ)));
     assertThat(requests).containsExactlyInAnyOrderElementsOf(expectedAuthorizations);
   }
 
@@ -113,6 +134,6 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(authorizationServices, times(26)).createAuthorization(any());
+    verify(authorizationServices, times(29)).createAuthorization(any());
   }
 }

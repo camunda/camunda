@@ -15,6 +15,7 @@ public final class ResourceBasedAuthorizationConstants {
       Set.of(
           AuthorizationResourceType.AUTHORIZATION,
           AuthorizationResourceType.COMPONENT,
+          AuthorizationResourceType.DOCUMENT,
           AuthorizationResourceType.GROUP,
           AuthorizationResourceType.ROLE,
           AuthorizationResourceType.USER,

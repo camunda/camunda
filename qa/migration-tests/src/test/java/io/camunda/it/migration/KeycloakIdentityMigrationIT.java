@@ -140,6 +140,10 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
                     PermissionType.READ_USER_TASK,
                     PermissionType.UPDATE_USER_TASK,
                     PermissionType.READ_PROCESS_DEFINITION)),
+            tuple(
+                "tasklist",
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)),
             tuple("tasklist", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
             tuple(
                 "identity",
@@ -231,6 +235,10 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
             tuple("operate", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
             tuple("zeebe", ResourceType.SYSTEM, Set.of(PermissionType.READ, PermissionType.UPDATE)),
             tuple("tasklist", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
+            tuple(
+                "tasklist",
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)),
             tuple(
                 "identity",
                 ResourceType.GROUP,

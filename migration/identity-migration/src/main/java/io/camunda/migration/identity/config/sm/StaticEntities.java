@@ -260,6 +260,12 @@ public class StaticEntities {
                         ownerId,
                         ownerType,
                         "*",
+                        AuthorizationResourceType.DOCUMENT,
+                        Set.of(PermissionType.READ)),
+                    new CreateAuthorizationRequest(
+                        ownerId,
+                        ownerType,
+                        "*",
                         AuthorizationResourceType.PROCESS_DEFINITION,
                         Set.of(
                             PermissionType.READ_PROCESS_DEFINITION,
@@ -273,6 +279,12 @@ public class StaticEntities {
                         TASKLIST_RESOURCE_ID,
                         AuthorizationResourceType.COMPONENT,
                         Set.of(PermissionType.ACCESS)),
+                    new CreateAuthorizationRequest(
+                        ownerId,
+                        ownerType,
+                        "*",
+                        AuthorizationResourceType.DOCUMENT,
+                        AuthorizationResourceType.DOCUMENT.getSupportedPermissionTypes()),
                     new CreateAuthorizationRequest(
                         ownerId,
                         ownerType,

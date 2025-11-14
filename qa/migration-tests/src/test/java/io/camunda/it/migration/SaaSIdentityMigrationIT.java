@@ -172,6 +172,12 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
                 DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.CREATE, PermissionType.READ)),
+            tuple(
+                DEVELOPER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
@@ -313,6 +319,12 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
                 VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.READ)),
+            tuple(
+                VISITOR_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
@@ -425,7 +437,7 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
                       .map(Authorization::getOwnerType)
                       .filter(OwnerType.CLIENT::equals)
                       .toList();
-              assertThat(authorizations.size()).isEqualTo(9);
+              assertThat(authorizations.size()).isEqualTo(10);
             });
 
     // then
@@ -491,6 +503,11 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
                 OwnerType.CLIENT,
                 ResourceType.BATCH,
                 Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
+            tuple(
+                "tasklist-client",
+                OwnerType.CLIENT,
+                ResourceType.DOCUMENT,
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)),
             tuple(
                 "tasklist-client",
                 OwnerType.CLIENT,
