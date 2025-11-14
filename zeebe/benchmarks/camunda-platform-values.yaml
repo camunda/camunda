@@ -17,7 +17,7 @@ global:
     # Image.repository defines the repository from which to fetch the docker images
     repository: "gcr.io/zeebe-io"
     # Image.tag defines the tag / version which should be used in the chart
-    tag: 8.7.0
+    tag: 8.6.0
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -60,7 +60,7 @@ zeebe:
   image:
     # Image.repository defines which image repository to use
     repository: camunda/zeebe
-    tag: 8.7.0
+    tag: 8.6.0
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   # PartitionCount defines how many zeebe partitions are set up in the cluster
@@ -183,7 +183,7 @@ zeebeGateway:
   image:
     # Image.repository defines which image repository to use
     repository: camunda/zeebe
-    tag: 8.7.0
+    tag: 8.6.0
   # LogLevel defines the log level which is used by the gateway
   logLevel: debug
 

@@ -90,7 +90,7 @@ on:
         default: false
 
 env:
-  HELM_CHART: camunda-platform-8.7
+  HELM_CHART: camunda-platform-8.6
 
 defaults:
   run:
