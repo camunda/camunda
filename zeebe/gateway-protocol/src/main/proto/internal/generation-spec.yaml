@@ -10892,14 +10892,16 @@ components:
         $like:
           $ref: "#/components/schemas/LikeFilterProperty"
     BatchOperationStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      description: The batch operation state.
+      type: string
       enum:
-        - CREATED
         - ACTIVE
-        - SUSPENDED
-        - COMPLETED
-        - PARTIALLY_COMPLETED
         - CANCELED
+        - COMPLETED
+        - CREATED
+        - FAILED
+        - PARTIALLY_COMPLETED
+        - SUSPENDED
     BatchOperationItemSearchQuerySortRequest:
       type: object
       properties:
@@ -11011,12 +11013,13 @@ components:
           description: The state of the batch operation.
           type: string
           enum:
-            - CREATED
             - ACTIVE
-            - SUSPENDED
-            - COMPLETED
-            - PARTIALLY_COMPLETED
             - CANCELED
+            - COMPLETED
+            - CREATED
+            - FAILED
+            - PARTIALLY_COMPLETED
+            - SUSPENDED
         batchOperationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
         startDate:
