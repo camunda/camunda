@@ -432,7 +432,7 @@ jobs:
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         shell: bash
         run: >
-          ./mvnw -B -T 2 --no-snapshot-updates
+          ./mvnw -B -T 2 --no-snapshot-updates -fn
           -D forkCount=7
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
