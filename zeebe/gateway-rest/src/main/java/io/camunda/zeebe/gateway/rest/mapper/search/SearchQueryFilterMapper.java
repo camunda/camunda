@@ -227,7 +227,7 @@ public class SearchQueryFilterMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::decisionInstanceIdOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(DecisionInstanceState.class, new DecisionInstanceStateConverter()))
+          .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getEvaluationDate())

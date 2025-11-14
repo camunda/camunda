@@ -90,20 +90,8 @@ public final class DecisionInstanceFilterTransformer
     return stringOperations(ID, idOperations);
   }
 
-  private List<SearchQuery> getStatesQuery(final List<Operation<DecisionInstanceState>> stateOperations) {
-    return stateOperations.stream()
-        .flatMap(op -> {
-          if (op.value() instanceof DecisionInstanceState state) {
-            return stringOperations(STATE, List.of(Operation.of(op.operator(), state.name()))).stream();
-          } else if (op.values() != null) {
-            final var stateNames = op.values().stream()
-                .map(s -> ((DecisionInstanceState) s).name())
-                .toList();
-            return stringOperations(STATE, List.of(Operation.of(op.operator(), stateNames))).stream();
-          }
-          return stringOperations(STATE, List.of(op)).stream();
-        })
-        .toList();
+  private List<SearchQuery> getStatesQuery(final List<Operation<String>> stateOperations) {
+    return stringOperations(STATE, stateOperations);
   }
 
   private List<SearchQuery> getEvaluationDateQuery(

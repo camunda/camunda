@@ -24,7 +24,7 @@ import java.util.function.Function;
 public record DecisionInstanceFilter(
     List<Long> decisionInstanceKeys,
     List<Operation<String>> decisionInstanceIdOperations,
-    List<Operation<DecisionInstanceState>> stateOperations,
+    List<Operation<String>> stateOperations,
     List<Operation<OffsetDateTime>> evaluationDateOperations,
     List<String> evaluationFailures,
     List<Long> processDefinitionKeys,
@@ -48,7 +48,7 @@ public record DecisionInstanceFilter(
 
     private List<Long> decisionInstanceKeys;
     private List<Operation<String>> decisionInstanceIdOperations;
-    private List<Operation<DecisionInstanceState>> stateOperations;
+    private List<Operation<String>> stateOperations;
     private List<Operation<OffsetDateTime>> evaluationDateOperations;
     private List<String> evaluationFailures;
     private List<Long> processDefinitionKeys;
@@ -92,7 +92,8 @@ public record DecisionInstanceFilter(
     }
 
     public Builder states(final List<DecisionInstanceState> values) {
-      stateOperations = addValuesToList(stateOperations, FilterUtil.mapDefaultToOperation(values));
+      stateOperations = addValuesToList(stateOperations, FilterUtil.mapDefaultToOperation(
+          values != null ? values.stream().map(Enum::name).toList() : null));
       return this;
     }
 
@@ -100,14 +101,14 @@ public record DecisionInstanceFilter(
       return states(collectValuesAsList(values));
     }
 
-    public Builder stateOperations(final List<Operation<DecisionInstanceState>> operations) {
+    public Builder stateOperations(final List<Operation<String>> operations) {
       stateOperations = addValuesToList(stateOperations, operations);
       return this;
     }
 
     @SafeVarargs
     public final Builder stateOperations(
-        final Operation<DecisionInstanceState> operation, final Operation<DecisionInstanceState>... operations) {
+        final Operation<String> operation, final Operation<String>... operations) {
       return stateOperations(collectValues(operation, operations));
     }
 

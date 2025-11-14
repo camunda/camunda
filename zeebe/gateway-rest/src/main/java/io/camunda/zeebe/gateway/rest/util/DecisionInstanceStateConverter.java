@@ -10,8 +10,7 @@ package io.camunda.zeebe.gateway.rest.util;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
 
-public class DecisionInstanceStateConverter
-    implements CustomConverter<DecisionInstanceEntity.DecisionInstanceState> {
+public class DecisionInstanceStateConverter implements CustomConverter<String> {
 
   @Override
   public boolean canConvert(final Object value) {
@@ -19,12 +18,12 @@ public class DecisionInstanceStateConverter
   }
 
   @Override
-  public DecisionInstanceEntity.DecisionInstanceState convertValue(final Object value) {
+  public String convertValue(final Object value) {
     if (value == null) {
       return null;
     }
     if (value instanceof DecisionInstanceStateEnum decisionInstanceStateEnum) {
-      return toInternalState(decisionInstanceStateEnum);
+      return toInternalStateAsString(decisionInstanceStateEnum);
     }
     throw new IllegalArgumentException(
         "Cannot convert value [%s] of type [%s]. Expected type: [%s]"
@@ -32,6 +31,13 @@ public class DecisionInstanceStateConverter
                 value,
                 value.getClass().getSimpleName(),
                 DecisionInstanceStateEnum.class.getSimpleName()));
+  }
+
+  public static String toInternalStateAsString(
+      DecisionInstanceStateEnum decisionInstanceStateEnum) {
+    final DecisionInstanceEntity.DecisionInstanceState internalState =
+        toInternalState(decisionInstanceStateEnum);
+    return (internalState == null) ? null : internalState.name();
   }
 
   public static DecisionInstanceEntity.DecisionInstanceState toInternalState(
