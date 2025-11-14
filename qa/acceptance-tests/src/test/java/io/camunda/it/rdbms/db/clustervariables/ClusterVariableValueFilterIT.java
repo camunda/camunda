@@ -349,7 +349,7 @@ public class ClusterVariableValueFilterIT {
     final var clusterVariableFilter =
         new ClusterVariableFilter.Builder()
             .scopes("TENANT")
-            .resourceIds(resourceId)
+            .tenantIds(resourceId)
             .names(varName, "not there")
             .build();
 
@@ -390,7 +390,7 @@ public class ClusterVariableValueFilterIT {
     final var clusterVariableFilter =
         new ClusterVariableFilter.Builder()
             .scopes("TENANT")
-            .resourceIds(resourceId)
+            .tenantIds(resourceId)
             .names(varName, "not there")
             .values(varValue)
             .build();
@@ -439,7 +439,7 @@ public class ClusterVariableValueFilterIT {
                         b.filter(
                             f ->
                                 f.scopes("TENANT")
-                                    .resourceIds(resourceId)
+                                    .tenantIds(resourceId)
                                     .valueOperations(Operation.like(variableValue + "*")))));
 
     // then
@@ -476,7 +476,7 @@ public class ClusterVariableValueFilterIT {
                         b.filter(
                             f ->
                                 f.scopes("TENANT")
-                                    .resourceIds(resourceId)
+                                    .tenantIds(resourceId)
                                     .valueOperations(Operation.like(variableValue + "?")))));
 
     // then
@@ -513,7 +513,7 @@ public class ClusterVariableValueFilterIT {
                         b.filter(
                             f ->
                                 f.scopes("TENANT")
-                                    .resourceIds(resourceId)
+                                    .tenantIds(resourceId)
                                     .valueOperations(Operation.like("ignoreAnyValue\\%X")))));
 
     // then
@@ -549,7 +549,7 @@ public class ClusterVariableValueFilterIT {
                         b.filter(
                             f ->
                                 f.scopes("TENANT")
-                                    .resourceIds(resourceId)
+                                    .tenantIds(resourceId)
                                     .valueOperations(Operation.like("ignoreSingleValue\\_X")))));
 
     // then
@@ -585,7 +585,7 @@ public class ClusterVariableValueFilterIT {
                         b.filter(
                             f ->
                                 f.scopes("TENANT")
-                                    .resourceIds(resourceId)
+                                    .tenantIds(resourceId)
                                     .valueOperations(Operation.like("value\\*any\\%*")))));
 
     // then
@@ -621,7 +621,7 @@ public class ClusterVariableValueFilterIT {
                         b.filter(
                             f ->
                                 f.scopes("TENANT")
-                                    .resourceIds(resourceId)
+                                    .tenantIds(resourceId)
                                     .valueOperations(
                                         Operation.like("value\\?single\\_wildcards?")))));
 
@@ -651,7 +651,7 @@ public class ClusterVariableValueFilterIT {
     final var builder =
         new ClusterVariableFilter.Builder()
             .scopes("TENANT")
-            .resourceIds(resourceId)
+            .tenantIds(resourceId)
             .names(variableName);
     if (operations != null) {
       builder.valueOperations(operations).build();

@@ -38,7 +38,7 @@ public class ClusterVariableDocumentReader extends DocumentBasedReader
     return getSearchExecutor()
         .getByQuery(
             ClusterVariableQuery.of(
-                b -> b.filter(f -> f.names(name).resourceIds(tenant)).singleResult()),
+                b -> b.filter(f -> f.names(name).tenantIds(tenant)).singleResult()),
             io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.class);
   }
 

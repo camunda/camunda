@@ -7,21 +7,18 @@
  */
 package io.camunda.webapps.schema.entities.clustervariable;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import java.util.Arrays;
 import java.util.Objects;
 
 public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEntity> {
 
-  private String clusterVariableId;
+  private String id;
   private String name;
   private String value;
   private String fullValue;
   private boolean isPreview;
-  private String scope;
-  private String resourceId;
-  @JsonIgnore private Object[] sortValues;
+  private ClusterVariableScope scope;
+  private String tenantId;
 
   public boolean isPreview() {
     return isPreview;
@@ -32,11 +29,11 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
     return this;
   }
 
-  public String getScope() {
+  public ClusterVariableScope getScope() {
     return scope;
   }
 
-  public ClusterVariableEntity setScope(final String scope) {
+  public ClusterVariableEntity setScope(final ClusterVariableScope scope) {
     this.scope = scope;
     return this;
   }
@@ -52,12 +49,12 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
 
   @Override
   public String getId() {
-    return clusterVariableId;
+    return id;
   }
 
   @Override
   public ClusterVariableEntity setId(final String id) {
-    clusterVariableId = id;
+    this.id = id;
     return this;
   }
 
@@ -79,17 +76,18 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
     return this;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public ClusterVariableEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(
-        clusterVariableId,
-        name,
-        value,
-        fullValue,
-        isPreview,
-        scope,
-        resourceId,
-        Arrays.hashCode(sortValues));
+    return Objects.hash(id, name, value, fullValue, isPreview, scope, tenantId);
   }
 
   @Override
@@ -99,20 +97,19 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
     }
     final ClusterVariableEntity that = (ClusterVariableEntity) o;
     return isPreview == that.isPreview
-        && Objects.equals(clusterVariableId, that.clusterVariableId)
+        && Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
         && Objects.equals(fullValue, that.fullValue)
-        && Objects.equals(scope, that.scope)
-        && Objects.equals(resourceId, that.resourceId)
-        && Objects.deepEquals(sortValues, that.sortValues);
+        && scope == that.scope
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public String toString() {
     return "ClusterVariableEntity{"
-        + "clusterVariableId='"
-        + clusterVariableId
+        + "id='"
+        + id
         + '\''
         + ", name='"
         + name
@@ -125,32 +122,11 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
         + '\''
         + ", isPreview="
         + isPreview
-        + ", scope='"
+        + ", scope="
         + scope
+        + ", tenantId='"
+        + tenantId
         + '\''
-        + ", resourceId='"
-        + resourceId
-        + '\''
-        + ", sortValues="
-        + Arrays.toString(sortValues)
         + '}';
-  }
-
-  public Object[] getSortValues() {
-    return sortValues;
-  }
-
-  public ClusterVariableEntity setSortValues(final Object[] sortValues) {
-    this.sortValues = sortValues;
-    return this;
-  }
-
-  public String getResourceId() {
-    return resourceId;
-  }
-
-  public ClusterVariableEntity setResourceId(final String resourceId) {
-    this.resourceId = resourceId;
-    return this;
   }
 }

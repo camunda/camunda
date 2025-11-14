@@ -66,7 +66,7 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
       final String tenant, final String name) {
     return search(
             new ClusterVariableQuery(
-                new Builder().resourceIds(tenant).scopes("TENANT").names(name).build(),
+                new Builder().tenantIds(tenant).scopes("TENANT").names(name).build(),
                 ClusterVariableSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(1))))
         .items()

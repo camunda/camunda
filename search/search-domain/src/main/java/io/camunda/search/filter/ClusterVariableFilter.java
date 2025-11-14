@@ -10,7 +10,6 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
-import io.camunda.search.filter.VariableValueFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -21,14 +20,14 @@ public record ClusterVariableFilter(
     List<Operation<String>> nameOperations,
     List<UntypedOperation> valueOperations,
     List<Operation<String>> scopeOperations,
-    List<Operation<String>> resourceIdOperations)
+    List<Operation<String>> tenantIdOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ClusterVariableFilter> {
     List<Operation<String>> nameOperations;
     List<UntypedOperation> valueOperations;
     List<Operation<String>> scopeOperations;
-    List<Operation<String>> resourceIdOperations;
+    List<Operation<String>> tenantIdOperations;
 
     public Builder nameOperations(final List<Operation<String>> operations) {
       nameOperations = addValuesToList(nameOperations, operations);
@@ -100,30 +99,30 @@ public record ClusterVariableFilter(
       return scopeOperations(collectValues(operation, operations));
     }
 
-    public Builder resourceIdOperations(final List<Operation<String>> operations) {
-      resourceIdOperations = addValuesToList(resourceIdOperations, operations);
+    public Builder tenantIdOperations(final List<Operation<String>> operations) {
+      tenantIdOperations = addValuesToList(tenantIdOperations, operations);
       return this;
     }
 
-    public Builder resourceIds(final String value, final String... values) {
-      return resourceIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    public Builder tenantIds(final String value, final String... values) {
+      return tenantIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder resourceIds(final List<String> values) {
-      return resourceIdOperations(FilterUtil.mapDefaultToOperation(values));
+    public Builder tenantIds(final List<String> values) {
+      return tenantIdOperations(FilterUtil.mapDefaultToOperation(values));
     }
 
     @SafeVarargs
-    public final Builder resourceIdOperations(
+    public final Builder tenantIdOperations(
         final Operation<String> operation, final Operation<String>... operations) {
-      return resourceIdOperations(collectValues(operation, operations));
+      return tenantIdOperations(collectValues(operation, operations));
     }
 
     public Builder copyFrom(final ClusterVariableFilter sourceFilter) {
       return nameOperations(sourceFilter.nameOperations)
           .valueUntypedOperations(sourceFilter.valueOperations)
           .scopeOperations(sourceFilter.scopeOperations)
-          .resourceIdOperations(sourceFilter.resourceIdOperations);
+          .tenantIdOperations(sourceFilter.tenantIdOperations);
     }
 
     @Override
@@ -132,7 +131,7 @@ public record ClusterVariableFilter(
           Objects.requireNonNullElseGet(nameOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(valueOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(scopeOperations, Collections::emptyList),
-          Objects.requireNonNullElseGet(resourceIdOperations, Collections::emptyList));
+          Objects.requireNonNullElseGet(tenantIdOperations, Collections::emptyList));
     }
   }
 }

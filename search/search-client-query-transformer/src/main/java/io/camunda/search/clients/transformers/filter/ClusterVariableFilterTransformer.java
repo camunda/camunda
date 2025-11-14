@@ -42,12 +42,12 @@ public final class ClusterVariableFilterTransformer
     queries.addAll(stringOperations(NAME, filter.nameOperations()));
     queries.addAll(getVariablesQuery(filter.valueOperations()));
     queries.addAll(getScopeQuery(filter.scopeOperations()));
-    queries.addAll(getResourceIdQuery(filter.resourceIdOperations()));
+    queries.addAll(getTenantQuery(filter.tenantIdOperations()));
     return and(queries);
   }
 
-  private Collection<SearchQuery> getResourceIdQuery(final List<Operation<String>> operations) {
-    return stringOperations(ClusterVariableIndex.RESOURCE_ID, operations);
+  private Collection<SearchQuery> getTenantQuery(final List<Operation<String>> operations) {
+    return stringOperations(ClusterVariableIndex.TENANT_ID, operations);
   }
 
   private Collection<SearchQuery> getScopeQuery(final List<Operation<String>> operations) {

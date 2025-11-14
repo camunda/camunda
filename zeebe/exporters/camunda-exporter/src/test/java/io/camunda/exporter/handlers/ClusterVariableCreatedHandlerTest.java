@@ -26,12 +26,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
-public class ClusterVariableHandlerTest {
+public class ClusterVariableCreatedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "clusterVariable";
   private final int variableSizeThreshold = 10;
-  private final ClusterVariableHandler underTest =
-      new ClusterVariableHandler(indexName, variableSizeThreshold);
+  private final ClusterVariableCreatedHandler underTest =
+      new ClusterVariableCreatedHandler(indexName, variableSizeThreshold);
 
   @Test
   void testGetHandledValueType() {
@@ -46,29 +46,29 @@ public class ClusterVariableHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ClusterVariableIntent.class,
-      names = {"CREATE", "DELETE", "UPDATE", "UPDATED"},
+      names = {"CREATE", "DELETE", "UPDATE", "UPDATED", "DELETED"},
       mode = Mode.EXCLUDE)
   void shouldHandleRecord(final ClusterVariableIntent intent) {
     // given
-    final Record<ClusterVariableRecordValue> decisionRecord =
+    final Record<ClusterVariableRecordValue> clusterVariableRecordValue =
         factory.generateRecord(ValueType.CLUSTER_VARIABLE, r -> r.withIntent(intent));
 
     // when - then
-    assertThat(underTest.handlesRecord(decisionRecord)).isTrue();
+    assertThat(underTest.handlesRecord(clusterVariableRecordValue)).isTrue();
   }
 
   @ParameterizedTest
   @EnumSource(
       value = ClusterVariableIntent.class,
-      names = {"CREATED", "DELETED"},
+      names = {"CREATED"},
       mode = Mode.EXCLUDE)
   void shouldNotHandleRecord(final ClusterVariableIntent intent) {
     // given
-    final Record<ClusterVariableRecordValue> decisionRecord =
+    final Record<ClusterVariableRecordValue> clusterVariableRecordValue =
         factory.generateRecord(ValueType.CLUSTER_VARIABLE, r -> r.withIntent(intent));
 
     // when - then
-    assertThat(underTest.handlesRecord(decisionRecord)).isFalse();
+    assertThat(underTest.handlesRecord(clusterVariableRecordValue)).isFalse();
   }
 
   @Test
@@ -89,11 +89,11 @@ public class ClusterVariableHandlerTest {
     final var idList = underTest.generateIds(clusterVariableRecordValueRecord);
 
     // then
-    assertThat(idList).containsExactly(clusterVariableRecordValue.getName());
+    assertThat(idList).containsExactly(clusterVariableRecordValue.getName() + "-GLOBAL");
   }
 
   @Test
-  void shouldGenerateIdsForGlobalTenantVariable() {
+  void shouldGenerateIdsForTenantClusterVariable() {
     // given
     final ClusterVariableRecordValue clusterVariableRecordValue =
         ImmutableClusterVariableRecordValue.builder()
@@ -113,7 +113,10 @@ public class ClusterVariableHandlerTest {
     // then
     assertThat(idList)
         .containsExactly(
-            clusterVariableRecordValue.getName() + "-" + clusterVariableRecordValue.getTenantId());
+            clusterVariableRecordValue.getName()
+                + "-"
+                + clusterVariableRecordValue.getTenantId()
+                + "-TENANT");
   }
 
   @Test
@@ -134,8 +137,9 @@ public class ClusterVariableHandlerTest {
             .setId("id")
             .setName("key")
             .setValue("value")
-            .setResourceId("tenantId")
-            .setScope("TENANT");
+            .setTenantId("tenantId")
+            .setScope(
+                io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -165,10 +169,13 @@ public class ClusterVariableHandlerTest {
     underTest.updateEntity(variableRecord, clusterVariableEntity);
 
     // then
-    assertThat(clusterVariableEntity.getId()).isEqualTo(clusterVariableRecordValue.getName());
+    assertThat(clusterVariableEntity.getId())
+        .isEqualTo(clusterVariableRecordValue.getName() + "-GLOBAL");
     assertThat(clusterVariableEntity.getName()).isEqualTo(clusterVariableRecordValue.getName());
     assertThat(clusterVariableEntity.getScope())
-        .isEqualTo(clusterVariableRecordValue.getScope().toString());
+        .isEqualTo(
+            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.fromProtocol(
+                clusterVariableRecordValue.getScope().toString()));
     assertThat(clusterVariableEntity.getValue()).isEqualTo(clusterVariableRecordValue.getValue());
     assertThat(clusterVariableEntity.isPreview()).isFalse();
     assertThat(clusterVariableEntity.getFullValue()).isNull();
@@ -197,15 +204,17 @@ public class ClusterVariableHandlerTest {
     // then
     assertThat(clusterVariableEntity.getId())
         .isEqualTo(
-            "%s-%s"
+            "%s-%s-TENANT"
                 .formatted(
                     clusterVariableRecordValue.getName(),
                     clusterVariableRecordValue.getTenantId()));
     assertThat(clusterVariableEntity.getName()).isEqualTo(clusterVariableRecordValue.getName());
-    assertThat(clusterVariableEntity.getResourceId())
+    assertThat(clusterVariableEntity.getTenantId())
         .isEqualTo(clusterVariableRecordValue.getTenantId());
     assertThat(clusterVariableEntity.getScope())
-        .isEqualTo(clusterVariableRecordValue.getScope().toString());
+        .isEqualTo(
+            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.fromProtocol(
+                clusterVariableRecordValue.getScope().toString()));
     assertThat(clusterVariableEntity.getValue()).isEqualTo(clusterVariableRecordValue.getValue());
     assertThat(clusterVariableEntity.isPreview()).isFalse();
     assertThat(clusterVariableEntity.getFullValue()).isNull();

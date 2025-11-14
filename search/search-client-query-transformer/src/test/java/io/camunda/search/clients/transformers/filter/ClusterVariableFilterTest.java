@@ -81,14 +81,14 @@ public class ClusterVariableFilterTest {
         filterBuilder
             .names("name")
             .scopes("TENANT")
-            .resourceIds("resource-123")
+            .tenantIds("resource-123")
             .values("some-value")
             .build();
 
     // then
     assertThat(filter.nameOperations()).hasSize(1);
     assertThat(filter.scopeOperations()).hasSize(1);
-    assertThat(filter.resourceIdOperations()).hasSize(1);
+    assertThat(filter.tenantIdOperations()).hasSize(1);
     assertThat(filter.valueOperations()).hasSize(1);
   }
 
@@ -112,12 +112,12 @@ public class ClusterVariableFilterTest {
     final var filterBuilder = new ClusterVariableFilter.Builder();
 
     // when
-    final var filter = filterBuilder.resourceIds("resource1", "resource2", "resource3").build();
+    final var filter = filterBuilder.tenantIds("resource1", "resource2", "resource3").build();
 
     // then
-    assertThat(filter.resourceIdOperations()).hasSize(1);
-    assertThat(filter.resourceIdOperations().getFirst().operator()).isEqualTo(Operator.IN);
-    assertThat(filter.resourceIdOperations().getFirst().values()).hasSize(3);
+    assertThat(filter.tenantIdOperations()).hasSize(1);
+    assertThat(filter.tenantIdOperations().getFirst().operator()).isEqualTo(Operator.IN);
+    assertThat(filter.tenantIdOperations().getFirst().values()).hasSize(3);
   }
 
   @Test

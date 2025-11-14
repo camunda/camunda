@@ -7,8 +7,8 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.RESOURCE_ID;
 import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.SCOPE;
 import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.VALUE;
 
@@ -20,7 +20,7 @@ public class ClusterVariableFieldSortingTransformer implements FieldSortingTrans
       case "name" -> NAME;
       case "value" -> VALUE;
       case "scope" -> SCOPE;
-      case "resourceId" -> RESOURCE_ID;
+      case "tenantId" -> TENANT_ID;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };
   }

@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.CAMUNDA;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import java.util.Optional;
 
 public class ClusterVariableIndex extends AbstractIndexDescriptor implements Prio5Backup {
@@ -23,7 +24,7 @@ public class ClusterVariableIndex extends AbstractIndexDescriptor implements Pri
   public static final String VALUE = "value";
   public static final String FULL_VALUE = "fullValue";
   public static final String SCOPE = "scope";
-  public static final String RESOURCE_ID = "resourceId";
+  public static final String TENANT_ID = "tenantId";
   public static final String IS_PREVIEW = "isPreview";
 
   public ClusterVariableIndex(final String indexPrefix, final boolean isElasticsearch) {
@@ -48,5 +49,16 @@ public class ClusterVariableIndex extends AbstractIndexDescriptor implements Pri
   @Override
   public String getComponentName() {
     return CAMUNDA.toString();
+  }
+
+  public static String generateID(
+      final String name, final String resourceId, final ClusterVariableScope scope) {
+    return switch (scope) {
+      case GLOBAL -> String.format("%s-%s", name, scope);
+      case TENANT -> String.format("%s-%s-%s", name, resourceId, scope);
+      default ->
+          throw new IllegalStateException(
+              "Cluster variable with unspecified scope can not be exported: " + scope);
+    };
   }
 }

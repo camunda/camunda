@@ -41,8 +41,8 @@ public final record ClusterVariableSort(List<FieldSorting> orderings) implements
       return this;
     }
 
-    public Builder resourceId() {
-      currentOrdering = new FieldSorting("resourceId", null);
+    public Builder tenantId() {
+      currentOrdering = new FieldSorting("tenantId", null);
       return this;
     }
 

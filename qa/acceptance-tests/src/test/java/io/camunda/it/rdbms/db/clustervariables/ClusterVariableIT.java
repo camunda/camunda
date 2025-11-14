@@ -134,7 +134,7 @@ public class ClusterVariableIT {
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
                         .scopes("TENANT")
-                        .resourceIds(resourceId)
+                        .tenantIds(resourceId)
                         .build(),
                     ClusterVariableSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -182,7 +182,7 @@ public class ClusterVariableIT {
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
                         .scopes("TENANT")
-                        .resourceIds(resourceId)
+                        .tenantIds(resourceId)
                         .build(),
                     ClusterVariableSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(null).size(null))));
@@ -217,7 +217,7 @@ public class ClusterVariableIT {
                 new ClusterVariableFilter.Builder()
                     .names(variableName)
                     .scopes("TENANT")
-                    .resourceIds(resourceId)
+                    .tenantIds(resourceId)
                     .build(),
                 ClusterVariableSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -243,7 +243,7 @@ public class ClusterVariableIT {
         clusterVariableReader.search(
             ClusterVariableQuery.of(
                 b ->
-                    b.filter(f -> f.scopes("TENANT").resourceIds(resourceId))
+                    b.filter(f -> f.scopes("TENANT").tenantIds(resourceId))
                         .sort(sort)
                         .page(p -> p.from(0).size(20))));
 
@@ -251,7 +251,7 @@ public class ClusterVariableIT {
         clusterVariableReader.search(
             ClusterVariableQuery.of(
                 b ->
-                    b.filter(f -> f.scopes("TENANT").resourceIds(resourceId))
+                    b.filter(f -> f.scopes("TENANT").tenantIds(resourceId))
                         .sort(sort)
                         .page(p -> p.size(15))));
 
@@ -259,7 +259,7 @@ public class ClusterVariableIT {
         clusterVariableReader.search(
             ClusterVariableQuery.of(
                 b ->
-                    b.filter(f -> f.scopes("TENANT").resourceIds(resourceId))
+                    b.filter(f -> f.scopes("TENANT").tenantIds(resourceId))
                         .sort(sort)
                         .page(p -> p.size(5).after(firstPage.endCursor()))));
 

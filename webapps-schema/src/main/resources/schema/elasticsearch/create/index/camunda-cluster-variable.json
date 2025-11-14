@@ -11,7 +11,7 @@
       "scope": {
         "type": "keyword"
       },
-      "resourceId": {
+      "tenantId": {
         "type": "keyword"
       },
       "value": {

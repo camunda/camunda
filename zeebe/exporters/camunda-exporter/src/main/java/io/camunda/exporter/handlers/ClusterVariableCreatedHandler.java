@@ -9,24 +9,26 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ClusterVariableHandler
+public class ClusterVariableCreatedHandler
     implements ExportHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
 
-  private static final Set<ClusterVariableIntent> SUPPORTED_INTENTS =
-      EnumSet.of(ClusterVariableIntent.CREATED, ClusterVariableIntent.DELETED);
+  private static final ClusterVariableIntent SUPPORTED_INTENT = ClusterVariableIntent.CREATED;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClusterVariableCreatedHandler.class);
   private final String indexName;
   private final int variableSizeThreshold;
 
-  public ClusterVariableHandler(final String indexName, final int variableSizeThreshold) {
+  public ClusterVariableCreatedHandler(final String indexName, final int variableSizeThreshold) {
     this.indexName = indexName;
     this.variableSizeThreshold = variableSizeThreshold;
   }
@@ -43,23 +45,17 @@ public class ClusterVariableHandler
 
   @Override
   public boolean handlesRecord(final Record<ClusterVariableRecordValue> record) {
-    return SUPPORTED_INTENTS.contains(record.getIntent());
+    return SUPPORTED_INTENT.equals(record.getIntent());
   }
 
   @Override
   public List<String> generateIds(final Record<ClusterVariableRecordValue> record) {
     final var recordValue = record.getValue();
-    switch (recordValue.getScope()) {
-      case GLOBAL -> {
-        return List.of(recordValue.getName());
-      }
-      case TENANT -> {
-        return List.of(String.format("%s-%s", recordValue.getName(), recordValue.getTenantId()));
-      }
-      default ->
-          throw new IllegalArgumentException(
-              "Cluster variable with unspecified scope can not be exported");
-    }
+    return List.of(
+        ClusterVariableIndex.generateID(
+            recordValue.getName(),
+            recordValue.getTenantId(),
+            ClusterVariableScope.fromProtocol(recordValue.getScope().toString())));
   }
 
   @Override
@@ -71,20 +67,18 @@ public class ClusterVariableHandler
   public void updateEntity(
       final Record<ClusterVariableRecordValue> record, final ClusterVariableEntity entity) {
     final var recordValue = record.getValue();
+    entity
+        .setScope(ClusterVariableScope.fromProtocol(recordValue.getScope().name()))
+        .setId(
+            ClusterVariableIndex.generateID(
+                recordValue.getName(),
+                recordValue.getTenantId(),
+                ClusterVariableScope.fromProtocol(recordValue.getScope().toString())))
+        .setName(recordValue.getName());
 
-    switch (recordValue.getScope()) {
-      case GLOBAL -> entity.setScope("GLOBAL").setId(recordValue.getName());
-      case TENANT ->
-          entity
-              .setScope("TENANT")
-              .setResourceId(recordValue.getTenantId())
-              .setId(String.format("%s-%s", recordValue.getName(), recordValue.getTenantId()));
-      default ->
-          throw new IllegalArgumentException(
-              "Cluster variable with unspecified scope can not be exported");
+    if (ClusterVariableScope.TENANT.equals(entity.getScope())) {
+      entity.setTenantId(recordValue.getTenantId());
     }
-
-    entity.setName(recordValue.getName());
 
     if (recordValue.getValue().length() > variableSizeThreshold) {
       entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));
