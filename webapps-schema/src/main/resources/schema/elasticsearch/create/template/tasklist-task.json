@@ -95,15 +95,7 @@
         "type": "integer"
       },
       "customHeaders": {
-        "type": "nested",
-        "properties": {
-          "name": {
-            "type": "keyword"
-          },
-          "value": {
-            "type": "keyword"
-          }
-        }
+        "type": "flattened"
       },
       "priority": {
         "type": "integer"
