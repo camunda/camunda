@@ -13,7 +13,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -21,28 +20,22 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.processinstance.behavior.ProcessInstanceCreateBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TagUtil;
 import java.util.Arrays;
@@ -74,39 +67,27 @@ public final class ProcessInstanceCreationCreateProcessor
           BpmnElementType.BOUNDARY_EVENT,
           BpmnElementType.UNSPECIFIED);
 
-  private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
-
   private final ProcessState processState;
-  private final VariableBehavior variableBehavior;
 
-  private final KeyGenerator keyGenerator;
-  private final TypedCommandWriter commandWriter;
-  private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
 
-  private final ProcessEngineMetrics metrics;
-
-  private final ElementActivationBehavior elementActivationBehavior;
+  private final ProcessInstanceCreateBehavior processInstanceCreateBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final ProcessEngineMetrics metrics;
 
   public ProcessInstanceCreationCreateProcessor(
       final ProcessState processState,
-      final KeyGenerator keyGenerator,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
       final ProcessEngineMetrics metrics,
       final AuthorizationCheckBehavior authCheckBehavior) {
     this.processState = processState;
-    variableBehavior = bpmnBehaviors.variableBehavior();
-    this.keyGenerator = keyGenerator;
-    commandWriter = writers.command();
-    stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    this.metrics = metrics;
-    elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    processInstanceCreateBehavior = bpmnBehaviors.processInstanceCreateBehavior();
     this.authCheckBehavior = authCheckBehavior;
+    this.metrics = metrics;
   }
 
   @Override
@@ -117,7 +98,7 @@ public final class ProcessInstanceCreationCreateProcessor
         .flatMap(process -> isAuthorized(command, process))
         .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(command, record, process),
+            process -> processInstanceCreateBehavior.createProcessInstance(command, record, process),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
@@ -136,6 +117,14 @@ public final class ProcessInstanceCreationCreateProcessor
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void createProcessInstance(
+      final TypedRecord<ProcessInstanceCreationRecord> command,
+      final ProcessInstanceCreationRecord record,
+      final DeployedProcess process) {
+    processInstanceCreateBehavior.createProcessInstance(command, record, process);
+    metrics.processInstanceCreated(record);
   }
 
   private Either<Rejection, DeployedProcess> isAuthorized(
@@ -164,42 +153,6 @@ public final class ProcessInstanceCreationCreateProcessor
                 "such process")
             : rejection.reason();
     return Either.left(new Rejection(rejection.type(), errorMessage));
-  }
-
-  private void createProcessInstance(
-      final TypedRecord<ProcessInstanceCreationRecord> command,
-      final ProcessInstanceCreationRecord record,
-      final DeployedProcess process) {
-    final long processInstanceKey = keyGenerator.nextKey();
-
-    setVariablesFromDocument(
-        record,
-        process.getKey(),
-        processInstanceKey,
-        process.getBpmnProcessId(),
-        process.getTenantId());
-
-    final var processInstance =
-        initProcessInstanceRecord(process, processInstanceKey, record.getTags());
-
-    if (record.startInstructions().isEmpty()) {
-      commandWriter.appendFollowUpCommand(
-          processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
-    } else {
-      activateElementsForStartInstructions(record.startInstructions(), process, processInstance);
-    }
-
-    record
-        .setProcessInstanceKey(processInstanceKey)
-        .setBpmnProcessId(process.getBpmnProcessId())
-        .setVersion(process.getVersion())
-        .setProcessDefinitionKey(process.getKey());
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceCreationIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(
-        processInstanceKey, ProcessInstanceCreationIntent.CREATED, record, command);
-
-    metrics.processInstanceCreated(record);
   }
 
   private Either<Rejection, DeployedProcess> validateCommand(
@@ -409,37 +362,6 @@ public final class ProcessInstanceCreationCreateProcessor
             flowNode -> flowNode.getElementType().equals(BpmnElementType.EVENT_BASED_GATEWAY));
   }
 
-  private void setVariablesFromDocument(
-      final ProcessInstanceCreationRecord record,
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer bpmnProcessId,
-      final String tenantId) {
-
-    variableBehavior.mergeLocalDocument(
-        processInstanceKey,
-        processDefinitionKey,
-        processInstanceKey,
-        bpmnProcessId,
-        tenantId,
-        record.getVariablesBuffer());
-  }
-
-  private ProcessInstanceRecord initProcessInstanceRecord(
-      final DeployedProcess process, final long processInstanceKey, final Set<String> tags) {
-    newProcessInstance.reset();
-    newProcessInstance.setBpmnProcessId(process.getBpmnProcessId());
-    newProcessInstance.setVersion(process.getVersion());
-    newProcessInstance.setProcessDefinitionKey(process.getKey());
-    newProcessInstance.setProcessInstanceKey(processInstanceKey);
-    newProcessInstance.setBpmnElementType(BpmnElementType.PROCESS);
-    newProcessInstance.setElementId(process.getProcess().getId());
-    newProcessInstance.setFlowScopeKey(-1);
-    newProcessInstance.setTenantId(process.getTenantId());
-    newProcessInstance.setTags(tags);
-    return newProcessInstance;
-  }
-
   private Either<Rejection, DeployedProcess> getProcess(
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
@@ -498,18 +420,6 @@ public final class ProcessInstanceCreationCreateProcessor
           new Rejection(
               RejectionType.NOT_FOUND, String.format(ERROR_MESSAGE_NOT_FOUND_BY_KEY, key)));
     }
-  }
-
-  private void activateElementsForStartInstructions(
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions,
-      final DeployedProcess process,
-      final ProcessInstanceRecord processInstance) {
-
-    startInstructions.forEach(
-        instruction -> {
-          final var element = process.getProcess().getElementById(instruction.getElementId());
-          elementActivationBehavior.activateElement(processInstance, element);
-        });
   }
 
   private record ElementIdAndType(String elementId, BpmnElementType elementType) {}

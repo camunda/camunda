@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
@@ -27,7 +28,8 @@ public final class ProcessInstanceCreationCreateWithResultProcessor
 
   public ProcessInstanceCreationCreateWithResultProcessor(
       final ProcessInstanceCreationCreateProcessor createProcessor,
-      final MutableElementInstanceState elementInstanceState) {
+      final MutableElementInstanceState elementInstanceState,
+      final ProcessEngineMetrics metrics) {
     this.createProcessor = createProcessor;
     this.elementInstanceState = elementInstanceState;
   }
