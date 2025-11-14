@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableScope;
 
 public class ClusterVariableEntityTransformer
     implements ServiceTransformer<
@@ -24,7 +25,7 @@ public class ClusterVariableEntityTransformer
         value.getValue(),
         value.getFullValue(),
         value.isPreview(),
-        value.getScope(),
-        value.getResourceId());
+        ClusterVariableScope.valueOf(value.getScope().name()),
+        value.getTenantId());
   }
 }

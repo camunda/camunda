@@ -83,7 +83,7 @@ public class ClusterVariableSortIT {
   public void shouldSortByResourceIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
-        b -> b.resourceId().asc(),
+        b -> b.tenantId().asc(),
         Comparator.comparing(ClusterVariableEntity::resourceId));
   }
 
@@ -91,7 +91,7 @@ public class ClusterVariableSortIT {
   public void shouldSortByResourceIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
-        b -> b.resourceId().desc(),
+        b -> b.tenantId().desc(),
         Comparator.comparing(ClusterVariableEntity::resourceId).reversed());
   }
 
@@ -110,7 +110,7 @@ public class ClusterVariableSortIT {
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
                         .scopes("TENANT")
-                        .resourceIds(resourceId)
+                        .tenantIds(resourceId)
                         .build(),
                     ClusterVariableSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))

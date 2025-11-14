@@ -90,12 +90,12 @@ public class ClusterVariableSortTest extends AbstractSortTransformerTest {
   }
 
   @Test
-  public void shouldApplySortConditionByResourceIdDESC() {
+  public void shouldApplySortConditionByTenantIdDESC() {
     // given
-    final var clusterVariableFilter = FilterBuilders.clusterVariable((f) -> f.names("resourceId"));
+    final var clusterVariableFilter = FilterBuilders.clusterVariable((f) -> f.names("tenantId"));
     final var request =
         SearchQueryBuilders.clusterVariableSearchQuery(
-            (q) -> q.filter(clusterVariableFilter).sort((s) -> s.resourceId().desc()).page(p -> p));
+            (q) -> q.filter(clusterVariableFilter).sort((s) -> s.tenantId().desc()).page(p -> p));
 
     // when
     final var sort = transformRequest(request);
@@ -109,7 +109,7 @@ public class ClusterVariableSortTest extends AbstractSortTransformerTest {
         sort.stream()
             .anyMatch(
                 s ->
-                    s.field().field().equals("resourceId")
+                    s.field().field().equals("tenantId")
                         && s.field().order().equals(SortOrder.DESC));
 
     assertThat(sortByResourceIdConditionCheck).isTrue();
@@ -156,7 +156,7 @@ public class ClusterVariableSortTest extends AbstractSortTransformerTest {
         SearchQueryBuilders.clusterVariableSearchQuery(
             (q) ->
                 q.filter(clusterVariableFilter)
-                    .sort((s) -> s.scope().asc().resourceId().desc())
+                    .sort((s) -> s.scope().asc().tenantId().desc())
                     .page(p -> p));
 
     // when
@@ -176,7 +176,7 @@ public class ClusterVariableSortTest extends AbstractSortTransformerTest {
         sort.stream()
             .anyMatch(
                 s ->
-                    s.field().field().equals("resourceId")
+                    s.field().field().equals("tenantId")
                         && s.field().order().equals(SortOrder.DESC));
 
     assertThat(sortByScopeConditionCheck).isTrue();

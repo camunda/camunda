@@ -7,14 +7,8 @@
  */
 package io.camunda.search.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record ClusterVariableEntity(
-    String id,
-    String name,
-    String value,
-    String fullValue,
-    Boolean isPreview,
-    ClusterVariableScope scope,
-    String resourceId) {}
+public enum ClusterVariableScope {
+  GLOBAL,
+  TENANT,
+  UNSPECIFIED;
+}
