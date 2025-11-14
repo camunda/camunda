@@ -74,7 +74,7 @@ jobs:
         shell: bash
         id: build-camunda
         run: |
-          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
+          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package -P'!include-optimize'
           ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
           export ARTIFACT
           echo "distball=dist/target/${ARTIFACT}.tar.gz" >> "$GITHUB_OUTPUT"
