@@ -38,6 +38,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
   private String serializedCustomHeaders;
   private Map<String, String> customHeaders;
   private Integer priority;
+  private List<String> tags;
   private int partitionId;
   private OffsetDateTime historyCleanupDate;
 
@@ -65,6 +66,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       final Integer processDefinitionVersion,
       final Map<String, String> customHeaders,
       final Integer priority,
+      final List<String> tags,
       final int partitionId,
       final OffsetDateTime historyCleanupDate) {
     this.userTaskKey = userTaskKey;
@@ -87,6 +89,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.customHeaders = customHeaders;
     serializedCustomHeaders = CustomHeaderSerializer.serialize(customHeaders);
     this.priority = priority;
+    this.tags = tags;
     this.partitionId = partitionId;
     this.historyCleanupDate = historyCleanupDate;
   }
@@ -276,6 +279,14 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.priority = priority;
   }
 
+  public List<String> tags() {
+    return tags;
+  }
+
+  public void tags(final List<String> tags) {
+    this.tags = tags;
+  }
+
   public int partitionId() {
     return partitionId;
   }
@@ -311,6 +322,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
         .processDefinitionVersion(processDefinitionVersion)
         .customHeaders(customHeaders)
         .priority(priority)
+        .tags(tags)
         .partitionId(partitionId)
         .historyCleanupDate(historyCleanupDate);
   }
@@ -338,6 +350,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     private Integer processDefinitionVersion;
     private Map<String, String> customHeaders;
     private Integer priority;
+    private List<String> tags;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
 
@@ -455,6 +468,11 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       return this;
     }
 
+    public Builder tags(final List<String> tags) {
+      this.tags = tags;
+      return this;
+    }
+
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
       return this;
@@ -489,6 +507,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
               processDefinitionVersion,
               customHeaders,
               priority,
+              tags,
               partitionId,
               historyCleanupDate);
 

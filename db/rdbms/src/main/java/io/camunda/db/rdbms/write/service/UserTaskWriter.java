@@ -56,6 +56,15 @@ public class UserTaskWriter {
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
               userTaskDbModel));
     }
+    if (userTaskDbModel.tags() != null && !userTaskDbModel.tags().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.USER_TASK,
+              WriteStatementType.INSERT,
+              userTaskDbModel.userTaskKey(),
+              "io.camunda.db.rdbms.sql.UserTaskMapper.insertTags",
+              userTaskDbModel));
+    }
   }
 
   public void update(final UserTaskDbModel userTaskDbModel) {
@@ -96,6 +105,22 @@ public class UserTaskWriter {
               WriteStatementType.INSERT,
               userTaskDbModel.userTaskKey(),
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
+              userTaskDbModel));
+    }
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK,
+            WriteStatementType.DELETE,
+            userTaskDbModel.userTaskKey(),
+            "io.camunda.db.rdbms.sql.UserTaskMapper.deleteTags",
+            userTaskDbModel.userTaskKey()));
+    if (userTaskDbModel.tags() != null && !userTaskDbModel.tags().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.USER_TASK,
+              WriteStatementType.INSERT,
+              userTaskDbModel.userTaskKey(),
+              "io.camunda.db.rdbms.sql.UserTaskMapper.insertTags",
               userTaskDbModel));
     }
   }
