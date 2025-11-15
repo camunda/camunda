@@ -6,10 +6,8 @@
   ~ Licensed under the Camunda License 1.0. You may not use this file
   ~ except in compliance with the Camunda License 1.0.
   -->
-<databaseChangeLog
-  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
   <property name="timestampWithTimeZone.type" value="DATETIMEOFFSET" dbms="mssql"/>
 
@@ -40,8 +38,7 @@
       <column name="FORM_ID" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
-    <createIndex tableName="${prefix}PROCESS_DEFINITION"
-      indexName="${prefix}IDX_PROCESS_DEFINITION_ID">
+    <createIndex tableName="${prefix}PROCESS_DEFINITION" indexName="${prefix}IDX_PROCESS_DEFINITION_ID">
       <column name="PROCESS_DEFINITION_ID"/>
     </createIndex>
   </changeSet>
@@ -78,20 +75,14 @@
   <changeSet id="create_process_instance_tag_table" author="camunda">
     <createTable tableName="${prefix}PROCESS_INSTANCE_TAG">
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
-        <constraints
-          primaryKey="true"
-          foreignKeyName="${prefix}FK_PROCESS_INSTANCE_TAG_PROCESS_INSTANCE"
-          referencedTableName="${prefix}PROCESS_INSTANCE"
-          referencedColumnNames="PROCESS_INSTANCE_KEY"
-          deleteCascade="true"/>
+        <constraints primaryKey="true" foreignKeyName="${prefix}FK_PROCESS_INSTANCE_TAG_PROCESS_INSTANCE" referencedTableName="${prefix}PROCESS_INSTANCE" referencedColumnNames="PROCESS_INSTANCE_KEY" deleteCascade="true"/>
         />
       </column>
-      <column name="TAG_VALUE" type="VARCHAR(100)">
+      <column name="TAG_VALUE" type="VARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
       </column>
     </createTable>
-    <createIndex tableName="${prefix}PROCESS_INSTANCE_TAG"
-      indexName="${prefix}IDX_PROCESS_INSTANCE_TAG_KEY">
+    <createIndex tableName="${prefix}PROCESS_INSTANCE_TAG" indexName="${prefix}IDX_PROCESS_INSTANCE_TAG_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
   </changeSet>
@@ -116,8 +107,7 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}VARIABLE"
-      indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_TENANT_ID">
@@ -199,11 +189,7 @@
 
     <createTable tableName="${prefix}CANDIDATE_USER">
       <column name="USER_TASK_KEY" type="BIGINT">
-        <constraints
-          foreignKeyName="${prefix}FK_CANDIDATE_USER_USER_TASK"
-          referencedTableName="${prefix}USER_TASK"
-          referencedColumnNames="USER_TASK_KEY"
-          deleteCascade="true"/>
+        <constraints foreignKeyName="${prefix}FK_CANDIDATE_USER_USER_TASK" referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY" deleteCascade="true"/>
         />
       </column>
       <column name="CANDIDATE_USER" type="VARCHAR(${userCharColumnSize})"/>
@@ -211,23 +197,31 @@
 
     <createTable tableName="${prefix}CANDIDATE_GROUP">
       <column name="USER_TASK_KEY" type="BIGINT">
-        <constraints
-          foreignKeyName="${prefix}FK_CANDIDATE_GROUP_USER_TASK"
-          referencedTableName="${prefix}USER_TASK"
-          referencedColumnNames="USER_TASK_KEY"
-          deleteCascade="true"/>
+        <constraints foreignKeyName="${prefix}FK_CANDIDATE_GROUP_USER_TASK" referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY" deleteCascade="true"/>
         />
       </column>
       <column name="CANDIDATE_GROUP" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
-    <createIndex tableName="${prefix}CANDIDATE_USER"
-      indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY">
+    <createTable tableName="${prefix}USER_TASK_TAG">
+      <column name="USER_TASK_KEY" type="BIGINT">
+        <constraints primaryKey="true" foreignKeyName="${prefix}FK_USER_TASK_TAG_USER_TASK" referencedTableName="${prefix}USER_TASK" referencedColumnNames="USER_TASK_KEY" deleteCascade="true"/>
+        />
+      </column>
+      <column name="TAG_VALUE" type="VARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"/>
+      </column>
+    </createTable>
+
+    <createIndex tableName="${prefix}CANDIDATE_USER" indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
     </createIndex>
 
-    <createIndex tableName="${prefix}CANDIDATE_GROUP"
-      indexName="${prefix}IDX_CANDIDATE_GROUP_USER_TASK_KEY">
+    <createIndex tableName="${prefix}CANDIDATE_GROUP" indexName="${prefix}IDX_CANDIDATE_GROUP_USER_TASK_KEY">
+      <column name="USER_TASK_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}USER_TASK_TAG" indexName="${prefix}IDX_USER_TASK_TAG_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
     </createIndex>
     <modifySql dbms="mariadb,mysql">
@@ -285,8 +279,7 @@
       <column name="DECISION_REQUIREMENTS_ID" type="VARCHAR(255)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}DECISION_DEFINITION"
-      indexName="${prefix}IDX_DECISION_DEFINITION_ID">
+    <createIndex tableName="${prefix}DECISION_DEFINITION" indexName="${prefix}IDX_DECISION_DEFINITION_ID">
       <column name="DECISION_DEFINITION_ID"/>
     </createIndex>
   </changeSet>
@@ -304,8 +297,7 @@
       <column name="XML" type="CLOB"/>
     </createTable>
 
-    <createIndex tableName="${prefix}DECISION_REQUIREMENTS"
-      indexName="${prefix}IDX_DECISION_REQUIREMENTS_ID">
+    <createIndex tableName="${prefix}DECISION_REQUIREMENTS" indexName="${prefix}IDX_DECISION_REQUIREMENTS_ID">
       <column name="DECISION_REQUIREMENTS_ID"/>
     </createIndex>
   </changeSet>
@@ -349,11 +341,7 @@
   <changeSet id="create_decision_instance_input_table" author="camunda">
     <createTable tableName="${prefix}DECISION_INSTANCE_INPUT">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(${userCharColumnSize})">
-        <constraints
-          foreignKeyName="${prefix}FK_DEC_INST_INPUT_DEC_INST"
-          referencedTableName="${prefix}DECISION_INSTANCE"
-          referencedColumnNames="DECISION_INSTANCE_ID"
-          deleteCascade="true"/>
+        <constraints foreignKeyName="${prefix}FK_DEC_INST_INPUT_DEC_INST" referencedTableName="${prefix}DECISION_INSTANCE" referencedColumnNames="DECISION_INSTANCE_ID" deleteCascade="true"/>
         />
       </column>
       <column name="INPUT_ID" type="VARCHAR(${userCharColumnSize})"/>
@@ -361,8 +349,7 @@
       <column name="INPUT_VALUE" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
-    <createIndex tableName="${prefix}DECISION_INSTANCE_INPUT"
-      indexName="${prefix}IDX_DECISION_INSTANCE_INPUT_INSTANCE_ID">
+    <createIndex tableName="${prefix}DECISION_INSTANCE_INPUT" indexName="${prefix}IDX_DECISION_INSTANCE_INPUT_INSTANCE_ID">
       <column name="DECISION_INSTANCE_ID"/>
     </createIndex>
   </changeSet>
@@ -370,11 +357,7 @@
   <changeSet id="create_decision_instance_output_table" author="camunda">
     <createTable tableName="${prefix}DECISION_INSTANCE_OUTPUT">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(${userCharColumnSize})">
-        <constraints
-          foreignKeyName="${prefix}FK_DEC_INST_OUTPUT_DEC_INST"
-          referencedTableName="${prefix}DECISION_INSTANCE"
-          referencedColumnNames="DECISION_INSTANCE_ID"
-          deleteCascade="true"/>
+        <constraints foreignKeyName="${prefix}FK_DEC_INST_OUTPUT_DEC_INST" referencedTableName="${prefix}DECISION_INSTANCE" referencedColumnNames="DECISION_INSTANCE_ID" deleteCascade="true"/>
         />
       </column>
       <column name="OUTPUT_ID" type="VARCHAR(${userCharColumnSize})"/>
@@ -384,8 +367,7 @@
       <column name="RULE_ID" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
-    <createIndex tableName="${prefix}DECISION_INSTANCE_OUTPUT"
-      indexName="${prefix}IDX_DECISION_INSTANCE_OUTPUT_INSTANCE_ID">
+    <createIndex tableName="${prefix}DECISION_INSTANCE_OUTPUT" indexName="${prefix}IDX_DECISION_INSTANCE_OUTPUT_INSTANCE_ID">
       <column name="DECISION_INSTANCE_ID"/>
     </createIndex>
   </changeSet>
@@ -519,23 +501,19 @@
       <column name="PERMISSION_TYPE" type="VARCHAR(255)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS"
-      indexName="${prefix}IDX_AUTHORIZATIONS_AUTHORIZATION_KEY">
+    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_AUTHORIZATION_KEY">
       <column name="AUTHORIZATION_KEY"/>
     </createIndex>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS"
-      indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_ID">
+    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_ID">
       <column name="OWNER_ID"/>
     </createIndex>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS"
-      indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_TYPE">
+    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_OWNER_TYPE">
       <column name="OWNER_TYPE"/>
     </createIndex>
 
-    <createIndex tableName="${prefix}AUTHORIZATIONS"
-      indexName="${prefix}IDX_AUTHORIZATIONS_RESOURCE_TYPE">
+    <createIndex tableName="${prefix}AUTHORIZATIONS" indexName="${prefix}IDX_AUTHORIZATIONS_RESOURCE_TYPE">
       <column name="RESOURCE_TYPE"/>
     </createIndex>
   </changeSet>
@@ -557,13 +535,7 @@
 
     <createTable tableName="${prefix}BATCH_OPERATION_ITEM">
       <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
-        <constraints
-          primaryKey="true"
-          nullable="false"
-          foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION"
-          referencedTableName="${prefix}BATCH_OPERATION"
-          referencedColumnNames="BATCH_OPERATION_KEY"
-          deleteCascade="true"/>
+        <constraints primaryKey="true" nullable="false" foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION" referencedTableName="${prefix}BATCH_OPERATION" referencedColumnNames="BATCH_OPERATION_KEY" deleteCascade="true"/>
       </column>
       <column name="ITEM_KEY" type="BIGINT">
         <constraints primaryKey="true" nullable="false"/>
@@ -577,11 +549,7 @@
 
     <createTable tableName="${prefix}BATCH_OPERATION_ERROR">
       <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
-        <constraints
-          foreignKeyName="${prefix}FK_BATCH_OPERATION_ERROR_BATCH_OPERATION"
-          referencedTableName="${prefix}BATCH_OPERATION"
-          referencedColumnNames="BATCH_OPERATION_KEY"
-          deleteCascade="true"/>
+        <constraints foreignKeyName="${prefix}FK_BATCH_OPERATION_ERROR_BATCH_OPERATION" referencedTableName="${prefix}BATCH_OPERATION" referencedColumnNames="BATCH_OPERATION_KEY" deleteCascade="true"/>
         />
       </column>
       <column name="PARTITION_ID" type="NUMBER"/>
@@ -589,8 +557,7 @@
       <column name="MESSAGE" type="VARCHAR(4000)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}BATCH_OPERATION_ERROR"
-      indexName="${prefix}IDX_BATCH_OPERATION_ERROR_KEY">
+    <createIndex tableName="${prefix}BATCH_OPERATION_ERROR" indexName="${prefix}IDX_BATCH_OPERATION_ERROR_KEY">
       <column name="BATCH_OPERATION_KEY"/>
       <column name="PARTITION_ID"/>
     </createIndex>
@@ -658,8 +625,7 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}SEQUENCE_FLOW"
-      indexName="${prefix}IDX_SEQUENCE_FLOW_PROCESS_INSTANCE_KEY">
+    <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
 

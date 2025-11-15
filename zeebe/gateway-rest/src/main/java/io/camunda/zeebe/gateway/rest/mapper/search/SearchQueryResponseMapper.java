@@ -999,7 +999,8 @@ public final class SearchQueryResponseMapper {
         .externalFormReference(t.externalFormReference())
         .processDefinitionVersion(t.processDefinitionVersion())
         .customHeaders(t.customHeaders())
-        .priority(t.priority());
+        .priority(t.priority())
+        .tags(t.tags());
   }
 
   public static FormResult toFormItem(final FormEntity f) {

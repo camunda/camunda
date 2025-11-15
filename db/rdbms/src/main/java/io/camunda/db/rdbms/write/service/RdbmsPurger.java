@@ -48,6 +48,7 @@ public class RdbmsPurger {
           "TENANT",
           "USAGE_METRIC",
           "USAGE_METRIC_TU",
+          "USER_TASK_TAG",
           "USER_TASK",
           "USER_",
           "VARIABLE");

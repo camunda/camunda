@@ -56,6 +56,15 @@ public class UserTaskWriter {
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
               userTaskDbModel));
     }
+    if (userTaskDbModel.tags() != null && !userTaskDbModel.tags().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.USER_TASK,
+              WriteStatementType.INSERT,
+              userTaskDbModel.userTaskKey(),
+              "io.camunda.db.rdbms.sql.UserTaskMapper.insertTags",
+              userTaskDbModel));
+    }
   }
 
   public void update(final UserTaskDbModel userTaskDbModel) {
@@ -98,6 +107,7 @@ public class UserTaskWriter {
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
               userTaskDbModel));
     }
+    // Tags are immutable and set only at creation time, so we don't update them
   }
 
   public void updateState(final long userTaskKey, final UserTaskState state) {

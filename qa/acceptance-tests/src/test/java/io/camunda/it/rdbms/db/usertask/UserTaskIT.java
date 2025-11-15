@@ -677,7 +677,8 @@ public class UserTaskIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
 
-    // compare only keys to avoid flaky test due random differences in candidate users/groups
+    // compare only keys to avoid flaky test due random differences in candidate
+    // users/groups
     assertThat(nextPage.items())
         .extracting(ut -> ut.userTaskKey())
         .isEqualTo(
@@ -699,7 +700,8 @@ public class UserTaskIT {
             "followUpDate",
             "candidateUsers",
             "processName",
-            "candidateGroups")
+            "candidateGroups",
+            "tags")
         .isEqualTo(userTask);
     assertThat(instance.creationDate())
         .isCloseTo(userTask.creationDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
@@ -722,6 +724,12 @@ public class UserTaskIT {
           .containsExactlyInAnyOrderElementsOf(userTask.candidateGroups());
     } else {
       assertThat(instance.candidateGroups()).isEmpty();
+    }
+
+    if (userTask.tags() != null) {
+      assertThat(instance.tags()).containsExactlyInAnyOrderElementsOf(userTask.tags());
+    } else {
+      assertThat(instance.tags()).isEmpty();
     }
   }
 

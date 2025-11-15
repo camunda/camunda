@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -146,9 +147,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY, 50);
   private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
+  private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>("tags", StringValue::new);
 
   public UserTaskRecord() {
-    super(22);
+    super(23);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -170,7 +172,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(actionProp)
         .declareProperty(creationTimestampProp)
         .declareProperty(priorityProp)
-        .declareProperty(deniedReasonProp);
+        .declareProperty(deniedReasonProp)
+        .declareProperty(tagsProp);
   }
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
@@ -197,6 +200,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     actionProp.setValue(record.getActionBuffer());
     priorityProp.setValue(record.getPriority());
     deniedReasonProp.setValue(record.getDeniedReason());
+    setTags(record.getTags());
   }
 
   /**
@@ -740,6 +744,22 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord resetChangedAttributes() {
     changedAttributesProp.reset();
+    return this;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return StreamSupport.stream(tagsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
+  }
+
+  public UserTaskRecord setTags(final Set<String> tags) {
+    tagsProp.reset();
+    if (tags != null) {
+      tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
+    }
     return this;
   }
 }

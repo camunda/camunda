@@ -65,12 +65,26 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getFollowUpDateQuery(filter.followUpDateOperations()));
     queries.addAll(getDueDateQuery(filter.dueDateOperations()));
 
-    // Process Instance Variable Query: Check if processVariable  with specified varName and
+    // Handle tags (AND logic like process instances)
+    // tags are stored as a keyword list, so we need to match all provided tags
+    // expression: tags: [A, B] -> tags:A AND tags:B means
+    // the tags list must contain a tag that is equal to A and a tag that is equal to B
+    if (filter.tags() != null && !filter.tags().isEmpty()) {
+      final List<SearchQuery> tagQueries =
+          filter.tags().stream()
+              .map(tag -> stringTerms(TAGS, java.util.List.of(tag)))
+              .collect(Collectors.toList());
+      queries.add(and(tagQueries));
+    }
+
+    // Process Instance Variable Query: Check if processVariable with specified
+    // varName and
     // varValue exists
     ofNullable(getProcessInstanceVariablesQuery(filter.processInstanceVariableFilter()))
         .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
 
-    // Local Variable Query: Check if localVariable with specified varName and varValue exists
+    // Local Variable Query: Check if localVariable with specified varName and
+    // varValue exists
     // No need validate parent as the localVariable is the only children from Task
     ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
