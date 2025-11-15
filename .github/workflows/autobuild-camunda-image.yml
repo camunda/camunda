@@ -1,0 +1,75 @@
+# description: This workflow is a handy way to build and push the Camunda Docker image into Google Container Registry, for testing purposes.
+# owner: Data Layer Team
+name: Autobuild: Camunda Docker Image (camunda.Dockerfile)
+on:
+  workflow_dispatch:
+    inputs:
+      image_name_suffix:
+        description: 'Customize your image name with a suffix (e.g., your username)'
+        type: string
+        required: false
+        default: ''
+      image_tag:
+        description: 'Specifies the tag of the Docker image'
+        type: string
+        required: true
+      branch_or_commit_sha:
+        description: 'Specifies the ref (e.g. main or a commit SHA) to build from'
+        default: 'main'
+        required: false
+
+jobs:
+  build-and-push-camunda-image:
+    name: Build Camunda
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout branch or commit SHA
+        with:
+          ref: ${{ inputs.branch_or_commit_sha }}
+      - uses: ./.github/actions/setup-build
+        name: Prepare requirements for the build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-zeebe
+        name: Build Camunda Distribution (Full Build)
+        id: build-camunda-distribution
+      - uses: google-github-actions/auth@v2
+        name: Authenticate to Google Cloud
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Compute image repository name
+        id: compute-repo
+        run: |
+          BASE_REPO="gcr.io/zeebe-io/camunda-autobuild"
+          if [ -n "${{ inputs.image_name_suffix }}" ]; then
+            echo "repo=${BASE_REPO}-${{ inputs.image_name_suffix }}" >> $GITHUB_OUTPUT
+          else
+            echo "repo=${BASE_REPO}" >> $GITHUB_OUTPUT
+          fi
+      - uses: ./.github/actions/build-platform-docker
+        name: Build and Push Camunda Docker Image
+        with:
+          repository: ${{ steps.compute-repo.outputs.repo }}
+          revision: ${{ inputs.branch_or_commit_sha }}
+          push: true
+          version: ${{ inputs.image_tag }}
+          distball: ${{ steps.build-camunda-distribution.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
