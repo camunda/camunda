@@ -36,6 +36,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String CANDIDATE_USERS = "candidateUsers";
   public static final String CUSTOM_HEADERS = "customHeaders";
   public static final String PRIORITY = "priority";
+  public static final String TAGS = "tags";
   public static final String ACTION = "action";
   public static final String CHANGED_ATTRIBUTES = "changedAttributes";
 
