@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,6 +16,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -114,6 +116,115 @@ public class MigrateAdHocSubProcessTest {
     assertThat(updatedVariable)
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId);
+  }
+
+  // ==================== #innerInstance Suffix Validation Tests ====================
+
+  @Test
+  public void shouldRejectMigrationWhenInnerInstanceSuffixUsedWithoutAdHocSubProcess() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .serviceTask("taskA", t -> t.zeebeJobType("taskA"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("taskB", t -> t.zeebeJobType("taskB"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    // when - attempting to use #innerInstance suffix on a non-ad-hoc element
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("taskA", "taskB")
+        .addMappingInstruction(
+            "taskA" + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX,
+            "taskB" + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX)
+        .expectRejection()
+        .migrate();
+
+    // then - fails because element id with ad-hoc sub-process reference doesn't exist
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                "Expected to migrate process instance '%s'. Found reference of '%s' suffix on element id, "
+                    + "but there are no other mapping instruction element ids that point correctly to an Ad-Hoc Sub-Process element type. "
+                    + "Please remove the suffix from all the element ids and retry.",
+                processInstanceKey, AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX));
+  }
+
+  @Test
+  public void shouldAcceptMigrationWhenInnerInstanceSuffixCorrectlyUsedOnBothSourceAndTarget() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                createProcessWithAdHocSubProcess(sourceProcessId, "adHocSubProcess", "taskA"))
+            .withXmlResource(
+                createProcessWithAdHocSubProcess(targetProcessId, "adHocSubProcess", "taskB"))
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    // Activate the ad-hoc subprocess
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("adHocSubProcess")
+        .modify();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("adHocSubProcess")
+        .await();
+
+    // when - correctly using suffix on both source and target with proper ad-hoc mapping
+    final var migrationResult =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("adHocSubProcess", "adHocSubProcess")
+            .addMappingInstruction("adHocSubProcess#innerInstance", "adHocSubProcess#innerInstance")
+            .migrate();
+
+    // then - migration should succeed
+    assertThat(migrationResult)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
   }
 
   // ==================== mapElementIds Method Tests ====================

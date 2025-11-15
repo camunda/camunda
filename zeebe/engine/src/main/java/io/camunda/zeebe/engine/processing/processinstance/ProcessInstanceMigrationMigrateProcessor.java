@@ -173,6 +173,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
+    requireValidAdHocSubprocessInnerInstanceMapping(
+        sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
     requireReferredElementsExist(
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
 
