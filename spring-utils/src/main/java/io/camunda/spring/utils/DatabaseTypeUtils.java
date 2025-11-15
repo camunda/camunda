@@ -35,7 +35,7 @@ public final class DatabaseTypeUtils {
    * @param env the Spring environment
    * @return the database type or "elasticsearch" if not set
    */
-  private static String getDatabaseTypeOrDefault(final Environment env) {
+  public static String getDatabaseTypeOrDefault(final Environment env) {
     return Optional.ofNullable(env.getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE))
         .orElse("elasticsearch");
   }
