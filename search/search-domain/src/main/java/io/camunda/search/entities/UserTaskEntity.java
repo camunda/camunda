@@ -36,7 +36,8 @@ public record UserTaskEntity(
     String externalFormReference,
     Integer processDefinitionVersion,
     Map<String, String> customHeaders,
-    Integer priority)
+    Integer priority,
+    List<String> tags)
     implements TenantOwnedEntity {
 
   public UserTaskEntity withName(final String newName) {
@@ -62,7 +63,8 @@ public record UserTaskEntity(
         externalFormReference,
         processDefinitionVersion,
         customHeaders,
-        priority);
+        priority,
+        tags);
   }
 
   public UserTaskEntity withProcessName(final String newProcessName) {
@@ -88,7 +90,8 @@ public record UserTaskEntity(
         externalFormReference,
         processDefinitionVersion,
         customHeaders,
-        priority);
+        priority,
+        tags);
   }
 
   public boolean hasName() {
