@@ -15,8 +15,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
@@ -99,6 +101,25 @@ final class ArchiverJobTest {
     // then verify recording metrics
     verify(recordArchiving).accept(3);
     verify(recordArchived).accept(3);
+    verify(metrics).measureArchivingDuration(any());
+  }
+
+  @Test
+  void shouldRecordMetricsEvenWhenArchivingFails() {
+    // given
+    repository.batch = new ArchiveBatch("2026-01-01", List.of("1", "2", "3"));
+    repository.shouldFailOnMove = true;
+
+    // when
+    assertThat(job.execute())
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseExactlyInstanceOf(RuntimeException.class)
+        .withMessageContaining("Simulated archiving failure");
+
+    // then verify recording metrics - duration should still be measured
+    verify(recordArchiving).accept(3);
+    verifyNoInteractions(recordArchived);
     verify(metrics).measureArchivingDuration(any());
   }
 
