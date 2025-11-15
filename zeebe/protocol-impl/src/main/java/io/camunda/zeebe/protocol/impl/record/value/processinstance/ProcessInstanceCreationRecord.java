@@ -45,6 +45,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue RUNTIME_INSTRUCTIONS_KEY =
       new StringValue("runtimeInstructions");
   private static final StringValue TAGS_KEY = new StringValue("tags");
+  private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -66,9 +67,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
               RUNTIME_INSTRUCTIONS_KEY, ProcessInstanceCreationRuntimeInstruction::new);
   private final ArrayProperty<StringValue> tagsProperty =
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
+  private final StringProperty versionTagProperty = new StringProperty(VERSION_TAG_KEY, "");
 
   public ProcessInstanceCreationRecord() {
-    super(10);
+    super(11);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -78,7 +80,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(startInstructionsProperty)
         .declareProperty(runtimeInstructionsProperty)
         .declareProperty(tenantIdProperty)
-        .declareProperty(tagsProperty);
+        .declareProperty(tagsProperty)
+        .declareProperty(versionTagProperty);
   }
 
   @Override
@@ -245,5 +248,19 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
     return this;
+  }
+
+  public String getVersionTag() {
+    return bufferAsString(versionTagProperty.getValue());
+  }
+
+  public ProcessInstanceCreationRecord setVersionTag(final String versionTag) {
+    versionTagProperty.setValue(versionTag);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVersionTagBuffer() {
+    return versionTagProperty.getValue();
   }
 }
