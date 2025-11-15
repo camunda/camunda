@@ -1,0 +1,75 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "entityKey": {
+        "type": "long"
+      },
+      "entityType": {
+        "type": "short"
+      },
+      "entityVersion": {
+        "type": "integer"
+      },
+      "operationType": {
+        "type": "short"
+      },
+      "batchOperationKey": {
+        "type": "long"
+      },
+      "timestamp": {
+        "type": "long"
+      },
+      "actorId": {
+        "type": "keyword"
+      },
+      "actorType": {
+        "type": "short"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "operationState": {
+        "type": "keyword"
+      },
+      "operationNote": {
+        "type": "text"
+      },
+      "operationCategory": {
+        "type": "short"
+      },
+      "operationDetails": {
+        "type": "object",
+        "enabled": false
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "elementInstanceKey": {
+        "type": "long"
+      },
+      "userTaskKey": {
+        "type": "long"
+      },
+      "decisionRequirementsKey": {
+        "type": "long"
+      },
+      "decisionKey": {
+        "type": "long"
+      },
+      "join": {
+        "type": "join",
+        "eager_global_ordinals": true,
+        "relations": {
+          "batchOperation": ["batchItem"]
+        }
+      }
+    }
+  }
+}

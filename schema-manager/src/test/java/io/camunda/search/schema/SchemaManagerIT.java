@@ -1009,6 +1009,7 @@ public class SchemaManagerIT {
             newPrefix + "-camunda-usage-metric-tu-8.8.0_",
             newPrefix + "-camunda-user-8.8.0_",
             newPrefix + "-camunda-web-session-8.8.0_",
+            newPrefix + "-camunda-audit-log-8.9.0_",
             newPrefix + "-operate-batch-operation-1.0.0_",
             newPrefix + "-operate-decision-8.3.0_",
             newPrefix + "-operate-decision-instance-8.3.0_",

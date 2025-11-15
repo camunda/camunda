@@ -10,29 +10,22 @@ package io.camunda.webapps.schema.descriptors.index;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
-import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
-public class TenantIndex extends AbstractIndexDescriptor implements Prio5Backup {
+public class AuditLogIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
-  public static final String INDEX_NAME = "tenant";
-  public static final String INDEX_VERSION = "8.8.0";
+  public static final String INDEX_NAME = "audit-log";
+  public static final String INDEX_VERSION = "8.9.0";
+  public static final String ENTITY_KEY = "entityKey";
 
-  public static final String KEY = "key";
-  public static final String TENANT_ID = "tenantId";
-  public static final String NAME = "name";
-  public static final String JOIN = "join";
-  public static final String MEMBER_TYPE = "memberType";
-  public static final String MEMBER_ID = "memberId";
-
-  public static final EntityJoinRelationFactory<IdentityJoinRelationshipType>
+  public static final EntityJoinRelationFactory<AuditLogJoinRelationshipType>
       JOIN_RELATION_FACTORY =
           new EntityJoinRelationFactory<>(
-              EntityJoinRelation.IdentityJoinRelationshipType.TENANT,
-              EntityJoinRelation.IdentityJoinRelationshipType.MEMBER);
+              AuditLogJoinRelationshipType.BATCH_OPERATION,
+              AuditLogJoinRelationshipType.BATCH_ITEM);
 
-  public TenantIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public AuditLogIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
