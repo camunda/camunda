@@ -216,6 +216,31 @@ public final class SearchUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchUserTaskByTag() {
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.tag("urgent")).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getTags()).containsExactly("urgent");
+  }
+
+  @Test
+  void shouldSearchUserTaskByTags() {
+    // when
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.tags(java.util.Arrays.asList("urgent", "vip", "priority-high")))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getTags())
+        .containsExactlyInAnyOrder("urgent", "vip", "priority-high");
+  }
+
+  @Test
   void shouldSearchUserTaskByPriorityLongFilter() {
     // when
     client.newUserTaskSearchRequest().filter(f -> f.priority(b -> b.gt(1).lt(10))).send().join();

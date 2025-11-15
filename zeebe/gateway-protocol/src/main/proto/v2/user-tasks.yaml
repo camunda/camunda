@@ -437,7 +437,7 @@ components:
           description: The key of the element instance.
         tags:
           type: array
-          description: The tags that were set for this user task.
+          description: Filter by tags. User tasks must have all specified tags (AND logic).
           items:
             type: string
 

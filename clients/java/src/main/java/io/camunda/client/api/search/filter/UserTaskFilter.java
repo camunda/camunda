@@ -103,6 +103,22 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter name(final String name);
 
   /**
+   * Filters user tasks by the specified tag.
+   *
+   * @param tag the tag value to filter by
+   * @return the updated filter
+   */
+  UserTaskFilter tag(final String tag);
+
+  /**
+   * Filters user tasks by the specified tags.
+   *
+   * @param tags the list of tag values to filter by
+   * @return the updated filter
+   */
+  UserTaskFilter tags(final List<String> tags);
+
+  /**
    * Filters user tasks by the specified candidate group.
    *
    * @param candidateGroup the candidate group of the user task

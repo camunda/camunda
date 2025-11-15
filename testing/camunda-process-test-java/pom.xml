@@ -175,10 +175,27 @@
 
     <!-- Required to access the version as a resource-->
     <resources>
-      <!-- Regular resources with filtering enabled -->
+      <!-- Regular resources with filtering enabled, excluding binary files -->
       <resource>
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>**/*.woff</exclude>
+          <exclude>**/*.woff2</exclude>
+          <exclude>**/*.ttf</exclude>
+          <exclude>**/*.eot</exclude>
+        </excludes>
+      </resource>
+      <!-- Binary files without filtering -->
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*.woff</include>
+          <include>**/*.woff2</include>
+          <include>**/*.ttf</include>
+          <include>**/*.eot</include>
+        </includes>
       </resource>
       <!-- Frontend files with filtering disabled -->
       <resource>
