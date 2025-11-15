@@ -64,6 +64,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getCompletionTimeQuery(filter.completionDateOperations()));
     queries.addAll(getFollowUpDateQuery(filter.followUpDateOperations()));
     queries.addAll(getDueDateQuery(filter.dueDateOperations()));
+    ofNullable(getTagsQuery(filter.tags())).ifPresent(queries::add);
 
     // Process Instance Variable Query: Check if processVariable  with specified varName and
     // varValue exists
@@ -154,6 +155,10 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private SearchQuery getNameQuery(final List<String> name) {
     return stringTerms(NAME, name);
+  }
+
+  private SearchQuery getTagsQuery(final List<String> tags) {
+    return stringTerms(TAGS, tags);
   }
 
   private SearchQuery getProcessInstanceVariablesQuery(
