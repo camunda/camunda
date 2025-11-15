@@ -241,7 +241,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setFollowUpDate(ExporterUtil.toOffsetDateTime(taskValue.getFollowUpDate()))
         .setPriority(taskValue.getPriority())
         .setCandidateGroups(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateGroupsList()))
-        .setCandidateUsers(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateUsersList()));
+        .setCandidateUsers(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateUsersList()))
+        .setTags(taskValue.getTags() != null ? taskValue.getTags().toArray(new String[0]) : null);
 
     if (!ExporterUtil.isEmpty(formKey)) {
       formCache
