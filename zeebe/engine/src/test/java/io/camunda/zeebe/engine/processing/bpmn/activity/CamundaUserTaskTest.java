@@ -189,6 +189,48 @@ public final class CamundaUserTaskTest {
   }
 
   @Test
+  public void shouldEvaluateCustomHeaderExpressionsAndConvertToString() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                t ->
+                    t.zeebeTaskHeader("staticHeader", "value")
+                        .zeebeTaskHeader("stringExpr", "=stringVar")
+                        .zeebeTaskHeader("numericExpr", "=numberVar + 10")
+                        .zeebeTaskHeader("booleanExpr", "=boolVar")
+                        .zeebeTaskHeader("dateTimeExpr", "=now() + duration(\"P3D\")")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("stringVar", "hello", "numberVar", 5, "boolVar", true))
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = userTask.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(5)
+        .containsEntry("staticHeader", "value")
+        .containsEntry("stringExpr", "hello")
+        .containsEntry("numericExpr", "15")
+        .containsEntry("booleanExpr", "true")
+        .containsKey("dateTimeExpr"); // dateTime will be converted to ISO-8601 string
+
+    // Verify that the dateTimeExpr is a valid ISO-8601 formatted string
+    assertThat(customHeaders.get("dateTimeExpr")).matches("\\d{4}-\\d{2}-\\d{2}T.*");
+  }
+
+  @Test
   public void shouldPickUpCustomFormForUserTask() {
     // given
     final String externalReference = "http://example.com/my-external-form";
@@ -1063,7 +1105,8 @@ public final class CamundaUserTaskTest {
             .withLocalSemantic()
             .update();
 
-    // then: variable update should be successful and trigger the user task update transition
+    // then: variable update should be successful and trigger the user task update
+    // transition
     Assertions.assertThat(variableUpdateRecord)
         .describedAs("Expect variables to be successfully updated for a user task")
         .hasRecordType(RecordType.EVENT)
@@ -1128,7 +1171,8 @@ public final class CamundaUserTaskTest {
             .getFirst()
             .getValue();
 
-    // when: updating a process-level variable and creating a new one using `PROPAGATE` semantic
+    // when: updating a process-level variable and creating a new one using
+    // `PROPAGATE` semantic
     ENGINE
         .variables()
         .ofScope(createdUserTask.getElementInstanceKey())
@@ -1152,7 +1196,8 @@ public final class CamundaUserTaskTest {
             tuple(VariableIntent.UPDATED, processInstanceKey, "approvalStatus", "\"SUBMITTED\""),
             tuple(VariableIntent.CREATED, processInstanceKey, "reviewerComment", "\"LGTM\""));
 
-    // and: user task should pass update transition with VARIABLES in changedAttributes
+    // and: user task should pass update transition with VARIABLES in
+    // changedAttributes
     assertThat(
             RecordingExporter.userTaskRecords()
                 .withProcessInstanceKey(processInstanceKey)
