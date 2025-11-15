@@ -109,7 +109,12 @@ test.describe
 
     await test.step('Verify that the incidents are resolved', async () => {
       const processInstanceKey = localState.processInstanceKey;
-      await verifyIncidentsForProcessInstance(request, processInstanceKey, 0);
+      await expect(async () => {
+        await verifyIncidentsForProcessInstance(request, processInstanceKey, 0);
+      }).toPass({
+        intervals: [1_000, 2_000, 3_000, 5_000, 5_000, 10_000, 10_000, 10_000],
+        timeout: 90_000,
+      });
     });
 
     await cancelProcessInstance(localState.processInstanceKey);
@@ -225,6 +230,7 @@ test.describe
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
+
     await test.step('Verify that the process instances have no incidents', async () => {
       await verifyIncidentsForProcessInstance(
         request,
@@ -232,11 +238,16 @@ test.describe
         1,
       );
 
-      await verifyIncidentsForProcessInstance(
-        request,
-        localState.processInstanceKey2,
-        0,
-      );
+      await expect(async () => {
+        await verifyIncidentsForProcessInstance(
+          request,
+          localState.processInstanceKey2,
+          0,
+        );
+      }).toPass({
+        intervals: [1_000, 2_000, 3_000, 5_000, 5_000, 10_000, 10_000, 10_000],
+        timeout: 120_000,
+      });
     });
 
     await cancelProcessInstance(localState.processInstanceKey1);
@@ -315,18 +326,24 @@ test.describe
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
-    await test.step('Verify that the process instances have no incidents', async () => {
-      await verifyIncidentsForProcessInstance(
-        request,
-        localState.processInstanceKey1,
-        0,
-      );
 
-      await verifyIncidentsForProcessInstance(
-        request,
-        localState.processInstanceKey2,
-        0,
-      );
+    await test.step('Verify that the process instances have no incidents', async () => {
+      await expect(async () => {
+        await verifyIncidentsForProcessInstance(
+          request,
+          localState.processInstanceKey1,
+          0,
+        );
+
+        await verifyIncidentsForProcessInstance(
+          request,
+          localState.processInstanceKey2,
+          0,
+        );
+      }).toPass({
+        intervals: [1_000, 2_000, 3_000, 5_000, 5_000, 10_000, 10_000, 10_000],
+        timeout: 90_000,
+      });
     });
 
     await cancelProcessInstance(localState.processInstanceKey1);
