@@ -1414,7 +1414,7 @@ class UserTaskSearchTest {
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(f -> f.customHeaders(List.of(h -> h.name("priority").value(v -> v.exists()))))
+            .filter(f -> f.customHeaders(List.of(h -> h.name("priority").value(v -> v.exists(true)))))
             .send()
             .join();
 
