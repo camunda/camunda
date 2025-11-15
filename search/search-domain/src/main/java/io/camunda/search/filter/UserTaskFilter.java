@@ -38,6 +38,7 @@ public record UserTaskFilter(
     List<Operation<OffsetDateTime>> completionDateOperations,
     List<Operation<OffsetDateTime>> followUpDateOperations,
     List<Operation<OffsetDateTime>> dueDateOperations,
+    List<String> tags,
     String type)
     implements FilterBase {
 
@@ -62,6 +63,7 @@ public record UserTaskFilter(
     private List<Operation<OffsetDateTime>> completionDateOperations;
     private List<Operation<OffsetDateTime>> followUpDateOperations;
     private List<Operation<OffsetDateTime>> dueDateOperations;
+    private List<String> tags;
     private String type;
 
     public Builder userTaskKeys(final Long... values) {
@@ -275,6 +277,15 @@ public record UserTaskFilter(
       return dueDateOperations(collectValues(operation, operations));
     }
 
+    public Builder tags(final String... values) {
+      return tags(collectValuesAsList(values));
+    }
+
+    public Builder tags(final List<String> values) {
+      tags = addValuesToList(tags, values);
+      return this;
+    }
+
     public Builder type(final String value) {
       type = value;
       return this;
@@ -302,6 +313,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(completionDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(followUpDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(dueDateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(tags, Collections.emptyList()),
           type);
     }
   }

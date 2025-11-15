@@ -53,6 +53,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     ofNullable(getBpmnProcessIdQuery(filter.bpmnProcessIds())).ifPresent(queries::add);
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
     ofNullable(getNameQuery(filter.names())).ifPresent(queries::add);
+    ofNullable(getTagsQuery(filter.tags())).ifPresent(queries::add);
     queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
     queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
@@ -64,13 +65,16 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getCompletionTimeQuery(filter.completionDateOperations()));
     queries.addAll(getFollowUpDateQuery(filter.followUpDateOperations()));
     queries.addAll(getDueDateQuery(filter.dueDateOperations()));
+    ofNullable(getTagsQuery(filter.tags())).ifPresent(queries::add);
 
-    // Process Instance Variable Query: Check if processVariable  with specified varName and
+    // Process Instance Variable Query: Check if processVariable with specified
+    // varName and
     // varValue exists
     ofNullable(getProcessInstanceVariablesQuery(filter.processInstanceVariableFilter()))
         .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
 
-    // Local Variable Query: Check if localVariable with specified varName and varValue exists
+    // Local Variable Query: Check if localVariable with specified varName and
+    // varValue exists
     // No need validate parent as the localVariable is the only children from Task
     ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
@@ -156,15 +160,18 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return stringTerms(NAME, name);
   }
 
+  private SearchQuery getTagsQuery(final List<String> tags) {
+    return stringTerms(TAGS, tags);
+  }
+
   private SearchQuery getProcessInstanceVariablesQuery(
       final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
-      final var queries =
-          variableFilters.stream()
-              .map(transformer::apply)
-              .map((q) -> hasChildQuery(TaskJoinRelationshipType.PROCESS_VARIABLE.getType(), q))
-              .collect(Collectors.toList());
+      final var queries = variableFilters.stream()
+          .map(transformer::apply)
+          .map((q) -> hasChildQuery(TaskJoinRelationshipType.PROCESS_VARIABLE.getType(), q))
+          .collect(Collectors.toList());
       return and(queries);
     }
     return null;
@@ -174,11 +181,10 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
 
-      final var queries =
-          variableFilters.stream()
-              .map(transformer::apply)
-              .map((q) -> hasChildQuery(TaskJoinRelationshipType.LOCAL_VARIABLE.getType(), q))
-              .collect(Collectors.toList());
+      final var queries = variableFilters.stream()
+          .map(transformer::apply)
+          .map((q) -> hasChildQuery(TaskJoinRelationshipType.LOCAL_VARIABLE.getType(), q))
+          .collect(Collectors.toList());
       return and(queries);
     }
     return null;

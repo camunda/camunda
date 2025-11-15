@@ -97,6 +97,9 @@ public class TaskEntity
   private Integer priority;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String[] tags;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String action;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -355,6 +358,15 @@ public class TaskEntity
 
   public TaskEntity setPriority(final Integer priority) {
     this.priority = priority;
+    return this;
+  }
+
+  public String[] getTags() {
+    return tags;
+  }
+
+  public TaskEntity setTags(final String[] tags) {
+    this.tags = tags;
     return this;
   }
 

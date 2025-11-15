@@ -103,6 +103,18 @@ public class UserTaskFilterImpl
   }
 
   @Override
+  public UserTaskFilter tag(final String tag) {
+    filter.addTagsItem(tag);
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter tags(final List<String> tags) {
+    filter.setTags(tags);
+    return this;
+  }
+
+  @Override
   public UserTaskFilter candidateGroup(final String candidateGroup) {
     candidateGroup(b -> b.eq(candidateGroup));
     return this;

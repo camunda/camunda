@@ -221,6 +221,18 @@
       <column name="CANDIDATE_GROUP" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
+    <createTable tableName="${prefix}USER_TASK_TAG">
+      <column name="USER_TASK_KEY" type="BIGINT">
+        <constraints
+          foreignKeyName="${prefix}FK_USER_TASK_TAG_USER_TASK"
+          referencedTableName="${prefix}USER_TASK"
+          referencedColumnNames="USER_TASK_KEY"
+          deleteCascade="true"/>
+        />
+      </column>
+      <column name="TAG_VALUE" type="VARCHAR(100)"/>
+    </createTable>
+
     <createIndex tableName="${prefix}CANDIDATE_USER"
       indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
@@ -228,6 +240,11 @@
 
     <createIndex tableName="${prefix}CANDIDATE_GROUP"
       indexName="${prefix}IDX_CANDIDATE_GROUP_USER_TASK_KEY">
+      <column name="USER_TASK_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}USER_TASK_TAG"
+      indexName="${prefix}IDX_USER_TASK_TAG_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
     </createIndex>
     <modifySql dbms="mariadb,mysql">

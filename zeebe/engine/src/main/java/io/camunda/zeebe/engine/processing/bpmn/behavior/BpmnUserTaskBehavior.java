@@ -165,10 +165,18 @@ public final class BpmnUserTaskBehavior {
             .setElementInstanceKey(context.getElementInstanceKey())
             .setTenantId(context.getTenantId())
             .setPriority(userTaskProperties.getPriority())
-            .setCreationTimestamp(clock.millis());
+            .setCreationTimestamp(clock.millis())
+            .setTags(getTagsFromProcessInstance(context));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
+  }
+
+  private Set<String> getTagsFromProcessInstance(final BpmnElementContext context) {
+    final var processInstance =
+        stateBehavior.getElementInstance(context.getProcessInstanceKey()).getValue();
+
+    return processInstance != null ? processInstance.getTags() : Collections.emptySet();
   }
 
   public Either<Failure, String> evaluateAssigneeExpression(

@@ -435,6 +435,11 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The key of the element instance.
+        tags:
+          type: array
+          description: Filter by tags. User tasks must have all specified tags (AND logic).
+          items:
+            type: string
 
     UserTaskSearchQueryResult:
       description: User task search query response.
@@ -536,6 +541,11 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
           description: The key of the form.
+        tags:
+          type: array
+          description: The tags that were set for this user task.
+          items:
+            type: string
 
     UserTaskCompletionRequest:
       type: object
