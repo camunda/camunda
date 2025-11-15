@@ -208,6 +208,22 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter localVariables(final Map<String, Object> variableValueFilters);
 
   /**
+   * Filters user tasks by specified Custom Headers.
+   *
+   * @param headerValueFilters from the task
+   * @return the updated filter
+   */
+  UserTaskFilter customHeaders(final List<Consumer<HeaderValueFilter>> headerValueFilters);
+
+  /**
+   * Filters user tasks by specified Map of Custom Headers.
+   *
+   * @param headerValueFilters from the task
+   * @return the updated filter
+   */
+  UserTaskFilter customHeaders(final Map<String, Object> headerValueFilters);
+
+  /**
    * Filters user tasks by the specified element instance key.
    *
    * @param elementInstanceKey the element instance key of the user task
