@@ -12,11 +12,10 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import {
   queryIncidentsRequestBodySchema,
   type Incident,
-  type QueryIncidentsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
-import {useLocation} from 'react-router-dom';
-import {getSortParams} from 'modules/utils/filter';
+import {useSearchParams} from 'react-router-dom';
+import {parseSortParamsV2} from 'modules/utils/filter';
 import {useMemo} from 'react';
 
 type EnhancedIncident = Incident & {
@@ -64,22 +63,20 @@ const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
   });
 };
 
-const incidentsSortKeySchema =
+const IncidentsSortFieldSchema =
   queryIncidentsRequestBodySchema.shape.sort.def.innerType.def.element.shape
     .field;
 
 const useIncidentsSort = () => {
-  const location = useLocation();
-  return useMemo<QueryIncidentsRequestBody['sort']>(() => {
-    const params = getSortParams(location.search);
-    const field = incidentsSortKeySchema.safeParse(params?.sortBy);
-    return [
-      {
-        field: field.success ? field.data : 'creationTime',
-        order: params?.sortOrder ?? 'desc',
-      },
-    ];
-  }, [location.search]);
+  const [search] = useSearchParams();
+  return useMemo(
+    () =>
+      parseSortParamsV2(search, IncidentsSortFieldSchema, {
+        field: 'creationTime',
+        order: 'desc',
+      }),
+    [search],
+  );
 };
 
 export {useEnhancedIncidents, useIncidentsSort, type EnhancedIncident};

@@ -12,6 +12,7 @@ import {
   mockBatchOperations,
   mockDecisionInstances,
   mockDecisionXml,
+  mockEmptyDecisionInstances,
   mockGroupedDecisions,
   mockResponses,
 } from '../mocks/decisions.mocks';
@@ -47,10 +48,7 @@ test.describe('decisions page', () => {
         batchOperations: {items: [], page: {totalItems: 0}},
         groupedDecisions: mockGroupedDecisions,
         decisionXml: '',
-        decisionInstances: {
-          decisionInstances: [],
-          totalCount: 0,
-        },
+        decisionInstances: mockEmptyDecisionInstances,
       }),
     );
 
@@ -91,7 +89,7 @@ test.describe('decisions page', () => {
       },
     });
 
-    await expect(decisionsPage.fetchErrorMessage).toBeVisible();
+    await expect(decisionsPage.fetchDecisionErrorMessage).toBeVisible();
     await expect(decisionsPage.diagramSpinner).not.toBeVisible();
 
     await expect(page).toHaveScreenshot();

@@ -14,32 +14,28 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {InstancesTable} from './index';
-import {decisionInstancesStore} from 'modules/stores/decisionInstances';
-import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {Routes, Route, MemoryRouter} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';
 import {AppHeader} from 'App/Layout/AppHeader';
-import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
-import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
-import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {createUser} from 'modules/testUtils';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
+import {
+  mockDecisionInstancesSearchResult,
+  mockEmptyDecisionInstancesSearchResult,
+} from 'modules/mocks/mockDecisionInstanceSearch';
+import {
+  assignApproverGroup,
+  invoiceClassification,
+} from 'modules/mocks/mockDecisionInstance';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {createUser} from 'modules/testUtils';
 
-const createWrapper = (initialPath: string = Paths.decisions()) => {
+const createWrapper = (
+  initialPath: string = `${Paths.decisions()}?evaluated=true`,
+) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      groupedDecisionsStore.fetchDecisions();
-      return () => {
-        decisionInstancesStore.reset();
-        groupedDecisionsStore.reset();
-      };
-    }, []);
-
     return (
       <QueryClientProvider client={getMockQueryClient()}>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -59,17 +55,12 @@ const createWrapper = (initialPath: string = Paths.decisions()) => {
 
 describe('<InstancesTable />', () => {
   beforeEach(() => {
-    mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
-    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
-    mockFetchDecisionInstances().withSuccess({
-      totalCount: 0,
-      decisionInstances: [],
-    });
+    mockSearchDecisionInstances().withSuccess(
+      mockDecisionInstancesSearchResult,
+    );
   });
 
   it('should initially render skeleton', async () => {
-    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
-
     render(<InstancesTable />, {wrapper: createWrapper()});
 
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
@@ -79,8 +70,8 @@ describe('<InstancesTable />', () => {
     );
   });
 
-  it('should render error message', async () => {
-    mockFetchDecisionInstances().withServerError();
+  it('should render error message when searching instances fails', async () => {
+    mockSearchDecisionInstances().withServerError();
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
@@ -92,17 +83,14 @@ describe('<InstancesTable />', () => {
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
   });
 
-  it('should render empty message when no filter is selected', async () => {
-    mockFetchDecisionInstances().withSuccess({
-      totalCount: 0,
-      decisionInstances: [],
-    });
-
-    render(<InstancesTable />, {wrapper: createWrapper()});
-
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('data-table-skeleton'),
+  it('should render empty message and load no instances when no filters are selected', async () => {
+    const resolver = vi.fn();
+    mockSearchDecisionInstances().withSuccess(
+      mockDecisionInstancesSearchResult,
+      {mockResolverFn: resolver},
     );
+
+    render(<InstancesTable />, {wrapper: createWrapper(Paths.decisions())});
 
     expect(
       screen.getByText('There are no Instances matching this filter set'),
@@ -114,17 +102,17 @@ describe('<InstancesTable />', () => {
     ).toBeInTheDocument();
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
+    expect(resolver).not.toHaveBeenCalled();
   });
 
-  it('should render empty message when at least one filter is selected', async () => {
-    mockFetchDecisionInstances().withSuccess({
-      totalCount: 0,
-      decisionInstances: [],
-    });
+  it('should render empty message when no results match the filter', async () => {
+    const resolver = vi.fn();
+    mockSearchDecisionInstances().withSuccess(
+      mockEmptyDecisionInstancesSearchResult,
+      {mockResolverFn: resolver},
+    );
 
-    render(<InstancesTable />, {
-      wrapper: createWrapper(`${Paths.decisions()}?evaluated=true&failed=true`),
-    });
+    render(<InstancesTable />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(
       screen.queryByTestId('data-table-skeleton'),
@@ -140,11 +128,10 @@ describe('<InstancesTable />', () => {
     ).not.toBeInTheDocument();
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
+    expect(resolver).toHaveBeenCalled();
   });
 
   it('should render decision instances', async () => {
-    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
-
     render(<InstancesTable />, {wrapper: createWrapper()});
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
@@ -183,24 +170,28 @@ describe('<InstancesTable />', () => {
     ).toBeInTheDocument();
 
     const rows = screen.getAllByRole('row');
-    expect(rows).toHaveLength(29);
+    expect(rows).toHaveLength(3);
 
     const [, firstDecisionInstance, secondDecisionInstance] = rows;
     expect(
-      within(firstDecisionInstance!).getByText('test decision instance 1'),
+      within(firstDecisionInstance).getByText(
+        invoiceClassification.decisionDefinitionName,
+      ),
     ).toBeInTheDocument();
     expect(
-      within(firstDecisionInstance!).getByTestId(
-        'EVALUATED-icon-2251799813689541',
+      within(firstDecisionInstance).getByTestId(
+        `EVALUATED-icon-${invoiceClassification.decisionEvaluationInstanceKey}`,
       ),
     ).toBeInTheDocument();
 
     expect(
-      within(secondDecisionInstance!).getByText('test decision instance 2'),
+      within(secondDecisionInstance!).getByText(
+        assignApproverGroup.decisionDefinitionName,
+      ),
     ).toBeInTheDocument();
     expect(
       within(secondDecisionInstance!).getByTestId(
-        'FAILED-icon-2251799813689542',
+        `FAILED-icon-${assignApproverGroup.decisionEvaluationInstanceKey}`,
       ),
     ).toBeInTheDocument();
     expect(
@@ -213,11 +204,7 @@ describe('<InstancesTable />', () => {
   it('should navigate to decision instance page', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
-
-    const {user} = render(<InstancesTable />, {
-      wrapper: createWrapper(Paths.decisions()),
-    });
+    const {user} = render(<InstancesTable />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(
       screen.queryByTestId('data-table-skeleton'),
@@ -227,13 +214,13 @@ describe('<InstancesTable />', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /view decision instance 2251799813689541/i,
+        name: /view decision instance 30945876576324-1/i,
       }),
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        /^\/decisions\/2251799813689541$/,
+        /^\/decisions\/30945876576324-1$/,
       ),
     );
 
@@ -244,24 +231,8 @@ describe('<InstancesTable />', () => {
   it('should navigate to process instance page', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    mockFetchDecisionInstances().withSuccess({
-      totalCount: 1,
-      decisionInstances: [
-        {
-          id: '2251799813689541',
-          decisionName: 'test decision instance 1',
-          decisionVersion: 1,
-          evaluationDate: '2022-02-07T10:01:51.293+0000',
-          processInstanceId: '2251799813689544',
-          state: 'EVALUATED',
-          sortValues: ['', ''],
-          tenantId: '',
-        },
-      ],
-    });
-
     const {user} = render(<InstancesTable />, {
-      wrapper: createWrapper(Paths.decisions()),
+      wrapper: createWrapper(),
     });
 
     await waitForElementToBeRemoved(
@@ -272,13 +243,13 @@ describe('<InstancesTable />', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /view process instance 2251799813689544/i,
+        name: /view process instance 777/i,
       }),
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        /^\/processes\/2251799813689544$/,
+        /^\/processes\/777$/,
       ),
     );
 
@@ -287,8 +258,6 @@ describe('<InstancesTable />', () => {
   });
 
   it('should display loading skeleton when sorting is applied', async () => {
-    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
-
     const {user} = render(<InstancesTable />, {wrapper: createWrapper()});
 
     await waitForElementToBeRemoved(
@@ -297,7 +266,7 @@ describe('<InstancesTable />', () => {
 
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
 
-    mockFetchDecisionInstances().withDelay(mockDecisionInstances);
+    mockSearchDecisionInstances().withDelay(mockDecisionInstancesSearchResult);
 
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
@@ -307,8 +276,16 @@ describe('<InstancesTable />', () => {
   });
 
   it('should refetch data when navigated from header', async () => {
-    mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
-    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
+    const resolver = vi.fn();
+    mockSearchDecisionInstances().withSuccess(
+      mockDecisionInstancesSearchResult,
+      {mockResolverFn: resolver},
+    );
+    mockSearchDecisionInstances().withSuccess(
+      mockDecisionInstancesSearchResult,
+      {mockResolverFn: resolver},
+    );
 
     const {user} = render(
       <>
@@ -322,8 +299,6 @@ describe('<InstancesTable />', () => {
       screen.queryByTestId('data-table-skeleton'),
     );
 
-    mockFetchDecisionInstances().withDelay(mockDecisionInstances);
-
     await user.click(
       within(
         screen.getByRole('navigation', {
@@ -336,19 +311,13 @@ describe('<InstancesTable />', () => {
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument(),
-    );
+    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
+    expect(resolver).toHaveBeenCalledTimes(2);
   });
 
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {
-      mockFetchDecisionInstances().withSuccess({
-        totalCount: 0,
-        decisionInstances: [],
-      });
-
       vi.stubGlobal('clientConfig', {
         multiTenancyEnabled: true,
       });
@@ -356,52 +325,44 @@ describe('<InstancesTable />', () => {
       render(<InstancesTable />, {
         wrapper: createWrapper(
           `${Paths.decisions()}?${new URLSearchParams(
-            tenant === undefined ? undefined : {tenant},
+            tenant === undefined
+              ? {evaluated: 'true'}
+              : {tenant, evaluated: 'true'},
           )}`,
         ),
       });
 
       expect(
-        screen.getByRole('columnheader', {name: 'Tenant'}),
+        screen.getByRole('columnheader', {name: /Tenant/}),
       ).toBeInTheDocument();
     },
   );
 
   it('should hide tenant column when multi tenancy is enabled and tenant filter is a specific tenant', async () => {
-    mockFetchDecisionInstances().withSuccess({
-      totalCount: 0,
-      decisionInstances: [],
-    });
-
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
     });
 
     render(<InstancesTable />, {
       wrapper: createWrapper(
-        `${Paths.decisions()}?${new URLSearchParams({tenant: 'tenant-a'})}`,
+        `${Paths.decisions()}?${new URLSearchParams({tenant: 'tenant-a', evaluated: 'true'})}`,
       ),
     });
 
     expect(
-      screen.queryByRole('columnheader', {name: 'Tenant'}),
+      screen.queryByRole('columnheader', {name: /Tenant/}),
     ).not.toBeInTheDocument();
   });
 
   it('should hide tenant column when multi tenancy is disabled', async () => {
-    mockFetchDecisionInstances().withSuccess({
-      totalCount: 0,
-      decisionInstances: [],
-    });
-
     render(<InstancesTable />, {
       wrapper: createWrapper(
-        `${Paths.decisions()}?${new URLSearchParams({tenant: 'all'})}`,
+        `${Paths.decisions()}?${new URLSearchParams({tenant: 'all', evaluated: 'true'})}`,
       ),
     });
 
     expect(
-      screen.queryByRole('columnheader', {name: 'Tenant'}),
+      screen.queryByRole('columnheader', {name: /Tenant/}),
     ).not.toBeInTheDocument();
   });
 });
