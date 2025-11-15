@@ -191,7 +191,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "efr", // externalFormReference
                       1, // processDefinitionVersion
                       Collections.emptyMap(), // customHeaders
-                      50 // priority
+                      50, // priority
+                      List.of() // tags
                       )))
           .startCursor("f")
           .endCursor("v")
@@ -244,7 +245,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 "efr",
                 1,
                 Map.of(),
-                50));
+                50,
+                List.of()));
     // Mock the behavior for an invalid userTaskKey to throw NotFoundException
     when(userTaskServices.getByKey(INVALID_USER_TASK_KEY))
         .thenThrow(
