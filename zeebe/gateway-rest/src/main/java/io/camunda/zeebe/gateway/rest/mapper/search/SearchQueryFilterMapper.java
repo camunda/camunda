@@ -923,7 +923,7 @@ public class SearchQueryFilterMapper {
     final List<Operation<String>> operations = mapToOperations(String.class).apply(value);
     return new io.camunda.search.filter.HeaderValueFilter.Builder()
         .name(name)
-        .valueOperations(operations)
+        .valueTypedOperations(operations)
         .buildList();
   }
 
