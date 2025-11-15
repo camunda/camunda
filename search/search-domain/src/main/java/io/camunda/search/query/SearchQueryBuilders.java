@@ -68,6 +68,15 @@ public final class SearchQueryBuilders {
     return fn.apply(variableSearchQuery()).build();
   }
 
+  public static ClusterVariableQuery.Builder clusterVariableSearchQuery() {
+    return new ClusterVariableQuery.Builder();
+  }
+
+  public static ClusterVariableQuery clusterVariableSearchQuery(
+      final Function<ClusterVariableQuery.Builder, ObjectBuilder<ClusterVariableQuery>> fn) {
+    return fn.apply(clusterVariableSearchQuery()).build();
+  }
+
   public static DecisionDefinitionQuery.Builder decisionDefinitionSearchQuery() {
     return new DecisionDefinitionQuery.Builder();
   }

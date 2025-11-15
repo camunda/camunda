@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
@@ -49,6 +50,7 @@ public class RdbmsWriterFactory {
   private final BatchOperationMapper batchOperationMapper;
   private final MessageSubscriptionMapper messageSubscriptionMapper;
   private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
+  private final ClusterVariableMapper clusterVariableMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -69,7 +71,8 @@ public class RdbmsWriterFactory {
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
-      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper) {
+      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
+      final ClusterVariableMapper clusterVariableMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -89,6 +92,7 @@ public class RdbmsWriterFactory {
     this.batchOperationMapper = batchOperationMapper;
     this.messageSubscriptionMapper = messageSubscriptionMapper;
     this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
+    this.clusterVariableMapper = clusterVariableMapper;
   }
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
@@ -115,6 +119,7 @@ public class RdbmsWriterFactory {
         usageMetricTUMapper,
         batchOperationMapper,
         messageSubscriptionMapper,
-        correlatedMessageSubscriptionMapper);
+        correlatedMessageSubscriptionMapper,
+        clusterVariableMapper);
   }
 }

@@ -203,9 +203,18 @@ public final class FilterBuilders {
     return new VariableFilter.Builder();
   }
 
+  public static ClusterVariableFilter.Builder clusterVariable() {
+    return new ClusterVariableFilter.Builder();
+  }
+
   public static VariableFilter variable(
       final Function<VariableFilter.Builder, ObjectBuilder<VariableFilter>> fn) {
     return fn.apply(variable()).build();
+  }
+
+  public static ClusterVariableFilter clusterVariable(
+      final Function<ClusterVariableFilter.Builder, ObjectBuilder<ClusterVariableFilter>> fn) {
+    return fn.apply(clusterVariable()).build();
   }
 
   public static VariableValueFilter.Builder variableValue() {

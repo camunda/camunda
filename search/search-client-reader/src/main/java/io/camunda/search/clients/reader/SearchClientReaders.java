@@ -39,4 +39,5 @@ public record SearchClientReaders(
     UsageMetricsTUReader usageMetricsTUReader,
     UserReader userReader,
     UserTaskReader userTaskReader,
-    VariableReader variableReader) {}
+    VariableReader variableReader,
+    ClusterVariableReader clusterVariableReader) {}

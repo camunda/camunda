@@ -16,6 +16,7 @@ import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
+import io.camunda.search.clients.reader.ClusterVariableReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
 import io.camunda.search.clients.reader.DecisionInstanceReader;
@@ -154,7 +155,8 @@ public class SearchClientDatabaseConfiguration {
       final UsageMetricsTUReader usageMetricsTUReader,
       final UserReader userReader,
       final UserTaskReader userTaskReader,
-      final VariableReader variableReader) {
+      final VariableReader variableReader,
+      final ClusterVariableReader clusterVariableReader) {
     return new SearchClientReaders(
         authorizationReader,
         batchOperationReader,
@@ -186,6 +188,7 @@ public class SearchClientDatabaseConfiguration {
         usageMetricsTUReader,
         userReader,
         userTaskReader,
-        variableReader);
+        variableReader,
+        clusterVariableReader);
   }
 }

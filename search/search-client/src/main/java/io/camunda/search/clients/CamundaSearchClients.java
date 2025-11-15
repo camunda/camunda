@@ -16,6 +16,7 @@ import io.camunda.search.clients.reader.SearchQueryStatisticsReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -53,6 +54,7 @@ import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -138,6 +140,25 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
     return doSearchWithReader(readers.correlatedMessageSubscriptionReader(), query);
+  }
+
+  @Override
+  public ClusterVariableEntity getClusterVariable(final String tenant, final String name) {
+    return doGet(a -> readers.clusterVariableReader().getTenantScopedClusterVariable(tenant, name))
+        .orElseThrow(
+            () -> entityByIdNotFoundException("cluster variable", "%s-%s".formatted(name, tenant)));
+  }
+
+  @Override
+  public ClusterVariableEntity getClusterVariable(final String name) {
+    return doGet(a -> readers.clusterVariableReader().getGloballyScopedClusterVariable(name))
+        .orElseThrow(() -> entityByIdNotFoundException("cluster variable", "%s".formatted(name)));
+  }
+
+  @Override
+  public SearchQueryResult<ClusterVariableEntity> searchClusterVariables(
+      final ClusterVariableQuery filter) {
+    return doSearchWithReader(readers.clusterVariableReader(), filter);
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.db.rdbms;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
+import io.camunda.db.rdbms.read.service.ClusterVariableDbReader;
 import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
@@ -55,6 +56,7 @@ public class RdbmsService {
   private final ProcessDefinitionDbReader processDefinitionReader;
   private final ProcessInstanceDbReader processInstanceReader;
   private final VariableDbReader variableReader;
+  private final ClusterVariableDbReader clusterVariableDbReader;
   private final RoleDbReader roleReader;
   private final RoleMemberDbReader roleMemberReader;
   private final TenantDbReader tenantReader;
@@ -85,6 +87,7 @@ public class RdbmsService {
       final ProcessDefinitionDbReader processDefinitionReader,
       final ProcessInstanceDbReader processInstanceReader,
       final VariableDbReader variableReader,
+      final ClusterVariableDbReader clusterVariableDbReader,
       final RoleDbReader roleReader,
       final RoleMemberDbReader roleMemberReader,
       final TenantDbReader tenantReader,
@@ -115,6 +118,7 @@ public class RdbmsService {
     this.roleMemberReader = roleMemberReader;
     this.tenantReader = tenantReader;
     this.variableReader = variableReader;
+    this.clusterVariableDbReader = clusterVariableDbReader;
     this.roleReader = roleReader;
     this.tenantMemberReader = tenantMemberReader;
     this.userReader = userReader;
@@ -181,6 +185,10 @@ public class RdbmsService {
 
   public VariableDbReader getVariableReader() {
     return variableReader;
+  }
+
+  public ClusterVariableDbReader getClusterVariableReader() {
+    return clusterVariableDbReader;
   }
 
   public RoleDbReader getRoleReader() {
