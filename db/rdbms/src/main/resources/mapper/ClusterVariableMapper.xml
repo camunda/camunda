@@ -74,6 +74,12 @@
           #{resourceId}
         </foreach>
       </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
 
       <!-- basic filters -->
       <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">

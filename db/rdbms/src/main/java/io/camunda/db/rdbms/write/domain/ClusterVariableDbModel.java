@@ -126,10 +126,12 @@ public record ClusterVariableDbModel(
 
     private String getCompositeId() {
       return switch (scope) {
-        case GLOBAL -> name;
-        case TENANT -> "%s-%s".formatted(name, tenantId);
-        default ->
-            throw new IllegalArgumentException("Unknown scope for cluster variable: " + scope);
+        case GLOBAL -> String.format("%s-%s", name, scope);
+        case TENANT -> String.format("%s-%s-%s", name, tenantId, scope);
+        // This should never happen, as any other scope would be rejected by the processor before
+        // mutating the state, as the safety check, but we need a default case for the switch
+        // expression
+        default -> String.format("%s-%s", name, scope);
       };
     }
 

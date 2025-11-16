@@ -12,7 +12,7 @@ import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.search.entities.ClusterVariableEntity;
 import java.util.List;
 
-public interface ClusterVariableMapper extends HistoryCleanupMapper {
+public interface ClusterVariableMapper {
 
   void insert(ClusterVariableDbModel variable);
 
