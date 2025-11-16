@@ -12,13 +12,14 @@ import static io.camunda.util.ValueTypeUtil.mapDouble;
 import static io.camunda.util.ValueTypeUtil.mapLong;
 
 import io.camunda.db.rdbms.write.util.TruncateUtil;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
 import java.util.function.Function;
 
 public record ClusterVariableDbModel(
-    String clusterVariableId,
+    String id,
     String name,
     ValueTypeEnum type,
     Double doubleValue,
@@ -26,8 +27,8 @@ public record ClusterVariableDbModel(
     String value,
     String fullValue,
     boolean isPreview,
-    String resourceId,
-    String scope)
+    String tenantId,
+    ClusterVariableScope scope)
     implements Copyable<ClusterVariableDbModel> {
 
   @Override
@@ -39,7 +40,7 @@ public record ClusterVariableDbModel(
             new ClusterVariableDbModelBuilder()
                 .name(name)
                 .value(value)
-                .resourceId(resourceId)
+                .tenantId(tenantId)
                 .scope(scope))
         .build();
   }
@@ -59,7 +60,7 @@ public record ClusterVariableDbModel(
     }
 
     return new ClusterVariableDbModel(
-        clusterVariableId,
+        id,
         name,
         type,
         doubleValue,
@@ -67,7 +68,7 @@ public record ClusterVariableDbModel(
         truncatedValue,
         fullValue,
         isPreview,
-        resourceId,
+        tenantId,
         scope);
   }
 
@@ -75,8 +76,8 @@ public record ClusterVariableDbModel(
       implements ObjectBuilder<ClusterVariableDbModel> {
     private String name;
     private String value;
-    private String resourceId;
-    private String scope;
+    private String tenantId;
+    private ClusterVariableScope scope;
 
     public ClusterVariableDbModelBuilder name(final String name) {
       this.name = name;
@@ -88,13 +89,13 @@ public record ClusterVariableDbModel(
       return this;
     }
 
-    public ClusterVariableDbModelBuilder scope(final String scope) {
+    public ClusterVariableDbModelBuilder scope(final ClusterVariableScope scope) {
       this.scope = scope;
       return this;
     }
 
-    public ClusterVariableDbModelBuilder resourceId(final String resourceId) {
-      this.resourceId = resourceId;
+    public ClusterVariableDbModelBuilder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
       return this;
     }
 
@@ -119,14 +120,14 @@ public record ClusterVariableDbModel(
           value,
           null,
           false,
-          resourceId,
+          tenantId,
           scope);
     }
 
     private String getCompositeId() {
       return switch (scope) {
-        case "GLOBAL" -> name;
-        case "TENANT" -> "%s-%s".formatted(name, resourceId);
+        case GLOBAL -> name;
+        case TENANT -> "%s-%s".formatted(name, tenantId);
         default ->
             throw new IllegalArgumentException("Unknown scope for cluster variable: " + scope);
       };
@@ -134,7 +135,7 @@ public record ClusterVariableDbModel(
 
     private ClusterVariableDbModel getModel(final ValueTypeEnum valueTypeEnum, final String value) {
       return new ClusterVariableDbModel(
-          getCompositeId(), name, valueTypeEnum, null, null, value, null, false, resourceId, scope);
+          getCompositeId(), name, valueTypeEnum, null, null, value, null, false, tenantId, scope);
     }
 
     private ClusterVariableDbModel getDoubleModel() {
@@ -147,7 +148,7 @@ public record ClusterVariableDbModel(
           value,
           null,
           false,
-          resourceId,
+          tenantId,
           scope);
     }
   }

@@ -10,11 +10,11 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.ClusterVariableEntity;
 
 public enum ClusterVariableSearchColumn implements SearchColumn<ClusterVariableEntity> {
-  CLUSTER_VARIABLE_ID("clusterVariableId"),
+  CLUSTER_VARIABLE_ID("id"),
   VAR_NAME("name"),
   VAR_VALUE("value"),
   VAR_FULL_VALUE("fullValue"),
-  RESOURCE_ID("resourceId"),
+  TENANT_ID("tenantId"),
   SCOPE("scope"),
   IS_PREVIEW("isPreview");
   private final String property;

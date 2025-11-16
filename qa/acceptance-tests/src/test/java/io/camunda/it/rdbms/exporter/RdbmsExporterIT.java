@@ -233,7 +233,8 @@ class RdbmsExporterIT {
     assertThat(variable).isNotNull();
     assertThat(variable.value()).isEqualTo(clusterVariableRecordValue.getValue());
     assertThat(variable.name()).isEqualTo(clusterVariableRecordValue.getName());
-    assertThat(variable.scope()).isEqualTo(clusterVariableRecordValue.getScope().toString());
+    assertThat(variable.scope().toString())
+        .isEqualTo(clusterVariableRecordValue.getScope().toString());
   }
 
   @Test
@@ -257,9 +258,10 @@ class RdbmsExporterIT {
 
     assertThat(variable).isNotNull();
     assertThat(variable.value()).isEqualTo(clusterVariableRecordValue.getValue());
-    assertThat(variable.resourceId()).isEqualTo(clusterVariableRecordValue.getTenantId());
+    assertThat(variable.tenantId()).isEqualTo(clusterVariableRecordValue.getTenantId());
     assertThat(variable.name()).isEqualTo(clusterVariableRecordValue.getName());
-    assertThat(variable.scope()).isEqualTo(clusterVariableRecordValue.getScope().toString());
+    assertThat(variable.scope().toString())
+        .isEqualTo(clusterVariableRecordValue.getScope().toString());
   }
 
   @Test

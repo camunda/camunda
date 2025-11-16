@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.clustervariables;
 
-import static io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedResourceId;
+import static io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedTenantId;
 import static io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures.createRandomTenantClusterVariable;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
@@ -20,6 +20,7 @@ import io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
@@ -39,8 +40,8 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given 20 random tenant variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
-    createAndSaveRandomsTenantClusterVariablesWithFixedResourceId(rdbmsService, resourceId);
+    final String tenantId = nextStringId();
+    createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(rdbmsService, tenantId);
 
     // and one variable with a specific name
     final String varName = "var-name-" + nextStringId();
@@ -51,13 +52,13 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // when we search for it, then we should find one
     searchAndAssertClusterVariableValueFilters(
-        testApplication.getRdbmsService(), variableWithFixedName, varName, resourceId, null);
+        testApplication.getRdbmsService(), variableWithFixedName, varName, tenantId, null);
   }
 
   @TestTemplate
@@ -65,7 +66,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final String valueForOne = "value-42000";
     final ClusterVariableDbModel randomizedVariable =
@@ -75,8 +76,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and an eq value filter
@@ -84,7 +85,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -92,7 +93,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "someName";
     final String valueWithPattern = "variable-42-value";
     final ClusterVariableDbModel randomizedVariable =
@@ -102,8 +103,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and a like value filter
@@ -111,7 +112,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -119,7 +120,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final String numberValue = "42000";
     final ClusterVariableDbModel randomizedVariable =
@@ -129,8 +130,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and an eq value filter
@@ -138,7 +139,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -146,7 +147,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final String boolValue = "true";
     final ClusterVariableDbModel randomizedVariable = createRandomTenantClusterVariable(boolValue);
@@ -155,8 +156,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and an eq value filter
@@ -164,7 +165,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -172,8 +173,8 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given 20 random variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
-    createAndSaveRandomsTenantClusterVariablesWithFixedResourceId(rdbmsService, resourceId);
+    final String tenantId = nextStringId();
+    createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(rdbmsService, tenantId);
 
     // and one variable with a specific name
     final String varName = "var-name-" + nextStringId();
@@ -184,8 +185,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and a neq value filter
@@ -193,7 +194,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -201,7 +202,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final String numValue = "42000";
     final ClusterVariableDbModel randomizedVariable = createRandomTenantClusterVariable(numValue);
@@ -210,8 +211,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and a gt value filter
@@ -219,7 +220,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -227,7 +228,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final String numValue = "42000";
     final ClusterVariableDbModel randomizedVariable = createRandomTenantClusterVariable(numValue);
@@ -236,8 +237,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and a gte value filter
@@ -245,7 +246,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -253,7 +254,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final String negValue = "-42000";
     final ClusterVariableDbModel randomizedVariable = createRandomTenantClusterVariable(negValue);
@@ -262,8 +263,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and a lt value filter
@@ -271,7 +272,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -279,7 +280,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final String negValue = "-42000";
     final ClusterVariableDbModel randomizedVariable = createRandomTenantClusterVariable(negValue);
@@ -288,8 +289,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and a lte value filter
@@ -297,7 +298,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -305,7 +306,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final String doubleValue = "-4200.1234";
     final ClusterVariableDbModel randomizedVariable =
@@ -315,8 +316,8 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and a lt value filter
@@ -324,7 +325,7 @@ public class ClusterVariableValueFilterIT {
 
     // when we search for it, we should find one
     searchAndAssertClusterVariableValueFilter(
-        rdbmsService, variableWithFixedName, varName, resourceId, operation);
+        rdbmsService, variableWithFixedName, varName, tenantId, operation);
   }
 
   @TestTemplate
@@ -332,7 +333,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "var-name-" + nextStringId();
     final ClusterVariableDbModel randomizedVariable =
         createRandomTenantClusterVariable(generateRandomString(50));
@@ -341,15 +342,15 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and two name filters
     final var clusterVariableFilter =
         new ClusterVariableFilter.Builder()
-            .scopes("TENANT")
-            .tenantIds(resourceId)
+            .scopes(ClusterVariableScope.TENANT.name())
+            .tenantIds(tenantId)
             .names(varName, "not there")
             .build();
 
@@ -373,7 +374,7 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String resourceId = nextStringId();
+    final String tenantId = nextStringId();
     final String varName = "unique-name" + generateRandomString(10);
     final String varValue = generateRandomString(50);
     final ClusterVariableDbModel randomizedVariable = createRandomTenantClusterVariable(varValue);
@@ -382,15 +383,15 @@ public class ClusterVariableValueFilterIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(varName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     // and two name with value filters
     final var clusterVariableFilter =
         new ClusterVariableFilter.Builder()
-            .scopes("TENANT")
-            .tenantIds(resourceId)
+            .scopes(ClusterVariableScope.TENANT.name())
+            .tenantIds(tenantId)
             .names(varName, "not there")
             .values(varValue)
             .build();
@@ -415,18 +416,26 @@ public class ClusterVariableValueFilterIT {
   public void shouldTransformAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
-    final var resourceId = nextStringId();
+    final var tenantId = nextStringId();
     final var variableValue = "transformAnyValue";
     final ClusterVariableDbModel var1 =
         createRandomTenantClusterVariable(variableValue + "%wildcards1");
     final ClusterVariableDbModel var1Fixed =
-        var1.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var1.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var1Fixed);
 
     final ClusterVariableDbModel var2 =
         createRandomTenantClusterVariable(variableValue + "%wildcards2");
     final ClusterVariableDbModel var2Fixed =
-        var2.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var2.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var2Fixed);
 
     // when
@@ -438,8 +447,8 @@ public class ClusterVariableValueFilterIT {
                     b ->
                         b.filter(
                             f ->
-                                f.scopes("TENANT")
-                                    .tenantIds(resourceId)
+                                f.scopes(ClusterVariableScope.TENANT.name())
+                                    .tenantIds(tenantId)
                                     .valueOperations(Operation.like(variableValue + "*")))));
 
     // then
@@ -454,16 +463,24 @@ public class ClusterVariableValueFilterIT {
   public void shouldTransformSingleWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
-    final var resourceId = nextStringId();
+    final var tenantId = nextStringId();
     final var variableValue = "transformSingleValue";
     final ClusterVariableDbModel var1 = createRandomTenantClusterVariable(variableValue + "X");
     final ClusterVariableDbModel var1Fixed =
-        var1.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var1.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var1Fixed);
 
     final ClusterVariableDbModel var2 = createRandomTenantClusterVariable(variableValue + "Y");
     final ClusterVariableDbModel var2Fixed =
-        var2.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var2.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var2Fixed);
 
     // when
@@ -475,8 +492,8 @@ public class ClusterVariableValueFilterIT {
                     b ->
                         b.filter(
                             f ->
-                                f.scopes("TENANT")
-                                    .tenantIds(resourceId)
+                                f.scopes(ClusterVariableScope.TENANT.name())
+                                    .tenantIds(tenantId)
                                     .valueOperations(Operation.like(variableValue + "?")))));
 
     // then
@@ -491,16 +508,24 @@ public class ClusterVariableValueFilterIT {
   public void shouldIgnoreEscapedSQLAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
-    final var resourceId = nextStringId();
+    final var tenantId = nextStringId();
     final var variableValue = "ignoreAnyValue%X";
     final ClusterVariableDbModel var1 = createRandomTenantClusterVariable(variableValue);
     final ClusterVariableDbModel var1Fixed =
-        var1.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var1.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var1Fixed);
 
     final ClusterVariableDbModel var2 = createRandomTenantClusterVariable("ignoreAnyValueXX");
     final ClusterVariableDbModel var2Fixed =
-        var2.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var2.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var2Fixed);
 
     // when
@@ -512,8 +537,8 @@ public class ClusterVariableValueFilterIT {
                     b ->
                         b.filter(
                             f ->
-                                f.scopes("TENANT")
-                                    .tenantIds(resourceId)
+                                f.scopes(ClusterVariableScope.TENANT.name())
+                                    .tenantIds(tenantId)
                                     .valueOperations(Operation.like("ignoreAnyValue\\%X")))));
 
     // then
@@ -527,16 +552,24 @@ public class ClusterVariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final var rdbmsService = testApplication.getRdbmsService();
-    final var resourceId = nextStringId();
+    final var tenantId = nextStringId();
     final var variableValue = "ignoreSingleValue_X";
     final ClusterVariableDbModel var1 = createRandomTenantClusterVariable(variableValue);
     final ClusterVariableDbModel var1Fixed =
-        var1.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var1.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var1Fixed);
 
     final ClusterVariableDbModel var2 = createRandomTenantClusterVariable("ignoreSingleValueXX");
     final ClusterVariableDbModel var2Fixed =
-        var2.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var2.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var2Fixed);
 
     // when
@@ -548,8 +581,8 @@ public class ClusterVariableValueFilterIT {
                     b ->
                         b.filter(
                             f ->
-                                f.scopes("TENANT")
-                                    .tenantIds(resourceId)
+                                f.scopes(ClusterVariableScope.TENANT.name())
+                                    .tenantIds(tenantId)
                                     .valueOperations(Operation.like("ignoreSingleValue\\_X")))));
 
     // then
@@ -562,17 +595,25 @@ public class ClusterVariableValueFilterIT {
   public void shouldUnescapeESAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var resourceId = nextStringId();
+    final var tenantId = nextStringId();
     final String varValue = "value*any%wildcards1";
     final ClusterVariableDbModel var1 = createRandomTenantClusterVariable(varValue);
     final ClusterVariableDbModel var1Fixed =
-        var1.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var1.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var1Fixed);
 
     final String varValue2 = "value*any%wildcards2";
     final ClusterVariableDbModel var2 = createRandomTenantClusterVariable(varValue2);
     final ClusterVariableDbModel var2Fixed =
-        var2.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var2.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var2Fixed);
 
     // when
@@ -584,8 +625,8 @@ public class ClusterVariableValueFilterIT {
                     b ->
                         b.filter(
                             f ->
-                                f.scopes("TENANT")
-                                    .tenantIds(resourceId)
+                                f.scopes(ClusterVariableScope.TENANT.name())
+                                    .tenantIds(tenantId)
                                     .valueOperations(Operation.like("value\\*any\\%*")))));
 
     // then
@@ -598,17 +639,25 @@ public class ClusterVariableValueFilterIT {
   public void shouldUnescapeESSingleWildcard(final CamundaRdbmsTestApplication testApplication) {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var resourceId = nextStringId();
+    final var tenantId = nextStringId();
     final String varValue = "value?single_wildcards1";
     final ClusterVariableDbModel var1 = createRandomTenantClusterVariable(varValue);
     final ClusterVariableDbModel var1Fixed =
-        var1.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var1.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var1Fixed);
 
     final String varValue2 = "value?single_wildcards2";
     final ClusterVariableDbModel var2 = createRandomTenantClusterVariable(varValue2);
     final ClusterVariableDbModel var2Fixed =
-        var2.copy(b -> ((ClusterVariableDbModelBuilder) b).resourceId(resourceId).scope("TENANT"));
+        var2.copy(
+            b ->
+                ((ClusterVariableDbModelBuilder) b)
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     ClusterVariableFixtures.createAndSaveVariables(rdbmsService, var2Fixed);
 
     // when
@@ -620,8 +669,8 @@ public class ClusterVariableValueFilterIT {
                     b ->
                         b.filter(
                             f ->
-                                f.scopes("TENANT")
-                                    .tenantIds(resourceId)
+                                f.scopes(ClusterVariableScope.TENANT.name())
+                                    .tenantIds(tenantId)
                                     .valueOperations(
                                         Operation.like("value\\?single\\_wildcards?")))));
 
@@ -635,23 +684,23 @@ public class ClusterVariableValueFilterIT {
       final RdbmsService rdbmsService,
       final ClusterVariableDbModel clusterVariableDbModel,
       final String variableName,
-      final String resourceId,
+      final String tenantId,
       final Operation<String> operation) {
     searchAndAssertClusterVariableValueFilters(
-        rdbmsService, clusterVariableDbModel, variableName, resourceId, List.of(operation));
+        rdbmsService, clusterVariableDbModel, variableName, tenantId, List.of(operation));
   }
 
   private static void searchAndAssertClusterVariableValueFilters(
       final RdbmsService rdbmsService,
       final ClusterVariableDbModel clusterVariableDbModel,
       final String variableName,
-      final String resourceId,
+      final String tenantId,
       final List<Operation<String>> operations) {
 
     final var builder =
         new ClusterVariableFilter.Builder()
-            .scopes("TENANT")
-            .tenantIds(resourceId)
+            .scopes(ClusterVariableScope.TENANT.name())
+            .tenantIds(tenantId)
             .names(variableName);
     if (operations != null) {
       builder.valueOperations(operations).build();

@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel.ClusterVariableDbModelBuilder;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.ClusterVariableScope;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -56,26 +57,26 @@ public final class ClusterVariableFixtures extends CommonFixtures {
     rdbmsWriter.flush();
   }
 
-  public static void createAndSaveRandomsTenantClusterVariablesWithFixedResourceId(
-      final RdbmsService rdbmsService, final String resourceId) {
+  public static void createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
+      final RdbmsService rdbmsService, final String tenantId) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
 
     for (int i = 0; i < 20; i++) {
       final ClusterVariableDbModel randomized =
-          createRandomizedTenantClusterVariable(b -> b.resourceId(resourceId));
+          createRandomizedTenantClusterVariable(b -> b.tenantId(tenantId));
       rdbmsWriter.getClusterVariableWriter().create(randomized);
     }
 
     rdbmsWriter.flush();
   }
 
-  public static void createAndSaveRandomsTenantClusterVariablesWithFixedResourceIdAndValue(
-      final RdbmsService rdbmsService, final String resourceId, final String value) {
+  public static void createAndSaveRandomsTenantClusterVariablesWithFixedTenantAndValue(
+      final RdbmsService rdbmsService, final String tenantId, final String value) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
 
     for (int i = 0; i < 20; i++) {
       final ClusterVariableDbModel randomized =
-          createRandomizedTenantClusterVariable(b -> b.resourceId(resourceId).value(value));
+          createRandomizedTenantClusterVariable(b -> b.tenantId(tenantId).value(value));
       rdbmsWriter.getClusterVariableWriter().create(randomized);
     }
 
@@ -126,8 +127,8 @@ public final class ClusterVariableFixtures extends CommonFixtures {
     final var builder =
         new ClusterVariableDbModelBuilder()
             .name(generateRandomString("name-"))
-            .scope("TENANT")
-            .resourceId(generateRandomStringWithRandomTypes());
+            .scope(ClusterVariableScope.TENANT)
+            .tenantId(generateRandomStringWithRandomTypes());
 
     if (RANDOM.nextInt(10) < 5) {
       builder.value(generateRandomStringWithRandomTypes());
@@ -151,7 +152,9 @@ public final class ClusterVariableFixtures extends CommonFixtures {
       final Function<ClusterVariableDbModelBuilder, ClusterVariableDbModelBuilder>
           builderFunction) {
     final var builder =
-        new ClusterVariableDbModelBuilder().name(generateRandomString("name-")).scope("GLOBAL");
+        new ClusterVariableDbModelBuilder()
+            .name(generateRandomString("name-"))
+            .scope(ClusterVariableScope.GLOBAL);
 
     if (RANDOM.nextInt(10) < 5) {
       builder.value(generateRandomStringWithRandomTypes());

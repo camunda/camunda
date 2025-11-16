@@ -45,7 +45,8 @@ public class ClusterVariableCreatedHandler
 
   @Override
   public boolean handlesRecord(final Record<ClusterVariableRecordValue> record) {
-    return SUPPORTED_INTENT.equals(record.getIntent());
+    return getHandledValueType().equals(record.getValueType())
+        && SUPPORTED_INTENT.equals(record.getIntent());
   }
 
   @Override

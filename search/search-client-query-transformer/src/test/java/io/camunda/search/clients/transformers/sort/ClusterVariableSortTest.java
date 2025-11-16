@@ -105,14 +105,14 @@ public class ClusterVariableSortTest extends AbstractSortTransformerTest {
     // Name being default, we have 2 sort conditions
     Assertions.assertThat(sort).hasSize(2);
 
-    final boolean sortByResourceIdConditionCheck =
+    final boolean sortByTenantIdConditionCheck =
         sort.stream()
             .anyMatch(
                 s ->
                     s.field().field().equals("tenantId")
                         && s.field().order().equals(SortOrder.DESC));
 
-    assertThat(sortByResourceIdConditionCheck).isTrue();
+    assertThat(sortByTenantIdConditionCheck).isTrue();
   }
 
   @Test
@@ -149,7 +149,7 @@ public class ClusterVariableSortTest extends AbstractSortTransformerTest {
   }
 
   @Test
-  public void shouldApplySortConditionByScopeAndResourceIdMixedOrder() {
+  public void shouldApplySortConditionByScopeAndTenantIdMixedOrder() {
     // given
     final var clusterVariableFilter = FilterBuilders.clusterVariable((f) -> f.names("mixed"));
     final var request =
@@ -172,7 +172,7 @@ public class ClusterVariableSortTest extends AbstractSortTransformerTest {
             .anyMatch(
                 s -> s.field().field().equals("scope") && s.field().order().equals(SortOrder.ASC));
 
-    final boolean sortByResourceIdConditionCheck =
+    final boolean sortByTenantIdConditionCheck =
         sort.stream()
             .anyMatch(
                 s ->
@@ -180,6 +180,6 @@ public class ClusterVariableSortTest extends AbstractSortTransformerTest {
                         && s.field().order().equals(SortOrder.DESC));
 
     assertThat(sortByScopeConditionCheck).isTrue();
-    assertThat(sortByResourceIdConditionCheck).isTrue();
+    assertThat(sortByTenantIdConditionCheck).isTrue();
   }
 }

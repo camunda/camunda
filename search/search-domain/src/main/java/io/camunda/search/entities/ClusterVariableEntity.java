@@ -17,4 +17,4 @@ public record ClusterVariableEntity(
     String fullValue,
     Boolean isPreview,
     ClusterVariableScope scope,
-    String resourceId) {}
+    String tenantId) {}

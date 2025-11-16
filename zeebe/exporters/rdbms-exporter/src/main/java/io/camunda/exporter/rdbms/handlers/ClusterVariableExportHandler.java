@@ -10,7 +10,9 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.service.ClusterVariableWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 
@@ -25,8 +27,9 @@ public class ClusterVariableExportHandler
 
   @Override
   public boolean canExport(final Record<ClusterVariableRecordValue> record) {
-    return record.getIntent() == ClusterVariableIntent.CREATED
-        || record.getIntent() == ClusterVariableIntent.DELETED;
+    return record.getValueType() == ValueType.CLUSTER_VARIABLE
+        && (record.getIntent() == ClusterVariableIntent.CREATED
+            || record.getIntent() == ClusterVariableIntent.DELETED);
   }
 
   @Override
@@ -43,8 +46,8 @@ public class ClusterVariableExportHandler
     return new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
         .name(value.getName())
         .value(value.getValue())
-        .scope(value.getScope().name())
-        .resourceId(value.getTenantId())
+        .scope(ClusterVariableScope.valueOf(record.getValue().getScope().name()))
+        .tenantId(value.getTenantId())
         .build();
   }
 }

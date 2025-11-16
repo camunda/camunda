@@ -31,7 +31,7 @@ public class ClusterVariableWriter {
         new QueueItem(
             ContextType.CLUSTER_VARIABLE,
             WriteStatementType.INSERT,
-            clusterVariable.clusterVariableId(),
+            clusterVariable.id(),
             "io.camunda.db.rdbms.sql.ClusterVariableMapper.insert",
             clusterVariable.truncateValue(
                 vendorDatabaseProperties.variableValuePreviewSize(),
@@ -43,7 +43,7 @@ public class ClusterVariableWriter {
         new QueueItem(
             ContextType.CLUSTER_VARIABLE,
             WriteStatementType.DELETE,
-            clusterVariable.clusterVariableId(),
+            clusterVariable.id(),
             "io.camunda.db.rdbms.sql.ClusterVariableMapper.delete",
             clusterVariable));
   }

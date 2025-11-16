@@ -22,6 +22,7 @@ import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ClusterVariableQuery;
@@ -49,7 +50,7 @@ public class ClusterVariableIT {
             .getRdbmsService()
             .getClusterVariableReader()
             .getTenantScopedClusterVariable(
-                randomizedVariable.resourceId(), randomizedVariable.name());
+                randomizedVariable.tenantId(), randomizedVariable.name());
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
@@ -89,7 +90,7 @@ public class ClusterVariableIT {
         rdbmsService
             .getClusterVariableReader()
             .getTenantScopedClusterVariable(
-                randomizedVariable.resourceId(), randomizedVariable.name());
+                randomizedVariable.tenantId(), randomizedVariable.name());
 
     assertThat(instance).isNotNull();
     assertThat(instance.isPreview()).isTrue();
@@ -123,9 +124,9 @@ public class ClusterVariableIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
-    final String resourceId = CommonFixtures.nextStringId();
-    ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedResourceId(
-        rdbmsService, resourceId);
+    final String tenantId = CommonFixtures.nextStringId();
+    ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
+        rdbmsService, tenantId);
 
     final var searchResult =
         rdbmsService
@@ -134,7 +135,7 @@ public class ClusterVariableIT {
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
                         .scopes("TENANT")
-                        .tenantIds(resourceId)
+                        .tenantIds(tenantId)
                         .build(),
                     ClusterVariableSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -171,9 +172,9 @@ public class ClusterVariableIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
-    final String resourceId = CommonFixtures.nextStringId();
-    ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedResourceId(
-        rdbmsService, resourceId);
+    final String tenantId = CommonFixtures.nextStringId();
+    ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
+        rdbmsService, tenantId);
 
     final var searchResult =
         rdbmsService
@@ -182,7 +183,7 @@ public class ClusterVariableIT {
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
                         .scopes("TENANT")
-                        .tenantIds(resourceId)
+                        .tenantIds(tenantId)
                         .build(),
                     ClusterVariableSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(null).size(null))));
@@ -198,7 +199,7 @@ public class ClusterVariableIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
 
-    final String resourceId = CommonFixtures.nextStringId();
+    final String tenantId = CommonFixtures.nextStringId();
     final String variableName = CommonFixtures.nextStringId();
     final ClusterVariableDbModel randomizedVariable =
         ClusterVariableFixtures.createRandomTenantClusterVariable(generateRandomString(100));
@@ -207,8 +208,8 @@ public class ClusterVariableIT {
             b ->
                 ((ClusterVariableDbModelBuilder) b)
                     .name(variableName)
-                    .resourceId(resourceId)
-                    .scope("TENANT"));
+                    .tenantId(tenantId)
+                    .scope(ClusterVariableScope.TENANT));
     createAndSaveVariables(rdbmsService, variableWithFixedName);
 
     final var searchResult =
@@ -217,7 +218,7 @@ public class ClusterVariableIT {
                 new ClusterVariableFilter.Builder()
                     .names(variableName)
                     .scopes("TENANT")
-                    .tenantIds(resourceId)
+                    .tenantIds(tenantId)
                     .build(),
                 ClusterVariableSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -225,7 +226,7 @@ public class ClusterVariableIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().name()).isEqualTo(variableName);
-    assertThat(searchResult.items().getFirst().resourceId()).isEqualTo(resourceId);
+    assertThat(searchResult.items().getFirst().tenantId()).isEqualTo(tenantId);
   }
 
   @TestTemplate
@@ -234,16 +235,16 @@ public class ClusterVariableIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
 
-    final String resourceId = CommonFixtures.nextStringId();
-    ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedResourceId(
-        rdbmsService, resourceId);
+    final String tenantId = CommonFixtures.nextStringId();
+    ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
+        rdbmsService, tenantId);
 
     final var sort = ClusterVariableSort.of(s -> s.name().asc().scope().asc());
     final var searchResult =
         clusterVariableReader.search(
             ClusterVariableQuery.of(
                 b ->
-                    b.filter(f -> f.scopes("TENANT").tenantIds(resourceId))
+                    b.filter(f -> f.scopes("TENANT").tenantIds(tenantId))
                         .sort(sort)
                         .page(p -> p.from(0).size(20))));
 
@@ -251,7 +252,7 @@ public class ClusterVariableIT {
         clusterVariableReader.search(
             ClusterVariableQuery.of(
                 b ->
-                    b.filter(f -> f.scopes("TENANT").tenantIds(resourceId))
+                    b.filter(f -> f.scopes("TENANT").tenantIds(tenantId))
                         .sort(sort)
                         .page(p -> p.size(15))));
 
@@ -259,7 +260,7 @@ public class ClusterVariableIT {
         clusterVariableReader.search(
             ClusterVariableQuery.of(
                 b ->
-                    b.filter(f -> f.scopes("TENANT").tenantIds(resourceId))
+                    b.filter(f -> f.scopes("TENANT").tenantIds(tenantId))
                         .sort(sort)
                         .page(p -> p.size(5).after(firstPage.endCursor()))));
 

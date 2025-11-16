@@ -17,8 +17,8 @@
       <arg column="VAR_VALUE" javaType="java.lang.String"/>
       <arg column="VAR_FULL_VALUE" javaType="java.lang.String"/>
       <arg column="IS_PREVIEW" javaType="boolean"/>
-      <arg column="SCOPE" javaType="java.lang.String"/>
-      <arg column="RESOURCE_ID" javaType="java.lang.String"/>
+      <arg column="SCOPE" javaType="io.camunda.search.entities.ClusterVariableScope"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
@@ -36,7 +36,7 @@
     VAR_NAME,
     VAR_VALUE,
     VAR_FULL_VALUE,
-    RESOURCE_ID,
+    TENANT_ID,
     SCOPE,
     IS_PREVIEW
     FROM ${prefix}CLUSTER_VARIABLE
@@ -50,25 +50,25 @@
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
     INSERT INTO ${prefix}CLUSTER_VARIABLE (CLUSTER_VARIABLE_ID, VAR_NAME, TYPE, DOUBLE_VALUE,
                                            LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, IS_PREVIEW,
-                                           RESOURCE_ID,
+                                           TENANT_ID,
                                            SCOPE)
-    VALUES (#{clusterVariableId}, #{name}, #{type}, #{doubleValue, jdbcType=DOUBLE},
+    VALUES (#{id}, #{name}, #{type}, #{doubleValue, jdbcType=DOUBLE},
             #{longValue, jdbcType=NUMERIC},
             #{value},
-            #{fullValue}, #{isPreview}, #{resourceId}, #{scope})
+            #{fullValue}, #{isPreview}, #{tenantId}, #{scope})
   </insert>
 
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
     DELETE
     FROM ${prefix}CLUSTER_VARIABLE
-    WHERE CLUSTER_VARIABLE_ID = #{clusterVariableId}
+    WHERE CLUSTER_VARIABLE_ID = #{id}
   </delete>
 
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
       <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-        AND RESOURCE_ID IN
+        AND VAR_NAME IN
         <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
           close=")">
           #{resourceId}
@@ -90,9 +90,9 @@
         </foreach>
       </if>
 
-      <if test="filter.resourceIdOperations != null and !filter.resourceIdOperations.isEmpty()">
-        <foreach collection="filter.resourceIdOperations" item="operation">
-          AND RESOURCE_ID
+      <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+        <foreach collection="filter.tenantIdOperations" item="operation">
+          AND TENANT_ID
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>

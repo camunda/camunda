@@ -52,13 +52,14 @@ public class ClusterVariableIndex extends AbstractIndexDescriptor implements Pri
   }
 
   public static String generateID(
-      final String name, final String resourceId, final ClusterVariableScope scope) {
+      final String name, final String tenantId, final ClusterVariableScope scope) {
     return switch (scope) {
       case GLOBAL -> String.format("%s-%s", name, scope);
-      case TENANT -> String.format("%s-%s-%s", name, resourceId, scope);
-      default ->
-          throw new IllegalStateException(
-              "Cluster variable with unspecified scope can not be exported: " + scope);
+      case TENANT -> String.format("%s-%s-%s", name, tenantId, scope);
+      // This should never happen, as any other scope would be rejected by the processor before
+      // mutating the state, as the safety check, but we need a default case for the switch
+      // expression
+      default -> String.format("%s-%s", name, scope);
     };
   }
 }

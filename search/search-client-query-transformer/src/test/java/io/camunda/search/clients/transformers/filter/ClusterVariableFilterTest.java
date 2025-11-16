@@ -72,7 +72,7 @@ public class ClusterVariableFilterTest {
   }
 
   @Test
-  public void shouldSetScopeAndResourceIdFilters() {
+  public void shouldSetScopeAndTenantIdFilters() {
     // given
     final var filterBuilder = new ClusterVariableFilter.Builder();
 
@@ -107,7 +107,7 @@ public class ClusterVariableFilterTest {
   }
 
   @Test
-  public void shouldSetMultipleResourceIds() {
+  public void shouldSetMultipleTenantIds() {
     // given
     final var filterBuilder = new ClusterVariableFilter.Builder();
 

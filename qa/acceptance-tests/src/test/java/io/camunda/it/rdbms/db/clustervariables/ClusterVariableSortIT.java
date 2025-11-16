@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.clustervariables;
 
-import static io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedResourceIdAndValue;
+import static io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedTenantAndValue;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,28 +80,28 @@ public class ClusterVariableSortIT {
   }
 
   @TestTemplate
-  public void shouldSortByResourceIdAsc(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.tenantId().asc(),
-        Comparator.comparing(ClusterVariableEntity::resourceId));
+        Comparator.comparing(ClusterVariableEntity::tenantId));
   }
 
   @TestTemplate
-  public void shouldSortByResourceIdDesc(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByTenantIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.tenantId().desc(),
-        Comparator.comparing(ClusterVariableEntity::resourceId).reversed());
+        Comparator.comparing(ClusterVariableEntity::tenantId).reversed());
   }
 
   private void testSorting(
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<ClusterVariableSort>> sortBuilder,
       final Comparator<ClusterVariableEntity> comparator) {
-    final var resourceId = nextStringId();
-    createAndSaveRandomsTenantClusterVariablesWithFixedResourceIdAndValue(
-        rdbmsService, resourceId, "val-" + nextStringId());
+    final var tenantId = nextStringId();
+    createAndSaveRandomsTenantClusterVariablesWithFixedTenantAndValue(
+        rdbmsService, tenantId, "val-" + nextStringId());
 
     final var searchResult =
         rdbmsService
@@ -110,7 +110,7 @@ public class ClusterVariableSortIT {
                 new ClusterVariableQuery(
                     new ClusterVariableFilter.Builder()
                         .scopes("TENANT")
-                        .tenantIds(resourceId)
+                        .tenantIds(tenantId)
                         .build(),
                     ClusterVariableSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))
