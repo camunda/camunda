@@ -172,7 +172,7 @@ paths:
 
 components:
   schemas:
-    AuthorizationRequest:
+    AuthorizationIdBasedRequest:
       type: object
       additionalProperties: false
       properties:
@@ -201,6 +201,46 @@ components:
         - resourceId
         - resourceType
         - permissionTypes
+
+    AuthorizationPropertyBasedRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        ownerId:
+          description: The ID of the owner of the permissions.
+          type: string
+        ownerType:
+          $ref: '#/components/schemas/OwnerTypeEnum'
+        resourcePropertyName:
+          description: The name of the resource property on which this authorization is based.
+          type: string
+        resourceType:
+          description: The type of resource to add permissions to.
+          type: string
+          allOf:
+            - $ref: '#/components/schemas/ResourceTypeEnum'
+        permissionTypes:
+          type: array
+          description: The permission types to add.
+          items:
+            allOf:
+              - $ref: '#/components/schemas/PermissionTypeEnum'
+      required:
+        - ownerId
+        - ownerType
+        - resourcePropertyName
+        - resourceType
+        - permissionTypes
+
+    AuthorizationRequest:
+      x-polymorphic-schema: true
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/AuthorizationIdBasedRequest'
+        - $ref: '#/components/schemas/AuthorizationPropertyBasedRequest'
+      description: |
+        Defines an authorization request.
+        Either an id-based or a property-based authorization can be provided.
 
     AuthorizationSearchQuerySortRequest:
       type: object
