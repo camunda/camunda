@@ -1871,6 +1871,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   VariableSearchRequest newVariableSearchRequest();
 
   /**
+   * Executes a search request to query variables.
+   *
+   * <pre>
+   * camundaClient
+   *  .newVariableSearchRequest()
+   *  .filter((f) -> f.variableKey(variableKey))
+   *  .sort((s) -> s.value().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   *
+   * @param truncateValues whether to truncate variable values in the response
+   * @return a builder for the variable search request
+   */
+  VariableSearchRequest newVariableSearchRequest(boolean truncateValues);
+
+  /**
    * Gets a variable by key.
    *
    * <pre>
@@ -1901,6 +1917,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  @return a builder for the user task variable search request
    */
   UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(long userTaskKey);
+
+  /**
+   * Executes a search request to query variables related to a user task.
+   *
+   * <pre>
+   *   long variableKey = ...;
+   *
+   *  camundaClient
+   *   .newUserTaskVariableSearchRequest(variableKey)
+   *   .sort((s) -> s.value().asc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
+   *
+   *  @param userTaskKey the key of the user task
+   *  @param truncateValues whether to truncate variable values in the response
+   *  @return a builder for the user task variable search request
+   */
+  UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(
+      long userTaskKey, boolean truncateValues);
 
   /**
    * <strong>Experimental: This method is under development. The respective API on compatible

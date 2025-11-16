@@ -34,6 +34,7 @@ import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.UserTaskVariableSearchQueryRequest;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -47,12 +48,17 @@ public class UserTaskVariableSearchRequestImpl
   private final RequestConfig.Builder httpRequestConfig;
   private final JsonMapper jsonMapper;
   private final long userTaskKey;
+  private final boolean truncateValues;
 
   public UserTaskVariableSearchRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final long userTaskKey) {
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper,
+      final long userTaskKey,
+      final boolean truncateValues) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.userTaskKey = userTaskKey;
+    this.truncateValues = truncateValues;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new UserTaskVariableSearchQueryRequest();
   }
@@ -66,8 +72,11 @@ public class UserTaskVariableSearchRequestImpl
   @Override
   public CamundaFuture<SearchResponse<Variable>> send() {
     final HttpCamundaFuture<SearchResponse<Variable>> result = new HttpCamundaFuture<>();
+    final Map<String, String> queryParams = new java.util.HashMap<>();
+    queryParams.put("truncateValues", String.valueOf(truncateValues));
     httpClient.post(
         String.format("/user-tasks/%d/variables/search", userTaskKey),
+        queryParams,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResult.class,

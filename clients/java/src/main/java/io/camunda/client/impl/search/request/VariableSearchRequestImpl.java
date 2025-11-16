@@ -34,6 +34,7 @@ import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -46,12 +47,15 @@ public class VariableSearchRequestImpl
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
+  private final boolean truncateValues;
 
-  public VariableSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public VariableSearchRequestImpl(
+      final HttpClient httpClient, final JsonMapper jsonMapper, final boolean truncateValues) {
     request = new VariableSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
+    this.truncateValues = truncateValues;
   }
 
   @Override
@@ -63,8 +67,11 @@ public class VariableSearchRequestImpl
   @Override
   public CamundaFuture<SearchResponse<Variable>> send() {
     final HttpCamundaFuture<SearchResponse<Variable>> result = new HttpCamundaFuture<>();
+    final Map<String, String> queryParams = new java.util.HashMap<>();
+    queryParams.put("truncateValues", String.valueOf(truncateValues));
     httpClient.post(
         "/variables/search",
+        queryParams,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResult.class,
