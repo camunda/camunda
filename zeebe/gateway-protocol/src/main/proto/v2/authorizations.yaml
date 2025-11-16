@@ -12,7 +12,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthorizationCreateResult'
+              $ref: '#/components/schemas/AuthorizationRequest'
         required: true
       responses:
         "201":
@@ -20,7 +20,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthorizationResult'
+                $ref: '#/components/schemas/AuthorizationCreateResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
