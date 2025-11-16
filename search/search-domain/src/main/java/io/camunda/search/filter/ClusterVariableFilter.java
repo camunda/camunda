@@ -118,13 +118,6 @@ public record ClusterVariableFilter(
       return tenantIdOperations(collectValues(operation, operations));
     }
 
-    public Builder copyFrom(final ClusterVariableFilter sourceFilter) {
-      return nameOperations(sourceFilter.nameOperations)
-          .valueUntypedOperations(sourceFilter.valueOperations)
-          .scopeOperations(sourceFilter.scopeOperations)
-          .tenantIdOperations(sourceFilter.tenantIdOperations);
-    }
-
     @Override
     public ClusterVariableFilter build() {
       return new ClusterVariableFilter(

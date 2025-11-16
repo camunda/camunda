@@ -146,13 +146,18 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public ClusterVariableEntity getClusterVariable(final String tenant, final String name) {
     return doGet(a -> readers.clusterVariableReader().getTenantScopedClusterVariable(tenant, name))
         .orElseThrow(
-            () -> entityByIdNotFoundException("cluster variable", "%s-%s".formatted(name, tenant)));
+            () ->
+                entityByIdNotFoundException(
+                    "Tenant-scoped Cluster Variable", "%s-%s".formatted(name, tenant)));
   }
 
   @Override
   public ClusterVariableEntity getClusterVariable(final String name) {
     return doGet(a -> readers.clusterVariableReader().getGloballyScopedClusterVariable(name))
-        .orElseThrow(() -> entityByIdNotFoundException("cluster variable", "%s".formatted(name)));
+        .orElseThrow(
+            () ->
+                entityByIdNotFoundException(
+                    "Global-scoped Cluster Variable", "%s".formatted(name)));
   }
 
   @Override
