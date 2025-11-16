@@ -15,23 +15,26 @@
  */
 package io.camunda.client.metrics;
 
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.metrics.DefaultMetricsContext.DefaultCounterMetricsContext;
+import io.camunda.client.metrics.DefaultMetricsContext.DefaultTimerMetricsContext;
 import io.camunda.client.metrics.MetricsContext.CounterMetricsContext;
 import io.camunda.client.metrics.MetricsContext.TimerMetricsContext;
+import java.util.List;
+import java.util.Map;
 
-/**
- * Default implementation for MetricsRecorder simply ignoring the counts. Typically, you will
- * replace this by a proper Micrometer implementation as you can find in the starter module
- * (activated if Actuator is on the classpath)
- */
-public class DefaultNoopMetricsRecorder extends AbstractMetricsRecorder {
+public interface JobHandlerInvokingBeansMetricsContext {
 
-  @Override
-  public void executeWithTimer(final TimerMetricsContext context, final Runnable methodToExecute) {
-    methodToExecute.run();
+  static CounterMetricsContext counter(final ActivatedJob activatedJob) {
+    return new DefaultCounterMetricsContext(
+        "camunda.job.invocations",
+        List.of(),
+        List.of(Map.entry("type", activatedJob.getType())),
+        1);
   }
 
-  @Override
-  protected void increase(final CounterMetricsContext context, final String action) {
-    // ignore
+  static TimerMetricsContext timer(final ActivatedJob activatedJob) {
+    return new DefaultTimerMetricsContext(
+        "camunda.job.execution-time", List.of(Map.entry("type", activatedJob.getType())));
   }
 }

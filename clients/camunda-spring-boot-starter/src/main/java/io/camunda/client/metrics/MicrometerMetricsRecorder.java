@@ -15,18 +15,21 @@
  */
 package io.camunda.client.metrics;
 
+import io.camunda.client.metrics.MetricsContext.CounterMetricsContext;
+import io.camunda.client.metrics.MetricsContext.TimerMetricsContext;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MicrometerMetricsRecorder implements MetricsRecorder {
+public class MicrometerMetricsRecorder extends AbstractMetricsRecorder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MicrometerMetricsRecorder.class);
 
@@ -38,30 +41,31 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
     this.meterRegistry = meterRegistry;
   }
 
-  protected Counter newCounter(final String metricName, final String action, final String jobType) {
-    final List<Tag> tags = new ArrayList<>();
-    if (action != null && !action.isEmpty()) {
-      tags.add(Tag.of("action", action));
-    }
-    if (jobType != null && !jobType.isEmpty()) {
-      tags.add(Tag.of("type", jobType));
-    }
+  protected Counter newCounter(final String metricName, final Tags tags) {
     return meterRegistry.counter(metricName, tags);
   }
 
   @Override
-  public void increase(
-      final String metricName, final String action, final String type, final int count) {
-    final String key = metricName + "#" + action + '#' + type;
+  protected void increase(final CounterMetricsContext context, final String action) {
+    final String key = MetricsContext.getKey(context.getName(), action, context.getTags());
     final Counter counter =
-        counters.computeIfAbsent(key, k -> newCounter(metricName, action, type));
-    counter.increment(count);
+        counters.computeIfAbsent(
+            key, k -> newCounter(context.getName(), fromEntries(context.getTags(), action)));
+    counter.increment(context.getCount());
+  }
+
+  private static Tags fromEntries(final List<Entry<String, String>> entries) {
+    return Tags.of(entries.stream().map(e -> Tag.of(e.getKey(), e.getValue())).toList());
+  }
+
+  private static Tags fromEntries(final List<Entry<String, String>> entries, final String action) {
+    return Tags.concat(
+        entries.stream().map(e -> Tag.of(e.getKey(), e.getValue())).toList(), "action", action);
   }
 
   @Override
-  public void executeWithTimer(
-      final String metricName, final String jobType, final Runnable methodToExecute) {
-    final Timer timer = meterRegistry.timer(metricName, "type", jobType);
+  public void executeWithTimer(final TimerMetricsContext context, final Runnable methodToExecute) {
+    final Timer timer = meterRegistry.timer(context.getName(), fromEntries(context.getTags()));
     timer.record(methodToExecute);
   }
 }
