@@ -29,7 +29,6 @@ import io.camunda.client.impl.search.filter.builder.DecisionInstanceStatePropert
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 

@@ -35,7 +35,6 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
