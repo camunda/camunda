@@ -92,6 +92,39 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  public void shouldMarkRecordReadersAsCompletedIf880RecordReceived() throws IOException {
+
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    tester.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    EXPORTER.export(record2);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    // receives 8.7 record and marks partition as finished importing
+    tester.performOneRoundOfImport();
+
+    waitForImportPositionToNotNull(1, ImportValueType.PROCESS_INSTANCE);
+
+    // then
+    // require multiple checks to avoid race condition. If records are written to zeebe indices and
+    // before a refresh, the record reader pulls the import batch is empty so it then says that the
+    // record reader is done when it is not.
+    for (int i = 0; i < emptyBatches; i++) {
+      tester.performOneRoundOfImport();
+    }
+
+    // the import position for
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderCompleted("1-process-instance"));
+  }
+
+  @Test
   public void shouldMarkRecordReadersAsCompletedIfTenantRecordReceived() throws IOException {
 
     // given
@@ -107,7 +140,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
 
     // then
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
@@ -139,7 +172,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
 
     for (int i = 0; i <= emptyBatches; i++) {
       tester.performOneRoundOfImport();
@@ -154,8 +187,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880TenantRecord()
-      throws IOException {
+  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
     // given
 
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
@@ -167,15 +199,15 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
     // when
     final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
-    final var tenant2Record = generateRecord(ValueType.TENANT, "8.8.0", 2);
+    final var tenant2Record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
     EXPORTER.export(tenantRecord);
     EXPORTER.export(tenant2Record);
 
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
-    waitForTenantImportPositionToNotNull(2);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
+    waitForImportPositionToNotNull(2, ImportValueType.PROCESS_INSTANCE);
 
     // Import empty batches
     for (int i = 0; i < emptyBatches; i++) {
@@ -235,15 +267,15 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
     // when
     final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
-    final var tenant2Record = generateRecord(ValueType.TENANT, "8.8.0", 2);
+    final var processInstance2Record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
     EXPORTER.export(tenantRecord);
-    EXPORTER.export(tenant2Record);
+    EXPORTER.export(processInstance2Record);
 
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
-    waitForTenantImportPositionToNotNull(2);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
+    waitForImportPositionToNotNull(2, ImportValueType.PROCESS_INSTANCE);
 
     // Import empty batches
     for (int i = 0; i < emptyBatches; i++) {
@@ -298,7 +330,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
 
     // then
     // Require multiple checks to avoid race condition.
@@ -383,7 +415,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     tester.performOneRoundOfImport();
-    waitForTenantImportPositionToNotNull(1);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
     // when
     for (int i = 0; i <= emptyBatches; i++) {
       tester.performOneRoundOfImport();
@@ -443,7 +475,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .orElse(Map.of());
   }
 
-  private void waitForTenantImportPositionToNotNull(final int partitionId) {
+  private void waitForImportPositionToNotNull(
+      final int partitionId, final ImportValueType importValueType) {
     // the empty batch must occur after the import position is updated for tenant
     // because the logic on if a partition is completed relies on the 8.8 tenant record being
     // imported.
@@ -451,7 +484,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .atMost(Duration.ofSeconds(30))
         .until(
             () -> {
-              final var importPosition = getImportPosition(partitionId + "-tenant");
+              final var importPosition =
+                  getImportPosition(partitionId + "-" + importValueType.getAliasTemplate());
               return importPosition.get("indexName") != null
                   && ((String) importPosition.get("indexName")).contains("8.8");
             });

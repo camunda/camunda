@@ -103,6 +103,36 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  public void shouldMarkRecordReadersAsCompletedIf880RecordReceived() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    osClient.index().refresh("*");
+    tester.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    EXPORTER.export(record2);
+    osClient.index().refresh("*");
+
+    tester.performOneRoundOfImport();
+
+    waitForImportPositionToNotNull(1, ImportValueType.PROCESS_INSTANCE);
+
+    // then
+    // require multiple checks to avoid race condition. If records are written to zeebe indices and
+    // before a refresh, the record reader pulls the import batch is empty so it then says that the
+    // record reader is done when it is not.
+    for (int i = 0; i < emptyBatches; i++) {
+      tester.performOneRoundOfImport();
+    }
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderCompleted("1-process-instance"));
+  }
+
+  @Test
   public void shouldMarkRecordReadersAsCompletedIfTenantRecordReceived() throws IOException {
     // given
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
@@ -118,7 +148,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     // receives 8.7 record and marks partition as finished importing
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
 
     // then
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
@@ -151,7 +181,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     osClient.index().refresh("*");
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
 
     for (int i = 0; i <= emptyBatches; i++) {
       tester.performOneRoundOfImport();
@@ -166,8 +196,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880TenantRecord()
-      throws IOException {
+  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
     // given
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
@@ -178,15 +207,15 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
 
     // when
     final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
-    final var tenant2Record = generateRecord(ValueType.TENANT, "8.8.0", 2);
+    final var processInstance2Record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
     EXPORTER.export(tenantRecord);
-    EXPORTER.export(tenant2Record);
+    EXPORTER.export(processInstance2Record);
 
     osClient.index().refresh("*");
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
-    waitForTenantImportPositionToNotNull(2);
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
+    waitForImportPositionToNotNull(2, ImportValueType.PROCESS_INSTANCE);
 
     // Import empty batches
     for (int i = 0; i < emptyBatches; i++) {
@@ -212,13 +241,13 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     tester.performOneRoundOfImport();
 
     // when
-    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    final var tenantRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(tenantRecord);
     osClient.index().refresh("*");
 
     tester.performOneRoundOfImport();
 
-    waitForTenantImportPositionToNotNull(1);
+    waitForImportPositionToNotNull(1, ImportValueType.PROCESS_INSTANCE);
 
     // then
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
@@ -298,12 +327,12 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
     // given
-    final var record = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record);
     osClient.index().refresh("*");
 
     tester.performOneRoundOfImport();
-    waitForTenantImportPositionToNotNull(1);
+    waitForImportPositionToNotNull(1, ImportValueType.PROCESS_INSTANCE);
 
     // when
     for (int i = 0; i <= emptyBatches; i++) {
@@ -362,7 +391,8 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         .orElse(new ImportPositionEntity());
   }
 
-  private void waitForTenantImportPositionToNotNull(final int partitionId) {
+  private void waitForImportPositionToNotNull(
+      final int partitionId, final ImportValueType importValueType) {
     // the empty batch must occur after the import position is updated for tenant
     // because the logic on if a partition is completed relies on the 8.8 tenant record being
     // imported.
@@ -370,7 +400,8 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         .atMost(Duration.ofSeconds(30))
         .until(
             () -> {
-              final var importPosition = getImportPosition(partitionId + "-tenant");
+              final var importPosition =
+                  getImportPosition(partitionId + "-" + importValueType.getAliasTemplate());
               return importPosition.getIndexName() != null
                   && importPosition.getIndexName().contains("8.8");
             });
