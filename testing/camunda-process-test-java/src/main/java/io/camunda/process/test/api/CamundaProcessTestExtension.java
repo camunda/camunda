@@ -144,8 +144,9 @@ public class CamundaProcessTestExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) {
-    if (!hasProcessTestAnnotation(context)) {
-      // test class is not annotated as CamundaProcessTest so skip
+    if (!hasProcessTestExtension(context)) {
+      // Skip the initialization for nested process tests. The runtime is initialized in the
+      // top-level process test.
       return;
     }
 
@@ -205,8 +206,25 @@ public class CamundaProcessTestExtension
     }
   }
 
-  private boolean hasProcessTestAnnotation(final ExtensionContext context) {
+  private boolean hasProcessTestExtension(final ExtensionContext context) {
+    return hasProcessTestAnnotation(context) || hasProcessTestField(context);
+  }
+
+  private static boolean hasProcessTestAnnotation(final ExtensionContext context) {
     return AnnotationUtils.isAnnotated(context.getTestClass(), CamundaProcessTest.class);
+  }
+
+  private static boolean hasProcessTestField(final ExtensionContext context) {
+    return context
+        .getTestClass()
+        .map(
+            testClass ->
+                ReflectionUtils.findFields(
+                    testClass,
+                    field -> field.getType().isAssignableFrom(CamundaProcessTestExtension.class),
+                    ReflectionUtils.HierarchyTraversalMode.TOP_DOWN))
+        .map(fields -> !fields.isEmpty())
+        .orElse(false);
   }
 
   @Override
@@ -304,7 +322,7 @@ public class CamundaProcessTestExtension
 
     ExtensionContext parentContext = context.getParent().orElse(null);
 
-    while (parentContext != null && !hasProcessTestAnnotation(parentContext)) {
+    while (parentContext != null && !hasProcessTestExtension(parentContext)) {
       prefix.insert(0, parentContext.getDisplayName() + "#");
       parentContext = parentContext.getParent().orElse(null);
     }
@@ -356,12 +374,8 @@ public class CamundaProcessTestExtension
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
-    if (runtime == null) {
-      // Skip if the runtime is not created.
-      return;
-    }
-    if (!hasProcessTestAnnotation(context)) {
-      // runtime was not initialized in this hierarchy level
+    if (runtime == null || !hasProcessTestExtension(context)) {
+      // Skip if the runtime is not created, or if this is a nested process test.
       return;
     }
 
