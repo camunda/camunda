@@ -56,6 +56,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerId": "foo",
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
+                 "resourcePropertyName": "",
                  "resourceId": "2",
                  "permissionTypes": ["CREATE"]
                }
@@ -131,6 +132,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   "ownerId": "ownerId",
                   "ownerType": "USER",
                   "resourceId": "resourceId",
+                  "resourcePropertyName": "",
                   "resourceType": "PROCESS_DEFINITION",
                   "permissionTypes": ["CREATE"]
                 }""",

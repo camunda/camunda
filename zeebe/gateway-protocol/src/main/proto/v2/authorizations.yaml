@@ -310,6 +310,9 @@ components:
         resourceId:
           description: ID of the resource the permission relates to.
           type: string
+        resourcePropertyName:
+          description: The name of the resource property the permission relates to.
+          type: string
         permissionTypes:
           description: Specifies the types of the permissions.
           type: array
