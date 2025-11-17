@@ -62,6 +62,7 @@ public class MsgpackBenchmark {
   public void deserializeWithoutConstructor(final BenchmarkState state) {
     final int i = state.nextIndex();
     final Pojo result = state.pojoDeserBatch[i];
+    result.reset();
     result.wrap(state.writeBuffers[i]);
   }
 
