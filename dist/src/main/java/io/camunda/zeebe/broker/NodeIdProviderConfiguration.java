@@ -121,8 +121,8 @@ public class NodeIdProviderConfiguration {
       final NodeIdProvider nodeIdProvider,
       final BrokerBasedConfiguration brokerBasedConfiguration) {
     final var initializer =
-        switch (cluster.getDynamicNodeId().getType()) {
-          case NONE -> new ConfiguredDataDirectoryProvider();
+        switch (cluster.getNodeIdProvider().getType()) {
+          case STATIC -> new ConfiguredDataDirectoryProvider();
           case S3 -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
         };
 
