@@ -27,6 +27,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -34,7 +35,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -131,7 +131,9 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
               .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
 
       final IndexResponse response = esClient.index(request, RequestOptions.DEFAULT);
-      return response.status() == RestStatus.CREATED;
+      final Result result = response.getResult();
+
+      return Result.CREATED.equals(result) || Result.UPDATED.equals(result);
     } catch (final IOException e) {
       LOGGER.error(e.getMessage(), e);
       throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);
