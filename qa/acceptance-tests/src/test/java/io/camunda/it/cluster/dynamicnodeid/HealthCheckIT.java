@@ -120,7 +120,7 @@ public class HealthCheckIT {
             "0.0.0.0",
             TOXIPROXY.getMappedPort(proxy.internalPort()),
             s3Endpoint.getPath(),
-            s3Endpoint.getPath(),
+            s3Endpoint.getQuery(),
             s3Endpoint.getFragment());
   }
 
