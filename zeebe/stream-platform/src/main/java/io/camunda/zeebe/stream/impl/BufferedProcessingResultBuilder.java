@@ -70,7 +70,10 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
-      final long key, final RecordValue value, final RecordMetadata metadata) {
+      final long key,
+      final RecordValue value,
+      final RecordMetadata metadata,
+      final boolean validateKeywordFieldSize) {
 
     // `operationReference` from `metadata` should have a higher precedence
     if (metadata.getOperationReference() == operationReferenceNullValue()) {
@@ -97,10 +100,12 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     }
 
     // validate record keyword fields
-    final var validationResult =
-        ((UnifiedRecordValue) value).validateKeywordFields(maxKeywordFieldSize);
-    if (validationResult.isLeft()) {
-      return Either.left(validationResult.getLeft());
+    if (validateKeywordFieldSize) {
+      final var validationResult =
+          ((UnifiedRecordValue) value).validateKeywordFields(maxKeywordFieldSize);
+      if (validationResult.isLeft()) {
+        return Either.left(validationResult.getLeft());
+      }
     }
 
     final var metadataWithValueType = metadata.valueType(valueType);
