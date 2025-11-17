@@ -15,10 +15,13 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.AuthorizationSort;
+import io.camunda.search.sort.SortOption.FieldSorting;
+import io.camunda.search.sort.SortOrder;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -255,21 +258,14 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     verify(authorizationServices).search(new AuthorizationQuery.Builder().build());
   }
 
-  @Test
-  void shouldSearchAuthorizationsWithSorting() {
+  @ParameterizedTest
+  @MethodSource("validAuthorizationSearchQueries")
+  void shouldSearchAuthorizationsWithValidQueries(
+      final String request, final AuthorizationQuery query) {
     // given
     when(authorizationServices.search(any(AuthorizationQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
-    final var request =
-        """
-            {
-                "sort": [
-                    {
-                        "field": "ownerType",
-                        "order": "DESC"
-                    }
-                ]
-            }""";
+
     // when / then
     webClient
         .post()
@@ -285,11 +281,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(authorizationServices)
-        .search(
-            new AuthorizationQuery.Builder()
-                .sort(new AuthorizationSort.Builder().ownerType().desc().build())
-                .build());
+    verify(authorizationServices).search(query);
   }
 
   @ParameterizedTest
@@ -312,6 +304,74 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(authorizationServices, never()).search(any(AuthorizationQuery.class));
+  }
+
+  public static Stream<Arguments> validAuthorizationSearchQueries() {
+    return Stream.of(
+        Arguments.of(
+            // sort by multiple fields (ownerType:desc, resourcePropertyName:asc)
+            """
+                {
+                    "sort": [
+                        {
+                            "field": "ownerType",
+                            "order": "DESC"
+                        },
+                        {
+                            "field": "resourcePropertyName",
+                            "order": "ASC"
+                        }
+                    ]
+                }""",
+            new AuthorizationQuery.Builder()
+                .sort(
+                    new AuthorizationSort(
+                        List.of(
+                            new FieldSorting("ownerType", SortOrder.DESC),
+                            new FieldSorting("resourcePropertyName", SortOrder.ASC))))
+                .build()),
+        // filter by resourcePropertyNames
+        Arguments.of(
+            """
+                {
+                    "filter": {
+                        "resourcePropertyNames": ["assignee", "candidateUsers"]
+                    }
+                }""",
+            new AuthorizationQuery.Builder()
+                .filter(
+                    new AuthorizationFilter.Builder()
+                        .resourcePropertyNames("assignee", "candidateUsers")
+                        // default empty values for other filter fields
+                        .resourceIds()
+                        .ownerIds()
+                        .build())
+                .build()),
+        // filter and sort by resourceId
+        Arguments.of(
+            """
+                {
+                    "sort": [
+                        {
+                            "field": "resourceId",
+                            "order": "DESC"
+                        }
+                    ],
+                    "filter": {
+                        "resourceIds": ["123", "*", "test"]
+                    }
+                }""",
+            new AuthorizationQuery.Builder()
+                .sort(
+                    new AuthorizationSort(List.of(new FieldSorting("resourceId", SortOrder.DESC))))
+                .filter(
+                    new AuthorizationFilter.Builder()
+                        .resourceIds("123", "*", "test")
+                        // default empty values for other filter fields
+                        .resourcePropertyNames()
+                        .ownerIds()
+                        .build())
+                .build()));
   }
 
   public static Stream<Arguments> invalidAuthorizationSearchQueries() {
@@ -359,7 +419,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourceType]",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [ownerId, ownerType, resourceId, resourcePropertyName, resourceType]",
                       "instance": "%s"
                     }""",
                 endpoint)),

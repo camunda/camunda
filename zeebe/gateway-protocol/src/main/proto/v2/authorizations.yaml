@@ -252,6 +252,7 @@ components:
             - ownerId
             - ownerType
             - resourceId
+            - resourcePropertyName
             - resourceType
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
@@ -285,6 +286,11 @@ components:
           $ref: '#/components/schemas/OwnerTypeEnum'
         resourceIds:
           description: The IDs of the resource to search permissions for.
+          type: array
+          items:
+            type: string
+        resourcePropertyNames:
+          description: The names of the resource properties to search permissions for.
           type: array
           items:
             type: string
