@@ -1,0 +1,39 @@
+:root {
+    --ifm-color-primary: #ff1f00 !important;
+    --ifm-color-primary-dark: #ff3800 !important;
+    --ifm-color-primary-darker: #ff4700 !important;
+    --ifm-color-primary-darkest: #ff5400 !important;
+    --ifm-color-primary-light: #ff7000 !important;
+    --ifm-color-primary-lighter: #ff7d00 !important;
+    --ifm-color-primary-lightest: #ff8b00 !important;
+    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+    --ifm-code-font-size: 95%;
+    --aa-primary-color-rgb: 255, 160, 122 !important;
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+    --ifm-color-primary: #ff1f00 !important;
+    --ifm-color-primary-dark: #ff3800 !important;
+    --ifm-color-primary-darker: #ff4700 !important;
+    --ifm-color-primary-darkest: #ff5400 !important;
+    --ifm-color-primary-light: #ff7000 !important;
+    --ifm-color-primary-lighter: #ff7d00 !important;
+    --ifm-color-primary-lightest: #ff8b00 !important;
+    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+    --ifm-code-font-size: 95%;
+    --aa-primary-color-rgb: 255, 160, 122 !important;
+}
+
+.docusaurus-highlight-code-line {
+    background-color: rgb(72, 77, 91);
+    display: block;
+    margin: 0 calc(-1 * var(--ifm-pre-padding));
+    padding: 0 var(--ifm-pre-padding);
+}
+
+body {
+    font-family: IBM Plex Sans, -apple-system, blinkmacsystemfont, Segoe UI,
+        roboto, oxygen, ubuntu, cantarell, fira sans, droid sans, helvetica neue,
+        sans-serif !important;
+}
