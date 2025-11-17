@@ -15,9 +15,9 @@ public class NodeIdProvider {
 
   /**
    * Set the {@link Type} of the implementation for the provider of dynamic node id. {@link
-   * Type#STATIC} refers to no provider.
+   * Type#FIXED} refers to no provider.
    */
-  private Type type = Type.STATIC;
+  private Type type = Type.FIXED;
 
   /** Configuration to use S3 for dynamic node id. */
   private S3 s3 = new S3();
@@ -27,7 +27,7 @@ public class NodeIdProvider {
    * because it's a reserved keyword in java. However, the getter is called `getStatic`, so this
    * field is bound as if it was name `static`.
    */
-  private final StaticConfig staticConfig = new StaticConfig();
+  private final Fixed fixed = new Fixed();
 
   public Type getType() {
     return type;
@@ -62,9 +62,9 @@ public class NodeIdProvider {
     return s3;
   }
 
-  public StaticConfig staticConfig() {
-    assertType(Type.STATIC);
-    return staticConfig;
+  public Fixed fixed() {
+    assertType(Type.FIXED);
+    return fixed;
   }
 
   /**
@@ -72,8 +72,8 @@ public class NodeIdProvider {
    * that it's called `getStatic` and not `getStaticConfig` since we want to bind it to the property
    * "static", not "static-config"
    */
-  StaticConfig getStatic() {
-    return staticConfig;
+  Fixed getFixed() {
+    return fixed;
   }
 
   private void assertType(final Type expected) {
@@ -221,7 +221,7 @@ public class NodeIdProvider {
     }
   }
 
-  public static final class StaticConfig {
+  public static final class Fixed {
     private int nodeId;
 
     public int getNodeId() {
@@ -244,7 +244,7 @@ public class NodeIdProvider {
   }
 
   public enum Type {
-    STATIC,
+    FIXED,
     S3;
   }
 }

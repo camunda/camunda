@@ -99,7 +99,7 @@ public class ClusterNodeIdProviderTest {
     @Test
     void shouldDefaultToStaticType() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getNodeIdProvider()).returns(Type.STATIC, NodeIdProvider::getType);
+      assertThat(cluster.getNodeIdProvider()).returns(Type.FIXED, NodeIdProvider::getType);
     }
 
     @Test
@@ -108,24 +108,24 @@ public class ClusterNodeIdProviderTest {
       assertThatThrownBy(() -> cluster.getNodeIdProvider().s3())
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining(
-              "Cannot access S3 configuration in NodeIdProvider configuration, type is STATIC.");
+              "Cannot access S3 configuration in NodeIdProvider configuration, type is FIXED.");
     }
   }
 
   @Nested
-  @TestPropertySource(properties = {"camunda.cluster.node-id-provider.type=static"})
-  class WithTypeSetToStatic {
+  @TestPropertySource(properties = {"camunda.cluster.node-id-provider.type=fixed"})
+  class WithTypeSetToFixed {
 
     private final Camunda camunda;
 
-    WithTypeSetToStatic(@Autowired final Camunda camunda) {
+    WithTypeSetToFixed(@Autowired final Camunda camunda) {
       this.camunda = camunda;
     }
 
     @Test
     void shouldSetTypeToStatic() {
       final var cluster = camunda.getCluster();
-      assertThat(cluster.getNodeIdProvider()).returns(Type.STATIC, NodeIdProvider::getType);
+      assertThat(cluster.getNodeIdProvider()).returns(Type.FIXED, NodeIdProvider::getType);
     }
 
     @Test
@@ -134,7 +134,7 @@ public class ClusterNodeIdProviderTest {
       assertThatThrownBy(() -> cluster.getNodeIdProvider().s3())
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining(
-              "Cannot access S3 configuration in NodeIdProvider configuration, type is STATIC.");
+              "Cannot access S3 configuration in NodeIdProvider configuration, type is FIXED.");
     }
   }
 
@@ -150,19 +150,19 @@ public class ClusterNodeIdProviderTest {
 
     @Test
     void shouldRemapNodeIdToStaticNodeId() {
-      // Verify the property is remapped to the static node ID
+      // Verify the property is remapped to the fixed node ID
       assertThat(camunda.getCluster().getNodeId()).isEqualTo(42);
-      assertThat(camunda.getCluster().getNodeIdProvider().staticConfig().getNodeId()).isEqualTo(42);
+      assertThat(camunda.getCluster().getNodeIdProvider().fixed().getNodeId()).isEqualTo(42);
     }
   }
 
   @Nested
   @TestPropertySource(properties = {"camunda.cluster.node-id=99"})
-  class WithStaticNodeIdProperty {
+  class WithFixedNodeIdProperty {
     final Camunda camunda;
 
     @Autowired
-    WithStaticNodeIdProperty(final Camunda camunda) {
+    WithFixedNodeIdProperty(final Camunda camunda) {
       this.camunda = camunda;
     }
 
@@ -170,7 +170,7 @@ public class ClusterNodeIdProviderTest {
     void shouldReadFromStaticNodeIdProperty() {
       // Verify the new property location works
       assertThat(camunda.getCluster().getNodeId()).isEqualTo(99);
-      assertThat(camunda.getCluster().getNodeIdProvider().staticConfig().getNodeId()).isEqualTo(99);
+      assertThat(camunda.getCluster().getNodeIdProvider().fixed().getNodeId()).isEqualTo(99);
     }
   }
 
@@ -188,7 +188,7 @@ public class ClusterNodeIdProviderTest {
     void shouldReadFromLegacyProperty() {
       // Verify backward compatibility with the legacy property
       assertThat(camunda.getCluster().getNodeId()).isEqualTo(7);
-      assertThat(camunda.getCluster().getNodeIdProvider().staticConfig().getNodeId()).isEqualTo(7);
+      assertThat(camunda.getCluster().getNodeIdProvider().fixed().getNodeId()).isEqualTo(7);
     }
   }
 }

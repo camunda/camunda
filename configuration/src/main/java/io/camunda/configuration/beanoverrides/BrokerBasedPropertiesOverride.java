@@ -287,7 +287,7 @@ public class BrokerBasedPropertiesOverride {
     final var cluster = unifiedConfiguration.getCamunda().getCluster().withBrokerProperties();
 
     override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
-    if (cluster.getNodeIdProvider().getType() == Type.STATIC) {
+    if (cluster.getNodeIdProvider().getType() == Type.FIXED) {
       override.getCluster().setNodeId(cluster.getNodeId());
     }
     override.getCluster().setPartitionsCount(cluster.getPartitionCount());

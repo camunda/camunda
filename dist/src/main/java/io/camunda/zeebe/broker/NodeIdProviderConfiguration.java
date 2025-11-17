@@ -53,7 +53,7 @@ public class NodeIdProviderConfiguration {
   /** Create the S3NodeReposiotry as a separate bean so it's lifecycle is managed by spring */
   public S3NodeIdRepository s3NodeIdRepository() {
     return switch (cluster.getNodeIdProvider().getType()) {
-      case STATIC -> null;
+      case FIXED -> null;
       case S3 -> {
         final var clientConfig = makeS3ClientConfig(cluster.getNodeIdProvider().s3());
         final var config =
@@ -71,7 +71,7 @@ public class NodeIdProviderConfiguration {
       final BrokerShutdownHelper shutdownHelper) {
     final var nodeIdProvider =
         switch (cluster.getNodeIdProvider().getType()) {
-          case STATIC -> {
+          case FIXED -> {
             final var nodeId = cluster.getNodeId();
             yield NodeIdProvider.staticProvider(nodeId);
           }
@@ -122,7 +122,7 @@ public class NodeIdProviderConfiguration {
       final BrokerBasedConfiguration brokerBasedConfiguration) {
     final var initializer =
         switch (cluster.getNodeIdProvider().getType()) {
-          case STATIC -> new ConfiguredDataDirectoryProvider();
+          case FIXED -> new ConfiguredDataDirectoryProvider();
           case S3 -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
         };
 
