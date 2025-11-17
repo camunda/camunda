@@ -53,7 +53,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
-      ttl: '28'
+      ttl: 28
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
@@ -67,7 +67,7 @@ jobs:
       - benchmark-data
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-mixed
-      ttl: '28'
+      ttl: 28
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
@@ -81,7 +81,7 @@ jobs:
       - benchmark-data
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}-latency
-      ttl: '28'
+      ttl: 28
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
