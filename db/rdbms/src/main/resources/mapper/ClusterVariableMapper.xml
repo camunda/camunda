@@ -84,7 +84,7 @@
       </if>
       <if
         test="tenancyEnabled == true">
-        AND
+        AND (
         <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
           TENANT_ID IN
           <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator=","
@@ -93,7 +93,7 @@
           </foreach>
           OR
         </if>
-        TENANT_ID IS NULL
+        TENANT_ID IS NULL )
       </if>
 
 
