@@ -89,7 +89,7 @@ public class MsgpackBenchmark {
         writeBuffers[i] = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
         pojoDeserBatch[i] = new Pojo();
         writePojoBatch[i] = createPojo(i);
-        createPojo(i).write(writeBuffers[i], 0);
+        writePojoBatch[i].write(writeBuffers[i], 0);
       }
     }
 
