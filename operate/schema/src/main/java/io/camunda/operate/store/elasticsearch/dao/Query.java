@@ -23,7 +23,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
 public class Query {
 
@@ -55,18 +54,14 @@ public class Query {
     return instance;
   }
 
-  public Query aggregate(String groupName, String fieldName, int limit) {
-    final TermsAggregationBuilder aggregation = AggregationBuilders.terms(groupName);
+  public Query aggregate(String groupName, String fieldName, int precisionThreshold) {
+    final var aggregation = AggregationBuilders.cardinality(groupName);
     aggregation.field(fieldName);
-    aggregation.size(limit);
+    aggregation.precisionThreshold(precisionThreshold);
     this.aggregationBuilder = aggregation;
     this.groupName = groupName;
 
     return this;
-  }
-
-  public Query aggregate(String groupName, String fieldName) {
-    return aggregate(groupName, fieldName, Integer.MAX_VALUE);
   }
 
   public Query and(Query andQuery) {

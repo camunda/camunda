@@ -14,74 +14,12 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.store.elasticsearch.dao.response;
+package io.camunda.operate.store;
 
-import java.util.List;
+public record AggregationResult(boolean error, Long totalDocs) {
+  public static final AggregationResult ERROR = new AggregationResult(true, null);
 
-public class AggregationResponse implements DAOResponse {
-
-  private boolean error;
-  private List<AggregationValue> hits;
-  private int size;
-  private long sumOfTotalDocs;
-
-  private AggregationResponse() {}
-
-  public AggregationResponse(boolean error) {
-    this(error, null, 0);
-  }
-
-  public AggregationResponse(boolean error, List<AggregationValue> hits, long sumOfTotalDocs) {
-    this.error = error;
-    this.hits = hits;
-    this.sumOfTotalDocs = sumOfTotalDocs;
-    if (hits == null) {
-      size = 0;
-    } else {
-      size = hits.size();
-    }
-  }
-
-  @Override
   public boolean hasError() {
     return error;
-  }
-
-  public List<AggregationValue> getHits() {
-    return hits;
-  }
-
-  public int getSize() {
-    return size;
-  }
-
-  public long getSumOfTotalDocs() {
-    return sumOfTotalDocs;
-  }
-
-  public static class AggregationValue {
-    private String key;
-    private long count;
-
-    public AggregationValue(String key, long count) {
-      this.key = key;
-      this.count = count;
-    }
-
-    public String getKey() {
-      return key;
-    }
-
-    public void setKey(String key) {
-      this.key = key;
-    }
-
-    public long getCount() {
-      return count;
-    }
-
-    public void setCount(long count) {
-      this.count = count;
-    }
   }
 }
