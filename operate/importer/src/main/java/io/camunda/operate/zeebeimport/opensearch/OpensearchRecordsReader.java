@@ -15,6 +15,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gt;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gtLte;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sourceInclude;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
@@ -50,9 +51,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -114,10 +115,6 @@ public class OpensearchRecordsReader implements RecordsReader {
   @Qualifier("recordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler readersExecutor;
 
-  @Autowired
-  @Qualifier("importerCompletionThreadPoolExecutor")
-  private ThreadPoolTaskExecutor importerCompletionExecutor;
-
   @Autowired private ImportPositionHolder importPositionHolder;
 
   @Autowired private OperateProperties operateProperties;
@@ -132,6 +129,8 @@ public class OpensearchRecordsReader implements RecordsReader {
   private List<ImportListener> importListeners;
 
   @Autowired private RecordsReaderHolder recordsReaderHolder;
+
+  @Autowired private ImportPositionIndex importPositionType;
 
   public OpensearchRecordsReader(
       final int partitionId, final ImportValueType importValueType, final int queueSize) {
@@ -571,38 +570,21 @@ public class OpensearchRecordsReader implements RecordsReader {
   }
 
   private boolean isPartitionCompletedImporting(final int partitionId) {
-    final var importPositionFutures =
-        Arrays.stream(ImportValueType.IMPORT_VALUE_TYPES)
-            .map(
-                valueType ->
-                    CompletableFuture.supplyAsync(
-                        () -> getLatestLoadedPosition(valueType, partitionId),
-                        importerCompletionExecutor))
+    final var searchRequestBuilder =
+        searchRequestBuilder(importPositionType.getAlias())
+            .query(term(ImportPositionIndex.PARTITION_ID, partitionId))
+            .source(sourceInclude(ImportPositionIndex.FIELD_INDEX_NAME))
+            .size(50);
+    final var response =
+        zeebeRichOpenSearchClient.doc().search(searchRequestBuilder, ImportPositionEntity.class);
+
+    final var indexNames =
+        response.hits().hits().stream()
+            .map(hit -> hit.source().getIndexName())
+            .filter(Objects::nonNull)
             .toList();
 
-    CompletableFuture.allOf(importPositionFutures.toArray(new CompletableFuture[0])).join();
-
-    final List<ImportPositionEntity> importPositions =
-        importPositionFutures.stream().map(CompletableFuture::join).toList();
-
-    return importPositions.stream()
-        .anyMatch(
-            position -> position.getIndexName() != null && position.getIndexName().contains("8.8"));
-  }
-
-  private ImportPositionEntity getLatestLoadedPosition(
-      final ImportValueType valueType, final int partitionId) {
-    try {
-      return importPositionHolder.getLatestLoadedPosition(
-          valueType.getAliasTemplate(), partitionId);
-    } catch (final IOException e) {
-      LOGGER.error(
-          "Failed to check import position of [{}] alias in partition [{}], this may block importers from being marked as completed",
-          valueType.getAliasTemplate(),
-          partitionId,
-          e);
-      throw new OperateRuntimeException(e);
-    }
+    return indexNames.stream().anyMatch(indexName -> indexName.contains("8.8"));
   }
 
   private void executeNext() {

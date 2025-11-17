@@ -46,14 +46,4 @@ public class ImportConfig {
     executor.initialize();
     return executor;
   }
-
-  @Bean("importerCompletionThreadPoolExecutor")
-  public ThreadPoolTaskExecutor getImporterCompletionTaskExecutor() {
-    final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(11); // 11 import value types
-    executor.setMaxPoolSize(11);
-    executor.setThreadNamePrefix("importer_completion_");
-    executor.initialize();
-    return executor;
-  }
 }

@@ -36,9 +36,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -50,6 +50,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -111,10 +112,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   @Qualifier("recordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler readersExecutor;
 
-  @Autowired
-  @Qualifier("importerCompletionThreadPoolExecutor")
-  private ThreadPoolTaskExecutor importerCompletionExecutor;
-
   @Autowired private ImportPositionHolder importPositionHolder;
 
   @Autowired private OperateProperties operateProperties;
@@ -131,6 +128,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   private List<ImportListener> importListeners;
 
   @Autowired private RecordsReaderHolder recordsReaderHolder;
+
+  @Autowired private ImportPositionIndex importPositionType;
 
   public ElasticsearchRecordsReader(
       final int partitionId, final ImportValueType importValueType, final int queueSize) {
@@ -608,37 +607,29 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   private boolean isPartitionCompletedImporting(final int partitionId) {
-    final var importPositionFutures =
-        Arrays.stream(ImportValueType.IMPORT_VALUE_TYPES)
-            .map(
-                valueType ->
-                    CompletableFuture.supplyAsync(
-                        () -> getLatestLoadedPosition(valueType, partitionId),
-                        importerCompletionExecutor))
-            .toList();
+    final var sourceBuilder =
+        new SearchSourceBuilder()
+            .query(QueryBuilders.termQuery(ImportPositionIndex.PARTITION_ID, partitionId))
+            .fetchSource(new String[] {ImportPositionIndex.FIELD_INDEX_NAME}, null)
+            .size(50);
 
-    CompletableFuture.allOf(importPositionFutures.toArray(new CompletableFuture[0])).join();
+    final var searchRequest =
+        new SearchRequest().indices(importPositionType.getAlias()).source(sourceBuilder);
 
-    final List<ImportPositionEntity> importPositions =
-        importPositionFutures.stream().map(CompletableFuture::join).toList();
-
-    return importPositions.stream()
-        .anyMatch(
-            position -> position.getIndexName() != null && position.getIndexName().contains("8.8"));
-  }
-
-  private ImportPositionEntity getLatestLoadedPosition(
-      final ImportValueType valueType, final int partitionId) {
     try {
-      return importPositionHolder.getLatestLoadedPosition(
-          valueType.getAliasTemplate(), partitionId);
+      final var response = zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
+
+      return Arrays.stream(response.getHits().getHits())
+          .map(hit -> hit.getSourceAsMap().get(ImportPositionIndex.FIELD_INDEX_NAME))
+          .filter(Objects::nonNull)
+          .map(Object::toString)
+          .anyMatch(indexName -> indexName.contains("8.8"));
     } catch (final IOException e) {
       LOGGER.error(
-          "Failed to check import position of [{}] alias in partition [{}], this may block importers from being marked as completed",
-          valueType.getAliasTemplate(),
+          "Failed to retrieve import positions so importer completion may not resolve correctly for partition {}",
           partitionId,
           e);
-      throw new OperateRuntimeException(e);
+      return false;
     }
   }
 
