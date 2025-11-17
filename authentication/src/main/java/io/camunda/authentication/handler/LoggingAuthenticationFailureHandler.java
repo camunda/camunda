@@ -35,16 +35,18 @@ public class LoggingAuthenticationFailureHandler implements AuthenticationFailur
       final HttpServletResponse response,
       final AuthenticationException exception)
       throws IOException, ServletException {
-    // AuthenticationServiceException will not be handled by default failure handlers,
+    // Only AuthenticationServiceException will not be handled by default failure handlers,
     // instead it will be rethrown and bubble up to tomcat, causing an ERROR log.
-    if (AuthenticationServiceException.class.isAssignableFrom(exception.getClass())) {
-      LOG.warn("A technical authentication problem occurred", exception);
-      // Setting this attributes will cause Tomcat to initiate
-      // rendering an error response, ultimately calling our GlobalErrorController.
-      request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, exception);
-      response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    if (!AuthenticationServiceException.class.isAssignableFrom(exception.getClass())) {
+      delegate.onAuthenticationFailure(request, response, exception);
       return;
     }
-    delegate.onAuthenticationFailure(request, response, exception);
+
+    LOG.warn("A technical authentication problem occurred", exception);
+
+    // Setting this attributes will cause Tomcat to initiate
+    // rendering an error response, ultimately calling our GlobalErrorController.
+    request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, exception);
+    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
   }
 }
