@@ -9,6 +9,5 @@ package io.camunda.search.entities;
 
 public enum ClusterVariableScope {
   GLOBAL,
-  TENANT,
-  UNSPECIFIED;
+  TENANT;
 }

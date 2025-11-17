@@ -12,20 +12,21 @@ import org.slf4j.LoggerFactory;
 
 public enum ClusterVariableScope {
   GLOBAL,
-  TENANT,
-  UNSPECIFIED;
-
+  TENANT;
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterVariableScope.class);
 
   public static ClusterVariableScope fromProtocol(final String scope) {
     return switch (scope) {
       case "GLOBAL" -> GLOBAL;
       case "TENANT" -> TENANT;
+      // This should never happen, as any other scope would be rejected by the processor before
+      // mutating the state, as the safety check, but we need a default case for the switch
+      // expression
       default -> {
         LOGGER.error(
-            "Unknown cluster variable scope received from protocol: {}. Defaulting to UNSPECIFIED.",
+            "Unknown cluster variable scope received from protocol: {}. Defaulting to GLOBAL.",
             scope);
-        yield UNSPECIFIED;
+        yield GLOBAL;
       }
     };
   }

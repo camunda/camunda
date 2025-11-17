@@ -56,10 +56,6 @@ public class ClusterVariableIndex extends AbstractIndexDescriptor implements Pri
     return switch (scope) {
       case GLOBAL -> String.format("%s-%s", name, scope);
       case TENANT -> String.format("%s-%s-%s", name, tenantId, scope);
-      // This should never happen, as any other scope would be rejected by the processor before
-      // mutating the state, as the safety check, but we need a default case for the switch
-      // expression
-      default -> String.format("%s-%s", name, scope);
     };
   }
 }
