@@ -54,7 +54,6 @@ type StartupSummary struct {
 func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings, retries int) error {
 	healthEndpoint := fmt.Sprintf("%s://localhost:9600/actuator/health", settings.GetProtocol())
 	if isRunning(ctx, name, healthEndpoint, retries, 14*time.Second) {
-		log.Info().Str("name", name).Msg("has successfully been started.")
 		if err := c8.OpenBrowser(ctx, settings.StartupUrl); err != nil {
 			log.Err(err).Msg("Failed to open browser")
 			return nil

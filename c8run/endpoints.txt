@@ -1,4 +1,7 @@
+
+✅ Camunda has started successfully.
 -------------------------------------------
+
 Access each component using the following URLs:
 - Operate:                {{.OperateURL}}
 - Tasklist:               {{.TasklistURL}}
