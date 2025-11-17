@@ -80,7 +80,7 @@ test.describe
       await verifyIncidentsForProcessInstance(request, processInstanceKey, 3);
     });
 
-    await test.step('Create Batch Operation to Resolve Incidents - Success', async () => {
+    await test.step('Create Batch Operation to Resolve Incidents and Verify - Success', async () => {
       await expect(async () => {
         const res = await request.post(
           buildUrl('/process-instances/incident-resolution'),
@@ -104,12 +104,10 @@ test.describe
           json,
         );
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
-      }).toPass(defaultAssertionOptions);
-    });
 
-    await test.step('Verify that the incidents are resolved', async () => {
-      const processInstanceKey = localState.processInstanceKey;
-      await verifyIncidentsForProcessInstance(request, processInstanceKey, 0);
+        const processInstanceKey = localState.processInstanceKey;
+        await verifyIncidentsForProcessInstance(request, processInstanceKey, 0);
+      }).toPass(defaultAssertionOptions);
     });
 
     await cancelProcessInstance(localState.processInstanceKey);
@@ -223,20 +221,20 @@ test.describe
         await assertStatusCode(res, 200);
         const json = await res.json();
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
-      }).toPass(defaultAssertionOptions);
-    });
-    await test.step('Verify that the process instances have no incidents', async () => {
-      await verifyIncidentsForProcessInstance(
-        request,
-        localState.processInstanceKey1,
-        1,
-      );
 
-      await verifyIncidentsForProcessInstance(
-        request,
-        localState.processInstanceKey2,
-        0,
-      );
+        // Verify that the process instances have no incidents
+        await verifyIncidentsForProcessInstance(
+          request,
+          localState.processInstanceKey1,
+          1,
+        );
+
+        await verifyIncidentsForProcessInstance(
+          request,
+          localState.processInstanceKey2,
+          0,
+        );
+      }).toPass(defaultAssertionOptions);
     });
 
     await cancelProcessInstance(localState.processInstanceKey1);
@@ -313,20 +311,20 @@ test.describe
         await assertStatusCode(res, 200);
         const json = await res.json();
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
-      }).toPass(defaultAssertionOptions);
-    });
-    await test.step('Verify that the process instances have no incidents', async () => {
-      await verifyIncidentsForProcessInstance(
-        request,
-        localState.processInstanceKey1,
-        0,
-      );
 
-      await verifyIncidentsForProcessInstance(
-        request,
-        localState.processInstanceKey2,
-        0,
-      );
+        // Verify that the process instances have no incidents
+        await verifyIncidentsForProcessInstance(
+          request,
+          localState.processInstanceKey1,
+          0,
+        );
+
+        await verifyIncidentsForProcessInstance(
+          request,
+          localState.processInstanceKey2,
+          0,
+        );
+      }).toPass(defaultAssertionOptions);
     });
 
     await cancelProcessInstance(localState.processInstanceKey1);
