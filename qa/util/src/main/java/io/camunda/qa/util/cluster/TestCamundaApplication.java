@@ -70,6 +70,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         TestStandaloneApplication<TestCamundaApplication> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestCamundaApplication.class);
+  // TODO KPO remove
   // private final BrokerBasedProperties brokerProperties;
   private final Camunda unifiedConfig;
   private final CamundaSecurityProperties securityConfig;
