@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.Cluster;
-import io.camunda.configuration.DynamicNodeIdConfig.S3;
+import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.ConfiguredDataDirectoryProvider;
@@ -52,14 +52,14 @@ public class NodeIdProviderConfiguration {
   @Bean
   /** Create the S3NodeReposiotry as a separate bean so it's lifecycle is managed by spring */
   public S3NodeIdRepository s3NodeIdRepository() {
-    return switch (cluster.getDynamicNodeId().getType()) {
-      case NONE -> null;
+    return switch (cluster.getNodeIdProvider().getType()) {
+      case FIXED -> null;
       case S3 -> {
-        final var clientConfig = makeS3ClientConfig(cluster.getDynamicNodeId().s3());
+        final var clientConfig = makeS3ClientConfig(cluster.getNodeIdProvider().s3());
         final var config =
             new S3NodeIdRepository.Config(
-                cluster.getDynamicNodeId().s3().getBucketName(),
-                cluster.getDynamicNodeId().s3().getLeaseDuration());
+                cluster.getNodeIdProvider().s3().getBucketName(),
+                cluster.getNodeIdProvider().s3().getLeaseDuration());
         yield S3NodeIdRepository.of(clientConfig, config, Clock.systemUTC());
       }
     };
@@ -70,13 +70,13 @@ public class NodeIdProviderConfiguration {
       final Optional<NodeIdRepository> nodeIdRepository,
       final BrokerShutdownHelper shutdownHelper) {
     final var nodeIdProvider =
-        switch (cluster.getDynamicNodeId().getType()) {
-          case NONE -> {
+        switch (cluster.getNodeIdProvider().getType()) {
+          case FIXED -> {
             final var nodeId = cluster.getNodeId();
             yield NodeIdProvider.staticProvider(nodeId);
           }
           case S3 -> {
-            final var config = cluster.getDynamicNodeId().s3();
+            final var config = cluster.getNodeIdProvider().s3();
             if (nodeIdRepository.isEmpty()) {
               throw new IllegalStateException(
                   "DynamicNodeIdProvider configured to use S3: missing s3 node id repository");
@@ -121,8 +121,8 @@ public class NodeIdProviderConfiguration {
       final NodeIdProvider nodeIdProvider,
       final BrokerBasedConfiguration brokerBasedConfiguration) {
     final var initializer =
-        switch (cluster.getDynamicNodeId().getType()) {
-          case NONE -> new ConfiguredDataDirectoryProvider();
+        switch (cluster.getNodeIdProvider().getType()) {
+          case FIXED -> new ConfiguredDataDirectoryProvider();
           case S3 -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
         };
 

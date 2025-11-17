@@ -24,6 +24,7 @@ import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Membership;
 import io.camunda.configuration.Metrics;
+import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.Rdbms;
@@ -286,7 +287,9 @@ public class BrokerBasedPropertiesOverride {
     final var cluster = unifiedConfiguration.getCamunda().getCluster().withBrokerProperties();
 
     override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
-    override.getCluster().setNodeId(cluster.getNodeId());
+    if (cluster.getNodeIdProvider().getType() == Type.FIXED) {
+      override.getCluster().setNodeId(cluster.getNodeId());
+    }
     override.getCluster().setPartitionsCount(cluster.getPartitionCount());
     override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
     override.getCluster().setClusterSize(cluster.getSize());

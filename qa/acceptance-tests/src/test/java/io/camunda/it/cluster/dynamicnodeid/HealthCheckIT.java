@@ -57,9 +57,8 @@ public class HealthCheckIT {
 
   @AutoClose private static S3Client s3Client;
   private static final String BUCKET_NAME = UUID.randomUUID().toString();
-  private static final int CLUSTER_SIZE = 3;
   private static final Duration LEASE_DURATION = Duration.ofSeconds(5);
-  private static final String TASK_ID_PROPERTY = "camunda.cluster.dynamic-node-id.s3.taskId";
+  private static final String TASK_ID_PROPERTY = "camunda.cluster.node-id-provider.s3.taskId";
   private static final ProxyRegistry PROXY_REGISTRY = new ProxyRegistry(TOXIPROXY);
   private static URI toxiproxyS3Endpoint;
   private static ContainerProxy proxy;
@@ -71,28 +70,23 @@ public class HealthCheckIT {
               Map.of(
                   "camunda.data.secondary-storage.type",
                   "none",
-                  "camunda.cluster.size",
-                  CLUSTER_SIZE))
-          // S3 repository properties
-          .withAdditionalProperties(
-              Map.of(
-                  "camunda.cluster.dynamic-node-id.type",
+                  "camunda.cluster.node-id-provider.type",
                   "s3",
                   TASK_ID_PROPERTY,
                   UUID.randomUUID().toString(),
-                  "camunda.cluster.dynamic-node-id.s3.bucketName",
+                  "camunda.cluster.node-id-provider.s3.bucketName",
                   BUCKET_NAME,
-                  "camunda.cluster.dynamic-node-id.s3.leaseDuration",
+                  "camunda.cluster.node-id-provider.s3.leaseDuration",
                   LEASE_DURATION,
-                  "camunda.cluster.dynamic-node-id.s3.endpoint",
+                  "camunda.cluster.node-id-provider.s3.endpoint",
                   toxiproxyS3Endpoint,
-                  "camunda.cluster.dynamic-node-id.s3.region",
+                  "camunda.cluster.node-id-provider.s3.region",
                   S3.getRegion(),
-                  "camunda.cluster.dynamic-node-id.s3.accessKey",
+                  "camunda.cluster.node-id-provider.s3.accessKey",
                   S3.getAccessKey(),
-                  "camunda.cluster.dynamic-node-id.s3.secretKey",
+                  "camunda.cluster.node-id-provider.s3.secretKey",
                   S3.getSecretKey(),
-                  "camunda.cluster.dynamic-node-id.s3.apiCallTimeout",
+                  "camunda.cluster.node-id-provider.s3.apiCallTimeout",
                   LEASE_DURATION.dividedBy(2).toString()));
 
   @BeforeAll
