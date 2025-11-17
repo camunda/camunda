@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +19,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationIdBasedRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPropertyBasedRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
@@ -29,7 +29,6 @@ import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.net.URI;
@@ -49,7 +48,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(AuthorizationController.class)
 @Import(SecurityConfiguration.class)
@@ -66,61 +64,35 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .thenReturn(authorizationServices);
   }
 
-  @Test
-  void createAuthorizationShouldReturnTheKey() {
+  @ParameterizedTest
+  @MethodSource("provideValidCreateAuthorizationRequests")
+  void createAuthorizationShouldReturnTheKey(
+      final AuthorizationRequest providedRequest,
+      final CreateAuthorizationRequest expectedCreateRequest) {
     final var authorizationKey = 1L;
-    final var ownerId = "ownerId";
-    final var resourceId = "resourceId";
-
-    final var request =
-        new AuthorizationIdBasedRequest()
-            .ownerId(ownerId)
-            .ownerType(OwnerTypeEnum.USER)
-            .resourceId(resourceId)
-            .resourceType(ResourceTypeEnum.PROCESS_DEFINITION)
-            .permissionTypes(List.of(PermissionTypeEnum.CREATE));
-
-    final var authorizationRecord =
-        new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
-            .setOwnerId(ownerId)
-            .setOwnerType(AuthorizationOwnerType.USER)
-            .setResourceMatcher(AuthorizationResourceMatcher.ID)
-            .setResourceId(resourceId)
-            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .setPermissionTypes(Set.of(PermissionType.CREATE));
 
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
-        .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new AuthorizationRecord().setAuthorizationKey(authorizationKey)));
 
     webClient
         .post()
         .uri("/v2/authorizations")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
+        .bodyValue(providedRequest)
         .exchange()
         .expectStatus()
         .isCreated()
-        .expectBody()
-        .json(
-            """
-            {
-              "authorizationKey": "%s"
-            }"""
-                .formatted(authorizationKey),
-            JsonCompareMode.STRICT);
+        .expectBody(AuthorizationCreateResult.class)
+        .isEqualTo(
+            new AuthorizationCreateResult().authorizationKey(String.valueOf(authorizationKey)));
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(1)).createAuthorization(captor.capture());
-    final var capturedRequest = captor.getValue();
-    assertThat(capturedRequest.ownerId()).isEqualTo(ownerId);
-    assertThat(capturedRequest.ownerType()).isEqualTo(authorizationRecord.getOwnerType());
-    assertThat(capturedRequest.resourceId()).isEqualTo(resourceId);
-    assertThat(capturedRequest.resourceType()).isEqualTo(authorizationRecord.getResourceType());
-    assertThat(capturedRequest.permissionTypes().size()).isEqualTo(1);
-    assertThat(capturedRequest.permissionTypes())
-        .isEqualTo(authorizationRecord.getPermissionTypes());
+    verify(authorizationServices).createAuthorization(captor.capture());
+    final var capturedCreateRequest = captor.getValue();
+    assertThat(capturedCreateRequest).isEqualTo(expectedCreateRequest);
   }
 
   @ParameterizedTest
@@ -227,36 +199,19 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isNoContent();
 
     // then
-    verify(authorizationServices, times(1)).deleteAuthorization(authorizationKey);
+    verify(authorizationServices).deleteAuthorization(authorizationKey);
   }
 
-  @Test
-  void updateAuthorizationShouldReturnNoContent() {
+  @ParameterizedTest
+  @MethodSource("provideValidUpdateAuthorizationRequests")
+  void updateAuthorizationShouldReturnNoContent(
+      final AuthorizationRequest providedRequest,
+      final UpdateAuthorizationRequest expectedUpdateRequest) {
     // given
-    final long authorizationKey = 100L;
-    final var ownerId = "ownerId";
-    final var resourceId = "resourceId";
-
-    final var request =
-        new AuthorizationIdBasedRequest()
-            .ownerId(ownerId)
-            .ownerType(OwnerTypeEnum.USER)
-            .resourceId(resourceId)
-            .resourceType(ResourceTypeEnum.PROCESS_DEFINITION)
-            .permissionTypes(List.of(PermissionTypeEnum.CREATE));
-
-    final var authorizationRecord =
-        new AuthorizationRecord()
-            .setAuthorizationKey(authorizationKey)
-            .setOwnerId(ownerId)
-            .setOwnerType(AuthorizationOwnerType.USER)
-            .setResourceMatcher(AuthorizationResourceMatcher.ID)
-            .setResourceId(resourceId)
-            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .setPermissionTypes(Set.of(PermissionType.CREATE));
+    final long authorizationKey = expectedUpdateRequest.authorizationKey();
 
     when(authorizationServices.updateAuthorization(any()))
-        .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
 
     // when
     webClient
@@ -264,23 +219,16 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .uri("/v2/authorizations/%s".formatted(authorizationKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
+        .bodyValue(providedRequest)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
     final var captor = ArgumentCaptor.forClass(UpdateAuthorizationRequest.class);
-    verify(authorizationServices, times(1)).updateAuthorization(captor.capture());
-    final var capturedRequest = captor.getValue();
-    assertThat(capturedRequest.authorizationKey()).isEqualTo(authorizationKey);
-    assertThat(capturedRequest.ownerId()).isEqualTo(ownerId);
-    assertThat(capturedRequest.ownerType()).isEqualTo(authorizationRecord.getOwnerType());
-    assertThat(capturedRequest.resourceId()).isEqualTo(resourceId);
-    assertThat(capturedRequest.resourceType()).isEqualTo(authorizationRecord.getResourceType());
-    assertThat(capturedRequest.permissionTypes().size()).isEqualTo(1);
-    assertThat(capturedRequest.permissionTypes())
-        .isEqualTo(authorizationRecord.getPermissionTypes());
+    verify(authorizationServices).updateAuthorization(captor.capture());
+    final var capturedUpdateRequest = captor.getValue();
+    assertThat(capturedUpdateRequest).isEqualTo(expectedUpdateRequest);
   }
 
   @ParameterizedTest
@@ -365,6 +313,113 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isBadRequest()
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
+  }
+
+  private static Stream<Arguments> provideValidCreateAuthorizationRequests() {
+    final var permissionEnums = List.of(PermissionTypeEnum.READ);
+    final var permissions = Set.of(PermissionType.READ);
+
+    return Stream.of(
+        Arguments.of(
+            // Id request
+            new AuthorizationIdBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissionEnums),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                "resourceId",
+                "",
+                AuthorizationResourceType.RESOURCE,
+                permissions)),
+        Arguments.of(
+            // Id (ANY) request
+            new AuthorizationIdBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("*")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissionEnums),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                "*",
+                "",
+                AuthorizationResourceType.RESOURCE,
+                permissions)),
+        Arguments.of(
+            // Property request
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceType(ResourceTypeEnum.USER_TASK)
+                .resourcePropertyName("assignee")
+                .permissionTypes(permissionEnums),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                "",
+                "assignee",
+                AuthorizationResourceType.USER_TASK,
+                permissions)));
+  }
+
+  private static Stream<Arguments> provideValidUpdateAuthorizationRequests() {
+    final var permissionEnums = List.of(PermissionTypeEnum.READ);
+    final var permissions = Set.of(PermissionType.READ);
+
+    return Stream.of(
+        Arguments.of(
+            // Id request
+            new AuthorizationIdBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissionEnums),
+            new UpdateAuthorizationRequest(
+                100,
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                "resourceId",
+                "",
+                AuthorizationResourceType.RESOURCE,
+                permissions)),
+        Arguments.of(
+            // Id (ANY) request
+            new AuthorizationIdBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("*")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissionEnums),
+            new UpdateAuthorizationRequest(
+                200,
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                "*",
+                "",
+                AuthorizationResourceType.RESOURCE,
+                permissions)),
+        Arguments.of(
+            // Property request
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceType(ResourceTypeEnum.USER_TASK)
+                .resourcePropertyName("assignee")
+                .permissionTypes(permissionEnums),
+            new UpdateAuthorizationRequest(
+                300,
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                "",
+                "assignee",
+                AuthorizationResourceType.USER_TASK,
+                permissions)));
   }
 
   private static Stream<Arguments> provideInvalidAuthorizationRequests() {
