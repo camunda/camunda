@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.time.Duration;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -16,6 +17,10 @@ public class PrimaryStorageBackup implements Cloneable {
 
   private static final Set<String> LEGACY_BROKER_STORE =
       Set.of("zeebe.broker.data.backup.store", "camunda.data.backup.store");
+
+  private static final Set<String> LEGACY_CONTINUOUS_BACKUPS_PROPERTIES =
+      Set.of(
+          "zeebe.broker.experimental.continuous-backups");
 
   /**
    * Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default
@@ -35,6 +40,12 @@ public class PrimaryStorageBackup implements Cloneable {
    */
   private BackupStoreType store = BackupStoreType.NONE;
 
+  private boolean required = false;
+  private boolean continuous = false;
+  private String schedule;
+  private Duration checkpointInterval;
+  private long offset;
+
   /** Configuration for backup store AWS S3 */
   @NestedConfigurationProperty private S3 s3 = new S3();
 
@@ -47,12 +58,26 @@ public class PrimaryStorageBackup implements Cloneable {
   /** Configuration for backup store Azure */
   @NestedConfigurationProperty private Azure azure = new Azure();
 
+  @NestedConfigurationProperty
+  private PrimaryStorageBackupRetention retention = new PrimaryStorageBackupRetention();
+
   public S3 getS3() {
     return s3;
   }
+  public boolean isContinuous() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + "continuous",
+        continuous,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        LEGACY_CONTINUOUS_BACKUPS_PROPERTIES);
+    }
 
   public void setS3(final S3 s3) {
     this.s3 = s3;
+    }
+  public void setContinuous(final boolean continuous) {
+    this.continuous = continuous;
   }
 
   public Gcs getGcs() {
