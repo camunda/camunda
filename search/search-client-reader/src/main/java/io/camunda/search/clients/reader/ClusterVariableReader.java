@@ -9,11 +9,14 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.query.ClusterVariableQuery;
+import io.camunda.security.reader.ResourceAccessChecks;
 
 public interface ClusterVariableReader
     extends SearchEntityReader<ClusterVariableEntity, ClusterVariableQuery> {
 
-  ClusterVariableEntity getTenantScopedClusterVariable(String tenant, String name);
+  ClusterVariableEntity getTenantScopedClusterVariable(
+      String tenant, String name, ResourceAccessChecks resourceAccessChecks);
 
-  ClusterVariableEntity getGloballyScopedClusterVariable(String name);
+  ClusterVariableEntity getGloballyScopedClusterVariable(
+      String name, ResourceAccessChecks resourceAccessChecks);
 }

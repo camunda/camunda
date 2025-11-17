@@ -63,7 +63,7 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
 
   @Override
   public ClusterVariableEntity getTenantScopedClusterVariable(
-      final String tenant, final String name) {
+      final String tenant, final String name, final ResourceAccessChecks resourceAccessChecks) {
     return search(
             new ClusterVariableQuery(
                 new Builder().tenantIds(tenant).scopes("TENANT").names(name).build(),
@@ -76,7 +76,8 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
   }
 
   @Override
-  public ClusterVariableEntity getGloballyScopedClusterVariable(final String name) {
+  public ClusterVariableEntity getGloballyScopedClusterVariable(
+      final String name, final ResourceAccessChecks resourceAccessChecks) {
     return search(
             new ClusterVariableQuery(
                 new Builder().scopes("GLOBAL").names(name).build(),

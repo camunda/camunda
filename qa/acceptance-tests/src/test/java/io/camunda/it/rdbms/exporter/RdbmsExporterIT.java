@@ -39,6 +39,9 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.search.query.UserQuery;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -228,7 +231,9 @@ class RdbmsExporterIT {
     final var variable =
         rdbmsService
             .getClusterVariableReader()
-            .getGloballyScopedClusterVariable(clusterVariableRecordValue.getName());
+            .getGloballyScopedClusterVariable(
+                clusterVariableRecordValue.getName(),
+                ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     assertThat(variable).isNotNull();
     assertThat(variable.value()).isEqualTo(clusterVariableRecordValue.getValue());
@@ -254,7 +259,9 @@ class RdbmsExporterIT {
         rdbmsService
             .getClusterVariableReader()
             .getTenantScopedClusterVariable(
-                clusterVariableRecordValue.getTenantId(), clusterVariableRecordValue.getName());
+                clusterVariableRecordValue.getTenantId(),
+                clusterVariableRecordValue.getName(),
+                ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     assertThat(variable).isNotNull();
     assertThat(variable.value()).isEqualTo(clusterVariableRecordValue.getValue());

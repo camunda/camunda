@@ -11,7 +11,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.ClusterVariableFilter;
@@ -39,11 +38,15 @@ public final class ClusterVariableFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final ClusterVariableFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    queries.addAll(stringOperations(NAME, filter.nameOperations()));
-    queries.addAll(getVariablesQuery(filter.valueOperations()));
+    queries.addAll(getNamesQuery(filter.nameOperations()));
+    queries.addAll(getValuesQuery(filter.valueOperations()));
     queries.addAll(getScopeQuery(filter.scopeOperations()));
     queries.addAll(getTenantQuery(filter.tenantIdOperations()));
     return and(queries);
+  }
+
+  private Collection<SearchQuery> getNamesQuery(final List<Operation<String>> operations) {
+    return stringOperations(ClusterVariableIndex.NAME, operations);
   }
 
   private Collection<SearchQuery> getTenantQuery(final List<Operation<String>> operations) {
@@ -54,7 +57,7 @@ public final class ClusterVariableFilterTransformer
     return stringOperations(ClusterVariableIndex.SCOPE, operations);
   }
 
-  private List<SearchQuery> getVariablesQuery(final List<UntypedOperation> variableFilters) {
+  private List<SearchQuery> getValuesQuery(final List<UntypedOperation> variableFilters) {
     return variableOperations(ClusterVariableIndex.VALUE, variableFilters);
   }
 }

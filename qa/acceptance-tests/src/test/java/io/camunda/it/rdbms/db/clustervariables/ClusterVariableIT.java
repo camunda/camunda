@@ -50,7 +50,9 @@ public class ClusterVariableIT {
             .getRdbmsService()
             .getClusterVariableReader()
             .getTenantScopedClusterVariable(
-                randomizedVariable.tenantId(), randomizedVariable.name());
+                randomizedVariable.tenantId(),
+                randomizedVariable.name(),
+                CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
@@ -68,7 +70,9 @@ public class ClusterVariableIT {
         testApplication
             .getRdbmsService()
             .getClusterVariableReader()
-            .getGloballyScopedClusterVariable(randomizedVariable.name());
+            .getGloballyScopedClusterVariable(
+                randomizedVariable.name(),
+                CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
@@ -90,7 +94,9 @@ public class ClusterVariableIT {
         rdbmsService
             .getClusterVariableReader()
             .getTenantScopedClusterVariable(
-                randomizedVariable.tenantId(), randomizedVariable.name());
+                randomizedVariable.tenantId(),
+                randomizedVariable.name(),
+                CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
     assertThat(instance.isPreview()).isTrue();
@@ -111,7 +117,9 @@ public class ClusterVariableIT {
     final var instance =
         rdbmsService
             .getClusterVariableReader()
-            .getGloballyScopedClusterVariable(randomizedVariable.name());
+            .getGloballyScopedClusterVariable(
+                randomizedVariable.name(),
+                CommonFixtures.resourceAccessChecksFromResourceIds(randomizedVariable.name()));
 
     assertThat(instance).isNotNull();
     assertThat(instance.isPreview()).isTrue();

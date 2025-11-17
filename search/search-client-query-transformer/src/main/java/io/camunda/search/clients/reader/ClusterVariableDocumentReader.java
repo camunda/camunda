@@ -13,6 +13,8 @@ import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 
 public class ClusterVariableDocumentReader extends DocumentBasedReader
     implements ClusterVariableReader {
@@ -34,19 +36,21 @@ public class ClusterVariableDocumentReader extends DocumentBasedReader
 
   @Override
   public ClusterVariableEntity getTenantScopedClusterVariable(
-      final String tenant, final String name) {
+      final String tenant, final String name, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
-        .getByQuery(
-            ClusterVariableQuery.of(
-                b -> b.filter(f -> f.names(name).tenantIds(tenant)).singleResult()),
-            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.class);
+        .getById(
+            ClusterVariableIndex.generateID(name, tenant, ClusterVariableScope.TENANT),
+            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.class,
+            indexDescriptor.getFullQualifiedName());
   }
 
   @Override
-  public ClusterVariableEntity getGloballyScopedClusterVariable(final String name) {
+  public ClusterVariableEntity getGloballyScopedClusterVariable(
+      final String name, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
-        .getByQuery(
-            ClusterVariableQuery.of(b -> b.filter(f -> f.names(name)).singleResult()),
-            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.class);
+        .getById(
+            ClusterVariableIndex.generateID(name, null, ClusterVariableScope.GLOBAL),
+            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.class,
+            indexDescriptor.getFullQualifiedName());
   }
 }
