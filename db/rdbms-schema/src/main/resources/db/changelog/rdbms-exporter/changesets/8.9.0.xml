@@ -806,9 +806,13 @@
     </createTable>
 
     <createIndex tableName="${prefix}CLUSTER_VARIABLE"
-      indexName="${prefix}IDX_CLUSTER_VARIABLE_TENANT_ID_SCOPE">
-      <column name="SCOPE"/>
+      indexName="${prefix}IDX_CLUSTER_VARIABLE_TENANT_ID">
       <column name="TENANT_ID"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}CLUSTER_VARIABLE"
+      indexName="${prefix}IDX_CLUSTER_VARIABLE_SCOPE">
+      <column name="SCOPE"/>
     </createIndex>
 
     <modifySql dbms="oracle">
