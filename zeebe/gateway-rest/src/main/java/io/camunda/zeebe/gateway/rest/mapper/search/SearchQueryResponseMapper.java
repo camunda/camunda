@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.ResponseMapper.formatDate;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 
@@ -1245,22 +1244,22 @@ public final class SearchQueryResponseMapper {
   }
 
   public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
-    final var resourceId =
-        (WILDCARD.getMatcher().value() == authorization.resourceMatcher())
-            ? "*"
-            : authorization.resourceId();
     return new AuthorizationResult()
         .authorizationKey(KeyUtil.keyToString(authorization.authorizationKey()))
         .ownerId(authorization.ownerId())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .resourceId(resourceId)
-        .resourcePropertyName(authorization.resourcePropertyName())
+        .resourceId(nullIfEmpty(authorization.resourceId()))
+        .resourcePropertyName(nullIfEmpty(authorization.resourcePropertyName()))
         .permissionTypes(
             authorization.permissionTypes().stream()
                 .map(PermissionType::name)
                 .map(PermissionTypeEnum::fromValue)
                 .toList());
+  }
+
+  private static String nullIfEmpty(final String value) {
+    return StringUtils.defaultIfEmpty(value, null);
   }
 
   private static ProcessInstanceStateEnum toProtocolState(

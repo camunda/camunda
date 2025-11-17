@@ -308,10 +308,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
         resourceId:
-          description: ID of the resource the permission relates to.
+          description: ID of the resource the permission relates to (mutually exclusive with `resourcePropertyName`).
           type: string
         resourcePropertyName:
-          description: The name of the resource property the permission relates to.
+          description: The name of the resource property the permission relates to (mutually exclusive with `resourceId`).
           type: string
         permissionTypes:
           description: Specifies the types of the permissions.

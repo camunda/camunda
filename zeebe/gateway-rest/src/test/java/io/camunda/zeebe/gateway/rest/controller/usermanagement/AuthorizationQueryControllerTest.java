@@ -56,13 +56,28 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerId": "foo",
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
-                 "resourcePropertyName": "",
                  "resourceId": "2",
                  "permissionTypes": ["CREATE"]
+               },
+               {
+                 "authorizationKey": "2",
+                 "ownerId": "foo",
+                 "ownerType": "USER",
+                 "resourceType": "RESOURCE",
+                 "resourceId": "*",
+                 "permissionTypes": ["CREATE"]
+               },
+               {
+                 "authorizationKey": "3",
+                 "ownerId": "foo",
+                 "ownerType": "USER",
+                 "resourceType": "USER_TASK",
+                 "resourcePropertyName": "assignee",
+                 "permissionTypes": ["CLAIM"]
                }
              ],
              "page": {
-               "totalItems": 1,
+               "totalItems": 3,
                "startCursor": "f",
                "endCursor": "v",
                "hasMoreTotalItems": false
@@ -72,7 +87,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
 
   private static final SearchQueryResult<AuthorizationEntity> SEARCH_QUERY_RESULT =
       new Builder<AuthorizationEntity>()
-          .total(1L)
+          .total(3L)
           .items(
               List.of(
                   new AuthorizationEntity(
@@ -83,7 +98,25 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       AuthorizationResourceMatcher.ID.value(),
                       "2",
                       "",
-                      Set.of(PermissionType.CREATE))))
+                      Set.of(PermissionType.CREATE)),
+                  new AuthorizationEntity(
+                      2L,
+                      "foo",
+                      OwnerTypeEnum.USER.getValue(),
+                      ResourceTypeEnum.RESOURCE.getValue(),
+                      AuthorizationResourceMatcher.ANY.value(),
+                      "*",
+                      null,
+                      Set.of(PermissionType.CREATE)),
+                  new AuthorizationEntity(
+                      3L,
+                      "foo",
+                      OwnerTypeEnum.USER.getValue(),
+                      ResourceTypeEnum.USER_TASK.getValue(),
+                      AuthorizationResourceMatcher.PROPERTY.value(),
+                      "",
+                      "assignee",
+                      Set.of(PermissionType.CLAIM))))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -132,7 +165,6 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   "ownerId": "ownerId",
                   "ownerType": "USER",
                   "resourceId": "resourceId",
-                  "resourcePropertyName": "",
                   "resourceType": "PROCESS_DEFINITION",
                   "permissionTypes": ["CREATE"]
                 }""",
