@@ -48,6 +48,7 @@
     "start": "vite",
     "build": "npm run ts-check && vite build && node ./renameProdIndex.js && node license-build.js",
     "test": "vitest run --project=unit",
+    "test-ci": "vitest run --project=unit --maxWorkers='75%'",
     "test:browser": "vitest run --project=browser",
     "ts-check": "tsc -b",
     "eslint": "eslint .",
