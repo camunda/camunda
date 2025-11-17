@@ -142,11 +142,11 @@ orchestration:
       camunda.operate.importerEnabled: "false"
       camunda.operate.elasticsearch.numberOfShards: 3
       # Schema management has been moved out of exporter - to be bootstrap at start; once
-      camunda.data.secondaryStorage.retention.enabled: "true"
+      camunda.data.secondary-storage.retention.enabled: "true"
       # 0s causes ILM to move data asap - it is normally the default
       # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-      camunda.data.secondaryStorage.retention.minimumAge: "70m"
-      camunda.data.secondaryStorage.elasticsearch.history.policyName: "camunda-retention-policy"
+      camunda.data.secondary-storage.retention.minimum-age: "70m"
+      camunda.data.secondary-storage.elasticsearch.history.policy-name: "camunda-retention-policy"
       #Metrics:
       camunda.flags.jfr.metrics: "true"
       # RocksDB memory limit setting, limits the overall RocksDB memory usage
