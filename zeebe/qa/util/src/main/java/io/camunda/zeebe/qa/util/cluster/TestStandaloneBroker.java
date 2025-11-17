@@ -192,7 +192,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public MemberId nodeId() {
     if (unifiedConfig.getCluster().getNodeIdProvider().getType() == Type.S3) {
-      return MemberId.from("0");
+      // Get nodeId from BrokerBasedProperties instead of unified configuration when using S3 node
+      // id provider. If the broker is not started yet, return "null" as node id
+      if (isStarted()) {
+        return MemberId.from(
+            String.valueOf(bean(BrokerBasedProperties.class).getCluster().getNodeId()));
+      } else {
+        return MemberId.from("null");
+      }
     }
     return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
   }
@@ -213,6 +220,22 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public boolean isGateway() {
     // Gateway enable flag is set via property (not fully in unified config yet)
     return isGatewayEnabled;
+  }
+
+  /**
+   * Modifies the unified configuration (camunda.* properties). This is the recommended way to
+   * configure test brokers going forward.
+   *
+   * <p>The unified configuration will be merged into BrokerBasedProperties at Spring application
+   * startup via BrokerBasedPropertiesOverride, with unified config taking precedence.
+   *
+   * @param modifier a configuration function that accepts the Camunda configuration object
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneBroker withUnifiedConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(unifiedConfig);
+    return this;
   }
 
   public TestStandaloneBroker withGatewayEnabled(final boolean enabled) {
@@ -243,22 +266,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "Gateway configuration via withGatewayConfig is not supported. "
             + "Gateway is not yet fully migrated to unified configuration. "
             + "Use withProperty() to set zeebe.broker.gateway.* properties instead.");
-  }
-
-  /**
-   * Modifies the unified configuration (camunda.* properties). This is the recommended way to
-   * configure test brokers going forward.
-   *
-   * <p>The unified configuration will be merged into BrokerBasedProperties at Spring application
-   * startup via BrokerBasedPropertiesOverride, with unified config taking precedence.
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneBroker withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(unifiedConfig);
-    return this;
   }
 
   @Override
@@ -360,6 +367,21 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "withBrokerConfig() is no longer supported. "
             + "Use withUnifiedConfig() or convenience methods like withClusterConfig(), withDataConfig(), etc. "
             + "BrokerBasedProperties is created from UnifiedConfiguration at Spring startup.");
+  }
+
+  /**
+   * Convenience method for setting the secondary storage type in the unified configuration.
+   * Additionally, the environment variable camunda.data.secondary-storage.type is set to ensure
+   * that ConditionalOnSecondaryStorageType behaves as expected
+   *
+   * @param type the secondary storage type
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneBroker withSecondaryStorageType(final SecondaryStorageType type) {
+    unifiedConfig.getData().getSecondaryStorage().setType(type);
+    withProperty("camunda.data.secondary-storage.type", type.name());
+    return this;
   }
 
   /**
@@ -518,21 +540,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
 
     withSecondaryStorageType(SecondaryStorageType.none);
-  }
-
-  /**
-   * Convenience method for setting the secondary storage type in the unified configuration.
-   * Additionally, the environment variable camunda.data.secondary-storage.type is set to ensure
-   * that ConditionalOnSecondaryStorageType behaves as expected
-   *
-   * @param type the secondary storage type
-   * @return itself for chaining
-   */
-  @Override
-  public TestStandaloneBroker withSecondaryStorageType(final SecondaryStorageType type) {
-    unifiedConfig.getData().getSecondaryStorage().setType(type);
-    withProperty("camunda.data.secondary-storage.type", type.name());
-    return this;
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {

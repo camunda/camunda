@@ -11,6 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.configuration.NodeIdProvider.S3;
+import io.camunda.configuration.NodeIdProvider.Type;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
@@ -22,7 +26,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,7 +55,6 @@ public class DynamicNodeIdIT {
   private static final int CLUSTER_SIZE = 3;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Duration LEASE_DURATION = Duration.ofSeconds(10);
-  private static final String TASK_ID_PROPERTY = "camunda.cluster.node-id-provider.s3.taskId";
 
   @TestZeebe
   private final TestCluster testCluster =
@@ -64,28 +66,22 @@ public class DynamicNodeIdIT {
           .withoutNodeId()
           .withNodeConfig(
               app ->
-                  app.withAdditionalProperties(
-                      Map.of(
-                          "camunda.data.secondary-storage.type",
-                          "none",
-                          "camunda.cluster.size",
-                          CLUSTER_SIZE,
-                          "camunda.cluster.node-id-provider.type",
-                          "s3",
-                          TASK_ID_PROPERTY,
-                          UUID.randomUUID().toString(),
-                          "camunda.cluster.node-id-provider.s3.bucketName",
-                          BUCKET_NAME,
-                          "camunda.cluster.node-id-provider.s3.leaseDuration",
-                          LEASE_DURATION,
-                          "camunda.cluster.node-id-provider.s3.endpoint",
-                          S3.getEndpoint(),
-                          "camunda.cluster.node-id-provider.s3.region",
-                          S3.getRegion(),
-                          "camunda.cluster.node-id-provider.s3.accessKey",
-                          S3.getAccessKey(),
-                          "camunda.cluster.node-id-provider.s3.secretKey",
-                          S3.getSecretKey())))
+                  app.withProperty(
+                          "camunda.data.secondary-storage.type", SecondaryStorageType.none.name())
+                      .withUnifiedConfig(
+                          cfg -> {
+                            cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                            cfg.getCluster().setSize(CLUSTER_SIZE);
+                            cfg.getCluster().getNodeIdProvider().setType(Type.S3);
+                            final S3 s3 = cfg.getCluster().getNodeIdProvider().s3();
+                            s3.setTaskId(UUID.randomUUID().toString());
+                            s3.setBucketName(BUCKET_NAME);
+                            s3.setLeaseDuration(LEASE_DURATION);
+                            s3.setEndpoint(S3.getEndpoint().toString());
+                            s3.setRegion(S3.getRegion());
+                            s3.setAccessKey(S3.getAccessKey());
+                            s3.setSecretKey(S3.getSecretKey());
+                          }))
           .build();
 
   @BeforeAll
@@ -118,8 +114,17 @@ public class DynamicNodeIdIT {
         testCluster.brokers().values().stream()
             .collect(
                 Collectors.toMap(
-                    b -> b.brokerConfig().getCluster().getNodeId(),
-                    b -> b.property(TASK_ID_PROPERTY, String.class, null)));
+                    // Get the nodeId from BrokerBasedProperties instead of the unified
+                    // configuration, because the nodeId is assigned by the NodeIdProvider in
+                    // BrokerBasedConfiguration if nodeId is null
+                    b -> b.bean(BrokerBasedProperties.class).getCluster().getNodeId(),
+                    b ->
+                        b.unifiedConfig()
+                            .getCluster()
+                            .getNodeIdProvider()
+                            .s3()
+                            .getTaskId()
+                            .orElseThrow()));
 
     assertThat(s3NodeIdMapping).isEqualTo(configNodeIdMapping);
 

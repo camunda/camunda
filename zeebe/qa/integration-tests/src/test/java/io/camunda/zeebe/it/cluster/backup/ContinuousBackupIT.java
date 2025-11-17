@@ -134,7 +134,7 @@ final class ContinuousBackupIT {
     FileUtil.ensureDirectoryExists(workingDirectory);
     final var restore =
         new TestRestoreApp()
-            .withConfig(this::configureRestoreApp)
+            .withUnifiedConfig(this::configureRestoreApp)
             .withWorkingDirectory(workingDirectory)
             .withBackupId(1, 2, 3)
             .start();
@@ -176,7 +176,7 @@ final class ContinuousBackupIT {
     FileUtil.ensureDirectoryExists(workingDirectory);
     final var restore =
         new TestRestoreApp()
-            .withConfig(this::configureRestoreApp)
+            .withUnifiedConfig(this::configureRestoreApp)
             .withWorkingDirectory(workingDirectory)
             .withBackupId(1, 3);
 

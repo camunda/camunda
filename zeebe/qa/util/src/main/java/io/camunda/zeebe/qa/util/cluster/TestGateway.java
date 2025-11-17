@@ -102,6 +102,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * @param modifier a configuration function that accepts the Camunda configuration object
    * @return itself for chaining
    */
+  @Override
   T withUnifiedConfig(final Consumer<Camunda> modifier);
 
   /** Returns the gateway configuration for this node. */

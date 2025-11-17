@@ -102,7 +102,7 @@ public class ClusteredBackupRestoreTest {
     // then -- restoring with one broker is successful
     try (final var restoreApp =
         new TestRestoreApp()
-            .withConfig(
+            .withUnifiedConfig(
                 config -> {
                   configureBackupStore(config);
                   config.getCluster().setSize(1);

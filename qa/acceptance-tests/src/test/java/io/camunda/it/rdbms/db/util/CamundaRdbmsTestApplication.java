@@ -10,9 +10,11 @@ package io.camunda.it.rdbms.db.util;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.configuration.Camunda;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +117,12 @@ public final class CamundaRdbmsTestApplication
   @Override
   public boolean isGateway() {
     return false;
+  }
+
+  @Override
+  public CamundaRdbmsTestApplication withUnifiedConfig(final Consumer<Camunda> modifier) {
+    throw new UnsupportedOperationException(
+        "CamundaRdbmsTestApplication does not support unified configuration");
   }
 
   public RdbmsService getRdbmsService() {

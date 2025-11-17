@@ -10,6 +10,7 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
@@ -18,6 +19,7 @@ import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOve
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
+import java.util.function.Consumer;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
@@ -57,6 +59,12 @@ public class TestStandaloneBackupManager
   @Override
   public boolean isGateway() {
     return false;
+  }
+
+  @Override
+  public TestStandaloneBackupManager withUnifiedConfig(final Consumer<Camunda> modifier) {
+    throw new UnsupportedOperationException(
+        "TestStandaloneBackupManager does not support unified configuration");
   }
 
   @Override

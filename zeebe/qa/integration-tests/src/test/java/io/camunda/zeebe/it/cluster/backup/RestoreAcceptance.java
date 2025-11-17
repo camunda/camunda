@@ -81,7 +81,10 @@ public interface RestoreAcceptance {
 
   private void restoreBackup(final long backupId) {
     final var restore =
-        new TestRestoreApp().withConfig(this::configureBackupStore).withBackupId(backupId).start();
+        new TestRestoreApp()
+            .withUnifiedConfig(this::configureBackupStore)
+            .withBackupId(backupId)
+            .start();
     restore.close();
   }
 
