@@ -1,3 +1,5 @@
+see [Testing Guide](https://github.com/camunda/camunda/blob/main/docs/testing/acceptance.md#rolling-update-tests) for more information
+
 ## Pre-requisites
 
 To run the upgradability tests, a Docker image for Zeebe must be built with the tag 'current-test'. To do that you can run (in the camunda/zeebe dir):
