@@ -1032,6 +1032,83 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
     }
 
     @Test
+    public void assignUnassignAssignZeebeUserTask() {
+      final String bpmnProcessId = "testProcess";
+      final String flowNodeBpmnId = "taskA";
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(bpmnProcessId)
+              .then()
+              .taskIsCreated(flowNodeBpmnId)
+              .getTaskId();
+      final var resultAssign1 =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId));
+      assertThat(resultAssign1)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isEqualTo(DEFAULT_USER_ID);
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNull();
+                assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+              });
+
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() != null);
+
+      final var resultUnassign =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/unassign"), taskId));
+
+      // then
+      assertThat(resultUnassign)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isNull();
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNull();
+                assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+              });
+
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() == null);
+
+      final var resultAssign2 =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId));
+      assertThat(resultAssign2)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isEqualTo(DEFAULT_USER_ID);
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNull();
+                assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+              });
+
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() != null);
+    }
+
+    @Test
     public void assignTaskByNonApiUser() {
       // given
       final String bpmnProcessId = "simpleTestProcess";
