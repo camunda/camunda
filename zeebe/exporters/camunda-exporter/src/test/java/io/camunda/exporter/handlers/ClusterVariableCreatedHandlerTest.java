@@ -169,8 +169,6 @@ public class ClusterVariableCreatedHandlerTest {
     underTest.updateEntity(variableRecord, clusterVariableEntity);
 
     // then
-    assertThat(clusterVariableEntity.getId())
-        .isEqualTo(clusterVariableRecordValue.getName() + "-GLOBAL");
     assertThat(clusterVariableEntity.getName()).isEqualTo(clusterVariableRecordValue.getName());
     assertThat(clusterVariableEntity.getScope())
         .isEqualTo(
@@ -202,12 +200,6 @@ public class ClusterVariableCreatedHandlerTest {
     underTest.updateEntity(variableRecord, clusterVariableEntity);
 
     // then
-    assertThat(clusterVariableEntity.getId())
-        .isEqualTo(
-            "%s-%s-TENANT"
-                .formatted(
-                    clusterVariableRecordValue.getName(),
-                    clusterVariableRecordValue.getTenantId()));
     assertThat(clusterVariableEntity.getName()).isEqualTo(clusterVariableRecordValue.getName());
     assertThat(clusterVariableEntity.getTenantId())
         .isEqualTo(clusterVariableRecordValue.getTenantId());

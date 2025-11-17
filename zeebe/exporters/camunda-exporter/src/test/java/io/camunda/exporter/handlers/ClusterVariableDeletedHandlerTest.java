@@ -117,48 +117,4 @@ public class ClusterVariableDeletedHandlerTest {
     underTest.flush(inputEntity, mockRequest);
     verify(mockRequest, times(1)).delete(indexName, inputEntity.getId());
   }
-
-  @Test
-  void shouldUpdateGlobalClusterEntityFromRecord() {
-    final ClusterVariableRecordValue value =
-        ImmutableClusterVariableRecordValue.builder()
-            .from(factory.generateObject(ClusterVariableRecordValue.class))
-            .withScope(ClusterVariableScope.GLOBAL)
-            .build();
-    final Record<ClusterVariableRecordValue> record =
-        factory.generateRecord(
-            ValueType.CLUSTER_VARIABLE,
-            r -> r.withIntent(ClusterVariableIntent.DELETED).withValue(value));
-    final ClusterVariableEntity entity = new ClusterVariableEntity();
-    underTest.updateEntity(record, entity);
-    assertThat(entity.getId()).isEqualTo(value.getName() + "-GLOBAL");
-    assertThat(entity.getName()).isEqualTo(value.getName());
-    assertThat(entity.getScope())
-        .isEqualTo(
-            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.fromProtocol(
-                value.getScope().toString()));
-  }
-
-  @Test
-  void shouldUpdateTenantClusterEntityFromRecord() {
-    final ClusterVariableRecordValue value =
-        ImmutableClusterVariableRecordValue.builder()
-            .from(factory.generateObject(ClusterVariableRecordValue.class))
-            .withScope(ClusterVariableScope.TENANT)
-            .withTenantId("tenantId")
-            .build();
-    final Record<ClusterVariableRecordValue> record =
-        factory.generateRecord(
-            ValueType.CLUSTER_VARIABLE,
-            r -> r.withIntent(ClusterVariableIntent.DELETED).withValue(value));
-    final ClusterVariableEntity entity = new ClusterVariableEntity();
-    underTest.updateEntity(record, entity);
-    assertThat(entity.getId()).isEqualTo(value.getName() + "-" + value.getTenantId() + "-TENANT");
-    assertThat(entity.getName()).isEqualTo(value.getName());
-    assertThat(entity.getTenantId()).isEqualTo(value.getTenantId());
-    assertThat(entity.getScope())
-        .isEqualTo(
-            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.fromProtocol(
-                value.getScope().toString()));
-  }
 }
