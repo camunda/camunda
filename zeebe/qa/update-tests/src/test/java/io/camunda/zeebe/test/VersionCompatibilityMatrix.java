@@ -65,7 +65,7 @@ final class VersionCompatibilityMatrix {
    *       upgrade paths.
    * </ul>
    */
-  private static Stream<Arguments> auto() {
+  static Stream<Arguments> auto() {
     final var matrix = new VersionCompatibilityMatrix();
 
     if (System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY") != null) {
