@@ -10219,6 +10219,14 @@ components:
         worker:
           description: The name of the worker of this job.
           type: string
+        creationTime:
+          description: When the job was created. Field is present for jobs created after 8.9.
+          type: string
+          format: date-time
+        lastUpdateTime:
+          description: When the job was last updated. Field is present for jobs created after 8.9.
+          type: string
+          format: date-time
     JobStateEnum:
       description: The state of the job.
       type: string

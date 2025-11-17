@@ -28,6 +28,12 @@ public class JobEntity
   /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
   private String bpmnProcessId;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  private OffsetDateTime creationTime;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  private OffsetDateTime lastUpdateTime;
+
   private String tenantId;
   private String type;
   private String worker;
@@ -251,6 +257,24 @@ public class JobEntity
     return this;
   }
 
+  public OffsetDateTime getCreationTime() {
+    return creationTime;
+  }
+
+  public JobEntity setCreationTime(final OffsetDateTime creationTime) {
+    this.creationTime = creationTime;
+    return this;
+  }
+
+  public OffsetDateTime getLastUpdateTime() {
+    return lastUpdateTime;
+  }
+
+  public JobEntity setLastUpdateTime(final OffsetDateTime lastUpdateTime) {
+    this.lastUpdateTime = lastUpdateTime;
+    return this;
+  }
+
   public Boolean isDenied() {
     return denied;
   }
@@ -295,7 +319,9 @@ public class JobEntity
         listenerEventType,
         position,
         denied,
-        deniedReason);
+        deniedReason,
+        creationTime,
+        lastUpdateTime);
   }
 
   @Override
@@ -330,7 +356,9 @@ public class JobEntity
         && Objects.equals(listenerEventType, jobEntity.listenerEventType)
         && Objects.equals(position, jobEntity.position)
         && Objects.equals(denied, jobEntity.denied)
-        && Objects.equals(deniedReason, jobEntity.deniedReason);
+        && Objects.equals(deniedReason, jobEntity.deniedReason)
+        && Objects.equals(creationTime, jobEntity.creationTime)
+        && Objects.equals(lastUpdateTime, jobEntity.lastUpdateTime);
   }
 
   @Override
@@ -388,6 +416,10 @@ public class JobEntity
         + denied
         + ", jobDeniedReason="
         + deniedReason
+        + ", creationTime="
+        + creationTime
+        + ", lastUpdateTime="
+        + lastUpdateTime
         + "} "
         + super.toString();
   }

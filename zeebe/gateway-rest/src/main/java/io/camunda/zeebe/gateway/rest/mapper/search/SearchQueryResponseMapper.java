@@ -642,7 +642,9 @@ public final class SearchQueryResponseMapper {
         .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
         .elementId(job.elementId())
         .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
-        .tenantId(job.tenantId());
+        .tenantId(job.tenantId())
+        .creationTime(formatDate(job.creationTime()))
+        .lastUpdateTime(formatDate(job.lastUpdateTime()));
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
