@@ -126,7 +126,10 @@ public class HealthCheckIT {
 
   @AfterEach
   public void cleanUp() throws IOException {
-    proxy.proxy().toxics().get(LATENCY_TOXIC).remove();
+    final var toxic = proxy.proxy().toxics().get(LATENCY_TOXIC);
+    if (toxic != null) {
+      toxic.remove();
+    }
   }
 
   @Test
