@@ -210,7 +210,7 @@ public final class EngineProcessors {
         processingState,
         scheduledTaskStateFactory,
         interPartitionCommandSender,
-        config.isCommandDistributionPaused());
+        config);
 
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
@@ -444,14 +444,14 @@ public final class EngineProcessors {
       final ProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final InterPartitionCommandSender interPartitionCommandSender,
-      final boolean isCommandDistributionPaused) {
+      final EngineConfiguration config) {
 
     // periodically retries command distribution
     typedRecordProcessors.withListener(
         new CommandRedistributor(
             scheduledTaskStateFactory.get().getDistributionState(),
             interPartitionCommandSender,
-            isCommandDistributionPaused));
+            config));
 
     final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(

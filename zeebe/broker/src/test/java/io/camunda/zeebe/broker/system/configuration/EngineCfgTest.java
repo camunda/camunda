@@ -42,6 +42,11 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE);
     assertThat(configuration.getMaxProcessDepth())
         .isEqualTo(EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH);
+    assertThat(configuration.getCommandRedistributionInterval())
+        .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
+    assertThat(configuration.getCommandRedistributionMaxBackoff())
+        .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
+    ;
   }
 
   @Test
@@ -63,5 +68,8 @@ final class EngineCfgTest {
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
     assertThat(configuration.getValidatorsResultsOutputMaxSize()).isEqualTo(2000);
     assertThat(configuration.getMaxProcessDepth()).isEqualTo(2000);
+    assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));
+    assertThat(configuration.getCommandRedistributionMaxBackoff())
+        .isEqualTo(Duration.ofMinutes(20));
   }
 }
