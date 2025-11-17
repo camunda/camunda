@@ -156,7 +156,7 @@ jobs:
           if [[ ! $RELEASE_VERSION =~ rc[0-9]+$ ]]; then
             is_rc="false"
           fi
-          if [[ ! $RELEASE_VERSION =~ alpha[0-9]+$ ]]; then
+          if [[ ! $RELEASE_VERSION =~ alpha[0-9]+(\.[0-9]+)*$ ]]; then
             is_alpha="false"
           fi
           {
@@ -375,7 +375,7 @@ jobs:
         env:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
+          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_docker_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 
       - name: Wait for Optimize to start
