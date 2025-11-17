@@ -126,13 +126,6 @@ orchestration:
       zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
       zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
       zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
-      # We moved the archiver configuration under retention at some point, but still need to support the previous
-      # versions for now, so the configurations for retention are duplicated
-      zeebe.broker.exporters.camundaexporter.args.history.retention.enabled: "true"
-      # 0s causes ILM to move data asap - it is normally the default
-      # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-      zeebe.broker.exporters.camundaexporter.args.history.retention.minimumAge: "70m"
-      zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
       # Configure a rate limit for all writes, so that we can visualize flow control metrics.
       zeebe.broker.flowControl.write.enabled: "true"
       zeebe.broker.flowControl.write.limit: 4000
@@ -147,6 +140,8 @@ orchestration:
       # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
       camunda.data.secondary-storage.retention.minimum-age: "70m"
       camunda.data.secondary-storage.elasticsearch.history.policy-name: "camunda-retention-policy"
+      camunda.database.retention.policyName: "camunda-retention-policy"
+      zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
       #Metrics:
       camunda.flags.jfr.metrics: "true"
       # RocksDB memory limit setting, limits the overall RocksDB memory usage
