@@ -132,6 +132,7 @@ java -jar target/benchmarks.jar MsgpackBenchmark -prof async:libPath=/path/to/li
 ## Understanding Results
 
 Example output:
+
 ```
 Benchmark                                                          (batchSize)  Mode  Cnt     Score     Error   Units
 MsgpackBenchmark.deserializeWithConstructor                               1000  avgt   10     0.420 ±   0.020   us/op
@@ -185,7 +186,6 @@ MsgpackBenchmark.serialize:gc.time                                      100000  
 - **Score**: Average throughput (higher is better)
 - **Error**: 99.9% confidence interval
 - **Units**: `us/op` = microseconds per operation
-
 
 ## Tips for Accurate Results
 
