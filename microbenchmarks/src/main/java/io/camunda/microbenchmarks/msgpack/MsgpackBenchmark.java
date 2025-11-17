@@ -8,9 +8,7 @@
 
 package io.camunda.microbenchmarks.msgpack;
 
-import io.camunda.zeebe.msgpack.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -19,6 +17,7 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -28,7 +27,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-@BenchmarkMode({Mode.AverageTime})
+@BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 2, time = 5, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
@@ -60,54 +59,53 @@ public class MsgpackBenchmark {
   }
 
   @Benchmark
-  public void serialize(final BenchmarkState state) {
-    state.pojo.write(state.writeBuffer, 0);
-  }
-
-  @Benchmark
-  public Pojo deserializeWithConstructor(final BenchmarkState state) {
-    final Pojo result = new Pojo();
-    result.wrap(state.readBuffer);
-    return result;
-  }
-
-  @Benchmark
-  public Pojo deserializeWithoutConstructor(final BenchmarkState state) {
-    state.pojoDeser.wrap(state.readBuffer);
-    return state.pojoDeser;
-  }
-
-  @Benchmark
-  public Map<String, Object> deserializeasMap(final BenchmarkState state) {
-    return MsgPackUtil.asMap(state.readBuffer);
+  public void deserializeWithoutConstructor(final BenchmarkState state) {
+    final int i = state.nextIndex();
+    final Pojo result = state.pojoDeserBatch[i];
+    result.wrap(state.writeBuffers[i]);
   }
 
   @State(Scope.Thread)
   public static class BenchmarkState {
 
-    public Pojo pojoDeser;
-    Pojo pojo;
-    UnsafeBuffer writeBuffer;
-    UnsafeBuffer readBuffer;
+    private static final int BUFFER_CAPACITY = 1024;
+
+    @Param({"1000", "10000", "100000"})
+    public int batchSize;
+
+    UnsafeBuffer[] writeBuffers;
+    Pojo[] pojoDeserBatch;
+    Pojo[] writePojoBatch;
+    int index = 0;
+    private final Pojo.POJOEnum[] enumValues = Pojo.POJOEnum.values();
 
     @Setup
     public void setup() {
-      // Initialize the Pojo with representative data
-      pojo = new Pojo();
-      pojo.setEnum(Pojo.POJOEnum.BAR);
-      pojo.setLong(123456789L);
-      pojo.setInt(42);
-      pojo.setString(BufferUtil.wrapString("benchmark test string"));
-      pojo.setBinary(BufferUtil.wrapString("binary data"));
-      pojo.nestedObject().setLong(987654321L);
+      writeBuffers = new UnsafeBuffer[batchSize];
+      pojoDeserBatch = new Pojo[batchSize];
+      writePojoBatch = new Pojo[batchSize];
 
-      // Allocate buffers for serialization/deserialization
-      writeBuffer = new UnsafeBuffer(new byte[1024]);
-      readBuffer = new UnsafeBuffer(new byte[1024]);
+      for (int i = 0; i < batchSize; i++) {
+        writeBuffers[i] = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
+        pojoDeserBatch[i] = new Pojo();
+        writePojoBatch[i] = createPojo(i);
+        createPojo(i).write(writeBuffers[i], 0);
+      }
+    }
 
-      // Pre-serialize the object for deserialization benchmark
-      pojo.write(readBuffer, 0);
-      pojoDeser = new Pojo();
+    int nextIndex() {
+      return index++ % batchSize;
+    }
+
+    Pojo createPojo(final int seed) {
+      final Pojo pojo = new Pojo();
+      pojo.setEnum(enumValues[seed % enumValues.length]);
+      pojo.setLong(123_456_789L + seed);
+      pojo.setInt(42 + seed);
+      pojo.setString(BufferUtil.wrapString("benchmark test string " + seed));
+      pojo.setBinary(BufferUtil.wrapString("binary data " + seed));
+      pojo.nestedObject().setLong(987_654_321L + seed);
+      return pojo;
     }
   }
 }
