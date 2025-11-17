@@ -39,7 +39,6 @@ describe('useProcessInstancesOverlayStatistics', () => {
       getFilters: () => mockFilters,
       setFilters: vi.fn(),
       areProcessInstanceStatesApplied: vi.fn(),
-      areDecisionInstanceStatesApplied: vi.fn(),
     });
   });
 

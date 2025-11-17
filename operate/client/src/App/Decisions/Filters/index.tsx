@@ -7,10 +7,10 @@
  */
 
 import {
-  type DecisionInstanceFilters,
-  getDecisionInstanceFilters,
+  parseDecisionInstancesFilter,
   updateDecisionsFiltersSearchString,
-} from 'modules/utils/filter';
+  type DecisionInstanceFilters,
+} from 'modules/utils/filter/decisionInstancesSearch';
 import {Form} from 'react-final-form';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {
@@ -47,7 +47,7 @@ const Filters: React.FC = observer(() => {
   const location = useLocation() as LocationType;
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filtersFromUrl = getDecisionInstanceFilters(location.search);
+  const filtersFromUrl = parseDecisionInstancesFilter(location.search);
   return (
     <Form<DecisionInstanceFilters>
       onSubmit={(values) => {

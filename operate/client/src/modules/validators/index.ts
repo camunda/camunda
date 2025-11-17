@@ -8,11 +8,8 @@
 
 import type {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
-import {
-  parseIds,
-  type DecisionInstanceFilters,
-  parseFilterTime,
-} from 'modules/utils/filter';
+import {parseIds, parseFilterTime} from 'modules/utils/filter';
+import type {DecisionInstanceFilters} from 'modules/utils/filter/decisionInstancesSearch';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';

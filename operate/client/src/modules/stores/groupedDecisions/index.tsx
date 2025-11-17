@@ -21,7 +21,7 @@ import {
 import {sortOptions} from 'modules/utils/sortOptions';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {getSearchString} from 'modules/utils/getSearchString';
-import {getDecisionInstanceFilters} from 'modules/utils/filter';
+import {parseDecisionInstancesFilter} from 'modules/utils/filter/decisionInstancesSearch';
 import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 
 type Decision = DecisionDto & {key: string};
@@ -63,7 +63,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
   fetchDecisions = this.retryOnConnectionLost(async (tenantId?: string) => {
     this.startFetching();
     const {name, tenant: tenantFromURL} =
-      getDecisionInstanceFilters(getSearchString());
+      parseDecisionInstancesFilter(getSearchString());
 
     const tenant = tenantId ?? tenantFromURL;
 
