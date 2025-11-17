@@ -158,12 +158,6 @@ public class Cluster implements Cloneable {
     this.initialContactPoints = initialContactPoints;
   }
 
-  // TODO KPO fix
-  public int nodeId() {
-    // return node id without backwards compatibility check; useful for internal testing
-    return nodeId;
-  }
-
   public Integer getNodeId() {
     return nodeIdProvider.fixed().getNodeId();
   }
