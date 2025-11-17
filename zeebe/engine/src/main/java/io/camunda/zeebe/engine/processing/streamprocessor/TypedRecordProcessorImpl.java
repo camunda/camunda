@@ -21,7 +21,6 @@ public final class TypedRecordProcessorImpl<T extends UnifiedRecordValue>
     implements TypedRecordProcessor<T> {
 
   private final TypedRecordProcessor<T> wrappedProcessor;
-  private TypedRecord<T> commandIncoming;
 
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -35,21 +34,15 @@ public final class TypedRecordProcessorImpl<T extends UnifiedRecordValue>
 
   @Override
   public void processRecord(final TypedRecord<T> command) {
-    commandIncoming = command;
     wrappedProcessor.processRecord(command);
   }
 
   @Override
   public ProcessingError tryHandleError(final TypedRecord<T> command, final Throwable error) {
     if (error instanceof MsgpackPropertySizeException) {
-      rejectionWriter.appendRejection(
-          commandIncoming != null ? commandIncoming : command,
-          RejectionType.INVALID_ARGUMENT,
-          error.getMessage());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, error.getMessage());
       responseWriter.writeRejectionOnCommand(
-          commandIncoming != null ? commandIncoming : command,
-          RejectionType.INVALID_ARGUMENT,
-          error.getMessage());
+          command, RejectionType.INVALID_ARGUMENT, error.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
     return wrappedProcessor.tryHandleError(command, error);
