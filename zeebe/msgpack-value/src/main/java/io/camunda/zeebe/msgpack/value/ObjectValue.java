@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.value;
 
+import io.camunda.zeebe.msgpack.MsgpackPropertySizeException;
 import io.camunda.zeebe.msgpack.property.BaseProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.property.UndeclaredProperty;
@@ -239,7 +240,7 @@ public class ObjectValue extends BaseValue {
       return Either.right(null);
     }
     return Either.left(
-        new IllegalArgumentException(
+        new MsgpackPropertySizeException(
             "Attribute validation errors: " + String.join(" ", validationErrors)));
   }
 }
