@@ -29,6 +29,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.net.URI;
@@ -331,6 +332,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ID,
                 "resourceId",
                 "",
                 AuthorizationResourceType.RESOURCE,
@@ -346,6 +348,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ANY,
                 "*",
                 "",
                 AuthorizationResourceType.RESOURCE,
@@ -361,6 +364,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new CreateAuthorizationRequest(
                 "ownerId",
                 AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.PROPERTY,
                 "",
                 "assignee",
                 AuthorizationResourceType.USER_TASK,
@@ -384,6 +388,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 100,
                 "ownerId",
                 AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ID,
                 "resourceId",
                 "",
                 AuthorizationResourceType.RESOURCE,
@@ -400,6 +405,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 200,
                 "ownerId",
                 AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ANY,
                 "*",
                 "",
                 AuthorizationResourceType.RESOURCE,
@@ -416,6 +422,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 300,
                 "ownerId",
                 AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.PROPERTY,
                 "",
                 "assignee",
                 AuthorizationResourceType.USER_TASK,

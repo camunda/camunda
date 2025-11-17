@@ -134,7 +134,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -401,6 +403,7 @@ public class RequestMapper {
             new CreateAuthorizationRequest(
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                resolveIdBasedResourceMatcher(request.getResourceId()),
                 request.getResourceId(),
                 "",
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
@@ -416,6 +419,7 @@ public class RequestMapper {
             new CreateAuthorizationRequest(
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                AuthorizationResourceMatcher.PROPERTY,
                 "",
                 request.getResourcePropertyName(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
@@ -444,6 +448,7 @@ public class RequestMapper {
                 authorizationKey,
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                resolveIdBasedResourceMatcher(request.getResourceId()),
                 request.getResourceId(),
                 "",
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
@@ -461,10 +466,18 @@ public class RequestMapper {
                 authorizationKey,
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                AuthorizationResourceMatcher.PROPERTY,
                 "",
                 request.getResourcePropertyName(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
                 transformPermissionTypes(request.getPermissionTypes())));
+  }
+
+  private static AuthorizationResourceMatcher resolveIdBasedResourceMatcher(
+      final String resourceId) {
+    return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
+        ? AuthorizationResourceMatcher.ANY
+        : AuthorizationResourceMatcher.ID;
   }
 
   private static ProblemDetail createUnsupportedAuthorizationProblemDetail(
