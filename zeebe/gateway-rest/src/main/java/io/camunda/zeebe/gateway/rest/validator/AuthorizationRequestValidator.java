@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationIdBasedRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPropertyBasedRequest;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
@@ -45,6 +46,24 @@ public final class AuthorizationRequestValidator {
               violations,
               idPattern,
               AuthorizationScope.WILDCARD_CHAR::equals);
+        });
+  }
+
+  public static Optional<ProblemDetail> validatePropertyBasedRequest(
+      final AuthorizationPropertyBasedRequest request, final Pattern idPattern) {
+    return validate(
+        violations -> {
+          validateCommonRequestProperties(
+              request.getOwnerId(),
+              request.getOwnerType(),
+              request.getResourceType(),
+              request.getPermissionTypes(),
+              idPattern,
+              violations);
+
+          // resourcePropertyName validation
+          IdentifierValidator.validateId(
+              request.getResourcePropertyName(), "resourcePropertyName", violations, idPattern);
         });
   }
 

@@ -83,6 +83,7 @@ public class AuthorizationServices
             .setResourceType(request.resourceType())
             .setResourceMatcher(getResourceMatcher(request.resourceId()))
             .setResourceId(request.resourceId())
+            .setResourcePropertyName(request.resourcePropertyName())
             .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
   }
@@ -113,12 +114,17 @@ public class AuthorizationServices
             .setOwnerType(request.ownerType())
             .setResourceMatcher(getResourceMatcher(request.resourceId()))
             .setResourceId(request.resourceId())
+            .setResourcePropertyName(request.resourcePropertyName())
             .setResourceType(request.resourceType())
             .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
   }
 
   private AuthorizationResourceMatcher getResourceMatcher(final String resourceId) {
+    if (resourceId.isEmpty()) {
+      return AuthorizationResourceMatcher.PROPERTY;
+    }
+
     return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
         ? AuthorizationResourceMatcher.ANY
         : AuthorizationResourceMatcher.ID;
@@ -128,6 +134,7 @@ public class AuthorizationServices
       String ownerId,
       AuthorizationOwnerType ownerType,
       String resourceId,
+      String resourcePropertyName,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionTypes) {}
 
@@ -136,6 +143,7 @@ public class AuthorizationServices
       String ownerId,
       AuthorizationOwnerType ownerType,
       String resourceId,
+      String resourcePropertyName,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionTypes) {}
 }

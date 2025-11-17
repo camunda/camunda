@@ -21,6 +21,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationIdBasedRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPropertyBasedRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
@@ -370,6 +371,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var permissions = List.of(PermissionTypeEnum.CREATE);
 
     return Stream.of(
+        // AuthorizationIdBasedRequest tests
         Arguments.of(
             new AuthorizationIdBasedRequest()
                 .ownerType(OwnerTypeEnum.USER)
@@ -439,6 +441,77 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceType(ResourceTypeEnum.RESOURCE)
                 .permissionTypes(permissions),
             "The provided ownerId contains illegal characters. It must match the pattern '%s'."
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+        // AuthorizationPropertyBasedRequest tests
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "No ownerId provided."),
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "No ownerId provided."),
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "No ownerType provided."),
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .permissionTypes(permissions),
+            "No resourceType provided."),
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE),
+            "No permissionTypes provided."),
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(List.of()),
+            "No permissionTypes provided."),
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId!!")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("resourcePropertyName")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "The provided ownerId contains illegal characters. It must match the pattern '%s'."
+                .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)),
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "No resourcePropertyName provided."),
+        Arguments.of(
+            new AuthorizationPropertyBasedRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourcePropertyName("property!!")
+                .resourceType(ResourceTypeEnum.RESOURCE)
+                .permissionTypes(permissions),
+            "The provided resourcePropertyName contains illegal characters. It must match the pattern '%s'."
                 .formatted(SecurityConfiguration.DEFAULT_ID_REGEX)));
   }
 }
