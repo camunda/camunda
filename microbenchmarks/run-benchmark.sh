@@ -5,8 +5,6 @@
 # with this work for additional information regarding copyright ownership.
 # Licensed under the Camunda License 1.0. You may not use this file
 # except in compliance with the Camunda License 1.0.
-#
-# Quick script to run msgpack benchmarks
 
 SCRIPT_FOLDER="$(dirname "$0")"
 cd "$SCRIPT_FOLDER" || (echo "Missing folder $SCRIPT_FOLDER"  && exit 1)
@@ -30,14 +28,12 @@ if [ ! -f "$JAR" ]; then
     exit 1
 fi
 
-# Run with provided arguments, or default to MsgpackBenchmark
-if [ $# -eq 0 ]; then
-    BENCHMARKS="MsgpackBenchmark"
-else
-    BENCHMARKS="$@"
-fi
+BENCHMARKS="$@"
 
 echo -e "${GREEN}Running Benchmarks: ${BENCHMARKS}...${NC}"
+if [ $# -eq 0 ]; then
+  echo "No benchmark specified, running all of them."
+fi
 echo ""
 
 java -jar "$JAR" "$BENCHMARKS"

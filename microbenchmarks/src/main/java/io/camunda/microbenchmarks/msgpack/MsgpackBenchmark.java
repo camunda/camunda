@@ -30,7 +30,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 2, time = 5, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 10, time = 10, timeUnit = TimeUnit.SECONDS)
 @Fork(
     value = 2,
     jvmArgsAppend = {"-Xms1G", "-Xmx1G"})
@@ -48,7 +48,7 @@ public class MsgpackBenchmark {
   @Benchmark
   public void serialize(final BenchmarkState state) {
     final int i = state.nextIndex();
-    state.writePojoBatch[i].write(state.writeBuffers[i], 0);
+    state.writePojos[i].write(state.writeBuffers[i], 0);
   }
 
   @Benchmark
@@ -61,7 +61,7 @@ public class MsgpackBenchmark {
   @Benchmark
   public void deserializeWithoutConstructor(final BenchmarkState state) {
     final int i = state.nextIndex();
-    final Pojo result = state.pojoDeserBatch[i];
+    final Pojo result = state.readPojos[i];
     result.reset();
     result.wrap(state.writeBuffers[i]);
   }
@@ -75,22 +75,22 @@ public class MsgpackBenchmark {
     public int batchSize;
 
     UnsafeBuffer[] writeBuffers;
-    Pojo[] pojoDeserBatch;
-    Pojo[] writePojoBatch;
+    Pojo[] readPojos;
+    Pojo[] writePojos;
     int index = 0;
     private final Pojo.POJOEnum[] enumValues = Pojo.POJOEnum.values();
 
     @Setup
     public void setup() {
       writeBuffers = new UnsafeBuffer[batchSize];
-      pojoDeserBatch = new Pojo[batchSize];
-      writePojoBatch = new Pojo[batchSize];
+      readPojos = new Pojo[batchSize];
+      writePojos = new Pojo[batchSize];
 
       for (int i = 0; i < batchSize; i++) {
         writeBuffers[i] = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
-        pojoDeserBatch[i] = new Pojo();
-        writePojoBatch[i] = createPojo(i);
-        writePojoBatch[i].write(writeBuffers[i], 0);
+        readPojos[i] = new Pojo();
+        writePojos[i] = createPojo(i);
+        writePojos[i].write(writeBuffers[i], 0);
       }
     }
 

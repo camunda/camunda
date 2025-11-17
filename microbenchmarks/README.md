@@ -1,16 +1,12 @@
 # Microbenchmarks
 
-This module contains JMH (Java Microbenchmark Harness) benchmarks for testing the performance of msgpack serialization and deserialization.
+This module contains JMH (Java Microbenchmark Harness) benchmarks, allowing us to run microbenchmarks against our implementations. To qualify and compare performance improvements.
 
 ## Quick Start
 
 ### 1. Build the Benchmark JAR
 
-```bash
-./mvnw clean package -pl microbenchmarks -DskipTests
-```
-
-Or from the root directory:
+From the root directory:
 
 ```bash
 ./mvnw clean package -pl microbenchmarks -DskipTests
