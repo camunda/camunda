@@ -25,7 +25,7 @@ class AuthorizationConfigurerTest {
 
   public static final ConfiguredAuthorization INVALID_OWNER_TYPE =
       new ConfiguredAuthorization(
-          AuthorizationOwnerType.UNSPECIFIED,
+          null,
           "foo",
           AuthorizationResourceType.RESOURCE,
           WILDCARD_CHAR,
@@ -46,7 +46,7 @@ class AuthorizationConfigurerTest {
 
     // then:
     assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft()).contains("Authorization owner must not be UNSPECIFIED");
+    assertThat(result.getLeft()).contains("No ownerType provided");
   }
 
   @Test
@@ -71,7 +71,7 @@ class AuthorizationConfigurerTest {
 
     // then:
     assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft()).contains("Authorization owner must not be UNSPECIFIED");
+    assertThat(result.getLeft()).contains("No ownerType provided");
     assertThat(result.getLeft()).hasSize(2);
   }
 
