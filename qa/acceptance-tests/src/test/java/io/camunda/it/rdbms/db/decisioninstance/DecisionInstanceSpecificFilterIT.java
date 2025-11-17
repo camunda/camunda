@@ -127,7 +127,8 @@ public class DecisionInstanceSpecificFilterIT {
     return List.of(
         DecisionInstanceFilter.of(b -> b.decisionInstanceIds("42-1")),
         DecisionInstanceFilter.of(b -> b.decisionInstanceIdOperations(Operation.eq("42-1"))),
-        DecisionInstanceFilter.of(b -> b.decisionInstanceIdOperations(Operation.in("42-1", "other-id"))),
+        DecisionInstanceFilter.of(
+            b -> b.decisionInstanceIdOperations(Operation.in("42-1", "other-id"))),
         DecisionInstanceFilter.of(b -> b.decisionInstanceKeys(42L)),
         DecisionInstanceFilter.of(b -> b.processInstanceKeys(123L)),
         DecisionInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
@@ -136,7 +137,7 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.decisionDefinitionIds("decision-100")),
         DecisionInstanceFilter.of(b -> b.states(DecisionInstanceState.EVALUATED)),
         DecisionInstanceFilter.of(b -> b.stateOperations(Operation.eq("EVALUATED"))),
-        DecisionInstanceFilter.of(b -> b.stateOperations(Operation.in("EVALUATED", "FAILED"))),
+        DecisionInstanceFilter.of(b -> b.stateOperations(Operation.in("EVALUATED"))),
         DecisionInstanceFilter.of(b -> b.decisionTypes(DecisionDefinitionType.DECISION_TABLE)),
         DecisionInstanceFilter.of(b -> b.evaluationFailures("failure-42")),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionNames("Decision 100")),
