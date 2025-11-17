@@ -24,23 +24,14 @@ type DecisionInstanceFilters = z.infer<typeof DecisionInstancesFilterSchema>;
 const DecisionInstancesFilterSchema = z
   .object({
     name: z.string().optional(),
-    version: z
-      .string()
-      .transform((v) => (v === 'all' ? undefined : parseInt(v)))
-      .optional(),
+    version: z.string().optional(),
     evaluated: z.coerce.boolean().optional(),
     failed: z.coerce.boolean().optional(),
-    decisionInstanceIds: z
-      .string()
-      .transform((s) => parseIds(s))
-      .optional(),
+    decisionInstanceIds: z.string().optional(),
     processInstanceId: z.string().optional(),
     evaluationDateBefore: z.string().transform(formatToISO).optional(),
     evaluationDateAfter: z.string().transform(formatToISO).optional(),
-    tenant: z
-      .string()
-      .transform((t) => (t !== 'all' ? t : undefined))
-      .optional(),
+    tenant: z.string().optional(),
   })
   .catch({});
 
@@ -59,9 +50,9 @@ function parseDecisionInstancesSearchFilter(
       mapDecisionEvaluationInstanceKeyFilter(filter),
     state: mapStateFilter(filter),
     decisionDefinitionId: filter.name,
-    decisionDefinitionVersion: filter.version,
+    decisionDefinitionVersion: mapDecisionDefinitionVersionFilter(filter),
     processInstanceKey: filter.processInstanceId,
-    tenantId: filter.tenant,
+    tenantId: filter.tenant === 'all' ? undefined : filter.tenant,
     evaluationDate: mapEvaluationDateFilter(filter),
   };
 }
@@ -69,11 +60,20 @@ function parseDecisionInstancesSearchFilter(
 function mapDecisionEvaluationInstanceKeyFilter(
   filter: DecisionInstanceFilters,
 ): DecisionInstancesSearchFilter['decisionEvaluationInstanceKey'] {
-  if (
-    Array.isArray(filter.decisionInstanceIds) &&
-    filter.decisionInstanceIds.length > 0
-  ) {
-    return {$in: filter.decisionInstanceIds};
+  const keys = filter.decisionInstanceIds
+    ? parseIds(filter.decisionInstanceIds)
+    : [];
+
+  if (keys.length > 0) {
+    return {$in: keys};
+  }
+}
+
+function mapDecisionDefinitionVersionFilter(
+  filter: DecisionInstanceFilters,
+): DecisionInstancesSearchFilter['decisionDefinitionVersion'] {
+  if (filter.version && filter.version !== 'all') {
+    return parseInt(filter.version);
   }
 }
 
