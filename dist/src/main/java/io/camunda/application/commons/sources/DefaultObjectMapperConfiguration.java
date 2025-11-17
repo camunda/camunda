@@ -33,7 +33,6 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
  * <p>Example of places where this default object mapper is used:
  *
  * <ul>
- *   <li>{@link io.camunda.zeebe.shared.security.ProblemAuthFailureHandler}
  *   <li>{@link io.camunda.authentication.handler.AuthFailureHandler}
  *   <li>{@link
  *       org.springframework.boot.actuate.autoconfigure.endpoint.jmx.JmxEndpointAutoConfiguration}
