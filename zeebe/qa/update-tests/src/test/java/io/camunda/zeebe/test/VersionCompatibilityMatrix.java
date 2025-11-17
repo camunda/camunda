@@ -21,6 +21,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.function.BinaryOperator;
@@ -28,6 +30,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides combinations of versions that should be compatible with each other. This matrix is used
@@ -35,6 +39,8 @@ import org.junit.jupiter.params.provider.Arguments;
  */
 @SuppressWarnings("unused")
 final class VersionCompatibilityMatrix {
+
+  private static final Logger LOG = LoggerFactory.getLogger(VersionCompatibilityMatrix.class);
 
   /**
    * Automatically chooses the matrix to use depending on the environment where tests are run.
@@ -88,13 +94,7 @@ final class VersionCompatibilityMatrix {
 
   private static Stream<Arguments> full() {
     final var versions = discoverVersions().sorted().toList();
-    final var latestVersionPerMinor =
-        versions.stream()
-            .collect(
-                Collectors.toMap(
-                    SemanticVersion::minor,
-                    Function.identity(),
-                    BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
+    final var latestVersionPerMinor = getLatestVersionPerMinor(versions);
     final var combinations =
         versions.stream()
             .filter(version -> version.minor() > 0)
@@ -128,6 +128,18 @@ final class VersionCompatibilityMatrix {
     return shard(combinations, index, total);
   }
 
+  private static Map<Integer, SemanticVersion> getLatestVersionPerMinor(
+      final List<SemanticVersion> versions) {
+    final var latestVersionPerMinor =
+        versions.stream()
+            .collect(
+                Collectors.toMap(
+                    SemanticVersion::minor,
+                    Function.identity(),
+                    BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
+    return latestVersionPerMinor;
+  }
+
   @VisibleForTesting
   static <T> Stream<T> shard(final SequencedCollection<T> list, final int index, final int total) {
     if (list.size() < total) {
@@ -146,17 +158,64 @@ final class VersionCompatibilityMatrix {
    * Discovers Zeebe versions that aren't pre-releases. Sourced from the GitHub API and can fail on
    * network issues. Includes all versions since 8.0.
    *
+   * <p>For the latest patch version of each minor version, verifies that the version has been
+   * published as a GitHub release before including it. This ensures that only versions with
+   * published artifacts are included in the compatibility matrix.
+   *
    * @see <a
    *     href="https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#list-matching-references--parameters">GitHub
    *     API</a>
    */
   static Stream<SemanticVersion> discoverVersions() {
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record Ref(String ref) {
-      SemanticVersion toSemanticVersion() {
-        return SemanticVersion.parse(ref.substring("refs/tags/".length())).orElse(null);
-      }
+    final var versions =
+        fetchTags()
+            .map(Ref::toSemanticVersion)
+            .filter(version -> version != null && version.preRelease() == null)
+            .toList();
+
+    // Filter out unreleased versions which might not have the right artifacts like maven/docker
+    // published yet. The GitHub API for fetching releases is inflexible, thus we optimize to only
+    // check for the latest versions of each minor.
+    final var unreleasedVersions =
+        getLatestVersionPerMinor(versions).values().stream()
+            .filter(version -> fetchRelease(version).isEmpty())
+            .peek(
+                version ->
+                    LOG.warn(
+                        "Latest patch {} for minor version 8.{} has no corresponding GitHub release yet. Excluding from compatibility matrix.",
+                        version,
+                        version.minor()))
+            .collect(Collectors.toSet());
+
+    return versions.stream().filter(version -> !unreleasedVersions.contains(version));
+  }
+
+  static Optional<Release> fetchRelease(final SemanticVersion tagName) {
+    final var endpoint =
+        URI.create(
+            "https://api.github.com/repos/camunda/camunda/releases/tags/" + tagName.toString());
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      final var retry =
+          Retry.of(
+              "github-api",
+              RetryConfig.custom()
+                  .maxAttempts(10)
+                  .intervalFunction(IntervalFunction.ofExponentialBackoff())
+                  .build());
+      final var response =
+          retry.executeCallable(
+              () ->
+                  httpClient.send(
+                      HttpRequest.newBuilder().GET().uri(endpoint).build(),
+                      BodyHandlers.ofByteArray()));
+      return Optional.ofNullable(new ObjectMapper().readValue(response.body(), Release.class));
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
     }
+  }
+
+  private static Stream<Ref> fetchTags() {
+
     final var endpoint =
         URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
     try (final var httpClient = HttpClient.newHttpClient()) {
@@ -173,12 +232,25 @@ final class VersionCompatibilityMatrix {
                   httpClient.send(
                       HttpRequest.newBuilder().GET().uri(endpoint).build(),
                       BodyHandlers.ofByteArray()));
+
       final var refs = new ObjectMapper().readValue(response.body(), Ref[].class);
-      return Stream.of(refs)
-          .map(Ref::toSemanticVersion)
-          .filter(version -> version != null && version.preRelease() == null);
+      return Stream.of(refs);
     } catch (final Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record Ref(String ref) {
+    SemanticVersion toSemanticVersion() {
+      return SemanticVersion.parse(ref.substring("refs/tags/".length())).orElse(null);
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private record Release(String tag_name, boolean prerelease) {
+    SemanticVersion toSemanticVersion() {
+      return SemanticVersion.parse(tag_name).orElse(null);
     }
   }
 }
