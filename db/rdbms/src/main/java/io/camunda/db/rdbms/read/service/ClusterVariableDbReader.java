@@ -12,12 +12,11 @@ import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.columns.ClusterVariableSearchColumn;
 import io.camunda.search.clients.reader.ClusterVariableReader;
 import io.camunda.search.entities.ClusterVariableEntity;
-import io.camunda.search.filter.ClusterVariableFilter.Builder;
-import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.sort.ClusterVariableSort;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.util.ClusterVariableUtil;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,14 +42,21 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
-    final var dbQuery =
-        ClusterVariableDbQuery.of(
-            b ->
-                b.filter(query.filter())
-                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
-                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
-                    .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+    final ClusterVariableDbQuery.Builder dbQueryBuilder = new ClusterVariableDbQuery.Builder();
+
+    dbQueryBuilder
+        .filter(query.filter())
+        .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+        .sort(dbSort)
+        .page(convertPaging(dbSort, query.page()));
+
+    if (resourceAccessChecks.tenantCheck().enabled()) {
+      dbQueryBuilder
+          .tenancyEnabled(true)
+          .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds());
+    }
+
+    final var dbQuery = dbQueryBuilder.build();
     LOG.trace("[RDBMS DB] Search for cluster variables with filter {}", query);
     final var totalHits = clusterVariableMapper.count(dbQuery);
     final var hits = clusterVariableMapper.search(dbQuery);
@@ -64,27 +70,15 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
   @Override
   public ClusterVariableEntity getTenantScopedClusterVariable(
       final String tenant, final String name, final ResourceAccessChecks resourceAccessChecks) {
-    return search(
-            new ClusterVariableQuery(
-                new Builder().tenantIds(tenant).scopes("TENANT").names(name).build(),
-                ClusterVariableSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(1))))
-        .items()
-        .stream()
-        .findFirst()
-        .orElse(null);
+    return clusterVariableMapper.get(
+        ClusterVariableUtil.generateID(name, tenant, ClusterVariableScope.TENANT));
   }
 
   @Override
   public ClusterVariableEntity getGloballyScopedClusterVariable(
       final String name, final ResourceAccessChecks resourceAccessChecks) {
-    return search(
-            ClusterVariableQuery.of(
-                b -> b.filter(f -> f.names(name).scopes("GLOBAL")).page(p -> p.from(0).size(1))))
-        .items()
-        .stream()
-        .findFirst()
-        .orElse(null);
+    return clusterVariableMapper.get(
+        ClusterVariableUtil.generateID(name, null, ClusterVariableScope.GLOBAL));
   }
 
   @Override

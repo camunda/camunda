@@ -69,12 +69,7 @@ public class ClusterVariableCreatedHandler
       final Record<ClusterVariableRecordValue> record, final ClusterVariableEntity entity) {
     final var recordValue = record.getValue();
     entity
-        .setScope(ClusterVariableScope.fromProtocol(recordValue.getScope().name()))
-        .setId(
-            ClusterVariableIndex.generateID(
-                recordValue.getName(),
-                recordValue.getTenantId(),
-                ClusterVariableScope.fromProtocol(recordValue.getScope().toString())))
+        .setScope(ClusterVariableScope.fromProtocol(recordValue.getScope().toString()))
         .setName(recordValue.getName());
 
     if (ClusterVariableScope.TENANT.equals(entity.getScope())) {

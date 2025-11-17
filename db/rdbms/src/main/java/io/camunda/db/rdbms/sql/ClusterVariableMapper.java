@@ -14,6 +14,8 @@ import java.util.List;
 
 public interface ClusterVariableMapper {
 
+  ClusterVariableEntity get(String id);
+
   void insert(ClusterVariableDbModel variable);
 
   void delete(ClusterVariableDbModel variable);

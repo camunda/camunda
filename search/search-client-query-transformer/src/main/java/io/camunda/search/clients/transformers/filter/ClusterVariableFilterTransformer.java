@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
@@ -17,22 +18,19 @@ import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public final class ClusterVariableFilterTransformer
     extends IndexFilterTransformer<ClusterVariableFilter> {
 
   public ClusterVariableFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
-  }
-
-  @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringTerms(ClusterVariableIndex.NAME, authorization.resourceIds());
   }
 
   @Override
@@ -43,6 +41,29 @@ public final class ClusterVariableFilterTransformer
     queries.addAll(getScopeQuery(filter.scopeOperations()));
     queries.addAll(getTenantQuery(filter.tenantIdOperations()));
     return and(queries);
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(
+      final TenantCheck tenantCheck, final Optional<String> field) {
+    final var tenantCheckQuery =
+        Optional.of(tenantCheck)
+            .map(TenantCheck::tenantIds)
+            .filter(t -> !t.isEmpty())
+            .map(t -> stringTerms(field.get(), t))
+            .orElse(null);
+
+    final var matchGlobalQuery =
+        stringTerms(
+            ClusterVariableIndex.SCOPE,
+            List.of(io.camunda.search.entities.ClusterVariableScope.GLOBAL.name()));
+
+    return or(matchGlobalQuery, tenantCheckQuery);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(ClusterVariableIndex.NAME, authorization.resourceIds());
   }
 
   private Collection<SearchQuery> getNamesQuery(final List<Operation<String>> operations) {

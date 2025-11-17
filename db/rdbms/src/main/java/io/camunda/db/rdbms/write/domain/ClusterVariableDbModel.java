@@ -14,6 +14,7 @@ import static io.camunda.util.ValueTypeUtil.mapLong;
 import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.ValueTypeEnum;
+import io.camunda.util.ClusterVariableUtil;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
 import java.util.function.Function;
@@ -125,14 +126,7 @@ public record ClusterVariableDbModel(
     }
 
     private String getCompositeId() {
-      return switch (scope) {
-        case GLOBAL -> String.format("%s-%s", name, scope);
-        case TENANT -> String.format("%s-%s-%s", name, tenantId, scope);
-        // This should never happen, as any other scope would be rejected by the processor before
-        // mutating the state, as the safety check, but we need a default case for the switch
-        // expression
-        default -> String.format("%s-%s", name, scope);
-      };
+      return ClusterVariableUtil.generateID(name, tenantId, scope);
     }
 
     private ClusterVariableDbModel getModel(final ValueTypeEnum valueTypeEnum, final String value) {

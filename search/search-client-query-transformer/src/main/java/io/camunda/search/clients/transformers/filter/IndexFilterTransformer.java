@@ -99,6 +99,11 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
       return matchAll();
     }
 
+    return toTenantCheckSearchQuery(tenantCheck, field);
+  }
+
+  protected SearchQuery toTenantCheckSearchQuery(
+      final TenantCheck tenantCheck, final Optional<String> field) {
     return Optional.of(tenantCheck)
         .map(TenantCheck::tenantIds)
         .filter(t -> !t.isEmpty())

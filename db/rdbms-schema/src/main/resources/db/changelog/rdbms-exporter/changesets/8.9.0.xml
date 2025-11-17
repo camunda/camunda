@@ -801,14 +801,14 @@
       <column name="VAR_VALUE" type="VARCHAR(8192)"/>
       <column name="VAR_FULL_VALUE" type="CLOB"/>
       <column name="IS_PREVIEW" type="BOOLEAN"/>
-      <column name="TENANT_ID" type="VARCHAR(255)"/>
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="SCOPE" type="VARCHAR(255)"/>
     </createTable>
 
     <createIndex tableName="${prefix}CLUSTER_VARIABLE"
       indexName="${prefix}IDX_CLUSTER_VARIABLE_TENANT_ID_SCOPE">
-      <column name="TENANT_ID"/>
       <column name="SCOPE"/>
+      <column name="TENANT_ID"/>
     </createIndex>
 
     <modifySql dbms="oracle">

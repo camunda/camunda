@@ -47,6 +47,14 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
+
+  <select id="get" parameterType="java.lang.String"
+    resultMap="io.camunda.db.rdbms.sql.ClusterVariableMapper.clusterVariableResultMap">
+    SELECT *
+    FROM ${prefix}CLUSTER_VARIABLE
+    WHERE CLUSTER_VARIABLE_ID = #{id}
+  </select>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
     INSERT INTO ${prefix}CLUSTER_VARIABLE (CLUSTER_VARIABLE_ID, VAR_NAME, TYPE, DOUBLE_VALUE,
                                            LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, IS_PREVIEW,
@@ -74,12 +82,20 @@
           #{resourceId}
         </foreach>
       </if>
-      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND TENANT_ID IN
-        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
-          #{tenantId}
-        </foreach>
+      <if
+        test="tenancyEnabled == true">
+        AND
+        <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+          TENANT_ID IN
+          <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator=","
+            close=")">
+            #{tenantId}
+          </foreach>
+          OR
+        </if>
+        TENANT_ID IS NULL
       </if>
+
 
       <!-- basic filters -->
       <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">

@@ -18,6 +18,7 @@ import java.util.function.Function;
 
 public record ClusterVariableDbQuery(
     ClusterVariableFilter filter,
+    boolean tenancyEnabled,
     List<String> authorizedResourceIds,
     List<String> authorizedTenantIds,
     DbQuerySorting<ClusterVariableEntity> sort,
@@ -38,9 +39,15 @@ public record ClusterVariableDbQuery(
     private List<String> authorizedTenantIds = List.of();
     private DbQuerySorting<ClusterVariableEntity> sort;
     private DbQueryPage page;
+    private boolean tenancyEnabled;
 
     public Builder filter(final ClusterVariableFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder tenancyEnabled(final boolean value) {
+      tenancyEnabled = value;
       return this;
     }
 
@@ -86,7 +93,7 @@ public record ClusterVariableDbQuery(
       authorizedTenantIds =
           Objects.requireNonNullElse(authorizedTenantIds, Collections.emptyList());
       return new ClusterVariableDbQuery(
-          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
+          filter, tenancyEnabled, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

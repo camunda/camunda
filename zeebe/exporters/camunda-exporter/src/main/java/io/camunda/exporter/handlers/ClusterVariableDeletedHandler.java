@@ -67,29 +67,7 @@ public class ClusterVariableDeletedHandler
   @Override
   public void updateEntity(
       final Record<ClusterVariableRecordValue> record, final ClusterVariableEntity entity) {
-    final var recordValue = record.getValue();
-    entity
-        .setScope(ClusterVariableScope.fromProtocol(recordValue.getScope().name()))
-        .setId(
-            ClusterVariableIndex.generateID(
-                recordValue.getName(),
-                recordValue.getTenantId(),
-                ClusterVariableScope.fromProtocol(recordValue.getScope().toString())))
-        .setName(recordValue.getName());
-
-    if (ClusterVariableScope.TENANT.equals(entity.getScope())) {
-      entity.setTenantId(recordValue.getTenantId());
-    }
-
-    if (recordValue.getValue().length() > variableSizeThreshold) {
-      entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));
-      entity.setFullValue(recordValue.getValue());
-      entity.setPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-      entity.setFullValue(null);
-      entity.setPreview(false);
-    }
+    // no-op since the entity will be deleted
   }
 
   @Override

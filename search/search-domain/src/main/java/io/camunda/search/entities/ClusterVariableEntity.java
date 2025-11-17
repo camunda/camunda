@@ -17,4 +17,11 @@ public record ClusterVariableEntity(
     String fullValue,
     Boolean isPreview,
     ClusterVariableScope scope,
-    String tenantId) {}
+    String tenantId)
+    implements TenantOwnedEntity {
+
+  @Override
+  public boolean isInTenantScope() {
+    return ClusterVariableScope.TENANT.equals(scope);
+  }
+}
