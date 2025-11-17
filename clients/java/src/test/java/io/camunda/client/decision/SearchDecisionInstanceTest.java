@@ -150,7 +150,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
     final DecisionInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicStringFilterProperty decisionEvaluationInstanceKey = filter.getDecisionEvaluationInstanceKey();
+    final BasicStringFilterProperty decisionEvaluationInstanceKey =
+        filter.getDecisionEvaluationInstanceKey();
     assertThat(decisionEvaluationInstanceKey).isNotNull();
     assertThat(decisionEvaluationInstanceKey.get$In()).isEqualTo(Arrays.asList("id1", "id2"));
   }
@@ -160,7 +161,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     // when
     client
         .newDecisionInstanceSearchRequest()
-        .filter(f -> f.state(b -> b.in(DecisionInstanceState.EVALUATED, DecisionInstanceState.FAILED)))
+        .filter(
+            f -> f.state(b -> b.in(DecisionInstanceState.EVALUATED, DecisionInstanceState.FAILED)))
         .send()
         .join();
 
@@ -171,7 +173,9 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final DecisionInstanceStateFilterProperty state = filter.getState();
     assertThat(state).isNotNull();
-    assertThat(state.get$In()).isEqualTo(Arrays.asList(DecisionInstanceStateEnum.EVALUATED, DecisionInstanceStateEnum.FAILED));
+    assertThat(state.get$In())
+        .isEqualTo(
+            Arrays.asList(DecisionInstanceStateEnum.EVALUATED, DecisionInstanceStateEnum.FAILED));
   }
 
   @Test

@@ -52,7 +52,7 @@ public class CollectionUtilTest {
   @Test
   void shouldConvertValuesAndAddThemToList() {
     // when
-    final var result = CollectionUtil.collectValues(Enum::name, TEST_ENUM.FOO, TEST_ENUM.BAR);
+    final var result = CollectionUtil.collectValues(Enum::name, TestEnum.FOO, TestEnum.BAR);
 
     // then
     assertThat(result).containsExactly("FOO", "BAR");
@@ -104,7 +104,7 @@ public class CollectionUtilTest {
     assertThat(result).hasSize(2);
   }
 
-  private enum TEST_ENUM {
+  private enum TestEnum {
     FOO,
     BAR
   }
