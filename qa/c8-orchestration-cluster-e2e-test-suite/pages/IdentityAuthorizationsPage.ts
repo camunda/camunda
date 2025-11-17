@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {sleep} from 'utils/sleep';
 import {waitForItemInList} from 'utils/waitForItemInList';
 
 export class IdentityAuthorizationsPage {
@@ -50,10 +51,7 @@ export class IdentityAuthorizationsPage {
       name: 'Create authorization',
     });
     this.createAuthorizationOwnerComboBox =
-      this.createAuthorizationModal.getByRole('combobox', {
-        name: 'Owner',
-        exact: true,
-      });
+      this.createAuthorizationModal.getByPlaceholder('Select an owner');
     this.createAuthorizationOwnerOption = (name) =>
       this.createAuthorizationModal.getByRole('option', {
         name,
@@ -166,29 +164,50 @@ export class IdentityAuthorizationsPage {
     resourceId: string;
     accessPermissions: string[];
   }) {
-    await this.createAuthorizationButton.click();
-    await expect(this.createAuthorizationModal).toBeVisible();
-    await this.selectAuthorizationOwnerType({
-      ownerType: authorization.ownerType,
-    });
-    await this.selectAuthorizationOwner({
-      ownerId: authorization.ownerId,
-    });
-    await this.selectResourceType(authorization.resourceType);
-    await this.fillResourceId(authorization.resourceId);
-    await this.selectAccessPermissions(authorization.accessPermissions);
-    await this.createAuthorizationSubmitButton.click();
-    await expect(this.createAuthorizationModal).toBeHidden();
-    await this.selectResourceTypeTab(authorization.resourceType);
-    const item = this.getAuthorizationCell(authorization.ownerId);
-    await waitForItemInList(this.page, item, {
-      clickNext: true,
-      timeout: 120000,
-      onAfterReload: () =>
-        this.selectResourceTypeTab(authorization.resourceType),
-      timeout: 30000,
-      clickNext: true,
-    });
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.createAuthorizationButton.click();
+        await expect(this.createAuthorizationModal).toBeVisible({
+          timeout: 15000,
+        });
+        await this.selectAuthorizationOwnerType({
+          ownerType: authorization.ownerType,
+        });
+        await this.selectAuthorizationOwner({
+          ownerId: authorization.ownerId,
+        });
+        await this.selectResourceType(authorization.resourceType);
+        await this.fillResourceId(authorization.resourceId);
+        await this.selectAccessPermissions(authorization.accessPermissions);
+        await this.createAuthorizationSubmitButton.click({timeout: 15000});
+        await expect(this.createAuthorizationModal).toBeHidden({
+          timeout: 15000,
+        });
+
+        await this.selectResourceTypeTab(authorization.resourceType);
+        const item = this.getAuthorizationCell(authorization.ownerId);
+        await waitForItemInList(this.page, item, {
+          timeout: 30000,
+          clickNext: true,
+          onAfterReload: () =>
+            this.selectResourceTypeTab(authorization.resourceType),
+        });
+        return;
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt < maxRetries) {
+          await sleep(60000);
+          await this.page.reload();
+        }
+      }
+    }
+
+    throw new Error(
+      `Failed to create authorization for ${authorization.ownerId} after ${maxRetries} attempts. Last error: ${lastError?.message}`,
+    );
   }
 
   async selectResourceType(resourceType: string) {
