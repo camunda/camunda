@@ -34,8 +34,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/zeebe/ci/common AURORA_POSTGRESQL_PASSWORD;
-            secret/data/products/zeebe/ci/common AURORA_POSTGRESQL_USERNAME;
+            secret/data/products/camunda/ci/common AURORA_POSTGRESQL_PASSWORD;
+            secret/data/products/camunda/ci/common AURORA_POSTGRESQL_USERNAME;
       - name: Set temp GH envs
         id: temp-vars
         run: |

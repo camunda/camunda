@@ -285,8 +285,8 @@ public class MultiDbConfigurator {
     // db type
     testApplication.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
     testApplication.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
-//    testApplication.withProperty("camunda.operate.database", DB_TYPE_RDBMS); // compatibility
-//    testApplication.withProperty("camunda.tasklist.database", DB_TYPE_RDBMS); // compatibility
+    testApplication.withProperty("camunda.operate.database", DB_TYPE_RDBMS); // compatibility
+    testApplication.withProperty("camunda.tasklist.database", DB_TYPE_RDBMS); // compatibility
     // --
 
     testApplication.withProperty("spring.datasource.url", url);
