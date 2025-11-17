@@ -144,6 +144,68 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @Test
+  void createAuthorizationShouldReturnBadRequestWhenBothResourceIdAndPropertyNameProvided() {
+    // given
+    final var request =
+        """
+            {
+              "ownerType": "USER",
+              "resourceType": "RESOURCE",
+              "resourceId": "resourceId",
+              "resourcePropertyName": "propertyName",
+              "permissionTypes":["CREATE"]
+            }""";
+
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle("Bad Request");
+    expectedBody.setInstance(URI.create("/v2/authorizations"));
+    expectedBody.setDetail("Only one of [resourceId, resourcePropertyName] is allowed");
+
+    // when - then
+    webClient
+        .post()
+        .uri("/v2/authorizations")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void createAuthorizationShouldReturnBadRequestWhenNoResourceIdNorPropertyNameProvided() {
+    // given
+    final var request =
+        """
+            {
+              "ownerType": "USER",
+              "resourceType": "RESOURCE",
+              "permissionTypes":["CREATE"]
+            }""";
+
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle("Bad Request");
+    expectedBody.setInstance(URI.create("/v2/authorizations"));
+    expectedBody.setDetail("At least one of [resourceId, resourcePropertyName] is required");
+
+    // when - then
+    webClient
+        .post()
+        .uri("/v2/authorizations")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
   void deleteAuthorizationShouldReturnNoContent() {
     // given
     final long authorizationKey = 100L;
@@ -231,6 +293,68 @@ public class AuthorizationControllerTest extends RestControllerTest {
     webClient
         .put()
         .uri("/v2/authorizations/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void updateAuthorizationShouldReturnBadRequestWhenBothResourceIdAndPropertyNameProvided() {
+    // given
+    final var request =
+        """
+            {
+              "ownerType": "USER",
+              "resourceType": "USER_TASK",
+              "resourceId": "123",
+              "resourcePropertyName": "assignee",
+              "permissionTypes":["UPDATE"]
+            }""";
+
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle("Bad Request");
+    expectedBody.setInstance(URI.create("/v2/authorizations/2"));
+    expectedBody.setDetail("Only one of [resourceId, resourcePropertyName] is allowed");
+
+    // when - then
+    webClient
+        .put()
+        .uri("/v2/authorizations/2")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void updateAuthorizationShouldReturnBadRequestWhenNoResourceIdNorPropertyNameProvided() {
+    // given
+    final var request =
+        """
+            {
+              "ownerType": "USER",
+              "resourceType": "USER_TASK",
+              "permissionTypes":["UPDATE"]
+            }""";
+
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle("Bad Request");
+    expectedBody.setInstance(URI.create("/v2/authorizations/3"));
+    expectedBody.setDetail("At least one of [resourceId, resourcePropertyName] is required");
+
+    // when - then
+    webClient
+        .put()
+        .uri("/v2/authorizations/3")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
