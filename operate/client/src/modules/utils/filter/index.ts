@@ -517,6 +517,11 @@ function getSortParams(search?: string): {
 
 type QuerySortItem<F extends string> = {field: F; order: QuerySortOrder};
 
+/**
+ * Parses sort options from the given {@linkcode URLSearchParams} for
+ * search APIs. The given {@linkcode fieldSchema} is used to validate the sort
+ * field. If no sort param is found, the given {@linkcode fallback} is returned.
+ */
 function parseSortParamsV2<F extends string>(
   search: URLSearchParams,
   fieldSchema: z.ZodEnum<Record<F, F>>,
@@ -526,7 +531,7 @@ function parseSortParamsV2<F extends string>(
   if (sortParam === null) {
     return [fallback];
   }
-  const [unsafeField, unsafeOrder] = sortParam.split('+') ?? [];
+  const [unsafeField, unsafeOrder] = sortParam.split('+');
   const field = fieldSchema.catch(fallback.field).parse(unsafeField);
   const order = querySortOrderSchema.catch(fallback.order).parse(unsafeOrder);
   return [{field, order}];

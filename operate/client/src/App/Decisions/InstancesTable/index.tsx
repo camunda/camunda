@@ -24,6 +24,7 @@ import {
 } from 'modules/hooks/decisionInstancesSearch';
 
 const ROW_HEIGHT = 34;
+const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 
 const InstancesTable: React.FC = observer(() => {
   const filter = useDecisionInstancesSearchFilter();
@@ -86,9 +87,9 @@ const InstancesTable: React.FC = observer(() => {
     return {
       message: 'There are no Instances matching this filter set',
       additionalInfo:
-        filter !== undefined
-          ? undefined
-          : 'To see some results, select at least one Instance state',
+        filter === undefined
+          ? 'To see some results, select at least one Instance state'
+          : undefined,
     };
   };
 
@@ -108,7 +109,6 @@ const InstancesTable: React.FC = observer(() => {
         onVerticalScrollStartReach={async (scrollDown) => {
           if (hasPreviousPage && !isFetchingPreviousPage) {
             await fetchPreviousPage();
-            const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
             scrollDown(SMOOTH_SCROLL_STEP_SIZE);
           }
         }}

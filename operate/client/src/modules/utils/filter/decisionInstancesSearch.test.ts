@@ -47,7 +47,7 @@ describe('parseDecisionInstancesSearchFilter', () => {
 
   it('should return undefined when no state param is set', () => {
     const searchParams = new URLSearchParams();
-    searchParams.append('name', 'tetsName');
+    searchParams.append('name', 'testName');
 
     const filter = parseDecisionInstancesSearchFilter(searchParams);
 

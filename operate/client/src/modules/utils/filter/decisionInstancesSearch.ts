@@ -35,6 +35,10 @@ const DecisionInstancesFilterSchema = z
   })
   .catch({});
 
+/**
+ * Parses filter arguments for a decision-instances search from the given {@linkcode URLSearchParams}.
+ * Returns `undefined` when no decision-instance-state filter is selected.
+ */
 function parseDecisionInstancesSearchFilter(
   search: URLSearchParams,
 ): DecisionInstancesSearchFilter | undefined {
