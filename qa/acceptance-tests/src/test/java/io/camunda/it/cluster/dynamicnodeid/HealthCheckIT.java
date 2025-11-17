@@ -57,7 +57,6 @@ public class HealthCheckIT {
 
   @AutoClose private static S3Client s3Client;
   private static final String BUCKET_NAME = UUID.randomUUID().toString();
-  private static final int CLUSTER_SIZE = 3;
   private static final Duration LEASE_DURATION = Duration.ofSeconds(5);
   private static final String TASK_ID_PROPERTY = "camunda.cluster.node-id-provider.s3.taskId";
   private static final ProxyRegistry PROXY_REGISTRY = new ProxyRegistry(TOXIPROXY);
@@ -71,11 +70,6 @@ public class HealthCheckIT {
               Map.of(
                   "camunda.data.secondary-storage.type",
                   "none",
-                  "camunda.cluster.size",
-                  CLUSTER_SIZE))
-          // S3 repository properties
-          .withAdditionalProperties(
-              Map.of(
                   "camunda.cluster.node-id-provider.type",
                   "s3",
                   TASK_ID_PROPERTY,
