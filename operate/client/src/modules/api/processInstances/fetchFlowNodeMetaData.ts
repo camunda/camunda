@@ -26,6 +26,8 @@ type InstanceMetaDataDto = {
   jobDeadline: string | null;
   jobCustomHeaders: {[key: string]: string} | null;
   jobId: string | null;
+  correlationKey?: string | null;
+  messageName?: string | null;
 };
 
 type MetaDataDto = {
