@@ -36,7 +36,11 @@ public final class TypedRecordProcessors {
 
   public TypedRecordProcessors onCommand(
       final ValueType valueType, final Intent intent, final TypedRecordProcessor<?> processor) {
-    recordProcessorMap.put(RecordType.COMMAND, valueType, intent.value(), processor);
+    recordProcessorMap.put(
+        RecordType.COMMAND,
+        valueType,
+        intent.value(),
+        new TypedRecordProcessorImpl<>(processor, writers));
     return this;
   }
 
