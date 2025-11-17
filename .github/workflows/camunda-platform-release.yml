@@ -308,6 +308,8 @@ jobs:
           push: true
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
           platforms: ${{ env.PLATFORMS }}
+          # turns on BuildKit debug logging
+          debug: 'true'
       - name: Verify Zeebe Docker image
         uses: ./.github/actions/verify-platform-docker
         with:
@@ -405,6 +407,8 @@ jobs:
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
           platforms: ${{ env.PLATFORMS }}
           dockerfile: operate.Dockerfile
+          # turns on BuildKit debug logging
+          debug: 'true'
       - name: Verify Operate Docker image
         uses: ./.github/actions/verify-platform-docker
         with:
@@ -504,6 +508,8 @@ jobs:
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
           platforms: ${{ env.PLATFORMS }}
           dockerfile: tasklist.Dockerfile
+          # turns on BuildKit debug logging
+          debug: 'true'
       - name: Verify Tasklist Docker image
         uses: ./.github/actions/verify-platform-docker
         with:
@@ -603,6 +609,8 @@ jobs:
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
           platforms: ${{ env.PLATFORMS }}
           dockerfile: camunda.Dockerfile
+          # turns on BuildKit debug logging
+          debug: 'true'
       - name: Verify Camunda Docker image
         uses: ./.github/actions/verify-platform-docker
         with:
