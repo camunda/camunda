@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import java.io.File;
 import java.time.Duration;
@@ -38,6 +39,7 @@ public final class DataCfg implements ConfigurationEntry {
   private Duration diskUsageMonitoringInterval;
   private DiskCfg disk = new DiskCfg();
   private BackupStoreCfg backup = new BackupStoreCfg();
+  private BackupSchedulerCfg backupScheduler = new BackupSchedulerCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -47,6 +49,7 @@ public final class DataCfg implements ConfigurationEntry {
     }
 
     backup.init(globalConfig, brokerBase);
+    backupScheduler.init(globalConfig, brokerBase);
 
     overrideDiskConfig();
     disk.init(globalConfig, brokerBase);
@@ -164,6 +167,14 @@ public final class DataCfg implements ConfigurationEntry {
     this.backup = backup;
   }
 
+  public BackupSchedulerCfg getBackupScheduler() {
+    return backupScheduler;
+  }
+
+  public void setBackupScheduler(final BackupSchedulerCfg backupScheduler) {
+    this.backupScheduler = backupScheduler;
+  }
+
   @Override
   public String toString() {
     return "DataCfg{"
@@ -191,6 +202,8 @@ public final class DataCfg implements ConfigurationEntry {
         + disk
         + ", backup="
         + backup
+        + ", backupScheduler="
+        + backupScheduler
         + '}';
   }
 }
