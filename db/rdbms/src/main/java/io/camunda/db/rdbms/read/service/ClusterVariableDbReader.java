@@ -79,13 +79,17 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
   public ClusterVariableEntity getGloballyScopedClusterVariable(
       final String name, final ResourceAccessChecks resourceAccessChecks) {
     return search(
-            new ClusterVariableQuery(
-                new Builder().scopes("GLOBAL").names(name).build(),
-                ClusterVariableSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(1))))
+            ClusterVariableQuery.of(
+                b -> b.filter(f -> f.names(name).scopes("GLOBAL")).page(p -> p.from(0).size(1))))
         .items()
         .stream()
         .findFirst()
         .orElse(null);
+  }
+
+  @Override
+  protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
+    return resourceAccessChecks.authorizationCheck().enabled()
+        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty();
   }
 }

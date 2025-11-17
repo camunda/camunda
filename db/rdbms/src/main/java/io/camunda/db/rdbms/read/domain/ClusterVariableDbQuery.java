@@ -11,6 +11,7 @@ import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.util.ObjectBuilder;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -79,9 +80,11 @@ public record ClusterVariableDbQuery(
     @Override
     public ClusterVariableDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
-      sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
-      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(Collections.emptyList()));
+      authorizedResourceIds =
+          Objects.requireNonNullElse(authorizedResourceIds, Collections.emptyList());
+      authorizedTenantIds =
+          Objects.requireNonNullElse(authorizedTenantIds, Collections.emptyList());
       return new ClusterVariableDbQuery(
           filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
