@@ -71,14 +71,13 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
-import org.springframework.util.unit.DataSize;
 
 @ExtendWith(StreamPlatformExtension.class)
 public final class StreamProcessorTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
-  private static final DataSize MAX_FIELD_SIZE = DataSize.ofKilobytes(32);
+  private static final long MAX_FIELD_SIZE = 32 * 1024;
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;

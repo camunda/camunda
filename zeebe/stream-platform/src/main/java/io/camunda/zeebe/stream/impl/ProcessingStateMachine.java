@@ -56,7 +56,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
-import org.springframework.util.unit.DataSize;
 
 /**
  * Represents the processing state machine, which is executed on normal processing.
@@ -160,7 +159,7 @@ public final class ProcessingStateMachine {
   private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
   private final int maxCommandsInBatch;
-  private final DataSize maxKeywordFieldSize;
+  private final long maxKeywordFieldSize;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
   private final ScheduledCommandCache scheduledCommandCache;
@@ -183,7 +182,7 @@ public final class ProcessingStateMachine {
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
     maxCommandsInBatch = context.getMaxCommandsInBatch();
-    maxKeywordFieldSize = context.getMaxKeywordFieldSize();
+    maxKeywordFieldSize = context.getMaxKeywordFieldSize().toBytes();
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);

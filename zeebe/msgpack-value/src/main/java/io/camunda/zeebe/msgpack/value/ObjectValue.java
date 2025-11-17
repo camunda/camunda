@@ -17,7 +17,6 @@ import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.util.unit.DataSize;
 
 public class ObjectValue extends BaseValue {
   private final List<BaseProperty<? extends BaseValue>> declaredProperties;
@@ -225,14 +224,14 @@ public class ObjectValue extends BaseValue {
     return declaredProperties.isEmpty() && undeclaredProperties.isEmpty();
   }
 
-  public Either<RuntimeException, Void> validateKeywordFields(final DataSize maxSize) {
+  public Either<RuntimeException, Void> validateKeywordFields(final long maxSize) {
     final var validationErrors = new ArrayList<String>();
     declaredProperties.forEach(
         prop -> {
           if (prop instanceof final StringProperty stringProperty
-              && stringProperty.resolveValue().getEncodedLength() > maxSize.toBytes()) {
+              && stringProperty.resolveValue().getEncodedLength() > maxSize) {
             validationErrors.add(
-                "Property " + stringProperty.getKey() + " exceeding max size of " + maxSize + ".");
+                "Property " + stringProperty.getKey() + " exceeding max size of " + maxSize + "B.");
           }
         });
 

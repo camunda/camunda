@@ -30,7 +30,6 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.util.unit.DataSize;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that buffers the processing results. After
@@ -46,10 +45,10 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final long operationReference;
   private boolean processInASeparateBatch = false;
   private final long batchOperationReference;
-  private final DataSize maxKeywordFieldSize;
+  private final long maxKeywordFieldSize;
 
   BufferedProcessingResultBuilder(
-      final RecordBatchSizePredicate predicate, final DataSize maxKeywordFieldSize) {
+      final RecordBatchSizePredicate predicate, final long maxKeywordFieldSize) {
     this(
         predicate,
         operationReferenceNullValue(),
@@ -61,7 +60,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       final RecordBatchSizePredicate predicate,
       final long operationReference,
       final long batchOperationReference,
-      final DataSize maxKeywordFieldSize) {
+      final long maxKeywordFieldSize) {
     mutableRecordBatch = new RecordBatch(predicate);
     this.operationReference = operationReference;
     this.batchOperationReference = batchOperationReference;
