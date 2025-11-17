@@ -529,7 +529,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+              $ref: 'roles.yaml#/components/schemas/RoleSearchQueryRequest'
       responses:
         "200":
           description: The search result of roles for the tenant.
@@ -717,7 +717,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+              $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleSearchQueryRequest'
       responses:
         "200":
           description: The search result of MappingRules for the tenant.

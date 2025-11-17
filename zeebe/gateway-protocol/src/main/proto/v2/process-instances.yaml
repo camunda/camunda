@@ -211,7 +211,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessInstanceIncidentSearchQuery'
+              $ref: 'incidents.yaml#/components/schemas/IncidentSearchQuery'
       responses:
         "200":
           description: The process instance search result.
@@ -887,18 +887,6 @@ components:
           allOf:
             - $ref: '#/components/schemas/ProcessInstanceFilter'
           description: The process instance search filters.
-
-    ProcessInstanceIncidentSearchQuery:
-      type: object
-      additionalProperties: false
-      allOf:
-        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
-      properties:
-        sort:
-          description: Sort field criteria.
-          type: array
-          items:
-            $ref: 'incidents.yaml#/components/schemas/IncidentSearchQuerySortRequest'
 
     BaseProcessInstanceFilterFields:
       description: Base process instance search filter.

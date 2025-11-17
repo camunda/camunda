@@ -132,7 +132,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ElementInstanceIncidentSearchQuery'
+              $ref: 'incidents.yaml#/components/schemas/IncidentSearchQuery'
       responses:
         "200":
           description: The element instance incident search result.
@@ -440,17 +440,6 @@ components:
           allOf:
             - $ref: "keys.yaml#/components/schemas/IncidentKey"
           description: Incident key associated with this element instance.
-
-    ElementInstanceIncidentSearchQuery:
-      type: object
-      allOf:
-        - $ref: "search-models.yaml#/components/schemas/SearchQueryRequest"
-      properties:
-        sort:
-          description: Sort field criteria.
-          type: array
-          items:
-            $ref: "incidents.yaml#/components/schemas/IncidentSearchQuerySortRequest"
 
     AdHocSubProcessActivateActivitiesInstruction:
       type: object
