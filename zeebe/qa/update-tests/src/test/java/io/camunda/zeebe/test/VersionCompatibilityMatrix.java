@@ -42,6 +42,16 @@ final class VersionCompatibilityMatrix {
 
   private static final Logger LOG = LoggerFactory.getLogger(VersionCompatibilityMatrix.class);
 
+  private final VersionProvider versionProvider;
+
+  public VersionCompatibilityMatrix() {
+    versionProvider = new GithubVersionProvider();
+  }
+
+  public VersionCompatibilityMatrix(final VersionProvider versionProvider) {
+    this.versionProvider = versionProvider;
+  }
+
   /**
    * Automatically chooses the matrix to use depending on the environment where tests are run.
    *
@@ -56,22 +66,24 @@ final class VersionCompatibilityMatrix {
    * </ul>
    */
   private static Stream<Arguments> auto() {
+    final var matrix = new VersionCompatibilityMatrix();
+
     if (System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY") != null) {
-      return full();
+      return matrix.full();
     } else if (System.getenv("ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY") != null) {
-      return fromPreviousPatchesToCurrent();
+      return matrix.fromPreviousPatchesToCurrent();
     } else if (System.getenv("CI") != null) {
-      return fromFirstAndLastPatchToCurrent();
+      return matrix.fromFirstAndLastPatchToCurrent();
     } else {
-      return fromPreviousMinorToCurrent();
+      return matrix.fromPreviousMinorToCurrent();
     }
   }
 
-  private static Stream<Arguments> fromPreviousMinorToCurrent() {
+  public Stream<Arguments> fromPreviousMinorToCurrent() {
     return Stream.of(Arguments.of(VersionUtil.getPreviousVersion(), "CURRENT"));
   }
 
-  private static Stream<Arguments> fromPreviousPatchesToCurrent() {
+  public Stream<Arguments> fromPreviousPatchesToCurrent() {
     final var current = VersionUtil.getSemanticVersion().orElseThrow();
     return discoverVersions()
         .filter(version -> version.compareTo(current) < 0)
@@ -79,7 +91,7 @@ final class VersionCompatibilityMatrix {
         .map(version -> Arguments.of(version.toString(), "CURRENT"));
   }
 
-  private static Stream<Arguments> fromFirstAndLastPatchToCurrent() {
+  public Stream<Arguments> fromFirstAndLastPatchToCurrent() {
     final var current = VersionUtil.getSemanticVersion().orElseThrow();
 
     final var minAndMaxPatch =
@@ -92,7 +104,7 @@ final class VersionCompatibilityMatrix {
         Arguments.of(minAndMaxPatch.max().toString(), "CURRENT"));
   }
 
-  private static Stream<Arguments> full() {
+  public Stream<Arguments> full() {
     final var versions = discoverVersions().sorted().toList();
     final var latestVersionPerMinor = getLatestVersionPerMinor(versions);
     final var combinations =
@@ -128,16 +140,14 @@ final class VersionCompatibilityMatrix {
     return shard(combinations, index, total);
   }
 
-  private static Map<Integer, SemanticVersion> getLatestVersionPerMinor(
+  private Map<Integer, SemanticVersion> getLatestVersionPerMinor(
       final List<SemanticVersion> versions) {
-    final var latestVersionPerMinor =
-        versions.stream()
-            .collect(
-                Collectors.toMap(
-                    SemanticVersion::minor,
-                    Function.identity(),
-                    BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
-    return latestVersionPerMinor;
+    return versions.stream()
+        .collect(
+            Collectors.toMap(
+                SemanticVersion::minor,
+                Function.identity(),
+                BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
   }
 
   @VisibleForTesting
@@ -166,10 +176,10 @@ final class VersionCompatibilityMatrix {
    *     href="https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#list-matching-references--parameters">GitHub
    *     API</a>
    */
-  static Stream<SemanticVersion> discoverVersions() {
+  public Stream<SemanticVersion> discoverVersions() {
     final var versions =
-        fetchTags()
-            .map(Ref::toSemanticVersion)
+        versionProvider
+            .discoverVersions()
             .filter(version -> version != null && version.preRelease() == null)
             .toList();
 
@@ -178,7 +188,7 @@ final class VersionCompatibilityMatrix {
     // check for the latest versions of each minor.
     final var unreleasedVersions =
         getLatestVersionPerMinor(versions).values().stream()
-            .filter(version -> fetchRelease(version).isEmpty())
+            .filter(version -> !versionProvider.isReleased(version))
             .peek(
                 version ->
                     LOG.warn(
@@ -190,67 +200,85 @@ final class VersionCompatibilityMatrix {
     return versions.stream().filter(version -> !unreleasedVersions.contains(version));
   }
 
-  static Optional<Release> fetchRelease(final SemanticVersion tagName) {
-    final var endpoint =
-        URI.create(
-            "https://api.github.com/repos/camunda/camunda/releases/tags/" + tagName.toString());
-    try (final var httpClient = HttpClient.newHttpClient()) {
-      final var retry =
-          Retry.of(
-              "github-api",
-              RetryConfig.custom()
-                  .maxAttempts(10)
-                  .intervalFunction(IntervalFunction.ofExponentialBackoff())
-                  .build());
-      final var response =
-          retry.executeCallable(
-              () ->
-                  httpClient.send(
-                      HttpRequest.newBuilder().GET().uri(endpoint).build(),
-                      BodyHandlers.ofByteArray()));
-      return Optional.ofNullable(new ObjectMapper().readValue(response.body(), Release.class));
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
+  static class GithubVersionProvider implements VersionProvider {
+
+    final Retry retry =
+        Retry.of(
+            "github-api",
+            RetryConfig.custom()
+                .maxAttempts(10)
+                .intervalFunction(IntervalFunction.ofExponentialBackoff())
+                .build());
+
+    @Override
+    public Stream<SemanticVersion> discoverVersions() {
+      return fetchTags().map(Ref::toSemanticVersion);
+    }
+
+    @Override
+    public boolean isReleased(final SemanticVersion version) {
+      return fetchRelease(version).isPresent();
+    }
+
+    private Optional<Release> fetchRelease(final SemanticVersion tagName) {
+      final var endpoint =
+          URI.create(
+              "https://api.github.com/repos/camunda/camunda/releases/tags/" + tagName.toString());
+      try (final var httpClient = HttpClient.newHttpClient()) {
+        final var response =
+            retry.executeCallable(
+                () ->
+                    httpClient.send(
+                        HttpRequest.newBuilder().GET().uri(endpoint).build(),
+                        BodyHandlers.ofByteArray()));
+
+        if (response.statusCode() == 404) {
+          return Optional.empty();
+        }
+
+        return Optional.ofNullable(new ObjectMapper().readValue(response.body(), Release.class));
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    private Stream<Ref> fetchTags() {
+
+      final var endpoint =
+          URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
+      try (final var httpClient = HttpClient.newHttpClient()) {
+        final var response =
+            retry.executeCallable(
+                () ->
+                    httpClient.send(
+                        HttpRequest.newBuilder().GET().uri(endpoint).build(),
+                        BodyHandlers.ofByteArray()));
+
+        final var refs = new ObjectMapper().readValue(response.body(), Ref[].class);
+        return Stream.of(refs);
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record Ref(String ref) {
+      SemanticVersion toSemanticVersion() {
+        return SemanticVersion.parse(ref.substring("refs/tags/".length())).orElse(null);
+      }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record Release(String tag_name, boolean prerelease) {
+      SemanticVersion toSemanticVersion() {
+        return SemanticVersion.parse(tag_name).orElse(null);
+      }
     }
   }
 
-  private static Stream<Ref> fetchTags() {
+  interface VersionProvider {
+    Stream<SemanticVersion> discoverVersions();
 
-    final var endpoint =
-        URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
-    try (final var httpClient = HttpClient.newHttpClient()) {
-      final var retry =
-          Retry.of(
-              "github-api",
-              RetryConfig.custom()
-                  .maxAttempts(10)
-                  .intervalFunction(IntervalFunction.ofExponentialBackoff())
-                  .build());
-      final var response =
-          retry.executeCallable(
-              () ->
-                  httpClient.send(
-                      HttpRequest.newBuilder().GET().uri(endpoint).build(),
-                      BodyHandlers.ofByteArray()));
-
-      final var refs = new ObjectMapper().readValue(response.body(), Ref[].class);
-      return Stream.of(refs);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  record Ref(String ref) {
-    SemanticVersion toSemanticVersion() {
-      return SemanticVersion.parse(ref.substring("refs/tags/".length())).orElse(null);
-    }
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private record Release(String tag_name, boolean prerelease) {
-    SemanticVersion toSemanticVersion() {
-      return SemanticVersion.parse(tag_name).orElse(null);
-    }
+    boolean isReleased(SemanticVersion version);
   }
 }
