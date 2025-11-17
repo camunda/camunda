@@ -9,10 +9,10 @@
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>microbenchmarks</artifactId>
+  <artifactId>camunda-microbenchmarks</artifactId>
   <packaging>jar</packaging>
 
-  <name>JMH benchmark sample: Java</name>
+  <name>Camunda Microbenchmarks</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
