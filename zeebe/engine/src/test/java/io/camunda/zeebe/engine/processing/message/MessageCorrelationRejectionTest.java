@@ -114,7 +114,7 @@ public final class MessageCorrelationRejectionTest {
             .withId("x".repeat(33 * 1024))
             .withName(messageName)
             .withCorrelationKey(correlationKey)
-            .expectRejection()
+            .expectGeneralRejection()
             .publish();
     // then
     Assertions.assertThat(rejectedRecord)
