@@ -348,3 +348,41 @@ components:
           type: array
           items:
             $ref: 'keys.yaml#/components/schemas/JobKey'
+
+    DecisionEvaluationInstanceKeyFilterProperty:
+      description: DecisionEvaluationInstanceKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/DecisionEvaluationInstanceKey"
+        - $ref: '#/components/schemas/AdvancedDecisionEvaluationInstanceKeyFilter'
+
+    AdvancedDecisionEvaluationInstanceKeyFilter:
+      title: Advanced filter
+      description: Advanced DecisionEvaluationInstanceKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/DecisionEvaluationInstanceKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/DecisionEvaluationInstanceKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/DecisionEvaluationInstanceKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "keys.yaml#/components/schemas/DecisionEvaluationInstanceKey"
