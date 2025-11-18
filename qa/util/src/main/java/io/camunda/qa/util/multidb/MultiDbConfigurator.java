@@ -279,8 +279,8 @@ public class MultiDbConfigurator {
   }
 
   public void configureRDBMSSupport(
-      final DatabaseType databaseType, final String prefix, final boolean retentionEnabled) {
-    final String shortPrefix = generateTablePrefix(prefix);
+      final DatabaseType databaseType, final boolean retentionEnabled) {
+    final String shortPrefix = generateTablePrefix();
     // db type
     testApplication.withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
     testApplication.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_RDBMS);
@@ -380,13 +380,11 @@ public class MultiDbConfigurator {
   }
 
   /**
-   * Generates a pseudorandom table prefix based on the given prefix by creating a deterministic
-   * random string.
+   * Generates a random table prefix based on the given prefix by creating a random string.
    *
-   * @param prefix test prefix
-   * @return
+   * @return the table prefix
    */
-  private static String generateTablePrefix(final String prefix) {
+  private static String generateTablePrefix() {
     final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     final StringBuilder sb = new StringBuilder(10);
     final java.util.Random random = new java.util.Random();

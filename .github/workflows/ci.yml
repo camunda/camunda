@@ -807,7 +807,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: it-rdbms-postgres
+          maven-cache-key-modifier: it-rdbms-mysql
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
