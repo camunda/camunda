@@ -57,20 +57,22 @@ class ElementInstancesTreeStore {
   };
 
   setRootNode = async (processInstanceKey: string) => {
-    if (this.state.rootScopeKey !== processInstanceKey) {
-      this.state.abortControllers.forEach((controller) => {
-        controller.abort();
-      });
-      this.state.abortControllers.clear();
-
-      this.state.nodes.clear();
-      this.state.expandedNodes.clear();
-      this.state.rootScopeKey = processInstanceKey;
-
-      this.state.expandedNodes.add(processInstanceKey);
-
-      await this.fetchFirstPage(processInstanceKey);
+    if (this.state.rootScopeKey === processInstanceKey) {
+      return;
     }
+
+    this.state.abortControllers.forEach((controller) => {
+      controller.abort();
+    });
+    this.state.abortControllers.clear();
+
+    this.state.nodes.clear();
+    this.state.expandedNodes.clear();
+    this.state.rootScopeKey = processInstanceKey;
+
+    this.state.expandedNodes.add(processInstanceKey);
+
+    await this.fetchFirstPage(processInstanceKey);
   };
 
   expandNode = async (scopeKey: string) => {
