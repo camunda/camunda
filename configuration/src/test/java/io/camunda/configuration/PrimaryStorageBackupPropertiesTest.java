@@ -8,10 +8,13 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.Schedule.CronSchedule;
+import io.camunda.zeebe.broker.system.configuration.backup.Schedule.IntervalSchedule;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,8 +47,9 @@ public class PrimaryStorageBackupPropertiesTest {
 
     @Test
     void shouldSetCronExpression() {
-      assertThat(backupSchedulerCfg.getSchedule()).isEqualTo("0 0 * * * ?");
-      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule()).isEqualTo("0 30 * * * ?");
+      assertThat(backupSchedulerCfg.getSchedule()).isInstanceOf(CronSchedule.class);
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
+          .isInstanceOf(CronSchedule.class);
     }
   }
 
@@ -66,9 +70,10 @@ public class PrimaryStorageBackupPropertiesTest {
 
     @Test
     void shouldSetIsoDurations() {
-      assertThat(backupSchedulerCfg.getSchedule()).isEqualTo("PT5H");
+      assertThat(backupSchedulerCfg.getSchedule()).isInstanceOf(IntervalSchedule.class);
       assertThat(backupSchedulerCfg.getCheckpointInterval()).isEqualTo(Duration.ofMinutes(2));
-      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule()).isEqualTo("PT12H");
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
+          .isInstanceOf(IntervalSchedule.class);
       assertThat(backupSchedulerCfg.getRetention().getWindow()).isEqualTo(Duration.ofDays(7));
     }
   }
@@ -92,14 +97,37 @@ public class PrimaryStorageBackupPropertiesTest {
     }
 
     @Test
-    void shouldSetCronExpression() {
-      assertThat(backupSchedulerCfg.getSchedule()).isEqualTo("PT5H");
+    void shouldParseConfig() {
+      assertThat(backupSchedulerCfg.getSchedule()).isInstanceOf(IntervalSchedule.class);
       assertThat(backupSchedulerCfg.getCheckpointInterval()).isEqualTo(Duration.ofMinutes(2));
-      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule()).isEqualTo("PT12H");
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
+          .isInstanceOf(IntervalSchedule.class);
       assertThat(backupSchedulerCfg.getRetention().getWindow()).isEqualTo(Duration.ofDays(7));
       assertThat(backupSchedulerCfg.isContinuous()).isTrue();
       assertThat(backupSchedulerCfg.isRequired()).isTrue();
       assertThat(backupSchedulerCfg.getOffset()).isEqualTo(100);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.schedule=P5H",
+        "camunda.data.primary-storage.backup.retention.cleanup-schedule=* * * t *",
+      })
+  class InvalidSchedulerConfiguration {
+    final BackupSchedulerCfg backupSchedulerCfg;
+
+    InvalidSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupSchedulerCfg = brokerCfg.getData().getBackupScheduler();
+    }
+
+    @Test
+    void shouldParseConfig() {
+      assertThatThrownBy(backupSchedulerCfg::getSchedule)
+          .isInstanceOf(IllegalArgumentException.class);
+      assertThatThrownBy(() -> backupSchedulerCfg.getRetention().getCleanupSchedule())
+          .isInstanceOf(IllegalArgumentException.class);
     }
   }
 }
