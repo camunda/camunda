@@ -12,16 +12,20 @@
 
 .listCell {
   vertical-align: middle;
+  position: relative;
 }
 
 .cellName {
   width: 200px;
+  position: relative;
+  overflow: visible;
 }
 
 .valueCell {
-  overflow-y: hidden;
+  overflow-y: visible;
   word-break: break-all;
   height: min(100px, min-content);
+  position: relative;
 }
 
 .controlsCell {
@@ -48,4 +52,47 @@
   max-height: 100px;
   height: min(min-content, 100%);
   overflow-y: auto;
+}
+
+// Ensure error messages from Carbon TextInput components are contained within table cells
+:global(.cds--form-requirement) {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 10 !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+}
+
+// Handle structured list row positioning to contain error messages
+:global(.cds--structured-list-row) {
+  position: relative;
+  isolation: isolate;
+  
+  .listCell {
+    position: relative;
+    overflow: visible;
+    z-index: 0;
+  }
+}
+
+// Ensure the cell name has proper containment for error messages
+.cellName {
+  overflow: visible !important;
+  
+  // Create a stacking context for error messages
+  :global(.cds--text-input__field-wrapper) {
+    position: relative;
+  }
+}
+
+// Ensure value cells can show error messages
+.valueCell {
+  overflow: visible !important;
+  
+  // Create a stacking context for error messages
+  :global(.cds--text-input__field-wrapper) {
+    position: relative;
+  }
 }
