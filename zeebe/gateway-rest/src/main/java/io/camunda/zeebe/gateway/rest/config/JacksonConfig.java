@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentStateFilterProperty;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationStateFilterPrope
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DecisionEvaluationInstructionDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.DecisionInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ElementInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IncidentErrorTypePropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IncidentStatePropertyDeserializer;
@@ -100,6 +102,9 @@ public class JacksonConfig {
         new ProcessInstanceCreationInstructionDeserializer());
     module.addDeserializer(
         DecisionEvaluationInstruction.class, new DecisionEvaluationInstructionDeserializer());
+    module.addDeserializer(
+        DecisionInstanceStateFilterProperty.class,
+        new DecisionInstanceStateFilterPropertyDeserializer());
     module.addDeserializer(
         IncidentErrorTypeFilterProperty.class, new IncidentErrorTypePropertyDeserializer());
     module.addDeserializer(

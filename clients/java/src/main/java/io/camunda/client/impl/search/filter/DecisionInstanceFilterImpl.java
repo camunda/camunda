@@ -17,15 +17,18 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.DecisionInstanceStateProperty;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.DecisionInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
@@ -48,24 +51,27 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionInstanceId(final String decisionInstanceId) {
-    filter.decisionEvaluationInstanceKey(decisionInstanceId);
+    return decisionInstanceId(b -> b.eq(decisionInstanceId));
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionInstanceId(final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
+    fn.accept(property);
+    filter.setDecisionEvaluationInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public DecisionInstanceFilter state(final DecisionInstanceState state) {
-    final DecisionInstanceStateEnum stateEnum;
-    switch (state) {
-      case EVALUATED:
-        stateEnum = DecisionInstanceStateEnum.EVALUATED;
-        break;
-      case FAILED:
-        stateEnum = DecisionInstanceStateEnum.FAILED;
-        break;
-      default:
-        throw new IllegalArgumentException("Unexpected DecisionInstanceState value: " + state);
-    }
-    filter.setState(stateEnum);
+    return state(b -> b.eq(state));
+  }
+
+  @Override
+  public DecisionInstanceFilter state(final Consumer<DecisionInstanceStateProperty> fn) {
+    final DecisionInstanceStateProperty property = new DecisionInstanceStatePropertyImpl();
+    fn.accept(property);
+    filter.setState(provideSearchRequestProperty(property));
     return this;
   }
 

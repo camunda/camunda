@@ -196,6 +196,119 @@ class DecisionInstanceSearchTest {
   }
 
   @Test
+  public void shouldRetrieveDecisionInstanceByDecisionId(final CamundaClient camundaClient) {
+    // when
+    final long decisionDefinitionKey =
+        EVALUATED_DECISIONS
+            .get(DECISION_DEFINITION_ID_1)
+            .getEvaluatedDecisions()
+            .getFirst()
+            .getDecisionKey();
+    final long decisionInstanceKey =
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey();
+    final String decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.decisionInstanceId(decisionInstanceId))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    final var decisionInstance = result.singleItem();
+
+    assertThat(decisionInstance.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+    assertThat(decisionInstance.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
+    assertThat(decisionInstance.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
+    assertThat(decisionInstance.getEvaluationFailure()).isNull();
+    assertThat(decisionInstance.getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getDecisionDefinitionId()).isEqualTo("decision_1");
+    assertThat(decisionInstance.getDecisionDefinitionName()).isEqualTo("Loan Eligibility");
+    assertThat(decisionInstance.getDecisionDefinitionVersion()).isEqualTo(1);
+    assertThat(decisionInstance.getDecisionDefinitionType())
+        .isEqualTo(DecisionDefinitionType.DECISION_TABLE);
+    assertThat(decisionInstance.getTenantId()).isEqualTo("<default>");
+    assertThat(decisionInstance.getDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(decisionInstance.getRootDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(decisionInstance.getResult()).isEqualTo("\"Eligible\"");
+    assertThat(decisionInstance.getEvaluationDate()).isNotNull();
+    // evaluated inputs and matched rules are not included in search results, only in get by id
+    assertThat(decisionInstance.getEvaluatedInputs()).isNull();
+    assertThat(decisionInstance.getMatchedRules()).isNull();
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByDecisionIdIn(final CamundaClient camundaClient) {
+    // when
+    final long decisionDefinitionKey =
+        EVALUATED_DECISIONS
+            .get(DECISION_DEFINITION_ID_1)
+            .getEvaluatedDecisions()
+            .getFirst()
+            .getDecisionKey();
+    final long decisionInstanceKey =
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey();
+    final String decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.decisionInstanceId(d -> d.in(decisionInstanceId, "foobar")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    final var decisionInstance = result.singleItem();
+
+    assertThat(decisionInstance.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+    assertThat(decisionInstance.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
+    assertThat(decisionInstance.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
+    assertThat(decisionInstance.getEvaluationFailure()).isNull();
+    assertThat(decisionInstance.getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getDecisionDefinitionId()).isEqualTo("decision_1");
+    assertThat(decisionInstance.getDecisionDefinitionName()).isEqualTo("Loan Eligibility");
+    assertThat(decisionInstance.getDecisionDefinitionVersion()).isEqualTo(1);
+    assertThat(decisionInstance.getDecisionDefinitionType())
+        .isEqualTo(DecisionDefinitionType.DECISION_TABLE);
+    assertThat(decisionInstance.getTenantId()).isEqualTo("<default>");
+    assertThat(decisionInstance.getDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(decisionInstance.getRootDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(decisionInstance.getResult()).isEqualTo("\"Eligible\"");
+    assertThat(decisionInstance.getEvaluationDate()).isNotNull();
+    // evaluated inputs and matched rules are not included in search results, only in get by id
+    assertThat(decisionInstance.getEvaluatedInputs()).isNull();
+    assertThat(decisionInstance.getMatchedRules()).isNull();
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByDecisionIdNotIn(final CamundaClient camundaClient) {
+    // when
+    final long decisionDefinitionKey =
+        EVALUATED_DECISIONS
+            .get(DECISION_DEFINITION_ID_1)
+            .getEvaluatedDecisions()
+            .getFirst()
+            .getDecisionKey();
+    final long decisionInstanceKey =
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey();
+    final String decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.decisionInstanceId(d -> d.notIn(decisionInstanceId, "foobar")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(4);
+  }
+
+  @Test
   public void shouldRetrieveDecisionInstanceByDecisionKeyFilterIn(
       final CamundaClient camundaClient) {
     // when
@@ -417,6 +530,36 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.state(state).decisionDefinitionType(type))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByStateIn() {
+    // when
+    final DecisionInstanceState state = DecisionInstanceState.EVALUATED;
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.state(s -> s.in(state)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByStateNotIn() {
+    // when
+    final DecisionInstanceState state = DecisionInstanceState.FAILED;
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.state(s -> s.notIn(state)))
             .send()
             .join();
 

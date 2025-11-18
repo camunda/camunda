@@ -15,7 +15,6 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
@@ -46,6 +45,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterFields;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilter;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterProperty;
+import io.camunda.zeebe.gateway.rest.util.DecisionInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.TagsValidator;
@@ -222,10 +222,12 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getDecisionEvaluationKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::decisionInstanceKeys);
-      ofNullable(filter.getDecisionEvaluationInstanceKey()).ifPresent(builder::decisionInstanceIds);
+      ofNullable(filter.getDecisionEvaluationInstanceKey())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::decisionInstanceIdOperations);
       ofNullable(filter.getState())
-          .map(s -> convertEnum(s, DecisionInstanceState.class))
-          .ifPresent(builder::states);
+          .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
+          .ifPresent(builder::stateOperations);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getEvaluationDate())
           .map(mapToOperations(OffsetDateTime.class))

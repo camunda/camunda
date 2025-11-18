@@ -35,7 +35,6 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
@@ -55,8 +54,8 @@ public final class DecisionInstanceFilterTransformer
   public SearchQuery toSearchQuery(final DecisionInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getKeysQuery(filter.decisionInstanceKeys())).ifPresent(queries::add);
-    ofNullable(getIdsQuery(filter.decisionInstanceIds())).ifPresent(queries::add);
-    ofNullable(getStatesQuery(filter.states())).ifPresent(queries::add);
+    queries.addAll(getIdsQuery(filter.decisionInstanceIdOperations()));
+    queries.addAll(getStatesQuery(filter.stateOperations()));
     queries.addAll(getEvaluationDateQuery(filter.evaluationDateOperations()));
     ofNullable(getEvaluationFailuresQuery(filter.evaluationFailures())).ifPresent(queries::add);
     ofNullable(getProcessDefinitionKeysQuery(filter.processDefinitionKeys()))
@@ -86,12 +85,12 @@ public final class DecisionInstanceFilterTransformer
     return longTerms(KEY, keys);
   }
 
-  private SearchQuery getIdsQuery(final List<String> ids) {
-    return stringTerms(ID, ids);
+  private List<SearchQuery> getIdsQuery(final List<Operation<String>> idOperations) {
+    return stringOperations(ID, idOperations);
   }
 
-  private SearchQuery getStatesQuery(final List<DecisionInstanceState> states) {
-    return stringTerms(STATE, states != null ? states.stream().map(Enum::name).toList() : null);
+  private List<SearchQuery> getStatesQuery(final List<Operation<String>> stateOperations) {
+    return stringOperations(STATE, stateOperations);
   }
 
   private List<SearchQuery> getEvaluationDateQuery(
