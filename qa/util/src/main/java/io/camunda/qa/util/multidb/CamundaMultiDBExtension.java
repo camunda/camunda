@@ -311,7 +311,7 @@ public class CamundaMultiDBExtension
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
       case RDBMS_H2, RDBMS_MARIADB, RDBMS_MSSQL, RDBMS_MYSQL, RDBMS_ORACLE, RDBMS_POSTGRES ->
-          multiDbConfigurator.configureRDBMSSupport(databaseType, testPrefix, isHistoryRelatedTest);
+          multiDbConfigurator.configureRDBMSSupport(databaseType, isHistoryRelatedTest);
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(

@@ -1057,8 +1057,10 @@ public final class TestHelper {
   }
 
   /**
-   * Asserts that the given search responses are sorted either in a case insensitive way or in a
-   * Java natural order way.
+   * Asserts that the given search responses are sorted either in a case-insensitive way or in a
+   * Java natural order way. This flexibility is needed because different databases might sort
+   * strings differently. To not make the assertion depend on a specific database behavior, we allow
+   * both sorting methods.
    */
   public static <T> void assertSortedFlexible(
       final SearchResponse<T> resultAsc,
