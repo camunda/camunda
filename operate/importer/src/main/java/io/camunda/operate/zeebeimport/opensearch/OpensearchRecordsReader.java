@@ -15,6 +15,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gt;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gtLte;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sourceInclude;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
@@ -50,6 +51,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -127,6 +129,8 @@ public class OpensearchRecordsReader implements RecordsReader {
   private List<ImportListener> importListeners;
 
   @Autowired private RecordsReaderHolder recordsReaderHolder;
+
+  @Autowired private ImportPositionIndex importPositionType;
 
   public OpensearchRecordsReader(
       final int partitionId, final ImportValueType importValueType, final int queueSize) {
@@ -547,7 +551,7 @@ public class OpensearchRecordsReader implements RecordsReader {
   }
 
   private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
-    if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+    if (isPartitionCompletedImporting(partitionId)) {
       recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
     }
 
@@ -563,6 +567,24 @@ public class OpensearchRecordsReader implements RecordsReader {
             e);
       }
     }
+  }
+
+  private boolean isPartitionCompletedImporting(final int partitionId) {
+    final var searchRequestBuilder =
+        searchRequestBuilder(importPositionType.getAlias())
+            .query(term(ImportPositionIndex.PARTITION_ID, partitionId))
+            .source(sourceInclude(ImportPositionIndex.FIELD_INDEX_NAME))
+            .size(50);
+    final var response =
+        zeebeRichOpenSearchClient.doc().search(searchRequestBuilder, ImportPositionEntity.class);
+
+    final var indexNames =
+        response.hits().hits().stream()
+            .map(hit -> hit.source().getIndexName())
+            .filter(Objects::nonNull)
+            .toList();
+
+    return indexNames.stream().anyMatch(indexName -> indexName.contains("8.8"));
   }
 
   private void executeNext() {

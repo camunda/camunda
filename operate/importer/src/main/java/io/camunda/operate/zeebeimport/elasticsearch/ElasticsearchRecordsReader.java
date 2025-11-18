@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -49,6 +50,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -126,6 +128,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   private List<ImportListener> importListeners;
 
   @Autowired private RecordsReaderHolder recordsReaderHolder;
+
+  @Autowired private ImportPositionIndex importPositionType;
 
   public ElasticsearchRecordsReader(
       final int partitionId, final ImportValueType importValueType, final int queueSize) {
@@ -584,7 +588,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
-    if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+    if (isPartitionCompletedImporting(partitionId)) {
       recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
     }
 
@@ -599,6 +603,33 @@ public class ElasticsearchRecordsReader implements RecordsReader {
             partitionId,
             e);
       }
+    }
+  }
+
+  private boolean isPartitionCompletedImporting(final int partitionId) {
+    final var sourceBuilder =
+        new SearchSourceBuilder()
+            .query(QueryBuilders.termQuery(ImportPositionIndex.PARTITION_ID, partitionId))
+            .fetchSource(new String[] {ImportPositionIndex.FIELD_INDEX_NAME}, null)
+            .size(50);
+
+    final var searchRequest =
+        new SearchRequest().indices(importPositionType.getAlias()).source(sourceBuilder);
+
+    try {
+      final var response = zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
+
+      return Arrays.stream(response.getHits().getHits())
+          .map(hit -> hit.getSourceAsMap().get(ImportPositionIndex.FIELD_INDEX_NAME))
+          .filter(Objects::nonNull)
+          .map(Object::toString)
+          .anyMatch(indexName -> indexName.contains("8.8"));
+    } catch (final IOException e) {
+      LOGGER.error(
+          "Failed to retrieve import positions so importer completion may not resolve correctly for partition {}",
+          partitionId,
+          e);
+      return false;
     }
   }
 
