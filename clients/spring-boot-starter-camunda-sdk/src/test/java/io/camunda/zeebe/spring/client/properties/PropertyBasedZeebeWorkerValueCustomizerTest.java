@@ -60,6 +60,15 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
       @Variable final String var1, @VariablesAsType final ComplexProcessVariable var2) {}
 
   @JobWorker
+  void variableOnlyWorker(@Variable final String foo) {}
+
+  @JobWorker
+  void variableWithValueOnlyWorker(@Variable("foo") final String bar) {}
+
+  @JobWorker
+  void variableWithNameOnlyWorker(@Variable(name = "foo") final String bar) {}
+
+  @JobWorker
   void activatedJobWorker(@Variable final String var1, final ActivatedJob activatedJob) {}
 
   @JobWorker
@@ -68,6 +77,45 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   @JobWorker
   void sampleWorkerWithEmptyJsonProperty(
       @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
+
+  @Test
+  void shouldExtractVariableNameFromParameterName() {
+    // given
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "variableOnlyWorker"));
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("foo");
+  }
+
+  @Test
+  void shouldExtractVariableNameFromValue() {
+    // given
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "variableWithValueOnlyWorker"));
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("foo");
+  }
+
+  @Test
+  void shouldExtractVariableNameFromName() {
+    // given
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "variableWithNameOnlyWorker"));
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("foo");
+  }
 
   @Test
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjectedLegacy() {
