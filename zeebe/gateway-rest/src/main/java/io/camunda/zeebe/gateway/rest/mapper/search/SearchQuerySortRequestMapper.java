@@ -13,6 +13,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
+import io.camunda.search.sort.ClusterVariableSort;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
@@ -165,6 +166,12 @@ public class SearchQuerySortRequestMapper {
 
   static List<SearchQuerySortRequest<VariableSearchQuerySortRequest.FieldEnum>>
       fromVariableSearchQuerySortRequest(final List<VariableSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<SearchQuerySortRequest<ClusterVariableSearchQuerySortRequest.FieldEnum>>
+      fromClusterVariableSearchQuerySortRequest(
+          final List<ClusterVariableSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -655,6 +662,24 @@ public class SearchQuerySortRequestMapper {
         case VARIABLE_KEY -> builder.variableKey();
         case SCOPE_KEY -> builder.scopeKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyClusterVariableSortField(
+      final ClusterVariableSearchQuerySortRequest.FieldEnum field,
+      final ClusterVariableSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case VALUE -> builder.value();
+        case NAME -> builder.name();
+        case TENANT_ID -> builder.tenantId();
+        case SCOPE -> builder.scope();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

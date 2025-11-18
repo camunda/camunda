@@ -371,6 +371,15 @@ paths:
   /variables/{variableKey}:
     $ref: 'variables.yaml#/paths/~1variables~1{variableKey}'
 
+  # Cluster variables endpoints
+  /cluster-variables:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables'
+  /cluster-variables/{name}/{scope}/{tenantId}:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1{name}~1{scope}~1{tenantId}'
+  /cluster-variables/search:
+    $ref: 'cluster-variables.yaml#/paths/~1cluster-variables~1search'
+
+
 components:
   securitySchemes:
     BearerAuth:

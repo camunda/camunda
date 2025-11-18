@@ -1,0 +1,253 @@
+## Endpoint definitions
+
+paths:
+  /cluster-variables:
+    post:
+      tags:
+        - Cluster Variable
+      summary: Create a new cluster variable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClusterVariableRequest'
+      responses:
+        '200':
+          description: Cluster variable created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterVariableResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+  /cluster-variables/search:
+    post:
+      tags:
+        - Cluster Variable
+      operationId: searchClusterVariables
+      summary: Search cluster variables
+      description: Search for cluster variables based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterVariableSearchQuery'
+      responses:
+        "200":
+          description: The cluster variable search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterVariableSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
+  /cluster-variables/{name}/{scope}/{tenantId}:
+    delete:
+      tags:
+        - Cluster Variable
+      summary: Delete a cluster variable
+      description: |
+        Deletes a cluster variable by name and scope.
+        - If scope is GLOBAL, tenantId must be omitted or null.
+        - If scope is TENANT, tenantId is required.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the cluster variable
+        - name: scope
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ GLOBAL, TENANT ]
+          description: The scope of the variable
+        - name: tenantId
+          in: path
+          required: false
+          schema:
+            type: string
+            nullable: true
+          description: Required if scope is TENANT, must be omitted or null for GLOBAL
+      responses:
+        '204':
+          description: Cluster variable deleted successfully
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Cluster variable not found
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+    get:
+      tags:
+        - Cluster Variable
+      summary: Get a cluster variable
+      description: |
+        Retrieves a cluster variable by name and scope.
+        - If scope is GLOBAL, tenantId must be omitted or null.
+        - If scope is TENANT, tenantId is required.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the cluster variable
+        - name: scope
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ GLOBAL, TENANT ]
+          description: The scope of the variable
+        - name: tenantId
+          in: path
+          required: false
+          schema:
+            type: string
+            nullable: true
+          description: Required if scope is TENANT, must be omitted or null for GLOBAL
+      responses:
+        '200':
+          description: Cluster variable found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterVariableResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: Cluster variable not found
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+components:
+  schemas:
+    ClusterVariableScope:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [ GLOBAL, TENANT ]
+        tenantId:
+          type: string
+          nullable: true
+          description: Required if type is TENANT, must be null or undefined for GLOBAL
+    CreateClusterVariableRequest:
+      type: object
+      required:
+        - name
+        - value
+        - scope
+      properties:
+        name:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: object
+        scope:
+          $ref: '#/components/schemas/ClusterVariableScope'
+    ClusterVariableResult:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+        scope:
+          $ref: '#/components/schemas/ClusterVariableScope'
+    ClusterVariableSearchQuery:
+      description: Cluster variable search query request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterVariableSearchQuerySortRequest'
+        filter:
+          description: The cluster variable search filters.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableFilter'
+    ClusterVariableSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - name
+            - value
+            - tenantId
+            - scope
+        order:
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+    ClusterVariableFilter:
+      description: Cluster variable filter request.
+      type: object
+      properties:
+        name:
+          description: Name of the cluster variable.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        value:
+          description: The value of the cluster variable.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        scope:
+          description: The scope filter for cluster variables.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableScopeFilter'
+    ClusterVariableScopeFilter:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [ GLOBAL, TENANT ]
+        tenantId:
+          description: Tenant identifier when type is TENANT.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+    ClusterVariableSearchQueryResult:
+      description: Cluster variable search query response.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching cluster variables.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterVariableResult'

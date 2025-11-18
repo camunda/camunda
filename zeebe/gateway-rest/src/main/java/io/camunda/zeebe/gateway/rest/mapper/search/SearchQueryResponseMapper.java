@@ -17,6 +17,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -63,6 +64,9 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResult;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScope;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
@@ -1190,6 +1194,44 @@ public final class SearchQueryResponseMapper {
 
   private static String getFullValueIfPresent(final VariableEntity variableEntity) {
     return variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value();
+  }
+
+  public static ClusterVariableSearchQueryResult toClusterVariableSearchQueryResponse(
+      final SearchQueryResult<ClusterVariableEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ClusterVariableSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toClusterVariables)
+                .orElseGet(Collections::emptyList));
+  }
+
+  private static List<ClusterVariableResult> toClusterVariables(
+      final List<ClusterVariableEntity> clusterVariableEntities) {
+    return clusterVariableEntities.stream()
+        .map(SearchQueryResponseMapper::toClusterVariable)
+        .toList();
+  }
+
+  public static ClusterVariableResult toClusterVariable(
+      final ClusterVariableEntity clusterVariableEntity) {
+
+    final ClusterVariableScope scope = new ClusterVariableScope();
+    switch (clusterVariableEntity.scope()) {
+      case GLOBAL -> scope.setType(ClusterVariableScope.TypeEnum.GLOBAL);
+      case TENANT -> {
+        scope.setType(ClusterVariableScope.TypeEnum.TENANT);
+        scope.setTenantId(clusterVariableEntity.tenantId());
+      }
+      // This case should never happen, because we can not export a cluster variable
+      // with a scope that is not GLOBAL or TENANT. But we handle it gracefully
+      default -> {}
+    }
+    return new ClusterVariableResult()
+        .name(clusterVariableEntity.name())
+        .value(clusterVariableEntity.value())
+        .scope(scope);
   }
 
   public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(

@@ -14,6 +14,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 
+import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -23,6 +24,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -458,6 +460,24 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyVariableSortField);
     final VariableFilter filter = SearchQueryFilterMapper.toVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
+  public static Either<ProblemDetail, ClusterVariableQuery> toClusterVariableQuery(
+      final ClusterVariableSearchQuery request) {
+
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.clusterVariableSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromClusterVariableSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::clusterVariable,
+            SearchQuerySortRequestMapper::applyClusterVariableSortField);
+    final ClusterVariableFilter filter =
+        SearchQueryFilterMapper.toClusterVariableFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::clusterVariableSearchQuery);
   }
 
   public static Either<ProblemDetail, UserQuery> toUserQuery(final UserSearchQueryRequest request) {
