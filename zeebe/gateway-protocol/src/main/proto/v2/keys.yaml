@@ -248,7 +248,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/ElementInstanceKey"
         $neq:
-          description: Checks for equality with the provided value.
+          description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ElementInstanceKey"
         $exists:
@@ -272,6 +272,8 @@ components:
         - type: string
           title: Exact match
           description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/JobKey'
         - $ref: '#/components/schemas/AdvancedJobKeyFilter'
 
     AdvancedJobKeyFilter:
@@ -360,7 +362,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/ScopeKey"
         $neq:
-          description: Checks for equality with the provided value.
+          description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/ScopeKey"
         $exists:
@@ -398,7 +400,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/VariableKey"
         $neq:
-          description: Checks for equality with the provided value.
+          description: Checks for inequality with the provided value.
           allOf:
             - $ref: "#/components/schemas/VariableKey"
         $exists:
