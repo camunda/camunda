@@ -48,8 +48,8 @@ public class BackupSchedulerCfg implements ConfigurationEntry {
     this.continuous = continuous;
   }
 
-  public String getSchedule() {
-    return schedule;
+  public Schedule getSchedule() throws IllegalArgumentException {
+    return Schedule.tryParse(schedule);
   }
 
   public void setSchedule(final String schedule) {

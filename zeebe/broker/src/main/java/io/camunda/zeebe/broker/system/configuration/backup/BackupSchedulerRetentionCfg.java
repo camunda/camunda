@@ -31,8 +31,8 @@ public class BackupSchedulerRetentionCfg implements ConfigurationEntry {
     this.window = window;
   }
 
-  public String getCleanupSchedule() {
-    return cleanupSchedule;
+  public Schedule getCleanupSchedule() throws IllegalArgumentException {
+    return Schedule.tryParse(cleanupSchedule);
   }
 
   public void setCleanupSchedule(final String cleanupSchedule) {
