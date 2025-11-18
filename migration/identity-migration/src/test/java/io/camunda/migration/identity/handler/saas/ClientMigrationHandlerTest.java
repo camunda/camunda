@@ -67,7 +67,7 @@ public class ClientMigrationHandlerTest {
   }
 
   @Test
-  public void shouldMigrateClients() {
+  public void shouldMigrateAllClients() {
     // given
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
@@ -163,6 +163,74 @@ public class ClientMigrationHandlerTest {
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_USER_TASK,
                     PermissionType.UPDATE_USER_TASK)));
+  }
+
+  @Test
+  public void shouldMigrateOperateClient() {
+    // given
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+    final var members =
+        new Members(
+            List.of(),
+            List.of(
+                new Client("operate-client", "operate-client-id", List.of(Permission.OPERATE))));
+    when(consoleClient.fetchMembers()).thenReturn(members);
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    final ArgumentCaptor<CreateAuthorizationRequest> request =
+        ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
+    verify(authorizationServices, times(6)).createAuthorization(request.capture());
+    final var requests = request.getAllValues();
+    assertThat(requests)
+        .extracting(
+            CreateAuthorizationRequest::ownerId,
+            CreateAuthorizationRequest::ownerType,
+            CreateAuthorizationRequest::resourceType,
+            CreateAuthorizationRequest::permissionTypes)
+        .contains(
+            tuple(
+                "operate-client-id",
+                AuthorizationOwnerType.CLIENT,
+                AuthorizationResourceType.MESSAGE,
+                Set.of(PermissionType.READ)),
+            tuple(
+                "operate-client-id",
+                AuthorizationOwnerType.CLIENT,
+                AuthorizationResourceType.BATCH,
+                Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
+            tuple(
+                "operate-client-id",
+                AuthorizationOwnerType.CLIENT,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.DELETE_PROCESS_INSTANCE,
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE)),
+            tuple(
+                "operate-client-id",
+                AuthorizationOwnerType.CLIENT,
+                AuthorizationResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_FORM)),
+            tuple(
+                "operate-client-id",
+                AuthorizationOwnerType.CLIENT,
+                AuthorizationResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.READ_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_DEFINITION)),
+            tuple(
+                "operate-client-id",
+                AuthorizationOwnerType.CLIENT,
+                AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.READ)));
   }
 
   @Test
