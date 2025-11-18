@@ -1261,21 +1261,29 @@ public class JobBasedAdHocSubProcessTest {
 
     // use max batch size 1 engine so that the commands are executed in order, and the follow
     // up commands from terminating the ahsp are not executed before the job completion command
+    // Additionally, we need to ensure that the activation command is processed before the
+    // adhoc subprocess is completely terminated.
+    // Without this, the termination and its follow-up commands would be processed completely
+    // before the activation command is processed. That would mean the ahsp would be completely
+    // terminated as well, and the rejection would be for a different reason (NOT_FOUND).
     ENGINE_BATCH_COMMAND_1.writeRecords(
         RecordToWrite.command()
             .processInstance(ProcessInstanceIntent.TERMINATE_ELEMENT, ahspInstance.getValue())
             .key(ahspInstance.getKey()),
-        RecordToWrite.command().job(JobIntent.COMPLETE, new JobRecord()).key(jobKey));
+        RecordToWrite.command().job(JobIntent.COMPLETE, new JobRecord()).key(jobKey),
+        RecordToWrite.command()
+            .adHocSubProcessInstruction(
+                AdHocSubProcessInstructionIntent.ACTIVATE,
+                new AdHocSubProcessInstructionRecord()
+                    .setAdHocSubProcessInstanceKey(ahspInstance.getKey()))
+            .key(ahspInstance.getKey()));
 
     // then
-    final var rejection =
-        ENGINE_BATCH_COMMAND_1
-            .adHocSubProcessActivity()
-            .withAdHocSubProcessInstanceKey(ahspInstance.getKey())
-            .expectRejection()
-            .activate();
-
-    RecordAssert.assertThat(rejection)
+    RecordAssert.assertThat(
+            RecordingExporter.adHocSubProcessInstructionRecords()
+                .onlyCommandRejections()
+                .withAdHocSubProcessInstanceKey(ahspInstance.getKey())
+                .getFirst())
         .describedAs("Expected rejection because ad-hoc sub-process is not active.")
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
