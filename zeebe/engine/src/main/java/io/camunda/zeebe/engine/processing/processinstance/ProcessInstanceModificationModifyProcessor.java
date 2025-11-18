@@ -123,13 +123,6 @@ public final class ProcessInstanceModificationModifyProcessor
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
       with an ancestor scope key that is not an ancestor of the element to activate:%s""";
 
-<<<<<<< HEAD
-=======
-  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_SUSPENDED =
-      """
-      Expected to modify instance of process '%s' but it is currently suspended. \
-      Suspended process instances cannot be modified.""";
-
   private static final String ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_TERMINATED =
       """
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
@@ -139,7 +132,6 @@ public final class ProcessInstanceModificationModifyProcessor
   private static final String ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_CONFLICT =
       "element '%s' requires flow scope instance '%d' which is being terminated";
 
->>>>>>> a179c426 (fix: activation without flow scope is rejected)
   private static final EnumSet<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.of(
           BpmnElementType.UNSPECIFIED,
