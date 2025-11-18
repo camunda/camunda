@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.ProcessEntity;
@@ -39,6 +40,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
+import io.camunda.operate.schema.indices.MetricIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -100,6 +102,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
+  @Autowired private MetricIndex metricIndex;
   @Autowired private SchemaManager schemaManager;
   @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
@@ -380,6 +383,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       entityToAliasMap.put(
           DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
       entityToAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
+      entityToAliasMap.put(MetricEntity.class, metricIndex.getFullQualifiedName());
     }
     return entityToAliasMap;
   }
