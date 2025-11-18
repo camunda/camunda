@@ -108,6 +108,7 @@ paths:
 
   /element-instances/{elementInstanceKey}/incidents/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Element instance
       operationId: searchElementInstanceIncidents
