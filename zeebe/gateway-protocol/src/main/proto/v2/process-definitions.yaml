@@ -284,7 +284,7 @@ components:
             - processDefinitionId
             - tenantId
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -495,7 +495,7 @@ components:
             - activeInstancesWithIncidentCount
             - activeInstancesWithoutIncidentCount
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -599,6 +599,6 @@ components:
             - activeInstancesWithIncidentCount
             - activeInstancesWithoutIncidentCount
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field

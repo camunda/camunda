@@ -91,6 +91,14 @@ components:
         page:
           $ref: '#/components/schemas/SearchQueryPageResponse'
 
+    SortOrderEnum:
+      description: The order in which to sort the related field.
+      type: string
+      enum:
+        - ASC
+        - DESC
+      default: ASC
+
     SearchQueryPageResponse:
       description: Pagination information about the search results.
       type: object
