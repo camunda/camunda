@@ -50,6 +50,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
+import org.junit.platform.commons.util.AnnotationUtils;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.slf4j.Logger;
@@ -143,6 +144,12 @@ public class CamundaProcessTestExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) {
+    if (!hasProcessTestExtension(context)) {
+      // Skip the initialization for nested process tests. The runtime is initialized in the
+      // top-level process test.
+      return;
+    }
+
     // create runtime
     runtime = runtimeBuilder.build();
     runtime.start();
@@ -197,6 +204,27 @@ public class CamundaProcessTestExtension
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
+  }
+
+  private boolean hasProcessTestExtension(final ExtensionContext context) {
+    return hasProcessTestAnnotation(context) || hasProcessTestField(context);
+  }
+
+  private static boolean hasProcessTestAnnotation(final ExtensionContext context) {
+    return AnnotationUtils.isAnnotated(context.getTestClass(), CamundaProcessTest.class);
+  }
+
+  private static boolean hasProcessTestField(final ExtensionContext context) {
+    return context
+        .getTestClass()
+        .map(
+            testClass ->
+                ReflectionUtils.findFields(
+                    testClass,
+                    field -> field.getType().isAssignableFrom(CamundaProcessTestExtension.class),
+                    ReflectionUtils.HierarchyTraversalMode.TOP_DOWN))
+        .map(fields -> !fields.isEmpty())
+        .orElse(false);
   }
 
   @Override
@@ -272,7 +300,7 @@ public class CamundaProcessTestExtension
     }
 
     try {
-      processCoverage.collectTestRunCoverage(context.getDisplayName());
+      processCoverage.collectTestRunCoverage(getCoverageTestName(context));
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -287,6 +315,19 @@ public class CamundaProcessTestExtension
     // the other way around leads to race conditions and inconsistencies in the tests
     resetRuntimeClock();
     deleteRuntimeData();
+  }
+
+  private String getCoverageTestName(final ExtensionContext context) {
+    final StringBuilder prefix = new StringBuilder();
+
+    ExtensionContext parentContext = context.getParent().orElse(null);
+
+    while (parentContext != null && !hasProcessTestExtension(parentContext)) {
+      prefix.insert(0, parentContext.getDisplayName() + "#");
+      parentContext = parentContext.getParent().orElse(null);
+    }
+
+    return prefix + context.getDisplayName();
   }
 
   private void printTestResults() {
@@ -333,8 +374,8 @@ public class CamundaProcessTestExtension
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
-    if (runtime == null) {
-      // Skip if the runtime is not created.
+    if (runtime == null || !hasProcessTestExtension(context)) {
+      // Skip if the runtime is not created, or if this is a nested process test.
       return;
     }
 
