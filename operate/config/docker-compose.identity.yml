@@ -113,7 +113,7 @@ services:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - SPRING_PROFILES_ACTIVE=dev-data,identity-auth
+      - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_CLIENT_ID=operate
@@ -142,7 +142,6 @@ services:
       - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - SPRING_PROFILES_ACTIVE=identity-auth
       - CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist
