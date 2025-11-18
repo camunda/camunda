@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.util.unit.DataSize;
 
 public final class StreamProcessorBuilder {
 
@@ -155,7 +154,7 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder maxKeywordFieldSize(final DataSize maxKeywordFieldSize) {
+  public StreamProcessorBuilder maxKeywordFieldSize(final long maxKeywordFieldSize) {
     streamProcessorContext.maxKeywordFieldSize(maxKeywordFieldSize);
     return this;
   }

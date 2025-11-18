@@ -171,7 +171,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .nodeId(context.getNodeId())
         .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
-        .maxKeywordFieldSize(context.getBrokerCfg().getData().getMaxKeyWordFieldSize())
+        .maxKeywordFieldSize(context.getBrokerCfg().getData().getMaxKeyWordFieldSize().toBytes())
         .setEnableAsyncScheduledTasks(
             context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
         .setScheduledTaskCheckInterval(

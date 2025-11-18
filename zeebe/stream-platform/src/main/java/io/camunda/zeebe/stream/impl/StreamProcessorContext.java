@@ -26,12 +26,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
-import org.springframework.util.unit.DataSize;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
-  public static final DataSize DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE = DataSize.ofKilobytes(32);
+  public static final long DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE = 32 * 1024;
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private ActorControl actor;
@@ -55,7 +54,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
-  private DataSize maxKeywordFieldSize = DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE;
+  private long maxKeywordFieldSize = DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE;
   private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
   private ControllableStreamClock clock;
@@ -227,11 +226,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return maxCommandsInBatch;
   }
 
-  public DataSize getMaxKeywordFieldSize() {
+  public long getMaxKeywordFieldSize() {
     return maxKeywordFieldSize;
   }
 
-  public StreamProcessorContext maxKeywordFieldSize(final DataSize maxKeywordFieldSize) {
+  public StreamProcessorContext maxKeywordFieldSize(final long maxKeywordFieldSize) {
     this.maxKeywordFieldSize = maxKeywordFieldSize;
     return this;
   }

@@ -182,7 +182,7 @@ public final class ProcessingStateMachine {
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
     maxCommandsInBatch = context.getMaxCommandsInBatch();
-    maxKeywordFieldSize = context.getMaxKeywordFieldSize().toBytes();
+    maxKeywordFieldSize = context.getMaxKeywordFieldSize();
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);

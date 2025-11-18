@@ -21,13 +21,15 @@ public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(128);
+  private static final DataSize DEFAULT_MAX_KEYWORD_FIELD_SIZE =
+      DataSize.ofBytes(StreamProcessorContext.DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE);
   private String directory = DEFAULT_DIRECTORY;
 
   private String runtimeDirectory = null;
 
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
 
-  private DataSize maxKeyWordFieldSize = StreamProcessorContext.DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE;
+  private DataSize maxKeyWordFieldSize = DEFAULT_MAX_KEYWORD_FIELD_SIZE;
 
   private Duration snapshotPeriod = Duration.ofMinutes(5);
 
@@ -120,7 +122,7 @@ public final class DataCfg implements ConfigurationEntry {
 
   public long getMaxKeyWordFieldSizeInBytes() {
     return Optional.ofNullable(maxKeyWordFieldSize)
-        .orElse(StreamProcessorContext.DEFAULT_DATA_MAX_KEYWORD_FIELD_SIZE)
+        .orElse(DEFAULT_MAX_KEYWORD_FIELD_SIZE)
         .toBytes();
   }
 
