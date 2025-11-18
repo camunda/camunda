@@ -240,6 +240,11 @@
       <artifactId>camunda-search-client</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.cronutils</groupId>
+      <artifactId>cron-utils</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
