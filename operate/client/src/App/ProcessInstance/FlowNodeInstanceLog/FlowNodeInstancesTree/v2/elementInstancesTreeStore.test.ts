@@ -63,7 +63,7 @@ const mockSecondPageItems: ElementInstance[] = Array.from(
   (_, i) =>
     createMockElementInstance({
       elementInstanceKey: `${2251799813685730 + i}`,
-      elementId: `task_${i + 50}`,
+      elementId: `task_${i + 100}`,
       startDate: `2023-01-01T11:${String(i).padStart(2, '0')}:00.000Z`,
     }),
 );
@@ -469,7 +469,7 @@ describe('elementInstancesTreeStore', () => {
       mockProcessInstanceKey,
     );
     expect(secondItems.length).toBe(100);
-    expect(secondItems[0].elementId).toBe('task_50');
+    expect(secondItems[0].elementId).toBe('task_100');
   });
 
   it('should return 0 when reaching end of list', async () => {
