@@ -9,28 +9,22 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
+import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
-import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ClusterVariableDeletedHandler
     implements ExportHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ClusterVariableDeletedHandler.class);
   private static final ClusterVariableIntent SUPPORTED_INTENT = ClusterVariableIntent.DELETED;
   private final String indexName;
-  private final int variableSizeThreshold;
 
-  public ClusterVariableDeletedHandler(final String indexName, final int variableSizeThreshold) {
+  public ClusterVariableDeletedHandler(final String indexName) {
     this.indexName = indexName;
-    this.variableSizeThreshold = variableSizeThreshold;
   }
 
   @Override
@@ -53,10 +47,11 @@ public class ClusterVariableDeletedHandler
   public List<String> generateIds(final Record<ClusterVariableRecordValue> record) {
     final var recordValue = record.getValue();
     return List.of(
-        ClusterVariableIndex.generateID(
+        ClusterVariableUtil.generateID(
             recordValue.getName(),
             recordValue.getTenantId(),
-            ClusterVariableScope.fromProtocol(recordValue.getScope().toString())));
+            io.camunda.search.entities.ClusterVariableScope.valueOf(
+                recordValue.getScope().name())));
   }
 
   @Override

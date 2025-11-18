@@ -11,7 +11,6 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.CAMUNDA;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import java.util.Optional;
 
 public class ClusterVariableIndex extends AbstractIndexDescriptor implements Prio5Backup {
@@ -49,13 +48,5 @@ public class ClusterVariableIndex extends AbstractIndexDescriptor implements Pri
   @Override
   public String getComponentName() {
     return CAMUNDA.toString();
-  }
-
-  public static String generateID(
-      final String name, final String tenantId, final ClusterVariableScope scope) {
-    return switch (scope) {
-      case GLOBAL -> String.format("%s-%s", name, scope);
-      case TENANT -> String.format("%s-%s-%s", name, tenantId, scope);
-    };
   }
 }

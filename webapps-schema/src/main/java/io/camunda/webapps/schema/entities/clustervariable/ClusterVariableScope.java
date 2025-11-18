@@ -15,10 +15,11 @@ public enum ClusterVariableScope {
   TENANT;
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterVariableScope.class);
 
-  public static ClusterVariableScope fromProtocol(final String scope) {
+  public static ClusterVariableScope fromProtocol(
+      final io.camunda.zeebe.protocol.record.value.ClusterVariableScope scope) {
     return switch (scope) {
-      case "GLOBAL" -> GLOBAL;
-      case "TENANT" -> TENANT;
+      case GLOBAL -> GLOBAL;
+      case TENANT -> TENANT;
       // This should never happen, as any other scope would be rejected by the processor before
       // mutating the state, as the safety check, but we need a default case for the switch
       // expression

@@ -12,9 +12,8 @@ import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
-import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 
 public class ClusterVariableDocumentReader extends DocumentBasedReader
     implements ClusterVariableReader {
@@ -39,7 +38,8 @@ public class ClusterVariableDocumentReader extends DocumentBasedReader
       final String tenant, final String name, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
         .getById(
-            ClusterVariableIndex.generateID(name, tenant, ClusterVariableScope.TENANT),
+            ClusterVariableUtil.generateID(
+                name, tenant, io.camunda.search.entities.ClusterVariableScope.TENANT),
             io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.class,
             indexDescriptor.getFullQualifiedName());
   }
@@ -49,7 +49,8 @@ public class ClusterVariableDocumentReader extends DocumentBasedReader
       final String name, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
         .getById(
-            ClusterVariableIndex.generateID(name, null, ClusterVariableScope.GLOBAL),
+            ClusterVariableUtil.generateID(
+                name, null, io.camunda.search.entities.ClusterVariableScope.GLOBAL),
             io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.class,
             indexDescriptor.getFullQualifiedName());
   }

@@ -29,9 +29,8 @@ import org.junit.jupiter.params.provider.EnumSource.Mode;
 public class ClusterVariableDeletedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "clusterVariable";
-  private final int variableSizeThreshold = 10;
   private final ClusterVariableDeletedHandler underTest =
-      new ClusterVariableDeletedHandler(indexName, variableSizeThreshold);
+      new ClusterVariableDeletedHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

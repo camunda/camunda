@@ -173,7 +173,7 @@ public class ClusterVariableCreatedHandlerTest {
     assertThat(clusterVariableEntity.getScope())
         .isEqualTo(
             io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.fromProtocol(
-                clusterVariableRecordValue.getScope().toString()));
+                clusterVariableRecordValue.getScope()));
     assertThat(clusterVariableEntity.getValue()).isEqualTo(clusterVariableRecordValue.getValue());
     assertThat(clusterVariableEntity.isPreview()).isFalse();
     assertThat(clusterVariableEntity.getFullValue()).isNull();
@@ -206,7 +206,7 @@ public class ClusterVariableCreatedHandlerTest {
     assertThat(clusterVariableEntity.getScope())
         .isEqualTo(
             io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.fromProtocol(
-                clusterVariableRecordValue.getScope().toString()));
+                clusterVariableRecordValue.getScope()));
     assertThat(clusterVariableEntity.getValue()).isEqualTo(clusterVariableRecordValue.getValue());
     assertThat(clusterVariableEntity.isPreview()).isFalse();
     assertThat(clusterVariableEntity.getFullValue()).isNull();

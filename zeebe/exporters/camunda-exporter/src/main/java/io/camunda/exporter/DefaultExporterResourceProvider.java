@@ -219,8 +219,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new ClusterVariableDeletedHandler(
-                indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()),
+                indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName()),
             new VariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),

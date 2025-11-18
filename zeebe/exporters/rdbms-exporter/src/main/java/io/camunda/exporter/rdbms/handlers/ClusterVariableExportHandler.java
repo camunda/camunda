@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.zeebe.protocol.record.value.ClusterVariableScope.GLOBAL;
+
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.service.ClusterVariableWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -42,12 +44,16 @@ public class ClusterVariableExportHandler
   }
 
   private ClusterVariableDbModel map(final Record<ClusterVariableRecordValue> record) {
-    final ClusterVariableRecordValue value = record.getValue();
-    return new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
-        .name(value.getName())
-        .value(value.getValue())
-        .scope(ClusterVariableScope.valueOf(record.getValue().getScope().name()))
-        .tenantId(value.getTenantId())
-        .build();
+    final var value = record.getValue();
+    final var builder =
+        new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
+            .name(value.getName())
+            .value(value.getValue());
+    if (value.getScope() == GLOBAL) {
+      builder.scope(ClusterVariableScope.GLOBAL).tenantId(null);
+    } else {
+      builder.scope(ClusterVariableScope.TENANT).tenantId(value.getTenantId());
+    }
+    return builder.build();
   }
 }

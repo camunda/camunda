@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -21,6 +22,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -54,9 +56,7 @@ public final class ClusterVariableFilterTransformer
             .orElse(null);
 
     final var matchGlobalQuery =
-        stringTerms(
-            ClusterVariableIndex.SCOPE,
-            List.of(io.camunda.search.entities.ClusterVariableScope.GLOBAL.name()));
+        term(ClusterVariableIndex.SCOPE, ClusterVariableScope.GLOBAL.name());
 
     return or(matchGlobalQuery, tenantCheckQuery);
   }

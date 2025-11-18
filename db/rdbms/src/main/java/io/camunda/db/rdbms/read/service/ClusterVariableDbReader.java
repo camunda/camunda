@@ -46,15 +46,11 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
 
     dbQueryBuilder
         .filter(query.filter())
+        .tenancyEnabled(resourceAccessChecks.tenantCheck().enabled())
+        .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
         .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
         .sort(dbSort)
         .page(convertPaging(dbSort, query.page()));
-
-    if (resourceAccessChecks.tenantCheck().enabled()) {
-      dbQueryBuilder
-          .tenancyEnabled(true)
-          .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds());
-    }
 
     final var dbQuery = dbQueryBuilder.build();
     LOG.trace("[RDBMS DB] Search for cluster variables with filter {}", query);
