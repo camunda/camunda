@@ -1,0 +1,7 @@
+# A default compose file which will launch OC with basic auth and ES as a DB
+# Equivalent to running docker compose -f oc.yml -f auth.basic.yml -f db.es.yml up -d
+include:
+  - path:
+    - oc.yml
+    - auth.basic.yml
+    - db.es.yml
