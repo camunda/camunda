@@ -289,6 +289,16 @@ class ElementInstancesTreeStore {
         ...nodeData,
         status,
       });
+    } else {
+      this.state.nodes.set(scopeKey, {
+        items: [],
+        pageMetadata: {
+          totalItems: 0,
+          windowStart: 0,
+          windowEnd: 0,
+        },
+        status,
+      });
     }
   };
 

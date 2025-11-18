@@ -227,7 +227,16 @@ describe('elementInstancesTreeStore', () => {
 
     const nodeData =
       elementInstancesTreeStore.state.nodes.get(mockChildScopeKey1);
-    expect(nodeData).toBeUndefined();
+
+    expect(nodeData).toEqual({
+      items: [],
+      pageMetadata: {
+        totalItems: 0,
+        windowStart: 0,
+        windowEnd: 0,
+      },
+      status: 'error',
+    });
   });
 
   it('should collapse node and remove from expandedNodes set', async () => {
