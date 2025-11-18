@@ -13,8 +13,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.Schedule.AutoSchedule;
 import io.camunda.zeebe.broker.system.configuration.backup.Schedule.CronSchedule;
 import io.camunda.zeebe.broker.system.configuration.backup.Schedule.IntervalSchedule;
+import io.camunda.zeebe.broker.system.configuration.backup.Schedule.NoneSchedule;
+import io.camunda.zeebe.broker.system.configuration.backup.Schedule.ScheduleType;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,8 +51,12 @@ public class PrimaryStorageBackupPropertiesTest {
     @Test
     void shouldSetCronExpression() {
       assertThat(backupSchedulerCfg.getSchedule()).isInstanceOf(CronSchedule.class);
+      assertThat(backupSchedulerCfg.getSchedule().getType()).isEqualTo(ScheduleType.CRON);
+
       assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
           .isInstanceOf(CronSchedule.class);
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule().getType())
+          .isEqualTo(ScheduleType.CRON);
     }
   }
 
@@ -99,9 +106,12 @@ public class PrimaryStorageBackupPropertiesTest {
     @Test
     void shouldParseConfig() {
       assertThat(backupSchedulerCfg.getSchedule()).isInstanceOf(IntervalSchedule.class);
+      assertThat(backupSchedulerCfg.getSchedule().getType()).isEqualTo(ScheduleType.INTERVAL);
       assertThat(backupSchedulerCfg.getCheckpointInterval()).isEqualTo(Duration.ofMinutes(2));
       assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
           .isInstanceOf(IntervalSchedule.class);
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule().getType())
+          .isEqualTo(ScheduleType.INTERVAL);
       assertThat(backupSchedulerCfg.getRetention().getWindow()).isEqualTo(Duration.ofDays(7));
       assertThat(backupSchedulerCfg.isContinuous()).isTrue();
       assertThat(backupSchedulerCfg.isRequired()).isTrue();
@@ -128,6 +138,67 @@ public class PrimaryStorageBackupPropertiesTest {
           .isInstanceOf(IllegalArgumentException.class);
       assertThatThrownBy(() -> backupSchedulerCfg.getRetention().getCleanupSchedule())
           .isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.retention.clean-up-schedule=none",
+      })
+  class NoneRetentionSchedulerConfiguration {
+    final BackupSchedulerCfg backupSchedulerCfg;
+
+    NoneRetentionSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupSchedulerCfg = brokerCfg.getData().getBackupScheduler();
+    }
+
+    @Test
+    void shouldParseConfig() {
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
+          .isInstanceOf(NoneSchedule.class);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.retention.clean-up-schedule=",
+      })
+  class EmptyRetentionSchedulerConfiguration {
+    final BackupSchedulerCfg backupSchedulerCfg;
+
+    EmptyRetentionSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupSchedulerCfg = brokerCfg.getData().getBackupScheduler();
+    }
+
+    @Test
+    void shouldParseConfig() {
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
+          .isInstanceOf(NoneSchedule.class);
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule().getType())
+          .isEqualTo(ScheduleType.NONE);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.retention.clean-up-schedule=auto",
+      })
+  class AutoRetentionSchedulerConfiguration {
+    final BackupSchedulerCfg backupSchedulerCfg;
+
+    AutoRetentionSchedulerConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupSchedulerCfg = brokerCfg.getData().getBackupScheduler();
+    }
+
+    @Test
+    void shouldParseConfig() {
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule())
+          .isInstanceOf(AutoSchedule.class);
+      assertThat(backupSchedulerCfg.getRetention().getCleanupSchedule().getType())
+          .isEqualTo(ScheduleType.AUTO);
     }
   }
 }

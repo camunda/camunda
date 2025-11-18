@@ -32,7 +32,7 @@ public class BackupSchedulerRetentionCfg implements ConfigurationEntry {
   }
 
   public Schedule getCleanupSchedule() throws IllegalArgumentException {
-    return Schedule.tryParse(cleanupSchedule);
+    return Schedule.parseSchedule(cleanupSchedule, false);
   }
 
   public void setCleanupSchedule(final String cleanupSchedule) {
