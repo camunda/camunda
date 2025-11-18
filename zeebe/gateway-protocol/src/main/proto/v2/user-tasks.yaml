@@ -3,6 +3,7 @@
 paths:
   /user-tasks/{userTaskKey}/completion:
     post:
+      x-eventually-consistent: false
       tags:
         - User task
       operationId: completeUserTask
@@ -44,10 +45,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-        x-eventually-consistent: false
 
   /user-tasks/{userTaskKey}/assignment:
     post:
+      x-eventually-consistent: false
       tags:
         - User task
       operationId: assignUserTask
@@ -89,7 +90,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-        x-eventually-consistent: false
 
   /user-tasks/{userTaskKey}:
     get:
@@ -129,6 +129,7 @@ paths:
             $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
     patch:
+      x-eventually-consistent: false
       tags:
         - User task
       operationId: updateUserTask
@@ -170,7 +171,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-        x-eventually-consistent: false
 
   /user-tasks/{userTaskKey}/form:
     get:
@@ -215,6 +215,7 @@ paths:
 
   /user-tasks/{userTaskKey}/assignee:
     delete:
+      x-eventually-consistent: false
       tags:
         - User task
       operationId: unassignUserTask
@@ -250,10 +251,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-        x-eventually-consistent: false
 
   /user-tasks/search:
     post:
+      x-eventually-consistent: true
       tags:
         - User task
       operationId: searchUserTasks
@@ -280,7 +281,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-        x-eventually-consistent: true
 
   /user-tasks/{userTaskKey}/variables/search:
     post:
