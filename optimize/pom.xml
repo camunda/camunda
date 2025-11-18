@@ -11,7 +11,7 @@
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.8.1-SNAPSHOT</version>
+  <version>8.8.2-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
@@ -48,9 +48,9 @@
     <project.previousVersion>8.7.0</project.previousVersion>
     <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
-    <zeebe.version>8.8.0</zeebe.version>
+    <zeebe.version>8.8.3</zeebe.version>
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <identity.version>8.8.0</identity.version>
+    <identity.version>8.8.1</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
 
@@ -219,6 +219,39 @@
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <dependencies>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${zeebe.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <dependencies>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${zeebe.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <dependencies>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${zeebe.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
@@ -512,6 +545,17 @@
             <phase>clean</phase>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>io.camunda</groupId>
+            <artifactId>zeebe-build-tools</artifactId>
+            <version>${zeebe.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
