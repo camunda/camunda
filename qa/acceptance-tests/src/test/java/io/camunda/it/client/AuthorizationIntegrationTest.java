@@ -341,6 +341,51 @@ public class AuthorizationIntegrationTest {
   }
 
   @Test
+  void searchShouldReturnAuthorizationsFilteredByResourcePropertyName() {
+    // when
+    final var resourcePropertyName = "propCandidateGroups";
+
+    final CreateAuthorizationResponse authorization =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_1)
+            .ownerType(OwnerType.USER)
+            .resourcePropertyName(resourcePropertyName)
+            .resourceType(ResourceType.USER_TASK)
+            .permissionTypes(PermissionType.CLAIM)
+            .execute();
+
+    // create one more property-based authorization
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(USER_ID_2)
+        .ownerType(OwnerType.USER)
+        .resourcePropertyName("someOtherProperty")
+        .resourceType(ResourceType.USER_TASK)
+        .permissionTypes(PermissionType.CLAIM)
+        .execute();
+
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var authorizationsSearchResponse =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(fn -> fn.resourcePropertyNames(resourcePropertyName))
+                      .execute();
+              assertThat(authorizationsSearchResponse.items())
+                  .singleElement()
+                  .satisfies(
+                      a -> {
+                        assertThat(a.getAuthorizationKey())
+                            .isEqualTo(Long.toString(authorization.getAuthorizationKey()));
+                        assertThat(a.getResourcePropertyName()).isEqualTo(resourcePropertyName);
+                      });
+            });
+  }
+
+  @Test
   void searchShouldReturnAuthorizationsSortedByOwnerId() {
     // when
     camundaClient
@@ -437,6 +482,64 @@ public class AuthorizationIntegrationTest {
               assertThat(authorizationsSearchResponse.items())
                   .map(Authorization::getResourceId)
                   .containsExactly("resource-alpha", "resource-beta", "resource-zebra");
+            });
+  }
+
+  @Test
+  void searchShouldReturnAuthorizationsSortedByResourcePropertyNames() {
+    // given: execute all authorization creation commands in parallel
+    final var future1 =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_1)
+            .ownerType(OwnerType.USER)
+            .resourcePropertyName("prop-oscar")
+            .resourceType(ResourceType.USER_TASK)
+            .permissionTypes(UPDATE)
+            .send();
+
+    final var future2 =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_1)
+            .ownerType(OwnerType.USER)
+            .resourcePropertyName("prop-tango")
+            .resourceType(ResourceType.RESOURCE)
+            .permissionTypes(CREATE)
+            .send();
+
+    final var future3 =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_2)
+            .ownerType(OwnerType.USER)
+            .resourcePropertyName("prop-lima")
+            .resourceType(ResourceType.RESOURCE)
+            .permissionTypes(CREATE)
+            .send();
+
+    CompletableFuture.allOf(
+            future1.toCompletableFuture(),
+            future2.toCompletableFuture(),
+            future3.toCompletableFuture())
+        .join();
+
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              // when
+              final var authorizationsSearchResponse =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(f -> f.resourcePropertyNames("prop-oscar", "prop-tango", "prop-lima"))
+                      .sort(s -> s.resourcePropertyName().desc())
+                      .execute();
+
+              // then
+              assertThat(authorizationsSearchResponse.items())
+                  .map(Authorization::getResourcePropertyName)
+                  .containsExactly("prop-tango", "prop-oscar", "prop-lima");
             });
   }
 

@@ -55,6 +55,22 @@ public interface AuthorizationFilter extends SearchRequestFilter {
   AuthorizationFilter resourceIds(final List<String> resourceIds);
 
   /**
+   * Filter authorizations by the specified resource property names.
+   *
+   * @param resourcePropertyNames the names of the resource properties
+   * @return the updated filter
+   */
+  AuthorizationFilter resourcePropertyNames(final String... resourcePropertyNames);
+
+  /**
+   * Filter authorizations by the specified resource property names.
+   *
+   * @param resourcePropertyNames the names of the resource properties
+   * @return the updated filter
+   */
+  AuthorizationFilter resourcePropertyNames(final List<String> resourcePropertyNames);
+
+  /**
    * Filter authorizations by the specified resource type.
    *
    * @param resourceType the type of the resource

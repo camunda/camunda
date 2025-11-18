@@ -49,13 +49,23 @@ public class AuthorizationFilterImpl
 
   @Override
   public AuthorizationFilter resourceIds(final String... resourceIds) {
-    filter.setResourceIds(Arrays.asList(resourceIds));
-    return this;
+    return resourceIds(Arrays.asList(resourceIds));
   }
 
   @Override
   public AuthorizationFilter resourceIds(final List<String> resourceIds) {
     filter.setResourceIds(resourceIds);
+    return this;
+  }
+
+  @Override
+  public AuthorizationFilter resourcePropertyNames(final String... resourcePropertyNames) {
+    return resourcePropertyNames(Arrays.asList(resourcePropertyNames));
+  }
+
+  @Override
+  public AuthorizationFilter resourcePropertyNames(final List<String> resourcePropertyNames) {
+    filter.setResourcePropertyNames(resourcePropertyNames);
     return this;
   }
 
