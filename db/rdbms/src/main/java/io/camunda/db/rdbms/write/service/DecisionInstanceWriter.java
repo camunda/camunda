@@ -11,13 +11,13 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 
 public class DecisionInstanceWriter {
@@ -25,48 +25,31 @@ public class DecisionInstanceWriter {
   private final DecisionInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;
-  private final Duration decisionInstanceTTL;
+  private final RdbmsWriterConfig config;
 
   public DecisionInstanceWriter(
       final DecisionInstanceMapper mapper,
       final ExecutionQueue executionQueue,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final Duration decisionInstanceTTL) {
+      final RdbmsWriterConfig config) {
     this.mapper = mapper;
     this.executionQueue = executionQueue;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
-    this.decisionInstanceTTL = decisionInstanceTTL;
+    this.config = config;
   }
 
   public void create(final DecisionInstanceDbModel decisionInstance) {
     // Set cleanup date for decision instances without a process instance
     final DecisionInstanceDbModel processedInstance;
-    if (decisionInstance.processInstanceKey() == -1 && decisionInstance.historyCleanupDate() == null) {
+    if (decisionInstance.processInstanceKey() == -1
+        && decisionInstance.historyCleanupDate() == null) {
       processedInstance =
-          new DecisionInstanceDbModel.Builder()
-              .decisionInstanceId(decisionInstance.decisionInstanceId())
-              .decisionInstanceKey(decisionInstance.decisionInstanceKey())
-              .state(decisionInstance.state())
-              .evaluationDate(decisionInstance.evaluationDate())
-              .evaluationFailure(decisionInstance.evaluationFailure())
-              .evaluationFailureMessage(decisionInstance.evaluationFailureMessage())
-              .result(decisionInstance.result())
-              .flowNodeInstanceKey(decisionInstance.flowNodeInstanceKey())
-              .flowNodeId(decisionInstance.flowNodeId())
-              .processInstanceKey(decisionInstance.processInstanceKey())
-              .processDefinitionKey(decisionInstance.processDefinitionKey())
-              .processDefinitionId(decisionInstance.processDefinitionId())
-              .decisionDefinitionKey(decisionInstance.decisionDefinitionKey())
-              .decisionDefinitionId(decisionInstance.decisionDefinitionId())
-              .decisionRequirementsKey(decisionInstance.decisionRequirementsKey())
-              .decisionRequirementsId(decisionInstance.decisionRequirementsId())
-              .rootDecisionDefinitionKey(decisionInstance.rootDecisionDefinitionKey())
-              .decisionType(decisionInstance.decisionType())
-              .tenantId(decisionInstance.tenantId())
-              .partitionId(decisionInstance.partitionId())
-              .evaluatedInputs(decisionInstance.evaluatedInputs())
-              .evaluatedOutputs(decisionInstance.evaluatedOutputs())
-              .historyCleanupDate(decisionInstance.evaluationDate().plus(decisionInstanceTTL))
+          decisionInstance
+              .toBuilder()
+              .historyCleanupDate(
+                  decisionInstance
+                      .evaluationDate()
+                      .plus(config.history().decisionInstanceTTL()))
               .build();
     } else {
       processedInstance = decisionInstance;
