@@ -18,9 +18,13 @@ import java.time.ZoneId;
 import java.time.chrono.ChronoZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /** Represents a schedule which can be either a CRON expression or an ISO8601 duration interval. */
 public sealed interface Schedule {
+
+  String AUTO = "auto";
+  String NONE = "none";
 
   /*
    * Provide the next execution of the scheduler
@@ -28,11 +32,40 @@ public sealed interface Schedule {
   Optional<Instant> nextExecution(Instant from);
 
   /*
+   * Provide the next execution of the scheduler, using the provided interval supplier if needed
+   */
+  default Optional<Instant> nextExecution(
+      final Instant from, final Supplier<Duration> intervalSupplier) {
+    return nextExecution(from);
+  }
+
+  /*
    * In reality the previous execution will be acquired from the checkpoint state
    */
   Optional<Instant> previousExecution(Instant from);
 
-  static Schedule tryParse(final String expression) throws IllegalArgumentException {
+  ScheduleType getType();
+
+  /**
+   * @param expression the expression string to parse
+   * @param mustMatch if true, the expression must be a valid cron or ISO8601 duration
+   * @return the typed {@link Schedule}
+   * @throws IllegalArgumentException if the expression is invalid
+   */
+  static Schedule parseSchedule(final String expression, final boolean mustMatch)
+      throws IllegalArgumentException {
+    if (!mustMatch && expression == null
+        || expression.isBlank()
+        || expression.equalsIgnoreCase(NONE)) {
+      return new NoneSchedule();
+    }
+    if (!mustMatch && expression.equalsIgnoreCase(AUTO)) {
+      return new AutoSchedule();
+    }
+    return mustParseSchedule(expression);
+  }
+
+  private static Schedule mustParseSchedule(final String expression) {
     try {
       final var cron =
           new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING53))
@@ -66,6 +99,11 @@ public sealed interface Schedule {
           .lastExecution(from.atZone(ZoneId.systemDefault()))
           .map(ChronoZonedDateTime::toInstant);
     }
+
+    @Override
+    public ScheduleType getType() {
+      return ScheduleType.CRON;
+    }
   }
 
   record IntervalSchedule(Duration interval) implements Schedule {
@@ -79,5 +117,59 @@ public sealed interface Schedule {
     public Optional<Instant> previousExecution(final Instant from) {
       return Optional.of(from.minus(interval));
     }
+
+    @Override
+    public ScheduleType getType() {
+      return ScheduleType.INTERVAL;
+    }
+  }
+
+  record NoneSchedule() implements Schedule {
+
+    @Override
+    public Optional<Instant> nextExecution(final Instant from) {
+      return Optional.empty();
+    }
+
+    @Override
+    public Optional<Instant> previousExecution(final Instant from) {
+      return Optional.empty();
+    }
+
+    @Override
+    public ScheduleType getType() {
+      return ScheduleType.NONE;
+    }
+  }
+
+  record AutoSchedule() implements Schedule {
+
+    @Override
+    public Optional<Instant> nextExecution(final Instant from) {
+      return Optional.empty();
+    }
+
+    @Override
+    public Optional<Instant> nextExecution(
+        final Instant from, final Supplier<Duration> intervalSupplier) {
+      return Optional.of(from.plus(intervalSupplier.get()));
+    }
+
+    @Override
+    public Optional<Instant> previousExecution(final Instant from) {
+      return Optional.empty();
+    }
+
+    @Override
+    public ScheduleType getType() {
+      return ScheduleType.AUTO;
+    }
+  }
+
+  enum ScheduleType {
+    CRON,
+    INTERVAL,
+    NONE,
+    AUTO
   }
 }
