@@ -31,7 +31,8 @@ public interface SearchClientsProxy
         UsageMetricsSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
-        VariableSearchClient {
+        VariableSearchClient,
+        ClusterVariableSearchClient {
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);
