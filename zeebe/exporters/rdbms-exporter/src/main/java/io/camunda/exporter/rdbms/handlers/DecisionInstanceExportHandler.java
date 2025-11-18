@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedInput;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedOutput;
@@ -22,7 +23,9 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.util.DateUtil;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,9 +35,13 @@ public class DecisionInstanceExportHandler
     implements RdbmsExportHandler<DecisionEvaluationRecordValue> {
 
   private final DecisionInstanceWriter decisionInstanceWriter;
+  private final Duration decisionInstanceTTL;
 
-  public DecisionInstanceExportHandler(final DecisionInstanceWriter decisionInstanceWriter) {
+  public DecisionInstanceExportHandler(
+      final DecisionInstanceWriter decisionInstanceWriter,
+      final RdbmsWriterConfig config) {
     this.decisionInstanceWriter = decisionInstanceWriter;
+    this.decisionInstanceTTL = config.history().decisionInstanceTTL();
   }
 
   @Override
@@ -80,12 +87,21 @@ public class DecisionInstanceExportHandler
             ? evaluatedDecision.getDecisionEvaluationInstanceKey()
             : String.format("%s-%d", key, index);
 
+    final var evaluationDate =
+        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+
+    // Set cleanup date for decision instances without a process instance
+    final var historyCleanupDate =
+        value.getProcessInstanceKey() == -1
+            ? evaluationDate.plus(decisionInstanceTTL)
+            : null;
+
     return new DecisionInstanceDbModel.Builder()
         .decisionInstanceId(id)
         .decisionInstanceKey(key)
         .decisionDefinitionKey(evaluatedDecision.getDecisionKey())
         .decisionDefinitionId(evaluatedDecision.getDecisionId())
-        .evaluationDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
+        .evaluationDate(evaluationDate)
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processDefinitionId(value.getBpmnProcessId())
         .processInstanceKey(value.getProcessInstanceKey())
@@ -103,6 +119,7 @@ public class DecisionInstanceExportHandler
             state == DecisionInstanceState.FAILED ? value.getEvaluationFailureMessage() : null)
         .partitionId(record.getPartitionId())
         .tenantId(value.getTenantId())
+        .historyCleanupDate(historyCleanupDate)
         .build();
   }
 
