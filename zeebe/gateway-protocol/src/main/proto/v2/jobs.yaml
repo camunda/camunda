@@ -3,13 +3,13 @@
 paths:
   /jobs/activation:
     post:
+      x-eventually-consistent: false
       tags:
         - Job
       operationId: activateJobs
       summary: Activate jobs
       description: |
         Iterate through all known partitions and activate jobs up to the requested maximum.
-      x-eventually-consistent: false
       requestBody:
         required: true
         content:
@@ -34,6 +34,7 @@ paths:
 
   /jobs/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Job
       operationId: searchJobs
@@ -60,10 +61,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /jobs/{jobKey}/failure:
     post:
+      x-eventually-consistent: false
       tags:
         - Job
       operationId: failJob
@@ -109,10 +110,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /jobs/{jobKey}/error:
     post:
+      x-eventually-consistent: false
       tags:
         - Job
       operationId: throwJobError
@@ -156,10 +157,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /jobs/{jobKey}/completion:
     post:
+      x-eventually-consistent: false
       tags:
         - Job
       operationId: completeJob
@@ -202,10 +203,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /jobs/{jobKey}:
     patch:
+      x-eventually-consistent: false
       tags:
         - Job
       operationId: updateJob
@@ -247,7 +248,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
 ## Schema definitions
 

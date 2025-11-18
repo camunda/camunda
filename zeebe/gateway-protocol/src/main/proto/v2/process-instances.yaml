@@ -3,6 +3,7 @@
 paths:
   /process-instances:
     post:
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: createProcessInstance
@@ -55,10 +56,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
-      x-eventually-consistent: false
 
   /process-instances/{processInstanceKey}:
     get:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: getProcessInstance
@@ -92,10 +93,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/{processInstanceKey}/sequence-flows:
     get:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: getProcessInstanceSequenceFlows
@@ -123,10 +124,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/{processInstanceKey}/statistics/element-instances:
     get:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: getProcessInstanceStatistics
@@ -154,10 +155,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: searchProcessInstances
@@ -184,10 +185,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/{processInstanceKey}/incidents/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: searchProcessInstanceIncidents
@@ -233,7 +234,6 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/{processInstanceKey}/incident-resolution:
     post:
@@ -274,6 +274,7 @@ paths:
 
   /process-instances/{processInstanceKey}/cancellation:
     post:
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: cancelProcessInstance
@@ -307,10 +308,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /process-instances/cancellation:
     post:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: cancelProcessInstancesBatchOperation
@@ -347,10 +348,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/incident-resolution:
     post:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: resolveIncidentsBatchOperation
@@ -387,10 +388,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/migration:
     post:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: migrateProcessInstancesBatchOperation
@@ -427,10 +428,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/modification:
     post:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: modifyProcessInstancesBatchOperation
@@ -469,10 +470,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-instances/{processInstanceKey}/migration:
     post:
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: migrateProcessInstance
@@ -521,10 +522,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /process-instances/{processInstanceKey}/modification:
     post:
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: modifyProcessInstance
@@ -564,10 +565,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /process-instances/{processInstanceKey}/call-hierarchy:
     get:
+      x-eventually-consistent: true
       tags:
         - Process instance
       operationId: getProcessInstanceCallHierarchy
@@ -603,7 +604,6 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
 ## Schema definitions
 

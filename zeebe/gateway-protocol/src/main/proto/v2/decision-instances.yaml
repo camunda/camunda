@@ -3,6 +3,7 @@
 paths:
   /decision-instances/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Decision instance
       operationId: searchDecisionInstances
@@ -29,10 +30,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /decision-instances/{decisionEvaluationInstanceKey}:
     get:
+      x-eventually-consistent: true
       tags:
         - Decision instance
       operationId: getDecisionInstance
@@ -68,7 +69,6 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
 ## Schema definitions
 

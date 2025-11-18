@@ -2,6 +2,7 @@
 paths:
   /authorizations:
     post:
+      x-eventually-consistent: false
       tags:
         - Authorization
       operationId: createAuthorization
@@ -36,10 +37,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /authorizations/{authorizationKey}:
     put:
+      x-eventually-consistent: false
       tags:
         - Authorization
       operationId: updateAuthorization
@@ -73,9 +74,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
     get:
+      x-eventually-consistent: true
       tags:
         - Authorization
       operationId: getAuthorization
@@ -107,9 +108,9 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
     delete:
+      x-eventually-consistent: false
       tags:
         - Authorization
       operationId: deleteAuthorization
@@ -137,10 +138,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /authorizations/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Authorization
       summary: Search authorizations
@@ -166,7 +167,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
 ## Schema definitions
 

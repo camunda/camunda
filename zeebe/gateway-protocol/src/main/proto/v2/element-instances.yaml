@@ -3,6 +3,7 @@
 paths:
   /element-instances/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Element instance
       operationId: searchElementInstances
@@ -29,10 +30,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /element-instances/{elementInstanceKey}:
     get:
+      x-eventually-consistent: true
       tags:
         - Element instance
       operationId: getElementInstance
@@ -68,10 +69,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /element-instances/{elementInstanceKey}/variables:
     put:
+      x-eventually-consistent: false
       tags:
         - Element instance
       operationId: createElementInstanceVariables
@@ -104,7 +105,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /element-instances/{elementInstanceKey}/incidents/search:
     post:
@@ -157,6 +157,7 @@ paths:
 
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
+      x-eventually-consistent: false
       tags:
         - Ad-hoc sub-process
       operationId: activateAdHocSubProcessActivities
@@ -198,7 +199,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
 ## Schema definitions
 
