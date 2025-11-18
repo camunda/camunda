@@ -106,6 +106,9 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
     if (variableAnnotation != null && !Variable.DEFAULT_NAME.equals(variableAnnotation.name())) {
       return variableAnnotation.name();
     }
+    if (variableAnnotation != null && !Variable.DEFAULT_NAME.equals(variableAnnotation.value())) {
+      return variableAnnotation.value();
+    }
     return parameterInfo.getParameterName();
   }
 
