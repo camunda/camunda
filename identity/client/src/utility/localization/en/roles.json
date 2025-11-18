@@ -25,6 +25,7 @@
   "assigningUser": "Assigning user",
   "searchAndAssignUserToRole": "Search and assign user to role",
   "searchByUsernameOrName": "Search by Username or Name",
+  "usernameDescription": "Check the documentation for <2>how to reference users</2>.",
   "roleMemberRemoved": "Role member has been removed.",
   "removeUser": "Remove user",
   "removingUser": "Removing user",
