@@ -180,4 +180,27 @@ public class HistoryCleanupIT {
             + "'",
         OffsetDateTime.class);
   }
+
+  @Test
+  public void shouldSetHistoryCleanupDateForDecisionInstanceWithoutProcessInstance() {
+    // GIVEN
+    // Create a decision instance without a processInstanceKey (using -1)
+    final var decisionInstance =
+        DecisionInstanceFixtures.createAndSaveRandomDecisionInstance(
+            rdbmsWriter, b -> b.processInstanceKey(-1L).historyCleanupDate(OffsetDateTime.now()));
+    rdbmsWriter.flush();
+
+    // THEN - verify cleanup date is set
+    final OffsetDateTime cleanupDate =
+        jdbcTemplate.queryForObject(
+            "SELECT HISTORY_CLEANUP_DATE FROM DECISION_INSTANCE "
+                + "WHERE DECISION_INSTANCE_KEY = "
+                + decisionInstance.decisionInstanceKey(),
+            OffsetDateTime.class);
+
+    assertThat(cleanupDate)
+        .describedAs(
+            "should have a history cleanup date set for decision instance without process instance")
+        .isNotNull();
+  }
 }

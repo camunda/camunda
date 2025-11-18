@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -38,8 +37,7 @@ public class DecisionInstanceExportHandler
   private final Duration decisionInstanceTTL;
 
   public DecisionInstanceExportHandler(
-      final DecisionInstanceWriter decisionInstanceWriter,
-      final RdbmsWriterConfig config) {
+      final DecisionInstanceWriter decisionInstanceWriter, final RdbmsWriterConfig config) {
     this.decisionInstanceWriter = decisionInstanceWriter;
     this.decisionInstanceTTL = config.history().decisionInstanceTTL();
   }
@@ -92,9 +90,7 @@ public class DecisionInstanceExportHandler
 
     // Set cleanup date for decision instances without a process instance
     final var historyCleanupDate =
-        value.getProcessInstanceKey() == -1
-            ? evaluationDate.plus(decisionInstanceTTL)
-            : null;
+        value.getProcessInstanceKey() == -1 ? evaluationDate.plus(decisionInstanceTTL) : null;
 
     return new DecisionInstanceDbModel.Builder()
         .decisionInstanceId(id)
