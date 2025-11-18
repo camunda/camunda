@@ -6,16 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
-import {expect} from '@playwright/test';
-import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
-import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
-import {waitForAssertion} from 'utils/waitForAssertion';
-import {sleep} from 'utils/sleep';
-import {OperateOperationPanelPage} from '@pages/OperateOperationPanelPage';
+import { test } from 'fixtures';
+import { expect } from '@playwright/test';
+import { deploy, createInstances, createSingleInstance } from 'utils/zeebeClient';
+import { captureScreenshot, captureFailureVideo } from '@setup';
+import { navigateToApp } from '@pages/UtilitiesPage';
+import { waitForAssertion } from 'utils/waitForAssertion';
+import { sleep } from 'utils/sleep';
+import { OperateOperationPanelPage } from '@pages/OperateOperationPanelPage';
 
-type ProcessInstance = {processInstanceKey: number};
+type ProcessInstance = { processInstanceKey: number };
 
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
@@ -51,7 +51,7 @@ test.beforeAll(async () => {
 
   callActivityProcessInstance = {
     processInstanceKey: Number(
-      (await createSingleInstance('CallActivityProcess', 1, {filtersTest: 456}))
+      (await createSingleInstance('CallActivityProcess', 1, { filtersTest: 456 }))
         .processInstanceKey,
     ),
   };
@@ -59,7 +59,7 @@ test.beforeAll(async () => {
   await deploy(['./resources/Variable_Process.bpmn']);
   variableProcessInstance = {
     processInstanceKey: Number(
-      (await createSingleInstance('Variable_Process', 1, {filtersTest: 604}))
+      (await createSingleInstance('Variable_Process', 1, { filtersTest: 604 }))
         .processInstanceKey,
     ),
   };
@@ -70,14 +70,14 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instances Filters', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+  test.beforeEach(async ({ page, loginPage, operateHomePage }) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
 
-  test.afterEach(async ({page}, testInfo) => {
+  test.afterEach(async ({ page }, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
@@ -130,8 +130,6 @@ test.describe('Process Instances Filters', () => {
         .toBeGreaterThan(1);
     });
 
-    // TODO: think about DRY here (first part repeat first test.step())
-    // But on the other side we don't want tests to be interdependent
     await test.step('Filter by Parent Instance Key and by Error Message and assert results', async () => {
       const callActivityProcessInstanceKey =
         callActivityProcessInstance.processInstanceKey.toString();
@@ -229,7 +227,7 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
 
-    await test.step('Filter by variable and assert results', async ({}) => {
+    await test.step('Filter by variable and assert results', async ({ }) => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
       await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
       await operateFiltersPanelPage.fillVariableValueFilter('604');
@@ -257,7 +255,7 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
-    await test.step('Filter by process instance key with one key and assert results', async ({}) => {
+    await test.step('Filter by process instance key with one key and assert results', async ({ }) => {
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
 
@@ -281,7 +279,7 @@ test.describe('Process Instances Filters', () => {
       });
     });
 
-    await test.step('Filter by process instance key with multiple keys and assert results', async ({}) => {
+    await test.step('Filter by process instance key with multiple keys and assert results', async ({ }) => {
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
       const callActivityProcessInstanceKey =
@@ -326,14 +324,14 @@ test.describe('Process Instances Filters', () => {
     await test.step('Filter by variable and operation id and assert results', async () => {
       const processToCancelMeowInstance = {
         processInstanceKey: Number(
-          (await createSingleInstance('ProcessToCancel', 1, {sound: 'meow'}))
+          (await createSingleInstance('ProcessToCancel', 1, { sound: 'meow' }))
             .processInstanceKey,
         ),
       };
 
       const processToCancelGawInstance = {
         processInstanceKey: Number(
-          (await createSingleInstance('ProcessToCancel', 1, {sound: 'gaw'}))
+          (await createSingleInstance('ProcessToCancel', 1, { sound: 'gaw' }))
             .processInstanceKey,
         ),
       };
@@ -372,7 +370,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 30000});
+          ).toBeVisible({ timeout: 30000 });
         },
         onFailure: async () => {
           await page.reload();
@@ -449,7 +447,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 30000});
+          ).toBeVisible({ timeout: 30000 });
         },
         onFailure: async () => {
           await page.reload();
@@ -473,7 +471,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 30000});
+          ).toBeVisible({ timeout: 30000 });
         },
         onFailure: async () => {
           await page.reload();
@@ -499,7 +497,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 30000});
+          ).toBeVisible({ timeout: 30000 });
         },
         onFailure: async () => {
           await page.reload();
@@ -546,7 +544,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 60000});
+          ).toBeVisible({ timeout: 60000 });
         },
         onFailure: async () => {
           await page.reload();
@@ -632,11 +630,11 @@ test.describe('Process Instances Filters', () => {
             exact: true,
           },
         ),
-      ).toBeVisible({timeout: 60000});
+      ).toBeVisible({ timeout: 60000 });
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           callActivityProcessInstanceKey.toString(),
-          {exact: true},
+          { exact: true },
         ),
       ).toBeHidden();
     });
@@ -663,7 +661,7 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Check that process instances table is filtered correctly', async () => {
-      await expect(page.getByText('2 results')).toBeVisible({timeout: 60000});
+      await expect(page.getByText('2 results')).toBeVisible({ timeout: 60000 });
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           orderProcessInstanceKey.toString(),
@@ -675,7 +673,7 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           callActivityProcessInstanceKey.toString(),
-          {exact: true},
+          { exact: true },
         ),
       ).toBeVisible();
     });
