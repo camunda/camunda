@@ -244,7 +244,7 @@ components:
             - startDate
             - endDate
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -360,7 +360,7 @@ components:
             - processInstanceKey
             - state
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -396,7 +396,7 @@ components:
         processInstanceKey:
           description: The process instance key of the processed item.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
         state:
           type: string
           description: The state of the batch operation.

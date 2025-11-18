@@ -867,7 +867,7 @@ components:
             - hasIncident
             - tenantId
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -918,15 +918,15 @@ components:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
         processInstanceKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The key of this process instance.
         parentProcessInstanceKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The parent process instance key.
         parentElementInstanceKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
           description: The parent element instance key.
         batchOperationId:
           allOf:
@@ -941,7 +941,7 @@ components:
           type: boolean
         elementInstanceState:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ElementInstanceStateFilterProperty'
+            - $ref: 'element-instances.yaml#/components/schemas/ElementInstanceStateFilterProperty'
           description: The state of the element instances associated with the process instance.
         elementId:
           allOf:
@@ -1023,7 +1023,7 @@ components:
           description: The process definition version tag.
         processDefinitionKey:
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
           description: The process definition key.
 
     ProcessInstanceFilter:
