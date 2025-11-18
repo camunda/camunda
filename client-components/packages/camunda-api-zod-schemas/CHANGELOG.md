@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.17
+
+### 🚀 Enhancements
+
+- add process instance incident resolution to zod schema ([#41107](https://github.com/camunda/camunda/pull/41107))
+
+### ❤️ Contributors
+
+- Patrick Dehn ([@pedesen](https://github.com/pedesen))
+
 ## v0.0.16
 
 ### 🚀 Enhancements

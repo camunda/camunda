@@ -335,6 +335,20 @@ const modifyProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification`,
 };
 
+const resolveProcessInstanceIncidentsResponseBodySchema = z.object({
+	batchOperationKey: z.string(),
+	batchOperationType: batchOperationTypeSchema,
+});
+
+type ResolveProcessInstanceIncidentsResponseBody = z.infer<
+	typeof resolveProcessInstanceIncidentsResponseBodySchema
+>;
+
+const resolveProcessInstanceIncidents: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+	method: 'POST',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution`,
+};
+
 export {
 	createProcessInstance,
 	getProcessInstance,
@@ -349,6 +363,7 @@ export {
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
+	resolveProcessInstanceIncidents,
 	createProcessInstanceRequestBodySchema,
 	createProcessInstanceResponseBodySchema,
 	modifyProcessInstanceRequestBodySchema,
@@ -360,6 +375,7 @@ export {
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
+	resolveProcessInstanceIncidentsResponseBodySchema,
 	processInstanceStateSchema,
 	processInstanceSchema,
 	sequenceFlowSchema,
@@ -390,4 +406,5 @@ export type {
 	CreateModificationBatchOperationRequestBody,
 	CreateModificationBatchOperationResponseBody,
 	ModifyProcessInstanceRequestBody,
+	ResolveProcessInstanceIncidentsResponseBody,
 };
