@@ -123,6 +123,15 @@ public final class ProcessInstanceModificationModifyProcessor
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
       with an ancestor scope key that is not an ancestor of the element to activate:%s""";
 
+  private static final String ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_TERMINATED =
+      """
+      Expected to modify instance of process '%s' but it contains one or more activate instructions \
+      for elements whose required flow scope instance is also being terminated: %s. \
+      Please provide a valid ancestor scope key for the activation or avoid terminating the required flow scope.""";
+
+  private static final String ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_CONFLICT =
+      "element '%s' requires flow scope instance '%d' which is being terminated";
+
   private static final EnumSet<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.of(
           BpmnElementType.UNSPECIFIED,
@@ -319,6 +328,10 @@ public final class ProcessInstanceModificationModifyProcessor
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
         .flatMap(valid -> validateAncestorKeys(process, value))
+        .flatMap(
+            valid ->
+                validateElementIsNotActivatedForTerminatedFlowScope(
+                    process, activateInstructions, terminateInstructions))
         .map(valid -> VALID);
   }
 
@@ -644,6 +657,71 @@ public final class ProcessInstanceModificationModifyProcessor
     }
 
     return false;
+  }
+
+  private Either<Rejection, ?> validateElementIsNotActivatedForTerminatedFlowScope(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions,
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+    // Collect all terminate instance keys
+    final Set<Long> terminatedInstanceKeys =
+        terminateInstructions.stream()
+            .map(ProcessInstanceModificationTerminateInstructionValue::getElementInstanceKey)
+            .collect(Collectors.toSet());
+
+    final List<String> conflictingActivations = new ArrayList<>();
+    for (final var terminatedInstanceKey : terminatedInstanceKeys) {
+      final var terminatedInstance = elementInstanceState.getInstance(terminatedInstanceKey);
+      if (terminatedInstance == null) {
+        // this should be already validated in validateElementInstanceExists
+        continue;
+      }
+
+      final var terminatedElement =
+          process.getProcess().getElementById(terminatedInstance.getValue().getElementId());
+      // Find all elements that have the terminated element as flow scope
+      // consider nested flow scopes as well as activate instructions that has ancestor scope key
+      // set
+      final var conflictingElements =
+          activateInstructions.stream()
+              .filter(
+                  activationInstruction -> {
+                    final var elementToActivate =
+                        process.getProcess().getElementById(activationInstruction.getElementId());
+
+                    if (activationInstruction.getAncestorScopeKey() > 0) {
+                      // if ancestor scope key is set, check if it matches the terminated instance
+                      // key
+                      return activationInstruction.getAncestorScopeKey() == terminatedInstanceKey;
+                    }
+
+                    final String terminatedElementId =
+                        BufferUtil.bufferAsString(terminatedElement.getId());
+
+                    return isFlowScopeOfElement(elementToActivate, terminatedElementId);
+                  })
+              .toList();
+
+      for (final var conflictingElement : conflictingElements) {
+        conflictingActivations.add(
+            String.format(
+                ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_CONFLICT,
+                conflictingElement.getElementId(),
+                terminatedInstanceKey));
+      }
+    }
+
+    if (conflictingActivations.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_TERMINATED,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join(", ", conflictingActivations));
+
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   public void executeVariableInstruction(
