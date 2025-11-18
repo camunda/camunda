@@ -48,57 +48,6 @@ public class AdHocSubprocessMigrationIT {
         deployProcessFromClasspath(client, "process/migration-ahsp-process_v2.bpmn");
 
     final var processInstanceKey =
-        startProcessInstance(client, "migration-ahsp-process_v1", Map.of());
-    processInstanceHasVariables(
-        client,
-        processInstanceKey,
-        Map.of(
-            AD_HOC_SUB_PROCESS_ELEMENTS,
-            v -> v.getValue().equals("[{\"elementId\":\"A\"," + "\"elementName\":\"A\"}]")));
-
-    // when
-    migrateProcessInstance(
-        client,
-        processInstanceKey,
-        MigrationPlan.newBuilder()
-            .withTargetProcessDefinitionKey(targetProcess)
-            .addMappingInstruction("AD_HOC_SUBPROCESS", "AD_HOC_SUBPROCESS")
-            .addMappingInstruction("A", "D")
-            .build());
-
-    // then
-    processInstanceExistAndMatches(
-        client,
-        f ->
-            f.processInstanceKey(processInstanceKey)
-                .processDefinitionId("migration-ahsp-process_v2"),
-        f -> assertThat(f).hasSize(1));
-    processInstanceHasUserTask(
-        client,
-        processInstanceKey,
-        userTask -> {
-          assertThat(userTask.getElementId()).isEqualTo("D");
-          assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-ahsp-process_v2");
-          assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(1);
-        });
-    processInstanceHasVariables(
-        client,
-        processInstanceKey,
-        Map.of(
-            AD_HOC_SUB_PROCESS_ELEMENTS,
-            v -> v.getValue().equals("[{\"elementId\":\"D\"," + "\"elementName\":\"D\"}]")));
-  }
-
-  @Test
-  void shouldMigrateProcessWithActiveAdHocSubprocessAndVariables() {
-    // given
-    final var sourceProcess =
-        deployProcessFromClasspath(client, "process/migration-ahsp-process_v1.bpmn");
-
-    final var targetProcess =
-        deployProcessFromClasspath(client, "process/migration-ahsp-process_v2.bpmn");
-
-    final var processInstanceKey =
         startProcessInstance(
             client,
             "migration-ahsp-process_v1",
@@ -116,6 +65,16 @@ public class AdHocSubprocessMigrationIT {
             "alice",
             v -> v.getValue().equals("\"bob\"")));
 
+    // Ensure user task A is active before migration
+    processInstanceHasUserTask(
+        client,
+        processInstanceKey,
+        1,
+        userTask -> {
+          assertThat(userTask.getElementId()).isEqualTo("A");
+          assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-ahsp-process_v1");
+        });
+
     // when
     migrateProcessInstance(
         client,
@@ -136,9 +95,155 @@ public class AdHocSubprocessMigrationIT {
     processInstanceHasUserTask(
         client,
         processInstanceKey,
+        1,
         userTask -> {
           assertThat(userTask.getElementId()).isEqualTo("D");
           assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-ahsp-process_v2");
+          assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(1);
+        });
+    processInstanceHasVariables(
+        client,
+        processInstanceKey,
+        Map.of(
+            AD_HOC_SUB_PROCESS_ELEMENTS,
+            v -> v.getValue().equals("[{\"elementId\":\"D\",\"elementName\":\"D\"}]"),
+            "foo",
+            v -> v.getValue().equals("\"bar\""),
+            "alice",
+            v -> v.getValue().equals("\"bob\"")));
+  }
+
+  @Test
+  void shouldMigrateProcessWithActiveMultiInstanceParallelAdHocSubprocess() {
+    // given
+    deployProcessFromClasspath(client, "process/migration-mip-ahsp_v1.bpmn");
+
+    final var targetProcess =
+        deployProcessFromClasspath(client, "process/migration-mip-ahsp_v2.bpmn");
+
+    final var processInstanceKey =
+        startProcessInstance(
+            client,
+            "migration-mip-ahsp_v1",
+            Map.of(
+                "foo", "bar",
+                "alice", "bob"));
+    processInstanceHasVariables(
+        client,
+        processInstanceKey,
+        Map.of(
+            AD_HOC_SUB_PROCESS_ELEMENTS,
+            v -> v.getValue().equals("[{\"elementId\":\"A\",\"elementName\":\"A\"}]"),
+            "foo",
+            v -> v.getValue().equals("\"bar\""),
+            "alice",
+            v -> v.getValue().equals("\"bob\"")));
+
+    // Ensure user tasks A are active before migration (2 tasks due to parallel MI with 2
+    // iterations)
+    processInstanceHasUserTask(
+        client,
+        processInstanceKey,
+        2,
+        userTask -> {
+          assertThat(userTask.getElementId()).isEqualTo("A");
+          assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-mip-ahsp_v1");
+        });
+
+    // when
+    migrateProcessInstance(
+        client,
+        processInstanceKey,
+        MigrationPlan.newBuilder()
+            .withTargetProcessDefinitionKey(targetProcess)
+            .addMappingInstruction("AD_HOC_MULTI_PARALLEL_1", "AD_HOC_MULTI_PARALLEL_2")
+            .addMappingInstruction("A", "D")
+            .build());
+
+    // then
+    processInstanceExistAndMatches(
+        client,
+        f -> f.processInstanceKey(processInstanceKey).processDefinitionId("migration-mip-ahsp_v2"),
+        f -> assertThat(f).hasSize(1));
+    processInstanceHasUserTask(
+        client,
+        processInstanceKey,
+        2,
+        userTask -> {
+          assertThat(userTask.getElementId()).isEqualTo("D");
+          assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-mip-ahsp_v2");
+          assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(1);
+        });
+    processInstanceHasVariables(
+        client,
+        processInstanceKey,
+        Map.of(
+            AD_HOC_SUB_PROCESS_ELEMENTS,
+            v -> v.getValue().equals("[{\"elementId\":\"D\",\"elementName\":\"D\"}]"),
+            "foo",
+            v -> v.getValue().equals("\"bar\""),
+            "alice",
+            v -> v.getValue().equals("\"bob\"")));
+  }
+
+  @Test
+  void shouldMigrateProcessWithActiveMultiInstanceSequentialAdHocSubprocess() {
+    // given
+    deployProcessFromClasspath(client, "process/migration-mis-ahsp_v1.bpmn");
+
+    final var targetProcess =
+        deployProcessFromClasspath(client, "process/migration-mis-ahsp_v2.bpmn");
+
+    final var processInstanceKey =
+        startProcessInstance(
+            client,
+            "migration-mis-ahsp_v1",
+            Map.of(
+                "foo", "bar",
+                "alice", "bob"));
+    processInstanceHasVariables(
+        client,
+        processInstanceKey,
+        Map.of(
+            AD_HOC_SUB_PROCESS_ELEMENTS,
+            v -> v.getValue().equals("[{\"elementId\":\"A\",\"elementName\":\"A\"}]"),
+            "foo",
+            v -> v.getValue().equals("\"bar\""),
+            "alice",
+            v -> v.getValue().equals("\"bob\"")));
+
+    // Ensure user task A is active before migration (only 1 task due to sequential MI)
+    processInstanceHasUserTask(
+        client,
+        processInstanceKey,
+        1,
+        userTask -> {
+          assertThat(userTask.getElementId()).isEqualTo("A");
+          assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-mis-ahsp_v1");
+        });
+
+    // when
+    migrateProcessInstance(
+        client,
+        processInstanceKey,
+        MigrationPlan.newBuilder()
+            .withTargetProcessDefinitionKey(targetProcess)
+            .addMappingInstruction("AD_HOC_MULTI_SEQUENTIAL_1", "AD_HOC_MULTI_SEQUENTIAL_2")
+            .addMappingInstruction("A", "D")
+            .build());
+
+    // then
+    processInstanceExistAndMatches(
+        client,
+        f -> f.processInstanceKey(processInstanceKey).processDefinitionId("migration-mis-ahsp_v2"),
+        f -> assertThat(f).hasSize(1));
+    processInstanceHasUserTask(
+        client,
+        processInstanceKey,
+        1,
+        userTask -> {
+          assertThat(userTask.getElementId()).isEqualTo("D");
+          assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-mis-ahsp_v2");
           assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(1);
         });
     processInstanceHasVariables(
@@ -230,12 +335,13 @@ public class AdHocSubprocessMigrationIT {
   private void processInstanceHasUserTask(
       final CamundaClient client,
       final Long processInstanceKey,
+      final int numberOfUserTasks,
       final ThrowingConsumer<UserTask> assertions) {
     userTaskExistAndMatches(
         client,
         f -> f.processInstanceKey(processInstanceKey),
         f -> {
-          assertThat(f).hasSize(1);
+          assertThat(f).hasSize(numberOfUserTasks);
           assertThat(f.getFirst()).satisfies(assertions);
         });
   }

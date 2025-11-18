@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -100,14 +101,14 @@ public class MigrateAdHocSubProcessTest {
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.UPDATED)
                 .withScopeKey(adHocSubProcessInstanceKey)
-                .withName("adHocSubProcessElements")
+                .withName(AD_HOC_SUB_PROCESS_ELEMENTS)
                 .exists())
         .isTrue();
 
     final var updatedVariable =
         RecordingExporter.variableRecords(VariableIntent.UPDATED)
             .withScopeKey(adHocSubProcessInstanceKey)
-            .withName("adHocSubProcessElements")
+            .withName(AD_HOC_SUB_PROCESS_ELEMENTS)
             .getFirst()
             .getValue();
 
@@ -365,9 +366,184 @@ public class MigrateAdHocSubProcessTest {
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.UPDATED)
                 .withScopeKey(adHocSubProcessInstanceKey)
-                .withName("adHocSubProcessElements")
+                .withName(AD_HOC_SUB_PROCESS_ELEMENTS)
                 .exists())
         .isTrue();
+  }
+
+  // ==================== Multi-Instance Ad-Hoc Sub-Process Tests ====================
+
+  @Test
+  public void shouldMigrateAdHocSubProcessWithinParallelMultiInstanceBody() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                createProcessWithParallelMultiInstanceAdHocSubProcess(
+                    sourceProcessId, "adHocSubProcess", "taskA"))
+            .withXmlResource(
+                createProcessWithParallelMultiInstanceAdHocSubProcess(
+                    targetProcessId, "adHocSubProcess", "taskB", "taskC"))
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withVariable("items", java.util.Arrays.asList(1, 2))
+            .create();
+
+    // Wait for the first multi-instance iteration to activate the ad-hoc subprocess
+    final long adHocSubProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("adHocSubProcess")
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("adHocSubProcess", "adHocSubProcess")
+        .addMappingInstruction("taskA", "taskB")
+        .migrate();
+
+    // then - verify multi-instance body migrated
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("adHocSubProcess")
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .exists())
+        .isTrue();
+
+    // then - verify ad-hoc subprocess migrated
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("adHocSubProcess")
+                .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+                .getFirst()
+                .getValue())
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("adHocSubProcess");
+
+    // then - verify adHocSubProcessElements variable was updated
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withScopeKey(adHocSubProcessInstanceKey)
+                .withName(AD_HOC_SUB_PROCESS_ELEMENTS)
+                .exists())
+        .isTrue();
+
+    final var updatedVariable =
+        RecordingExporter.variableRecords(VariableIntent.UPDATED)
+            .withScopeKey(adHocSubProcessInstanceKey)
+            .withName(AD_HOC_SUB_PROCESS_ELEMENTS)
+            .getFirst()
+            .getValue();
+
+    assertThat(updatedVariable)
+        .isNotNull()
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId);
+  }
+
+  @Test
+  public void shouldMigrateAdHocSubProcessWithinSequentialMultiInstanceBody() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                createProcessWithSequentialMultiInstanceAdHocSubProcess(
+                    sourceProcessId, "adHocSubProcess", "taskA"))
+            .withXmlResource(
+                createProcessWithSequentialMultiInstanceAdHocSubProcess(
+                    targetProcessId, "adHocSubProcess", "taskB", "taskC"))
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withVariable("items", java.util.Arrays.asList(1, 2))
+            .create();
+
+    // Wait for the first sequential iteration to activate the ad-hoc subprocess
+    final long adHocSubProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("adHocSubProcess")
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("adHocSubProcess", "adHocSubProcess")
+        .addMappingInstruction("taskA", "taskB")
+        .migrate();
+
+    // then - verify multi-instance body migrated (sequential)
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("adHocSubProcess")
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .exists())
+        .isTrue();
+
+    // then - verify ad-hoc subprocess migrated
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("adHocSubProcess")
+                .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+                .exists())
+        .isTrue();
+
+    // then - verify adHocSubProcessElements variable was updated
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withScopeKey(adHocSubProcessInstanceKey)
+                .withName(AD_HOC_SUB_PROCESS_ELEMENTS)
+                .exists())
+        .isTrue();
+
+    final var updatedVariable =
+        RecordingExporter.variableRecords(VariableIntent.UPDATED)
+            .withScopeKey(adHocSubProcessInstanceKey)
+            .withName(AD_HOC_SUB_PROCESS_ELEMENTS)
+            .getFirst()
+            .getValue();
+
+    assertThat(updatedVariable)
+        .isNotNull()
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId);
   }
 
   // ==================== Helper Methods ====================
@@ -379,6 +555,46 @@ public class MigrateAdHocSubProcessTest {
         .adHocSubProcess(
             adHocId,
             ahsp -> {
+              for (final String taskId : taskIds) {
+                ahsp.serviceTask(taskId, t -> t.zeebeJobType(taskId));
+              }
+            })
+        .endEvent()
+        .done();
+  }
+
+  private BpmnModelInstance createProcessWithParallelMultiInstanceAdHocSubProcess(
+      final String processId, final String adHocId, final String... taskIds) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .adHocSubProcess(
+            adHocId,
+            ahsp -> {
+              ahsp.multiInstance(
+                  mi ->
+                      mi.parallel()
+                          .zeebeInputCollectionExpression("items")
+                          .zeebeInputElement("item"));
+              for (final String taskId : taskIds) {
+                ahsp.serviceTask(taskId, t -> t.zeebeJobType(taskId));
+              }
+            })
+        .endEvent()
+        .done();
+  }
+
+  private BpmnModelInstance createProcessWithSequentialMultiInstanceAdHocSubProcess(
+      final String processId, final String adHocId, final String... taskIds) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .adHocSubProcess(
+            adHocId,
+            ahsp -> {
+              ahsp.multiInstance(
+                  mi ->
+                      mi.sequential()
+                          .zeebeInputCollectionExpression("items")
+                          .zeebeInputElement("item"));
               for (final String taskId : taskIds) {
                 ahsp.serviceTask(taskId, t -> t.zeebeJobType(taskId));
               }
