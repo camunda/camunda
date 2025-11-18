@@ -81,6 +81,7 @@ public record RdbmsWriterConfig(
 
   public record HistoryConfig(
       Duration defaultHistoryTTL,
+      Duration decisionInstanceTTL,
       Duration batchOperationCancelProcessInstanceHistoryTTL,
       Duration batchOperationMigrateProcessInstanceHistoryTTL,
       Duration batchOperationModifyProcessInstanceHistoryTTL,
@@ -106,6 +107,7 @@ public record RdbmsWriterConfig(
     public static class Builder implements ObjectBuilder<HistoryConfig> {
 
       private Duration defaultHistoryTTL = DEFAULT_HISTORY_TTL;
+      private Duration decisionInstanceTTL = DEFAULT_HISTORY_TTL;
       private Duration batchOperationCancelProcessInstanceHistoryTTL =
           DEFAULT_BATCH_OPERATION_HISTORY_TTL;
       private Duration batchOperationMigrateProcessInstanceHistoryTTL =
@@ -122,6 +124,11 @@ public record RdbmsWriterConfig(
 
       public HistoryConfig.Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
         this.defaultHistoryTTL = defaultHistoryTTL;
+        return this;
+      }
+
+      public HistoryConfig.Builder decisionInstanceTTL(final Duration decisionInstanceTTL) {
+        this.decisionInstanceTTL = decisionInstanceTTL;
         return this;
       }
 
@@ -183,6 +190,7 @@ public record RdbmsWriterConfig(
       public HistoryConfig build() {
         return new HistoryConfig(
             defaultHistoryTTL,
+            decisionInstanceTTL,
             batchOperationCancelProcessInstanceHistoryTTL,
             batchOperationMigrateProcessInstanceHistoryTTL,
             batchOperationModifyProcessInstanceHistoryTTL,
