@@ -3,6 +3,7 @@
 paths:
   /process-definitions/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Process definition
       operationId: searchProcessDefinitions
@@ -29,10 +30,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-definitions/{processDefinitionKey}:
     get:
+      x-eventually-consistent: true
       tags:
         - Process definition
       operationId: getProcessDefinition
@@ -70,10 +71,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-definitions/{processDefinitionKey}/xml:
     get:
+      x-eventually-consistent: true
       tags:
         - Process definition
       operationId: getProcessDefinitionXML
@@ -116,10 +117,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-definitions/{processDefinitionKey}/form:
     get:
+      x-eventually-consistent: true
       tags:
         - Process definition
       operationId: getStartProcessForm
@@ -157,10 +158,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-definitions/{processDefinitionKey}/statistics/element-instances:
     post:
+      x-eventually-consistent: true
       tags:
         - Process definition
       operationId: getProcessDefinitionStatistics
@@ -194,10 +195,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-definitions/statistics/process-instances:
     post:
+      x-eventually-consistent: true
       tags:
         - Process definition
       operationId: getProcessDefinitionInstanceStatistics
@@ -225,10 +226,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /process-definitions/{processDefinitionId}/statistics/process-instances:
     post:
+      x-eventually-consistent: true
       tags:
         - Process definition
       operationId: getProcessDefinitionInstanceVersionStatistics
@@ -263,7 +264,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
 ## Schema definitions
 

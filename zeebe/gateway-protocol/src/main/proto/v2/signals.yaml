@@ -3,6 +3,7 @@
 paths:
   /signals/broadcast:
     post:
+      x-eventually-consistent: false
       tags:
         - Signal
       operationId: broadcastSignal
@@ -33,7 +34,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
 ## Schema definitions
 

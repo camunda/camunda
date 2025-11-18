@@ -3,6 +3,7 @@
 paths:
   /messages/publication:
     post:
+      x-eventually-consistent: false
       tags:
         - Message
       operationId: publishMessage
@@ -32,10 +33,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /messages/correlation:
     post:
+      x-eventually-consistent: false
       tags:
         - Message
       operationId: correlateMessage
@@ -72,10 +73,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /message-subscriptions/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Message subscription
       operationId: searchMessageSubscriptions
@@ -102,16 +103,15 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /correlated-message-subscriptions/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Message subscription
       operationId: searchCorrelatedMessageSubscriptions
       summary: Search correlated message subscriptions
       description: Search correlated message subscriptions based on given criteria.
-      x-eventually-consistent: true
       requestBody:
         required: false
         content:

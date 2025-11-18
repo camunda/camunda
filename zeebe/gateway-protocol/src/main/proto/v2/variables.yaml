@@ -3,6 +3,7 @@
 paths:
   /variables/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Variable
       operationId: searchVariables
@@ -29,10 +30,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /variables/{variableKey}:
     get:
+      x-eventually-consistent: true
       tags:
         - Variable
       operationId: getVariable
@@ -66,7 +67,6 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
 ## Schema definitions
 
