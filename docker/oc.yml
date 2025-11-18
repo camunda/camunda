@@ -26,9 +26,7 @@ services:
     configs:
       - source: application
         target: /usr/local/camunda/config/additional/application.yml
-    depends_on:
-      elastic:
-        condition: service_healthy
+
     networks:
       - camunda
     extra_hosts:

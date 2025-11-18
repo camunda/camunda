@@ -13,7 +13,7 @@ services:
       elastic:
         condition: service_healthy
   elastic:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.6
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
     environment:
       - ES_JAVA_OPTS=-Xmx2147483648
       - action.auto_create_index=true

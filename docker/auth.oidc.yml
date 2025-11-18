@@ -1,5 +1,5 @@
 # This file is not meant to be used directly, but in composition with the root docker-compose.yml
-# If you wish to launch OC with basic auth, then you would run:
+# If you wish to launch OC with OIDC auth, then you would run:
 # docker compose -f oc.yml -f auth.oidc.yml up -d
 services:
   oc:
@@ -15,15 +15,15 @@ services:
   keycloak:
     image: keycloak/keycloak:${KEYCLOAK_VERSION}
     volumes:
-      - keycloak:/opt/jboss/keycloak/standalone/data
+      - keycloak:/opt/keycloak/data
       - ./config/realm.json:/opt/keycloak/data/import/realm.json
     ports:
       - 18080:8080
     environment:
-      - KEYCLOAK_HTTP_PORT=18080
+
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN_USER}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KEYCLOAK_IMPORT=/opt/keycloak/data/import/realm.json
+
     restart: on-failure
     command: ["start-dev", "--import-realm", "--health-enabled=true"]
     networks:

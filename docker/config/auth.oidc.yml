@@ -24,4 +24,4 @@ camunda.security:
           - demo
 zeebe.broker.gateway:
   security.authentication.identity:
-    issuer-backend-url: http://keycloak:8080/auth/realms/camunda-platform
+    issuer-backend-url: http://keycloak:8080/realms/camunda
