@@ -119,7 +119,8 @@ public abstract class OpensearchSearchableDao<T, R> {
   }
 
   /**
-   * Collect required query terms that must always be present.
+   * Collect required query terms that must always be present and automatically applies a
+   * tenant-aware filter, if necessary.
    *
    * <p>You can use {@link #collectFilterQueryTerms(Object)} instead to build query terms based on
    * an existing filter object. The two may be combined if you have query terms that always need to
