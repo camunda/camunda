@@ -124,7 +124,7 @@ components:
         decisionEvaluationInstanceKey:
           description: The key of the decision evaluation instance.
           allOf:
-            - $ref: '#/components/schemas/DecisionEvaluationInstanceKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKeyFilterProperty'
         state:
           description: The state of the decision instance.
           allOf:
