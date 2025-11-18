@@ -1,0 +1,27 @@
+camunda.security:
+  authorizations:
+    enabled: true
+  authentication:
+    method: oidc
+    unprotected-api: false
+    oidc:
+      client-id: camunda
+      client-secret: camunda
+      redirect-uri: http://localhost:8080/sso-callback
+      authorization-uri: http://localhost:18080/realms/camunda/protocol/openid-connect/auth
+      token-uri: http://keycloak:8080/realms/camunda/protocol/openid-connect/token
+      jwk-set-uri: http://keycloak:8080/realms/camunda/protocol/openid-connect/certs
+      audiences:
+        - camunda
+      usernameClaim: preferred_username
+      clientIdClaim: client_id
+      scope:
+        - openid
+  initialization:
+    default-roles:
+      admin:
+        users:
+          - demo
+zeebe.broker.gateway:
+  security.authentication.identity:
+    issuer-backend-url: http://keycloak:8080/auth/realms/camunda-platform

@@ -1,0 +1,39 @@
+{
+  "realm": "camunda",
+  "enabled": true,
+  "users": [
+    {
+      "username" : "demo",
+      "firstName" : "Demo",
+      "lastName" : "Demo",
+      "email" : "demo@camunda.com",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo"
+        }
+      ],
+      "realmRoles": ["admin"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "admin"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "camunda",
+      "secret": "camunda",
+      "name": "camunda",
+      "clientAuthenticatorType": "client-secret",
+      "publicClient": true,
+      "redirectUris": ["*"],
+      "directAccessGrantsEnabled": true
+    }
+  ]
+}
