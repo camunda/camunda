@@ -95,8 +95,7 @@ test.describe.serial('component authorizations CRUD', () => {
     ).toHaveAttribute('data-invalid', 'true');
   });
 
-  // Skipped due to bug 40968:  https://github.com/camunda/camunda/issues/40968
-  test.skip('create user authorization', async ({
+  test('create user authorization', async ({
     page,
     identityUsersPage,
     identityRolesPage,
@@ -238,8 +237,7 @@ test.describe('authorization scenarios', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Skipped due to bug 40968:  https://github.com/camunda/camunda/issues/40968
-  test.skip('create component authorization for a user', async ({
+  test('create component authorization for a user', async ({
     page,
     identityUsersPage,
     identityAuthorizationsPage,
