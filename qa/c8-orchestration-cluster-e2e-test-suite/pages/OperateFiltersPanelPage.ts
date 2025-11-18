@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 
 type OptionalFilter =
   | 'Variable'
@@ -26,7 +26,6 @@ export class OperateFiltersPanelPage {
   readonly completedInstancesCheckbox: Locator;
   readonly canceledInstancesCheckbox: Locator;
   readonly finishedInstancesCheckbox: Locator;
-
   readonly processNameFilter: Locator;
   readonly processVersionFilter: Locator;
   readonly processInstanceKeysFilter: Locator;
@@ -164,7 +163,7 @@ export class OperateFiltersPanelPage {
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
-    await this.page.getByLabel(filterName, {exact: true}).hover();
+    await this.page.getByLabel(filterName, { exact: true }).hover();
     await this.page.getByLabel(`Remove ${filterName} Filter`).click();
   }
 
@@ -238,7 +237,7 @@ export class OperateFiltersPanelPage {
     await expect(this.dateFilterDialog).toBeVisible();
 
     const date = new Date();
-    const monthName = date.toLocaleString('default', {month: 'long'});
+    const monthName = date.toLocaleString('default', { month: 'long' });
     const year = date.getFullYear();
 
     await this.fromDateInput.click();
@@ -279,11 +278,11 @@ export class OperateFiltersPanelPage {
   }
 
   async clickMultipleVariablesSwitch() {
-    await this.multipleVariablesSwitch.click({force: true});
+    await this.multipleVariablesSwitch.click({ force: true });
   }
 
   async clickRunningInstancesCheckbox(): Promise<void> {
-    await this.runningInstancesCheckbox.click({timeout: 60000});
+    await this.runningInstancesCheckbox.click({ timeout: 60000 });
   }
 
   async clickActiveInstancesCheckbox(): Promise<void> {
@@ -291,17 +290,17 @@ export class OperateFiltersPanelPage {
   }
 
   async clickIncidentsInstancesCheckbox(): Promise<void> {
-    await this.incidentsInstancesCheckbox.click({timeout: 60000});
+    await this.incidentsInstancesCheckbox.click({ timeout: 60000 });
   }
 
   async clickFinishedInstancesCheckbox(): Promise<void> {
-    await this.finishedInstancesCheckbox.click({timeout: 60000});
+    await this.finishedInstancesCheckbox.click({ timeout: 60000 });
   }
 
   async clickCompletedInstancesCheckbox(): Promise<void> {
-    await this.completedInstancesCheckbox.click({timeout: 60000});
+    await this.completedInstancesCheckbox.click({ timeout: 60000 });
   }
   async clickCanceledInstancesCheckbox(): Promise<void> {
-    await this.canceledInstancesCheckbox.click({timeout: 60000});
+    await this.canceledInstancesCheckbox.click({ timeout: 60000 });
   }
 }
