@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -74,22 +73,11 @@ public class OperateV1TenancyIT {
   @UserDefinition
   private static final TestUser ADMIN_USER = new TestUser(ADMIN, ADMIN, AUTHORIZED_PERMISSIONS);
 
-  @BeforeAll
-  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A, TENANT_A, ADMIN);
-    createTenant(adminClient, TENANT_TO_BE_DELETED, TENANT_TO_BE_DELETED, ADMIN);
-
-    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
-    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_A);
-
-    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_TO_BE_DELETED);
-    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_TO_BE_DELETED);
-    waitForProcessInstances(adminClient, f -> f.processDefinitionId(PROCESS_ID), 2);
-  }
-
   @Test
   public void shouldNotReturnProcessesFromDeletedTenants(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
+
+    setupTwoTenantsWithProcessesBeforeDeletion(camundaClient);
 
     try (final var operateClient = STANDALONE_CAMUNDA.newOperateClient(ADMIN, ADMIN)) {
       // given
@@ -115,6 +103,18 @@ public class OperateV1TenancyIT {
                 assertSearchResultsTenants(afterDeletionResult, TENANT_A);
               });
     }
+  }
+
+  private void setupTwoTenantsWithProcessesBeforeDeletion(final CamundaClient adminClient) {
+    createTenant(adminClient, TENANT_A, TENANT_A, ADMIN);
+    createTenant(adminClient, TENANT_TO_BE_DELETED, TENANT_TO_BE_DELETED, ADMIN);
+
+    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
+    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_A);
+
+    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_TO_BE_DELETED);
+    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_TO_BE_DELETED);
+    waitForProcessInstances(adminClient, f -> f.processDefinitionId(PROCESS_ID), 2);
   }
 
   private Either<Exception, ProcessInstanceResult> searchProcessInstancesV1(
