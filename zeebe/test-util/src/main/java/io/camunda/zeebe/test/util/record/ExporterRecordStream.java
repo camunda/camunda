@@ -15,11 +15,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class ExporterRecordStream<
@@ -98,19 +96,5 @@ public abstract class ExporterRecordStream<
   public S withValueTypes(final ValueType... valueTypes) {
     final var valueTypesSet = Set.of(valueTypes);
     return filter(m -> valueTypesSet.contains(m.getValueType()));
-  }
-
-  /**
-   * Removes duplicated records based on their position. Keeps the first occurrence of each
-   * position. Since records are exported with an at-least-once guarantee, there might be duplicated
-   * records in the stream, e.g. after a restart.
-   *
-   * @return a new stream without duplicated positions
-   */
-  public S withoutDuplicatedPositions() {
-    return supply(
-        collect(Collectors.toMap(Record::getPosition, r -> r, (r1, r2) -> r1, LinkedHashMap::new))
-            .values()
-            .stream());
   }
 }
