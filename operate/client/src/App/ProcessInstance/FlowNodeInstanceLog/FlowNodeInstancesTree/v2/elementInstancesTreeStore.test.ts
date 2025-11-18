@@ -243,15 +243,15 @@ describe('elementInstancesTreeStore', () => {
     mockSearchElementInstances().withSuccess(mockEmptyResponse);
     await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
 
-    expect(
-      elementInstancesTreeStore.state.expandedNodes.has(mockChildScopeKey1),
-    ).toBe(true);
+    expect(elementInstancesTreeStore.isNodeExpanded(mockChildScopeKey1)).toBe(
+      true,
+    );
 
     elementInstancesTreeStore.collapseNode(mockChildScopeKey1);
 
-    expect(
-      elementInstancesTreeStore.state.expandedNodes.has(mockChildScopeKey1),
-    ).toBe(false);
+    expect(elementInstancesTreeStore.isNodeExpanded(mockChildScopeKey1)).toBe(
+      false,
+    );
   });
 
   it('should remove collapsed node data from memory', async () => {
