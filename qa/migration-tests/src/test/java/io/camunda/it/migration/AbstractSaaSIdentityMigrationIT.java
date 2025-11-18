@@ -373,6 +373,11 @@ public abstract class AbstractSaaSIdentityMigrationIT {
               "permissions": ["Operate", "Zeebe"]
             },
             {
+              "name": "Operate",
+              "clientId": "operate-client",
+              "permissions": ["Operate"]
+             },
+            {
               "name": "Tasklist",
               "clientId": "tasklist-client",
               "permissions": ["Tasklist"]

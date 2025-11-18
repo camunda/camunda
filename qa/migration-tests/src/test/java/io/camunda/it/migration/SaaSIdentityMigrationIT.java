@@ -437,7 +437,7 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
                       .map(Authorization::getOwnerType)
                       .filter(OwnerType.CLIENT::equals)
                       .toList();
-              assertThat(authorizations.size()).isEqualTo(10);
+              assertThat(authorizations.size()).isEqualTo(16);
             });
 
     // then
@@ -503,6 +503,45 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
                 OwnerType.CLIENT,
                 ResourceType.BATCH,
                 Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
+            tuple(
+                "operate-client",
+                OwnerType.CLIENT,
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.READ)),
+            tuple(
+                "operate-client",
+                OwnerType.CLIENT,
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.DELETE_PROCESS_INSTANCE,
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE)),
+            tuple(
+                "operate-client",
+                OwnerType.CLIENT,
+                ResourceType.BATCH,
+                Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
+            tuple(
+                "operate-client",
+                OwnerType.CLIENT,
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_FORM)),
+            tuple(
+                "operate-client",
+                OwnerType.CLIENT,
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.READ_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_DEFINITION)),
+            tuple(
+                "operate-client",
+                OwnerType.CLIENT,
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.READ)),
             tuple(
                 "tasklist-client",
                 OwnerType.CLIENT,
