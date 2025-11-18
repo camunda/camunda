@@ -513,6 +513,7 @@
       <column name="RESOURCE_TYPE" type="VARCHAR(255)"/>
       <column name="RESOURCE_MATCHER" type="SMALLINT"/>
       <column name="RESOURCE_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="RESOURCE_PROPERTY_NAME" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PERMISSION_TYPE" type="VARCHAR(255)"/>
     </createTable>
 

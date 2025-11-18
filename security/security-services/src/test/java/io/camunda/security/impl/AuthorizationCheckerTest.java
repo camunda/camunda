@@ -39,6 +39,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class AuthorizationCheckerTest {
 
+  private static final String EMPTY_STRING = "";
+
   private AuthorizationChecker authorizationChecker;
 
   @BeforeEach
@@ -109,6 +111,7 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ANY.value(),
               WILDCARD_RESOURCE_ID,
+              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       authorizationReader.create(
           new AuthorizationEntity(
@@ -118,6 +121,7 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ID.value(),
               RESOURCE_ID,
+              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       // client based authorizations
       authorizationReader.create(
@@ -128,6 +132,7 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ANY.value(),
               WILDCARD_RESOURCE_ID,
+              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       authorizationReader.create(
           new AuthorizationEntity(
@@ -137,6 +142,7 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ID.value(),
               RESOURCE_ID,
+              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       // mapping rule based authorizations
       authorizationReader.create(
@@ -147,6 +153,7 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ANY.value(),
               WILDCARD_RESOURCE_ID,
+              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       authorizationReader.create(
           new AuthorizationEntity(
@@ -156,6 +163,7 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ID.value(),
               RESOURCE_ID,
+              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
     }
 
@@ -781,6 +789,7 @@ public class AuthorizationCheckerTest {
           resourceType.name(),
           matcher.value(),
           resourceId,
+          EMPTY_STRING,
           permissionTypes);
     }
 
@@ -1132,6 +1141,7 @@ public class AuthorizationCheckerTest {
           resourceType.name(),
           matcher.value(),
           resourceId,
+          EMPTY_STRING,
           permissionTypes);
     }
 
