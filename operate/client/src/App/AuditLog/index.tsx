@@ -8,6 +8,7 @@
 
 import {useState, useMemo} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
+import {Link} from '@carbon/react';
 import {AuditLogFilters} from './Filters';
 import {
   type AuditLogSearchFilters,
@@ -18,13 +19,28 @@ import {
 } from 'modules/api/v2/auditLog/searchAuditLog';
 import {useAuditLog} from 'modules/queries/auditLog/useAuditLog';
 import {SortableTable} from 'modules/components/SortableTable';
-import {Stack} from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
+import {Information} from '@carbon/react/icons';
+import {ClassicBatch} from '@carbon/icons-react';
+import {DetailsModal} from './DetailsModal';
+import {StatusIndicator} from './StatusIndicator';
+import type {MockAuditLogEntry} from 'modules/mocks/auditLog';
+import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
+
+type DetailsModalState = {
+  open: boolean;
+  entry: MockAuditLogEntry | null;
+};
 
 const AuditLog: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
+    open: false,
+    entry: null,
+  });
 
   // Get sort from URL or use defaults
   const sortParams = getSortParams(location.search);
@@ -41,10 +57,6 @@ const AuditLog: React.FC = () => {
         ? Number(params.get('processDefinitionVersion'))
         : undefined,
       processInstanceKey: params.get('processInstanceKey') || undefined,
-      processInstanceState:
-        (params.get('processInstanceState') as
-          | AuditLogSearchFilters['processInstanceState']
-          | null) || undefined,
       operationType:
         (params.get('operationType') as
           | AuditLogSearchFilters['operationType']
@@ -59,12 +71,8 @@ const AuditLog: React.FC = () => {
       endDateTo: params.get('endDateTo') || undefined,
       user: params.get('user') || undefined,
       note: params.get('note') || undefined,
-      tenantId: params.get('tenantId') || undefined,
-      searchQuery: params.get('searchQuery') || undefined,
     };
   }, [location.search]);
-
-  const isTenancyEnabled = true; // Assumed enabled based on requirements
 
   // Helper function to update URL with new filters
   const updateFilters = (newFilters: AuditLogSearchFilters) => {
@@ -75,7 +83,6 @@ const AuditLog: React.FC = () => {
       'processDefinitionName',
       'processDefinitionVersion',
       'processInstanceKey',
-      'processInstanceState',
       'operationType',
       'operationState',
       'startDateFrom',
@@ -84,8 +91,6 @@ const AuditLog: React.FC = () => {
       'endDateTo',
       'user',
       'note',
-      'tenantId',
-      'searchQuery',
     ];
 
     // Remove all filter params first
@@ -123,6 +128,14 @@ const AuditLog: React.FC = () => {
 
   const {data, isLoading, error} = useAuditLog(request);
 
+  const openDetailsModal = (entry: MockAuditLogEntry) => {
+    setDetailsModal({open: true, entry});
+  };
+
+  const closeDetailsModal = () => {
+    setDetailsModal({open: false, entry: null});
+  };
+
   const formatOperationType = (type: string) => {
     return type
       .split('_')
@@ -130,46 +143,142 @@ const AuditLog: React.FC = () => {
       .join(' ');
   };
 
-  const formatOperationState = (state: string) => {
-    return state
-      .split('_')
-      .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-      .join(' ');
-  };
 
   const headers = [
     {key: 'operationType', header: 'Operation'},
+    {key: 'processes', header: 'Reference'},
     {key: 'operationState', header: 'Status'},
-    {key: 'processDefinitionName', header: 'Process'},
-    {key: 'startTimestamp', header: 'Start time'},
     {key: 'user', header: 'Applied by'},
-    {key: 'note', header: 'Note'},
+    {key: 'startTimestamp', header: 'Time'},
+    {key: 'actions', header: ' '},
   ];
 
   const rows = useMemo(
     () =>
-      data?.items.map((entry: AuditLogEntry) => ({
-        id: entry.id,
-        processDefinitionName: entry.processDefinitionName,
-        operationType: formatOperationType(entry.operationType),
-        operationState: formatOperationState(entry.operationState),
-        startTimestamp: formatDate(entry.startTimestamp),
-        user: entry.user,
-        note: entry.comment ? (
-          <div
-            style={{
-              maxWidth: '200px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {entry.comment}
-          </div>
-        ) : (
-          '-'
-        ),
-      })) || [],
+      data?.items.map((entry: AuditLogEntry) => {
+        const mockEntry = entry as MockAuditLogEntry;
+        
+        // Determine what to show in the "Reference" column
+        let processesDisplay: React.ReactNode;
+        
+        if (mockEntry.isMultiInstanceOperation) {
+          // For batch operations, show "Batch operation" text and batch key as link
+          processesDisplay = (
+            <div>
+              <div>Multiple instances</div>
+              {mockEntry.batchOperationId && (
+                <Link
+                  href="#"
+                  onClick={(e: React.MouseEvent) => e.preventDefault()}
+                  style={{
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  {mockEntry.batchOperationId}
+                </Link>
+              )}
+            </div>
+          );
+        } else if (
+          entry.operationType === 'DEPLOY_RESOURCE' ||
+          entry.operationType === 'DELETE_RESOURCE'
+        ) {
+          // For resource operations, show resource name and key
+          const resourceKey = mockEntry.details?.resourceKey;
+          const resourceType = mockEntry.details?.resourceType;
+          const isForm = resourceType === 'form';
+          const isDelete = entry.operationType === 'DELETE_RESOURCE';
+          
+          processesDisplay = (
+            <div>
+              <div>{entry.processDefinitionName}</div>
+              {resourceKey && (
+                isForm || isDelete ? (
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--cds-text-secondary)',
+                    }}
+                  >
+                    {resourceKey}
+                  </div>
+                ) : (
+                  <Link
+                    href="#"
+                    onClick={(e: React.MouseEvent) => e.preventDefault()}
+                    style={{
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    {resourceKey}
+                  </Link>
+                )
+              )}
+            </div>
+          );
+        } else if (entry.processDefinitionName) {
+          // For single operations, show process name with instance key as link
+          processesDisplay = (
+            <div>
+              <div>{entry.processDefinitionName}</div>
+              {entry.processInstanceKey && (
+                <Link
+                  href="#"
+                  onClick={(e: React.MouseEvent) => e.preventDefault()}
+                  style={{
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  {entry.processInstanceKey}
+                </Link>
+              )}
+            </div>
+          );
+        } else {
+          processesDisplay = '-';
+        }
+
+        return {
+          id: entry.id,
+          operationType: (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--cds-spacing-03)',
+              }}
+            >
+              {mockEntry.isMultiInstanceOperation && (
+                <span title="Batch operation">
+                  <ClassicBatch size={16} />
+                </span>
+              )}
+              <span>{formatOperationType(entry.operationType)}</span>
+            </div>
+          ),
+          operationState: <StatusIndicator status={entry.operationState} />,
+          processes: processesDisplay,
+          user: entry.user,
+          startTimestamp: formatDate(entry.startTimestamp),
+          actions: (
+            <button
+              type="button"
+              onClick={() => openDetailsModal(mockEntry)}
+              title="View details"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                color: 'var(--cds-text-primary)',
+              }}
+            >
+              <Information size={16} />
+            </button>
+          ),
+          entry: mockEntry,
+        };
+      }) || [],
     [data],
   );
 
@@ -232,51 +341,64 @@ const AuditLog: React.FC = () => {
   }, [rows, sortBy, sortOrder, data]);
 
   return (
-    <div
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
+    <>
+      <VisuallyHiddenH1>Audit Log</VisuallyHiddenH1>
       <div
         style={{
-          padding: '1rem',
-          paddingTop: '0.5rem',
-          flex: 1,
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
+          display: 'grid',
+          gridTemplateColumns: '320px 1fr',
+          height: '100%',
+          overflow: 'hidden',
         }}
       >
-        <Stack gap={5}>
-          <Stack orientation="vertical" gap={1}>
-            <div style={{padding: '1rem', paddingBottom: 0}}>
-              <h4 style={{marginBottom: '1rem'}}>Filter</h4>
-            </div>
+        {/* Left Panel - Filters */}
+        <div
+          style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 'var(--cds-spacing-05)',
+            borderRight: '1px solid var(--cds-border-subtle)',
+            backgroundColor: 'var(--cds-layer-01)',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            minWidth: 0,
+          }}
+        >
+          <h6 style={{marginBottom: 'var(--cds-spacing-05)'}}>Filter</h6>
+          <div style={{width: '100%', minWidth: 0}}>
             <AuditLogFilters
               filters={filtersFromUrl}
               onFiltersChange={(newFilters) => {
                 updateFilters(newFilters);
               }}
-              onSearchChange={(query) => {
-                updateFilters({...filtersFromUrl, searchQuery: query});
-              }}
-              isTenancyEnabled={isTenancyEnabled}
             />
-          </Stack>
+          </div>
+        </div>
 
-          <Stack orientation="vertical" gap={1}>
-            <div style={{padding: '1rem', paddingBottom: 0}}>
-              <h4 style={{marginBottom: '1rem'}}>Operations</h4>
-            </div>
+        {/* Right Panel - Table */}
+        <div
+          style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 'var(--cds-spacing-05)',
+            backgroundColor: 'var(--cds-layer)',
+            overflow: 'hidden',
+          }}
+        >
+          <h3 style={{marginBottom: 'var(--cds-spacing-06)'}}>Operations Log</h3>
+          <div style={{flex: 1, overflow: 'hidden'}}>
             <SortableTable
               state={isLoading ? 'skeleton' : error ? 'error' : 'content'}
               headerColumns={headers}
               rows={sortedRows}
-              columnsToRenderAsTags={['operationState']}
               onSort={(clickedSortKey) => {
+                // Don't allow sorting on actions column
+                if (clickedSortKey === 'actions') {
+                  return;
+                }
+
                 const newParams = new URLSearchParams(location.search);
                 const currentSort = getSortParams(location.search);
 
@@ -293,10 +415,16 @@ const AuditLog: React.FC = () => {
                 navigate({search: newParams.toString()}, {replace: true});
               }}
             />
-          </Stack>
-        </Stack>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <DetailsModal
+        open={detailsModal.open}
+        onClose={closeDetailsModal}
+        entry={detailsModal.entry}
+      />
+    </>
   );
 };
 

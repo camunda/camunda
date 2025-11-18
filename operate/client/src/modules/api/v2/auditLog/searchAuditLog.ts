@@ -10,6 +10,7 @@ import {requestWithThrow} from 'modules/request';
 
 // Operation Types
 export type OperationType =
+  | 'CREATE_PROCESS_INSTANCE'
   | 'RESOLVE_INCIDENT'
   | 'CANCEL_PROCESS_INSTANCE'
   | 'MIGRATE_PROCESS_INSTANCE'
@@ -19,8 +20,13 @@ export type OperationType =
   | 'ADD_VARIABLE'
   | 'UPDATE_VARIABLE'
   | 'DELETE_DECISION_DEFINITION'
+  | 'EVALUATE_DECISION'
   | 'COMPLETE_USER_TASK'
-  | 'ASSIGN_USER_TASK';
+  | 'ASSIGN_USER_TASK'
+  | 'UNASSIGN_USER_TASK'
+  | 'UPDATE_USER_TASK'
+  | 'DEPLOY_RESOURCE'
+  | 'DELETE_RESOURCE';
 
 // Operation States
 export type OperationState =
@@ -31,7 +37,9 @@ export type OperationState =
   | 'PARTIALLY_COMPLETED'
   | 'CANCELLED'
   | 'FAILED'
-  | 'SKIPPED';
+  | 'SKIPPED'
+  | 'success'
+  | 'fail';
 
 // Process Instance States
 export type ProcessInstanceState =

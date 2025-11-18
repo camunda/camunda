@@ -47,6 +47,7 @@ const getOperationStateType = (
     case 'Cancelled':
       return 'red';
     case 'Active':
+    case 'Activated':
       return 'blue';
     case 'Created':
       return 'cyan';

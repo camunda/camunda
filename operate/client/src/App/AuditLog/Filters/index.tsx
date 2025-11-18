@@ -6,13 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useCallback, useEffect, useMemo} from 'react';
+import {useCallback, useMemo} from 'react';
 import {
   Stack,
-  Search,
-  Dropdown,
   TextInput,
   FilterableMultiSelect,
+  ComboBox,
   Layer,
   DatePicker,
   DatePickerInput,
@@ -20,68 +19,91 @@ import {
 import type {
   OperationType,
   OperationState,
-  ProcessInstanceState,
   AuditLogSearchFilters,
 } from 'modules/api/v2/auditLog/searchAuditLog';
 import {observer} from 'mobx-react';
 
 const OPERATION_TYPES: {id: OperationType; label: string}[] = [
-  {id: 'RESOLVE_INCIDENT', label: 'Resolve incidents'},
+  {id: 'CREATE_PROCESS_INSTANCE', label: 'Create process instance'},
   {id: 'CANCEL_PROCESS_INSTANCE', label: 'Cancel process instance'},
-  {id: 'MIGRATE_PROCESS_INSTANCE', label: 'Migrate process instance'},
   {id: 'MODIFY_PROCESS_INSTANCE', label: 'Modify process instance'},
-  {id: 'DELETE_PROCESS_INSTANCE', label: 'Delete process instance'},
-  {id: 'DELETE_PROCESS_DEFINITION', label: 'Delete process definition'},
+  {id: 'MIGRATE_PROCESS_INSTANCE', label: 'Migrate process instance'},
+  {id: 'RESOLVE_INCIDENT', label: 'Resolve incident'},
   {id: 'ADD_VARIABLE', label: 'Add variable'},
   {id: 'UPDATE_VARIABLE', label: 'Update variable'},
-  {id: 'DELETE_DECISION_DEFINITION', label: 'Delete decision definition'},
+  {id: 'EVALUATE_DECISION', label: 'Evaluate decision'},
+  {id: 'DEPLOY_RESOURCE', label: 'Deploy resource'},
+  {id: 'DELETE_RESOURCE', label: 'Delete resource'},
 ];
 
 const OPERATION_STATES: {id: OperationState; label: string}[] = [
-  {id: 'CREATED', label: 'Created'},
-  {id: 'ACTIVE', label: 'Active'},
-  {id: 'SUSPENDED', label: 'Suspended'},
-  {id: 'COMPLETED', label: 'Completed'},
-  {id: 'PARTIALLY_COMPLETED', label: 'Partially completed'},
-  {id: 'CANCELLED', label: 'Cancelled'},
+  {id: 'success', label: 'Success'},
+  {id: 'fail', label: 'Failed'},
 ];
 
-const PROCESS_INSTANCE_STATES: {id: ProcessInstanceState; label: string}[] = [
-  {id: 'ACTIVE', label: 'Active'},
-  {id: 'COMPLETED', label: 'Completed'},
-  {id: 'CANCELED', label: 'Canceled'},
-  {id: 'INCIDENT', label: 'Incident'},
-  {id: 'TERMINATED', label: 'Terminated'},
-];
+// Process definitions with versions - in production, this would come from an API
+const PROCESS_DEFINITIONS_WITH_VERSIONS: Record<string, number[]> = {
+  'Order Process': [3, 2, 1],
+  'Payment Process': [2, 1],
+  'Claims Process': [2, 1],
+  'Fulfillment Process': [1],
+  'Check in process': [1],
+  'Process C': [2, 1],
+  'Pricing Process': [1],
+  'Decision Process': [1],
+  'Final process': [1],
+  'A test process': [1],
+  'B process': [1],
+  'another process': [1],
+  'testing process': [2, 1],
+  'process d': [3, 2, 1],
+};
+
+const PROCESS_DEFINITIONS = Object.keys(PROCESS_DEFINITIONS_WITH_VERSIONS);
 
 type AuditLogFiltersProps = {
   filters: AuditLogSearchFilters;
   onFiltersChange: (filters: AuditLogSearchFilters) => void;
-  onSearchChange: (query: string) => void;
-  isTenancyEnabled: boolean;
 };
 
 const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
-  ({filters, onFiltersChange, onSearchChange, isTenancyEnabled}) => {
-    const [localSearchQuery, setLocalSearchQuery] = useState(
-      filters.searchQuery || '',
-    );
-
-    // Debounce search
-    useEffect(() => {
-      const timeoutId = setTimeout(() => {
-        onSearchChange(localSearchQuery);
-      }, 300);
-
-      return () => clearTimeout(timeoutId);
-    }, [localSearchQuery, onSearchChange]);
-
+  ({filters, onFiltersChange}) => {
     const handleFilterChange = useCallback(
       (
         key: keyof AuditLogSearchFilters,
         value: string | number | undefined,
       ) => {
         onFiltersChange({...filters, [key]: value});
+      },
+      [filters, onFiltersChange],
+    );
+
+    // Get available versions for selected process
+    const availableVersions = useMemo(() => {
+      if (!filters.processDefinitionName) {
+        return [];
+      }
+      return PROCESS_DEFINITIONS_WITH_VERSIONS[filters.processDefinitionName] || [];
+    }, [filters.processDefinitionName]);
+
+    // Auto-select latest version when process definition changes
+    const handleProcessDefinitionChange = useCallback(
+      (selectedProcess: string | null) => {
+        if (selectedProcess) {
+          const versions = PROCESS_DEFINITIONS_WITH_VERSIONS[selectedProcess];
+          const latestVersion = versions?.[0]; // First item is the latest
+          onFiltersChange({
+            ...filters,
+            processDefinitionName: selectedProcess,
+            processDefinitionVersion: latestVersion,
+          });
+        } else {
+          onFiltersChange({
+            ...filters,
+            processDefinitionName: undefined,
+            processDefinitionVersion: undefined,
+          });
+        }
       },
       [filters, onFiltersChange],
     );
@@ -105,33 +127,38 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
 
     return (
       <Layer>
-        <Stack gap={5}>
-          {/* Filter row 1 - Main filters */}
-          <Stack orientation="horizontal" gap={5}>
-            <TextInput
+        <Stack gap={8} orientation="vertical" style={{width: '100%'}}>
+          <Stack gap={5} orientation="vertical" style={{width: '100%'}}>
+            <ComboBox
               id="process-definition-name"
-              labelText="Process definition name"
-              placeholder="All processes"
-              value={filters.processDefinitionName || ''}
-              onChange={(e) =>
-                handleFilterChange('processDefinitionName', e.target.value)
+              titleText="Process definition"
+              placeholder="Search by process definition"
+              items={PROCESS_DEFINITIONS}
+              selectedItem={filters.processDefinitionName || null}
+              onChange={({selectedItem}) =>
+                handleProcessDefinitionChange(selectedItem ?? null)
               }
               size="sm"
+              style={{width: '100%'}}
             />
-            <TextInput
+            <ComboBox
               id="process-definition-version"
-              labelText="Version"
-              type="number"
-              placeholder="All versions"
-              value={filters.processDefinitionVersion || ''}
-              onChange={(e) =>
-                handleFilterChange(
-                  'processDefinitionVersion',
-                  e.target.value ? Number(e.target.value) : undefined,
-                )
+              titleText="Version"
+              placeholder={
+                filters.processDefinitionName ? 'Select version' : 'Select a process first'
               }
+              items={availableVersions}
+              selectedItem={
+                filters.processDefinitionVersion !== undefined
+                  ? filters.processDefinitionVersion
+                  : null
+              }
+              onChange={({selectedItem}) =>
+                handleFilterChange('processDefinitionVersion', selectedItem ?? undefined)
+              }
+              disabled={!filters.processDefinitionName}
               size="sm"
-              style={{maxWidth: '150px'}}
+              style={{width: '100%'}}
             />
             <TextInput
               id="process-instance-key"
@@ -142,62 +169,44 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                 handleFilterChange('processInstanceKey', e.target.value)
               }
               size="sm"
-            />
-            <Dropdown
-              id="process-instance-state"
-              titleText="Process instance state"
-              label="Choose option(s)"
-              items={PROCESS_INSTANCE_STATES}
-              itemToString={(item) => item?.label ?? ''}
-              selectedItem={
-                filters.processInstanceState
-                  ? PROCESS_INSTANCE_STATES.find(
-                      (s) => s.id === filters.processInstanceState,
-                    )
-                  : null
-              }
-              onChange={({selectedItem}) =>
-                handleFilterChange(
-                  'processInstanceState',
-                  selectedItem?.id ?? undefined,
-                )
-              }
-              size="sm"
+              style={{width: '100%'}}
             />
           </Stack>
-
-          {/* Filter row 2 - Operation, dates, user */}
-          <Stack orientation="horizontal" gap={5}>
-            <FilterableMultiSelect
-              id="operation-type"
-              titleText="Operation type"
-              placeholder="Choose option(s)"
-              items={OPERATION_TYPES}
-              itemToString={(item) => item?.label ?? ''}
-              selectedItems={selectedOperationTypes}
-              onChange={({selectedItems}) =>
-                handleFilterChange(
-                  'operationType',
-                  selectedItems[0]?.id ?? undefined,
-                )
-              }
-              size="sm"
-            />
-            <FilterableMultiSelect
-              id="operation-state"
-              titleText="Operation status"
-              placeholder="Choose option(s)"
-              items={OPERATION_STATES}
-              itemToString={(item) => item?.label ?? ''}
-              selectedItems={selectedOperationStates}
-              onChange={({selectedItems}) =>
-                handleFilterChange(
-                  'operationState',
-                  selectedItems[0]?.id ?? undefined,
-                )
-              }
-              size="sm"
-            />
+          <Stack gap={5} orientation="vertical" style={{width: '100%'}}>
+            <div style={{width: '100%'}}>
+              <FilterableMultiSelect
+                id="operation-type"
+                titleText="Operation type"
+                placeholder="Choose option(s)"
+                items={OPERATION_TYPES}
+                itemToString={(item) => item?.label ?? ''}
+                selectedItems={selectedOperationTypes}
+                onChange={({selectedItems}) =>
+                  handleFilterChange(
+                    'operationType',
+                    selectedItems[0]?.id ?? undefined,
+                  )
+                }
+                size="sm"
+              />
+            </div>
+            <div style={{width: '100%'}}>
+              <FilterableMultiSelect
+                id="operation-state"
+                titleText="Operation status"
+                placeholder="Choose option(s)"
+                items={OPERATION_STATES}
+                itemToString={(item) => item?.label ?? ''}
+                selectedItems={selectedOperationStates}
+                onChange={({selectedItems}) =>
+                  handleFilterChange(
+                    'operationState',
+                    selectedItems[0]?.id ?? undefined,
+                  )
+                }
+                size="sm"
+              />
+            </div>
             <DatePicker
               datePickerType="range"
               value={[filters.startDateFrom || '', filters.startDateTo || '']}
@@ -206,49 +215,31 @@ const AuditLogFilters: React.FC<AuditLogFiltersProps> = observer(
                 handleFilterChange('startDateFrom', startDate?.toISOString() || '');
                 handleFilterChange('startDateTo', endDate?.toISOString() || '');
               }}
+              style={{width: '100%'}}
             >
               <DatePickerInput
                 id="start-date"
-                labelText="From"
+                labelText="Start date"
                 placeholder="mm/dd/yyyy"
                 size="sm"
               />
               <DatePickerInput
                 id="end-date"
-                labelText="To"
+                labelText="End date"
                 placeholder="mm/dd/yyyy"
                 size="sm"
               />
             </DatePicker>
             <TextInput
               id="user"
-              labelText="User"
-              placeholder="Filter by user"
+              labelText="Applied by"
+              placeholder="Filter by user or client"
               value={filters.user || ''}
               onChange={(e) => handleFilterChange('user', e.target.value)}
               size="sm"
+              style={{width: '100%'}}
             />
-            {isTenancyEnabled && (
-              <TextInput
-                id="tenant-id"
-                labelText="Tenant id"
-                placeholder="Filter by tenant"
-                value={filters.tenantId || ''}
-                onChange={(e) => handleFilterChange('tenantId', e.target.value)}
-                size="sm"
-              />
-            )}
           </Stack>
-
-          {/* Search bar - below filters as per design */}
-          <Search
-            labelText="Search"
-            placeholder="Search user or comment"
-            value={localSearchQuery}
-            onChange={(e) => setLocalSearchQuery(e.target.value)}
-            onClear={() => setLocalSearchQuery('')}
-            size="sm"
-          />
         </Stack>
       </Layer>
     );

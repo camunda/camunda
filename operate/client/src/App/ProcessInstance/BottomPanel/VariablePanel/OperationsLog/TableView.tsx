@@ -18,9 +18,8 @@ import {
   TableBody,
   TableCell,
   Dropdown,
-  Tag,
 } from '@carbon/react';
-import {Information} from '@carbon/react/icons';
+import {Information, CheckmarkFilled, ErrorFilled} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';
 import {DetailsModal} from './DetailsModal';
 import {mockOperationLog} from './mocks';
@@ -36,16 +35,29 @@ type DetailsModalState = {
   entry: MockAuditLogEntry | null;
 };
 
-const getOperationStateType = (
-  state: string,
-): 'green' | 'red' => {
+const getOperationStateIcon = (state: string) => {
   switch (state) {
-    case 'Completed':
-      return 'green';
-    case 'Failed':
-      return 'red';
+    case 'success':
+      return (
+        <CheckmarkFilled
+          size={16}
+          style={{color: 'var(--cds-support-success)'}}
+        />
+      );
+    case 'fail':
+      return (
+        <ErrorFilled
+          size={16}
+          style={{color: 'var(--cds-support-error)'}}
+        />
+      );
     default:
-      return 'green';
+      return (
+        <CheckmarkFilled
+          size={16}
+          style={{color: 'var(--cds-support-success)'}}
+        />
+      );
   }
 };
 
@@ -94,9 +106,8 @@ const OperationsLogTable: React.FC = observer(() => {
 
   const headers = [
     {key: 'operationType', header: 'Operation'},
-    {key: 'operationState', header: 'Status'},
     {key: 'user', header: 'Applied by'},
-    {key: 'startTimestamp', header: 'Start Time'},
+    {key: 'startTimestamp', header: 'Time'},
     {key: 'actions', header: ' '},
   ];
 
@@ -214,15 +225,19 @@ const OperationsLogTable: React.FC = observer(() => {
                   return (
                     <TableRow {...rowProps} key={key}>
                       {row.cells.map((cell) => {
-                        if (cell.info.header === 'operationState') {
+                        if (cell.info.header === 'operationType') {
                           return (
                             <TableCell key={cell.id}>
-                              <Tag
-                                type={getOperationStateType(cell.value)}
-                                size="md"
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 'var(--cds-spacing-03)',
+                                }}
                               >
-                                {cell.value}
-                              </Tag>
+                                {rowData && getOperationStateIcon(rowData.entry.operationState)}
+                                <span>{cell.value}</span>
+                              </div>
                             </TableCell>
                           );
                         }
