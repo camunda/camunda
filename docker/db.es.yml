@@ -1,0 +1,43 @@
+# This file is not meant to be used directly, but in composition with the root docker-compose.yml
+# If you wish to launch OC with ES as DB, then you would run:
+# docker compose -f oc.yml -f db.es.yml up -d
+services:
+  oc:
+    extends:
+      file: ./oc.yml
+      service: oc
+    configs:
+      - source: db-es
+        target: /usr/local/camunda/config/additional/db/application.yml
+    depends_on:
+      elastic:
+        condition: service_healthy
+  elastic:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.6
+    environment:
+      - ES_JAVA_OPTS=-Xmx2147483648
+      - action.auto_create_index=true
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - action.destructive_requires_name=false
+      - indices.lifecycle.poll_interval=1s
+    ports:
+      - 9200:9200
+    networks:
+      - camunda
+    volumes:
+      - elastic:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD", "curl", "--silent", "--fail", "http://localhost:9200/_cluster/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+      start_interval: 5s
+
+volumes:
+  elastic:
+
+configs:
+  db-es:
+    file: ./config/db.es.yml

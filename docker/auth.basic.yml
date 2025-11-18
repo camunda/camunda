@@ -1,0 +1,15 @@
+# This file is not meant to be used directly, but in composition with the root docker-compose.yml
+# If you wish to launch OC with basic auth, then you would run:
+# docker compose -f oc.yml -f auth.basic.yml up -d
+services:
+  oc:
+    extends:
+      file: ./oc.yml
+      service: oc
+    configs:
+      - source: auth-basic
+        target: /usr/local/camunda/config/additional/auth/application.yml
+
+configs:
+  auth-basic:
+    file: ./config/auth.basic.yml

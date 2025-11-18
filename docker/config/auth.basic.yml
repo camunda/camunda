@@ -1,0 +1,14 @@
+camunda.security:
+  authorizations:
+    enabled: true
+  authentication:
+    method: basic
+    unprotected-api: false
+  initialization:
+    users:
+      - username: demo
+        password: demo
+    default-roles:
+      admin:
+        users:
+          - demo

@@ -1,0 +1,7 @@
+camunda.data.secondary-storage:
+  type: elasticsearch
+  autoconfigure-camunda-exporter: true
+  elasticsearch:
+    url: http://elastic:9200
+    history:
+      process-instance-enabled: true

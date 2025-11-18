@@ -1,0 +1,9 @@
+zeebe:
+  broker:
+    gateway:
+      enabled: true
+    cluster:
+      nodeId: 0
+      partitionsCount: 1
+      replicationFactor: 1
+      clusterSize: 1

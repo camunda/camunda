@@ -1,0 +1,51 @@
+# Base docker compose file for a single node Orchestration Cluster
+# By default will not start properly, and you need to configure it with additional files, e.g.
+# docker compose -f oc.yml -f db.es.yml -f auth.basic.yml up -d
+name: oc
+
+networks:
+  camunda: { }
+
+services:
+  oc:
+    image: camunda/camunda:${CAMUNDA_VERSION:-}
+    build:
+      context: ../
+      args:
+        - DISTBALL=dist/target/camunda-zeebe-*-SNAPSHOT.tar.gz
+      dockerfile: camunda.Dockerfile
+    ports:
+      - 8080:8080 # REST
+      - 26500:26500 # gRPC
+      - 9600:9600 # actuators
+    environment:
+      - SPRING_CONFIG_ADDITIONALLOCATION=file:/usr/local/camunda/config/additional/*/
+    env_file:
+      - path: .env
+        required: true
+    configs:
+      - source: application
+        target: /usr/local/camunda/config/additional/application.yml
+    depends_on:
+      elastic:
+        condition: service_healthy
+    networks:
+      - camunda
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - oc:/usr/local/camunda/data
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 10s bash -c ':> /dev/tcp/127.0.0.1/9600' || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  oc:
+
+configs:
+  application:
+    file: ./config/application.yml
