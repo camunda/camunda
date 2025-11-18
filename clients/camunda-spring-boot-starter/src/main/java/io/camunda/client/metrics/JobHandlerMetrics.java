@@ -15,17 +15,21 @@
  */
 package io.camunda.client.metrics;
 
-import java.util.Map;
-
-public interface MetricsContext {
-
-  String getName();
-
-  Map<String, String> getTags();
-
-  interface CounterMetricsContext extends MetricsContext {
-    int getCount();
+public interface JobHandlerMetrics {
+  interface Action {
+    String ACTIVATED = "activated";
+    String COMPLETED = "completed";
+    String FAILED = "failed";
+    String BPMN_ERROR = "bpmn-error";
   }
 
-  interface TimerMetricsContext extends MetricsContext {}
+  interface Name {
+    String INVOCATION = "camunda.job.invocations";
+    String EXECUTION_TIME = "camunda.job.execution-time";
+  }
+
+  interface Tag {
+    String TYPE = "type";
+    String ACTION = "action";
+  }
 }

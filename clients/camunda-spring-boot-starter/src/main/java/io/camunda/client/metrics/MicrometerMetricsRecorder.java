@@ -22,17 +22,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MicrometerMetricsRecorder extends AbstractMetricsRecorder {
-
+public class MicrometerMetricsRecorder implements MetricsRecorder {
   private static final Logger LOGGER = LoggerFactory.getLogger(MicrometerMetricsRecorder.class);
-
   private final MeterRegistry meterRegistry;
   private final Map<String, Counter> counters = new ConcurrentHashMap<>();
 
@@ -41,31 +37,53 @@ public class MicrometerMetricsRecorder extends AbstractMetricsRecorder {
     this.meterRegistry = meterRegistry;
   }
 
-  protected Counter newCounter(final String metricName, final Tags tags) {
-    return meterRegistry.counter(metricName, tags);
+  private static String getKey(final String name, final Tags tags) {
+    return name
+        + "######"
+        + String.join("#", tags.stream().map(e -> e.getKey() + "=" + e.getValue()).toList());
   }
 
   @Override
-  protected void increase(final CounterMetricsContext context, final String action) {
-    final String key = MetricsContext.getKey(context.getName(), action, context.getTags());
-    final Counter counter =
-        counters.computeIfAbsent(
-            key, k -> newCounter(context.getName(), fromEntries(context.getTags(), action)));
-    counter.increment(context.getCount());
+  public void increaseActivated(final CounterMetricsContext context) {
+    increaseCounter(context, JobHandlerMetrics.Action.ACTIVATED);
   }
 
-  private static Tags fromEntries(final List<Entry<String, String>> entries) {
-    return Tags.of(entries.stream().map(e -> Tag.of(e.getKey(), e.getValue())).toList());
+  @Override
+  public void increaseCompleted(final CounterMetricsContext context) {
+    increaseCounter(context, JobHandlerMetrics.Action.COMPLETED);
   }
 
-  private static Tags fromEntries(final List<Entry<String, String>> entries, final String action) {
-    return Tags.concat(
-        entries.stream().map(e -> Tag.of(e.getKey(), e.getValue())).toList(), "action", action);
+  @Override
+  public void increaseFailed(final CounterMetricsContext context) {
+    increaseCounter(context, JobHandlerMetrics.Action.FAILED);
+  }
+
+  @Override
+  public void increaseBpmnError(final CounterMetricsContext context) {
+    increaseCounter(context, JobHandlerMetrics.Action.BPMN_ERROR);
   }
 
   @Override
   public void executeWithTimer(final TimerMetricsContext context, final Runnable methodToExecute) {
     final Timer timer = meterRegistry.timer(context.getName(), fromEntries(context.getTags()));
     timer.record(methodToExecute);
+  }
+
+  protected void increaseCounter(final CounterMetricsContext context, final String action) {
+    final Tags tags = fromEntries(context.getTags(), action);
+    final String key = getKey(context.getName(), tags);
+    final Counter counter =
+        counters.computeIfAbsent(
+            key,
+            k -> meterRegistry.counter(context.getName(), fromEntries(context.getTags(), action)));
+    counter.increment(context.getCount());
+  }
+
+  private static Tags fromEntries(final Map<String, String> entries) {
+    return Tags.of(entries.entrySet().stream().map(e -> Tag.of(e.getKey(), e.getValue())).toList());
+  }
+
+  private static Tags fromEntries(final Map<String, String> entries, final String action) {
+    return Tags.concat(fromEntries(entries), JobHandlerMetrics.Tag.ACTION, action);
   }
 }

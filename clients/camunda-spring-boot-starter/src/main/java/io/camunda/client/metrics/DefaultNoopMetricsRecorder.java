@@ -23,15 +23,30 @@ import io.camunda.client.metrics.MetricsContext.TimerMetricsContext;
  * replace this by a proper Micrometer implementation as you can find in the starter module
  * (activated if Actuator is on the classpath)
  */
-public class DefaultNoopMetricsRecorder extends AbstractMetricsRecorder {
+public class DefaultNoopMetricsRecorder implements MetricsRecorder {
+
+  @Override
+  public void increaseActivated(final CounterMetricsContext context) {
+    // ignore
+  }
+
+  @Override
+  public void increaseCompleted(final CounterMetricsContext context) {
+    // ignore
+  }
+
+  @Override
+  public void increaseFailed(final CounterMetricsContext context) {
+    // ignore
+  }
+
+  @Override
+  public void increaseBpmnError(final CounterMetricsContext context) {
+    // ignore
+  }
 
   @Override
   public void executeWithTimer(final TimerMetricsContext context, final Runnable methodToExecute) {
     methodToExecute.run();
-  }
-
-  @Override
-  protected void increase(final CounterMetricsContext context, final String action) {
-    // ignore
   }
 }

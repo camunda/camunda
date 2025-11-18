@@ -15,22 +15,17 @@
  */
 package io.camunda.client.metrics;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
+import java.util.Collections;
+import java.util.Map;
 
 public class DefaultMetricsContext implements MetricsContext {
   private final String name;
-  private final List<Entry<String, String>> tags;
+  private final Map<String, String> tags;
 
-  public DefaultMetricsContext(final String name, final List<Entry<String, String>> tags) {
+  public DefaultMetricsContext(final String name, final Map<String, String> tags) {
     this.name = name;
-    this.tags = new ArrayList<>(tags);
+    this.tags = Collections.unmodifiableMap(tags);
   }
-
-  //  public DefaultMetricsContext(final ActivatedJob job) {
-  //      this(List.of("camunda.job.invocations"), List.of(Map.entry("type",job.getType())));
-  //    }
 
   @Override
   public String getName() {
@@ -38,28 +33,18 @@ public class DefaultMetricsContext implements MetricsContext {
   }
 
   @Override
-  public List<Entry<String, String>> getTags() {
+  public Map<String, String> getTags() {
     return tags;
   }
 
   public static class DefaultCounterMetricsContext extends DefaultMetricsContext
       implements CounterMetricsContext {
     private final int count;
-    private final List<String> aliases;
 
     public DefaultCounterMetricsContext(
-        final String name,
-        final List<String> aliases,
-        final List<Entry<String, String>> tags,
-        final int count) {
+        final String name, final Map<String, String> tags, final int count) {
       super(name, tags);
       this.count = count;
-      this.aliases = aliases;
-    }
-
-    @Override
-    public List<String> getAliases() {
-      return aliases;
     }
 
     @Override
@@ -71,7 +56,7 @@ public class DefaultMetricsContext implements MetricsContext {
   public static class DefaultTimerMetricsContext extends DefaultMetricsContext
       implements TimerMetricsContext {
 
-    public DefaultTimerMetricsContext(final String name, final List<Entry<String, String>> tags) {
+    public DefaultTimerMetricsContext(final String name, final Map<String, String> tags) {
       super(name, tags);
     }
   }
