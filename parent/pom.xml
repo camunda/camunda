@@ -716,6 +716,12 @@
         <scope>test</scope>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>microbenchmarks</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- Tasklist Modules -->
       <dependency>
         <groupId>io.camunda</groupId>
