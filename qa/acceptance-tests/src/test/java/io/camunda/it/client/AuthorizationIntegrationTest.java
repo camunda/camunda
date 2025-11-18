@@ -7,6 +7,8 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.client.api.search.enums.PermissionType.CREATE;
+import static io.camunda.it.client.AuthorizationIntegrationTest.AuthorizationRequestParam.idBased;
 import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -76,23 +78,16 @@ public class AuthorizationIntegrationTest {
 
   @ParameterizedTest
   @MethodSource("getValidAuthorizationRequest")
-  void shouldCreateAndGetAuthorizationByAuthorizationKey(
-      final OwnerType ownerType,
-      final ResourceType resourceType,
-      final String ownerId,
-      final String resourceId) {
-    // given
-    final PermissionType permissionType = PermissionType.CREATE;
-
+  void shouldCreateAndGetAuthorizationByAuthorizationKey(final AuthorizationRequestParam request) {
     // when
     final CreateAuthorizationResponse authorization =
         camundaClient
             .newCreateAuthorizationCommand()
-            .ownerId(ownerId)
-            .ownerType(ownerType)
-            .resourceId(resourceId)
-            .resourceType(resourceType)
-            .permissionTypes(permissionType)
+            .ownerId(request.ownerId)
+            .ownerType(request.ownerType)
+            .resourceId(request.resourceId)
+            .resourceType(request.resourceType)
+            .permissionTypes(request.permissionType)
             .send()
             .join();
     final long authorizationKey = authorization.getAuthorizationKey();
@@ -107,34 +102,27 @@ public class AuthorizationIntegrationTest {
                   camundaClient.newAuthorizationGetRequest(authorizationKey).send().join();
               assertThat(retrievedAuthorization.getAuthorizationKey())
                   .isEqualTo(String.valueOf(authorizationKey));
-              assertThat(retrievedAuthorization.getResourceId()).isEqualTo(resourceId);
-              assertThat(retrievedAuthorization.getResourceType()).isEqualTo(resourceType);
-              assertThat(retrievedAuthorization.getOwnerId()).isEqualTo(ownerId);
-              assertThat(retrievedAuthorization.getOwnerType()).isEqualTo(ownerType);
+              assertThat(retrievedAuthorization.getResourceId()).isEqualTo(request.resourceId);
+              assertThat(retrievedAuthorization.getResourceType()).isEqualTo(request.resourceType);
+              assertThat(retrievedAuthorization.getOwnerId()).isEqualTo(request.ownerId);
+              assertThat(retrievedAuthorization.getOwnerType()).isEqualTo(request.ownerType);
               assertThat(retrievedAuthorization.getPermissionTypes())
-                  .isEqualTo(List.of(permissionType));
+                  .isEqualTo(List.of(request.permissionType));
             });
   }
 
   @ParameterizedTest
   @MethodSource("getValidAuthorizationRequest")
-  void shouldUpdateValidAuthorizationByAuthorizationKey(
-      final OwnerType ownerType,
-      final ResourceType resourceType,
-      final String ownerId,
-      final String resourceId) {
-    // given
-    final PermissionType permissionType = PermissionType.CREATE;
-
+  void shouldUpdateValidAuthorizationByAuthorizationKey(final AuthorizationRequestParam request) {
     // when
     final CreateAuthorizationResponse authorization =
         camundaClient
             .newCreateAuthorizationCommand()
-            .ownerId(ownerId)
-            .ownerType(ownerType)
-            .resourceId(resourceId)
+            .ownerId(request.ownerId)
+            .ownerType(request.ownerType)
+            .resourceId(request.resourceId)
             .resourceType(ResourceType.AUTHORIZATION)
-            .permissionTypes(permissionType)
+            .permissionTypes(request.permissionType)
             .send()
             .join();
     final long authorizationKey = authorization.getAuthorizationKey();
@@ -153,11 +141,11 @@ public class AuthorizationIntegrationTest {
             });
     camundaClient
         .newUpdateAuthorizationCommand(authorizationKey)
-        .ownerId(ownerId)
-        .ownerType(ownerType)
-        .resourceId(resourceId)
-        .resourceType(resourceType)
-        .permissionTypes(permissionType)
+        .ownerId(request.ownerId)
+        .ownerType(request.ownerType)
+        .resourceId(request.resourceId)
+        .resourceType(request.resourceType)
+        .permissionTypes(request.permissionType)
         .send()
         .join();
     Awaitility.await()
@@ -168,12 +156,12 @@ public class AuthorizationIntegrationTest {
                   camundaClient.newAuthorizationGetRequest(authorizationKey).send().join();
               assertThat(retrievedAuthorization.getAuthorizationKey())
                   .isEqualTo(String.valueOf(authorizationKey));
-              assertThat(retrievedAuthorization.getResourceId()).isEqualTo(resourceId);
-              assertThat(retrievedAuthorization.getResourceType()).isEqualTo(resourceType);
-              assertThat(retrievedAuthorization.getOwnerId()).isEqualTo(ownerId);
-              assertThat(retrievedAuthorization.getOwnerType()).isEqualTo(ownerType);
+              assertThat(retrievedAuthorization.getResourceId()).isEqualTo(request.resourceId);
+              assertThat(retrievedAuthorization.getResourceType()).isEqualTo(request.resourceType);
+              assertThat(retrievedAuthorization.getOwnerId()).isEqualTo(request.ownerId);
+              assertThat(retrievedAuthorization.getOwnerType()).isEqualTo(request.ownerType);
               assertThat(retrievedAuthorization.getPermissionTypes())
-                  .isEqualTo(List.of(permissionType));
+                  .isEqualTo(List.of(request.permissionType));
             });
   }
 
@@ -187,9 +175,7 @@ public class AuthorizationIntegrationTest {
       final String ownerId,
       final String resourceId,
       final String message) {
-    // given
-    final PermissionType permissionType = PermissionType.CREATE;
-
+    // when - then
     assertThatThrownBy(
             () ->
                 camundaClient
@@ -198,7 +184,7 @@ public class AuthorizationIntegrationTest {
                     .ownerType(ownerType)
                     .resourceId(resourceId)
                     .resourceType(resourceType)
-                    .permissionTypes(permissionType)
+                    .permissionTypes(CREATE)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -231,7 +217,7 @@ public class AuthorizationIntegrationTest {
             .ownerType(OwnerType.USER)
             .resourceId(Strings.newRandomValidIdentityId())
             .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(PermissionType.CREATE)
+            .permissionTypes(CREATE)
             .send()
             .join();
 
@@ -242,7 +228,7 @@ public class AuthorizationIntegrationTest {
         .ownerType(OwnerType.USER)
         .resourceId(Strings.newRandomValidIdentityId())
         .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(PermissionType.CREATE)
+        .permissionTypes(CREATE)
         .send()
         .join();
 
@@ -275,7 +261,7 @@ public class AuthorizationIntegrationTest {
             .ownerType(OwnerType.USER)
             .resourceId(resourceId)
             .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(PermissionType.CREATE)
+            .permissionTypes(CREATE)
             .send()
             .join();
 
@@ -286,7 +272,7 @@ public class AuthorizationIntegrationTest {
         .ownerType(OwnerType.USER)
         .resourceId("someOtherId")
         .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(PermissionType.CREATE)
+        .permissionTypes(CREATE)
         .send()
         .join();
 
@@ -316,7 +302,7 @@ public class AuthorizationIntegrationTest {
         .ownerType(OwnerType.USER)
         .resourceId(Strings.newRandomValidIdentityId())
         .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(PermissionType.CREATE)
+        .permissionTypes(CREATE)
         .send()
         .join();
 
@@ -327,7 +313,7 @@ public class AuthorizationIntegrationTest {
         .ownerType(OwnerType.USER)
         .resourceId(Strings.newRandomValidIdentityId())
         .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(PermissionType.CREATE)
+        .permissionTypes(CREATE)
         .send()
         .join();
 
@@ -357,7 +343,7 @@ public class AuthorizationIntegrationTest {
             .ownerType(OwnerType.USER)
             .resourceId("resource-zebra")
             .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(PermissionType.CREATE)
+            .permissionTypes(CREATE)
             .send();
 
     final var future2 =
@@ -367,7 +353,7 @@ public class AuthorizationIntegrationTest {
             .ownerType(OwnerType.USER)
             .resourceId("resource-alpha")
             .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(PermissionType.CREATE)
+            .permissionTypes(CREATE)
             .send();
 
     final var future3 =
@@ -377,7 +363,7 @@ public class AuthorizationIntegrationTest {
             .ownerType(OwnerType.USER)
             .resourceId("resource-beta")
             .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(PermissionType.CREATE)
+            .permissionTypes(CREATE)
             .send();
 
     CompletableFuture.allOf(
@@ -418,31 +404,37 @@ public class AuthorizationIntegrationTest {
     assertThat(searchResponse.items()).isEmpty();
   }
 
-  public static Stream<Arguments> getValidAuthorizationRequest() {
+  public static Stream<AuthorizationRequestParam> getValidAuthorizationRequest() {
     return Stream.of(
-        Arguments.of(OwnerType.USER, ResourceType.RESOURCE, USER_ID_1, "resource1"),
-        Arguments.of(OwnerType.USER, ResourceType.RESOURCE, USER_ID_1, "*"),
-        Arguments.of(OwnerType.ROLE, ResourceType.RESOURCE, ROLE_ID_1, "resource1"),
-        Arguments.of(OwnerType.ROLE, ResourceType.RESOURCE, ROLE_ID_1, "*"),
-        Arguments.of(OwnerType.GROUP, ResourceType.RESOURCE, GROUP_ID_1, "resource1"),
-        Arguments.of(OwnerType.GROUP, ResourceType.RESOURCE, GROUP_ID_1, "*"),
-        Arguments.of(
-            OwnerType.CLIENT, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "*"),
-        Arguments.of(
+        idBased(OwnerType.USER, ResourceType.RESOURCE, USER_ID_1, "resource1", CREATE),
+        idBased(OwnerType.USER, ResourceType.RESOURCE, USER_ID_1, "*", CREATE),
+        idBased(OwnerType.ROLE, ResourceType.RESOURCE, ROLE_ID_1, "resource1", CREATE),
+        idBased(OwnerType.ROLE, ResourceType.RESOURCE, ROLE_ID_1, "*", CREATE),
+        idBased(OwnerType.GROUP, ResourceType.RESOURCE, GROUP_ID_1, "resource1", CREATE),
+        idBased(OwnerType.GROUP, ResourceType.RESOURCE, GROUP_ID_1, "*", CREATE),
+        idBased(
             OwnerType.CLIENT,
             ResourceType.RESOURCE,
             Strings.newRandomValidIdentityId(),
-            "resource1"),
-        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.RESOURCE, MAPPING_RULE_ID_1, "resource1"),
-        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.RESOURCE, MAPPING_RULE_ID_1, "*"),
-        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.USER, MAPPING_RULE_ID_1, USER_ID_1),
-        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.USER, MAPPING_RULE_ID_1, "*"),
-        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.ROLE, MAPPING_RULE_ID_1, ROLE_ID_1),
-        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.ROLE, MAPPING_RULE_ID_1, "*"),
-        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.GROUP, MAPPING_RULE_ID_1, GROUP_ID_1),
-        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.GROUP, MAPPING_RULE_ID_1, "*"),
-        Arguments.of(OwnerType.ROLE, ResourceType.MAPPING_RULE, ROLE_ID_1, MAPPING_RULE_ID_1),
-        Arguments.of(OwnerType.ROLE, ResourceType.MAPPING_RULE, ROLE_ID_1, "*"));
+            "*",
+            CREATE),
+        idBased(
+            OwnerType.CLIENT,
+            ResourceType.RESOURCE,
+            Strings.newRandomValidIdentityId(),
+            "resource1",
+            CREATE),
+        idBased(
+            OwnerType.MAPPING_RULE, ResourceType.RESOURCE, MAPPING_RULE_ID_1, "resource1", CREATE),
+        idBased(OwnerType.MAPPING_RULE, ResourceType.RESOURCE, MAPPING_RULE_ID_1, "*", CREATE),
+        idBased(OwnerType.MAPPING_RULE, ResourceType.USER, MAPPING_RULE_ID_1, USER_ID_1, CREATE),
+        idBased(OwnerType.MAPPING_RULE, ResourceType.USER, MAPPING_RULE_ID_1, "*", CREATE),
+        idBased(OwnerType.MAPPING_RULE, ResourceType.ROLE, MAPPING_RULE_ID_1, ROLE_ID_1, CREATE),
+        idBased(OwnerType.MAPPING_RULE, ResourceType.ROLE, MAPPING_RULE_ID_1, "*", CREATE),
+        idBased(OwnerType.MAPPING_RULE, ResourceType.GROUP, MAPPING_RULE_ID_1, GROUP_ID_1, CREATE),
+        idBased(OwnerType.MAPPING_RULE, ResourceType.GROUP, MAPPING_RULE_ID_1, "*", CREATE),
+        idBased(OwnerType.ROLE, ResourceType.MAPPING_RULE, ROLE_ID_1, MAPPING_RULE_ID_1, CREATE),
+        idBased(OwnerType.ROLE, ResourceType.MAPPING_RULE, ROLE_ID_1, "*", CREATE));
   }
 
   public static Stream<Arguments> getInvalidAuthorizationCreateRequest() {
@@ -471,5 +463,38 @@ public class AuthorizationIntegrationTest {
             Strings.newRandomValidIdentityId(),
             "*",
             "a role with this ID does not exist"));
+  }
+
+  public record AuthorizationRequestParam(
+      OwnerType ownerType,
+      ResourceType resourceType,
+      String ownerId,
+      String resourceId,
+      String resourcePropertyName,
+      PermissionType permissionType) {
+
+    static AuthorizationRequestParam idBased(
+        final OwnerType ownerType,
+        final ResourceType resourceType,
+        final String ownerId,
+        final String resourceId,
+        final PermissionType permissionType) {
+      return new AuthorizationRequestParam(
+          ownerType, resourceType, ownerId, resourceId, null, permissionType);
+    }
+
+    static AuthorizationRequestParam propertyBased(
+        final OwnerType ownerType,
+        final ResourceType resourceType,
+        final String ownerId,
+        final String resourcePropertyName,
+        final PermissionType permissionType) {
+      return new AuthorizationRequestParam(
+          ownerType, resourceType, ownerId, null, resourcePropertyName, permissionType);
+    }
+
+    public boolean isIdBased() {
+      return resourceId != null;
+    }
   }
 }
