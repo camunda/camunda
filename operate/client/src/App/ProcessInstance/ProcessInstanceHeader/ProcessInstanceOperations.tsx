@@ -59,28 +59,25 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const {
     mutate: resolveProcessInstanceIncidents,
     isPending: isResolveIncidentsPending,
-  } = useResolveProcessInstanceIncidents(
-    processInstance.processInstanceKey,
-    {
-      onError: (error) => {
-        invalidateQueries();
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Failed to resolve process instance incidents',
-          subtitle: error.message || error.statusText,
-          isDismissable: true,
-        });
-      },
-      onSuccess: () => {
-        invalidateQueries();
-        tracking.track({
-          eventName: 'single-operation',
-          operationType: 'RESOLVE_INCIDENT',
-          source: 'instance-header',
-        });
-      },
+  } = useResolveProcessInstanceIncidents(processInstance.processInstanceKey, {
+    onError: (error) => {
+      invalidateQueries();
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Failed to resolve process instance incidents',
+        subtitle: error.message || error.statusText,
+        isDismissable: true,
+      });
     },
-  );
+    onSuccess: () => {
+      invalidateQueries();
+      tracking.track({
+        eventName: 'single-operation',
+        operationType: 'RESOLVE_INCIDENT',
+        source: 'instance-header',
+      });
+    },
+  });
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({
