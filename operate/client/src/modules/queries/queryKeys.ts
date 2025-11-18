@@ -50,6 +50,10 @@ const queryKeys = {
       'decisionDefinition',
       decisionDefinitionKey,
     ],
+    search: (payload?: object) =>
+      payload
+        ? ['decisionDefinitionsSearch', payload]
+        : ['decisionDefinitionsSearch'],
   },
   processDefinitionXml: {
     get: (processDefinitionKey?: string) => [
