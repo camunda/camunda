@@ -1,0 +1,24 @@
+{
+  "name": "v2",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "orval.config.js",
+  "scripts": {
+    "generate": "kubb generate"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "10.1.0",
+    "@kubb/cli": "4.5.9",
+    "@kubb/core": "4.5.9",
+    "@kubb/plugin-faker": "4.5.9",
+    "@kubb/plugin-msw": "4.5.9",
+    "@kubb/plugin-oas": "4.5.9",
+    "@kubb/plugin-ts": "4.5.9",
+    "@kubb/plugin-zod": "4.5.9",
+    "msw": "2.12.2",
+    "zod": "4.1.12"
+  }
+}
