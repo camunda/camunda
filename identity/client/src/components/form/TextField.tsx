@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ChangeEvent, FC, useId } from "react";
+import { ChangeEvent, FC, ReactNode, useId } from "react";
 import { PasswordInput, TextArea, TextInput } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 
@@ -38,7 +38,7 @@ export type TextFieldProps = {
   label: string;
   value: string;
   errors?: string[] | string;
-  helperText?: string;
+  helperText?: ReactNode;
   placeholder?: string;
   cols?: number;
   autoFocus?: boolean;
