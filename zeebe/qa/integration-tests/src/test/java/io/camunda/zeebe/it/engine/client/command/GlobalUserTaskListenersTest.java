@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -62,11 +63,12 @@ public class GlobalUserTaskListenersTest {
     // given: global listener configuration and process definition
 
     // configure global listeners
-    configureBroker(
+    configureGlobalListeners(
         List.of(
             createListenerConfig("globalBefore1", List.of("creating"), false),
             createListenerConfig("globalAfter1", List.of("creating"), true),
             createListenerConfig("globalBefore2", List.of("creating"), false)));
+    restartBroker();
 
     // setup workers for listeners (global and non-global)
     setupAutocompleteWorker("globalBefore1");
@@ -90,13 +92,30 @@ public class GlobalUserTaskListenersTest {
     final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
 
     // when: process with task is created
-    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
-    final var userTask = getTaskInfo("task", processInstanceKey);
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
 
     // then: all listeners are executed in correct order
-    final List<String> executedListeners =
-        searchListenerJobTypes(userTask.elementKey(), JobListenerEventType.CREATING);
-    assertThat(executedListeners)
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task creation is started
+                    r.getIntent() == UserTaskIntent.CREATING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task creation has been completed
+                    r.getIntent() == UserTaskIntent.CREATED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for creating event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.CREATING)
+        .extracting(JobRecordValue::getType)
+        // check correct listeners have been executed in correct order
         .containsExactly("globalBefore1", "globalBefore2", "local1", "local2", "globalAfter1");
   }
 
@@ -105,7 +124,9 @@ public class GlobalUserTaskListenersTest {
     // given: global listener configuration and process already started
 
     // configure global listeners
-    configureBroker(List.of(createListenerConfig("oldAssigning", List.of("assigning"), false)));
+    configureGlobalListeners(
+        List.of(createListenerConfig("oldAssigning", List.of("assigning"), false)));
+    restartBroker();
 
     // setup workers for listeners (global and non-global)
     setupAutocompleteWorker("oldAssigning");
@@ -122,28 +143,80 @@ public class GlobalUserTaskListenersTest {
 
     // start process and create task
     final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
-    final var userTask = getTaskInfo("task", processInstanceKey);
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getValue();
 
     // verify that old listener is executed
-    camundaClient.newAssignUserTaskCommand(userTask.taskKey()).assignee("user1").send().join();
-    assertCompletedListeners(
-        userTask.elementKey(), JobListenerEventType.ASSIGNING, List.of("oldAssigning"));
+    camundaClient
+        .newAssignUserTaskCommand(userTask.getUserTaskKey())
+        .assignee("user1")
+        .send()
+        .join();
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task assignment is started
+                    r.getIntent() == UserTaskIntent.ASSIGNING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task assignment has been completed
+                    r.getIntent() == UserTaskIntent.ASSIGNED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for assigning event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.ASSIGNING)
+        .extracting(JobRecordValue::getType)
+        // check correct listeners have been executed in correct order
+        .containsExactly("oldAssigning");
 
     // when: configuration is changed and broker restarted
-    configureBroker(
+    configureGlobalListeners(
         List.of(
             createListenerConfig("newAssigning", List.of("assigning"), false),
             createListenerConfig("oldAssigning", List.of("assigning"), false)));
+    restartBroker();
 
     // then: new configuration is used for new commands to existing process instance
-    camundaClient.newAssignUserTaskCommand(userTask.taskKey()).assignee("user2").send().join();
-    assertCompletedListeners(
-        userTask.elementKey(),
-        JobListenerEventType.ASSIGNING,
-        List.of(
-            "oldAssigning", // from old command
-            "newAssigning", // from new command
-            "oldAssigning")); // from new command
+    camundaClient
+        .newAssignUserTaskCommand(userTask.getUserTaskKey())
+        .assignee("user2")
+        .send()
+        .join();
+
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task assignment is started
+                    r.getIntent() == UserTaskIntent.ASSIGNING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey
+                            && ((UserTaskRecordValue) r.getValue()).getAssignee().equals("user2"))
+                .limit(
+                    r -> // stop after task assignment has been completed
+                    r.getIntent() == UserTaskIntent.ASSIGNED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey
+                            && ((UserTaskRecordValue) r.getValue()).getAssignee().equals("user2"))
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for assigning event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.ASSIGNING)
+        .extracting(JobRecordValue::getType)
+        // check correct listeners have been executed in correct order
+        .containsExactly("newAssigning", "oldAssigning");
   }
 
   @Test
@@ -151,7 +224,9 @@ public class GlobalUserTaskListenersTest {
     // given: global listener configuration and process already started
 
     // configure global listeners
-    configureBroker(List.of(createListenerConfig("oldCreating", List.of("creating"), false)));
+    configureGlobalListeners(
+        List.of(createListenerConfig("oldCreating", List.of("creating"), false)));
+    restartBroker();
 
     // setup workers for listeners (global and non-global)
     setupAutocompleteWorker("oldCreating");
@@ -167,37 +242,56 @@ public class GlobalUserTaskListenersTest {
     final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
 
     // when: configuration is changed and broker restarted
-    configureBroker(
+    configureGlobalListeners(
         List.of(
             createListenerConfig("newCreating", List.of("Creating"), false),
             createListenerConfig("oldCreating", List.of("Creating"), false)));
+    restartBroker();
 
     // then: new configuration is applied for new processes
-    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
-    final var userTask = getTaskInfo("task", processInstanceKey);
-    assertCompletedListeners(
-        userTask.elementKey(),
-        JobListenerEventType.CREATING,
-        List.of("newCreating", "oldCreating"));
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task creation is started
+                    r.getIntent() == UserTaskIntent.CREATING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task creation has been completed
+                    r.getIntent() == UserTaskIntent.CREATED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for creating event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.CREATING)
+        .extracting(JobRecordValue::getType)
+        // check correct listeners have been executed in correct order
+        .containsExactly("newCreating", "oldCreating");
   }
 
   private void setupAutocompleteWorker(final String jobType) {
     camundaClient
         .newWorker()
         .jobType(jobType)
-        .handler(
-            (client, job) -> {
-              client.newCompleteCommand(job).send().join();
-            })
+        .handler((client, job) -> client.newCompleteCommand(job).send().join())
         .open();
   }
 
-  private void configureBroker(final List<GlobalListenerCfg> listenerCfgs) {
+  private void configureGlobalListeners(final List<GlobalListenerCfg> listenerCfgs) {
     final GlobalListenersCfg globalListenersCfg = new GlobalListenersCfg();
     globalListenersCfg.setUserTask(listenerCfgs);
     ZEEBE.brokerConfig().getExperimental().getEngine().setGlobalListeners(globalListenersCfg);
+  }
+
+  private void restartBroker() {
     if (ZEEBE.isStarted()) {
       ZEEBE.stop();
+      RecordingExporter.reset();
     }
     ZEEBE.start();
     ZEEBE.awaitCompleteTopology();
@@ -211,36 +305,4 @@ public class GlobalUserTaskListenersTest {
     listenerCfg.setAfterNonGlobal(afterNonGlobal);
     return listenerCfg;
   }
-
-  private List<String> searchListenerJobTypes(
-      final long taskKey, final JobListenerEventType eventType) {
-    return RecordingExporter.jobRecords(JobIntent.COMPLETED)
-        .withoutDuplicatedPositions()
-        .map(Record::getValue)
-        .filter(j -> j.getElementInstanceKey() == taskKey)
-        .filter(j -> j.getJobKind() == JobKind.TASK_LISTENER)
-        .filter(j -> j.getJobListenerEventType() == eventType)
-        .map(JobRecordValue::getType)
-        .toList();
-  }
-
-  private void assertCompletedListeners(
-      final long taskKey, final JobListenerEventType eventType, final List<String> expectedTypes) {
-    final List<String> completedTypes = searchListenerJobTypes(taskKey, eventType);
-    assertThat(completedTypes)
-        .as("Completed listener types for event " + eventType)
-        .containsExactlyElementsOf(expectedTypes);
-  }
-
-  private TaskInfo getTaskInfo(final String taskName, final long processInstanceKey) {
-    return RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-        .filter(r -> processInstanceKey == r.getValue().getProcessInstanceKey())
-        .filter(r -> r.getValue().getElementId().equals(taskName))
-        .map(Record::getValue)
-        .map(r -> new TaskInfo(r.getUserTaskKey(), r.getElementInstanceKey()))
-        .findFirst()
-        .orElseThrow();
-  }
-
-  private record TaskInfo(long taskKey, long elementKey) {}
 }
