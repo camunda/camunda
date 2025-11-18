@@ -30,11 +30,7 @@ import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/form/TextField";
 import Divider from "src/components/form/Divider";
 import { DocumentationLink } from "src/components/documentation";
-import {
-  Row,
-  TextFieldContainer,
-  PermissionsSectionLabel,
-} from "../components";
+import { Row, TextFieldContainer, Caption } from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
 import { isValidId, isValidResourceId } from "src/utility/validate";
@@ -351,7 +347,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
         render={({ field, fieldState }) => (
           <CheckboxGroup
             legendText={
-              <PermissionsSectionLabel>
+              <Caption>
                 <Translate i18nKey="selectPermission">
                   Select at least one permission. All available resource
                   permissions can be found{" "}
@@ -363,7 +359,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                   </DocumentationLink>{" "}
                   .
                 </Translate>
-              </PermissionsSectionLabel>
+              </Caption>
             }
             invalid={!!fieldState.error}
             invalidText={fieldState.error?.message}

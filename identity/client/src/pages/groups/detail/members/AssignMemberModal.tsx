@@ -16,6 +16,8 @@ import FormModal from "src/components/modal/FormModal";
 import { Group } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
 import { useNotifications } from "src/components/notifications";
+import { DocumentationLink } from "src/components/documentation";
+import { Caption } from "src/pages/authorizations/modals/components.tsx";
 
 const AssignMemberModal: FC<
   UseEntityModalCustomProps<
@@ -23,7 +25,7 @@ const AssignMemberModal: FC<
     { assignedUsers: User[] }
   >
 > = ({ entity: { groupId }, onSuccess, open, onClose }) => {
-  const { t } = useTranslate("groups");
+  const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
   const [username, setUsername] = useState("");
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
@@ -72,6 +74,20 @@ const AssignMemberModal: FC<
         label={t("username")}
         placeholder={t("typeUsername")}
         onChange={setUsername}
+        helperText={
+          <Caption>
+            <Translate i18nKey="usernameDescription">
+              Check the documentation for{" "}
+              <DocumentationLink
+                path="/docs/components/identity/group/#assign-users-to-a-group"
+                withIcon
+              >
+                how to reference users
+              </DocumentationLink>{" "}
+              .
+            </Translate>
+          </Caption>
+        }
         value={username}
         autoFocus
       />
