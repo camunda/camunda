@@ -727,9 +727,8 @@ public class ProcessInstanceMigrationMigrateProcessor
           targetProcessDefinition.getProcess().getElementById(targetElementId);
 
       final ExecutableAdHocSubProcess targetAhsp;
-      if (element instanceof ExecutableMultiInstanceBody) {
-        throw new UnsupportedOperationException(
-            "Multi-Instance for ad-hoc subprocesses is not supported yet");
+      if (element instanceof ExecutableMultiInstanceBody mi) {
+        targetAhsp = (ExecutableAdHocSubProcess) mi.getInnerActivity();
       } else {
         targetAhsp = (ExecutableAdHocSubProcess) element;
       }
