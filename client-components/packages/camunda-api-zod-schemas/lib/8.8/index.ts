@@ -82,6 +82,7 @@ import {
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
+	resolveProcessInstanceIncidents,
 } from './process-instance';
 import {
 	getUserTask,
@@ -296,6 +297,7 @@ const endpoints = {
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
+	resolveProcessInstanceIncidents,
 } as const;
 
 export {currentUserSchema, getCurrentUser, type CurrentUser} from './authentication';
@@ -610,6 +612,7 @@ export {
 	type CreateModificationBatchOperationRequestBody,
 	type CreateModificationBatchOperationResponseBody,
 	type ModifyProcessInstanceRequestBody,
+	type ResolveProcessInstanceIncidentsResponseBody,
 } from './process-instance';
 export {
 	userTaskSchema,
