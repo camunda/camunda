@@ -9,7 +9,6 @@ package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
@@ -78,8 +77,8 @@ public class RdbmsExporterWrapper implements Exporter {
     config.validate(); // throws exception if configuration is invalid
 
     final int partitionId = context.getPartitionId();
-    final var writerConfig = config.createRdbmsWriterConfig(partitionId);
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(writerConfig);
+    final RdbmsWriter rdbmsWriter =
+        rdbmsService.createWriter(config.createRdbmsWriterConfig(partitionId));
 
     final var builder =
         new RdbmsExporter.Builder()
@@ -100,7 +99,7 @@ public class RdbmsExporterWrapper implements Exporter {
             new RdbmsBatchOperationCacheLoader(rdbmsService.getBatchOperationReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", context.getMeterRegistry()));
 
-    createHandlers(partitionId, rdbmsWriter, writerConfig, builder);
+    createHandlers(partitionId, rdbmsWriter, builder);
     createBatchOperationHandlers(rdbmsWriter, builder);
 
     exporter = builder.build();
@@ -127,10 +126,7 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void createHandlers(
-      final long partitionId,
-      final RdbmsWriter rdbmsWriter,
-      final RdbmsWriterConfig writerConfig,
-      final RdbmsExporter.Builder builder) {
+      final long partitionId, final RdbmsWriter rdbmsWriter, final RdbmsExporter.Builder builder) {
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       builder.withHandler(
@@ -153,7 +149,7 @@ public class RdbmsExporterWrapper implements Exporter {
     }
     builder.withHandler(
         ValueType.DECISION_EVALUATION,
-        new DecisionInstanceExportHandler(rdbmsWriter.getDecisionInstanceWriter(), writerConfig));
+        new DecisionInstanceExportHandler(rdbmsWriter.getDecisionInstanceWriter()));
     builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriter.getGroupWriter()));
     builder.withHandler(
         ValueType.INCIDENT,

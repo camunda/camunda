@@ -110,7 +110,10 @@ public class RdbmsWriter {
     decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
     decisionInstanceWriter =
         new DecisionInstanceWriter(
-            decisionInstanceMapper, executionQueue, vendorDatabaseProperties);
+            decisionInstanceMapper,
+            executionQueue,
+            vendorDatabaseProperties,
+            config.history().decisionInstanceTTL());
     decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
     flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper);
     groupWriter = new GroupWriter(executionQueue);

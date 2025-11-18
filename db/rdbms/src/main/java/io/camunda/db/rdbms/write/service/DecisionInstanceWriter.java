@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 
 public class DecisionInstanceWriter {
@@ -24,47 +25,83 @@ public class DecisionInstanceWriter {
   private final DecisionInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;
+  private final Duration decisionInstanceTTL;
 
   public DecisionInstanceWriter(
       final DecisionInstanceMapper mapper,
       final ExecutionQueue executionQueue,
-      final VendorDatabaseProperties vendorDatabaseProperties) {
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final Duration decisionInstanceTTL) {
     this.mapper = mapper;
     this.executionQueue = executionQueue;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
+    this.decisionInstanceTTL = decisionInstanceTTL;
   }
 
   public void create(final DecisionInstanceDbModel decisionInstance) {
+    // Set cleanup date for decision instances without a process instance
+    final DecisionInstanceDbModel processedInstance;
+    if (decisionInstance.processInstanceKey() == -1 && decisionInstance.historyCleanupDate() == null) {
+      processedInstance =
+          new DecisionInstanceDbModel.Builder()
+              .decisionInstanceId(decisionInstance.decisionInstanceId())
+              .decisionInstanceKey(decisionInstance.decisionInstanceKey())
+              .state(decisionInstance.state())
+              .evaluationDate(decisionInstance.evaluationDate())
+              .evaluationFailure(decisionInstance.evaluationFailure())
+              .evaluationFailureMessage(decisionInstance.evaluationFailureMessage())
+              .result(decisionInstance.result())
+              .flowNodeInstanceKey(decisionInstance.flowNodeInstanceKey())
+              .flowNodeId(decisionInstance.flowNodeId())
+              .processInstanceKey(decisionInstance.processInstanceKey())
+              .processDefinitionKey(decisionInstance.processDefinitionKey())
+              .processDefinitionId(decisionInstance.processDefinitionId())
+              .decisionDefinitionKey(decisionInstance.decisionDefinitionKey())
+              .decisionDefinitionId(decisionInstance.decisionDefinitionId())
+              .decisionRequirementsKey(decisionInstance.decisionRequirementsKey())
+              .decisionRequirementsId(decisionInstance.decisionRequirementsId())
+              .rootDecisionDefinitionKey(decisionInstance.rootDecisionDefinitionKey())
+              .decisionType(decisionInstance.decisionType())
+              .tenantId(decisionInstance.tenantId())
+              .partitionId(decisionInstance.partitionId())
+              .evaluatedInputs(decisionInstance.evaluatedInputs())
+              .evaluatedOutputs(decisionInstance.evaluatedOutputs())
+              .historyCleanupDate(decisionInstance.evaluationDate().plus(decisionInstanceTTL))
+              .build();
+    } else {
+      processedInstance = decisionInstance;
+    }
+
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.DECISION_INSTANCE,
             WriteStatementType.INSERT,
-            decisionInstance.decisionInstanceKey(),
+            processedInstance.decisionInstanceKey(),
             "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insert",
-            decisionInstance.truncateErrorMessage(
+            processedInstance.truncateErrorMessage(
                 vendorDatabaseProperties.errorMessageSize(),
                 vendorDatabaseProperties.charColumnMaxBytes())));
-    if (decisionInstance.evaluatedInputs() != null
-        && !decisionInstance.evaluatedInputs().isEmpty()) {
+    if (processedInstance.evaluatedInputs() != null
+        && !processedInstance.evaluatedInputs().isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.DECISION_INSTANCE,
               WriteStatementType.INSERT,
-              decisionInstance.decisionInstanceKey(),
+              processedInstance.decisionInstanceKey(),
               "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insertInput",
-              decisionInstance.truncateErrorMessage(
+              processedInstance.truncateErrorMessage(
                   vendorDatabaseProperties.errorMessageSize(),
                   vendorDatabaseProperties.charColumnMaxBytes())));
     }
-    if (decisionInstance.evaluatedOutputs() != null
-        && !decisionInstance.evaluatedOutputs().isEmpty()) {
+    if (processedInstance.evaluatedOutputs() != null
+        && !processedInstance.evaluatedOutputs().isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.DECISION_INSTANCE,
               WriteStatementType.INSERT,
-              decisionInstance.decisionInstanceKey(),
+              processedInstance.decisionInstanceKey(),
               "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insertOutput",
-              decisionInstance.truncateErrorMessage(
+              processedInstance.truncateErrorMessage(
                   vendorDatabaseProperties.errorMessageSize(),
                   vendorDatabaseProperties.charColumnMaxBytes())));
     }

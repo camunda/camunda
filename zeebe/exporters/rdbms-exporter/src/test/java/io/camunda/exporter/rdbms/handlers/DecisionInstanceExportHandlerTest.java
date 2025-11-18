@@ -9,14 +9,12 @@ package io.camunda.exporter.rdbms.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,16 +27,12 @@ class DecisionInstanceExportHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @Mock private DecisionInstanceWriter decisionInstanceWriter;
-  @Mock private RdbmsWriterConfig writerConfig;
-  @Mock private RdbmsWriterConfig.HistoryConfig historyConfig;
 
   private DecisionInstanceExportHandler handler;
 
   @BeforeEach
   void setUp() {
-    org.mockito.Mockito.when(writerConfig.history()).thenReturn(historyConfig);
-    org.mockito.Mockito.when(historyConfig.decisionInstanceTTL()).thenReturn(Duration.ofDays(30));
-    handler = new DecisionInstanceExportHandler(decisionInstanceWriter, writerConfig);
+    handler = new DecisionInstanceExportHandler(decisionInstanceWriter);
   }
 
   @Test
@@ -52,12 +46,10 @@ class DecisionInstanceExportHandlerTest {
 
   @Test
   void shouldSetHistoryCleanupDateForDecisionInstanceWithoutProcessInstance() {
-    // This test verifies the logic in DecisionInstanceExportHandler.map() method
-    // The actual processInstanceKey value is checked in integration tests
-    // Here we just verify that the handler is properly configured with the TTL
+    // This test verifies the logic in DecisionInstanceWriter.create() method
+    // The actual processInstanceKey value and cleanup date calculation are tested in
+    // DecisionInstanceWriter tests and integration tests
     assertThat(handler).isNotNull();
-    // The handler should be configured with a decisionInstanceTTL from the config
-    // This is verified by the configuration being passed in the constructor
   }
 
   @Test
