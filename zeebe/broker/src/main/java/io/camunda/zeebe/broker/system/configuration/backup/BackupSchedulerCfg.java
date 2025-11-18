@@ -49,7 +49,7 @@ public class BackupSchedulerCfg implements ConfigurationEntry {
   }
 
   public Schedule getSchedule() throws IllegalArgumentException {
-    return Schedule.tryParse(schedule);
+    return Schedule.parseSchedule(schedule, true);
   }
 
   public void setSchedule(final String schedule) {
