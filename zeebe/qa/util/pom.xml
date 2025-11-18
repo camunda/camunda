@@ -161,11 +161,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
     </dependency>
 
