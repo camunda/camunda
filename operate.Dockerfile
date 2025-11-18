@@ -60,7 +60,7 @@ LABEL io.k8s.description="Tool for process observability and troubleshooting pro
 EXPOSE 8080
 
 RUN apk update && apk upgrade
-RUN apk add --no-cache bash openjdk21-jre tzdata gcompat libgcc libc6-compat
+RUN apk add --no-cache bash openjdk21-jre tzdata
 
 ENV OPE_HOME=/usr/local/operate
 

@@ -226,7 +226,7 @@ final class SecuredClusteredMessagingIT {
 
   private void assertAddressIsSecured(final Object nodeId, final SocketAddress address) {
     SslAssert.assertThat(address)
-        .as("node %s is not secured correctly at address %s", nodeId, address)
+        .as("node %s is not secured correctly REMOVEME at address %s", nodeId, address)
         .isSecuredBy(CERTIFICATE);
   }
 
