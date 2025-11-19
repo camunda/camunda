@@ -686,9 +686,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   rdbms-postgres-integration-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-#   TODO: replace with schedule-only trigger before merge:
-#   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    if: github.event_name == 'schedule'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS - Postgres ITs"
     timeout-minutes: 15
@@ -774,9 +772,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   rdbms-mysql-integration-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    #   TODO: replace with schedule-only trigger before merge:
-    #   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    if: github.event_name == 'schedule'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS - MySQL ITs"
     timeout-minutes: 15
@@ -858,9 +854,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   rdbms-mariadb-integration-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    #   TODO: replace with schedule-only trigger before merge:
-    #   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    if: github.event_name == 'schedule'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS - MariaDB ITs"
     timeout-minutes: 15
@@ -942,9 +936,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   rdbms-mssql-integration-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    #   TODO: replace with schedule-only trigger before merge:
-    #   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    if: github.event_name == 'schedule'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS - MSSQL ITs"
     timeout-minutes: 15
@@ -1019,9 +1011,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   rdbms-oracle-integration-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    #   TODO: replace with schedule-only trigger before merge:
-    #   if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' && github.event_name == 'schedule' }}
+    if: github.event_name == 'schedule'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS - Oracle ITs"
     timeout-minutes: 15
