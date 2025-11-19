@@ -353,6 +353,7 @@ final class SegmentsManager implements AutoCloseable {
    */
   private Collection<Segment> loadSegments() {
     final var lastFlushedIndex = metaStore.loadLastFlushedIndex();
+    LOG.info("Loading segments until lastFlushedIndex={}", lastFlushedIndex);
 
     // Ensure log directories are created.
     //noinspection ResultOfMethodCallIgnored
@@ -371,6 +372,7 @@ final class SegmentsManager implements AutoCloseable {
                 file.toPath(),
                 previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
                 journalIndex);
+        LOG.info("Loaded segment {}: {}", file, segment.descriptor());
 
         if (i > 0) {
           // throws CorruptedJournalException if there is gap
