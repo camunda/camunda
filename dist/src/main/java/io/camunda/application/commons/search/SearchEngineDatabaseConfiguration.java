@@ -58,7 +58,7 @@ public class SearchEngineDatabaseConfiguration {
 
     // Override schema creation if database type is "none"
     final DatabaseType databaseType = searchEngineConnectProperties.getTypeEnum();
-    if (DatabaseConfig.NONE.equals(databaseType.name())) {
+    if (DatabaseConfig.NONE.equalsIgnoreCase(databaseType.name())) {
       searchEngineSchemaManagerProperties.setCreateSchema(false);
     }
 

@@ -46,6 +46,10 @@ final class SnapshotWithExportersTest {
     private final TestStandaloneBroker zeebe =
         new TestStandaloneBroker().withUnauthenticatedAccess();
 
+    //            .withUnifiedConfig(
+    //                cfg ->
+    // cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false));
+
     private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
 
     @Test
@@ -96,7 +100,11 @@ final class SnapshotWithExportersTest {
   final class WithExporter {
     @TestZeebe
     private final TestStandaloneBroker zeebe =
-        new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+        new TestStandaloneBroker()
+            .withRecordingExporter(true)
+            .withUnauthenticatedAccess()
+            .withUnifiedConfig(
+                cfg -> cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false));
 
     private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
 

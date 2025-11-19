@@ -44,6 +44,9 @@ final class ControlledActorClockEndpointIT {
   @TestZeebe
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
+          //          .withUnifiedConfig(
+          //              cfg ->
+          // cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false))
           .withRecordingExporter(true)
           .withProperty("zeebe.clock.controlled", true);
 

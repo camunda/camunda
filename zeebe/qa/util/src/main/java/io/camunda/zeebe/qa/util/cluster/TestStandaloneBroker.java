@@ -17,6 +17,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.NodeIdProvider.Type;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
@@ -515,6 +516,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .getInternalApi()
         .setPort(SocketUtil.getNextAddress().getPort());
     unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+
+    // TODO KPO disable default exporter
+    // unifiedConfig.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
+    unifiedConfig.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+    withProperty("camunda.data.secondary-storage.type", SecondaryStorageType.none.name());
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {
