@@ -33,6 +33,15 @@ public abstract class BackupEndpointStandaloneTest {
   }
 
   @Test
+  public void shouldCallTakeWithoutIdWhenIsStandalone() {
+    // when
+    backupEndpointStandalone.take();
+
+    // then
+    verify(backupEndpoint).take();
+  }
+
+  @Test
   public void shouldCallListWhenIsStandalone() {
     // when
     backupEndpointStandalone.query(null);

@@ -32,6 +32,11 @@ public final class BackupEndpointStandalone {
     return backupEndpoint.take(backupId);
   }
 
+  @WriteOperation
+  public WebEndpointResponse<?> take() {
+    return backupEndpoint.take();
+  }
+
   @ReadOperation
   public WebEndpointResponse<?> listAll() {
     return backupEndpoint.listAll();
