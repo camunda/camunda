@@ -19,15 +19,28 @@ public class ContainerVersionsUtil {
       "zeebe.currentVersion.docker.tag";
   private static final String ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME =
       "zeebe.currentVersion.docker.repo";
+  private static final String TASKLIST_CURRENTVERSION_DOCKER_PROPERTY_NAME =
+      "tasklist.currentVersion.docker.tag";
+  private static final String TASKLIST_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME =
+      "tasklist.currentVersion.docker.repo";
   private static final String VERSIONS_FILE = "container-versions.properties";
 
   public static DockerImageName getZeebeDockerImageName() {
-    return DockerImageName.parse(
-            ContainerVersionsUtil.readProperty(
-                ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME))
-        .withTag(
-            ContainerVersionsUtil.readProperty(
-                ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME));
+    return getDockerImageName(
+        ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME,
+        ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+  }
+
+  public static DockerImageName getTasklistDockerImageName() {
+    return getDockerImageName(
+        ContainerVersionsUtil.TASKLIST_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME,
+        ContainerVersionsUtil.TASKLIST_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+  }
+
+  private static DockerImageName getDockerImageName(
+      final String repoProperty, final String versionProperty) {
+    return DockerImageName.parse(ContainerVersionsUtil.readProperty(repoProperty))
+        .withTag(ContainerVersionsUtil.readProperty(versionProperty));
   }
 
   public static String readProperty(final String propertyName) {
