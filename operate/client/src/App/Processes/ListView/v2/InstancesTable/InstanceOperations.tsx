@@ -59,11 +59,9 @@ const InstanceOperations: React.FC<Props> = ({
         instanceIds: [processInstanceKey],
         operationType: 'RESOLVE_INCIDENT',
       });
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Failed to resolve process instance incidents',
-        subtitle: error.message || error.statusText,
-        isDismissable: true,
+      handleOperationError({
+        operationType: 'RESOLVE_INCIDENT',
+        statusCode: error.status,
       });
     },
     onSuccess: () => {
