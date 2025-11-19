@@ -7,7 +7,6 @@
  */
 
 import {Operations} from 'modules/components/Operations';
-import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {tracking} from 'modules/tracking';
@@ -41,11 +40,9 @@ const InstanceOperations: React.FC<Props> = ({
         instanceIds: [processInstanceKey],
         operationType: 'CANCEL_PROCESS_INSTANCE',
       });
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Failed to cancel process instance',
-        subtitle: error.message,
-        isDismissable: true,
+      handleOperationError({
+        operationType: 'CANCEL_PROCESS_INSTANCE',
+        statusCode: undefined,
       });
     },
   });
