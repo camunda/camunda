@@ -50,7 +50,7 @@ public class BatchOperationItemDbReader extends AbstractEntityReader<BatchOperat
     LOG.trace("[RDBMS DB] Search for batch operation items with filter {}", dbQuery);
     final var totalHits = batchOperationMapper.countItems(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage)) {
+    if (shouldReturnEmptyPage(dbPage, totalHits)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 

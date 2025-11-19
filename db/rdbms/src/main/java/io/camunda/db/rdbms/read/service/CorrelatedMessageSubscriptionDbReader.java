@@ -67,7 +67,7 @@ public class CorrelatedMessageSubscriptionDbReader
     LOG.trace("[RDBMS DB] Search for correlated message subscriptions with filter {}", dbQuery);
     final var totalHits = mapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(dbPage)) {
+    if (shouldReturnEmptyPage(dbPage, totalHits)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 
