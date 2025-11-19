@@ -85,7 +85,8 @@ components:
             - $ref: '#/components/schemas/AuditLogEntityTypeEnum'
           description: The type of the entity.
         operationType:
-          type: string
+          allOf:
+            - $ref: '#/components/schemas/AuditLogOperationTypeEnum'
           description: The type of operation performed.
         batchOperationKey:
           allOf:
@@ -265,65 +266,23 @@ components:
     AuditLogEntityTypeEnum:
       type: string
       enum:
-        - JOB
-        - DEPLOYMENT
+        - PROCESS
         - PROCESS_INSTANCE
         - INCIDENT
-        - MESSAGE
-        - MESSAGE_SUBSCRIPTION
-        - PROCESS_MESSAGE_SUBSCRIPTION
-        - JOB_BATCH
-        - TIMER
-        - MESSAGE_START_EVENT_SUBSCRIPTION
-        - VARIABLE
-        - VARIABLE_DOCUMENT
-        - PROCESS_INSTANCE_CREATION
-        - ERROR
-        - PROCESS_INSTANCE_RESULT
-        - PROCESS
-        - DEPLOYMENT_DISTRIBUTION
-        - PROCESS_EVENT
-        - DECISION
-        - DECISION_REQUIREMENTS
-        - DECISION_EVALUATION
-        - PROCESS_INSTANCE_MODIFICATION
-        - ESCALATION
-        - SIGNAL_SUBSCRIPTION
-        - SIGNAL
-        - RESOURCE_DELETION
-        - COMMAND_DISTRIBUTION
-        - PROCESS_INSTANCE_BATCH
-        - MESSAGE_BATCH
-        - FORM
         - USER_TASK
-        - PROCESS_INSTANCE_MIGRATION
-        - COMPENSATION_SUBSCRIPTION
-        - MESSAGE_CORRELATION
-        - USER
-        - CLOCK
-        - AUTHORIZATION
-        - RESOURCE
-        - TENANT
-        - GROUP
-        - MAPPING_RULE
-        - IDENTITY_SETUP
-        - ROLE
-        - BATCH_OPERATION_CREATION
-        - BATCH_OPERATION_EXECUTION
-        - BATCH_OPERATION_CHUNK
-        - AD_HOC_SUB_PROCESS_INSTRUCTION
-        - BATCH_OPERATION_LIFECYCLE_MANAGEMENT
-        - BATCH_OPERATION_PARTITION_LIFECYCLE
-        - ASYNC_REQUEST
-        - USAGE_METRIC
-        - MULTI_INSTANCE
-        - RUNTIME_INSTRUCTION
-        - BATCH_OPERATION_INITIALIZATION
-        - CLUSTER_VARIABLE
-        - SCALE
-        - CHECKPOINT
-        - SBE_UNKNOWN
-        - NULL_VAL
+        - BATCH
+        - VARIABLE
+
+    AuditLogOperationTypeEnum:
+      type: string
+      enum:
+        - CREATE
+        - UPDATE
+        - MIGRATE
+        - DELETE
+        - SUSPEND
+        - RESUME
+        - CANCEL
 
     AuditLogActorTypeEnum:
       type: string
