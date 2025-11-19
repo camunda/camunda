@@ -73,7 +73,6 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 public class OpenSearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchConnector.class);
-  private static final String AWS_OPENSEARCH_SERVICE_NAME = "es";
 
   private PluginRepository osClientRepository = new PluginRepository();
   @Autowired private TasklistProperties tasklistProperties;
