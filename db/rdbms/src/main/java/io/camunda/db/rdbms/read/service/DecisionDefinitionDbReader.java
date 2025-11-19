@@ -48,6 +48,7 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         DecisionDefinitionDbQuery.of(
             b ->
@@ -55,12 +56,12 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for decision definition with filter {}", dbQuery);
     final var totalHits = decisionDefinitionMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(query.page())) {
+    if (shouldReturnEmptyPage(dbPage)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 

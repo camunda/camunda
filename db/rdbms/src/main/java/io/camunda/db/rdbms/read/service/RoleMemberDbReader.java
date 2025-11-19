@@ -42,18 +42,19 @@ public class RoleMemberDbReader extends AbstractEntityReader<RoleMemberEntity>
     }
 
     final var dbSort = convertSort(query.sort(), RoleMemberSearchColumn.ENTITY_ID);
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         RoleMemberDbQuery.of(
             b ->
                 b.filter(query.filter())
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for roles with filter {}", dbQuery);
     final var totalHits = roleMapper.countMembers(dbQuery);
 
-    if (shouldReturnEmptyPage(query.page())) {
+    if (shouldReturnEmptyPage(dbPage)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 

@@ -43,14 +43,14 @@ public class BatchOperationItemDbReader extends AbstractEntityReader<BatchOperat
             query.sort(),
             BatchOperationItemSearchColumn.BATCH_OPERATION_KEY,
             BatchOperationItemSearchColumn.ITEM_KEY);
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
-        BatchOperationItemDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+        BatchOperationItemDbQuery.of(b -> b.filter(query.filter()).sort(dbSort).page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for batch operation items with filter {}", dbQuery);
     final var totalHits = batchOperationMapper.countItems(dbQuery);
 
-    if (shouldReturnEmptyPage(query.page())) {
+    if (shouldReturnEmptyPage(dbPage)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 

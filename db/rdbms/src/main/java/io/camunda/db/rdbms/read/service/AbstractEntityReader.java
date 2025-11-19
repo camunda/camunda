@@ -164,12 +164,12 @@ abstract class AbstractEntityReader<T> {
   }
 
   /**
-   * Checks if the provided search query page should result in an empty page.
+   * Checks if the provided database query page should result in an empty page.
    *
-   * @param page the search query page to check
+   * @param page the database query page to check
    * @return {@code true} if the page size is zero, {@code false} otherwise
    */
-  protected boolean shouldReturnEmptyPage(final SearchQueryPage page) {
+  protected boolean shouldReturnEmptyPage(final DbQueryPage page) {
     return page.size() == 0;
   }
 }

@@ -47,18 +47,19 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
     }
 
     final var dbSort = convertSort(query.sort(), TenantSearchColumn.TENANT_ID);
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         TenantDbQuery.of(
             b ->
                 b.filter(query.filter())
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for tenants with filter {}", dbQuery);
     final var totalHits = tenantMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(query.page())) {
+    if (shouldReturnEmptyPage(dbPage)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 

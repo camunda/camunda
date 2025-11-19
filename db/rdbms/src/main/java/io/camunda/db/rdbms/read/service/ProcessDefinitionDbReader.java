@@ -48,6 +48,7 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         ProcessDefinitionDbQuery.of(
             b ->
@@ -55,12 +56,12 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = processDefinitionMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(query.page())) {
+    if (shouldReturnEmptyPage(dbPage)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 

@@ -40,14 +40,13 @@ public class FormDbReader extends AbstractEntityReader<FormEntity> implements Fo
   public SearchQueryResult<FormEntity> search(
       final FormQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), FormSearchColumn.FORM_KEY);
-    final var dbQuery =
-        FormDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+    final var dbPage = convertPaging(dbSort, query.page());
+    final var dbQuery = FormDbQuery.of(b -> b.filter(query.filter()).sort(dbSort).page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for form with filter {}", dbQuery);
     final var totalHits = formMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(query.page())) {
+    if (shouldReturnEmptyPage(dbPage)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 

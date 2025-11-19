@@ -57,6 +57,7 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         BatchOperationDbQuery.of(
             b ->
@@ -64,12 +65,12 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for batch operations with filter {}", dbQuery);
     final var totalHits = batchOperationMapper.count(dbQuery);
 
-    if (shouldReturnEmptyPage(query.page())) {
+    if (shouldReturnEmptyPage(dbPage)) {
       return buildSearchQueryResult(totalHits, List.of(), dbSort);
     }
 
