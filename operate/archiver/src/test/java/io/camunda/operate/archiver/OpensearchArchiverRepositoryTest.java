@@ -175,8 +175,6 @@ public class OpensearchArchiverRepositoryTest {
 
   @Test
   public void testReindexDocuments() {
-    when(richOpenSearchClient.index()).thenReturn(openSearchIndexOperations);
-    when(openSearchIndexOperations.indexExists(anyString())).thenReturn(true);
     when(operateProperties.getOpensearch()).thenReturn(operateOpensearchProperties);
     when(operateOpensearchProperties.getNumberOfShards()).thenReturn(5);
     try (final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
@@ -201,8 +199,6 @@ public class OpensearchArchiverRepositoryTest {
 
   @Test
   public void testReindexDocumentsError() {
-    when(richOpenSearchClient.index()).thenReturn(openSearchIndexOperations);
-    when(openSearchIndexOperations.indexExists(anyString())).thenReturn(true);
     when(operateProperties.getOpensearch()).thenReturn(operateOpensearchProperties);
     when(operateOpensearchProperties.getNumberOfShards()).thenReturn(5);
     try (final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
