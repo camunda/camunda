@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
@@ -59,6 +60,11 @@ final class LogStreamReaderImpl implements LogStreamReader {
     currentEventBuffer.wrap(
         nextEventBuffer, nextEvent.getFragmentOffset(), nextEvent.getFragmentLength());
     LOG.info("Read event from {}", currentEventBuffer);
+
+    if (nextEvent.getLength() <= DataFrameDescriptor.HEADER_LENGTH) {
+      LOG.warn(
+          "Next event length {} is suspiciously small: {}", nextEvent.getLength(), nextEventBuffer);
+    }
 
     nextEventOffset += nextEvent.getLength();
     nextEvent.wrap(nextEventBuffer, nextEventOffset);
