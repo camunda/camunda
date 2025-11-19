@@ -1029,6 +1029,10 @@ Content-Type: application/pdf
 
 ###
 # @name download-document-authorized
+< {%
+  import {wait} from "../js/wait"
+  wait(2)
+%}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents/{{DOCUMENT_ID}}?contentHash={{CONTENT_HASH}}
 Cookie: camunda-session={{session_cookie}}; X-CSRF-TOKEN={{csrf_cookie}}
 X-CSRF-TOKEN: {{csrf_token}}
