@@ -455,7 +455,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void recoverFromSnapshot() {
     state = new ExportersState(zeebeDb, zeebeDb.createContext());
     final long snapshotPosition = state.getLowestPosition();
-    LOG.debug(
+    LOG.info(
         "Recovered exporter '{}' from snapshot at lastExportedPosition {}",
         getName(),
         snapshotPosition);
