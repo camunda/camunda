@@ -13,6 +13,7 @@ import {ComboBox} from 'modules/components/ComboBox';
 import {Dropdown, Stack} from '@carbon/react';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {
+  getDefinitionIdFromIdentifier,
   useDecisionDefinitions,
   useDecisionDefinitionVersions,
 } from 'modules/hooks/decisionDefinition';
@@ -22,17 +23,19 @@ const DecisionsFormGroup: React.FC = observer(() => {
   const tenantsById = useAvailableTenants();
 
   const form = useForm();
-  const definitionIdValue = useField('name').input.value;
+  const nameValue = useField('name').input.value;
   const tenantValue = useField('tenant').input.value;
-  const tenantId =
+
+  const definitionId = getDefinitionIdFromIdentifier(nameValue);
+  const specificTenantId =
     isMultiTenancyEnabled && tenantValue !== '' && tenantValue !== 'all'
       ? tenantValue
       : undefined;
 
-  const {data: definitions = []} = useDecisionDefinitions(tenantId);
+  const {data: definitions = []} = useDecisionDefinitions(specificTenantId);
   const {data: versions = []} = useDecisionDefinitionVersions(
-    definitionIdValue,
-    tenantId,
+    definitionId,
+    specificTenantId,
   );
 
   return (
@@ -46,18 +49,17 @@ const DecisionsFormGroup: React.FC = observer(() => {
                 id="decisionName"
                 aria-label="Select a Decision"
                 items={definitions.map((definition) => ({
-                  id: definition.decisionDefinitionId,
+                  id: definition.identifier,
                   label:
-                    isMultiTenancyEnabled && !tenantId
+                    isMultiTenancyEnabled && !specificTenantId
                       ? `${definition.name} - ${tenantsById[definition.tenantId]}`
                       : definition.name,
                 }))}
                 onChange={({selectedItem}) => {
-                  input.onChange(selectedItem?.id);
                   const matchingDecision = definitions.find(
-                    (d) => d.decisionDefinitionId === selectedItem?.id,
+                    (d) => d.identifier === selectedItem?.id,
                   );
-
+                  input.onChange(selectedItem?.id);
                   form.change('version', matchingDecision?.version ?? '');
                   if (isMultiTenancyEnabled && matchingDecision) {
                     form.change('tenant', matchingDecision.tenantId);

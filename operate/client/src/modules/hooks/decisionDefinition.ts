@@ -9,11 +9,27 @@
 import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useDecisionInstancesSearchFilter} from './decisionInstancesSearch';
 import {useDecisionDefinitionsSearch} from 'modules/queries/decisionDefinitions/useDecisionDefinitionsSearch';
+import {DEFAULT_TENANT} from 'modules/constants';
+
+interface DecisionDefinitionWithIdentifier extends DecisionDefinition {
+  /** A `definitionId`--`tenantId` tuple that is almost unique but not unique across versions. */
+  identifier: string;
+}
+
+function getDefinitionIdentifier(definitionId: string, tenantId?: string) {
+  return `${definitionId}--${tenantId ?? DEFAULT_TENANT}`;
+}
+
+function getDefinitionIdFromIdentifier(
+  identifier?: string,
+): string | undefined {
+  return identifier?.split('--')[0];
+}
 
 /**
  * Returns sorted decision-definitions for an optional `tenantId`.
- * The definition are deduplicated for their `decisionDefinitionIds` to include
- * only the latest `version`.
+ * The definition are deduplicated for their `decisionDefinitionIds` and `tenantIds`
+ * to include only the latest `version`.
  */
 function useDecisionDefinitions(tenantId?: string) {
   return useDecisionDefinitionsSearch({
@@ -25,11 +41,15 @@ function useDecisionDefinitions(tenantId?: string) {
       ],
     },
     select: (definitions) => {
-      const uniquifier = new Map<string, DecisionDefinition>();
+      const uniquifier = new Map<string, DecisionDefinitionWithIdentifier>();
       for (const definition of definitions) {
-        const seenDefinition = uniquifier.get(definition.decisionDefinitionId);
+        const identifier = getDefinitionIdentifier(
+          definition.decisionDefinitionId,
+          definition.tenantId,
+        );
+        const seenDefinition = uniquifier.get(identifier);
         if (!seenDefinition || seenDefinition.version < definition.version) {
-          uniquifier.set(definition.decisionDefinitionId, definition);
+          uniquifier.set(identifier, {...definition, identifier});
         }
       }
       return Array.from(uniquifier.values());
@@ -81,7 +101,10 @@ function useSelectedDecisionDefinition() {
   });
 }
 
+export type {DecisionDefinitionWithIdentifier};
 export {
+  getDefinitionIdentifier,
+  getDefinitionIdFromIdentifier,
   useDecisionDefinitionVersions,
   useDecisionDefinitions,
   useSelectedDecisionDefinition,
