@@ -14,6 +14,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
@@ -51,12 +53,29 @@ public class ProcessServiceTest {
   @InjectMocks private ProcessService instance;
 
   @Test
-  void startProcessInstanceInvalidTenant() {
+  void startProcessInstanceNoAuthentication() {
     final String processDefinitionKey = "processDefinitionKey";
-    final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
+    final List<VariableInputDTO> variableInputDTOList = new ArrayList<>();
     final String tenantId = "tenantA";
 
-    final List<String> tenantIds = new ArrayList<String>();
+    when(tenantService.isMultiTenancyEnabled()).thenReturn(false);
+
+    final ProcessInstanceCreationRecord processInstanceEvent =
+        mockCreateProcessInstance(processDefinitionKey, false);
+
+    final ProcessInstanceDTO response =
+        instance.startProcessInstance(processDefinitionKey, variableInputDTOList, tenantId, false);
+    assertThat(response).isInstanceOf(ProcessInstanceDTO.class);
+    assertThat(response.getId()).isEqualTo(processInstanceEvent.getProcessInstanceKey());
+    verifyNoInteractions(identityAuthorizationService);
+  }
+
+  @Test
+  void startProcessInstanceInvalidTenant() {
+    final String processDefinitionKey = "processDefinitionKey";
+    final List<VariableInputDTO> variableInputDTOList = new ArrayList<>();
+
+    final List<String> tenantIds = new ArrayList<>();
     tenantIds.add("TenantB");
     tenantIds.add("TenantC");
     final TenantService.AuthenticatedTenants authenticatedTenants =
@@ -64,6 +83,8 @@ public class ProcessServiceTest {
 
     when(tenantService.isMultiTenancyEnabled()).thenReturn(true);
     when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+
+    doReturn(true).when(identityAuthorizationService).isAllowedToStartProcess(processDefinitionKey);
 
     assertThatThrownBy(
             () -> instance.startProcessInstance(processDefinitionKey, variableInputDTOList, ""))
@@ -73,30 +94,36 @@ public class ProcessServiceTest {
   @Test
   void startProcessInstanceInvalidTenantMultiTenancyOff() {
     final String processDefinitionKey = "processDefinitionKey";
-    final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
+    final List<VariableInputDTO> variableInputDTOList = new ArrayList<>();
     final String tenantId = "tenantA";
 
-    final List<String> tenantIds = new ArrayList<String>();
-    tenantIds.add("TenantB");
-    tenantIds.add("TenantC");
     when(tenantService.isMultiTenancyEnabled()).thenReturn(false);
 
+    doReturn(true).when(identityAuthorizationService).isAllowedToStartProcess(processDefinitionKey);
+
     final ProcessInstanceCreationRecord processInstanceEvent =
-        mockCreateProcessInstance(processDefinitionKey);
+        mockCreateProcessInstance(processDefinitionKey, true);
 
     final ProcessInstanceDTO response =
         instance.startProcessInstance(processDefinitionKey, variableInputDTOList, tenantId);
     assertThat(response).isInstanceOf(ProcessInstanceDTO.class);
     assertThat(response.getId()).isEqualTo(processInstanceEvent.getProcessInstanceKey());
+    verify(identityAuthorizationService).isAllowedToStartProcess(processDefinitionKey);
   }
 
   private ProcessInstanceCreationRecord mockCreateProcessInstance(
-      final String processDefinitionKey) {
+      final String processDefinitionKey, final boolean usesAuthentication) {
     final var processInstanceEvent = mock(ProcessInstanceCreationRecord.class);
     when(processInstanceEvent.getProcessInstanceKey()).thenReturn(123456L);
-    doReturn(processInstanceEvent)
-        .when(tasklistServicesAdapter)
-        .createProcessInstance(eq(processDefinitionKey), any(), any());
+    if (usesAuthentication) {
+      doReturn(processInstanceEvent)
+          .when(tasklistServicesAdapter)
+          .createProcessInstance(eq(processDefinitionKey), any(), any());
+    } else {
+      doReturn(processInstanceEvent)
+          .when(tasklistServicesAdapter)
+          .createProcessInstanceWithoutAuthentication(eq(processDefinitionKey), any(), any());
+    }
     return processInstanceEvent;
   }
 
@@ -135,25 +162,30 @@ public class ProcessServiceTest {
   @Test
   void startProcessInstanceMissingResourceBasedAuthCaseHasNoPermissionOnAnyResource() {
     final String processDefinitionKey = "processDefinitionKey";
-    final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
+    final List<VariableInputDTO> variableInputDTOList = new ArrayList<>();
 
     mockCreateProcessInstanceForbiddenAction(processDefinitionKey);
+
+    doReturn(false)
+        .when(identityAuthorizationService)
+        .isAllowedToStartProcess(processDefinitionKey);
 
     assertThatThrownBy(
             () -> instance.startProcessInstance(processDefinitionKey, variableInputDTOList, ""))
         .isInstanceOf(ForbiddenActionException.class);
+    verify(identityAuthorizationService).isAllowedToStartProcess(processDefinitionKey);
   }
 
   @Test
   void startProcessInstanceWithResourceBasedAuth() {
     final String processDefinitionKey = "processDefinitionKey";
-    final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
+    final List<VariableInputDTO> variableInputDTOList = new ArrayList<>();
     doReturn(List.of("processDefinitionKey"))
         .when(identityAuthorizationService)
         .getProcessDefinitionsFromAuthorization();
 
     final ProcessInstanceCreationRecord processInstanceEvent =
-        mockCreateProcessInstance(processDefinitionKey);
+        mockCreateProcessInstance(processDefinitionKey, true);
 
     final ProcessInstanceDTO response =
         instance.startProcessInstance(processDefinitionKey, variableInputDTOList, "");
@@ -170,7 +202,7 @@ public class ProcessServiceTest {
         .getProcessDefinitionsFromAuthorization();
 
     final ProcessInstanceCreationRecord processInstanceEvent =
-        mockCreateProcessInstance(processDefinitionKey);
+        mockCreateProcessInstance(processDefinitionKey, true);
 
     final ProcessInstanceDTO response =
         instance.startProcessInstance(processDefinitionKey, variableInputDTOList, "");

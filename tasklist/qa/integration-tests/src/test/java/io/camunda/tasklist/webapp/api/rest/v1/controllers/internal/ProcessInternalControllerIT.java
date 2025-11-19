@@ -11,6 +11,8 @@ import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -27,6 +29,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +46,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -57,6 +61,8 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private TasklistProperties tasklistProperties;
+
+  @MockitoBean private IdentityAuthorizationService identityAuthorizationService;
 
   private MockMvcHelper mockMvcHelper;
 
@@ -321,6 +327,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
   class StartAndDeleteProcessInstanceTests {
     @Test
     public void startProcessInstance() throws Exception {
+      when(identityAuthorizationService.isAllowedToStartProcess("startedByForm")).thenReturn(true);
       final var result =
           startProcessDeployInvokeAndReturn("startedByFormProcess.bpmn", "startedByForm");
       assertThat(result)
@@ -330,6 +337,23 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
               processInstanceDTO -> {
                 Assertions.assertThat(processInstanceDTO.getId()).isNotNull();
               });
+      verify(identityAuthorizationService).isAllowedToStartProcess("startedByForm");
+    }
+
+    @Test
+    public void startProcessInstanceWhenNotAuthorizedThenForbiddenResponseReturned()
+        throws Exception {
+      when(identityAuthorizationService.isAllowedToStartProcess("startedByForm")).thenReturn(false);
+      final var result =
+          startProcessDeployInvokeAndReturn("startedByFormProcess.bpmn", "startedByForm");
+      assertThat(result)
+          .hasHttpStatus(HttpStatus.FORBIDDEN)
+          .hasApplicationProblemJsonContentType()
+          .extractingErrorContent(objectMapper)
+          .hasStatus(HttpStatus.FORBIDDEN)
+          .hasInstanceId()
+          .hasMessage("User does not have the permission to start this process.");
+      verify(identityAuthorizationService).isAllowedToStartProcess("startedByForm");
     }
 
     @Test
