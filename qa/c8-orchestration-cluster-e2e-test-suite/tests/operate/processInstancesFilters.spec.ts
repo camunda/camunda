@@ -555,14 +555,14 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Select another flow node from the diagram', async () => {
-      await operateProcessesPage.diagram.clickFlowNode('always fails');
+      await operateProcessesPage.diagram.clickFlowNode('alwaysFails');
 
       await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue(
         'Always fails',
       );
     });
     await test.step('Select same flow node again and see filter is removed', async () => {
-      await operateProcessesPage.diagram.clickFlowNode('always fails');
+      await operateProcessesPage.diagram.clickFlowNode('alwaysFails');
 
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,
@@ -735,4 +735,60 @@ test.describe('Process Instances Filters', () => {
     });
   })
 
+  test('Reset filters when navigating away and assert results', async ({
+    page,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateHomePage,
+  }) => {
+    await test.step('Apply Process Instance Key and variable filter and assert results', async () => {
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        variableProcessInstanceKey,
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.processInstanceKeyCell)
+            .toHaveText(variableProcessInstanceKey);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
+      await operateFiltersPanelPage.fillVariableValueFilter('604');
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Click on the "Process" link button in the header and assert the results', async () => {
+      await operateHomePage.clickProcessesTab();
+      await expect(operateFiltersPanelPage.processInstanceKeysFilter).toBeHidden();
+      await expect(operateFiltersPanelPage.variableNameFilter).toBeHidden();
+      await operateFiltersPanelPage
+        .validateCheckedState(
+          [operateFiltersPanelPage.activeInstancesCheckbox,
+          operateFiltersPanelPage.incidentsInstancesCheckbox,
+          operateFiltersPanelPage.runningInstancesCheckbox],
+
+          [operateFiltersPanelPage.finishedInstancesCheckbox,
+          operateFiltersPanelPage.completedInstancesCheckbox,
+          operateFiltersPanelPage.canceledInstancesCheckbox]
+        );
+    });
+  })
 });
