@@ -377,13 +377,18 @@ public class TestContainerUtil {
     }
   }
 
+  public GenericContainer createTasklistContainer(final TestContext testContext) {
+    return createTasklistContainer(ContainerVersionsUtil.getTasklistDockerImageName(), testContext);
+  }
+
   public GenericContainer createTasklistContainer(
-      final String dockerImageName, final String version, final TestContext testContext) {
+      final DockerImageName dockerImageName, final TestContext testContext) {
+    final String version = dockerImageName.getVersionPart();
     final int managementPort = getTasklistManagementPort(version);
     final Integer[] exposedPorts =
         new HashSet<>(List.of(TASKLIST_HTTP_PORT, managementPort)).toArray(Integer[]::new);
     tasklistContainer =
-        new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
+        new GenericContainer<>(dockerImageName)
             .withExposedPorts(exposedPorts)
             .withAccessToHost(true)
             .withExtraHost("host.testcontainers.internal", "host-gateway")
@@ -403,11 +408,11 @@ public class TestContainerUtil {
   }
 
   public void startTasklistContainer(
-      final GenericContainer tasklistContainer,
-      final String version,
-      final TestContext testContext) {
+      final GenericContainer tasklistContainer, final TestContext testContext) {
     tasklistContainer.start();
-
+    final DockerImageName dockerImageName =
+        DockerImageName.parse(tasklistContainer.getDockerImageName());
+    final String version = dockerImageName.getVersionPart();
     testContext.setExternalTasklistHost(tasklistContainer.getHost());
     testContext.setExternalTasklistPort(tasklistContainer.getMappedPort(TASKLIST_HTTP_PORT));
     testContext.setExternalTasklistMgmtPort(
