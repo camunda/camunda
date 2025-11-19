@@ -1,10 +1,10 @@
 # description: This workflow deploys a load test with a camunda cluster under test.
-# We use this worklow to start weekly medic load tests.
+# We use this workflow to start ad-hoc load tests or weekly medic load tests.
 # The health of the cluster and results of the load tests are monitored by Core team's regularly.
 # https://grafana.dev.zeebe.io/login
 # called by: zeebe-medic-benchmarks.yml, zeebe-pr-benchmark.yaml
 # type: CI
-# owner: @camunda/core-features
+# owner: camunda/orchestration-cluster-team
 name: Camunda load test
 on:
   workflow_dispatch:
@@ -16,10 +16,6 @@ on:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
         default: ""
-        required: false
-      ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
-        default: 'stable/8.8'
         required: false
       cluster:
         description: 'Specifies which cluster to deploy the load test on'
@@ -57,11 +53,6 @@ on:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
         default: ""
-        required: false
-      ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
-        default: 'main'
-        type: string
         required: false
       cluster:
         description: 'Specifies which cluster to deploy the load test on'
@@ -101,16 +92,22 @@ on:
 env:
   HELM_CHART: camunda-platform-8.8
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   calculate-image-tag:
     name: Calculate Image Tag
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }
     outputs:
       image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
       - name: Get image tag
         id: image-tag
         run: |
@@ -128,7 +125,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -157,7 +154,7 @@ jobs:
         name: Build Camunda Platform
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize -Dmaven.test.skip=true
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
       - uses: google-github-actions/auth@v2
         id: auth
         with:
@@ -174,11 +171,20 @@ jobs:
         name: Build Camunda Docker Image
         with:
           repository: 'gcr.io/zeebe-io/zeebe'
-          revision: ${{ inputs.ref }}
+          revision: ${{ github.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-load-test-images:
     name: Build Starter and Worker
@@ -192,7 +198,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         id: auth
@@ -217,6 +223,15 @@ jobs:
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -P\!include-optimize -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Build Worker Image
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   deploy-cluster-under-test:
     name: Deploy cluster under test
@@ -269,9 +284,9 @@ jobs:
           --set orchestration.image.registry=gcr.io
           --set orchestration.image.repository=zeebe-io/zeebe
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          -f https://raw.githubusercontent.com/camunda/camunda/refs/heads/${{ inputs.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
+          -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
-          ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
+          ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
       - name: Label namespace
         run: >
             kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
@@ -284,6 +299,15 @@ jobs:
             $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
             \`\`\`
           EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   deploy-load-test:
     name: Deploy load test
@@ -307,12 +331,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.ref }}
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.4
+      - uses: google-github-actions/get-gke-credentials@v2.3.5
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
@@ -345,3 +369,12 @@ jobs:
             $(helm get values ${{ inputs.name }}-test -n ${{ inputs.name }})
             \`\`\`
           EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
