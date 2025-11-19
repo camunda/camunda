@@ -16,6 +16,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
+import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
@@ -137,8 +138,8 @@ describe('ProcessInstanceOperations', () => {
     );
   });
 
-  it('should show notification on legacy resolve incident error', async () => {
-    mockApplyOperation().withServerError();
+  it('should show notification on resolve incident error', async () => {
+    mockResolveProcessInstanceIncidents().withServerError();
     const instanceWithIncident = createProcessInstance({
       state: 'ACTIVE',
       hasIncident: true,
@@ -154,7 +155,8 @@ describe('ProcessInstanceOperations', () => {
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'error',
-        title: 'Operation could not be created',
+        title: 'Failed to resolve process instance incidents',
+        subtitle: 'Internal Server Error',
         isDismissable: true,
       }),
     );

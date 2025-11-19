@@ -30,3 +30,6 @@ yarn-error.log*
 /e2e-playwright/docs-screenshots/**/*.png
 
 *.tsbuildinfo
+
+# Test output files
+TEST-*.xml
