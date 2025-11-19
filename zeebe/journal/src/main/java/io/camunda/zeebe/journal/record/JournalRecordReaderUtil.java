@@ -13,10 +13,13 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Common methods used by SegmentWriter and SegmentReader to read records from a buffer. */
 public final class JournalRecordReaderUtil {
 
+  private static final Logger LOG = LoggerFactory.getLogger(JournalRecordReaderUtil.class);
   private final JournalRecordSerializer serializer;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
 
@@ -68,6 +71,7 @@ public final class JournalRecordReaderUtil {
 
     // Read record
     final RecordData record = serializer.readData(directBuffer, metadataLength);
+    LOG.info("Read record at position {}: {}, {}", buffer.position(), record, metadata);
 
     if (record != null && expectedIndex != record.index()) {
       buffer.reset();
