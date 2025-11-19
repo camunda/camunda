@@ -484,6 +484,10 @@ public class TestContainerUtil {
     }
   }
 
+  public ZeebeContainer startZeebe(final TestContext<?> testContext) {
+    return startZeebe(ContainerVersionsUtil.getZeebeDockerImageName(), testContext);
+  }
+
   public ZeebeContainer startZeebe(
       final DockerImageName dockerImageName, final TestContext<?> testContext) {
     if (broker == null) {

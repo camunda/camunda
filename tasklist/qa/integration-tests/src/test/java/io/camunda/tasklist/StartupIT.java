@@ -10,7 +10,6 @@ package io.camunda.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
 import org.junit.jupiter.api.AfterEach;
@@ -48,7 +47,7 @@ public class StartupIT {
     testContext = new TestContext();
     testContainerUtil.startElasticsearch(testContext);
 
-    testContainerUtil.startZeebe(ContainerVersionsUtil.getZeebeDockerImageName(), testContext);
+    testContainerUtil.startZeebe(testContext);
 
     tasklistContainer =
         testContainerUtil

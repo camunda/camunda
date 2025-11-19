@@ -14,7 +14,6 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
-import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
@@ -140,7 +139,7 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createElsSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(ContainerVersionsUtil.getZeebeDockerImageName(), testContext);
+    testContainerUtil.startZeebe(testContext);
     createCamundaClient(testContext.getZeebeGrpcAddress());
   }
 
@@ -164,7 +163,7 @@ public class BackupRestoreTest {
     testContext.setOsClient(osClient);
     createOsSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(ContainerVersionsUtil.getZeebeDockerImageName(), testContext);
+    testContainerUtil.startZeebe(testContext);
     createCamundaClient(testContext.getZeebeGrpcAddress());
   }
 
