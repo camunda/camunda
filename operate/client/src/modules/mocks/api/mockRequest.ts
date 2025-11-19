@@ -8,6 +8,7 @@
 
 import {mockServer} from 'modules/mock-server/node';
 import {type DefaultBodyType, delay, http, HttpResponse} from 'msw';
+import {type MockedFunction} from 'vitest';
 
 const checkPollingHeader = ({
   req,
@@ -41,7 +42,7 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
       responseData: Type,
       options?: {
         expectPolling?: boolean;
-        mockResolverFn?: ReturnType<typeof vi.fn>;
+        mockResolverFn?: MockedFunction<() => void>;
       },
     ) => {
       mockServer.use(
@@ -110,7 +111,7 @@ const mockPutRequest = function <Type extends DefaultBodyType>(url: string) {
     withSuccess: (
       responseData: Type,
       options?: {
-        mockResolverFn?: ReturnType<typeof vi.fn>;
+        mockResolverFn?: MockedFunction<() => void>;
       },
     ) => {
       mockServer.use(
@@ -175,7 +176,7 @@ const mockPatchRequest = function <Type extends DefaultBodyType>(url: string) {
     withSuccess: (
       responseData: Type,
       options?: {
-        mockResolverFn?: ReturnType<typeof vi.fn>;
+        mockResolverFn?: MockedFunction<() => void>;
       },
     ) => {
       mockServer.use(
@@ -248,7 +249,7 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
       responseData: Type,
       options?: {
         expectPolling?: boolean;
-        mockResolverFn?: ReturnType<typeof vi.fn>;
+        mockResolverFn?: MockedFunction<() => void>;
       },
     ) => {
       mockServer.use(

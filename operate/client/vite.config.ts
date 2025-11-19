@@ -18,6 +18,7 @@ import license from 'rollup-plugin-license';
 import path from 'node:path';
 import sbom from 'rollup-plugin-sbom';
 import {configDefaults} from 'vitest/config';
+import {playwright} from '@vitest/browser-playwright';
 
 const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
 const outDir = 'build';
@@ -124,7 +125,7 @@ export default defineConfig(({mode}) => ({
           setupFiles: ['./vitest.browser.setup.ts'],
           browser: {
             enabled: true,
-            provider: 'playwright',
+            provider: playwright(),
             instances: [
               {
                 browser: 'chromium',
