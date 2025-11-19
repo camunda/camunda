@@ -11,16 +11,24 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import org.testcontainers.utility.DockerImageName;
 
 public class ContainerVersionsUtil {
 
-  public static final String ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME =
+  private static final String ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME =
       "zeebe.currentVersion.docker.tag";
-  public static final String ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME =
+  private static final String ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME =
       "zeebe.currentVersion.docker.repo";
-  public static final String IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME =
-      "identity.currentVersion.docker";
   private static final String VERSIONS_FILE = "container-versions.properties";
+
+  public static DockerImageName getZeebeDockerImageName() {
+    return DockerImageName.parse(
+            ContainerVersionsUtil.readProperty(
+                ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME))
+        .withTag(
+            ContainerVersionsUtil.readProperty(
+                ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME));
+  }
 
   public static String readProperty(final String propertyName) {
     // Read first System properties, to make sure we can override it in CI

@@ -88,20 +88,14 @@ public abstract class TasklistZeebeExtension
   protected abstract String getZeebeExporterIndexPrefixConfigParameterName();
 
   private ZeebeContainer createZeebeContainer() {
-    final String zeebeVersion =
-        ContainerVersionsUtil.readProperty(
-            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
-    final String zeebeRepo =
-        ContainerVersionsUtil.readProperty(
-            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME);
+    final DockerImageName zeebeDockerImage = ContainerVersionsUtil.getZeebeDockerImageName();
     final String indexPrefix = indexPrefixHolder.getIndexPrefix();
     LOGGER.info(
-        "************ Starting Zeebe - {}:{}, indexPrefix={} ************",
-        zeebeRepo,
-        zeebeVersion,
+        "************ Starting Zeebe - {}, indexPrefix={} ************",
+        zeebeDockerImage,
         indexPrefix);
     final ZeebeContainer zContainer =
-        new ZeebeContainer(DockerImageName.parse(zeebeRepo).withTag(zeebeVersion))
+        new ZeebeContainer(zeebeDockerImage)
             .withEnv(getDatabaseEnvironmentVariables(indexPrefix))
             .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
             .withEnv("ZEEBE_LOG_LEVEL", "ERROR")

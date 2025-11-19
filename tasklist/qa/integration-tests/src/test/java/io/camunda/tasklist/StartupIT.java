@@ -48,10 +48,7 @@ public class StartupIT {
     testContext = new TestContext();
     testContainerUtil.startElasticsearch(testContext);
 
-    testContainerUtil.startZeebe(
-        ContainerVersionsUtil.readProperty(
-            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME),
-        testContext);
+    testContainerUtil.startZeebe(ContainerVersionsUtil.getZeebeDockerImageName(), testContext);
 
     tasklistContainer =
         testContainerUtil
