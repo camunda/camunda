@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
 import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
@@ -22,6 +23,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +35,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -45,6 +48,8 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
   @Autowired private WebApplicationContext context;
 
   @Autowired private ObjectMapper objectMapper;
+
+  @MockitoBean private IdentityAuthorizationService identityAuthorizationService;
 
   private MockMvcHelper mockMvcHelper;
 
@@ -176,6 +181,8 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
             processInstanceDTO -> {
               Assertions.assertThat(processInstanceDTO.getId()).isNotNull();
             });
+
+    verifyNoInteractions(identityAuthorizationService);
   }
 
   @Test
