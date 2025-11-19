@@ -46,7 +46,7 @@ jobs:
         arch: [ amd64 ]
         include:
           - os: macos
-            runner: macos-15-intel
+            runner: macos-latest-large
           - os: macos
             runner: macos-latest
             arch: arm64
