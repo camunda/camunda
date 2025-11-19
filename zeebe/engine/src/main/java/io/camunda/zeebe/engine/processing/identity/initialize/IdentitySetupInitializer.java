@@ -22,7 +22,6 @@ import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -97,14 +96,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
     configuredAuthorizations.ifRight(auths -> auths.forEach(setupRecord::addAuthorization));
 
-    // TODO: after adding more entity types, change this, so it accounts for all violations all
-    //   together.
-    configuredAuthorizations.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured entities: \n- %s"
-                  .formatted(StringUtils.join(violations, "\n- ")));
-        });
+    // Checking for validation errors is done in CamundaSecurityConfiguration instead,
+    // where the application can be killed on error.
 
     initialization
         .getUsers()
