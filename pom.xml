@@ -63,7 +63,7 @@
               <exclude>**/node_modules/**/*.md</exclude>
               <exclude>tasklist/client/**/*.md</exclude>
             </excludes>
-            <flexmark />
+            <flexmark></flexmark>
           </markdown>
         </configuration>
       </plugin>
