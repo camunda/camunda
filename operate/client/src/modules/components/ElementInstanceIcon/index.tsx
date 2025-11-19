@@ -11,7 +11,10 @@ import {getBoundaryEventType} from 'modules/bpmn-js/utils/getBoundaryEventType';
 import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
 import {isInterruptingEvent} from 'modules/bpmn-js/utils/isInterruptingEvent';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {isAdHocSubProcessInnerInstance} from 'modules/bpmn-js/utils/isAdHocSubProcessInnerInstance';
+import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
+import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 
 import FlowNodeProcess from 'modules/components/Icon/flow-node-process-root.svg?react';
 
@@ -91,23 +94,32 @@ import FlowNodeEventCompensationIntermediateThrow from 'modules/components/Icon/
 import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node-compensation-boundary-event.svg?react';
 
 type Props = {
-  elementInstanceType: ElementInstance['type'];
   diagramBusinessObject: BusinessObject | undefined;
   className?: string;
 };
 
 const ElementInstanceIcon: React.FC<Props> = ({
-  elementInstanceType,
   diagramBusinessObject,
   className,
   ...rest
 }) => {
+  if (diagramBusinessObject === undefined) {
+    return (
+      <FlowNodeTask
+        className={className}
+        data-testid="element-instance-icon"
+        {...rest}
+      />
+    );
+  }
+
+  const businessObjectTypeName = diagramBusinessObject.$type;
   const isGateway = [
-    'PARALLEL_GATEWAY',
-    'EXCLUSIVE_GATEWAY',
-    'INCLUSIVE_GATEWAY',
-    'EVENT_BASED_GATEWAY',
-  ].includes(elementInstanceType);
+    'bpmn:ParallelGateway',
+    'bpmn:ExclusiveGateway',
+    'bpmn:InclusiveGateway',
+    'bpmn:EventBasedGateway',
+  ].includes(businessObjectTypeName);
   const svgProps = {
     style: isGateway
       ? {
@@ -121,40 +133,46 @@ const ElementInstanceIcon: React.FC<Props> = ({
     ...rest,
   };
 
-  switch (elementInstanceType) {
-    case 'AD_HOC_SUB_PROCESS_INNER_INSTANCE':
-      return <FlowNodeTaskSubProcessAdhocInnerInstance {...svgProps} />;
-    case 'AD_HOC_SUB_PROCESS':
-      return <FlowNodeTaskSubProcessAdhoc {...svgProps} />;
-    case 'EXCLUSIVE_GATEWAY':
+  if (isAdHocSubProcessInnerInstance(diagramBusinessObject)) {
+    return <FlowNodeTaskSubProcessAdhocInnerInstance {...svgProps} />;
+  }
+
+  if (isAdHocSubProcess(diagramBusinessObject)) {
+    return <FlowNodeTaskSubProcessAdhoc {...svgProps} />;
+  }
+
+  if (isEventSubProcess({businessObject: diagramBusinessObject})) {
+    return <FlowNodeEventSubprocess {...svgProps} />;
+  }
+
+  switch (businessObjectTypeName) {
+    case 'bpmn:ExclusiveGateway':
       return <FlowNodeGatewayExclusive {...svgProps} />;
-    case 'INCLUSIVE_GATEWAY':
+    case 'bpmn:InclusiveGateway':
       return <FlowNodeGatewayInclusive {...svgProps} />;
-    case 'PARALLEL_GATEWAY':
+    case 'bpmn:ParallelGateway':
       return <FlowNodeGatewayParallel {...svgProps} />;
-    case 'EVENT_BASED_GATEWAY':
+    case 'bpmn:EventBasedGateway':
       return <FlowNodeGatewayEventBased {...svgProps} />;
-    case 'SERVICE_TASK':
+    case 'bpmn:ServiceTask':
       return <FlowNodeTaskService {...svgProps} />;
-    case 'USER_TASK':
+    case 'bpmn:UserTask':
       return <FlowNodeTaskUser {...svgProps} />;
-    case 'BUSINESS_RULE_TASK':
+    case 'bpmn:BusinessRuleTask':
       return <FlowNodeTaskBusinessRule {...svgProps} />;
-    case 'SCRIPT_TASK':
+    case 'bpmn:ScriptTask':
       return <FlowNodeTaskScript {...svgProps} />;
-    case 'RECEIVE_TASK':
+    case 'bpmn:ReceiveTask':
       return <FlowNodeTaskReceive {...svgProps} />;
-    case 'SEND_TASK':
+    case 'bpmn:SendTask':
       return <FlowNodeTaskSend {...svgProps} />;
-    case 'MANUAL_TASK':
+    case 'bpmn:ManualTask':
       return <FlowNodeTaskManual {...svgProps} />;
-    case 'CALL_ACTIVITY':
+    case 'bpmn:CallActivity':
       return <FlowNodeCallActivity {...svgProps} />;
-    case 'PROCESS':
+    case 'bpmn:Process':
       return <FlowNodeProcess {...svgProps} />;
-    case 'EVENT_SUB_PROCESS':
-      return <FlowNodeEventSubprocess {...svgProps} />;
-    case 'SUB_PROCESS':
+    case 'bpmn:SubProcess':
       return <FlowNodeTaskSubProcess {...svgProps} />;
   }
 
@@ -162,7 +180,7 @@ const ElementInstanceIcon: React.FC<Props> = ({
     return <FlowNodeTask {...svgProps} />;
   }
 
-  if (elementInstanceType === 'MULTI_INSTANCE_BODY') {
+  if (isMultiInstance(diagramBusinessObject)) {
     const multiInstanceType = getMultiInstanceType(diagramBusinessObject);
 
     if (multiInstanceType === 'parallel') {
@@ -311,12 +329,12 @@ const ElementInstanceIcon: React.FC<Props> = ({
       }
   }
 
-  switch (elementInstanceType) {
-    case 'START_EVENT':
+  switch (businessObjectTypeName) {
+    case 'bpmn:StartEvent':
       return <FlowNodeEventStart {...svgProps} />;
-    case 'END_EVENT':
+    case 'bpmn:EndEvent':
       return <FlowNodeEventEnd {...svgProps} />;
-    case 'INTERMEDIATE_THROW_EVENT':
+    case 'bpmn:IntermediateThrowEvent':
       return <FlowNodeEventIntermediateThrow {...svgProps} />;
   }
 
