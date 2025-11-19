@@ -2,6 +2,7 @@
 paths:
   /audit-logs/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Audit Log
       operationId: searchAuditLogs
@@ -28,10 +29,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           description: An internal error occurred while processing the request.
-      x-eventually-consistent: true
 
   /audit-logs/{operationKey}:
     get:
+      x-eventually-consistent: true
       tags:
         - Audit Log
       operationId: getAuditLog
@@ -43,7 +44,7 @@ paths:
           required: true
           description: The audit log operation key.
           schema:
-            type: string
+            $ref: 'keys.yaml#/components/schemas/AuditLogOperationKey'
       responses:
         "200":
           description: The audit log is successfully returned.
@@ -63,7 +64,6 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -74,7 +74,8 @@ components:
       type: object
       properties:
         operationKey:
-          type: string
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/AuditLogOperationKey'
           description: The unique operation key of the audit log entry.
         entityKey:
           type: string
@@ -87,7 +88,9 @@ components:
           type: string
           description: The type of operation performed.
         batchOperationKey:
-          $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
+          description: Key of the batch operation.
         batchOperationType:
           allOf:
             - $ref: '#/components/schemas/AuditLogBatchOperationTypeEnum'
@@ -104,8 +107,9 @@ components:
             - $ref: '#/components/schemas/AuditLogActorTypeEnum'
           description: The type of the actor.
         tenantId:
-          type: string
-          description: The tenant ID.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the audit log.
         operationStatus:
           allOf:
             - $ref: '#/components/schemas/AuditLogOperationStatusEnum'
@@ -117,31 +121,146 @@ components:
           allOf:
             - $ref: '#/components/schemas/AuditLogCategoryEnum'
           description: The category of the operation.
-        bpmnProcessId:
-          type: string
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The process definition ID.
         processDefinitionKey:
-          $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition.
         processInstanceKey:
-          $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance.
         elementInstanceKey:
-          $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-        decisionDefinitionKey:
-          $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
+          description: The key of the element instance.
         jobKey:
-          $ref: 'keys.yaml#/components/schemas/JobKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/JobKey'
+          description: The key of the job.
         userTaskKey:
-          $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+          description: The key of the user task.
         decisionRequirementsId:
           type: string
           description: The decision requirements ID.
         decisionRequirementsKey:
-          $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
-        decisionInstanceId:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: The assigned key of the decision requirements.
+        decisionDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: The decision definition ID.
+        decisionDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: The key of the decision definition.
+        decisionEvaluationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
+          description: The key of the decision evaluation.
+
+    AuditLogSearchQuerySortRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        field:
+          description: The field to sort by.
           type: string
-          description: The decision instance ID.
-        decisionInstanceKey:
-          $ref: 'keys.yaml#/components/schemas/DecisionInstanceKey'
+          enum:
+            - timestamp
+            - operationType
+            - entityType
+            - status
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
+    AuditLogSearchQueryRequest:
+      description: Audit log search request.
+      additionalProperties: false
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogSearchQuerySortRequest'
+        filter:
+          allOf:
+            - $ref: '#/components/schemas/AuditLogFilter'
+          description: The audit log search filters.
+
+    AuditLogFilter:
+      description: Audit log filter request
+      type: object
+      properties:
+        processDefinitionKey:
+          description: The process definition key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+        processInstanceKey:
+          description: The process instance key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+        elementInstanceKey:
+          description: The element instance key search filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+        operationType:
+          description: The operation type search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        operationStatus:
+          description: The operation status search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        timestamp:
+          description: The timestamp search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+        actorId:
+          description: The actor ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        actorType:
+          description: The actor type search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        entityType:
+          description: The entity type search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        tenantId:
+          description: The tenant ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        operationCategory:
+          description: The operation category search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+
+    AuditLogSearchQueryResult:
+      description: Audit log search response.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching audit logs.
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogResult'
+
+    ## Enums
 
     AuditLogEntityTypeEnum:
       type: string
@@ -232,98 +351,3 @@ components:
         - MIGRATE_PROCESS_INSTANCE
         - MODIFY_PROCESS_INSTANCE
         - RESOLVE_INCIDENT
-
-    AuditLogSearchQuerySortRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        field:
-          description: The field to sort by.
-          type: string
-          enum:
-            - timestamp
-            - operationType
-            - entityType
-            - status
-        order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
-      required:
-        - field
-
-    AuditLogSearchQueryRequest:
-      description: Audit log search request.
-      additionalProperties: false
-      allOf:
-        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
-      type: object
-      properties:
-        sort:
-          description: Sort field criteria.
-          type: array
-          items:
-            $ref: '#/components/schemas/AuditLogSearchQuerySortRequest'
-        filter:
-          allOf:
-            - $ref: '#/components/schemas/AuditLogFilter'
-          description: The audit log search filters.
-
-    AuditLogFilter:
-      description: Audit log filter request
-      type: object
-      properties:
-        processDefinitionKey:
-          description: The process definition key search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty"
-        processInstanceKey:
-          description: The process instance key search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty"
-        elementInstanceKey:
-          description: The element instance key search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty"
-        operationType:
-          description: The operation type search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
-        operationStatus:
-          description: The operation status search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
-        timestamp:
-          description: The timestamp search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/DateTimeFilterProperty"
-        actorId:
-          description: The actor ID search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
-        actorType:
-          description: The actor type search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
-        entityType:
-          description: The entity type search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
-        tenantId:
-          description: The tenant ID search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
-        operationCategory:
-          description: The operation category search filter.
-          allOf:
-            - $ref: "filters.yaml#/components/schemas/StringFilterProperty"
-
-    AuditLogSearchQueryResult:
-      description: Audit log search response.
-      type: object
-      allOf:
-        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
-      properties:
-        items:
-          description: The matching audit logs.
-          type: array
-          items:
-            $ref: '#/components/schemas/AuditLogResult'

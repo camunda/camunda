@@ -149,6 +149,15 @@ components:
       format: int64
       minimum: 1
 
+    AuditLogOperationKey:
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
+      description: System-generated key for an audit log entry.
+      format: AuditLogOperationKey
+      x-semantic-type: AuditLogOperationKey
+      example: "22517998136843567"
+      type: string
+
 ## Filters
 
     ProcessDefinitionKeyFilterProperty:
