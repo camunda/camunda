@@ -32,6 +32,10 @@ import {useState} from 'react';
 import {Locations} from 'modules/Routes';
 import {FiltersPanel} from 'modules/components/FiltersPanel';
 import {TenantField} from 'modules/components/TenantField';
+import {
+  getDefinitionIdentifier,
+  getDefinitionIdFromIdentifier,
+} from 'modules/hooks/decisionDefinition';
 
 const initialValues: DecisionInstanceFilters = {
   evaluated: true,
@@ -46,15 +50,29 @@ const Filters: React.FC = observer(() => {
   const location = useLocation() as LocationType;
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+  const filters = parseDecisionInstancesFilter(location.search);
 
   return (
     <Form<DecisionInstanceFilters>
       onSubmit={(values) => {
         navigate({
-          search: updateDecisionsFiltersSearchString(location.search, values),
+          search: updateDecisionsFiltersSearchString(location.search, {
+            ...values,
+            name: getDefinitionIdFromIdentifier(values.name),
+          }),
         });
       }}
-      initialValues={parseDecisionInstancesFilter(location.search)}
+      initialValues={{
+        ...filters,
+        name:
+          filters.name && filters.tenant !== 'all'
+            ? getDefinitionIdentifier(filters.name, filters.tenant)
+            : undefined,
+        version:
+          filters.version && filters.tenant !== 'all'
+            ? filters.version
+            : undefined,
+      }}
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
