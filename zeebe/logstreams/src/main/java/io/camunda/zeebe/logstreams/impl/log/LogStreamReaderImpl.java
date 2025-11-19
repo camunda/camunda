@@ -14,6 +14,8 @@ import java.util.NoSuchElementException;
 import net.jcip.annotations.NotThreadSafe;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link LogStreamReader} implementation which can read single events from the blocks given by
@@ -24,6 +26,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 @NotThreadSafe
 final class LogStreamReaderImpl implements LogStreamReader {
+
+  private static final Logger LOG = LoggerFactory.getLogger(LogStreamReaderImpl.class);
   private final LogStorageReader reader;
 
   private LoggedEventImpl currentEvent;
@@ -54,6 +58,7 @@ final class LogStreamReaderImpl implements LogStreamReader {
 
     currentEventBuffer.wrap(
         nextEventBuffer, nextEvent.getFragmentOffset(), nextEvent.getFragmentLength());
+    LOG.info("Read event from {}", currentEventBuffer);
 
     nextEventOffset += nextEvent.getLength();
     nextEvent.wrap(nextEventBuffer, nextEventOffset);
