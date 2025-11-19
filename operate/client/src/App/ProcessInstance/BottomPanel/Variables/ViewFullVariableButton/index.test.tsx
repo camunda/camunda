@@ -66,6 +66,6 @@ describe('<ViewFullVariableButton />', () => {
     expect(
       screen.getByRole('heading', {name: `Full value of ${mockVariableName}`}),
     ).toBeInTheDocument();
-    expect(screen.getByText(/"foo": "bar"/)).toBeInTheDocument();
+    expect(await screen.findByText(/"foo": "bar"/)).toBeInTheDocument();
   });
 });

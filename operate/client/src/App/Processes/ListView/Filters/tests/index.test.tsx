@@ -366,8 +366,6 @@ describe('Filters', () => {
   });
 
   it('should enable the reset button', async () => {
-    vi.useFakeTimers();
-
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
