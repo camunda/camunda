@@ -7,11 +7,9 @@
  */
 package io.camunda.it.auth;
 
-import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.versioned.VersionedTest;
 import io.camunda.shared.auth.AuthorizationSearchITShared;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
-@MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@VersionedTest(enableAuthorization = true)
 public class AuthorizationSearchIT extends AuthorizationSearchITShared {
 }

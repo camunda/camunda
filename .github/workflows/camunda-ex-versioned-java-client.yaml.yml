@@ -1,0 +1,218 @@
+name: camunda-ex-versioned-java-client.yaml
+
+on:
+  workflow_dispatch:
+    inputs:
+      client-version:
+        description: 'Specific client version to test (optional, tests all if empty)'
+        required: false
+        default: ''
+      server-version:
+        description: 'Specific server version to test (optional, tests all if empty)'
+        required: false
+        default: ''
+  schedule:
+    # Run at 3:00 AM every day
+    - cron: '0 3 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  discover-versions:
+    name: Discover Available Versions
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      client-versions: ${{ steps.get-versions.outputs.client-versions }}
+      server-versions: ${{ steps.get-versions.outputs.server-versions }}
+      matrix: ${{ steps.create-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history to get all tags
+
+      - name: Discover versions from git tags
+        id: get-versions
+        shell: bash
+        run: |
+          set -e
+
+          echo "Discovering versions from git tags..."
+
+          # Get all tags and filter for version tags (e.g., 8.8.0, 8.9.1, etc.)
+          ALL_TAGS=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
+
+          echo "All version tags found:"
+          echo "$ALL_TAGS"
+
+          # Filter client versions >= 8.8.0
+          CLIENT_VERSIONS=$(echo "$ALL_TAGS" | \
+            awk -F. '$1 == 8 && $2 >= 8 {print}' | \
+            sort -V -u | \
+            tail -20)
+
+          # Add current SNAPSHOT version for client
+          CURRENT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          CLIENT_VERSIONS=$(echo -e "${CLIENT_VERSIONS}\n${CURRENT_VERSION}" | sort -V -u)
+
+          # Filter server versions >= 8.9.0
+          SERVER_VERSIONS=$(echo "$ALL_TAGS" | \
+            awk -F. '$1 == 8 && $2 >= 9 {print}' | \
+            sort -V -u | \
+            tail -20)
+
+          # Add SNAPSHOT for server (uses current Docker image)
+          SERVER_VERSIONS=$(echo -e "${SERVER_VERSIONS}\nSNAPSHOT" | sort -V -u)
+
+          # Override with manual input if provided
+          if [ -n "${{ github.event.inputs.client-version }}" ]; then
+            CLIENT_VERSIONS="${{ github.event.inputs.client-version }}"
+          fi
+
+          if [ -n "${{ github.event.inputs.server-version }}" ]; then
+            SERVER_VERSIONS="${{ github.event.inputs.server-version }}"
+          fi
+
+          # Convert to JSON arrays
+          CLIENT_JSON=$(echo "$CLIENT_VERSIONS" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          SERVER_JSON=$(echo "$SERVER_VERSIONS" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+          echo "client-versions=$CLIENT_JSON" >> "$GITHUB_OUTPUT"
+          echo "server-versions=$SERVER_JSON" >> "$GITHUB_OUTPUT"
+
+          echo "Found client versions: $CLIENT_JSON"
+          echo "Found server versions: $SERVER_JSON"
+
+      - name: Create test matrix
+        id: create-matrix
+        shell: bash
+        run: |
+          set -e
+
+          CLIENT_VERSIONS='${{ steps.get-versions.outputs.client-versions }}'
+          SERVER_VERSIONS='${{ steps.get-versions.outputs.server-versions }}'
+
+          # Create matrix: each client version tested against ALL server versions
+          MATRIX=$(jq -n \
+            --argjson clients "$CLIENT_VERSIONS" \
+            --argjson servers "$SERVER_VERSIONS" \
+            '{include: [
+              $clients[] as $client |
+              $servers[] as $server |
+              {
+                "client-version": $client,
+                "server-version": $server,
+                "scenario": ($client + "-vs-" + $server)
+              }
+            ]}')
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+          echo "Generated test matrix:"
+          echo "$MATRIX" | jq .
+
+          # Calculate and log matrix size
+          MATRIX_SIZE=$(echo "$MATRIX" | jq '.include | length')
+          echo "Total test combinations: $MATRIX_SIZE"
+
+  test-compatibility:
+    name: "${{ matrix.client-version }} → ${{ matrix.server-version }}"
+    needs: discover-versions
+    if: needs.discover-versions.outputs.matrix != ''
+    timeout-minutes: 30
+    permissions: {}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.discover-versions.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.client-version }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+
+      # Run versioned tests with specified client and server versions
+      - name: Test client ${{ matrix.client-version }} against server ${{ matrix.server-version }}
+        shell: bash
+        run: >
+          ./mvnw -B --no-snapshot-updates
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3
+          -D camunda.test.version=${{ matrix.server-version }}
+          -D camunda.client.version=${{ matrix.client-version }}
+          -pl 'qa/versioned-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+        continue-on-error: true
+        id: test-run
+
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "Client ${{ matrix.client-version }} vs Server ${{ matrix.server-version }}"
+
+      - name: Record compatibility result
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p compatibility-results
+          RESULT="${{ steps.test-run.outcome }}"
+          echo "${{ matrix.client-version }},${{ matrix.server-version }},$RESULT" >> compatibility-results/result.csv
+
+      - name: Upload compatibility result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibility-result-${{ matrix.scenario }}
+          path: compatibility-results/result.csv
+          retention-days: 30
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "Client ${{ matrix.client-version }} vs Server ${{ matrix.server-version }}"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  notify:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [discover-versions, test-compatibility]
+    if: failure()
+    steps:
+      - uses: actions/checkout@v4
+      - name: Send notification
+        shell: bash
+        run: |
+          echo "⚠️ Client version compatibility tests failed"
+          echo "Check the workflow run for details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "Download the compatibility matrix artifact for detailed results."

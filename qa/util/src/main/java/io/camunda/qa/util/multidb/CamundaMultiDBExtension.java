@@ -352,13 +352,15 @@ public class CamundaMultiDBExtension
     if (shouldSetupKeycloak) {
       authenticatedClientFactory =
           new OidcCamundaClientTestFactory(
-              applicationUnderTest,
+              applicationUnderTest.application.newClientBuilder(),
+              applicationUnderTest.application.restAddress(),
+              applicationUnderTest.application.grpcAddress(),
               testPrefix,
               keycloakContainer.getAuthServerUrl()
                   + "/realms/camunda/protocol/openid-connect/token");
       injectStaticKeycloakContainerField(testClass, keycloakContainer);
     } else {
-      authenticatedClientFactory = new BasicAuthCamundaClientTestFactory(applicationUnderTest);
+      authenticatedClientFactory = new BasicAuthCamundaClientTestFactory(applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), applicationUnderTest.application.grpcAddress());
     }
 
     if (applicationUnderTest.shouldBeManaged) {
@@ -410,7 +412,7 @@ public class CamundaMultiDBExtension
           try {
             final var clientFactory =
                 (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForUser(applicationUnderTest.application, user);
+            clientFactory.createClientForUser(applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), applicationUnderTest.application.grpcAddress(), user);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for user, as the application is not configured for basic authentication: %s",
@@ -422,7 +424,7 @@ public class CamundaMultiDBExtension
         mappingRule -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForMappingRule(applicationUnderTest.application, mappingRule);
+            clientFactory.createClientForMappingRule(applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), applicationUnderTest.application.grpcAddress(), mappingRule);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for mapping rule, as the application is not configured for OIDC authentication",
@@ -438,7 +440,7 @@ public class CamundaMultiDBExtension
         client -> {
           try {
             final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
-            clientFactory.createClientForClient(applicationUnderTest.application, client);
+            clientFactory.createClientForClient(applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), applicationUnderTest.application.grpcAddress(), client);
           } catch (final ClassCastException e) {
             LOGGER.warn(
                 "Could not create client for client, as the application is not configured for OIDC authentication",
@@ -503,31 +505,38 @@ public class CamundaMultiDBExtension
     var testStandaloneApplication = defaultTestApplication;
     var shouldBeManaged = true;
     predicate = predicate.and(field -> field.isAnnotationPresent(MultiDbTestApplication.class));
-    for (final Field field : testClass.getDeclaredFields()) {
-      try {
-        if (predicate.test(field)) {
-          if (TestStandaloneApplication.class.isAssignableFrom(field.getType())) {
-            field.setAccessible(true);
-            testStandaloneApplication = (TestStandaloneApplication<?>) field.get(null);
-            final MultiDbTestApplication annotation =
-                field.getAnnotation(MultiDbTestApplication.class);
-            shouldBeManaged = annotation.managedLifecycle();
-            field.setAccessible(false);
-          } else {
-            fail(
-                String.format(
-                    "Expected to find field annotated with %s from type %s, but found %s. It doesn't apply criteria.",
-                    MultiDbTestApplication.class, TestSpringApplication.class, field.getType()));
+
+    Class<?> current = testClass;
+    while (current != null && current != Object.class) {
+      for (final Field field : current.getDeclaredFields()) {
+        try {
+          if (predicate.test(field)) {
+            if (TestStandaloneApplication.class.isAssignableFrom(field.getType())) {
+              field.setAccessible(true);
+              testStandaloneApplication = (TestStandaloneApplication<?>) field.get(null);
+              final MultiDbTestApplication annotation =
+                  field.getAnnotation(MultiDbTestApplication.class);
+              shouldBeManaged = annotation.managedLifecycle();
+              field.setAccessible(false);
+              return new ApplicationUnderTest(testStandaloneApplication, shouldBeManaged);
+            } else {
+              fail(
+                  String.format(
+                      "Expected to find field annotated with %s from type %s, but found %s. It doesn't apply criteria.",
+                      MultiDbTestApplication.class, TestSpringApplication.class, field.getType()));
+            }
           }
+        } catch (final Exception ex) {
+          throw new RuntimeException(
+              String.format(
+                  "Expected to find field annotated with %s from type %s, but fail during that.",
+                  MultiDbTestApplication.class, TestSpringApplication.class),
+              ex);
         }
-      } catch (final Exception ex) {
-        throw new RuntimeException(
-            String.format(
-                "Expected to find field annotated with %s from type %s, but fail during that.",
-                MultiDbTestApplication.class, TestSpringApplication.class),
-            ex);
       }
+      current = current.getSuperclass();
     }
+
     return new ApplicationUnderTest(testStandaloneApplication, shouldBeManaged);
   }
 
@@ -563,57 +572,75 @@ public class CamundaMultiDBExtension
       Predicate<Field> predicate,
       final Class<T> entityClass,
       final Class<? extends Annotation> definitionClass) {
-    final var instances = new ArrayList<T>();
-    predicate =
-        predicate.and(
-            field ->
-                field.getType() == entityClass && field.getAnnotation(definitionClass) != null);
-    for (final Field field : testClass.getDeclaredFields()) {
-      try {
-        if (predicate.test(field)) {
-          field.setAccessible(true);
-          final var instance = (T) field.get(testInstance);
-          instances.add(instance);
+
+    final List<T> instances = new ArrayList<>();
+    predicate = predicate.and(field ->
+        field.getType() == entityClass && field.getAnnotation(definitionClass) != null);
+
+    Class<?> current = testClass;
+    while (current != null && current != Object.class) {
+      for (final Field field : current.getDeclaredFields()) {
+        try {
+          if (predicate.test(field)) {
+            field.setAccessible(true);
+            @SuppressWarnings("unchecked") final T instance = (T) field.get(testInstance);
+            instances.add(instance);
+          }
+        } catch (final Exception ex) {
+          throw new RuntimeException(ex);
         }
-      } catch (final Exception ex) {
-        throw new RuntimeException(ex);
       }
+      current = current.getSuperclass();
     }
+
     return instances;
   }
 
   private void injectStaticClientField(final Class<?> testClass) {
-    for (final Field field : testClass.getDeclaredFields()) {
-      try {
-        if (field.getType() == CamundaClient.class) {
-          if (ModifierSupport.isStatic(field)) {
-            field.setAccessible(true);
-            field.set(null, getCamundaClient(field.getAnnotation(Authenticated.class)));
-          } else {
-            fail("Camunda Client field couldn't be injected. Make sure it is static.");
+    Class<?> current = testClass;
+    while (current != null && current != Object.class) {
+      for (final Field field : current.getDeclaredFields()) {
+        try {
+          if (field.getType() == CamundaClient.class) {
+            if (ModifierSupport.isStatic(field)) {
+              field.setAccessible(true);
+              field.set(null, getCamundaClient(field.getAnnotation(Authenticated.class)));
+              return;
+            } else {
+              fail("Camunda Client field couldn't be injected. Make sure it is static: " + field);
+            }
           }
+        } catch (final Exception ex) {
+          throw new RuntimeException(ex);
         }
-      } catch (final Exception ex) {
-        throw new RuntimeException(ex);
       }
+      current = current.getSuperclass();
     }
   }
 
   private void injectStaticKeycloakContainerField(
       final Class<?> testClass, final KeycloakContainer keycloakContainer) {
-    for (final Field field : testClass.getDeclaredFields()) {
-      try {
-        if (field.getType() == KeycloakContainer.class) {
-          if (ModifierSupport.isStatic(field)) {
-            field.setAccessible(true);
-            field.set(null, keycloakContainer);
-          } else {
-            fail("Keycloak container field couldn't be injected. Make sure it is static.");
+
+    Class<?> current = testClass;
+
+    while (current != null && current != Object.class) {
+      for (final Field field : current.getDeclaredFields()) {
+        try {
+          if (field.getType() == KeycloakContainer.class) {
+            if (ModifierSupport.isStatic(field)) {
+              field.setAccessible(true);
+              field.set(null, keycloakContainer);
+              return;
+            } else {
+              fail("Keycloak container field couldn't be injected. Make sure it is static: " + field);
+            }
           }
+        } catch (final Exception ex) {
+          throw new RuntimeException(ex);
         }
-      } catch (final Exception ex) {
-        throw new RuntimeException(ex);
       }
+
+      current = current.getSuperclass();
     }
   }
 
@@ -640,7 +667,7 @@ public class CamundaMultiDBExtension
 
   private CamundaClient getCamundaClient(final Authenticated authenticated) {
     return authenticatedClientFactory.getCamundaClient(
-        applicationUnderTest.application, authenticated);
+        applicationUnderTest.application.newClientBuilder(), applicationUnderTest.application.restAddress(), authenticated);
   }
 
   public record ApplicationUnderTest(

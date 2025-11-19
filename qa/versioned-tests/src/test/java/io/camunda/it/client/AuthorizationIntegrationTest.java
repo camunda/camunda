@@ -7,10 +7,10 @@
  */
 package io.camunda.it.client;
 
-import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.versioned.VersionedTest;
 import io.camunda.shared.client.AuthorizationIntegrationTestShared;
 
-@MultiDbTest
+@VersionedTest
 public class AuthorizationIntegrationTest extends AuthorizationIntegrationTestShared {
 
 }

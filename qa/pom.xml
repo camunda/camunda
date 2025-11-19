@@ -19,6 +19,8 @@
     <module>acceptance-tests</module>
     <module>archunit-tests</module>
     <module>util</module>
+    <module>versioned-tests</module>
+    <module>shared-tests</module>
   </modules>
 
   <build>
