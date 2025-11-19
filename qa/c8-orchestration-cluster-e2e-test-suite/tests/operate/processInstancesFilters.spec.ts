@@ -67,6 +67,7 @@ test.beforeAll(async () => {
   await deploy(['./resources/Versioned Process.bpmn']);
   await deploy(['./resources/Versioned Process_2.bpmn']);
   await deploy(['./resources/ProcessToCancel.bpmn']);
+  await deploy(['./resources/NamedEventsProcess.bpmn']);
 });
 
 test.describe('Process Instances Filters', () => {
@@ -679,4 +680,59 @@ test.describe('Process Instances Filters', () => {
       ).toBeVisible();
     });
   });
+
+  test('Verify flow node selection reflects in filters and assert results', async ({
+    operateFiltersPanelPage,
+    operateDiagramPage,
+    page,
+  }) => {
+    await test.step('Select process from dropdown and assert results', async () => {
+      await operateFiltersPanelPage.selectProcess('NamedEventsProcess');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateFiltersPanelPage.processNameFilter).toHaveValue('NamedEventsProcess');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+      await expect(operateDiagramPage.diagram).toBeVisible();
+    });
+
+    await test.step('Click start flow node and assert filter value and results', async () => {
+      await operateDiagramPage.clickFlowNode('StartEvent_OrderReceived');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('Order received');
+    });
+
+    await test.step('Click task flow nodes and assert filter value and results', async () => {
+      await operateDiagramPage.clickFlowNode('Activity_SendOrderConfirmation');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('Send order confirmation');
+
+      await operateDiagramPage.clickFlowNode('Activity_PackItems');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('Pack Items');
+
+      await operateDiagramPage.clickFlowNode('Activity_SendItems');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('Send items');
+    });
+
+    await test.step('Click end event flow node and assert filter value and results', async () => {
+      await operateDiagramPage.clickFlowNode('Event_OrderFulfilled');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('Order fulfilled');
+    });
+
+    await test.step('Click intermediate throw event flow node and assert results', async () => {
+      await operateDiagramPage.clickFlowNode('Event_OrderConfirmed');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('Order Confirmed');
+    });
+
+    await test.step('Click same flow node again and see filter is removed', async () => {
+      await operateDiagramPage.clickFlowNode('Event_OrderConfirmed');
+
+      await expect(
+        operateFiltersPanelPage.flowNodeFilter,
+      ).toHaveValue('');
+    });
+  })
+
 });
