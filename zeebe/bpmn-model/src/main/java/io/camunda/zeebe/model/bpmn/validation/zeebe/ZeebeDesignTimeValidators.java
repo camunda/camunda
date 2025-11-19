@@ -54,7 +54,6 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new DefinitionsValidator());
     validators.add(new EndEventValidator());
     validators.add(new EventDefinitionValidator());
-    validators.add(new ConditionalEventDefinitionValidator());
     validators.add(new GatewayValidator());
     validators.add(new EventBasedGatewayValidator());
     validators.add(new ErrorEventDefinitionValidator());
