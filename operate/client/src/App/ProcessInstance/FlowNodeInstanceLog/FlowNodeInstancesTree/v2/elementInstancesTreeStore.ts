@@ -312,6 +312,24 @@ class ElementInstancesTreeStore {
     return this.state.nodes.get(scopeKey)?.items ?? [];
   };
 
+  hasNextPage = (scopeKey: string): boolean => {
+    const nodeData = this.state.nodes.get(scopeKey);
+    if (nodeData === undefined) {
+      return false;
+    }
+
+    return nodeData.pageMetadata.windowEnd < nodeData.pageMetadata.totalItems;
+  };
+
+  hasPreviousPage = (scopeKey: string): boolean => {
+    const nodeData = this.state.nodes.get(scopeKey);
+    if (nodeData === undefined) {
+      return false;
+    }
+
+    return nodeData.pageMetadata.windowStart > 0;
+  };
+
   reset = () => {
     this.state.abortControllers.forEach((controller) => {
       controller.abort();
