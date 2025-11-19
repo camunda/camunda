@@ -777,7 +777,7 @@ X-Document-Metadata: {"fileName": "test.pdf", "size": 1234567}
 Content-Type: application/pdf
 
 < ./test.pdf
---boundary123
+--boundary123--
 
 > {%
   client.test("Document upload should be successful", function () {
@@ -813,7 +813,7 @@ X-Document-Metadata: {"fileName": "test.pdf", "size": 1234567}
 Content-Type: application/pdf
 
 < ./test.pdf
---boundary123
+--boundary123--
 
 > {%
   client.test("Document upload should be unsuccessful", function () {
