@@ -70,6 +70,9 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_RESOURCE_TYPE = "resourceType";
   public static final String ATTRIBUTE_LINK_NAME = "linkName";
 
+  public static final String ATTRIBUTE_VARIABLE_NAMES = "variableNames";
+  public static final String ATTRIBUTE_VARIABLE_EVENTS = "variableEvents";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -120,6 +123,8 @@ public class ZeebeConstants {
 
   public static final String ELEMENT_LINKED_RESOURCE = "linkedResource";
   public static final String ELEMENT_LINKED_RESOURCES = "linkedResources";
+
+  public static final String ELEMENT_CONDITION_VARIABLE = "conditionVariable";
 
   /** The property used for the example output JSON data. */
   public static final String PROPERTY_EXAMPLE_DATA = "camundaModeler:exampleOutputJson";

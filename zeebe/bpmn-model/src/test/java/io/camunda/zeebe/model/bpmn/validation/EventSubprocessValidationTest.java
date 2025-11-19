@@ -70,7 +70,7 @@ class EventSubprocessValidationTest {
         process,
         expect(
             SUBPROCESS_ID,
-            "Start events in event subprocesses must be one of: message, timer, error, signal or escalation"),
+            "Start events in event subprocesses must be one of: message, timer, error, signal, escalation, or conditional"),
         expect(
             SUBPROCESS_ID, "A compensation event subprocess is not allowed on the process level"));
   }
@@ -102,11 +102,11 @@ class EventSubprocessValidationTest {
         process,
         expect(
             SUBPROCESS_ID,
-            "Start events in event subprocesses must be one of: message, timer, error, signal or escalation"));
+            "Start events in event subprocesses must be one of: message, timer, error, signal, escalation, or conditional"));
   }
 
   @Test
-  @DisplayName("An event subprocess with a conditional start event should not be valid")
+  @DisplayName("An event subprocess with a conditional start event should be valid")
   void conditionalStartEvent() {
     // given
     final BpmnModelInstance process =
@@ -117,13 +117,8 @@ class EventSubprocessValidationTest {
             .endEvent()
             .done();
 
-    // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process,
-        expect(
-            SUBPROCESS_ID,
-            "Start events in event subprocesses must be one of: message, timer, error, signal or escalation"),
-        expect(ConditionalEventDefinition.class, "Event definition of this type is not supported"));
+    // when/then - conditional events are now supported in event subprocesses
+    ProcessValidationUtil.assertThatProcessIsValid(process);
   }
 
   @Test
