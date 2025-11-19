@@ -16,4 +16,6 @@ public interface KeyGeneratorControls extends KeyGenerator {
    * @param key the new key
    */
   void setKeyIfHigher(long key);
+
+  long getCurrentKey();
 }

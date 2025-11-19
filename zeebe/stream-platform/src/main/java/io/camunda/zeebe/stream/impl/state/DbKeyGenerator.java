@@ -61,17 +61,6 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
     return nextKey;
   }
 
-  /**
-   * Retrieve the current key from the state, since it is only used in tests it is not part of the
-   * interface.
-   *
-   * @return the current key from the state
-   */
-  @VisibleForTesting
-  public long getCurrentKey() {
-    return nextValueManager.getCurrentValue(LATEST_KEY);
-  }
-
   @Override
   public void setKeyIfHigher(final long key) {
     final var currentKey = nextValueManager.getCurrentValue(LATEST_KEY);
@@ -86,5 +75,17 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
       }
       nextValueManager.setValue(LATEST_KEY, key);
     }
+  }
+
+  /**
+   * Retrieve the current key from the state, since it is only used in tests it is not part of the
+   * interface.
+   *
+   * @return the current key from the state
+   */
+  @Override
+  @VisibleForTesting
+  public long getCurrentKey() {
+    return nextValueManager.getCurrentValue(LATEST_KEY);
   }
 }

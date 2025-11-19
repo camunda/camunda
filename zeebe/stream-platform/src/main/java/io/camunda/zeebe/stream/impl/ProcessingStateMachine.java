@@ -277,11 +277,21 @@ public final class ProcessingStateMachine {
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
+      final long keyBeforeProcessing = context.getKeyGeneratorControls().getCurrentKey();
       try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
         zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
         processingMetrics.observeCommandCount(processedCommandsCount);
       }
 
+      final long keyAfterProcessing = context.getKeyGeneratorControls().getCurrentKey();
+      final long diff = keyAfterProcessing - keyBeforeProcessing;
+      final int results = currentProcessingResult.getRecordBatch().entries().size();
+      assert diff <= results
+          : "Expected to allocate at most resulting events ("
+              + results
+              + ") during processing of a single command, but allocated "
+              + diff
+              + " keys.";
       finalizeCommandProcessing();
       writeRecords();
     } catch (final RecoverableException recoverableException) {

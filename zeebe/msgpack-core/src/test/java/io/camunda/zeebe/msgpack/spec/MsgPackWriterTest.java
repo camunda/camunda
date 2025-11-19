@@ -123,6 +123,11 @@ public final class MsgPackWriterTest {
             actual((w) -> w.writeInteger(-(1L << 63))),
             expect((b) -> b.add(0xd3, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
           },
+          {
+            "int 64",
+            actual((w) -> w.writeInteger((1L << 51) + Integer.MAX_VALUE)),
+            expect((b) -> b.add(0xd3, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+          },
           {"str 8", actual((w) -> w.writeStringHeader(0xff)), expect((b) -> b.add(0xd9, 0xff))},
           {
             "str 8 with data",
