@@ -162,4 +162,15 @@ abstract class AbstractEntityReader<T> {
         || resourceAccessChecks.tenantCheck().enabled()
             && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
   }
+
+  /**
+   * Checks if the provided database query page should result in an empty page.
+   *
+   * @param page the database query page to check
+   * @param totalHits the total number of hits
+   * @return {@code true} if the page size is zero or total hits is zero, {@code false} otherwise
+   */
+  protected boolean shouldReturnEmptyPage(final DbQueryPage page, final long totalHits) {
+    return page.size() == 0 || totalHits == 0;
+  }
 }

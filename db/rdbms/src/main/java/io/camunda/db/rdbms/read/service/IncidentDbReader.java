@@ -46,6 +46,7 @@ public class IncidentDbReader extends AbstractEntityReader<IncidentEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         IncidentDbQuery.of(
             b ->
@@ -53,10 +54,15 @@ public class IncidentDbReader extends AbstractEntityReader<IncidentEntity>
                     .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for incident with filter {}", dbQuery);
     final var totalHits = incidentMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(dbPage, totalHits)) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = incidentMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
