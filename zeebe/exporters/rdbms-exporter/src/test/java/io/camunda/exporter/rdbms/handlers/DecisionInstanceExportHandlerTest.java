@@ -45,14 +45,6 @@ class DecisionInstanceExportHandlerTest {
   }
 
   @Test
-  void shouldSetHistoryCleanupDateForDecisionInstanceWithoutProcessInstance() {
-    // This test verifies the logic in DecisionInstanceWriter.create() method
-    // The actual processInstanceKey value and cleanup date calculation are tested in
-    // DecisionInstanceWriter tests and integration tests
-    assertThat(handler).isNotNull();
-  }
-
-  @Test
   void shouldBeAbleToExportEvaluatedDecision() {
     // given
     final Record<DecisionEvaluationRecordValue> record =

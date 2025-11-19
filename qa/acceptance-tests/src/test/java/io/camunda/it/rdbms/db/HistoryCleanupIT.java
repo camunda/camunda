@@ -185,12 +185,15 @@ public class HistoryCleanupIT {
   public void shouldSetHistoryCleanupDateForDecisionInstanceWithoutProcessInstance() {
     // GIVEN
     // Create a decision instance without a processInstanceKey (using -1)
+    // Use a deterministic evaluation date for predictable cleanup date calculation
+    final var evaluationDate = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
     final var decisionInstance =
         DecisionInstanceFixtures.createAndSaveRandomDecisionInstance(
-            rdbmsWriter, b -> b.processInstanceKey(-1L).historyCleanupDate(OffsetDateTime.now()));
+            rdbmsWriter,
+            b -> b.processInstanceKey(-1L).evaluationDate(evaluationDate).historyCleanupDate(null));
     rdbmsWriter.flush();
 
-    // THEN - verify cleanup date is set
+    // THEN - verify cleanup date is calculated correctly
     final OffsetDateTime cleanupDate =
         jdbcTemplate.queryForObject(
             "SELECT HISTORY_CLEANUP_DATE FROM DECISION_INSTANCE "
@@ -198,9 +201,13 @@ public class HistoryCleanupIT {
                 + decisionInstance.decisionInstanceKey(),
             OffsetDateTime.class);
 
+    // The cleanup date should be evaluationDate + decisionInstanceTTL (default 30 days)
+    final var expectedCleanupDate = evaluationDate.plusDays(30);
     assertThat(cleanupDate)
         .describedAs(
-            "should have a history cleanup date set for decision instance without process instance")
-        .isNotNull();
+            "should have cleanup date set to evaluationDate + decisionInstanceTTL for decision"
+                + " instance without process instance")
+        .isNotNull()
+        .isEqualTo(expectedCleanupDate);
   }
 }
