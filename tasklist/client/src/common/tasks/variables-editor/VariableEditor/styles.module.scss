@@ -49,3 +49,10 @@
   height: min(min-content, 100%);
   overflow-y: auto;
 }
+
+.singleLineValue {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
