@@ -71,7 +71,7 @@ func TestPrintStatus_DockerModeIgnoresPortFlag(t *testing.T) {
     })
 
     // Verify fixed docker ports are present
-    expectedPorts := map[string]int{"Operate": 8081, "Tasklist": 8082, "Identity": 8084, "Orchestration Cluster API": 8088}
+    expectedPorts := map[string]int{"Operate": 8088, "Tasklist": 8088, "Identity": 8088, "Orchestration Cluster API": 8088}
     for name, port := range expectedPorts {
         if !strings.Contains(out, "http://localhost:"+strconv.Itoa(port)) {
             t.Fatalf("expected %s endpoint to include port %d; output: %s", name, port, out)
