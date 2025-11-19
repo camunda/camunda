@@ -153,7 +153,7 @@ public class ExporterConfiguration {
 
   public static class BulkConfiguration {
     // delay before forced flush
-    private int delay = 5;
+    private int delay = 1;
     // bulk size before flush
     private int size = 5_000;
     // bulk memory utilisation before flush (in Mb)
