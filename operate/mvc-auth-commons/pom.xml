@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.6.22-SNAPSHOT</version>
+    <version>8.6.21</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-mvc-auth-commons</artifactId>
