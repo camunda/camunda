@@ -109,7 +109,7 @@ public final class RdbmsExporter {
         currentUsageMetricsCleanupTask.cancel();
       }
 
-      rdbmsWriter.flush();
+      rdbmsWriter.flush(true);
     } catch (final Exception e) {
       LOG.warn("[RDBMS Exporter] Failed to flush records before closing exporter.", e);
     }
@@ -143,16 +143,16 @@ public final class RdbmsExporter {
         }
 
         lastPosition = record.getPosition();
-
-        if (flushAfterEachRecord()) {
-          rdbmsWriter.flush();
-        }
       }
     } else {
       LOG.trace("[RDBMS Exporter] No registered handler found for {}", record.getValueType());
     }
 
-    if (!exported) {
+    if (exported) {
+      // causes a flush check after each processed record. Depending on the queue size and
+      // configuration, the writers ExecutionQueue may or may not flush here.
+      rdbmsWriter.flush(flushAfterEachRecord());
+    } else {
       LOG.trace(
           "[RDBMS Exporter] Record with key {} and original partitionId {} could not be exported {}.",
           record.getKey(),
@@ -251,7 +251,7 @@ public final class RdbmsExporter {
       LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;
     }
-    rdbmsWriter.flush();
+    rdbmsWriter.flush(true);
   }
 
   public static final class Builder {

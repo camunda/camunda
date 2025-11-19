@@ -278,6 +278,20 @@ public class RdbmsWriter {
   }
 
   public void flush() {
-    executionQueue.flush();
+    flush(true);
+  }
+
+  /**
+   * Flushes the execution queue based on the force parameter.
+   *
+   * @param force if true, forces an immediate flush; if false, only flushes if queue limits are
+   *     reached
+   */
+  public void flush(final boolean force) {
+    if (force) {
+      executionQueue.flush();
+    } else {
+      executionQueue.checkQueueForFlush();
+    }
   }
 }

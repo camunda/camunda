@@ -65,7 +65,47 @@ class DefaultExecutionQueueTest {
   }
 
   @Test
-  public void whenFlushLimitIsActivatedFlushShouldHappen() {
+  public void whenFlushLimitIsZeroFlushShouldNotHappenAfterCheck() {
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, metrics);
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    executionQueue.executeInQueue(item1);
+
+    verifyNoInteractions(sqlSessionFactory);
+
+    final var result = executionQueue.checkQueueForFlush();
+    assertThat(result).isFalse();
+
+    verifyNoInteractions(sqlSessionFactory);
+  }
+
+  @Test
+  public void whenFlushLimitIsNotActivatedFlushShouldNotHappenAfterCheck() {
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 3, metrics);
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    executionQueue.executeInQueue(item1);
+
+    verifyNoInteractions(sqlSessionFactory);
+
+    final var result = executionQueue.checkQueueForFlush();
+    assertThat(result).isFalse();
+
+    verifyNoInteractions(sqlSessionFactory);
+  }
+
+  @Test
+  public void whenFlushLimitIsActivatedFlushShouldHappenAfterCheck() {
     executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 3, metrics);
     final var item1 =
         new QueueItem(
@@ -91,6 +131,11 @@ class DefaultExecutionQueueTest {
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
     executionQueue.executeInQueue(item3);
+
+    verifyNoInteractions(sqlSessionFactory);
+
+    final var result = executionQueue.checkQueueForFlush();
+    assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
