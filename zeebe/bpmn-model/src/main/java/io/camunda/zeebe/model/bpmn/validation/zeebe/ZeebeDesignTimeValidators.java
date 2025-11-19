@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeConditionVariable;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
@@ -146,6 +147,7 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new ZeebeBindingTypeValidator<>(ZeebeCalledDecision.class));
     validators.add(new ZeebeBindingTypeValidator<>(ZeebeCalledElement.class));
     validators.add(new ZeebeBindingTypeValidator<>(ZeebeFormDefinition.class));
+    validators.add(new ZeebeConditionVariableValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebePriorityDefinition.class)
             .hasNonEmptyAttribute(
