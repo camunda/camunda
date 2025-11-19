@@ -407,6 +407,16 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickResetFilters();
       await operateFiltersPanelPage.clickRunningInstancesCheckbox();
       await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.processInstancesTable.first()).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
       await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
       await operateFiltersPanelPage.fillOperationIdFilter(operationId);
 
