@@ -104,6 +104,15 @@ public interface BackupActuator {
   @Body("%7B\"backupId\": \"{backupId}\"%7D")
   TakeBackupRuntimeResponse take(@Param("backupId") long backupId);
 
+  /**
+   * Triggers taking a backup of the cluster.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  TakeBackupRuntimeResponse take();
+
   @RequestLine("GET /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   BackupInfo status(@Param final long id);
