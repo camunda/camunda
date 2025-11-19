@@ -111,7 +111,7 @@ public class CamundaClientProperties {
    */
   private Duration requestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
 
-  /** The maximum number of concurrent HTTP connections the client can open. */
+  /** The maximum number of concurrent HTTP connections the client can open. Available since 8.8.4. */
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
 
   public CamundaClientCloudProperties getCloud() {
