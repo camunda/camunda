@@ -256,6 +256,7 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Filter by process instance key with one key and assert results', async ({ }) => {
+      await operateFiltersPanelPage.clickResetFilters();
       const variableProcessInstanceKey =
         variableProcessInstance.processInstanceKey.toString();
 
@@ -295,7 +296,7 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateFiltersPanelPage.finishedInstancesCheckbox,
       ).toBeEnabled();
-      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
+      await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
 
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
@@ -403,8 +404,8 @@ test.describe('Process Instances Filters', () => {
       await operateOperationPanelPage.collapseOperationIdField();
 
       await operateFiltersPanelPage.clickResetFilters();
-      await operateFiltersPanelPage.runningInstancesCheckbox.click();
-      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
+      await operateFiltersPanelPage.clickRunningInstancesCheckbox();
+      await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
       await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
       await operateFiltersPanelPage.fillOperationIdFilter(operationId);
 
@@ -504,7 +505,7 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
+      await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
       await expect
         .poll(() => operateProcessesPage.processInstancesTable.count())
         .toBeGreaterThanOrEqual(2);
