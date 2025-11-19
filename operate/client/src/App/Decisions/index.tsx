@@ -32,6 +32,10 @@ const Decisions: React.FC = () => {
         queryKey: queryKeys.decisionDefinitions.search(),
         type: 'active',
       });
+      client.refetchQueries({
+        queryKey: queryKeys.decisionInstances.searchPaginated(),
+        type: 'active',
+      });
     }
   }, [location.state, client]);
 

@@ -16,7 +16,6 @@ import {
 import {InstancesTable} from './index';
 import {Routes, Route, MemoryRouter} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {AppHeader} from 'App/Layout/AppHeader';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -29,8 +28,6 @@ import {
   assignApproverGroup,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
-import {mockMe} from 'modules/mocks/api/v2/me';
-import {createUser} from 'modules/testUtils';
 
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
@@ -273,46 +270,6 @@ describe('<InstancesTable />', () => {
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
-  });
-
-  it('should refetch data when navigated from header', async () => {
-    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
-    const resolver = vi.fn();
-    mockSearchDecisionInstances().withSuccess(
-      mockDecisionInstancesSearchResult,
-      {mockResolverFn: resolver},
-    );
-    mockSearchDecisionInstances().withSuccess(
-      mockDecisionInstancesSearchResult,
-      {mockResolverFn: resolver},
-    );
-
-    const {user} = render(
-      <>
-        <AppHeader />
-        <InstancesTable />
-      </>,
-      {wrapper: createWrapper()},
-    );
-
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('data-table-skeleton'),
-    );
-
-    await user.click(
-      within(
-        screen.getByRole('navigation', {
-          name: /camunda operate/i,
-        }),
-      ).getByRole('link', {
-        name: /decisions/i,
-      }),
-    );
-
-    expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
-    expect(resolver).toHaveBeenCalledTimes(2);
   });
 
   it.each(['all', undefined])(
