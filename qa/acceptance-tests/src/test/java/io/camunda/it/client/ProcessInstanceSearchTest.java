@@ -545,6 +545,25 @@ public class ProcessInstanceSearchTest {
   }
 
   @Test
+  void shouldQueryByElementIdAndMultipleOrConditions() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.elementId("taskA")
+                        .orFilters(List.of(f3 -> f3.state(ACTIVE), f4 -> f4.state(COMPLETED))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v1");
+  }
+
+  @Test
   void shouldNotQueryIfNoOrConditionMatches() {
     // when
     final var result =
