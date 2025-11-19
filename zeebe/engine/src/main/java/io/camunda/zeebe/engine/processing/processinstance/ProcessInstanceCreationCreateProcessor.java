@@ -21,8 +21,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationCreateProcessor
-    implements CommandProcessor<ProcessInstanceCreationRecord> {
+    implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
@@ -82,6 +82,7 @@ public final class ProcessInstanceCreationCreateProcessor
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final StateWriter stateWriter;
 
   private final ProcessEngineMetrics metrics;
 
@@ -101,26 +102,22 @@ public final class ProcessInstanceCreationCreateProcessor
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    stateWriter = writers.state();
     this.metrics = metrics;
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
-
+  public void processRecord(final TypedRecord<ProcessInstanceCreationRecord> command) {
     final ProcessInstanceCreationRecord record = command.getValue();
 
     getProcess(record)
         .flatMap(process -> isAuthorized(command, process))
         .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(controller, record, process),
-            rejection -> controller.reject(rejection.type(), rejection.reason()));
-
-    return true;
+            process -> createProcessInstance(command, process),
+            rejection -> reject(command, rejection.type(), rejection.reason()));
   }
 
   @Override
@@ -135,6 +132,16 @@ public final class ProcessInstanceCreationCreateProcessor
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  public void reject(
+      final TypedRecord<ProcessInstanceCreationRecord> command,
+      final RejectionType type,
+      final String reason) {
+    rejectionWriter.appendRejection(command, type, reason);
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeRejectionOnCommand(command, type, reason);
+    }
   }
 
   private Either<Rejection, DeployedProcess> isAuthorized(
@@ -167,10 +174,11 @@ public final class ProcessInstanceCreationCreateProcessor
   }
 
   private void createProcessInstance(
-      final CommandControl<ProcessInstanceCreationRecord> controller,
-      final ProcessInstanceCreationRecord record,
-      final DeployedProcess process) {
+      final TypedRecord<ProcessInstanceCreationRecord> command, final DeployedProcess process) {
+
     final long processInstanceKey = keyGenerator.nextKey();
+    final var commandKey = command.getKey();
+    final var record = command.getValue();
 
     setVariablesFromDocument(
         record,
@@ -194,7 +202,14 @@ public final class ProcessInstanceCreationCreateProcessor
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
         .setProcessDefinitionKey(process.getKey());
-    controller.accept(ProcessInstanceCreationIntent.CREATED, record);
+
+    final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
+
+    stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeEventOnCommand(
+          entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
+    }
 
     metrics.processInstanceCreated(record);
   }
@@ -390,7 +405,7 @@ public final class ProcessInstanceCreationCreateProcessor
               RejectionType.INVALID_ARGUMENT,
               "Expected to create instance of process with tags, but the tags '%s' are invalid. %s"
                   .formatted(
-                      invalidTags.stream().collect(Collectors.joining("', '")),
+                      String.join("', '", invalidTags),
                       TagUtil.TAG_FORMAT_DESCRIPTION)));
     }
 
