@@ -167,30 +167,47 @@ public class ElasticsearchConnector {
 
   private KeyStore loadCustomTrustStore(final SslProperties sslConfig) {
     try {
-      final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-      trustStore.load(null);
-      // load custom es server certificate if configured
-      final String serverCertificate = sslConfig.getCertificatePath();
-      if (serverCertificate != null) {
-        setCertificateInTrustStore(trustStore, serverCertificate);
+      final String certificatePath = sslConfig.getCertificatePath();
+      if (certificatePath != null) {
+        // Check if it's a PKCS12 keystore
+        if (certificatePath.endsWith(".p12") || certificatePath.endsWith(".pfx")) {
+          return loadPKCS12KeyStore(certificatePath);
+        } else {
+          // Load as X.509 certificate
+          return loadX509KeyStore(certificatePath);
+        }
+      } else {
+        final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        trustStore.load(null);
+        return trustStore;
       }
-      return trustStore;
     } catch (final Exception e) {
-      final String message =
-          "Could not create certificate trustStore for the secured Elasticsearch Connection!";
-      throw new TasklistRuntimeException(message, e);
+      throw new TasklistRuntimeException(
+          "Could not create certificate trustStore for the secured Elasticsearch Connection!", e);
     }
   }
 
-  private void setCertificateInTrustStore(
-      final KeyStore trustStore, final String serverCertificate) {
-    try {
-      final Certificate cert = loadCertificateFromPath(serverCertificate);
-      trustStore.setCertificateEntry("elasticsearch-host", cert);
+  private KeyStore loadPKCS12KeyStore(final String certificatePath) {
+    try (final FileInputStream fis = new FileInputStream(certificatePath)) {
+      final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+      keyStore.load(fis, null); // No password for the test keystore
+      return keyStore;
     } catch (final Exception e) {
-      final String message =
-          "Could not load configured server certificate for the secured Elasticsearch Connection!";
-      throw new TasklistRuntimeException(message, e);
+      throw new TasklistRuntimeException(
+          "Could not load PKCS12 certificate from path: " + certificatePath, e);
+    }
+  }
+
+  private KeyStore loadX509KeyStore(final String certificatePath) {
+    try {
+      final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      trustStore.load(null);
+      final Certificate cert = loadCertificateFromPath(certificatePath);
+      trustStore.setCertificateEntry("elasticsearch-host", cert);
+      return trustStore;
+    } catch (final Exception e) {
+      throw new TasklistRuntimeException(
+          "Could not load X.509 certificate from path: " + certificatePath, e);
     }
   }
 
