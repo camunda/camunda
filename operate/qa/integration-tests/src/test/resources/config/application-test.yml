@@ -45,5 +45,5 @@ spring:
   thymeleaf:
     prefix: classpath:/static/
 ---
-spring.config.activate.on-profile: identity-auth, sso-auth
+spring.config.activate.on-profile: sso-auth
 camunda.webapps.login-delegated: true
