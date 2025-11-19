@@ -22,9 +22,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.lte;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.createIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.deleteByQueryRequestBuilder;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.time;
@@ -260,9 +258,6 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
       final String destinationIndexName,
       final String idFieldName,
       final List<Object> processInstanceKeys) {
-    if (!richOpenSearchClient.index().indexExists(destinationIndexName)) {
-      createIndexAs(sourceIndexName, destinationIndexName);
-    }
 
     final Query sourceQuery =
         stringTerms(idFieldName, processInstanceKeys.stream().map(Object::toString).toList());
@@ -294,17 +289,6 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
   private long getAutoSlices() {
     return operateProperties.getOpensearch().getNumberOfShards();
-  }
-
-  private void createIndexAs(final String sourceIndexName, final String destinationIndexName) {
-    final var srcIndex =
-        richOpenSearchClient
-            .index()
-            .get(getIndexRequestBuilder(sourceIndexName))
-            .get(sourceIndexName);
-    richOpenSearchClient
-        .index()
-        .createIndexWithRetries(createIndexRequestBuilder(destinationIndexName, srcIndex).build());
   }
 
   private Either<Throwable, ArchiveBatch> handleSearchResponse(
