@@ -98,9 +98,24 @@ public final class ZeebeRuntimeValidators {
                 expression ->
                     expression
                         .isOptional()
+                        .isStatic()
                         .satisfiesIfStatic(
-                            ZeebeExpressionValidator::isListOfCsv,
-                            "be a list of comma-separated values, e.g. 'a,b,c'"))
+                            staticExpression -> {
+                              final String value = staticExpression.getExpression().trim();
+                              if (value.isEmpty()) {
+                                return true;
+                              }
+                              // Split by comma and validate each value
+                              final String[] events = value.split(",");
+                              for (final String event : events) {
+                                final String trimmed = event.trim();
+                                if (!trimmed.equals("create") && !trimmed.equals("update")) {
+                                  return false;
+                                }
+                              }
+                              return true;
+                            },
+                            "be empty or contain only 'create', 'update', or both (comma-separated)"))
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeTaskDefinition.class)

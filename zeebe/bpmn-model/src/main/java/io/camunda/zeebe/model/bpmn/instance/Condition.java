@@ -21,4 +21,4 @@ package io.camunda.zeebe.model.bpmn.instance;
  *
  * @author Sebastian Menski
  */
-public interface Condition extends Expression {}
+public interface Condition extends FormalExpression {}
