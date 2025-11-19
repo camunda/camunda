@@ -21,9 +21,17 @@ public class LeaseTest {
   final Lease lease = new Lease("task1", originalTimestamp, nodeInstance);
 
   @Test
+  public void shouldReturnIfValid() {
+    assertThat(lease.isStillValid(originalTimestamp)).isTrue();
+    assertThat(lease.isStillValid(originalTimestamp + 1)).isFalse();
+    assertThat(lease.isStillValid(originalTimestamp - 1)).isTrue();
+    assertThat(lease.isStillValid(0)).isTrue();
+  }
+
+  @Test
   public void shouldRenewCorrectlyWhenValid() {
     // given
-    final var currentTime = 2000L;
+    final var currentTime = 500L;
     final var renewalDuration = Duration.ofSeconds(5);
 
     // when
@@ -40,7 +48,7 @@ public class LeaseTest {
     // given
     final var currentTime = 10000L;
     final var renewalDuration = Duration.ofSeconds(5);
-    assertThat(lease.isStillValid(currentTime, renewalDuration)).isFalse();
+    assertThat(lease.isStillValid(currentTime)).isFalse();
 
     // when/then
     assertThatThrownBy(() -> lease.renew(currentTime, renewalDuration))
