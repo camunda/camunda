@@ -7073,7 +7073,9 @@
   ],
   "preload": false,
   "schemaVersion": 42,
-  "tags": [],
+  "tags": [
+    "as code"
+  ],
   "templating": {
     "list": [
       {
@@ -7444,5 +7446,5 @@
   "timezone": "browser",
   "title": "Core Features Overview",
   "uid": "core-features-overview",
-  "version": 1
+  "version": 2
 }
