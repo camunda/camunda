@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 
 type OptionalFilter =
   | 'Variable'
@@ -20,17 +20,18 @@ type OptionalFilter =
 
 export class OperateFiltersPanelPage {
   private page: Page;
-  readonly activeCheckbox: Locator;
-  readonly incidentsCheckbox: Locator;
+  readonly activeInstancesCheckbox: Locator;
+  readonly incidentsInstancesCheckbox: Locator;
   readonly runningInstancesCheckbox: Locator;
-  readonly completedCheckbox: Locator;
-  readonly canceledCheckbox: Locator;
+  readonly completedInstancesCheckbox: Locator;
+  readonly canceledInstancesCheckbox: Locator;
   readonly finishedInstancesCheckbox: Locator;
   readonly processNameFilter: Locator;
   readonly processVersionFilter: Locator;
   readonly processInstanceKeysFilter: Locator;
   readonly processInstanceKeysFilterOption: Locator;
   readonly parentProcessInstanceKey: Locator;
+  readonly processInstanceKey: Locator;
   readonly flowNodeFilter: Locator;
   readonly operationIdFilter: Locator;
   readonly resetFiltersButton: Locator;
@@ -53,22 +54,24 @@ export class OperateFiltersPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.activeCheckbox = this.page.getByRole('checkbox', {name: 'Active'});
-    this.incidentsCheckbox = this.page.getByRole('checkbox', {
-      name: 'Incidents',
-    });
-    this.runningInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Running Instances',
-    });
-    this.completedCheckbox = this.page.getByRole('checkbox', {
-      name: 'Completed',
-    });
-    this.canceledCheckbox = this.page.getByRole('checkbox', {
-      name: 'Canceled',
-    });
-    this.finishedInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Finished Instances',
-    });
+    this.runningInstancesCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Running' });
+    this.activeInstancesCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Active' });
+    this.incidentsInstancesCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Incidents' });
+    this.completedInstancesCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Completed' });
+    this.canceledInstancesCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Canceled' });
+    this.finishedInstancesCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Finished' });
     this.processNameFilter = this.page.getByRole('combobox', {
       name: 'Name',
     });
@@ -83,6 +86,9 @@ export class OperateFiltersPanelPage {
     });
     this.parentProcessInstanceKey = page.getByRole('textbox', {
       name: 'parent process instance key',
+    });
+    this.processInstanceKey = page.getByRole('textbox', {
+      name: 'process instance key',
     });
     this.flowNodeFilter = this.page.getByRole('combobox', {
       name: 'flow node',
@@ -151,23 +157,23 @@ export class OperateFiltersPanelPage {
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
-    await this.page.getByLabel(filterName, {exact: true}).hover();
+    await this.page.getByLabel(filterName, { exact: true }).hover();
     await this.page.getByLabel(`Remove ${filterName} Filter`).click();
   }
 
   async selectProcess(option: string) {
     await this.processNameFilter.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    await this.page.getByRole('option', { name: option, exact: true }).click();
   }
 
   async selectVersion(option: string) {
     await this.processVersionFilter.click();
-    await this.page.getByRole('option', {name: option, exact: true}).click();
+    await this.page.getByRole('option', { name: option, exact: true }).click();
   }
 
   async selectFlowNode(option: string) {
     await this.flowNodeFilter.click();
-    await this.page.getByRole('option', {name: option}).click();
+    await this.page.getByRole('option', { name: option }).click();
   }
 
   async fillVariableNameFilter(name: string) {
@@ -210,7 +216,7 @@ export class OperateFiltersPanelPage {
     await expect(this.dateFilterDialog).toBeVisible();
 
     const date = new Date();
-    const monthName = date.toLocaleString('default', {month: 'long'});
+    const monthName = date.toLocaleString('default', { month: 'long' });
     const year = date.getFullYear();
 
     await this.fromDateInput.click();
@@ -238,6 +244,10 @@ export class OperateFiltersPanelPage {
     await this.errorMessageFilter.fill(errorMessage);
   }
 
+  async fillOperationIdFilter(operationId: string) {
+    await this.operationIdFilter.fill(operationId);
+  }
+
   async clickJsonEditorModal() {
     await this.jsonEditorModalButton.click();
   }
@@ -247,6 +257,29 @@ export class OperateFiltersPanelPage {
   }
 
   async clickMultipleVariablesSwitch() {
-    await this.multipleVariablesSwitch.click({force: true});
+    await this.multipleVariablesSwitch.click({ force: true });
+  }
+
+  async clickRunningInstancesCheckbox(): Promise<void> {
+    await this.runningInstancesCheckbox.click({ timeout: 60000 });
+  }
+
+  async clickActiveInstancesCheckbox(): Promise<void> {
+    await this.activeInstancesCheckbox.click();
+  }
+
+  async clickIncidentsInstancesCheckbox(): Promise<void> {
+    await this.incidentsInstancesCheckbox.click({ timeout: 60000 });
+  }
+
+  async clickFinishedInstancesCheckbox(): Promise<void> {
+    await this.finishedInstancesCheckbox.click({ timeout: 60000 });
+  }
+
+  async clickCompletedInstancesCheckbox(): Promise<void> {
+    await this.completedInstancesCheckbox.click({ timeout: 60000 });
+  }
+  async clickCanceledInstancesCheckbox(): Promise<void> {
+    await this.canceledInstancesCheckbox.click({ timeout: 60000 });
   }
 }

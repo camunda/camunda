@@ -6,17 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
-import {expect} from '@playwright/test';
-import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
-import {captureScreenshot, captureFailureVideo} from '@setup';
-import {navigateToApp} from '@pages/UtilitiesPage';
-import {waitForAssertion} from 'utils/waitForAssertion';
+import { test } from 'fixtures';
+import { expect } from '@playwright/test';
+import { deploy, createInstances, createSingleInstance } from 'utils/zeebeClient';
+import { captureScreenshot, captureFailureVideo } from '@setup';
+import { navigateToApp } from '@pages/UtilitiesPage';
+import { waitForAssertion } from 'utils/waitForAssertion';
+import { sleep } from 'utils/sleep';
+import { OperateOperationPanelPage } from '@pages/OperateOperationPanelPage';
 
-type ProcessInstance = {processInstanceKey: number};
+type ProcessInstance = { processInstanceKey: number };
 
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
+let variableProcessInstance: ProcessInstance;
 
 test.beforeAll(async () => {
   await deploy([
@@ -48,28 +51,41 @@ test.beforeAll(async () => {
 
   callActivityProcessInstance = {
     processInstanceKey: Number(
-      (await createSingleInstance('CallActivityProcess', 1, {filtersTest: 456}))
+      (await createSingleInstance('CallActivityProcess', 1, { filtersTest: 456 }))
         .processInstanceKey,
     ),
   };
+
+  await deploy(['./resources/Variable_Process.bpmn']);
+  variableProcessInstance = {
+    processInstanceKey: Number(
+      (await createSingleInstance('Variable_Process', 1, { filtersTest: 604 }))
+        .processInstanceKey,
+    ),
+  };
+
+  await deploy(['./resources/Versioned Process.bpmn']);
+  await deploy(['./resources/Versioned Process_2.bpmn']);
+  await deploy(['./resources/ProcessToCancel.bpmn']);
 });
 
 test.describe('Process Instances Filters', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+  test.beforeEach(async ({ page, loginPage, operateHomePage }) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
     await operateHomePage.clickProcessesTab();
   });
 
-  test.afterEach(async ({page}, testInfo) => {
+  test.afterEach(async ({ page }, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
-  test('Filter process instances by parent key, date range, and error message', async ({
+  test('Filter process instances by parent key, date range, variable, instance key and error message', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
+    operateOperationPanelPage,
   }) => {
     await test.step('Filter by Parent Process Instance Key and assert results', async () => {
       const callActivityProcessInstanceKey =
@@ -81,10 +97,6 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
         callActivityProcessInstanceKey,
       );
-      await expect(operateProcessesPage.noMatchingInstancesMessage).toBeVisible(
-        {timeout: 60000},
-      );
-      await operateProcessesPage.clickProcessCompletedCheckbox();
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('1 result')).toBeVisible();
@@ -93,10 +105,19 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         },
       });
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
       await expect(operateProcessesPage.parentInstanceIdCell).toHaveText(
         callActivityProcessInstanceKey,
       );
-      expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
+      expect(await operateProcessesPage.processInstancesTable.count()).toBe(2);
     });
 
     await test.step('Reset filter', async () => {
@@ -109,8 +130,44 @@ test.describe('Process Instances Filters', () => {
         .toBeGreaterThan(1);
     });
 
+    await test.step('Filter by Parent Instance Key and by Error Message and assert results', async () => {
+      const callActivityProcessInstanceKey =
+        callActivityProcessInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Parent Process Instance Key',
+      );
+      await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
+        callActivityProcessInstanceKey,
+      );
+      await expect(page.getByText('1 result')).toBeVisible();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      const errorMessage =
+        "Failed to extract the correlation key for 'nonExistingClientId'";
+      await operateFiltersPanelPage.displayOptionalFilter('Error Message');
+      await operateFiltersPanelPage.fillErrorMessageFilter(errorMessage);
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
     await test.step('Filter by End Date Range and assert results', async () => {
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
       let currentRowCount =
         await operateProcessesPage.processInstancesTable.count();
@@ -169,6 +226,289 @@ test.describe('Process Instances Filters', () => {
       await expect(operateFiltersPanelPage.errorMessageFilter).toBeHidden();
       await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
     });
+
+    await test.step('Filter by variable and assert results', async ({ }) => {
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
+      await operateFiltersPanelPage.fillVariableValueFilter('604');
+
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+
+      await sleep(1_000);
+
+      await waitForAssertion({
+        assertion: async () => {
+          const variableProcessInstanceKeys = new Set<string>();
+          for (const element of await operateProcessesPage.processInstancesTable
+            .getByTestId('cell-processInstanceKey')
+            .elementHandles()) {
+            variableProcessInstanceKeys.add(await element.innerText());
+          }
+          expect(
+            variableProcessInstanceKeys.has(variableProcessInstanceKey),
+          ).toBeTruthy();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Filter by process instance key with one key and assert results', async ({ }) => {
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        variableProcessInstanceKey,
+      );
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(
+            variableProcessInstanceKey,
+          );
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Filter by process instance key with multiple keys and assert results', async ({ }) => {
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+      const callActivityProcessInstanceKey =
+        callActivityProcessInstance.processInstanceKey.toString();
+      await operateFiltersPanelPage.resetFiltersButton.click();
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+
+      await expect(
+        operateFiltersPanelPage.finishedInstancesCheckbox,
+      ).toBeVisible();
+      await expect(
+        operateFiltersPanelPage.finishedInstancesCheckbox,
+      ).toBeEnabled();
+      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
+
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 results')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Reset filter', async () => {
+      await operateFiltersPanelPage.clickResetFilters();
+      await expect(
+        operateFiltersPanelPage.processInstanceKeysFilter,
+      ).toBeHidden();
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeGreaterThan(1);
+    });
+
+    await test.step('Filter by variable and operation id and assert results', async () => {
+      const processToCancelMeowInstance = {
+        processInstanceKey: Number(
+          (await createSingleInstance('ProcessToCancel', 1, { sound: 'meow' }))
+            .processInstanceKey,
+        ),
+      };
+
+      const processToCancelGawInstance = {
+        processInstanceKey: Number(
+          (await createSingleInstance('ProcessToCancel', 1, { sound: 'gaw' }))
+            .processInstanceKey,
+        ),
+      };
+
+      const processToCancelInstanceMeowIK =
+        processToCancelMeowInstance.processInstanceKey.toString();
+      const processToCancelInstanceGawIK =
+        processToCancelGawInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        `${processToCancelInstanceMeowIK}, ${processToCancelInstanceGawIK}`,
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 results')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateProcessesPage.selectProcessCheckboxByPIK(
+        processToCancelInstanceMeowIK,
+        processToCancelInstanceGawIK,
+      );
+
+      await operateProcessesPage.clickCancelBatchOperationButton();
+
+      await operateProcessesPage.clickCancelProcessInstanceDialogButton();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({ timeout: 30000 });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      var lastOperation = operateOperationPanelPage
+        .getAllOperationEntries()
+        .last();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            OperateOperationPanelPage.getOperationType(lastOperation),
+          ).toHaveText('Cancel');
+        },
+        onFailure: async () => {
+          lastOperation = operateOperationPanelPage
+            .getAllOperationEntries()
+            .last();
+          await page.reload();
+        },
+      });
+
+      const operationId =
+        await OperateOperationPanelPage.getOperationID(
+          lastOperation,
+        ).innerText();
+
+      await operateOperationPanelPage.collapseOperationIdField();
+
+      await operateFiltersPanelPage.clickResetFilters();
+      await operateFiltersPanelPage.runningInstancesCheckbox.click();
+      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
+      await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
+      await operateFiltersPanelPage.fillOperationIdFilter(operationId);
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 results')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('sound');
+      await operateFiltersPanelPage.fillVariableValueFilter('"meow"');
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 results')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Filter by end and start date range', async () => {
+      await operateFiltersPanelPage.resetFiltersButton.click();
+
+      await operateFiltersPanelPage.displayOptionalFilter('Start Date Range');
+      await operateFiltersPanelPage.pickDateTimeRange({
+        fromDay: '1',
+        toDay: '1',
+        fromTime: '00:00:00',
+        toTime: '00:00:00',
+      });
+      await operateFiltersPanelPage.clickApply();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({ timeout: 30000 });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.displayOptionalFilter('End Date Range');
+
+      const todayDate = new Date();
+      console.log('Today date:', todayDate.getDate());
+
+      await operateFiltersPanelPage.pickDateTimeRange({
+        fromDay: todayDate.getDate().toString(),
+        toDay: todayDate.getDate().toString(),
+        fromTime: '00:00:00',
+        toTime: '23:59:59',
+      });
+      await operateFiltersPanelPage.clickApply();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({ timeout: 30000 });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.removeOptionalFilter('Start Date Range');
+
+      await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
+      await operateFiltersPanelPage.displayOptionalFilter('Start Date Range');
+      await expect(operateFiltersPanelPage.startDateFilter).toBeVisible();
+
+      await operateFiltersPanelPage.pickDateTimeRange({
+        fromDay: todayDate.getDate().toString(),
+        toDay: todayDate.getDate().toString(),
+        fromTime: '00:00:00',
+        toTime: '23:59:59',
+      });
+
+      await operateFiltersPanelPage.clickApply();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({ timeout: 30000 });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.finishedInstancesCheckbox.click();
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeGreaterThanOrEqual(2);
+    });
   });
 
   test('Interaction between diagram and filters', async ({
@@ -180,6 +520,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.selectProcess(
         'Process With Multiple Versions',
       );
+      await operateFiltersPanelPage.selectVersion('2');
       await waitForAssertion({
         assertion: async () => {
           await expect
@@ -203,7 +544,7 @@ test.describe('Process Instances Filters', () => {
         assertion: async () => {
           await expect(
             operateProcessesPage.noMatchingInstancesMessage,
-          ).toBeVisible({timeout: 60000});
+          ).toBeVisible({ timeout: 60000 });
         },
         onFailure: async () => {
           await page.reload();
@@ -247,7 +588,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.processInstanceKeysFilter.fill(
         `${orderProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
       );
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
     });
     await test.step('Add Variable Filter', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variable');
@@ -289,11 +630,11 @@ test.describe('Process Instances Filters', () => {
             exact: true,
           },
         ),
-      ).toBeVisible({timeout: 60000});
+      ).toBeVisible({ timeout: 60000 });
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           callActivityProcessInstanceKey.toString(),
-          {exact: true},
+          { exact: true },
         ),
       ).toBeHidden();
     });
@@ -320,7 +661,7 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Check that process instances table is filtered correctly', async () => {
-      await expect(page.getByText('2 results')).toBeVisible({timeout: 60000});
+      await expect(page.getByText('2 results')).toBeVisible({ timeout: 60000 });
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           orderProcessInstanceKey.toString(),
@@ -332,7 +673,7 @@ test.describe('Process Instances Filters', () => {
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
           callActivityProcessInstanceKey.toString(),
-          {exact: true},
+          { exact: true },
         ),
       ).toBeVisible();
     });
