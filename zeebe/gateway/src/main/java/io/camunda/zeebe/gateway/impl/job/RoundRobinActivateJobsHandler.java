@@ -281,7 +281,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
 
   private void logResponseNotSent(
       final String jobType, final List<Long> jobKeys, final String reason) {
-    Loggers.GATEWAY_LOGGER.debug(
+    Loggers.GATEWAY_LOGGER.info(
         "Failed to send {} activated jobs for type {} (with job keys: {}) to client, because: {}",
         jobKeys.size(),
         jobType,
